@@ -4,7 +4,7 @@
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
-    "testdriver": "./index.js"
+    "testdriverai": "./index.js"
   },
   "scripts": {
     "start": "node index.js",
