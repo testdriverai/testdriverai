@@ -1,5 +1,5 @@
 {
-  "name": "testdriver-agent",
+  "name": "testdriverai",
   "version": "4.0.0",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
