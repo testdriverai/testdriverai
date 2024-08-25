@@ -1,134 +1,158 @@
-# TestDriver AI Agent
+![TestDriver.ai](https://github.com/dashcamio/testdriver/assets/318295/2a0ad981-8504-46f0-ad97-60cb6c26f1e7)
 
+# TestDriver.ai
 
-## Workflow
+Next generation autonomous AI agent for end-to-end testing of web & desktop
 
-Everything will be saved when SigInt is called
+[Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.gg/ZjhBsJc5)
 
-### Editing and naming
+----
 
-```sh
-node index.js edit testdriver.yml
-node index.js testdriver.yml
-```
+TestDriver isn't like any test framework you've used before. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
 
-### Running
+- **Easier set up:** No need to add test IDs or craft complex selectors
+- **Less Maintenance:** Tests don't break when code changes
+- **More Power:** TestDriver can test any application and control any OS setting
 
-```sh
-node index.js run testdriver.yml
-```
+### Demo
 
-## Internal Commands Docs
+https://github.com/user-attachments/assets/fba08020-a751-4d9e-9505-50db541fd38b
 
-### `/summarize`
+# Examples
 
-Writes a summary to `/tmp/oiResult.log` for GitHub and such.
+- Test any user flow on any website in any browser
+- Clone, build, and test any desktop app
+- Render multiple browser windows and popups like 3rd party auth
+- Test `<canvas>`, `<iframe>`,  and `<video>` tags with ease
+- Use file selectors to upload files to the browser
+- Test chrome extensions
+- Test integrations between applications
+- Integrates into CI/CD via GitHub Actions ($)
 
-### `/save`
+Check out [the docs](https://docs.testdriver.ai/).
 
-Writes yml instructions from memory to save file
+# Workflow
 
-### `/run`
+1. Tell TestDriver what to do in natural language on your local machine using `npm i testdriverai -g` 
+2. TestDriver looks at the screen and uses mouse and keyboard emulation to accomplish the goal
+3. Run TestDriver tests on our test infrastructure
 
-Execute a `/save`
+# Quickstart
 
-### `/summarize`
+## Install TestDriver via NPM
 
-Generate a text summary of the test.
-
-### `/quit`
-
-Exits the application.
-
-### `/undo`
-
-Undo the last thing appended to the save file.
-
-### `/manual`
-
-Generates the yml and runs it as if it were created from AI.
-
-`/manual command=click x=10 y=20`
-`/manual command=match-image path=sort.png`
-`/manual command=wait-for-image path=sort.png seconds=10`
-`/manual command=wait-for-text text='see detatils'`
-`/manual command=embed file=open.yml`
-
-# Old
-
-## Installation
-```sh
-npm install
-```
-
-### Potential problems
-
-#### Node GYP
-FYI robotjs might require extra steps to install, due to `node-gyp`, so you have to:
+Install testdriverai via NPM. This will make testdriverai available as a global command.
 
 ```sh
-brew install python-setuptools
+npm install testdriverai -g
 ```
 
-or whatever accomplishes the same on your OS distro.
+## Set up the project
 
-## Running
-
-```
-npm run dev
-```
-
-## Running as `testdriver`
-
-Run `npm link` and the agent will be available globally as `testdriver`.
-
-```
-npm link
-testdriver
-```
-## Example of saving and restoring AI memory
-
-Let's say I want to test the `/save` and `/summarize` call. It would be annoying to wait for an entire test to run to test the function once. Here's how you do it.
-
-So let's say I just ran this test:
-
-```md
-> open google chrome
-> navigate to youtube.com
-> search for 'cat videos'
-> click the first one
-```
-
-I would call `/savechat` to save the history JSON into the `/.chats` directory.
-
-Then, I can make changes and spawn a new process. At that point I could run `/loadchat` to restore the agent memory 
-as if I had never exited the process:
+In the root of the project you want to test, run `testdriverai init`. This will authorize you to communicate with our API and set up example GitHub runner workflows.
 
 ```sh
-# load an old chat history to test saving
-/loadchat .chats/1713391070500.json
+testdriverai init
 ```
 
-That will allow me to test things like `/save` and `/summarize` over and over again without running more tests.
+You're almost ready to deploy your first test!
+
+## Teach TestDriver a test
+
+Running testdriverai init creates a sample project that's ready to deploy via GitHub actions! But the test file is blank, so let's show TestDriver what we want to test. Run the following command:
 
 ```sh
-# save the test plan to markdown
-/save
+testdriverai .testdriver/test.yml
 ```
 
-## Turning an exploratory test into a regression test
+## Reset the test state
 
-Ok so we've run our test. TestDriver will automatically save a regression to `./saves`. This saved regression will
-contain the codeblocks the AI generated and ran in linear order.
+TestDriver best practice is to start instructing TestDriver with your app in it's initial state. For browsers, this means creating a new tab with the website you want to test.
 
-Any invalid codeblocks (invalid yml) should not be written here. However, codeblocks that contain spelling errors or invalid paramers
-will be written.
+If you have multiple monitors, make sure you do this on your primary display.
 
-Any `yml` block that spawns a subrouteine (at depth 1 or higher) will invoke a REAL ai agent that will make decisions. This is also
-an opportunity for it to go off the rails.
+> When deploying, the TestDriver GitHub action executes tests on ephemeral VMs. You can use a prerun script to reach this initial state automatically.
 
-So for example, `click-text` does NOT hardcode the x/y coordinates. It is evaluated at run time, the AI is given a screenshot and the
-`click-text` process starts from scratch. The AI *should* choose the same text every time, but it may not.
+## Instruct TestDriver
 
-Same for `click-image`. We think that this will be more reliable than x,y coords or sub-image matching, as it allows the AI to adapt to
-a changing application. No selectors!
+Now, just tell TestDriver what you want it to do. For now, stick with single commands like "click sign up" and "scroll down." 
+
+Later, try `/explore` to perform higher level objectives like "complete the onboarding." 
+
+```yaml
+> Click on sign up
+TestDriver Generates a Test
+TestDriver will look at your screen and generate a test script. TestDriver can see the screen, control the mouse, keyboard, and more! 
+TestDriver can only see your primary display!
+To navigate to testdriver.ai, we need to focus on the
+Google Chrome application, click on the search bar, type
+the URL, and then press Enter.
+
+Here are the steps:
+
+1. Focus on the Google Chrome application.
+2. Click on the search bar.
+3. Type "testdriver.ai".
+4. Press Enter.
+
+Let's start with focusing on the Google Chrome application
+and clicking on the search bar.
+
+commands:
+  - command: focus-application
+    name: Google Chrome
+  - command: hover-text
+    text: Search Google or type a URL
+    description: main google search
+    action: click
+
+After this, we will type the URL and press Enter.
+```
+
+## TestDriver executes the test script
+
+TestDriver will execute the commands found in the yml codeblocks of the response.
+
+See the yml TestDriver generated? That's our own schema. You can learn more about it in the [reference](https://docs.testdriver.ai/reference/yml-schema).
+
+> Take your hands off the mouse and keyboard while TestDriver executes! TestDriver is not a fan of backseat drivers.
+
+## Keep going!
+
+Feel free to ask TestDriver to perform some more tasks. Every time you prompt TestDriver it will look at your screen and generate more test step to complete your goal.
+
+```sh
+> navigate to airbnb.com
+> search for destinations in austin tx
+> click check in
+> select august 8
+```
+
+## Save the test
+
+If everything worked perfectly, use the `/save` command to save the test script to the current file. 
+
+If something didn't work, you can use `/undo` to remove all of the test steps added since the last prompt.
+
+## Test the test locally
+
+Now it's time to make sure the test plan works before we deploy it. Use testdriver run to run the test file you just created with /save . 
+
+```sh
+testdriverai run testdriver/test.yml
+```
+
+Make sure to reset the test state! 
+
+## Deploy
+
+Now it's time to deploy your test using our GitHub action! testdriver init already did the work for you and will start triggering tests once you commit the new files to your repository.
+
+```sh
+git add .
+git commit -am "Add TestDriver tests"
+gh pr create --web
+```
+
+Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/continuous-integration/overview).
+
