@@ -95,6 +95,11 @@ console.log('')
 
 if (a.command !== 'run') {
   speak('Howdy! I am TestDriver version ' + package.version);
+
+  console.log(chalk.red('Warning!') + chalk.dim(' TestDriver sends screenshots of the desktop to our API.'));
+  console.log(chalk.dim('https://docs.testdriver.ai/security-and-privacy/agent'));
+  console.log('')
+
 }
 
 // individual run ID for this session
