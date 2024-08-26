@@ -577,24 +577,24 @@ let setTerminalWindowTransparency = async (hide) => {
       
       if (terminalApp) hideTerminal(terminalApp);
 
-      http.get('http://localhost:60305/hide', (res) => {
-        // Handle response if needed
-      }).on('error', (err) => {
-        // console.error('Error:', err);
-      });
+      // http.get('http://localhost:60305/hide', (res) => {
+      //   // Handle response if needed
+      // }).on('error', (err) => {
+      //   // console.error('Error:', err);
+      // });
     } else {
 
       if(terminalApp) showTerminal(terminalApp);
 
-      http.get('http://localhost:60305/show', (res) => {
-        // Handle response if needed
-      }).on('error', (err) => {
-        // console.error('Error:', err);
-      });
+      // http.get('http://localhost:60305/show', (res) => {
+      //   // Handle response if needed
+      // }).on('error', (err) => {
+      //   // console.error('Error:', err);
+      // });
     }
   } catch (e) {
     // Suppress error
-    // console.error('Caught exception:', e);
+    console.error('Caught exception:', e);
   }
 }
 
