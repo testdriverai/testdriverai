@@ -13,12 +13,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "20"
-      # - run: npm ci
-      # - run: npm test
-      - name:  'Automated Version Bump'
-        uses:  'phips28/gh-action-bump-version@master'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       - uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_AUTH_TOKEN }}
