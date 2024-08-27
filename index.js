@@ -827,7 +827,7 @@ const embed = async (file, depth) => {
   // await sdk.auth();
 
   let win = await system.activeWin();
-  terminalApp = win.owner.name;
+  terminalApp = win?.owner?.name || "";
 
   // should be start of new session
   sessionRes = await sdk.req('session/start', {
