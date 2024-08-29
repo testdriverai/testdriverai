@@ -338,11 +338,11 @@ const aiExecute = async(message, validateAndLoop = false) => {
 
 }
 
-const assert = async (criteria) => {
+const assert = async (expect) => {
 
   analytics.track('assert');
 
-  let task = criteria;
+  let task = expect;
   if (!task) {
     // set task to last value of tasks
     let task = tasks[tasks.length - 1];
@@ -360,7 +360,7 @@ const assert = async (criteria) => {
   let response = `\`\`\`yml
 commands:
   - command: assert
-    criteria: ${criteria}
+    expect: ${expect}
 \`\`\``
 
   await aiExecute(response)
