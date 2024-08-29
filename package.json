@@ -37,7 +37,6 @@
     "say": "^0.16.0",
     "screenshot-desktop": "^1.15.0",
     "semver": "^7.6.2",
-    "sharp": "^0.33.4",
     "systeminformation": "^5.22.7",
     "tmp": "^0.2.3",
     "uuid": "^10.0.0",
