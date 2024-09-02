@@ -102,6 +102,22 @@ let runID = new Date().getTime();
 
 function completer(line) {
   let completions = '/summarize /save /run /quit /explore /assert /undo /manual'.split(' ')
+  let filesAndFolders = fs.readdirSync('./')
+  filesAndFolders = filesAndFolders.map(file => {
+    let stats = fs.statSync(file)
+    if(stats.isDirectory()){
+      return file + '/' // add a '/' at the end of the folder name
+    } else {
+      return file
+    }
+  })
+
+  if (line.startsWith('/run ')){
+    var partialName = line.substring(5) // works only when there is a space after /run
+    var matches = filesAndFolders.filter(name => name.startsWith(partialName))
+    var fullCommand = matches.map(name => '/run ' + name)
+    return [partialName.length ? fullCommand: matches, line]
+  }
 
   var hits = completions.filter(function(c) { return c.indexOf(line) == 0 })
   // show all completions if none found
