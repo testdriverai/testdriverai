@@ -107,8 +107,6 @@ let runID = new Date().getTime();
 
 function completer(line) {
   let completions = '/summarize /save /run /quit /explore /assert /undo /manual'.split(' ')
-  
-  completions.concat(tasks)
 
   var hits = completions.filter(function(c) { return c.indexOf(line) == 0 })
   // show all completions if none found
