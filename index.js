@@ -723,7 +723,7 @@ let run = async (file, overwrite = false) => {
   for (const step of ymlObj.steps) {
 
     log.log('info', ``, null);
-    log.log('info', chalk.cyan(` ${step.prompt || 'no prompt'} `), null);
+    log.log('info', chalk.cyan(`${step.prompt || 'no prompt'}`), null);
 
     executionHistory.push({
       prompt: step.prompt,
