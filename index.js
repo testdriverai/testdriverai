@@ -72,8 +72,8 @@ let getArgs = () => {
   }
 
   // turn args[file] into local path
-  if (args[file] && args[file].indexOf('/') == -file) {
-    args[file] = `${__dirname}/${args[file]}`
+  if (args[file]) {
+    args[file] = `${process.cwd()}/${args[file]}`
     if (!args[file].endsWith('.yml')) {
       args[file] += '.yml';
     }
@@ -88,6 +88,7 @@ const thisFile = a.file;
 const thisCommand = a.command;
 
 log.log('info', chalk.green(`Howdy! I'm TestDriver v${package.version}`))
+log.log('info', chalk.dim(`Working on ${thisFile}`))
 console.log('')
 log.log('info', `Join our Discord for help`);
 log.log('info', chalk.yellow(`https://discord.com/invite/cWDFW8DzPm`)); 
