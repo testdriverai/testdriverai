@@ -16,6 +16,7 @@ const http = require('http');
 const path = require('path');
 const chalk = require('chalk')
 const yaml = require('js-yaml');
+const macScreenPerms = require('mac-screen-capture-permissions');
 
 // local modules
 const speak = require('./lib/speak');
@@ -94,15 +95,6 @@ log.log('info', `Join our Discord for help`);
 log.log('info', chalk.yellow(`https://discord.com/invite/cWDFW8DzPm`)); 
 console.log('')
 
-if (a.command !== 'run') {
-  speak('Howdy! I am TestDriver version ' + package.version);
-
-  console.log(chalk.red('Warning!') + chalk.dim(' TestDriver sends screenshots of the desktop to our API.'));
-  console.log(chalk.dim('https://docs.testdriver.ai/security-and-privacy/agent'));
-  console.log('')
-
-}
-
 // individual run ID for this session
 let runID = new Date().getTime();
 
@@ -135,8 +127,8 @@ const exit = async (failed = true) => {
 
   // we purposly never resolve this promise so the process will hang
   return new Promise(async () => {
-    rl.close()
-    rl.removeAllListeners()
+    rl?.close()
+    rl?.removeAllListeners()
     process.exit(failed ? 1 : 0);
   });
 }
@@ -827,6 +819,25 @@ const embed = async (file, depth) => {
 
   // await sdk.auth();
 
+
+  // if os is mac, check for screen capture permissions
+  if (process.platform === 'darwin' && !macScreenPerms.hasScreenCapturePermission()) {
+    log.log('info', chalk.red('Screen capture permissions not enabled.'))
+    log.log('info', 'You must enable screen capture permissions for the application calling `testdriverai`.')
+    log.log('info', 'Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only')
+    analytics.track('noMacPermissions');
+    return exit();
+  }
+
+  if (thisCommand !== 'run') {
+    speak('Howdy! I am TestDriver version ' + package.version);
+
+    console.log(chalk.red('Warning!') + chalk.dim(' TestDriver sends screenshots of the desktop to our API.'));
+    console.log(chalk.dim('https://docs.testdriver.ai/security-and-privacy/agent'));
+    console.log('')
+
+  }
+
   let win = await system.activeWin();
   terminalApp = win?.owner?.name || "";
 
@@ -856,7 +867,6 @@ process.on('uncaughtException', async (err) => {
   analytics.track('uncaughtException', {err});
   console.error('Uncaught Exception:', err);
   // You might want to exit the process after handling the error
-  await summarize(err);
   await exit(true);
 });
 
@@ -864,6 +874,5 @@ process.on('unhandledRejection', async (reason, promise) => {
   analytics.track('unhandledRejection', {reason, promise});
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // Optionally, you might want to exit the process
-  await summarize(reason)
   await exit(true);
 });

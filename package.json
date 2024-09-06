@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "4.0.14",
+  "version": "4.0.15",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -26,6 +26,7 @@
     "dotenv": "^16.4.5",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
+    "mac-screen-capture-permissions": "^2.1.0",
     "markdown-parser": "0.0.8",
     "marked": "^12.0.1",
     "marked-terminal": "^7.0.0",
