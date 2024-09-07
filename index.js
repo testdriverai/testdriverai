@@ -17,7 +17,6 @@ const path = require('path');
 const chalk = require('chalk')
 const yaml = require('js-yaml');
 const macScreenPerms = require('mac-screen-capture-permissions');
-const clipboardy = require('clipboardy');
 
 // local modules
 const speak = require('./lib/speak');
@@ -752,7 +751,7 @@ const promptUser = () => {
   // Case where it doesn't execute the command but pastes the clipboard content
 if (rl.on) {
     rl.on('paste', () => {
-    const clipboardContent = clipboardy.readSync();
+    const clipboardContent = require('clipboardy').readSync();
     rl.write(clipboardContent);
   });
 }
