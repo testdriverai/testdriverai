@@ -745,17 +745,8 @@ ${yaml.dump(step)}
 
 };
 
-
-
 const promptUser = () => {
-  // Case where it doesn't execute the command but pastes the clipboard content
-if (rl.on) {
-    rl.on('paste', () => {
-    const clipboardContent = require('clipboardy').readSync();
-    rl.write(clipboardContent);
-  });
-}
-rl.prompt(true);
+  rl.prompt(true);
 }
 
 const iffy = async (condition, then, otherwise, depth) => {
