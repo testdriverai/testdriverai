@@ -11,10 +11,14 @@ Add-Type @"
     }
 "@
 
-function Bring-WindowToFront {
+function Control-Window {
     param(
         [Parameter(Mandatory=$true)]
-        [string]$ProcessName
+        [string]$ProcessName,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateSet("Minimize", "Show")]
+        [string]$Action
     )
 
     $processes = Get-Process | Where-Object {
@@ -29,18 +33,25 @@ function Bring-WindowToFront {
     foreach ($proc in $processes) {
         $hwnd = $proc.MainWindowHandle
 
-        # Check if the window is minimized
-        if ([User32]::IsIconic($hwnd)) {
-            # If minimized, restore the window
-            [User32]::ShowWindowAsync($hwnd, 9) | Out-Null
+        if ($Action -eq "Minimize") {
+            # Minimize the window
+            [User32]::ShowWindowAsync($hwnd, 6) | Out-Null # 6 is SW_MINIMIZE
+            Write-Host "Minimized '$($proc.MainWindowTitle)'."
         }
+        elseif ($Action -eq "Show") {
+            # Check if the window is minimized
+            if ([User32]::IsIconic($hwnd)) {
+                # If minimized, restore the window
+                [User32]::ShowWindowAsync($hwnd, 9) | Out-Null # 9 is SW_RESTORE
+            }
 
-        # Bring the window to the foreground
-        [User32]::SetForegroundWindow($hwnd) | Out-Null
-
-        Write-Host "Brought '$($proc.MainWindowTitle)' to the foreground."
+            # Bring the window to the foreground
+            [User32]::SetForegroundWindow($hwnd) | Out-Null
+            Write-Host "Brought '$($proc.MainWindowTitle)' to the foreground."
+        }
     }
 }
 
 # Usage example:
-Bring-WindowToFront -ProcessName $args[0]
+# Control-Window -ProcessName "notepad" -Action "Minimize"
+# Control-Window -ProcessName "notepad" -Action "Show"

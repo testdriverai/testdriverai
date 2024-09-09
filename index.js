@@ -91,8 +91,9 @@ const thisCommand = a.command;
 log.log('info', chalk.green(`Howdy! I'm TestDriver v${package.version}`))
 log.log('info', chalk.dim(`Working on ${thisFile}`))
 console.log('')
+log.log('info', chalk.yellow(`This is beta software!`))
 log.log('info', `Join our Discord for help`);
-log.log('info', chalk.yellow(`https://discord.com/invite/cWDFW8DzPm`)); 
+log.log('info', `https://discord.com/invite/cWDFW8DzPm`); 
 console.log('')
 
 // individual run ID for this session
@@ -573,22 +574,15 @@ let setTerminalWindowTransparency = async (hide) => {
   try {
     if (hide) {
       
-      if (terminalApp) hideTerminal(terminalApp);
+      if (terminalApp) {
+        hideTerminal(terminalApp)
+      };
 
-      // http.get('http://localhost:60305/hide', (res) => {
-      //   // Handle response if needed
-      // }).on('error', (err) => {
-      //   // console.error('Error:', err);
-      // });
     } else {
 
-      if(terminalApp) showTerminal(terminalApp);
-
-      // http.get('http://localhost:60305/show', (res) => {
-      //   // Handle response if needed
-      // }).on('error', (err) => {
-      //   // console.error('Error:', err);
-      // });
+      if(terminalApp) {
+        showTerminal(terminalApp);
+      }
     }
   } catch (e) {
     // Suppress error
