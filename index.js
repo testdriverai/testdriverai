@@ -16,6 +16,7 @@ const http = require('http');
 const path = require('path');
 const chalk = require('chalk')
 const yaml = require('js-yaml');
+const sanitizeFilename = require("sanitize-filename");
 const macScreenPerms = require('mac-screen-capture-permissions');
 
 // local modules
@@ -396,6 +397,38 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   
 }
 
+const generate = async (type) => {
+
+  log.log('debug', 'generate called', type)
+
+  speak('thinking...');
+  notify('thinking...');
+  log.log('info', chalk.dim('thinking...'), true);
+
+  log.log('info', '');
+
+  let image = await system.captureScreenBase64();
+  let message = await sdk.req('generate', {
+    type,
+    image});
+
+  log.prettyMarkdown(message)
+
+  console.log(message)
+
+  let testPrompts = await parser.findGenerativePrompts(message);
+
+  // for each testPrompt
+  for (const testPrompt of testPrompts) {
+    // write a file called testprompt.headings[0].replace(' ', '-').toLowerCase().md
+    // with the contents of the testPrompt
+    let fileName = testPrompt.headings[0].trim().replace(/ /g, '-').toLowerCase() + '.md';
+    let path1 = path.join(process.cwd(), 'testdriver', '.generate', fileName);
+    let contents = testPrompt.listsOrdered[0].map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
+    fs.writeFileSync(path1, contents);
+  }
+}
+
 const popFromHistory = async (fullStep) => {
 
   log.log('info', chalk.dim('undoing...'), true)
@@ -500,7 +533,9 @@ const firstPrompt = async (text) => {
     analytics.track('input', {input});
 
     console.log('') // adds a nice break between submissions
-    
+
+    let commands = input.split(' ');
+
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf('/summarize') == 0) {
       await summarize();
@@ -509,19 +544,17 @@ const firstPrompt = async (text) => {
     } else if (input.indexOf('/save') == 0) {
       await save();
     } else if (input.indexOf('/explore') == 0) {
-      let commands = input.split(' ');
       await humanInput(commands.slice(1).join(' '), true)
     } else if (input.indexOf('/undo') == 0) {
       await undo();
     } else if (input.indexOf('/assert') == 0) {
-      let commands = input.split(' ');
       await assert(commands.slice(1).join(' '))
     } else if (input.indexOf('/manual') == 0) {
-      let commands = input.split(' ');
       await manualInput(commands.slice(1).join(' '))
     } else if (input.indexOf('/run') == 0) {
-      let commands = input.split(' ');
       await run(commands[1], commands[2]);
+    } else if (input.indexOf('/generate') == 0) {
+      await generate(commands[1]);
     } else {
       await humanInput(input, false)
     }

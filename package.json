@@ -7,6 +7,7 @@
     "testdriverai": "./index.js"
   },
   "scripts": {
+    "preinstall": "node preinstall.js",
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
@@ -35,6 +36,7 @@
     "remark-parse": "^11.0.0",
     "rimraf": "^5.0.5",
     "robotjs": "^0.6.0",
+    "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
     "screenshot-desktop": "^1.15.0",
     "semver": "^7.6.2",
