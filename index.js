@@ -124,6 +124,8 @@ if (!commandHistory.length) {
 
 const exit = async (failed = true) => {
 
+  await save();
+
   analytics.track('exit', {failed});
 
   // we purposly never resolve this promise so the process will hang
