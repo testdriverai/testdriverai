@@ -487,8 +487,6 @@ const firstPrompt = async (text) => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   rl.on('line', async (input) => {
-
-    console.log(input)
     
     await setTerminalApp();
 
@@ -571,8 +569,6 @@ New commands will be appended.
 };
 
 let setTerminalWindowTransparency = async (hide) => {
-
-  console.log('set terminal window transparency', hide, terminalApp)
 
   try {
     if (hide) {
@@ -755,8 +751,6 @@ const setTerminalApp = async () => {
   } else {
     terminalApp = win?.owner?.name || "";
   }
-
-  console.log('set terminal as ', terminalApp)
 
 }
 
