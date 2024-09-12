@@ -487,9 +487,8 @@ const firstPrompt = async (text) => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   rl.on('line', async (input) => {
-
-    let win = await system.activeWin();
-    terminalApp = win?.owner?.name || "";
+    
+    await setTerminalApp();
 
     setTerminalWindowTransparency(true)
     errorCounts = {};
@@ -743,6 +742,18 @@ const promptUser = () => {
   rl.prompt(true);
 }
 
+const setTerminalApp = async () => {
+
+  let win = await system.activeWin();
+  console.log(win)
+  if (process.platform === 'win32') {
+    terminalApp = win?.title || "";
+  } else {
+    terminalApp = win?.owner?.name || "";
+  }
+
+}
+
 const iffy = async (condition, then, otherwise, depth) => {
 
   analytics.track('if', {condition});
@@ -830,8 +841,7 @@ const embed = async (file, depth) => {
 
   }
 
-  let win = await system.activeWin();
-  terminalApp = win?.owner?.name || "";
+  await setTerminalApp();
 
   // should be start of new session
   sessionRes = await sdk.req('session/start', {
