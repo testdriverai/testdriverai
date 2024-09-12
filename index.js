@@ -414,8 +414,6 @@ const generate = async (type) => {
 
   log.prettyMarkdown(message)
 
-  console.log(message)
-
   let testPrompts = await parser.findGenerativePrompts(message);
 
   // for each testPrompt

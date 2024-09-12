@@ -7,7 +7,6 @@
     "testdriverai": "./index.js"
   },
   "scripts": {
-    "preinstall": "node preinstall.js",
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
