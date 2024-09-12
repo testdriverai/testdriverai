@@ -420,9 +420,8 @@ const generate = async (type) => {
 
   // for each testPrompt
   for (const testPrompt of testPrompts) {
-    // write a file called testprompt.headings[0].replace(' ', '-').toLowerCase().md
     // with the contents of the testPrompt
-    let fileName = testPrompt.headings[0].trim().replace(/ /g, '-').toLowerCase() + '.md';
+    let fileName = sanitizeFilename(testPrompt.headings[0]).trim().replace(/ /g, '-').toLowerCase() + '.md';
     let path1 = path.join(process.cwd(), 'testdriver', '.generate', fileName);
     let contents = testPrompt.listsOrdered[0].map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
     fs.writeFileSync(path1, contents);
