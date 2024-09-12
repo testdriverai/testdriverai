@@ -747,7 +747,6 @@ const promptUser = () => {
 const setTerminalApp = async () => {
 
   let win = await system.activeWin();
-  console.log(win)
   if (process.platform === 'win32') {
     terminalApp = win?.title || "";
   } else {
