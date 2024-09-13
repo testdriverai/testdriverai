@@ -100,14 +100,49 @@ console.log('')
 // individual run ID for this session
 let runID = new Date().getTime();
 
+function fileCompleter(line) {
+  line = line.slice(5); // remove /run 
+  const lastSepIndex = line.lastIndexOf(path.sep);
+  let dir;
+  let partial;
+  if (lastSepIndex === -1) {
+    dir = '.';
+    partial = line;
+  }
+  else{
+  dir = line.slice(0, lastSepIndex + 1);
+  partial = line.slice(lastSepIndex + 1);
+}
+try{
+const dirPath = path.resolve(process.cwd(), dir);
+
+let files = fs.readdirSync(dirPath);
+files = files.map(file => {
+  const fullFilePath = path.join(dirPath, file);
+  const fileStats = fs.statSync(fullFilePath);
+  return file + (fileStats.isDirectory() ? path.sep : ''); // add path.sep for dir
+});
+const matches = files.filter(file => file.startsWith(partial));
+
+return [matches.length ? matches : files, partial];
+}
+catch(err){
+  return [[], partial];
+}
+}
+
 function completer(line) {
   let completions = '/summarize /save /run /quit /explore /assert /undo /manual'.split(' ')
-  
+  if(line.startsWith('/run ')){
+    return fileCompleter(line);
+  }
+  else{
   completions.concat(tasks)
 
   var hits = completions.filter(function(c) { return c.indexOf(line) == 0 })
   // show all completions if none found
-  return [hits.length ? hits : completions, line]
+    return [hits.length ? hits : completions, line]
+  }
 }
 
 if (!fs.existsSync(commandHistoryFile)) {
