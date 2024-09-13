@@ -16,6 +16,8 @@ const http = require('http');
 const path = require('path');
 const chalk = require('chalk')
 const yaml = require('js-yaml');
+const sanitizeFilename = require("sanitize-filename");
+const macScreenPerms = require('mac-screen-capture-permissions');
 
 // local modules
 const speak = require('./lib/speak');
@@ -72,8 +74,8 @@ let getArgs = () => {
   }
 
   // turn args[file] into local path
-  if (args[file] && args[file].indexOf('/') == -file) {
-    args[file] = `${__dirname}/${args[file]}`
+  if (args[file]) {
+    args[file] = `${process.cwd()}/${args[file]}`
     if (!args[file].endsWith('.yml')) {
       args[file] += '.yml';
     }
@@ -88,19 +90,12 @@ const thisFile = a.file;
 const thisCommand = a.command;
 
 log.log('info', chalk.green(`Howdy! I'm TestDriver v${package.version}`))
+log.log('info', chalk.dim(`Working on ${thisFile}`))
 console.log('')
+log.log('info', chalk.yellow(`This is beta software!`))
 log.log('info', `Join our Discord for help`);
-log.log('info', chalk.yellow(`https://discord.com/invite/cWDFW8DzPm`)); 
+log.log('info', `https://discord.com/invite/cWDFW8DzPm`); 
 console.log('')
-
-if (a.command !== 'run') {
-  speak('Howdy! I am TestDriver version ' + package.version);
-
-  console.log(chalk.red('Warning!') + chalk.dim(' TestDriver sends screenshots of the desktop to our API.'));
-  console.log(chalk.dim('https://docs.testdriver.ai/security-and-privacy/agent'));
-  console.log('')
-
-}
 
 // individual run ID for this session
 let runID = new Date().getTime();
@@ -164,12 +159,14 @@ if (!commandHistory.length) {
 
 const exit = async (failed = true) => {
 
+  await save();
+
   analytics.track('exit', {failed});
 
   // we purposly never resolve this promise so the process will hang
   return new Promise(async () => {
-    rl.close()
-    rl.removeAllListeners()
+    rl?.close()
+    rl?.removeAllListeners()
     process.exit(failed ? 1 : 0);
   });
 }
@@ -436,6 +433,35 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   
 }
 
+const generate = async (type) => {
+
+  log.log('debug', 'generate called', type)
+
+  speak('thinking...');
+  notify('thinking...');
+  log.log('info', chalk.dim('thinking...'), true);
+
+  log.log('info', '');
+
+  let image = await system.captureScreenBase64();
+  let message = await sdk.req('generate', {
+    type,
+    image});
+
+  log.prettyMarkdown(message)
+
+  let testPrompts = await parser.findGenerativePrompts(message);
+
+  // for each testPrompt
+  for (const testPrompt of testPrompts) {
+    // with the contents of the testPrompt
+    let fileName = sanitizeFilename(testPrompt.headings[0]).trim().replace(/ /g, '-').toLowerCase() + '.md';
+    let path1 = path.join(process.cwd(), 'testdriver', '.generate', fileName);
+    let contents = testPrompt.listsOrdered[0].map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
+    fs.writeFileSync(path1, contents);
+  }
+}
+
 const popFromHistory = async (fullStep) => {
 
   log.log('info', chalk.dim('undoing...'), true)
@@ -527,9 +553,8 @@ const firstPrompt = async (text) => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   rl.on('line', async (input) => {
-
-    let win = await system.activeWin();
-    terminalApp = win?.owner?.name || "";
+    
+    await setTerminalApp();
 
     setTerminalWindowTransparency(true)
     errorCounts = {};
@@ -540,7 +565,9 @@ const firstPrompt = async (text) => {
     analytics.track('input', {input});
 
     console.log('') // adds a nice break between submissions
-    
+
+    let commands = input.split(' ');
+
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf('/summarize') == 0) {
       await summarize();
@@ -549,19 +576,17 @@ const firstPrompt = async (text) => {
     } else if (input.indexOf('/save') == 0) {
       await save();
     } else if (input.indexOf('/explore') == 0) {
-      let commands = input.split(' ');
       await humanInput(commands.slice(1).join(' '), true)
     } else if (input.indexOf('/undo') == 0) {
       await undo();
     } else if (input.indexOf('/assert') == 0) {
-      let commands = input.split(' ');
       await assert(commands.slice(1).join(' '))
     } else if (input.indexOf('/manual') == 0) {
-      let commands = input.split(' ');
       await manualInput(commands.slice(1).join(' '))
     } else if (input.indexOf('/run') == 0) {
-      let commands = input.split(' ');
       await run(commands[1], commands[2]);
+    } else if (input.indexOf('/generate') == 0) {
+      await generate(commands[1]);
     } else {
       await humanInput(input, false)
     }
@@ -614,22 +639,15 @@ let setTerminalWindowTransparency = async (hide) => {
   try {
     if (hide) {
       
-      if (terminalApp) hideTerminal(terminalApp);
+      if (terminalApp) {
+        hideTerminal(terminalApp)
+      };
 
-      // http.get('http://localhost:60305/hide', (res) => {
-      //   // Handle response if needed
-      // }).on('error', (err) => {
-      //   // console.error('Error:', err);
-      // });
     } else {
 
-      if(terminalApp) showTerminal(terminalApp);
-
-      // http.get('http://localhost:60305/show', (res) => {
-      //   // Handle response if needed
-      // }).on('error', (err) => {
-      //   // console.error('Error:', err);
-      // });
+      if(terminalApp) {
+        showTerminal(terminalApp);
+      }
     }
   } catch (e) {
     // Suppress error
@@ -757,7 +775,7 @@ let run = async (file, overwrite = false) => {
   for (const step of ymlObj.steps) {
 
     log.log('info', ``, null);
-    log.log('info', chalk.cyan(` ${step.prompt || 'no prompt'} `), null);
+    log.log('info', chalk.cyan(`${step.prompt || 'no prompt'}`), null);
 
     executionHistory.push({
       prompt: step.prompt,
@@ -786,10 +804,19 @@ ${yaml.dump(step)}
 
 };
 
-
-
 const promptUser = () => {
   rl.prompt(true);
+}
+
+const setTerminalApp = async () => {
+
+  let win = await system.activeWin();
+  if (process.platform === 'win32') {
+    terminalApp = win?.title || "";
+  } else {
+    terminalApp = win?.owner?.name || "";
+  }
+
 }
 
 const iffy = async (condition, then, otherwise, depth) => {
@@ -860,8 +887,26 @@ const embed = async (file, depth) => {
 
   // await sdk.auth();
 
-  let win = await system.activeWin();
-  terminalApp = win?.owner?.name || "";
+
+  // if os is mac, check for screen capture permissions
+  if (process.platform === 'darwin' && !macScreenPerms.hasScreenCapturePermission()) {
+    log.log('info', chalk.red('Screen capture permissions not enabled.'))
+    log.log('info', 'You must enable screen capture permissions for the application calling `testdriverai`.')
+    log.log('info', 'Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only')
+    analytics.track('noMacPermissions');
+    return exit();
+  }
+
+  if (thisCommand !== 'run') {
+    speak('Howdy! I am TestDriver version ' + package.version);
+
+    console.log(chalk.red('Warning!') + chalk.dim(' TestDriver sends screenshots of the desktop to our API.'));
+    console.log(chalk.dim('https://docs.testdriver.ai/security-and-privacy/agent'));
+    console.log('')
+
+  }
+
+  await setTerminalApp();
 
   // should be start of new session
   sessionRes = await sdk.req('session/start', {
@@ -889,7 +934,6 @@ process.on('uncaughtException', async (err) => {
   analytics.track('uncaughtException', {err});
   console.error('Uncaught Exception:', err);
   // You might want to exit the process after handling the error
-  await summarize(err);
   await exit(true);
 });
 
@@ -897,6 +941,5 @@ process.on('unhandledRejection', async (reason, promise) => {
   analytics.track('unhandledRejection', {reason, promise});
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // Optionally, you might want to exit the process
-  await summarize(reason)
   await exit(true);
 });
