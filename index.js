@@ -70,7 +70,14 @@ let getArgs = () => {
   }
 
   if (!args[file]) {
-    args[file] = 'testdriver.yml'
+    
+    // make testdriver directory if it doesn't exist
+    let testdriverFolder = path.join(process.cwd(), 'testdriver');
+    if (!fs.existsSync(testdriverFolder)) {
+      fs.mkdirSync(testdriverFolder);
+    }
+
+    args[file] = 'testdriver/testdriver.yml'
   }
 
   // turn args[file] into local path
@@ -457,7 +464,11 @@ const generate = async (type) => {
   for (const testPrompt of testPrompts) {
     // with the contents of the testPrompt
     let fileName = sanitizeFilename(testPrompt.headings[0]).trim().replace(/ /g, '-').toLowerCase() + '.md';
-    let path1 = path.join(process.cwd(), 'testdriver', '.generate', fileName);
+    let path1 = path.join(process.cwd(), 'testdriver', 'generate', fileName);
+    // create generate directory if it doesn't exist
+    if (!fs.existsSync(path.join(process.cwd(), 'testdriver', 'generate'))) {
+      fs.mkdirSync(path.join(process.cwd(), 'testdriver', 'generate'));
+    }
     let contents = testPrompt.listsOrdered[0].map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
     fs.writeFileSync(path1, contents);
   }
