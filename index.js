@@ -61,6 +61,16 @@ let getArgs = () => {
   let command = 0;
   let file = 1;
 
+
+  // TODO use a arg parser library to simplify this
+  if (args[command] == "--help" || args[command] == '-h'
+      || args[file] == "--help" || args[file] == '-h') {
+      console.log(
+          "Command: testdriverai [init, run, edit] [yaml filepath]"
+      );
+      process.exit(0);
+  }
+
   if (args[command] == 'init') {
   } else if (args[command] !== 'run' && !args[file]) {
     args[file] = args[command];
