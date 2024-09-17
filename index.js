@@ -808,7 +808,7 @@ ${yaml.dump(step)}
   }
 
   if (overwrite) {
-    await save();
+    await save(file);
   }
 
   setTerminalWindowTransparency(false);
