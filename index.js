@@ -470,7 +470,7 @@ const generate = async (type) => {
       fs.mkdirSync(path.join(process.cwd(), 'testdriver', 'generate'));
     }
     let list = testPrompt.listsOrdered[0];
-    list.append('/save');
+    list.append(`/save testdriver/${fileName}`);
     let contents = list.map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
     fs.writeFileSync(path1, contents);
   }
