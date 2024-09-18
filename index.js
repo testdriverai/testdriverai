@@ -588,7 +588,7 @@ const firstPrompt = async (text) => {
     } else if (input.indexOf('/quit') == 0) {
       await exit();
     } else if (input.indexOf('/save') == 0) {
-      await save({ filepath: commands[0] });
+      await save({ filepath: commands[1] });
     } else if (input.indexOf('/explore') == 0) {
       await humanInput(commands.slice(1).join(' '), true)
     } else if (input.indexOf('/undo') == 0) {
@@ -808,7 +808,7 @@ ${yaml.dump(step)}
   }
 
   if (overwrite) {
-    await save(file);
+    await save({ filepath: file });
   }
 
   setTerminalWindowTransparency(false);
