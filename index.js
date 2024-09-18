@@ -70,7 +70,14 @@ let getArgs = () => {
   }
 
   if (!args[file]) {
-    args[file] = 'testdriver.yml'
+    
+    // make testdriver directory if it doesn't exist
+    let testdriverFolder = path.join(process.cwd(), 'testdriver');
+    if (!fs.existsSync(testdriverFolder)) {
+      fs.mkdirSync(testdriverFolder);
+    }
+
+    args[file] = 'testdriver/testdriver.yml'
   }
 
   // turn args[file] into local path
@@ -397,7 +404,7 @@ commands:
 
   await aiExecute(response)
 
-  await save(true);
+  await save({ silent: true });
 
 }
 
@@ -430,7 +437,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
 
   log.log('debug', 'showing prompt from humanInput response check')
 
-  await save(true)
+  await save({ silent: true })
   
 }
 
@@ -457,8 +464,14 @@ const generate = async (type) => {
   for (const testPrompt of testPrompts) {
     // with the contents of the testPrompt
     let fileName = sanitizeFilename(testPrompt.headings[0]).trim().replace(/ /g, '-').toLowerCase() + '.md';
-    let path1 = path.join(process.cwd(), 'testdriver', '.generate', fileName);
-    let contents = testPrompt.listsOrdered[0].map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
+    let path1 = path.join(process.cwd(), 'testdriver', 'generate', fileName);
+    // create generate directory if it doesn't exist
+    if (!fs.existsSync(path.join(process.cwd(), 'testdriver', 'generate'))) {
+      fs.mkdirSync(path.join(process.cwd(), 'testdriver', 'generate'));
+    }
+    let list = testPrompt.listsOrdered[0];
+    list.append(`/save testdriver/${fileName}`);
+    let contents = list.map((item, index) => `${index + 1}. /explore ${item}`).join('\n');
     fs.writeFileSync(path1, contents);
   }
 }
@@ -501,7 +514,7 @@ ${yml}
 
   await aiExecute(message, false);  
 
-  await save(true)
+  await save({ silent: true })
 
 }
 
@@ -575,7 +588,7 @@ const firstPrompt = async (text) => {
     } else if (input.indexOf('/quit') == 0) {
       await exit();
     } else if (input.indexOf('/save') == 0) {
-      await save();
+      await save({ filepath: commands[1] });
     } else if (input.indexOf('/explore') == 0) {
       await humanInput(commands.slice(1).join(' '), true)
     } else if (input.indexOf('/undo') == 0) {
@@ -685,7 +698,7 @@ let summarize = async (error = null) => {
 }
 
 // this function is responsible for saving the regression test script to a file
-let save = async (silent) => {
+let save = async ({ filepath = thisFile, silent = false } = {}) => {
   
   analytics.track('save', {silent});
 
@@ -701,7 +714,7 @@ let save = async (silent) => {
   // write reply to /tmp/oiResult.log.log
   let regression = await generator.historyToYml(executionHistory);    
   try {
-    fs.writeFileSync(thisFile, regression); 
+    fs.writeFileSync(filepath, regression); 
   } catch (e) {
     log.log('error', e.message)
     console.log(e)
@@ -718,7 +731,7 @@ ${regression}
 
     // console.log(csv.join('\n'))
 
-    const fileName = thisFile.split('/').pop();
+    const fileName = filepath.split('/').pop();
     if (!silent) {
       log.log('info', chalk.dim(`saved as ${fileName}`));
     }
@@ -795,7 +808,7 @@ ${yaml.dump(step)}
   }
 
   if (overwrite) {
-    await save();
+    await save({ filepath: file });
   }
 
   setTerminalWindowTransparency(false);
