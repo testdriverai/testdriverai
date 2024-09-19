@@ -16,14 +16,15 @@ const http = require('http');
 const path = require('path');
 const chalk = require('chalk')
 const yaml = require('js-yaml');
+const { Command } = require('commander');
 
 // local modules
 const speak = require('./lib/speak');
 const analytics = require('./lib/analytics');
 const log = require('./lib/logger');
 const parser = require('./lib/parser')
-const commander = require('./lib/commander')
 const system = require('./lib/system');
+const commander = require('./lib/commander');
 const generator = require('./lib/generator')
 const sdk = require('./lib/sdk');
 const commands = require('./lib/commands');
@@ -48,44 +49,30 @@ require('dotenv').config()
 let tasks = [];
 
 // get args from terminal
-const args = process.argv.slice(2);
-
-const commandHistoryFile = path.join(os.homedir(), '.testdriver_history');
-
-const delay = t => new Promise(resolve => setTimeout(resolve, t));
-
-let getArgs = () => {
-
-  let command = 0;
-  let file = 1;
-
-  if (args[command] == 'init') {
-  } else if (args[command] !== 'run' && !args[file]) {
-    args[file] = args[command];
-    args[command] = 'edit';
-  } else if (!args[command]) {
-    args[command] = 'edit'
-  }
-
-  if (!args[file]) {
-    args[file] = 'testdriver.yml'
-  }
-
-  // turn args[file] into local path
-  if (args[file] && args[file].indexOf('/') == -file) {
-    args[file] = `${__dirname}/${args[file]}`
-    if (!args[file].endsWith('.yml')) {
-      args[file] += '.yml';
+const program = new Command();
+program
+  .version(package.version)
+  .option('init', 'Initialize the test driver')
+  .option('run', 'Run the test driver')
+  .option('edit', 'Edit the test driver')
+  .arguments('[file]')
+  .action((file) => {
+    if (!file) {
+      file = 'testdriver.yml';
     }
-  }
+    if (file && file.indexOf('/') === -1) {
+      file = `${__dirname}/${file}`;
+      if (!file.endsWith('.yml')) {
+        file += '.yml';
+      }
+    }
+    thisFile = file;
+  });
 
-  return {command: args[command], file: args[file]};
-}
+program.parse(process.argv);
 
-let a = getArgs();
-
-const thisFile = a.file;
-const thisCommand = a.command;
+const options = program.opts();
+const thisCommand = options.init ? 'init' : options.run ? 'run' : 'edit';
 
 log.log('info', chalk.green(`Howdy! I'm TestDriver v${package.version}`))
 console.log('')
@@ -93,7 +80,7 @@ log.log('info', `Join our Discord for help`);
 log.log('info', chalk.yellow(`https://discord.com/invite/cWDFW8DzPm`)); 
 console.log('')
 
-if (a.command !== 'run') {
+if (thisCommand !== 'run') {
   speak('Howdy! I am TestDriver version ' + package.version);
 
   console.log(chalk.red('Warning!') + chalk.dim(' TestDriver sends screenshots of the desktop to our API.'));
@@ -508,24 +495,24 @@ const firstPrompt = async (text) => {
     console.log('') // adds a nice break between submissions
     
     // if last character is a question mark, we assume the user is asking a question
-    if (input.indexOf('/summarize') == 0) {
+    if (input.startsWith('/summarize')) {
       await summarize();
-    } else if (input.indexOf('/quit') == 0) {
+    } else if (input.startsWith('/quit')) {
       await exit();
-    } else if (input.indexOf('/save') == 0) {
+    } else if (input.startsWith('/save')) {
       await save();
-    } else if (input.indexOf('/explore') == 0) {
+    } else if (input.startsWith('/explore')) {
       let commands = input.split(' ');
       await humanInput(commands.slice(1).join(' '), true)
-    } else if (input.indexOf('/undo') == 0) {
+    } else if (input.startsWith('/undo')) {
       await undo();
-    } else if (input.indexOf('/assert') == 0) {
+    } else if (input.startsWith('/assert')) {
       let commands = input.split(' ');
       await assert(commands.slice(1).join(' '))
-    } else if (input.indexOf('/manual') == 0) {
+    } else if (input.startsWith('/manual')) {
       let commands = input.split(' ');
       await manualInput(commands.slice(1).join(' '))
-    } else if (input.indexOf('/run') == 0) {
+    } else if (input.startsWith('/run')) {
       let commands = input.split(' ');
       await run(commands[1], commands[2]);
     } else {
