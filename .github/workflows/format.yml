@@ -9,6 +9,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 20
+      - name: npm install
+        run: npm install --only=dev
       - name: Run ESLint
         run: npx eslint
       - name: Run Prettier
