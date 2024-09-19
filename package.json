@@ -10,8 +10,7 @@
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
-    "bundle": "node build.mjs",
-    "postinstall": "node postinstall.js"
+    "bundle": "node build.mjs"
   },
   "author": "",
   "license": "ISC",
