@@ -1,12 +1,12 @@
-let platform = require('os').platform();
-let exec = require('child_process').exec;
+let platform = require("os").platform();
+let exec = require("child_process").exec;
 
-if (platform !== 'darwin') {
-  console.log('TestDriver Setup: Skipping codesign becasue not on Mac');
+if (platform !== "darwin") {
+  console.log("TestDriver Setup: Skipping codesign becasue not on Mac");
   return;
 }
 
-console.log('TestDriver Setup: Codesigning terminal-notifier.app');
+console.log("TestDriver Setup: Codesigning terminal-notifier.app");
 
 let signScript = `codesign --sign - --force --deep node_modules/node-notifier/vendor/mac.noindex/terminal-notifier.app`;
 
