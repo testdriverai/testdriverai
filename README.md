@@ -6,7 +6,7 @@ Next generation autonomous AI agent for end-to-end testing of web & desktop
 
 [Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.gg/a8Cq739VWn)
 
-----
+---
 
 TestDriver isn't like any test framework you've used before. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
 
@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/fba08020-a751-4d9e-9505-50db541fd38b
 - Test any user flow on any website in any browser
 - Clone, build, and test any desktop app
 - Render multiple browser windows and popups like 3rd party auth
-- Test `<canvas>`, `<iframe>`,  and `<video>` tags with ease
+- Test `<canvas>`, `<iframe>`, and `<video>` tags with ease
 - Use file selectors to upload files to the browser
 - Test chrome extensions
 - Test integrations between applications
@@ -33,7 +33,7 @@ Check out [the docs](https://docs.testdriver.ai/).
 
 # Workflow
 
-1. Tell TestDriver what to do in natural language on your local machine using `npm i testdriverai -g` 
+1. Tell TestDriver what to do in natural language on your local machine using `npm i testdriverai -g`
 2. TestDriver looks at the screen and uses mouse and keyboard emulation to accomplish the goal
 3. Run TestDriver tests on our test infrastructure
 
@@ -75,14 +75,14 @@ If you have multiple monitors, make sure you do this on your primary display.
 
 ## Instruct TestDriver
 
-Now, just tell TestDriver what you want it to do. For now, stick with single commands like "click sign up" and "scroll down." 
+Now, just tell TestDriver what you want it to do. For now, stick with single commands like "click sign up" and "scroll down."
 
-Later, try `/explore` to perform higher level objectives like "complete the onboarding." 
+Later, try `/explore` to perform higher level objectives like "complete the onboarding."
 
 ```yaml
 > Click on sign up
 TestDriver Generates a Test
-TestDriver will look at your screen and generate a test script. TestDriver can see the screen, control the mouse, keyboard, and more! 
+TestDriver will look at your screen and generate a test script. TestDriver can see the screen, control the mouse, keyboard, and more!
 TestDriver can only see your primary display!
 To navigate to testdriver.ai, we need to focus on the
 Google Chrome application, click on the search bar, type
@@ -130,19 +130,19 @@ Feel free to ask TestDriver to perform some more tasks. Every time you prompt Te
 
 ## Save the test
 
-If everything worked perfectly, use the `/save` command to save the test script to the current file. 
+If everything worked perfectly, use the `/save` command to save the test script to the current file.
 
 If something didn't work, you can use `/undo` to remove all of the test steps added since the last prompt.
 
 ## Test the test locally
 
-Now it's time to make sure the test plan works before we deploy it. Use testdriver run to run the test file you just created with /save . 
+Now it's time to make sure the test plan works before we deploy it. Use testdriver run to run the test file you just created with /save .
 
 ```sh
 testdriverai run testdriver/test.yml
 ```
 
-Make sure to reset the test state! 
+Make sure to reset the test state!
 
 ## Deploy
 
@@ -155,4 +155,3 @@ gh pr create --web
 ```
 
 Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/continuous-integration/overview).
-
