@@ -13,5 +13,5 @@ jobs:
         run: npm install --only=dev
       - name: Run ESLint
         run: npx eslint
-      - name: Run Prettier
-        run: npx prettier . --write
+      - name: Prettify code
+        uses: creyD/prettier_action@v4.3
