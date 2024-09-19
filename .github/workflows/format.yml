@@ -10,7 +10,7 @@ jobs:
         with:
           node-version: 20
       - name: Install modules
-        run: npm install --omit=dev
+        run: npm install -D
       - name: Run ESLint
         run: eslint . --ext .js,.jsx,.ts,.tsx
       - name: Run Prettier
