@@ -10,6 +10,6 @@ jobs:
         with:
           node-version: 20
       - name: Run ESLint
-        run: npx eslint . --ext .js,.jsx,.ts,.tsx
+        run: npx eslint
       - name: Run Prettier
         run: npx prettier . --write
