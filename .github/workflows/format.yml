@@ -2,15 +2,15 @@ name: Eslint
 on: push
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
           node-version: 20
-      - name: npm install
-        run: npm install --only=dev
+      - name: npm install 
+        run: npm install --only=dev --ignore-scripts
       - name: Run ESLint
         run: npx eslint
       - name: Prettify code
