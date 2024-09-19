@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install modules
-        run: npm install --only=dev
+        run: npm install -D
       - name: Run ESLint
         run: eslint . --ext .js,.jsx,.ts,.tsx
       - name: Run Prettier
