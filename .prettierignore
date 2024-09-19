@@ -1,4 +1,2 @@
-# Ignore artifacts:
-build
-coverage
 lib/subimage/opencv.js
+node_modules
