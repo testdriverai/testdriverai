@@ -41,6 +41,8 @@ let commandHistory = [];
 let executionHistory = [];
 let errorCounts = {};
 let errorLimit = 3;
+let checkCount = 0;
+let checkLimit = 3;
 let rl;
 
 require("dotenv").config();
@@ -252,6 +254,15 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
 // this checks that the task is "really done" using a screenshot of the desktop state
 // it's likely that the task will not be complete and the AI will respond with more codeblocks to execute
 const check = async () => {
+  
+  checkCount++;
+
+  if (checkCount >= checkLimit) {
+    log.log("info", chalk.red("Exploratory loop detected. Exiting."));
+    await summarize("Check loop detected.");
+    return await exit(true);
+  }
+
   await delay(3000);
 
   console.log("");
@@ -259,6 +270,7 @@ const check = async () => {
   let image = await system.captureScreenBase64(0.5);
   let mousePosition = await system.getMousePosition();
   let activeWindow = await system.activeWin();
+
   return await sdk.req("check", { tasks, image, mousePosition, activeWindow });
 };
 
@@ -421,9 +433,11 @@ commands:
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
 const humanInput = async (currentTask, validateAndLoop = false) => {
-  lastPrompt = currentTask;
 
-  log.log("debug", "humanInput called");
+  lastPrompt = currentTask;
+  checkCount = 0;
+
+  log.log("debug", "mnput called");
 
   tasks.push(currentTask);
 
