@@ -437,7 +437,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   lastPrompt = currentTask;
   checkCount = 0;
 
-  log.log("debug", "mnput called");
+  log.log("debug", "humanInput called");
 
   tasks.push(currentTask);
 
