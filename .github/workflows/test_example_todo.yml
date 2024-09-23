@@ -13,19 +13,9 @@ jobs:
     name: "TestDriver"
     runs-on: ubuntu-latest
     steps:
-      - run: "ls"
-      - run: "ls .."
-      - run: "ls ../.."
-      - run: "ls ../../.."
-      - run: "pwd"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: /home/runner/work/testdriverai/package-lock.json
-
       - uses: testdriverai/action@main
         with:
+          branch: alex-test
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
             1. /run testdriver/test.yml
