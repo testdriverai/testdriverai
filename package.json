@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "4.0.43",
+  "version": "4.0.44",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -10,8 +10,7 @@
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
-    "bundle": "node build.mjs",
-    "postinstall": "node postinstall.js"
+    "bundle": "node build.mjs"
   },
   "author": "",
   "license": "ISC",
@@ -46,10 +45,14 @@
     "winston": "^3.13.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.10.0",
     "esbuild": "0.20.2",
     "esbuild-plugin-fileloc": "^0.0.6",
+    "eslint": "^9.10.0",
+    "globals": "^15.9.0",
     "node-addon-api": "^8.0.0",
-    "node-gyp": "^10.1.0"
+    "node-gyp": "^10.1.0",
+    "prettier": "3.3.3"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5",
