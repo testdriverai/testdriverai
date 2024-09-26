@@ -485,6 +485,7 @@ const generate = async (type) => {
 
   // for each testPrompt
   for (const testPrompt of testPrompts) {
+
     // with the contents of the testPrompt
     let fileName =
       sanitizeFilename(testPrompt.headings[0])
@@ -497,7 +498,8 @@ const generate = async (type) => {
       fs.mkdirSync(path.join(process.cwd(), "testdriver", "generate"));
     }
     let list = testPrompt.listsOrdered[0];
-    list.append(`/save testdriver/${fileName}`);
+
+    list.push(`/save testdriver/${fileName}`);
     let contents = list
       .map((item, index) => `${index + 1}. /explore ${item}`)
       .join("\n");
