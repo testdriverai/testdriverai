@@ -8,6 +8,7 @@ jobs:
   bump_and_publish:
     steps: 
       - name: Automated Version Bump
+        id: bump_version
         uses: phips28/gh-action-bump-version@master
         with:
           minor-wording: "MINOR"
@@ -18,6 +19,7 @@ jobs:
       - name: Publish
         runs-on: ubuntu-latest
         needs: bump_version
+        uses: phips28/gh-action-bump-version@master
         steps:
           - uses: actions/checkout@v4
             with:
