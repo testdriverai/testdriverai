@@ -8,7 +8,7 @@ Next generation autonomous AI agent for end-to-end testing of web & desktop
 
 ---
 
-TestDriver isn't like any test framework you've used before. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
+TestDriver isn't like any test framework you've used before. TestDriver is an OS Agent for QA. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
 
 - **Easier set up:** No need to add test IDs or craft complex selectors
 - **Less Maintenance:** Tests don't break when code changes
