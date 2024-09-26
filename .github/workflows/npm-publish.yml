@@ -28,7 +28,7 @@ jobs:
       
       - name: Push changes to main
         env:
-          PAT_TOKEN: ${{ secrets.PUSH_TO_PROTECTED_BRANCH }}
+          PAT_TOKEN: ${{ secrets.TD_AUTO_BUMP }}
         run: |
           git push https://$PAT_TOKEN@github.com/testdriverai/testdriverai.git HEAD:main --force
 
