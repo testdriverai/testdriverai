@@ -29,6 +29,7 @@ const generator = require("./lib/generator");
 const sdk = require("./lib/sdk");
 const commands = require("./lib/commands");
 const init = require("./lib/init");
+const config = require("./lib/config");
 
 const { showTerminal, hideTerminal } = require("./lib/focus-application");
 const isValidVersion = require("./lib/valid-version");
@@ -44,8 +45,6 @@ let errorLimit = 3;
 let checkCount = 0;
 let checkLimit = 3;
 let rl;
-
-require("dotenv").config();
 
 // list of prompts that the user has given us
 let tasks = [];
@@ -499,7 +498,6 @@ const generate = async (type) => {
     }
     let list = testPrompt.listsOrdered[0];
 
-    list.push(`/save testdriver/${fileName}`);
     let contents = list
       .map((item, index) => `${index + 1}. /explore ${item}`)
       .join("\n");
@@ -669,6 +667,11 @@ New commands will be appended.
 };
 
 let setTerminalWindowTransparency = async (hide) => {
+
+  if (!config.TD_MINIMIZE) {
+    return
+  };
+
   try {
     if (hide) {
       if (terminalApp) {
