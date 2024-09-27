@@ -499,7 +499,6 @@ const generate = async (type) => {
     }
     let list = testPrompt.listsOrdered[0];
 
-    list.push(`/save testdriver/${fileName}`);
     let contents = list
       .map((item, index) => `${index + 1}. /explore ${item}`)
       .join("\n");
