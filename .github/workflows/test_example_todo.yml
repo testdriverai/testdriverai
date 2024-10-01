@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: testdriverai/action@main
         with:
-          branch: alex-test
+          branch: ami-change
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
             1. /run testdriver/test.yml
