@@ -669,21 +669,24 @@ New commands will be appended.
 
 let setTerminalWindowTransparency = async (hide) => {
 
+  if (hide) {
 
-  try {
-    await http.get('http://localhost:60305/hide')
-  } catch (e) {
-  // Suppress error
-  console.error('Caught exception:', e);
+    try {
+      http.get('http://localhost:60305/hide').on('error',function(){}).end();
+    } catch (e) {
+    // Suppress error
+    console.error('Caught exception:', e);
+    }
+  } else {
+
+    try {
+      http.get('http://localhost:60305/hide').on('error',function(){}).end();
+    } catch (e) {
+    // Suppress error
+    console.error('Caught exception:', e);
+    }
+
   }
-
-  try {
-    await http.get('http://localhost:60305/show');
-  } catch (e) {
-  // Suppress error
-  console.error('Caught exception:', e);
-  }
-
 
   if (!config.TD_MINIMIZE) {
     return
