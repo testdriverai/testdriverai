@@ -230,7 +230,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
 
   let image;
   if (error.attachScreenshot) {
-    image = await system.captureScreenBase64(0.5);
+    image = await system.captureScreenBase64();
   } else {
     image = null;
   }
@@ -267,7 +267,7 @@ const check = async () => {
 
   console.log("");
   log.log("info", chalk.dim("checking..."), "testdriver");
-  let image = await system.captureScreenBase64(0.5);
+  let image = await system.captureScreenBase64();
   let mousePosition = await system.getMousePosition();
   let activeWindow = await system.activeWin();
 
@@ -447,7 +447,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
 
   log.log("info", "");
 
-  let image = await system.captureScreenBase64(0.5);
+  let image = await system.captureScreenBase64();
   let message = await sdk.req("input", {
     input: currentTask,
     mousePosition: await system.getMousePosition(),
@@ -473,7 +473,7 @@ const generate = async (type) => {
 
   log.log("info", "");
 
-  let image = await system.captureScreenBase64(0.5);
+  let image = await system.captureScreenBase64();
   let message = await sdk.req("generate", {
     type,
     image,
@@ -719,7 +719,7 @@ let summarize = async (error = null) => {
   log.log("info", chalk.dim("reviewing test..."), true);
 
   // let text = prompts.summarize(tasks, error);
-  let image = await system.captureScreenBase64(0.5);
+  let image = await system.captureScreenBase64();
 
   log.log("info", chalk.dim("summarizing..."), true);
 
