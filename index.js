@@ -10,6 +10,7 @@ const package = require("./package.json");
 const fs = require("fs");
 const readline = require("readline");
 const os = require("os");
+const http = require('http');
 
 // third party modules
 const path = require("path");
@@ -667,6 +668,22 @@ New commands will be appended.
 };
 
 let setTerminalWindowTransparency = async (hide) => {
+
+
+  try {
+    await http.get('http://localhost:60305/hide')
+  } catch (e) {
+  // Suppress error
+  console.error('Caught exception:', e);
+  }
+
+  try {
+    await http.get('http://localhost:60305/show');
+  } catch (e) {
+  // Suppress error
+  console.error('Caught exception:', e);
+  }
+
 
   if (!config.TD_MINIMIZE) {
     return
