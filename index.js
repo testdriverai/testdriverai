@@ -463,11 +463,12 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   await save({ silent: true });
 };
 
-const generate = async (type) => {
+const generate = async (type, count) => {
   log.log("debug", "generate called", type);
 
   speak("thinking...");
   notify("thinking...");
+
   log.log("info", chalk.dim("thinking..."), true);
 
   log.log("info", "");
@@ -476,6 +477,9 @@ const generate = async (type) => {
   let message = await sdk.req("generate", {
     type,
     image,
+    mousePosition: await system.getMousePosition(),
+    activeWindow: await system.activeWin(),
+    count
   });
 
   log.prettyMarkdown(message);
@@ -492,10 +496,12 @@ const generate = async (type) => {
         .replace(/ /g, "-")
         .toLowerCase() + ".md";
     let path1 = path.join(process.cwd(), "testdriver", "generate", fileName);
+    
     // create generate directory if it doesn't exist
     if (!fs.existsSync(path.join(process.cwd(), "testdriver", "generate"))) {
       fs.mkdirSync(path.join(process.cwd(), "testdriver", "generate"));
     }
+
     let list = testPrompt.listsOrdered[0];
 
     let contents = list
@@ -503,6 +509,8 @@ const generate = async (type) => {
       .join("\n");
     fs.writeFileSync(path1, contents);
   }
+
+  exit(false);
 };
 
 const popFromHistory = async (fullStep) => {
@@ -619,7 +627,7 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/run") == 0) {
       await run(commands[1], commands[2]);
     } else if (input.indexOf("/generate") == 0) {
-      await generate(commands[1]);
+      await generate(commands[1], commands[2]);
     } else {
       await humanInput(input, false);
     }
