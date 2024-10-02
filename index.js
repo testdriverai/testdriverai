@@ -44,7 +44,7 @@ let executionHistory = [];
 let errorCounts = {};
 let errorLimit = 3;
 let checkCount = 0;
-let checkLimit = 3;
+let checkLimit = 10;
 let rl;
 
 // list of prompts that the user has given us
