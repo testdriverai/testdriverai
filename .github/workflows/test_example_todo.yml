@@ -20,19 +20,19 @@ jobs:
           prompt: |
             1. /run testdriver/test.yml
           prerun: |
-            cd $env:TEMP
-            cd ..
-            Get-PSDrive -PSProvider FileSystem
-            ls C:\Users\Administrator\AppData\Local\npm-cache
-            ls C:\Users\Administrator\AppData\Local
-            git clone https://github.com/testdriverai/example-react-todo.git
-            cd example-react-todo
-            npm install
-            Start-Process npm -ArgumentList "run start"
-            cd $env:TEMP
-            npm init -y
+            # cd $env:TEMP
+            # cd ..
+            # Get-PSDrive -PSProvider FileSystem
+            # ls C:\Users\Administrator\AppData\Local\npm-cache
+            # ls C:\Users\Administrator\AppData\Local
+            # git clone https://github.com/testdriverai/example-react-todo.git
+            # cd example-react-todo
+            # npm install
+            # Start-Process npm -ArgumentList "run start"
+            # cd $env:TEMP
+            # npm init -y
             Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${{ env.WEBSITE_URL }}"
-            exit
+            # exit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
