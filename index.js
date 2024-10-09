@@ -1,4 +1,21 @@
 #!/usr/bin/env node
+const os = require('os');
+
+// Get the current process ID
+const pid = process.pid;
+
+try {
+  // Display the current priority
+  console.log('Current priority:', os.getPriority(pid));
+
+  // Set the priority to the highest value
+  os.setPriority(pid, -20);
+
+  // Display the updated priority
+  console.log('Updated priority:', os.getPriority(pid));
+} catch (error) {
+  console.error('Failed to set process priority:', error);
+}
 
 // disable depreciation warnings
 process.removeAllListeners("warning");
@@ -11,7 +28,6 @@ require("./lib/profiler");
 
 const fs = require("fs");
 const readline = require("readline");
-const os = require("os");
 const http = require('http');
 
 // third party modules
