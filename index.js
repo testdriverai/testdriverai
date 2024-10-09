@@ -7,6 +7,8 @@ process.removeAllListeners("warning");
 const package = require("./package.json");
 
 // system modules
+require("./lib/profiler");
+
 const fs = require("fs");
 const readline = require("readline");
 const os = require("os");
