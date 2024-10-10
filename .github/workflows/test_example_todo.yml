@@ -15,7 +15,8 @@ jobs:
     steps:
       - uses: testdriverai/action@main
         with:
-          branch: alexrowe/warmstart
+          # branch: alexrowe/tst
+          branch: alexrowe/warmstart-fallback
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
             1. /run testdriver/test.yml
