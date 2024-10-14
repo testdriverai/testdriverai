@@ -6,7 +6,7 @@ on:
 name: Publish to NPM
 jobs:
   bump_version:
-    name: 'Bump Version'
+    name: "Bump Version"
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
@@ -23,10 +23,10 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      - name: 'Bump version'
+      - name: "Bump version"
         run: npm version patch -m "Bump version to %s [skip ci]"
-      
-      - name: Push changes to main 
+
+      - name: Push changes to main
         run: |
           git push https://${{ secrets.GH_TOKEN }}@github.com/testdriverai/testdriverai.git HEAD:main --force
 

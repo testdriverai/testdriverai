@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const os = require('os');
+const os = require("os");
 
 // Get the current process ID
 const pid = process.pid;
@@ -7,6 +7,7 @@ const pid = process.pid;
 try {
   // Set the priority to the highest value
   os.setPriority(pid, -20);
+  // eslint-disable-next-line no-unused-vars
 } catch (error) {
   // console.error('Failed to set process priority:', error);
 }
@@ -22,7 +23,7 @@ require("./lib/profiler");
 
 const fs = require("fs");
 const readline = require("readline");
-const http = require('http');
+const http = require("http");
 
 // third party modules
 const path = require("path");
@@ -266,7 +267,6 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
 // this checks that the task is "really done" using a screenshot of the desktop state
 // it's likely that the task will not be complete and the AI will respond with more codeblocks to execute
 const check = async () => {
-  
   checkCount++;
 
   if (checkCount >= checkLimit) {
@@ -445,7 +445,6 @@ commands:
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
 const humanInput = async (currentTask, validateAndLoop = false) => {
-
   lastPrompt = currentTask;
   checkCount = 0;
 
@@ -492,7 +491,7 @@ const generate = async (type, count) => {
     image,
     mousePosition: await system.getMousePosition(),
     activeWindow: await system.activeWin(),
-    count
+    count,
   });
 
   log.prettyMarkdown(message);
@@ -501,7 +500,6 @@ const generate = async (type, count) => {
 
   // for each testPrompt
   for (const testPrompt of testPrompts) {
-
     // with the contents of the testPrompt
     let fileName =
       sanitizeFilename(testPrompt.headings[0])
@@ -509,7 +507,7 @@ const generate = async (type, count) => {
         .replace(/ /g, "-")
         .toLowerCase() + ".md";
     let path1 = path.join(process.cwd(), "testdriver", "generate", fileName);
-    
+
     // create generate directory if it doesn't exist
     if (!fs.existsSync(path.join(process.cwd(), "testdriver", "generate"))) {
       fs.mkdirSync(path.join(process.cwd(), "testdriver", "generate"));
@@ -688,29 +686,31 @@ New commands will be appended.
 };
 
 let setTerminalWindowTransparency = async (hide) => {
-
   if (hide) {
-
     try {
-      http.get('http://localhost:60305/hide').on('error',function(){}).end();
+      http
+        .get("http://localhost:60305/hide")
+        .on("error", function () {})
+        .end();
     } catch (e) {
-    // Suppress error
-    console.error('Caught exception:', e);
+      // Suppress error
+      console.error("Caught exception:", e);
     }
   } else {
-
     try {
-      http.get('http://localhost:60305/hide').on('error',function(){}).end();
+      http
+        .get("http://localhost:60305/hide")
+        .on("error", function () {})
+        .end();
     } catch (e) {
-    // Suppress error
-    console.error('Caught exception:', e);
+      // Suppress error
+      console.error("Caught exception:", e);
     }
-
   }
 
   if (!config.TD_MINIMIZE) {
-    return
-  };
+    return;
+  }
 
   try {
     if (hide) {
