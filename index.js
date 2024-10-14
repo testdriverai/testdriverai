@@ -5,16 +5,10 @@ const os = require('os');
 const pid = process.pid;
 
 try {
-  // Display the current priority
-  console.log('Current priority:', os.getPriority(pid));
-
   // Set the priority to the highest value
   os.setPriority(pid, -20);
-
-  // Display the updated priority
-  console.log('Updated priority:', os.getPriority(pid));
 } catch (error) {
-  console.error('Failed to set process priority:', error);
+  // console.error('Failed to set process priority:', error);
 }
 
 // disable depreciation warnings
