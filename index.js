@@ -459,7 +459,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   log.log("info", "");
 
   let image = await system.captureScreenBase64();
-  process.stdout.write("\n");
+  const mdStream = log.createMarkdownStreamLogger();
   let message = await sdk.req(
     "input",
     {
@@ -468,10 +468,9 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
       activeWindow: await system.activeWin(),
       image,
     },
-    (chunk) => process.stdout.write(chunk),
+    (chunk) => mdStream.log(chunk),
   );
-  process.stdout.write("\n");
-  // log.prettyMarkdown(message);
+  mdStream.end();
 
   await aiExecute(message, validateAndLoop);
 
@@ -491,7 +490,7 @@ const generate = async (type, count) => {
   log.log("info", "");
 
   let image = await system.captureScreenBase64();
-  process.stdout.write("\n");
+  const mdStream = log.createMarkdownStreamLogger();
   let message = await sdk.req(
     "generate",
     {
@@ -501,11 +500,9 @@ const generate = async (type, count) => {
       activeWindow: await system.activeWin(),
       count,
     },
-    (chunk) => process.stdout.write(chunk),
+    (chunk) => mdStream.log(chunk),
   );
-  process.stdout.write("\n");
-
-  // log.prettyMarkdown(message);
+  mdStream.end();
 
   let testPrompts = await parser.findGenerativePrompts(message);
 
@@ -754,7 +751,7 @@ let summarize = async (error = null) => {
 
   log.log("info", chalk.dim("summarizing..."), true);
 
-  process.stdout.write("\n");
+  const mdStream = log.createMarkdownStreamLogger();
   let reply = await sdk.req(
     "summarize",
     {
@@ -762,9 +759,9 @@ let summarize = async (error = null) => {
       error: error?.toString(),
       tasks,
     },
-    (chunk) => process.stdout.write(chunk),
+    (chunk) => mdStream.log(chunk),
   );
-  process.stdout.write("\n");
+  mdStream.end();
 
   let resultFile = "/tmp/oiResult.log.log";
   if (process.platform === "win32") {
@@ -772,8 +769,6 @@ let summarize = async (error = null) => {
   }
   // write reply to /tmp/oiResult.log.log
   fs.writeFileSync(resultFile, reply);
-
-  // log.prettyMarkdown(reply);
 };
 
 // this function is responsible for saving the regression test script to a file
