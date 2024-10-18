@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: testdriverai/action@main
         with:
-          # branch: alexrowe/tst
+          # branch: main
           branch: alexrowe/warmstart-fallback-2
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
