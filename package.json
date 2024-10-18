@@ -22,7 +22,6 @@
     "datadog-winston": "^1.6.0",
     "decompress": "^4.2.1",
     "dotenv": "^16.4.5",
-    "draftlog": "^1.0.13",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
     "mac-screen-capture-permissions": "^2.1.0",
