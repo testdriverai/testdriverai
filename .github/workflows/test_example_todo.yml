@@ -16,7 +16,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           # branch: alexrowe/tst
-          branch: alexrowe/warmstart-fallback
+          branch: alexrowe/warmstart-fallback-2
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
             1. /run testdriver/test.yml
@@ -37,4 +37,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
-          WEBSITE_URL: "https://localhost:3000" # Define the website URL here
+          WEBSITE_URL: "https://google.com" # Define the website URL here
