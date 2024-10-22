@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+
+<head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .box {
+      border: 2px solid red;
+      position: absolute;
+    }
+
+    .container {
+      inset: 0;
+      position: absolute;
+    }
+
+    #pointer {
+      width: 25px;
+      height: 25px;
+      opacity: 0;
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background-color: rgba(255, 255, 0, 1);
+    }
+
+    .single-click {
+      animation: singleClick 0.7s ease-in-out forwards;
+    }
+
+    .double-click {
+      animation: doubleClick 0.7s ease-in-out forwards;
+    }
+
+    @keyframes singleClick {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2);
+      }
+    }
+
+    @keyframes doubleClick {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      45% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.2);
+      }
+
+      55% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(2);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="main" class="container">
+    <div id="pointer"></div>
+  </div>
+  <div id="screenshot" class="container"></div>
+  <script>
+    const { ipcRenderer } = require("electron");
+    const { events } = require("../lib/events.js")
+
+    const pointer = document.querySelector("#pointer");
+    const container = document.querySelector("#main");
+    const screenshot = document.querySelector("#screenshot");
+
+    function drawBoxes(boxes) {
+      // Remove old boxes
+      const ids = boxes.map((box) => box.id);
+      Array.from(container.querySelectorAll(".box"))
+        .filter((el) => !ids.includes(el.id))
+        .forEach((el) => el.remove());
+
+      // Update or Create boxes
+      boxes.forEach(({ id, x, y, width, height, color }) => {
+        const oldElement = container.querySelector(`#${id}.box`);
+        const boxElement = oldElement || document.createElement("div");
+        boxElement.id = id;
+        boxElement.setAttribute("class", "box");
+        boxElement.style.position = "absolute";
+        boxElement.style.top = toCss(y);
+        boxElement.style.left = toCss(x);
+        boxElement.style.width = toCss(width);
+        boxElement.style.height = toCss(height);
+
+        if (!oldElement) {
+          container.appendChild(boxElement);
+        }
+      });
+    }
+
+    ipcRenderer.on(events.screenCapture.start, (event, data) => {
+      // Hide everything whlie the app takes the screenshot
+      container.style.opacity = 0;
+    });
+
+    ipcRenderer.on(events.screenCapture.end, (event, data) => {
+
+      screenshot.style.border = "8px solid red"
+      setTimeout(() => {
+        container.style.opacity = 1;
+        screenshot.style.border = "none"
+      }, 300);
+    });
+
+    ipcRenderer.on(events.mouseClick, (event, { x, y, click = "single" } = {}) => {
+      pointer.setAttribute("class", `${click}-click`);
+      pointer.style.left = toCss(x);
+      pointer.style.top = toCss(y);
+    });
+
+    const toCss = (size) => {
+      if (typeof size === "number") {
+        return `${size / window.devicePixelRatio}px`;
+      }
+      return size;
+    };
+  </script>
+</body>
+
+</html>
