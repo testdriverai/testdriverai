@@ -13,7 +13,7 @@ jobs:
     name: "TestDriver"
     runs-on: ubuntu-latest
     steps:
-      - uses: testdriverai/action@main
+      - uses: testdriverai/action@alexrowe/user-inputs
         with:
           # branch: main
           branch: alexrowe/warmstart-fallback-2
