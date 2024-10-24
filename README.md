@@ -81,7 +81,7 @@ If you have multiple monitors, make sure you do this on your primary display.
 
 Now, just tell TestDriver what you want it to do. For now, stick with single commands like "click sign up" and "scroll down."
 
-Later, try `/explore` to perform higher level objectives like "complete the onboarding."
+Later, try to perform higher level objectives like "complete the onboarding."
 
 ```yaml
 > Click on sign up
