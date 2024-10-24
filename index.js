@@ -234,7 +234,9 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
   if (errorCounts[safeKey] > errorLimit - 1) {
     console.log(chalk.red("Error loop detected. Exiting."));
     console.log(eMessage);
-    await summarize(eMessage);
+    if (config.TD_SUMMARIZE) {
+      await summarize(eMessage);
+    }
     return await exit(true);
   }
 
@@ -272,7 +274,9 @@ const check = async () => {
 
   if (checkCount >= checkLimit) {
     log.log("info", chalk.red("Exploratory loop detected. Exiting."));
-    await summarize("Check loop detected.");
+    if (config.TD_SUMMARIZE) {
+      await summarize("Check loop detected.");
+    }
     return await exit(true);
   }
 
@@ -324,7 +328,9 @@ const runCommand = async (command, depth) => {
     if (error.fatal) {
       console.log("");
       log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
-      await summarize(error.message);
+      if (config.TD_SUMMARIZE) {
+        await summarize(error.message);
+      }
       return await exit(true);
     } else {
       return await haveAIResolveError(
@@ -862,8 +868,9 @@ let run = async (file, overwrite = false, shouldExit = true) => {
       console.log(
         `Version mismatch: ${file}. Trying to run a test with v${ymlObj.version} test when this package is v${package.version}.`,
       );
-
-      await summarize("Version mismatch");
+      if (config.TD_SUMMARIZE) {
+        await summarize("Version mismatch");
+      }
       await exit(true);
     }
   }
