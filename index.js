@@ -163,7 +163,7 @@ function fileCompleter(line) {
 
 function completer(line) {
   let completions =
-    "/summarize /save /run /quit /explore /assert /undo /manual".split(" ");
+    "/summarize /save /run /quit /assert /undo /manual".split(" ");
   if (line.startsWith("/run ")) {
     return fileCompleter(line);
   } else {
@@ -524,7 +524,7 @@ const generate = async (type, count) => {
     let list = testPrompt.listsOrdered[0];
 
     let contents = list
-      .map((item, index) => `${index + 1}. /explore ${item}`)
+      .map((item, index) => `${index + 1}. ${item}`)
       .join("\n");
     fs.writeFileSync(path1, contents);
   }
@@ -635,8 +635,6 @@ const firstPrompt = async () => {
       await exit();
     } else if (input.indexOf("/save") == 0) {
       await save({ filepath: commands[1] });
-    } else if (input.indexOf("/explore") == 0) {
-      await humanInput(commands.slice(1).join(" "), true);
     } else if (input.indexOf("/undo") == 0) {
       await undo();
     } else if (input.indexOf("/assert") == 0) {
@@ -648,7 +646,7 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/generate") == 0) {
       await generate(commands[1], commands[2]);
     } else {
-      await humanInput(input, false);
+      await humanInput(input, true);
     }
 
     setTerminalWindowTransparency(false);
