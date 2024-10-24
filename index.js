@@ -279,7 +279,7 @@ const check = async () => {
 
   console.log("");
   log.log("info", chalk.dim("checking..."), "testdriver");
-  let image = await system.captureScreenBase64();
+  let image = await system.captureScreenBase64(.5);
   let mousePosition = await system.getMousePosition();
   let activeWindow = await system.activeWin();
 
@@ -458,7 +458,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
 
   log.log("info", "");
 
-  let image = await system.captureScreenBase64();
+  let image = await system.captureScreenBase64(.5);
   const mdStream = log.createMarkdownStreamLogger();
   let message = await sdk.req(
     "input",
@@ -648,7 +648,7 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/generate") == 0) {
       await generate(commands[1], commands[2]);
     } else {
-      await humanInput(input, false);
+      await humanInput(input, true);
     }
 
     setTerminalWindowTransparency(false);
