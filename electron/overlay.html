@@ -94,38 +94,33 @@
     const container = document.querySelector("#main");
     const screenshot = document.querySelector("#screenshot");
 
+    let boundingBoxesTimeout = null
+
     function drawBoxes(boxes) {
       // Remove old boxes
-      const ids = boxes.map((box) => box.id);
-      Array.from(container.querySelectorAll(".box"))
-        .filter((el) => !ids.includes(el.id))
+      Array
+        .from(container.querySelectorAll(".box"))
         .forEach((el) => el.remove());
 
       // Update or Create boxes
-      boxes.forEach(({ id, x, y, width, height, color }) => {
-        const oldElement = container.querySelector(`#${id}.box`);
-        const boxElement = oldElement || document.createElement("div");
-        boxElement.id = id;
+      boxes.forEach(({ x, y, width, height, color }) => {
+        const boxElement = document.createElement("div");
         boxElement.setAttribute("class", "box");
         boxElement.style.position = "absolute";
         boxElement.style.top = toCss(y);
         boxElement.style.left = toCss(x);
         boxElement.style.width = toCss(width);
         boxElement.style.height = toCss(height);
-
-        if (!oldElement) {
-          container.appendChild(boxElement);
-        }
+        container.appendChild(boxElement)
       });
     }
 
     ipcRenderer.on(events.screenCapture.start, (event, data) => {
-      // Hide everything whlie the app takes the screenshot
+      // Hide everything while the app takes the screenshot
       container.style.opacity = 0;
     });
 
     ipcRenderer.on(events.screenCapture.end, (event, data) => {
-
       screenshot.style.border = "8px solid red"
       setTimeout(() => {
         container.style.opacity = 1;
@@ -137,6 +132,12 @@
       pointer.setAttribute("class", `${click}-click`);
       pointer.style.left = toCss(x);
       pointer.style.top = toCss(y);
+    });
+
+    ipcRenderer.on(events.matches.show, (event, closeMatches = []) => {
+      if (boundingBoxesTimeout) clearTimeout(boundingBoxesTimeout)
+      drawBoxes(closeMatches)
+      boundingBoxesTimeout = setTimeout(() => drawBoxes([]), 3000)
     });
 
     const toCss = (size) => {
