@@ -121,14 +121,14 @@
 
     ipcRenderer.on(events.screenCapture.start, (event, data) => {
       // Hide everything whlie the app takes the screenshot
-      container.style.opacity = 0;
+      // container.style.opacity = 0;
     });
 
     ipcRenderer.on(events.screenCapture.end, (event, data) => {
 
       screenshot.style.border = "8px solid red"
       setTimeout(() => {
-        container.style.opacity = 1;
+        // container.style.opacity = 1;
         screenshot.style.border = "none"
       }, 300);
     });

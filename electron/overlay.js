@@ -24,6 +24,7 @@ app.whenReady().then(() => {
     autoHideMenuBar: true,
   });
   window.setIgnoreMouseEvents(true);
+  window.setContentProtection(true);
   window.loadFile("overlay.html");
 
   ipc.serve(() => {
