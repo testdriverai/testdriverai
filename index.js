@@ -64,10 +64,6 @@ let rl;
 // list of prompts that the user has given us
 let tasks = [];
 
-if (!config.TD_DISABLE_OVERLAYS) {
-  require("./lib/overlay.js");
-}
-
 // get args from terminal
 const args = process.argv.slice(2);
 
