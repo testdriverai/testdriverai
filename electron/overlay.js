@@ -7,13 +7,17 @@ ipc.config.retry = 1500;
 ipc.config.silent = true;
 
 app.whenReady().then(() => {
+  app.dock.hide();
+
   const window = new BrowserWindow({
     ...screen.getPrimaryDisplay().bounds,
     frame: false,
+    show: false,
     closable: false,
     resizable: false,
     focusable: false,
     fullscreen: true,
+    fullscreenable: false,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
@@ -25,7 +29,17 @@ app.whenReady().then(() => {
   });
   window.setIgnoreMouseEvents(true);
   window.setContentProtection(true);
+
+  window.setAlwaysOnTop(true, 'screen-saver');
+  window.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+  });
+  window.setIgnoreMouseEvents(true);
   window.loadFile("overlay.html");
+  window.show();
+
+  // open developer tools
+  window.webContents.openDevTools();
 
   ipc.serve(() => {
     let lastPing = null;
