@@ -57,7 +57,7 @@ let executionHistory = [];
 let errorCounts = {};
 let errorLimit = 3;
 let checkCount = 0;
-let checkLimit = 3;
+let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
 
