@@ -28,7 +28,7 @@ app.whenReady().then(() => {
     autoHideMenuBar: true,
   });
   window.setIgnoreMouseEvents(true);
-  window.setContentProtection(true);
+  // window.setContentProtection(true);
 
   window.setAlwaysOnTop(true, "screen-saver");
   window.setVisibleOnAllWorkspaces(true, {
