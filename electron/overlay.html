@@ -119,28 +119,24 @@
     const screenshot = document.querySelector("#screenshot");
     const terminalElement = document.querySelector("#terminal");
 
+    let boundingBoxesTimeout = null
+
     function drawBoxes(boxes) {
       // Remove old boxes
-      const ids = boxes.map((box) => box.id);
-      Array.from(container.querySelectorAll(".box"))
-        .filter((el) => !ids.includes(el.id))
+      Array
+        .from(container.querySelectorAll(".box"))
         .forEach((el) => el.remove());
 
       // Update or Create boxes
-      boxes.forEach(({ id, x, y, width, height, color }) => {
-        const oldElement = container.querySelector(`#${id}.box`);
-        const boxElement = oldElement || document.createElement("div");
-        boxElement.id = id;
+      boxes.forEach(({ x, y, width, height, color }) => {
+        const boxElement = document.createElement("div");
         boxElement.setAttribute("class", "box");
         boxElement.style.position = "absolute";
         boxElement.style.top = toCss(y);
         boxElement.style.left = toCss(x);
         boxElement.style.width = toCss(width);
         boxElement.style.height = toCss(height);
-
-        if (!oldElement) {
-          container.appendChild(boxElement);
-        }
+        container.appendChild(boxElement)
       });
     }
 
@@ -164,6 +160,12 @@
         pointer.style.top = toCss(y);
       },
     );
+
+    ipcRenderer.on(events.matches.show, (event, closeMatches = []) => {
+      if (boundingBoxesTimeout) clearTimeout(boundingBoxesTimeout)
+      drawBoxes(closeMatches)
+      boundingBoxesTimeout = setTimeout(() => drawBoxes([]), 3000)
+    });
 
     const toCss = (size) => {
       if (typeof size === "number") {
