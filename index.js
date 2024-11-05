@@ -18,9 +18,6 @@ process.removeAllListeners("warning");
 // package.json is included to get the version number
 const package = require("./package.json");
 
-// system modules
-require("./lib/profiler");
-
 const fs = require("fs");
 const readline = require("readline");
 const http = require("http");
