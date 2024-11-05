@@ -339,8 +339,6 @@ const runCommand = async (command, depth) => {
     }
   } catch (error) {
 
-    console.log(error)
-
     if (error.fatal) {
       console.log("");
       log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
