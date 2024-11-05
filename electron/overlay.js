@@ -43,7 +43,7 @@ app.whenReady().then(() => {
 
   ipc.serve(() => {
     let lastPing = null;
-    setTimeout(() => {
+    setInterval(() => {
       if (!lastPing) return;
       if (Date.now() - lastPing > 1000) process.exit();
     }, 100);
