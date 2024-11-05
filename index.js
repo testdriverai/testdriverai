@@ -49,6 +49,7 @@ const { showTerminal, hideTerminal } = require("./lib/focus-application");
 const isValidVersion = require("./lib/valid-version");
 const session = require("./lib/session");
 const notify = require("./lib/notify");
+const { emitter, events } = require("./lib/events.js");
 
 let lastPrompt = "";
 let terminalApp = "";
@@ -163,8 +164,9 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions =
-    "/summarize /save /run /quit /assert /undo /manual".split(" ");
+  let completions = "/summarize /save /run /quit /assert /undo /manual".split(
+    " ",
+  );
   if (line.startsWith("/run ")) {
     return fileCompleter(line);
   } else {
@@ -336,6 +338,9 @@ const runCommand = async (command, depth) => {
       return await actOnMarkdown(response, depth);
     }
   } catch (error) {
+
+    console.log(error)
+
     if (error.fatal) {
       console.log("");
       log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
@@ -642,6 +647,7 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   rl.on("line", async (input) => {
+    emitter.emit(events.interactive, false);
     await setTerminalApp();
 
     setTerminalWindowTransparency(true);
@@ -927,6 +933,7 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
+  emitter.emit(events.interactive, true);
   rl.prompt(true);
 };
 
@@ -990,6 +997,15 @@ const embed = async (file, depth) => {
 
   log.log("info", `${file} (end)`);
 };
+
+emitter.on(events.interactive, (data) => {
+  if (!terminalApp) return;
+  if (data) {
+    showTerminal(terminalApp);
+  } else {
+    hideTerminal(terminalApp);
+  }
+});
 
 (async () => {
   // @todo add-auth
