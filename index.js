@@ -58,7 +58,7 @@ let executionHistory = [];
 let errorCounts = {};
 let errorLimit = 3;
 let checkCount = 0;
-let checkLimit = 3;
+let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
 
@@ -338,6 +338,7 @@ const runCommand = async (command, depth) => {
       return await actOnMarkdown(response, depth);
     }
   } catch (error) {
+
     if (error.fatal) {
       console.log("");
       log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
