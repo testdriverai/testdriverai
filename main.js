@@ -28,9 +28,6 @@ if (config.TD_DISABLE_OVERLAYS) {
 
   require("./lib/overlay.js")
     .electronProcessPromise.then(() => {
-      setInterval(() => {
-        emitter.emit(events.overlay.ping);
-      }, 200);
       require("./index.js");
     })
     .catch((err) => {
