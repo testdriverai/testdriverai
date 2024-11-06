@@ -234,9 +234,13 @@
     });
 
     ipcRenderer.on(events.screenCapture.end, (event, data) => {
-      container.style.opacity = 1;
-      screenshotElement.setAttribute("class", "")
-      screenshotElement.setAttribute("class", "screenshot")
+      screenshotElement.classList.remove('screenshot');
+      // Force reflow
+      void screenshotElement.offsetWidth;
+      screenshotElement.classList.add('screenshot');
+      setTimeout(() => {
+        container.style.opacity = 1
+      }, 300)
     });
 
     ipcRenderer.on(events.mouseClick,
