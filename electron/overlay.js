@@ -31,12 +31,10 @@ app.whenReady().then(() => {
     autoHideMenuBar: true,
   });
   window.setIgnoreMouseEvents(true);
-
   window.setAlwaysOnTop(true, "screen-saver");
   window.setVisibleOnAllWorkspaces(true, {
     visibleOnFullScreen: true,
   });
-  window.setIgnoreMouseEvents(true);
   window.loadFile("overlay.html");
   window.show();
 
