@@ -337,7 +337,6 @@ const runCommand = async (command, depth) => {
       return await actOnMarkdown(response, depth);
     }
   } catch (error) {
-
     if (error.fatal) {
       console.log("");
       log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
@@ -1005,8 +1004,7 @@ emitter.on(events.interactive, (data) => {
 });
 
 (async () => {
-
-  console.log(await  system.getPrimaryDisplay());
+  // console.log(await  system.getPrimaryDisplay());
 
   // @todo add-auth
   // if (!process.env.DASHCAM_API_KEY) {
