@@ -245,10 +245,12 @@
 
     ipcRenderer.on(events.mouseClick,
       (event, { x, y, click = "single" } = {}) => {
-        pointer.setAttribute("class", "");
-        pointer.setAttribute("class", `${click}-click`);
         pointer.style.marginLeft = toCss(x);
         pointer.style.marginTop = toCss(y);
+        pointer.setAttribute("class", "");
+        // Force reflow
+        void pointer.offsetWidth;
+        pointer.classList.add(`${click}-click`);
       },
     );
 
