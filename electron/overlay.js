@@ -9,17 +9,14 @@ ipc.config.silent = true;
 app.whenReady().then(() => {
   app.dock?.hide();
 
-  const window = new BrowserWindow({
+  const windowOptions = {
     ...screen.getPrimaryDisplay().bounds,
-    // https://github.com/electron/electron/issues/8141#issuecomment-299668381
-    // Allow the window to cover the menu bar on macos
     enableLargerThanScreen: true,
     frame: false,
     show: false,
     closable: false,
     resizable: false,
     focusable: false,
-    fullscreen: true,
     fullscreenable: true,
     transparent: true,
     alwaysOnTop: true,
@@ -29,7 +26,13 @@ app.whenReady().then(() => {
       contextIsolation: false,
     },
     autoHideMenuBar: true,
-  });
+  };
+
+  if (process.platform !== 'darwin') {
+    windowOptions.fullscreen = true;
+  }
+
+  const window = new BrowserWindow(windowOptions);
   window.setIgnoreMouseEvents(true);
   window.setAlwaysOnTop(true, "screen-saver");
   window.setVisibleOnAllWorkspaces(true, {
