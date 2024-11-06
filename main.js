@@ -2,7 +2,7 @@
 const config = require("./lib/config");
 const { emitter, events } = require("./lib/events.js");
 
-if (config.TD_DISABLE_OVERLAYS) {
+if (!config.TD_OVERLAY) {
   require("./index.js");
 } else {
   // Intercept all stdout and stderr calls (works with console as well)
