@@ -20,7 +20,7 @@ app.whenReady().then(() => {
     resizable: false,
     focusable: false,
     fullscreen: true,
-    fullscreenable: false,
+    fullscreenable: true,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
