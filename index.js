@@ -280,7 +280,6 @@ const check = async () => {
 
   await delay(3000);
 
-  console.log("");
   log.log("info", chalk.dim("checking..."), "testdriver");
 
   let thisScreenshot = await system.captureScreenBase64();
@@ -1006,6 +1005,9 @@ emitter.on(events.interactive, (data) => {
 });
 
 (async () => {
+
+  console.log(await  system.getPrimaryDisplay());
+
   // @todo add-auth
   // if (!process.env.DASHCAM_API_KEY) {
   //   log.log('info', chalk.red(`You must supply an API key`), 'system')

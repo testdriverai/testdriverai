@@ -9,8 +9,18 @@ ipc.config.silent = true;
 app.whenReady().then(() => {
   app.dock?.hide();
 
+  // get electron workarea size
+  let workAreaSize = screen.getPrimaryDisplay().workAreaSize;
+
+  // get dispaly size
+  let displaySize = screen.getPrimaryDisplay().size;
+
+  // calculate difference between display and workarea
+
+  let diff = displaySize.height - workAreaSize.height;
+
   const window = new BrowserWindow({
-    ...screen.getPrimaryDisplay().bounds,
+    ...workAreaSize,
     frame: false,
     show: false,
     closable: false,
@@ -39,7 +49,13 @@ app.whenReady().then(() => {
   window.show();
 
   // open developer tools
-  // window.webContents.openDevTools();
+  window.webContents.openDevTools();
+
+  setInterval(() => {
+    window?.webContents.send('config', {
+      menubarSize: diff
+    });
+  }, 1000);
 
   ipc.serve(() => {
     for (const event of eventsArray) {
@@ -53,3 +69,5 @@ app.whenReady().then(() => {
   });
   ipc.server.start();
 });
+
+
