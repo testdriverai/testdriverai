@@ -10,7 +10,8 @@
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
-    "bundle": "node build.mjs"
+    "bundle": "node build.mjs",
+    "test": "mocha test/*"
   },
   "author": "",
   "license": "ISC",
@@ -56,6 +57,8 @@
     "globals": "^15.9.0",
     "node-addon-api": "^8.0.0",
     "node-gyp": "^10.1.0",
+    "mocha": "^10.8.2",
+    "chai": "^5.1.2",
     "prettier": "3.3.3"
   },
   "optionalDependencies": {
