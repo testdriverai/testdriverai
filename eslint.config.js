@@ -16,6 +16,6 @@ module.exports = [
   {
     // this needs to be it's own object for some reason
     // https://github.com/eslint/eslint/issues/17400
-    ignores: ["lib/subimage/opencv.js", "node_modules/**", ".git"],
+    ignores: ["lib/subimage/opencv.js", "node_modules/**", ".git", "electron/terminal/xterm*"],
   },
 ];
