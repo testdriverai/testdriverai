@@ -49,6 +49,7 @@ const { showTerminal, hideTerminal } = require("./lib/focus-application");
 const isValidVersion = require("./lib/valid-version");
 const session = require("./lib/session");
 const notify = require("./lib/notify");
+const { emitter, events } = require("./lib/events.js");
 
 let lastPrompt = "";
 let terminalApp = "";
@@ -57,16 +58,12 @@ let executionHistory = [];
 let errorCounts = {};
 let errorLimit = 3;
 let checkCount = 0;
-let checkLimit = 3;
+let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
 
 // list of prompts that the user has given us
 let tasks = [];
-
-if (!config.TD_DISABLE_OVERLAYS) {
-  require("./lib/overlay.js");
-}
 
 // get args from terminal
 const args = process.argv.slice(2);
@@ -167,8 +164,9 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions =
-    "/summarize /save /run /quit /assert /undo /manual".split(" ");
+  let completions = "/summarize /save /run /quit /assert /undo /manual".split(
+    " ",
+  );
   if (line.startsWith("/run ")) {
     return fileCompleter(line);
   } else {
@@ -282,7 +280,6 @@ const check = async () => {
 
   await delay(3000);
 
-  console.log("");
   log.log("info", chalk.dim("checking..."), "testdriver");
 
   let thisScreenshot = await system.captureScreenBase64();
@@ -646,6 +643,7 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   rl.on("line", async (input) => {
+    emitter.emit(events.interactive, false);
     await setTerminalApp();
 
     setTerminalWindowTransparency(true);
@@ -931,6 +929,7 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
+  emitter.emit(events.interactive, true);
   rl.prompt(true);
 };
 
@@ -995,7 +994,18 @@ const embed = async (file, depth) => {
   log.log("info", `${file} (end)`);
 };
 
+emitter.on(events.interactive, (data) => {
+  if (!terminalApp) return;
+  if (data) {
+    showTerminal(terminalApp);
+  } else {
+    hideTerminal(terminalApp);
+  }
+});
+
 (async () => {
+  // console.log(await  system.getPrimaryDisplay());
+
   // @todo add-auth
   // if (!process.env.DASHCAM_API_KEY) {
   //   log.log('info', chalk.red(`You must supply an API key`), 'system')
