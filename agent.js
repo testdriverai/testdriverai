@@ -641,6 +641,8 @@ const firstPrompt = async () => {
   // notice that the AI is only called if the input is not a command
   rl.on("line", async (input) => {
     if (!isInteractive) return;
+    if (!input.trim().length) return promptUser();
+
     emitter.emit(events.interactive, false);
     await setTerminalApp();
     // setTerminalWindowTransparency(true);
