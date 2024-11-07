@@ -62,6 +62,11 @@ let rl;
 // list of prompts that the user has given us
 let tasks = [];
 
+let isInteractive = false;
+emitter.on(events.interactive, (data) => {
+  isInteractive = data;
+});
+
 // get args from terminal
 const args = process.argv.slice(2);
 
@@ -990,17 +995,6 @@ const embed = async (file, depth) => {
 
   log.log("info", `${file} (end)`);
 };
-
-let isInteractive = false;
-emitter.on(events.interactive, (data) => {
-  isInteractive = data;
-  if (!terminalApp) return;
-  if (isInteractive) {
-    showTerminal(terminalApp);
-  } else {
-    hideTerminal(terminalApp);
-  }
-});
 
 (async () => {
   // console.log(await  system.getPrimaryDisplay());
