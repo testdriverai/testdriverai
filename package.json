@@ -2,14 +2,14 @@
   "name": "testdriverai",
   "version": "4.1.4",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
-  "main": "main.js",
+  "main": "index.js",
   "bin": {
-    "testdriverai": "./main.js"
+    "testdriverai": "./index.js"
   },
   "scripts": {
-    "start": "node main.js",
-    "dev": "DEV=true node main.js",
-    "debug": "DEV=true VERBOSE=true node main.js",
+    "start": "node index.js",
+    "dev": "DEV=true node index.js",
+    "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs"
   },
   "author": "",
