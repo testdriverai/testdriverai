@@ -1,15 +1,15 @@
 {
   "name": "testdriverai",
-  "version": "4.0.81",
+  "version": "4.1.0",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
-  "main": "index.js",
+  "main": "main.js",
   "bin": {
-    "testdriverai": "./index.js"
+    "testdriverai": "./main.js"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "DEV=true node index.js",
-    "debug": "DEV=true VERBOSE=true node index.js",
+    "start": "node main.js",
+    "dev": "DEV=true node main.js",
+    "debug": "DEV=true VERBOSE=true node main.js",
     "bundle": "node build.mjs"
   },
   "author": "",
@@ -22,6 +22,7 @@
     "datadog-winston": "^1.6.0",
     "decompress": "^4.2.1",
     "dotenv": "^16.4.5",
+    "electron": "^33.0.2",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
     "mac-screen-capture-permissions": "^2.1.0",
@@ -29,6 +30,7 @@
     "marked": "^12.0.1",
     "marked-terminal": "^7.0.0",
     "marky": "^1.2.5",
+    "node-ipc": "^12.0.0",
     "node-notifier": "^10.0.1",
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
