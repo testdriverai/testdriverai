@@ -640,10 +640,10 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   rl.on("line", async (input) => {
+    if (!isInteractive) return;
     emitter.emit(events.interactive, false);
     await setTerminalApp();
-
-    setTerminalWindowTransparency(true);
+    // setTerminalWindowTransparency(true);
     errorCounts = {};
 
     // append this to commandHistoryFile
@@ -677,7 +677,7 @@ const firstPrompt = async () => {
       await humanInput(input, true);
     }
 
-    setTerminalWindowTransparency(false);
+    // setTerminalWindowTransparency(false);
     promptUser();
   });
 
@@ -992,9 +992,11 @@ const embed = async (file, depth) => {
   log.log("info", `${file} (end)`);
 };
 
+let isInteractive = false;
 emitter.on(events.interactive, (data) => {
+  isInteractive = data;
   if (!terminalApp) return;
-  if (data) {
+  if (isInteractive) {
     showTerminal(terminalApp);
   } else {
     hideTerminal(terminalApp);
