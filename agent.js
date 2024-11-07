@@ -652,6 +652,7 @@ const firstPrompt = async () => {
     analytics.track("input", { input });
 
     console.log(""); // adds a nice break between submissions
+    console.log("Got input", input);
 
     let commands = input.split(" ");
 
