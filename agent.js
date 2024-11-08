@@ -256,6 +256,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
   speak("thinking...");
   notify("thinking...");
   log.log("info", chalk.dim("thinking..."), true);
+  log.log("info", "");
 
   let response = await sdk.req("error", {
     description: eMessage,
@@ -280,9 +281,9 @@ const check = async () => {
     return await exit(true);
   }
 
-  await delay(3000);
-
+  log.log("info", "");
   log.log("info", chalk.dim("checking..."), "testdriver");
+  log.log("info", "");
 
   let thisScreenshot = await system.captureScreenBase64();
   let images = [lastScreenshot, thisScreenshot];
@@ -452,6 +453,7 @@ const assert = async (expect) => {
   speak("thinking...");
   notify("thinking...");
   log.log("info", chalk.dim("thinking..."), true);
+  log.log("info", "");
 
   let response = `\`\`\`yml
 commands:
@@ -477,7 +479,6 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   speak("thinking...");
   notify("thinking...");
   log.log("info", chalk.dim("thinking..."), true);
-
   log.log("info", "");
 
   lastScreenshot = await system.captureScreenBase64();
@@ -492,6 +493,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
       image: lastScreenshot,
     },
     (chunk) => {
+
       if (chunk.type === "data") {
         mdStream.log(chunk.data);
       }
@@ -513,7 +515,6 @@ const generate = async (type, count) => {
   notify("thinking...");
 
   log.log("info", chalk.dim("thinking..."), true);
-
   log.log("info", "");
 
   let image = await system.captureScreenBase64();
