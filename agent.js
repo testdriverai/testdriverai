@@ -646,6 +646,8 @@ const firstPrompt = async () => {
   // notice that the AI is only called if the input is not a command
   rl.on("line", async (input) => {
     if (!isInteractive) return;
+    if (!input.trim().length) return promptUser();
+
     emitter.emit(events.interactive, false);
     await setTerminalApp();
     // setTerminalWindowTransparency(true);
@@ -936,6 +938,7 @@ const promptUser = () => {
 };
 
 const setTerminalApp = async () => {
+  if (terminalApp) return;
   let win = await system.activeWin();
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
