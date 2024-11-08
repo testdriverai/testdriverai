@@ -228,12 +228,18 @@
 
 
     ipcRenderer.on(events.screenCapture.start, (event, data) => {
+      if (data?.silent) return
       // Hide everything whlie the app takes the screenshot
-
       container.style.opacity = 0;
     });
 
+    ipcRenderer.on(events.screenCapture.error, (event, data) => {
+      if (data?.silent) return
+      container.style.opacity = 1
+    });
+
     ipcRenderer.on(events.screenCapture.end, (event, data) => {
+      if (data?.silent) return
       screenshotElement.classList.remove('screenshot');
       // Force reflow
       void screenshotElement.offsetWidth;
