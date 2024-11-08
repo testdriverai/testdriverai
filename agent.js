@@ -72,8 +72,6 @@ const args = process.argv.slice(2);
 
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
-const delay = (t) => new Promise((resolve) => setTimeout(resolve, t));
-
 let getArgs = () => {
   let command = 0;
   let file = 1;
