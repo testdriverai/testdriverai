@@ -648,8 +648,7 @@ const firstPrompt = async () => {
     if (!input.trim().length) return promptUser();
 
     emitter.emit(events.interactive, false);
-    await setTerminalApp();
-    // setTerminalWindowTransparency(true);
+    setTerminalWindowTransparency(true);
     errorCounts = {};
 
     // append this to commandHistoryFile
@@ -682,7 +681,7 @@ const firstPrompt = async () => {
       await humanInput(input, true);
     }
 
-    // setTerminalWindowTransparency(false);
+    setTerminalWindowTransparency(false);
     promptUser();
   });
 
@@ -725,6 +724,7 @@ New commands will be appended.
 };
 
 let setTerminalWindowTransparency = async (hide) => {
+
   if (hide) {
     try {
       http
@@ -750,6 +750,7 @@ let setTerminalWindowTransparency = async (hide) => {
   if (!config.TD_MINIMIZE) {
     return;
   }
+
 
   try {
     if (hide) {
@@ -936,9 +937,9 @@ const promptUser = () => {
   rl.prompt(true);
 };
 
-const setTerminalApp = async () => {
+const setTerminalApp = async (win) => {
+  
   if (terminalApp) return;
-  let win = await system.activeWin();
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
   } else {
@@ -999,6 +1000,9 @@ const embed = async (file, depth) => {
 };
 
 (async () => {
+  
+  await setTerminalApp();
+
   // console.log(await  system.getPrimaryDisplay());
 
   // @todo add-auth
@@ -1042,7 +1046,6 @@ const embed = async (file, depth) => {
     console.log("");
   }
 
-  await setTerminalApp();
 
   // should be start of new session
   const sessionRes = await sdk.req("session/start", {
@@ -1078,3 +1081,7 @@ process.on("unhandledRejection", async (reason, promise) => {
   // Optionally, you might want to exit the process
   await exit(true);
 });
+
+module.exports = {
+  setTerminalApp
+};

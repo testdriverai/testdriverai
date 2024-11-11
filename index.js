@@ -1,37 +1,47 @@
 #!/usr/bin/env node
 const config = require("./lib/config.js");
+const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
 
-if (!config.TD_OVERLAY) {
-  require("./agent.js");
-} else {
-  // Intercept all stdout and stderr calls (works with console as well)
-  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-  process.stdout.write = (...args) => {
-    const [data, encoding] = args;
-    emitter.emit(
-      events.terminal.stdout,
-      data.toString(typeof encoding === "string" ? encoding : undefined),
-    );
-    originalStdoutWrite(...args);
-  };
+(async () => {
 
-  const originalStderrWrite = process.stderr.write.bind(process.stderr);
-  process.stderr.write = (...args) => {
-    const [data, encoding] = args;
-    emitter.emit(
-      events.terminal.stderr,
-      data.toString(typeof encoding === "string" ? encoding : undefined),
-    );
-    originalStderrWrite(...args);
-  };
+  let win = await system.activeWin();
 
-  require("./lib/overlay.js")
-    .electronProcessPromise.then(() => {
-      require("./agent.js");
-    })
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
-}
+  if (!config.TD_OVERLAY) {
+    let agent = require("./agent.js");
+    agent.setTerminalApp(win);
+  } else {
+    // Intercept all stdout and stderr calls (works with console as well)
+    const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = (...args) => {
+      const [data, encoding] = args;
+      emitter.emit(
+        events.terminal.stdout,
+        data.toString(typeof encoding === "string" ? encoding : undefined),
+      );
+      originalStdoutWrite(...args);
+    };
+  
+    const originalStderrWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (...args) => {
+      const [data, encoding] = args;
+      emitter.emit(
+        events.terminal.stderr,
+        data.toString(typeof encoding === "string" ? encoding : undefined),
+      );
+      originalStderrWrite(...args);
+    };
+  
+    require("./lib/overlay.js")
+      .electronProcessPromise.then(() => {
+        let agent = require("./agent.js");
+        agent.setTerminalApp(win);
+      })
+      .catch((err) => {
+        console.error(err);
+        process.exit(1);
+      });
+  }
+
+  
+})()
