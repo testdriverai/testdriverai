@@ -39,7 +39,10 @@ app.whenReady().then(() => {
     visibleOnFullScreen: true,
   });
   window.loadFile("overlay.html");
-  window.showInactive();
+
+  window.once('ready-to-show', () => {
+    window.showInactive();
+  });
 
   // open developer tools
   // window.webContents.openDevTools();

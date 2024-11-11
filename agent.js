@@ -775,7 +775,6 @@ let summarize = async (error = null) => {
 
   log.log("info", "");
 
-  log.log("info", chalk.cyan("summarizing"));
   log.log("info", chalk.dim("reviewing test..."), true);
 
   // let text = prompts.summarize(tasks, error);
@@ -938,7 +937,7 @@ const promptUser = () => {
 };
 
 const setTerminalApp = async (win) => {
-  
+
   if (terminalApp) return;
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
@@ -999,10 +998,8 @@ const embed = async (file, depth) => {
   log.log("info", `${file} (end)`);
 };
 
-(async () => {
+const start = async () => {
   
-  await setTerminalApp();
-
   // console.log(await  system.getPrimaryDisplay());
 
   // @todo add-auth
@@ -1066,7 +1063,7 @@ const embed = async (file, depth) => {
   } else if (thisCommand == "init") {
     init();
   }
-})();
+};
 
 process.on("uncaughtException", async (err) => {
   analytics.track("uncaughtException", { err });
@@ -1083,5 +1080,6 @@ process.on("unhandledRejection", async (reason, promise) => {
 });
 
 module.exports = {
-  setTerminalApp
+  setTerminalApp,
+  start
 };

@@ -10,6 +10,7 @@ const { emitter, events } = require("./lib/events.js");
   if (!config.TD_OVERLAY) {
     let agent = require("./agent.js");
     agent.setTerminalApp(win);
+    agent.start();
   } else {
     // Intercept all stdout and stderr calls (works with console as well)
     const originalStdoutWrite = process.stdout.write.bind(process.stdout);
@@ -36,6 +37,7 @@ const { emitter, events } = require("./lib/events.js");
       .electronProcessPromise.then(() => {
         let agent = require("./agent.js");
         agent.setTerminalApp(win);
+        agent.start();
       })
       .catch((err) => {
         console.error(err);
