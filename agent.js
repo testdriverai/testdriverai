@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 const os = require("os");
 
 // Get the current process ID
@@ -217,13 +218,15 @@ const exit = async (failed = true) => {
 // creates a new "thread" in which the AI is given an error
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
-const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
+const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
+  
+
   let eMessage = error.message ? error.message : error;
 
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
-  log.log("error", eMessage);
+  log.log("debug", eMessage);
 
   if (process.env["DEV"]) {
     console.log(error, eMessage);
@@ -256,11 +259,20 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = false) => {
   log.log("info", chalk.dim("thinking..."), true);
   log.log("info", "");
 
+  const mdStream = log.createMarkdownStreamLogger();
+
   let response = await sdk.req("error", {
     description: eMessage,
     markdown,
     image,
-  });
+    },
+    (chunk) => {
+      if (chunk.type === "data") {
+        mdStream.log(chunk.data);
+      }
+    },
+  );
+  mdStream.end();
 
   if (response?.data) {
     return await actOnMarkdown(response.data, depth, true);
