@@ -295,7 +295,7 @@ const check = async () => {
   log.log("info", chalk.dim("checking..."), "testdriver");
   log.log("info", "");
 
-  let thisScreenshot = await system.captureScreenBase64();
+  let thisScreenshot = await system.captureScreenBase64(1, false, true);
   let images = [lastScreenshot, thisScreenshot];
   let mousePosition = await system.getMousePosition();
   let activeWindow = await system.activeWin();
