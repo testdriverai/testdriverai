@@ -350,7 +350,7 @@ const runCommand = async (command, depth) => {
       return await actOnMarkdown(response, depth);
     }
   } catch (error) {
-    if (error.fatal) {
+    if (thisCommand == "run") {
       console.log("");
       log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
       await summarize(error.message);
