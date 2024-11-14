@@ -333,7 +333,7 @@ const runCommand = async (command, depth) => {
   try {
     let response;
 
-    if (command.command == "embed") {
+    if (command.command == "run") {
       response = await embed(command.file, depth);
     } else if (command.command == "if") {
       response = await iffy(
