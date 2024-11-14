@@ -954,7 +954,7 @@ const setTerminalApp = async (win) => {
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
   } else {
-    terminalApp = win?.owner?.name || "";
+    terminalApp = win?.owner?.bundleId || "";
   }
 };
 
