@@ -215,11 +215,21 @@ const exit = async (failed = true) => {
   });
 };
 
+const dieOnFatal = async (error) => {
+  console.log("");
+  log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
+  await summarize(error.message);
+  return await exit(true);
+}
+
 // creates a new "thread" in which the AI is given an error
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
 const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
-  
+
+  if (thisCommand == "run" || error.fatal) {
+    return await dieOnFatal(error);
+  }
 
   let eMessage = error.message ? error.message : error;
 
@@ -350,19 +360,12 @@ const runCommand = async (command, depth) => {
       return await actOnMarkdown(response, depth);
     }
   } catch (error) {
-    if (thisCommand == "run") {
-      console.log("");
-      log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
-      await summarize(error.message);
-      return await exit(true);
-    } else {
-      return await haveAIResolveError(
-        error,
-        yaml.dump({ commands: [yml] }),
-        depth,
-        true,
-      );
-    }
+    return await haveAIResolveError(
+      error,
+      yaml.dump({ commands: [yml] }),
+      depth,
+      true,
+    );
   }
 };
 
