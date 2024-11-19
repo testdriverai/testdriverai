@@ -215,11 +215,21 @@ const exit = async (failed = true) => {
   });
 };
 
+const dieOnFatal = async (error) => {
+  console.log("");
+  log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
+  await summarize(error.message);
+  return await exit(true);
+}
+
 // creates a new "thread" in which the AI is given an error
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
 const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
-  
+
+  if (thisCommand == "run" || error.fatal) {
+    return await dieOnFatal(error);
+  }
 
   let eMessage = error.message ? error.message : error;
 
@@ -295,7 +305,7 @@ const check = async () => {
   log.log("info", chalk.dim("checking..."), "testdriver");
   log.log("info", "");
 
-  let thisScreenshot = await system.captureScreenBase64();
+  let thisScreenshot = await system.captureScreenBase64(1, false, true);
   let images = [lastScreenshot, thisScreenshot];
   let mousePosition = await system.getMousePosition();
   let activeWindow = await system.activeWin();
@@ -333,7 +343,7 @@ const runCommand = async (command, depth) => {
   try {
     let response;
 
-    if (command.command == "embed") {
+    if (command.command == "run") {
       response = await embed(command.file, depth);
     } else if (command.command == "if") {
       response = await iffy(
@@ -350,19 +360,12 @@ const runCommand = async (command, depth) => {
       return await actOnMarkdown(response, depth);
     }
   } catch (error) {
-    if (error.fatal) {
-      console.log("");
-      log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
-      await summarize(error.message);
-      return await exit(true);
-    } else {
-      return await haveAIResolveError(
-        error,
-        yaml.dump({ commands: [yml] }),
-        depth,
-        true,
-      );
-    }
+    return await haveAIResolveError(
+      error,
+      yaml.dump({ commands: [yml] }),
+      depth,
+      true,
+    );
   }
 };
 
@@ -954,7 +957,7 @@ const setTerminalApp = async (win) => {
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
   } else {
-    terminalApp = win?.owner?.name || "";
+    terminalApp = win?.owner?.bundleId || "";
   }
 };
 
