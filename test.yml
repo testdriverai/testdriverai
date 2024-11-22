@@ -1,0 +1,7 @@
+version: 4.1.1
+steps:
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+        prompt: focus chrome
