@@ -1,7 +1,13 @@
-version: 4.1.1
+version: 4.1.27
 steps:
   - prompt: focus chrome
     commands:
       - command: focus-application
         name: Google Chrome
         prompt: focus chrome
+  - prompt: Click on the X on the window to close Google Chrome
+    commands:
+      - command: hover-text
+        text: X
+        description: close button in the top right corner of the Chrome window
+        action: click
