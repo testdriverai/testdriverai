@@ -1,13 +1,17 @@
-version: 4.1.27
+version: 4.0.22
 steps:
   - prompt: focus chrome
     commands:
       - command: focus-application
         name: Google Chrome
         prompt: focus chrome
-  - prompt: Click on the Dashcam Title
+  - prompt: Click on google search bar
     commands:
       - command: hover-text
-        text: Dashcam
-        description: Dashcam title
+        text: Search Google
+        description: Search Google
         action: click
+  - prompt: enter text foo
+    commands:
+      - command: type
+        text: foo
