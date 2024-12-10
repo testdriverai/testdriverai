@@ -2,7 +2,7 @@
 
 # TestDriver.ai
 
-Next generation autonomous AI agent for end-to-end testing of web & desktop
+Automate and scale QA with agentic users. Next generation autonomous AI agent for end-to-end testing of web & desktop.
 
 [Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.gg/a8Cq739VWn)
 
