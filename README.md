@@ -55,19 +55,9 @@ Install testdriverai via NPM. This will make testdriverai available as a global 
 npm install testdriverai -g
 ```
 
-## Set up the project
-
-In the root of the project you want to test, run `testdriverai init`. This will authorize you to communicate with our API and set up example GitHub runner workflows.
-
-```sh
-testdriverai init
-```
-
-You're almost ready to deploy your first test!
-
 ## Teach TestDriver a test
 
-Running testdriverai init creates a sample project that's ready to deploy via GitHub actions! But the test file is blank, so let's show TestDriver what we want to test. Run the following command:
+Let's show TestDriver what we want to test. Run the following command:
 
 ```sh
 testdriverai .testdriver/test.yml
@@ -78,8 +68,6 @@ testdriverai .testdriver/test.yml
 TestDriver best practice is to start instructing TestDriver with your app in it's initial state. For browsers, this means creating a new tab with the website you want to test.
 
 If you have multiple monitors, make sure you do this on your primary display.
-
-> When deploying, the TestDriver GitHub action executes tests on ephemeral VMs. You can use a prerun script to reach this initial state automatically.
 
 ## Instruct TestDriver
 
@@ -135,10 +123,6 @@ Feel free to ask TestDriver to perform some more tasks. Every time you prompt Te
 > click check in
 > select august 8
 ```
-
-## Save the test
-
-If everything worked perfectly, use the `/save` command to save the test script to the current file.
 
 If something didn't work, you can use `/undo` to remove all of the test steps added since the last prompt.
 
