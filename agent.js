@@ -220,13 +220,12 @@ const dieOnFatal = async (error) => {
   log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
   await summarize(error.message);
   return await exit(true);
-}
+};
 
 // creates a new "thread" in which the AI is given an error
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
 const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
-
   if (thisCommand == "run" || error.fatal) {
     return await dieOnFatal(error);
   }
@@ -271,10 +270,12 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   const mdStream = log.createMarkdownStreamLogger();
 
-  let response = await sdk.req("error", {
-    description: eMessage,
-    markdown,
-    image,
+  let response = await sdk.req(
+    "error",
+    {
+      description: eMessage,
+      markdown,
+      image,
     },
     (chunk) => {
       if (chunk.type === "data") {
@@ -506,7 +507,6 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
       image: lastScreenshot,
     },
     (chunk) => {
-
       if (chunk.type === "data") {
         mdStream.log(chunk.data);
       }
@@ -558,6 +558,8 @@ const generate = async (type, count) => {
       sanitizeFilename(testPrompt.headings[0])
         .trim()
         .replace(/ /g, "-")
+        .replace(/['"`]/g, "")
+        .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
         .toLowerCase() + ".md";
     let path1 = path.join(process.cwd(), "testdriver", "generate", fileName);
 
@@ -739,7 +741,6 @@ New commands will be appended.
 };
 
 let setTerminalWindowTransparency = async (hide) => {
-
   if (hide) {
     try {
       http
@@ -765,7 +766,6 @@ let setTerminalWindowTransparency = async (hide) => {
   if (!config.TD_MINIMIZE) {
     return;
   }
-
 
   try {
     if (hide) {
@@ -952,7 +952,6 @@ const promptUser = () => {
 };
 
 const setTerminalApp = async (win) => {
-
   if (terminalApp) return;
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
@@ -1014,7 +1013,6 @@ const embed = async (file, depth) => {
 };
 
 const start = async () => {
-  
   // console.log(await  system.getPrimaryDisplay());
 
   // @todo add-auth
@@ -1058,7 +1056,6 @@ const start = async () => {
     console.log("");
   }
 
-
   // should be start of new session
   const sessionRes = await sdk.req("session/start", {
     systemInformationOsInfo: await system.getSystemInformationOsInfo(),
@@ -1096,5 +1093,5 @@ process.on("unhandledRejection", async (reason, promise) => {
 
 module.exports = {
   setTerminalApp,
-  start
+  start,
 };
