@@ -12,7 +12,7 @@ jobs:
       - name: Trigger workflow in Testdriver Dev
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.TESTDRIVER_DEV_TOKEN }}
           repository: testdriverai/testdriver-dev
           event-type: trigger-from-client
           client-payload: '{"pr_number": "${{ github.event.pull_request.number }}", "pr_sha": "${{ github.event.pull_request.head.sha }}", "api_ref": "main"}'
