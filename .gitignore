@@ -143,6 +143,9 @@ dist
 
 # Optional stylelint cache
 
+# Test file for Tarun to play with
+test.js
+
 # SvelteKit build / generate output
 .svelte-kit
 

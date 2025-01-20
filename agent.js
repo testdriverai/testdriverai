@@ -834,8 +834,11 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
     return;
   }
 
-  // write reply to /tmp/oiResult.log.log
+
   let regression = await generator.historyToYml(executionHistory);
+  if (process.env.TD_OVERWRITE) {
+    regression = await generator.ymlWithComments(filepath, regression);
+  }
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
@@ -849,8 +852,6 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
 \`\`\`yaml
 ${regression}
 \`\`\``);
-
-    // console.log(csv.join('\n'))
 
     const fileName = filepath.split("/").pop();
     if (!silent) {
