@@ -48,7 +48,6 @@ const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
 const notify = require("./lib/notify.js");
 const { emitter, events } = require("./lib/events.js");
-const { should } = require("chai");
 
 let lastPrompt = "";
 let terminalApp = "";
