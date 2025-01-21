@@ -887,6 +887,9 @@ let run = async (file, overwrite = false, shouldExit = true) => {
     await exit(true);
   }
 
+  // Inject environment variables into any ${VAR} strings
+  yml = parser.interpolate(yml, process.env);
+
   let ymlObj = null;
   try {
     ymlObj = await yaml.load(yml);
