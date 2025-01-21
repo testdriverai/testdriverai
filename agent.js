@@ -1073,7 +1073,8 @@ const start = async () => {
     errorLimit = 100;
     run(thisFile);
   } else if (thisCommand == "init") {
-    init();
+    await init();
+    process.exit(0);
   }
 };
 
