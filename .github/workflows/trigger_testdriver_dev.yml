@@ -1,0 +1,21 @@
+name: Trigger Testdriver Dev Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  API_REF: main
+
+jobs:
+  trigger-testdriver-dev:
+    name: Trigger testdriver-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger workflow in Testdriver Dev
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.TESTDRIVER_DEV_TOKEN }}
+          repository: testdriverai/testdriver-dev
+          event-type: trigger-from-client
+          client-payload: '{"pr_number": "${{ github.event.pull_request.number }}", "pr_sha": "${{ github.event.pull_request.head.sha }}", "api_ref": "${{ env.API_REF }}"}'
