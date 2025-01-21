@@ -1077,7 +1077,7 @@ const start = async () => {
     run(thisFile);
   } else if (thisCommand == "init") {
     await init();
-   process.exit(0);
+    process.exit(0);
   }
 };
 
