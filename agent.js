@@ -691,7 +691,7 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/manual") == 0) {
       await manualInput(commands.slice(1).join(" "));
     } else if (input.indexOf("/run") == 0) {
-      await run(commands[1], commands[2], commands[3]);
+      await run(commands[1], commands[2] == "true", commands[3] == "true");
     } else if (input.indexOf("/generate") == 0) {
       await generate(commands[1], commands[2]);
     } else {
@@ -934,13 +934,17 @@ ${yaml.dump(step)}
     await actOnMarkdown(markdown, 0, true);
   }
 
+<<<<<<< Updated upstream
   if (overwrite || overwrite == "true") {
+=======
+  if (shouldSave) {
+>>>>>>> Stashed changes
     await save({ filepath: file });
   }
 
   setTerminalWindowTransparency(false);
 
-  if (shouldExit || shouldExit == "true") {
+  if (shouldExit) {
     await summarize();
     await exit(false);
   }
