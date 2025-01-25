@@ -1,8 +1,8 @@
 name: Trigger Testdriver Dev Workflow
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+#
+# on:
+#   pull_request:
+#     types: [opened, synchronize, reopened]
 
 env:
   API_REF: main
