@@ -934,11 +934,7 @@ ${yaml.dump(step)}
     await actOnMarkdown(markdown, 0, true);
   }
 
-<<<<<<< Updated upstream
-  if (overwrite || overwrite == "true") {
-=======
   if (shouldSave) {
->>>>>>> Stashed changes
     await save({ filepath: file });
   }
 
