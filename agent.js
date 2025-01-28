@@ -868,6 +868,7 @@ ${regression}
 let run = async (file, shouldSave = false, shouldExit = true) => {
 
   setTerminalWindowTransparency(true);
+  emitter.emit(events.interactive, false);
 
   log.log("info", chalk.cyan(`running ${file}...`));
 
@@ -942,6 +943,7 @@ ${yaml.dump(step)}
   }
 
   setTerminalWindowTransparency(false);
+  emitter.emit(events.interactive, true);
 
   if (shouldExit || shouldExit == "true") {
     await summarize();
