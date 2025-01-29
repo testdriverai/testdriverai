@@ -1,6 +1,6 @@
-const ipc = require("node-ipc").default;
-const { app, screen, BrowserWindow } = require("electron");
-const { eventsArray } = require("../lib/events.js");
+import { default as ipc } from 'node-ipc';
+import { app, screen, BrowserWindow } from 'electron';
+import { eventsArray } from '../lib/events.js';
 
 ipc.config.id = "testdriverai_overlay";
 ipc.config.retry = 1500;
