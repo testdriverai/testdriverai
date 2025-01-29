@@ -202,8 +202,11 @@ if (!commandHistory.length) {
   ];
 }
 
-const exit = async (failed = true) => {
-  await save();
+const exit = async (failed = true, shouldSave = false) => {
+  
+  if (shouldSave) {
+    await save();
+  }
 
   analytics.track("exit", { failed });
 
@@ -641,6 +644,16 @@ const actOnMarkdown = async (content, depth, pushToHistory = false) => {
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
+
+  // should be start of new session
+  const sessionRes = await sdk.req("session/start", {
+    systemInformationOsInfo: await system.getSystemInformationOsInfo(),
+    mousePosition: await system.getMousePosition(),
+    activeWindow: await system.activeWin(),
+  });
+
+  session.set(sessionRes.data.id);
+
   // readline is what allows us to get user input
   rl = readline.createInterface({
     terminal: true,
@@ -681,7 +694,7 @@ const firstPrompt = async () => {
     if (input.indexOf("/summarize") == 0) {
       await summarize();
     } else if (input.indexOf("/quit") == 0) {
-      await exit();
+      await exit(false, true);
     } else if (input.indexOf("/save") == 0) {
       await save({ filepath: commands[1] });
     } else if (input.indexOf("/undo") == 0) {
@@ -705,7 +718,7 @@ const firstPrompt = async () => {
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
     analytics.track("load");
-    let object = await generator.ymlToHistory(
+    let object = await generator.hydrateFromYML(
       fs.readFileSync(thisFile, "utf-8"),
     );
 
@@ -835,7 +848,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
   }
 
   // write reply to /tmp/oiResult.log.log
-  let regression = await generator.historyToYml(executionHistory);
+  let regression = await generator.dumpToYML(executionHistory);
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
@@ -865,6 +878,7 @@ ${regression}
 let run = async (file, shouldSave = false, shouldExit = true) => {
 
   setTerminalWindowTransparency(true);
+  emitter.emit(events.interactive, false);
 
   log.log("info", chalk.cyan(`running ${file}...`));
 
@@ -939,6 +953,7 @@ ${yaml.dump(step)}
   }
 
   setTerminalWindowTransparency(false);
+  emitter.emit(events.interactive, true);
 
   if (shouldExit) {
     await summarize();
@@ -1055,15 +1070,6 @@ const start = async () => {
     );
     console.log("");
   }
-
-  // should be start of new session
-  const sessionRes = await sdk.req("session/start", {
-    systemInformationOsInfo: await system.getSystemInformationOsInfo(),
-    mousePosition: await system.getMousePosition(),
-    activeWindow: await system.activeWin(),
-  });
-
-  session.set(sessionRes.data);
 
   analytics.track("command", { command: thisCommand, file: thisFile });
 
