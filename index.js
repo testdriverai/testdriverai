@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-const config = require("./lib/config.js");
-const system = require("./lib/system.js");
-const { emitter, events } = require("./lib/events.js");
+import config from "./lib/config.js";
+import system from "./lib/system.js";
+import { emitter, events } from "./lib/events.js";
 
 (async () => {
 
   let win = await system.activeWin();
 
   if (!config.TD_OVERLAY) {
-    let agent = require("./agent.js");
+    let agent = await import("./agent.js");
     agent.setTerminalApp(win);
     agent.start();
   } else {
@@ -33,9 +33,10 @@ const { emitter, events } = require("./lib/events.js");
       originalStderrWrite(...args);
     };
   
-    require("./lib/overlay.js")
-      .electronProcessPromise.then(() => {
-        let agent = require("./agent.js");
+    const overlay = await import("./lib/overlay.js");
+    overlay.electronProcessPromise
+      .then(() => {
+        let agent = import("./agent.js");
         agent.setTerminalApp(win);
         agent.start();
       })

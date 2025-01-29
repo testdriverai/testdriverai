@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 
-const os = require("os");
+import os from 'os';
+import fs from 'fs';
+import readline from 'readline';
+import http from 'http';
+import path from 'path';
+import chalk from 'chalk';
+import yaml from 'js-yaml';
+import sanitizeFilename from 'sanitize-filename';
+import macScreenPerms from 'mac-screen-capture-permissions';
 
 // Get the current process ID
 const pid = process.pid;
@@ -16,38 +24,24 @@ try {
 // disable depreciation warnings
 process.removeAllListeners("warning");
 
-// package.json is included to get the version number
-const package = require("./package.json");
-
-const fs = require("fs");
-const readline = require("readline");
-const http = require("http");
-
-// third party modules
-const path = require("path");
-const chalk = require("chalk");
-const yaml = require("js-yaml");
-const sanitizeFilename = require("sanitize-filename");
-const macScreenPerms = require("mac-screen-capture-permissions");
-
 // local modules
-const speak = require("./lib/speak.js");
-const analytics = require("./lib/analytics.js");
-const log = require("./lib/logger.js");
-const parser = require("./lib/parser.js");
-const commander = require("./lib/commander.js");
-const system = require("./lib/system.js");
-const generator = require("./lib/generator.js");
-const sdk = require("./lib/sdk.js");
-const commands = require("./lib/commands.js");
-const init = require("./lib/init.js");
-const config = require("./lib/config.js");
-
-const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
-const isValidVersion = require("./lib/valid-version.js");
-const session = require("./lib/session.js");
-const notify = require("./lib/notify.js");
-const { emitter, events } = require("./lib/events.js");
+import speak from './lib/speak.js';
+import analytics from './lib/analytics.js';
+import log from './lib/logger.js';
+import parser from './lib/parser.js';
+import commander from './lib/commander.js';
+import system from './lib/system.js';
+import generator from './lib/generator.js';
+import sdk from './lib/sdk.js';
+import commands from './lib/commands.js';
+import init from './lib/init.js';
+import config from './lib/config.js';
+import { showTerminal, hideTerminal } from './lib/focus-application.js';
+import isValidVersion from './lib/valid-version.js';
+import session from './lib/session.js';
+import notify from './lib/notify.js';
+import { emitter, events } from './lib/events.js';
+import packageJson from './package.json';
 
 let lastPrompt = "";
 let terminalApp = "";
@@ -123,7 +117,7 @@ let a = getArgs();
 const thisFile = a.file;
 const thisCommand = a.command;
 
-log.log("info", chalk.green(`Howdy! I'm TestDriver v${package.version}`));
+log.log("info", chalk.green(`Howdy! I'm TestDriver v${packageJson.version}`));
 log.log("info", chalk.dim(`Working on ${thisFile}`));
 console.log("");
 log.log("info", chalk.yellow(`This is beta software!`));
@@ -918,7 +912,7 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
     if (!valid) {
       log.log("error", "Version mismatch. Please try again.");
       console.log(
-        `Version mismatch: ${file}. Trying to run a test with v${ymlObj.version} test when this package is v${package.version}.`,
+        `Version mismatch: ${file}. Trying to run a test with v${ymlObj.version} test when this package is v${packageJson.version}.`,
       );
 
       await summarize("Version mismatch");
@@ -966,7 +960,7 @@ const promptUser = () => {
   rl.prompt(true);
 };
 
-const setTerminalApp = async (win) => {
+export const setTerminalApp = async (win) => {
   if (terminalApp) return;
   if (process.platform === "win32") {
     terminalApp = win?.title || "";
@@ -1027,7 +1021,7 @@ const embed = async (file, depth) => {
   log.log("info", `${file} (end)`);
 };
 
-const start = async () => {
+export const start = async () => {
   // console.log(await  system.getPrimaryDisplay());
 
   // @todo add-auth
@@ -1059,7 +1053,7 @@ const start = async () => {
   }
 
   if (thisCommand !== "run") {
-    speak("Howdy! I am TestDriver version " + package.version);
+    speak("Howdy! I am TestDriver version " + packageJson.version);
 
     console.log(
       chalk.red("Warning!") +
@@ -1097,8 +1091,3 @@ process.on("unhandledRejection", async (reason, promise) => {
   // Optionally, you might want to exit the process
   await exit(true);
 });
-
-module.exports = {
-  setTerminalApp,
-  start,
-};
