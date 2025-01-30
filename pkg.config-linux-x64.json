@@ -1,0 +1,6 @@
+{
+  "pkg": {
+    "targets": ["node20-linux-x64"],
+    "assets": ["node_modules/sharp/build/Release/*"]
+  }
+}

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");

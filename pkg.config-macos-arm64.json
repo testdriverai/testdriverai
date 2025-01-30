@@ -1,0 +1,5 @@
+{
+  "pkg": {
+    "targets": ["node20-macos-arm64"]
+  }
+}
