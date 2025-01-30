@@ -1,0 +1,5 @@
+{
+  "pkg": {
+    "targets": ["node22-macos-arm64"]
+  }
+}
