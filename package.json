@@ -37,7 +37,7 @@
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
-    "rimraf": "^5.0.5",
+    "rimraf": "^6.0.1",
     "robotjs": "^0.6.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
@@ -58,7 +58,7 @@
     "globals": "^15.9.0",
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
-    "node-gyp": "^10.1.0",
+    "gi": "^10.1.0",
     "prettier": "3.3.3"
   },
   "optionalDependencies": {
