@@ -41,13 +41,13 @@
     "robotjs": "^0.6.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
-    "screenshot-desktop": "^1.15.0",
     "semver": "^7.6.2",
     "sharp": "^0.33.5",
     "systeminformation": "^5.23.5",
     "tmp": "^0.2.3",
     "uuid": "^10.0.0",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "node-screenshots": "0.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
