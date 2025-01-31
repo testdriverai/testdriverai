@@ -1,5 +1,5 @@
 const globals = require("globals");
-const pluginJs = require("@eslint/js");
+const pluginJs = require("@eslint/injs");
 
 module.exports = [
   pluginJs.configs.recommended,
