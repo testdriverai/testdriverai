@@ -898,8 +898,10 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
     await exit(true);
   }
 
+  let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
+
   // Inject environment variables into any ${VAR} strings
-  yml = parser.interpolate(yml, process.env);
+  yml = parser.interpolate(yml, interpolationVars);
 
   let ymlObj = null;
   try {
