@@ -36,7 +36,6 @@
     "node-ipc": "^12.0.0",
     "node-notifier": "^10.0.1",
     "node-screenshots": "0.2.1",
-    "node-screenshots-win32-x64-msvc": "^0.2.1",
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
