@@ -1,0 +1,72 @@
+name: Build Binaries
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-14, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-14
+            node_version: '20.11.1'
+            build_command: npm run build-mac-dev
+            binary_name: entry-macos
+            pkg_config: pkg.config-macos-arm64.json
+
+          - os: windows-latest
+            node_version: '20.11.1'
+            build_command: npm run build-win-dev
+            binary_name: entry-windows.exe
+            pkg_config: pkg.config-windows-x64.json
+            install_dependencies: |
+              npm config set msvs_version 2022
+              npm install --global windows-build-tools
+              npm install
+              cd node_modules/sharp
+              node-gyp configure
+              node-gyp build
+              cd ../..
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+
+      - name: Install OS-specific dependencies
+        run: ${{ matrix.install_dependencies || 'echo "No extra dependencies required"' }}
+        shell: bash
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Bundle with esbuild
+        run: node build.mjs
+
+      - name: Verify bundled file
+        run: node entrypoint.js
+
+      - name: Install pkg
+        run: npm install -g @yao-pkg/pkg
+
+      - name: Build binary
+        run: ${{ matrix.build_command }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary_name }}
+          path: ./entry*
