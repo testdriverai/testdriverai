@@ -11,7 +11,8 @@
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
-    "test": "mocha test/*"
+    "test": "mocha test/*",
+    "preinstall": "node -e \"process.platform === 'win32' || process.exit(1)\" && npm install node-screenshots-win32-x64-msvc"
   },
   "author": "",
   "license": "ISC",
@@ -35,6 +36,7 @@
     "node-ipc": "^12.0.0",
     "node-notifier": "^10.0.1",
     "node-screenshots": "0.2.1",
+    "node-screenshots-win32-x64-msvc": "^0.2.1",
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
