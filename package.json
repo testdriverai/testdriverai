@@ -11,7 +11,10 @@
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
-    "test": "mocha test/*"
+    "test": "mocha test/*",
+    "build-mac-dev": "pkg -d -c pkg.config-macos-arm64.json entrypoint.js",
+    "build-linux-dev": "pkg -d -c pkg.config-linux-x64.json entrypoint.js",
+    "build-win-dev": "pkg -d -c pkg.config-windows-x64.json entrypoint.js"
   },
   "author": "",
   "license": "ISC",
