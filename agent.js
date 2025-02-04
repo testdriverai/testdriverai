@@ -912,6 +912,10 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   // Inject environment variables into any ${VAR} strings
   yml = parser.interpolate(yml, process.env);
 
+  // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
+  yml = parser.interpolate(yml, interpolationVars);
+
+
   let ymlObj = null;
   try {
     ymlObj = await yaml.load(yml);
