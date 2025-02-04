@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "4.1.57",
+  "version": "4.2.2",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -15,9 +15,6 @@
     "build-mac-dev": "pkg -d -c pkg.config-macos-arm64.json entrypoint.js",
     "build-linux-dev": "pkg -d -c pkg.config-linux-x64.json entrypoint.js",
     "build-win-dev": "pkg -d -c pkg.config-windows-x64.json entrypoint.js"
-  },
-  "volta": {
-    "node": "20.11.1"
   },
   "author": "",
   "license": "ISC",
