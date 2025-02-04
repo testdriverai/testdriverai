@@ -46,7 +46,7 @@
     "sharp": "^0.33.5",
     "systeminformation": "^5.23.5",
     "tmp": "^0.2.3",
-    "uuid": "^10.0.0",
+    "uuid": "^11.0.5",
     "winston": "^3.13.0"
   },
   "overrides": {
