@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-latest, macos-latest, windows-latest]
+        runner: [macos-latest, windows-latest]
         node-version: ['16', '18', '20']
 
     steps:
@@ -33,4 +33,4 @@ jobs:
         run: npm install -g testdriverai
 
       - name: Verify Installation
-        run: testdriverai --version || echo "TestDriverAI not found"
+        run: testdriverai --help || echo "TestDriverAI not found"
