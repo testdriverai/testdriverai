@@ -1,5 +1,5 @@
 {
   "pkg": {
-    "targets": ["node22-macos-arm64"]
+    "targets": ["node20-macos-arm64"]
   }
 }
