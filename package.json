@@ -11,8 +11,7 @@
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
-    "test": "mocha test/*",
-    "preinstall": "node -e \"process.platform === 'win32' || process.exit(1)\" && npm install node-screenshots-win32-x64-msvc"
+    "test": "mocha test/*"
   },
   "author": "",
   "license": "ISC",
