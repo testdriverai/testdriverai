@@ -901,6 +901,9 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
 
   // Inject environment variables into any ${VAR} strings
+  yml = parser.interpolate(yml, process.env);
+
+  // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
   yml = parser.interpolate(yml, interpolationVars);
 
   let ymlObj = null;
