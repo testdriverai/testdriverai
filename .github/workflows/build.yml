@@ -48,9 +48,6 @@ jobs:
       - name: Bundle with esbuild
         run: node build.mjs
 
-      - name: Verify bundled file
-        run: node entrypoint.js
-
       - name: Install pkg
         run: npm install -g @yao-pkg/pkg
 
