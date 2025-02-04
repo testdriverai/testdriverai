@@ -26,14 +26,14 @@ jobs:
             build_command: npm run build-win-dev
             binary_name: entry-windows.exe
             pkg_config: pkg.config-windows-x64.json
-            install_dependencies: |
-              npm config set msvs_version 2022
-              npm install --global windows-build-tools
-              npm install
-              cd node_modules/sharp
-              node-gyp configure
-              node-gyp build
-              cd ../..
+            # install_dependencies: |
+            #   # npm config set msvs_version 2022
+            #   # npm install --global windows-build-tools
+            #   # npm install
+            #   # cd node_modules/sharp
+            #   # node-gyp configure
+            #   # node-gyp build
+            #   # cd ../..
 
     runs-on: ${{ matrix.os }}
 
