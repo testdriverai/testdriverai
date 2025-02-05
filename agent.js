@@ -243,7 +243,6 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   logger.debug("%j",  error);
   logger.debug("%s", error.stack);
-  }
 
   log.prettyMarkdown(eMessage);
 
