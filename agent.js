@@ -764,7 +764,7 @@ let setTerminalWindowTransparency = async (hide) => {
         .end();
     } catch (e) {
       // Suppress error
-      logging.error("Caught exception:", e);
+      logger.error("Caught exception:", e);
     }
   } else {
     try {
@@ -774,7 +774,7 @@ let setTerminalWindowTransparency = async (hide) => {
         .end();
     } catch (e) {
       // Suppress error
-      logging.error("Caught exception:", e);
+      logger.error("Caught exception:", e);
     }
   }
 
@@ -794,7 +794,7 @@ let setTerminalWindowTransparency = async (hide) => {
     }
   } catch (e) {
     // Suppress error
-    logging.error("Caught exception:", e);
+    logger.error("Caught exception:", e);
   }
 };
 
@@ -1088,14 +1088,14 @@ const start = async () => {
 
 process.on("uncaughtException", async (err) => {
   analytics.track("uncaughtException", { err });
-  logging.error("Uncaught Exception:", err);
+  logger.error("Uncaught Exception:", err);
   // You might want to exit the process after handling the error
   await exit(true);
 });
 
 process.on("unhandledRejection", async (reason, promise) => {
   analytics.track("unhandledRejection", { reason, promise });
-  logging.error("Unhandled Rejection at:", promise, "reason:", reason);
+  logger.error("Unhandled Rejection at:", promise, "reason:", reason);
   // Optionally, you might want to exit the process
   await exit(true);
 });
