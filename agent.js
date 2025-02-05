@@ -161,7 +161,7 @@ function fileCompleter(line) {
 
     return [matches.length ? matches : files, partial];
   } catch (e) {
-    logger.info(e);
+    logger.info("%s", e);
     return [[], partial];
   }
 }
@@ -242,7 +242,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
   logger.error(eMessage);
 
   logger.debug("%j",  error);
-  logger.debug(error.stack);
+  logger.debug("%s", error.stack);
   }
 
   log.prettyMarkdown(eMessage);
@@ -250,7 +250,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
   // if we get the same error 3 times in `run` mode, we exit
   if (errorCounts[safeKey] > errorLimit - 1) {
     logger.info(chalk.red("Error loop detected. Exiting."));
-    logger.info(eMessage);
+    logger.info("%s", eMessage);
     await summarize(eMessage);
     return await exit(true);
   }
@@ -399,7 +399,7 @@ const executeCommands = async (commands, depth, pushToHistory = false) => {
 const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
   depth = depth + 1;
 
-  logger.debug({ message: "execute code blocks", depth });
+  logger.debug("%j", { message: "execute code blocks", depth });
 
   for (const codeblock of codeblocks) {
     let commands;
@@ -525,7 +525,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
 };
 
 const generate = async (type, count) => {
-  logger.debug("generate called", type);
+  logger.debug("generate called, %s", type);
 
   speak("thinking...");
   notify("thinking...");
@@ -620,7 +620,7 @@ ${yml}
 
 // this function is responsible for starting the recursive process of executing codeblocks
 const actOnMarkdown = async (content, depth, pushToHistory = false) => {
-  logger.debug({
+  logger.debug("%j", {
     message: "actOnMarkdown called",
     depth,
   });
@@ -762,7 +762,7 @@ let setTerminalWindowTransparency = async (hide) => {
         .end();
     } catch (e) {
       // Suppress error
-      logger.error("Caught exception:", e);
+      logger.error("Caught exception: %s", e);
     }
   } else {
     try {
@@ -792,7 +792,7 @@ let setTerminalWindowTransparency = async (hide) => {
     }
   } catch (e) {
     // Suppress error
-    logger.error("Caught exception:", e);
+    logger.error("Caught exception: %s", e);
   }
 };
 
@@ -853,7 +853,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
     logger.error(e.message);
-    logger.error(e);
+    logger.error("%s", e);
   }
 
   if (!silent) {
@@ -909,7 +909,7 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   try {
     ymlObj = await yaml.load(yml);
   } catch (e) {
-    logger.error(e);
+    logger.error("%s", e);
     logger.error(`Invalid YAML: ${file}`);
 
     await summarize("Invalid YAML");
@@ -1086,14 +1086,14 @@ const start = async () => {
 
 process.on("uncaughtException", async (err) => {
   analytics.track("uncaughtException", { err });
-  logger.error("Uncaught Exception:", err);
+  logger.error("Uncaught Exception: %s", err);
   // You might want to exit the process after handling the error
   await exit(true);
 });
 
 process.on("unhandledRejection", async (reason, promise) => {
   analytics.track("unhandledRejection", { reason, promise });
-  logger.error("Unhandled Rejection at:", promise, "reason:", reason);
+  logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
   // Optionally, you might want to exit the process
   await exit(true);
 });

@@ -41,7 +41,7 @@ const { logger } = require("./lib/logger.js");
         agent.start();
       })
       .catch((err) => {
-        logger.error(err);
+        logger.error("%s", err);
         process.exit(1);
       });
   }
