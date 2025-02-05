@@ -221,8 +221,7 @@ const exit = async (failed = true, shouldSave = false) => {
 };
 
 const dieOnFatal = async (error) => {
-  logger.info("");
-  logger.info(chalk.red("Fatal Error") + `\n${error.message}`);
+  logger.error(chalk.red("Fatal Error") + `\n${error.message}`);
   await summarize(error.message);
   return await exit(true);
 };
@@ -240,11 +239,10 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
-  logger.debug(eMessage);
+  logger.error(eMessage);
 
-  if (process.env["DEV"]) {
-    logger.info(error, eMessage);
-    logger.info(error.stack);
+  logger.debug("%j",  error);
+  logger.debug(error.stack);
   }
 
   log.prettyMarkdown(eMessage);
