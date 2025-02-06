@@ -49,6 +49,8 @@ const session = require("./lib/session.js");
 const notify = require("./lib/notify.js");
 const { emitter, events } = require("./lib/events.js");
 
+const logger = log.logger;
+
 let lastPrompt = "";
 let terminalApp = "";
 let commandHistory = [];
@@ -84,7 +86,7 @@ let getArgs = () => {
     args[file] == "--help" ||
     args[file] == "-h"
   ) {
-    console.log("Command: testdriverai [init, run, edit] [yaml filepath]");
+    logger.info("Command: testdriverai [init, run, edit] [yaml filepath]");
     process.exit(0);
   }
 
@@ -123,13 +125,13 @@ let a = getArgs();
 const thisFile = a.file;
 const thisCommand = a.command;
 
-log.log("info", chalk.green(`Howdy! I'm TestDriver v${package.version}`));
-log.log("info", chalk.dim(`Working on ${thisFile}`));
-console.log("");
-log.log("info", chalk.yellow(`This is beta software!`));
-log.log("info", `Join our Discord for help`);
-log.log("info", `https://discord.com/invite/cWDFW8DzPm`);
-console.log("");
+logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
+logger.info(chalk.dim(`Working on ${thisFile}`));
+logger.info("");
+logger.info(chalk.yellow(`This is beta software!`));
+logger.info(`Join our Discord for help`);
+logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+logger.info("");
 
 // individual run ID for this session
 // let runID = new Date().getTime();
@@ -159,7 +161,7 @@ function fileCompleter(line) {
 
     return [matches.length ? matches : files, partial];
   } catch (e) {
-    console.log(e);
+    logger.info("%s", e);
     return [[], partial];
   }
 }
@@ -219,8 +221,7 @@ const exit = async (failed = true, shouldSave = false) => {
 };
 
 const dieOnFatal = async (error) => {
-  console.log("");
-  log.log("info", chalk.red("Fatal Error") + `\n${error.message}`);
+  logger.error(chalk.red("Fatal Error") + `\n${error.message}`);
   await summarize(error.message);
   return await exit(true);
 };
@@ -238,19 +239,17 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
-  log.log("debug", eMessage);
+  logger.error(eMessage);
 
-  if (process.env["DEV"]) {
-    console.log(error, eMessage);
-    console.log(error.stack);
-  }
+  logger.debug("%j",  error);
+  logger.debug("%s", error.stack);
 
   log.prettyMarkdown(eMessage);
 
   // if we get the same error 3 times in `run` mode, we exit
   if (errorCounts[safeKey] > errorLimit - 1) {
-    console.log(chalk.red("Error loop detected. Exiting."));
-    console.log(eMessage);
+    logger.info(chalk.red("Error loop detected. Exiting."));
+    logger.info("%s", eMessage);
     await summarize(eMessage);
     return await exit(true);
   }
@@ -268,8 +267,8 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   speak("thinking...");
   notify("thinking...");
-  log.log("info", chalk.dim("thinking..."), true);
-  log.log("info", "");
+  logger.info(chalk.dim("thinking..."), true);
+  logger.info("");
 
   const mdStream = log.createMarkdownStreamLogger();
 
@@ -300,14 +299,14 @@ const check = async () => {
   checkCount++;
 
   if (checkCount >= checkLimit) {
-    log.log("info", chalk.red("Exploratory loop detected. Exiting."));
+    logger.info(chalk.red("Exploratory loop detected. Exiting."));
     await summarize("Check loop detected.");
     return await exit(true);
   }
 
-  log.log("info", "");
-  log.log("info", chalk.dim("checking..."), "testdriver");
-  log.log("info", "");
+  logger.info("");
+  logger.info(chalk.dim("checking..."), "testdriver");
+  logger.info("");
 
   let thisScreenshot = await system.captureScreenBase64(1, false, true);
   let images = [lastScreenshot, thisScreenshot];
@@ -342,7 +341,7 @@ const check = async () => {
 const runCommand = async (command, depth) => {
   let yml = await yaml.dump(command);
 
-  log.log("debug", `running command: \n\n${yml}`);
+  logger.debug(`running command: \n\n${yml}`);
 
   try {
     let response;
@@ -378,6 +377,7 @@ let csv = [["command,time"]];
 
 const executeCommands = async (commands, depth, pushToHistory = false) => {
   if (commands?.length) {
+
     for (const command of commands) {
       if (pushToHistory) {
         executionHistory[executionHistory.length - 1]?.commands.push(command);
@@ -386,7 +386,7 @@ const executeCommands = async (commands, depth, pushToHistory = false) => {
       await runCommand(command, depth);
 
       let timeToComplete = (new Date().getTime() - lastCommand) / 1000;
-      // console.log(timeToComplete, 'seconds')
+      // logger.info(timeToComplete, 'seconds')
 
       csv.push([command.command, timeToComplete]);
       lastCommand = new Date().getTime();
@@ -399,7 +399,7 @@ const executeCommands = async (commands, depth, pushToHistory = false) => {
 const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
   depth = depth + 1;
 
-  log.log("debug", { message: "execute code blocks", depth });
+  logger.debug("%j", { message: "execute code blocks", depth });
 
   for (const codeblock of codeblocks) {
     let commands;
@@ -424,13 +424,13 @@ const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
 const aiExecute = async (message, validateAndLoop = false) => {
   executionHistory.push({ prompt: lastPrompt, commands: [] });
 
-  log.log("debug", "kicking off exploratory loop");
+  logger.debug("kicking off exploratory loop");
 
   // kick everything off
   await actOnMarkdown(message, 0, true);
 
   if (validateAndLoop) {
-    log.log("debug", "exploratory loop resolved, check your work");
+    logger.debug("exploratory loop resolved, check your work");
 
     let response = await check();
 
@@ -441,13 +441,13 @@ const aiExecute = async (message, validateAndLoop = false) => {
       return await haveAIResolveError(error, response, 0);
     }
 
-    log.log("debug", `found ${checkCodeblocks.length} codeblocks`);
+    logger.debug(`found ${checkCodeblocks.length} codeblocks`);
 
     if (checkCodeblocks.length > 0) {
-      log.log("debug", "check thinks more needs to be done");
+      logger.debug("check thinks more needs to be done");
       return await aiExecute(response, validateAndLoop);
     } else {
-      log.log("debug", "seems complete, returning");
+      logger.debug("seems complete, returning");
       return response;
     }
   }
@@ -469,8 +469,8 @@ const assert = async (expect) => {
 
   speak("thinking...");
   notify("thinking...");
-  log.log("info", chalk.dim("thinking..."), true);
-  log.log("info", "");
+  logger.info(chalk.dim("thinking..."), true);
+  logger.info("");
 
   let response = `\`\`\`yml
 commands:
@@ -489,14 +489,14 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   lastPrompt = currentTask;
   checkCount = 0;
 
-  log.log("debug", "humanInput called");
+  logger.debug("humanInput called");
 
   tasks.push(currentTask);
 
   speak("thinking...");
   notify("thinking...");
-  log.log("info", chalk.dim("thinking..."), true);
-  log.log("info", "");
+  logger.info(chalk.dim("thinking..."), true);
+  logger.info("");
 
   lastScreenshot = await system.captureScreenBase64();
 
@@ -519,19 +519,19 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
 
   await aiExecute(message.data, validateAndLoop);
 
-  log.log("debug", "showing prompt from humanInput response check");
+  logger.debug("showing prompt from humanInput response check");
 
   await save({ silent: true });
 };
 
 const generate = async (type, count) => {
-  log.log("debug", "generate called", type);
+  logger.debug("generate called, %s", type);
 
   speak("thinking...");
   notify("thinking...");
 
-  log.log("info", chalk.dim("thinking..."), true);
-  log.log("info", "");
+  logger.info(chalk.dim("thinking..."), true);
+  logger.info("");
 
   let image = await system.captureScreenBase64();
   const mdStream = log.createMarkdownStreamLogger();
@@ -583,7 +583,7 @@ const generate = async (type, count) => {
 };
 
 const popFromHistory = async (fullStep) => {
-  log.log("info", chalk.dim("undoing..."), true);
+  logger.info(chalk.dim("undoing..."), true);
 
   if (executionHistory.length) {
     if (fullStep) {
@@ -620,7 +620,7 @@ ${yml}
 
 // this function is responsible for starting the recursive process of executing codeblocks
 const actOnMarkdown = async (content, depth, pushToHistory = false) => {
-  log.log("debug", {
+  logger.debug("%j", {
     message: "actOnMarkdown called",
     depth,
   });
@@ -692,7 +692,7 @@ const firstPrompt = async () => {
 
     analytics.track("input", { input });
 
-    console.log(""); // adds a nice break between submissions
+    logger.info(""); // adds a nice break between submissions
 
     let commands = input.split(" ");
 
@@ -732,8 +732,8 @@ const firstPrompt = async () => {
 
     if (!object?.steps) {
       analytics.track("load invalid yaml");
-      log.log("error", "Invalid YAML. No steps found.");
-      console.log("Invalid YAML: " + thisFile);
+      logger.error("Invalid YAML. No steps found.");
+      logger.info("Invalid YAML: " + thisFile);
       return await exit(true);
     }
 
@@ -748,7 +748,7 @@ const firstPrompt = async () => {
 ${yml}
 \`\`\``;
 
-    log.log("info", `Loaded test script ${thisFile}\n`);
+    logger.info(`Loaded test script ${thisFile}\n`);
 
     log.prettyMarkdown(`
 
@@ -770,7 +770,7 @@ let setTerminalWindowTransparency = async (hide) => {
         .end();
     } catch (e) {
       // Suppress error
-      console.error("Caught exception:", e);
+      logger.error("Caught exception: %s", e);
     }
   } else {
     try {
@@ -780,7 +780,7 @@ let setTerminalWindowTransparency = async (hide) => {
         .end();
     } catch (e) {
       // Suppress error
-      console.error("Caught exception:", e);
+      logger.error("Caught exception:", e);
     }
   }
 
@@ -800,23 +800,23 @@ let setTerminalWindowTransparency = async (hide) => {
     }
   } catch (e) {
     // Suppress error
-    console.error("Caught exception:", e);
+    logger.error("Caught exception: %s", e);
   }
 };
 
 // this function is responsible for summarizing the test script that has already executed
-// it is what is saved to the `/tmp/oiResult.log.log` file and output to the action as a summary
+// it is what is saved to the `/tmp/oiResult.log` file and output to the action as a summary
 let summarize = async (error = null) => {
   analytics.track("summarize");
 
-  log.log("info", "");
+  logger.info("");
 
-  log.log("info", chalk.dim("reviewing test..."), true);
+  logger.info(chalk.dim("reviewing test..."), true);
 
   // let text = prompts.summarize(tasks, error);
   let image = await system.captureScreenBase64();
 
-  log.log("info", chalk.dim("summarizing..."), true);
+  logger.info(chalk.dim("summarizing..."), true);
 
   const mdStream = log.createMarkdownStreamLogger();
   let reply = await sdk.req(
@@ -834,11 +834,11 @@ let summarize = async (error = null) => {
   );
   mdStream.end();
 
-  let resultFile = "/tmp/oiResult.log.log";
+  let resultFile = "/tmp/oiResult.log";
   if (process.platform === "win32") {
-    resultFile = "/Windows/Temp/oiResult.log.log";
+    resultFile = "/Windows/Temp/oiResult.log";
   }
-  // write reply to /tmp/oiResult.log.log
+  // write reply to /tmp/oiResult.log
   fs.writeFileSync(resultFile, reply.data);
 };
 
@@ -848,21 +848,21 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
   analytics.track("save", { silent });
 
   if (!silent) {
-    log.log("info", chalk.dim("saving..."), true);
-    console.log("");
+    logger.info(chalk.dim("saving..."), true);
+    logger.info("");
   }
 
   if (!executionHistory.length) {
     return;
   }
 
-  // write reply to /tmp/oiResult.log.log
+  // write reply to /tmp/oiResult.log
   let regression = await generator.dumpToYML(executionHistory);
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
-    log.log("error", e.message);
-    console.log(e);
+    logger.error(e.message);
+    logger.error("%s", e);
   }
 
   if (!silent) {
@@ -872,11 +872,11 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
 ${regression}
 \`\`\``);
 
-    // console.log(csv.join('\n'))
+    // logger.info(csv.join('\n'))
 
     const fileName = filepath.split("/").pop();
     if (!silent) {
-      log.log("info", chalk.dim(`saved as ${fileName}`));
+      logger.info(chalk.dim(`saved as ${fileName}`));
     }
   }
 };
@@ -891,7 +891,7 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
-  log.log("info", chalk.cyan(`running ${file}...`));
+  logger.info(chalk.cyan(`running ${file}...`));
 
   executionHistory = [];
   let yml;
@@ -900,10 +900,9 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   try {
     yml = fs.readFileSync(file, "utf-8");
   } catch (e) {
-    console.log(e);
-    log.log("error", "File not found. Please try again.");
-    console.log(`File not found: ${file}`);
-    console.log(`Current directory: ${process.cwd()}`);
+    logger.error(e);
+    logger.error(`File not found: ${file}`);
+    logger.error(`Current directory: ${process.cwd()}`);
 
     await summarize("File not found");
     await exit(true);
@@ -922,9 +921,8 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   try {
     ymlObj = await yaml.load(yml);
   } catch (e) {
-    console.log(e);
-    log.log("error", "Invalid YAML. Please try again.");
-    console.log(`Invalid YAML: ${file}`);
+    logger.error("%s", e);
+    logger.error(`Invalid YAML: ${file}`);
 
     await summarize("Invalid YAML");
     await exit(true);
@@ -933,8 +931,7 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   if (ymlObj.version) {
     let valid = isValidVersion(ymlObj.version);
     if (!valid) {
-      log.log("error", "Version mismatch. Please try again.");
-      console.log(
+      logger.error(
         `Version mismatch: ${file}. Trying to run a test with v${ymlObj.version} test when this package is v${package.version}.`,
       );
 
@@ -946,8 +943,8 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
   executionHistory = [];
 
   for (const step of ymlObj.steps) {
-    log.log("info", ``, null);
-    log.log("info", chalk.yellow(`${step.prompt || "no prompt"}`), null);
+    logger.info(``, null);
+    logger.info(chalk.yellow(`${step.prompt || "no prompt"}`), null);
 
     executionHistory.push({
       prompt: step.prompt,
@@ -958,8 +955,8 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
 ${yaml.dump(step)}
 \`\`\``;
 
-    log.log("debug", markdown);
-    log.log("debug", "load calling actOnMarkdown");
+    logger.debug(markdown);
+    logger.debug("load calling actOnMarkdown");
 
     lastPrompt = step.prompt;
     await actOnMarkdown(markdown, 0, true);
@@ -995,7 +992,7 @@ const setTerminalApp = async (win) => {
 const iffy = async (condition, then, otherwise, depth) => {
   analytics.track("if", { condition });
 
-  log.log("info", generator.jsonToManual({ command: "if", condition }));
+  logger.info(generator.jsonToManual({ command: "if", condition }));
 
   let response = await commands.assert(condition);
 
@@ -1011,11 +1008,11 @@ const iffy = async (condition, then, otherwise, depth) => {
 const embed = async (file, depth) => {
   analytics.track("embed", { file });
 
-  log.log("info", generator.jsonToManual({ command: "embed", file }));
+  logger.info(generator.jsonToManual({ command: "embed", file }));
 
   depth = depth + 1;
 
-  log.log("info", `${file} (start)`);
+  logger.info(`${file} (start)`);
 
   // get the current wowrking directory where this file is being executed
   let cwd = process.cwd();
@@ -1041,17 +1038,17 @@ const embed = async (file, depth) => {
     await executeCommands(step.commands, depth);
   }
 
-  log.log("info", `${file} (end)`);
+  logger.info(`${file} (end)`);
 };
 
 const start = async () => {
-  // console.log(await  system.getPrimaryDisplay());
+  // logger.info(await  system.getPrimaryDisplay());
 
   // @todo add-auth
   // if (!process.env.DASHCAM_API_KEY) {
-  //   log.log('info', chalk.red(`You must supply an API key`), 'system')
-  //   log.log('info', `Supply your API key with the \`DASHCAM_API_KEY\` environment variable.`, 'system');
-  //   log.log('info', 'You can get a key in the Dashcam Discord server: https://discord.com/invite/cWDFW8DzPm', 'system')
+  //   log('info', chalk.red(`You must supply an API key`), 'system')
+  //   log('info', `Supply your API key with the \`DASHCAM_API_KEY\` environment variable.`, 'system');
+  //   log('info', 'You can get a key in the Dashcam Discord server: https://discord.com/invite/cWDFW8DzPm', 'system')
   //   process.exit();
   // }
 
@@ -1062,13 +1059,11 @@ const start = async () => {
     process.platform === "darwin" &&
     !macScreenPerms.hasScreenCapturePermission()
   ) {
-    log.log("info", chalk.red("Screen capture permissions not enabled."));
-    log.log(
-      "info",
+    logger.info(chalk.red("Screen capture permissions not enabled."));
+    logger.info(
       "You must enable screen capture permissions for the application calling `testdriverai`.",
     );
-    log.log(
-      "info",
+    logger.info(
       "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
     );
     analytics.track("noMacPermissions");
@@ -1078,14 +1073,14 @@ const start = async () => {
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
 
-    console.log(
+    logger.info(
       chalk.red("Warning!") +
         chalk.dim(" TestDriver sends screenshots of the desktop to our API."),
     );
-    console.log(
+    logger.info(
       chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
     );
-    console.log("");
+    logger.info("");
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
@@ -1103,14 +1098,14 @@ const start = async () => {
 
 process.on("uncaughtException", async (err) => {
   analytics.track("uncaughtException", { err });
-  console.error("Uncaught Exception:", err);
+  logger.error("Uncaught Exception: %s", err);
   // You might want to exit the process after handling the error
   await exit(true);
 });
 
 process.on("unhandledRejection", async (reason, promise) => {
   analytics.track("unhandledRejection", { reason, promise });
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
   // Optionally, you might want to exit the process
   await exit(true);
 });
