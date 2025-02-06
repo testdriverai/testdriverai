@@ -1,0 +1,28 @@
+
+name: Example Todo App
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: testdriverai/action@alexrowe/yml-interpolation-test
+        with:
+          os: windows
+          branch: alexrowe/yml-interpolation
+          key: ${{secrets.TESTDRIVER_API_KEY}}
+          prompt: |
+            1. /run test.yml
+          prerun: |
+            Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${{ env.WEBSITE_URL }}"
+          version: test
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBSITE_URL: "https://kzmgtp9k2gtuuw2iquk2.lite.vusercontent.net/"
+          TD_PASSWORD: "passW0rd!"
