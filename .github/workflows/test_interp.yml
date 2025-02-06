@@ -1,0 +1,27 @@
+
+name: Test Interp
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: testdriverai/action@main
+        with:
+          os: windows
+          branch: main
+          key: ${{secrets.TESTDRIVER_API_KEY}}
+          prompt: |
+            1. /run test.yml
+          prerun: |
+            Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${{ env.WEBSITE_URL }}"
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBSITE_URL: "https://kzmgtp9k2gtuuw2iquk2.lite.vusercontent.net/"
+          TD_PASSWORD: "passW0rd!"
