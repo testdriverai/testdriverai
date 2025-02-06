@@ -10,7 +10,7 @@ jobs:
         with:
           node-version: 20
       - name: npm install
-        run: npm install --only=dev --ignore-scripts
+        run: npm install -D --ignore-scripts
       - name: Run ESLint
         run: npx eslint
       - name: Run Prettier
