@@ -377,6 +377,9 @@ let csv = [["command,time"]];
 
 const executeCommands = async (commands, depth, pushToHistory = false) => {
   if (commands?.length) {
+
+    logger.info("");
+
     for (const command of commands) {
       if (pushToHistory) {
         executionHistory[executionHistory.length - 1]?.commands.push(command);
