@@ -1,5 +1,5 @@
 
-name: Example Todo App
+name: Test Interp
 
 on:
   push:
@@ -11,16 +11,15 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: testdriverai/action@alexrowe/yml-interpolation-test
+      - uses: testdriverai/action@main
         with:
           os: windows
-          branch: alexrowe/yml-interpolation
+          branch: main
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
             1. /run test.yml
           prerun: |
             Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${{ env.WEBSITE_URL }}"
-          version: test
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
