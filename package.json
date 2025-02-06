@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "4.2.2",
+  "version": "4.2.9",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -11,8 +11,7 @@
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
-    "test": "mocha test/*",
-    "preinstall": "node -e \"process.platform === 'win32' || process.exit(1)\" && npm install node-screenshots-win32-x64-msvc"
+    "test": "mocha test/*"
   },
   "author": "",
   "license": "ISC",
@@ -36,13 +35,13 @@
     "node-ipc": "^12.0.0",
     "node-notifier": "^10.0.1",
     "node-screenshots": "0.2.1",
-    "node-screenshots-win32-x64-msvc": "^0.2.1",
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
     "robotjs": "^0.6.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
+    "screenshot-desktop": "^1.15.0",
     "semver": "^7.6.2",
     "sharp": "^0.33.5",
     "systeminformation": "^5.23.5",
