@@ -453,6 +453,46 @@ const aiExecute = async (message, validateAndLoop = false) => {
   }
 };
 
+const loadYML = async (file) => {
+
+  let yml;
+
+  //wrap this in try/catch so if the file doesn't exist output an error message to the user
+  try {
+    yml = fs.readFileSync(file, "utf-8");
+  } catch (e) {
+    logger.error(e);
+    logger.error(`File not found: ${file}`);
+    logger.error(`Current directory: ${process.cwd()}`);
+
+    await summarize("File not found");
+    await exit(true);
+  }
+
+  let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
+
+  // Inject environment variables into any ${VAR} strings
+  yml = parser.interpolate(yml, process.env);
+
+  // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
+  yml = parser.interpolate(yml, interpolationVars);
+
+
+  let ymlObj = null;
+  try {
+    ymlObj = await yaml.load(yml);
+  } catch (e) {
+    logger.error("%s", e);
+    logger.error(`Invalid YAML: ${file}`);
+
+    await summarize("Invalid YAML");
+    await exit(true);
+  }
+
+  return ymlObj;
+
+}
+
 const assert = async (expect) => {
   analytics.track("assert");
 
@@ -893,40 +933,7 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
 
   logger.info(chalk.cyan(`running ${file}...`));
 
-  executionHistory = [];
-  let yml;
-
-  //wrap this in try/catch so if the file doesn't exist output an error message to the user
-  try {
-    yml = fs.readFileSync(file, "utf-8");
-  } catch (e) {
-    logger.error(e);
-    logger.error(`File not found: ${file}`);
-    logger.error(`Current directory: ${process.cwd()}`);
-
-    await summarize("File not found");
-    await exit(true);
-  }
-
-  let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
-
-  // Inject environment variables into any ${VAR} strings
-  yml = parser.interpolate(yml, process.env);
-
-  // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
-  yml = parser.interpolate(yml, interpolationVars);
-
-
-  let ymlObj = null;
-  try {
-    ymlObj = await yaml.load(yml);
-  } catch (e) {
-    logger.error("%s", e);
-    logger.error(`Invalid YAML: ${file}`);
-
-    await summarize("Invalid YAML");
-    await exit(true);
-  }
+  let ymlObj = await loadYML(file);
 
   if (ymlObj.version) {
     let valid = isValidVersion(ymlObj.version);
@@ -1027,14 +1034,9 @@ const embed = async (file, depth) => {
     throw `Embedded file not found: ${file}`;
   }
 
-  // read the file contents
-  let contents = fs.readFileSync(file, "utf8");
+  let ymlObj = await loadYML(file);
 
-  // for each step, run each command
-  let steps = yaml.load(contents).steps;
-  // for each step, execute the commands
-
-  for (const step of steps) {
+  for (const step of ymlObj.steps) {
     await executeCommands(step.commands, depth);
   }
 
