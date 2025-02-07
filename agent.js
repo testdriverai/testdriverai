@@ -22,6 +22,7 @@ const package = require("./package.json");
 const fs = require("fs");
 const readline = require("readline");
 const http = require("http");
+const { program }  = require("commander");
 
 // third party modules
 const path = require("path");
@@ -71,53 +72,71 @@ emitter.on(events.interactive, (data) => {
 });
 
 // get args from terminal
-const args = process.argv.slice(2);
+// const args = process.argv.slice(2);
 
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
 let getArgs = () => {
-  let command = 0;
-  let file = 1;
+  const defaultFile = "testdriver/testdriver.yml";
+  let userCommand;
+  let userFile;
 
-  // TODO use a arg parser library to simplify this
-  if (
-    args[command] == "--help" ||
-    args[command] == "-h" ||
-    args[file] == "--help" ||
-    args[file] == "-h"
-  ) {
-    logger.info("Command: testdriverai [init, run, edit] [yaml filepath]");
-    process.exit(0);
+  program
+    .name("testdriverai")
+    .description("Generate and edit testdriver yaml files")
+    .version(package.version);
+
+  program
+    .command("init")
+    .description("Initialize A testdriver YAML file")
+    .argument("[file]", "File to use", defaultFile)
+    .action((file) => {
+      userCommand = "init";
+      userFile = file
+    });
+
+  program
+    .command("run")
+    .description("Run through a testdriver YAML file")
+    .argument("[file]", "File to use", defaultFile)
+    .action((file) => {
+      userCommand = "run";
+      userFile = file
+    });
+
+  program
+    .command("edit")
+    .description("Append / Edit a testdriver YAML")
+    .argument("[file]", "File to use", defaultFile)
+    .action((file) => {
+      userCommand = "edit";
+      userFile = file
+    });
+
+  // Default to "edit" if no subcommand is provided
+  program
+    .argument("[file]", "File to use", defaultFile)
+    .action((file) => {
+      userCommand = "edit";
+      userFile = file
+    });
+  program.parse(process.argv);
+
+    // Resolve to absolute path
+  const resolvedPath = path.resolve(userFile);
+
+  // Get parent directory
+  const parentDir = path.dirname(resolvedPath);
+
+  // Ensure parent directories exist
+  fs.mkdirSync(parentDir, { recursive: true });
+
+  // Enforce .yml extension
+  if (!userFile.endsWith(".yml") && !userFile.endsWith(".yaml")) {
+    userFile += ".yml";
   }
 
-  if (args[command] == "init") {
-    args[command] = "init";
-  } else if (args[command] !== "run" && !args[file]) {
-    args[file] = args[command];
-    args[command] = "edit";
-  } else if (!args[command]) {
-    args[command] = "edit";
-  }
-
-  if (!args[file]) {
-    // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(process.cwd(), "testdriver");
-    if (!fs.existsSync(testdriverFolder)) {
-      fs.mkdirSync(testdriverFolder);
-    }
-
-    args[file] = "testdriver/testdriver.yml";
-  }
-
-  // turn args[file] into local path
-  if (args[file]) {
-    args[file] = `${process.cwd()}/${args[file]}`;
-    if (!args[file].endsWith(".yml")) {
-      args[file] += ".yml";
-    }
-  }
-
-  return { command: args[command], file: args[file] };
+  return { command: userCommand, file: userFile }; 
 };
 
 let a = getArgs();
