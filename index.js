@@ -1,8 +1,15 @@
 #!/usr/bin/env node
+
+const { parseArgs } = require('./lib/cli.js');
+
+// Parse Args immediately
+const args = parseArgs(process.argv);
+
 const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
+
 
 (async () => {
 
@@ -11,7 +18,7 @@ const { logger } = require("./lib/logger.js");
   if (!config.TD_OVERLAY) {
     let agent = require("./agent.js");
     agent.setTerminalApp(win);
-    agent.start();
+    agent.start(args);
   } else {
     // Intercept all stdout and stderr calls (works with console as well)
     const originalStdoutWrite = process.stdout.write.bind(process.stdout);
@@ -38,7 +45,7 @@ const { logger } = require("./lib/logger.js");
       .electronProcessPromise.then(() => {
         let agent = require("./agent.js");
         agent.setTerminalApp(win);
-        agent.start();
+        agent.start(args);
       })
       .catch((err) => {
         logger.error("%s", err);
