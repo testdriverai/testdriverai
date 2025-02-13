@@ -656,7 +656,7 @@ const firstPrompt = async () => {
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf("/summarize") == 0) {
       await summarize();
-    } else if (input.indexOf("/quit") == 0) {
+    } else if (input.indexOf("/quit") == 0 || input.indexOf("/exit") == 0) {
       await exit(false, true);
     } else if (input.indexOf("/save") == 0) {
       await save({ filepath: commands[1] });
