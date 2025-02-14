@@ -46,6 +46,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Chaos
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: Remove-Item -Recurse -Force node_modules\mac-screen-capture-permissions
+        shell: pwsh
+
       - name: Bundle with esbuild
         run: node build.mjs
 
