@@ -1,6 +1,7 @@
 const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
+const { logger } = require("./lib/logger.js");
 
 (async () => {
 
@@ -39,7 +40,7 @@ const { emitter, events } = require("./lib/events.js");
         agent.start();
       })
       .catch((err) => {
-        console.error(err);
+        logger.error("%s", err);
         process.exit(1);
       });
   }
