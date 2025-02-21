@@ -561,7 +561,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   await save({ silent: true });
 };
 
-const generate = async (type, count) => {
+const generate = async (type, count, baseYaml) => {
   logger.debug("generate called, %s", type);
 
   speak("thinking...");
@@ -569,6 +569,10 @@ const generate = async (type, count) => {
 
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
+
+  if (baseYaml) {
+    await run(baseYaml, false, false);
+  }
 
   let image = await system.captureScreenBase64();
   const mdStream = log.createMarkdownStreamLogger();
@@ -610,6 +614,9 @@ const generate = async (type, count) => {
 
     let list = testPrompt.listsOrdered[0];
 
+    if (baseYaml && fs.existsSync(baseYaml)) {
+      list.unshift(`/run ${baseYaml} --embed`);
+    }
     let contents = list
       .map((item, index) => `${index + 1}. ${item}`)
       .join("\n");
@@ -728,7 +735,10 @@ const firstPrompt = async () => {
 
     logger.info(""); // adds a nice break between submissions
 
-    let commands = input.split(" ");
+    let commands = input
+      .split(" ")
+      .map((l) => l.trim())
+      .filter((l) => l.length);
 
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf("/summarize") == 0) {
@@ -777,7 +787,7 @@ const firstPrompt = async () => {
         await run(file, shouldSave, shouldExit);
       }
     } else if (input.indexOf("/generate") == 0) {
-      await generate(commands[1], commands[2]);
+      await generate(commands[1], commands[2], commands[3]);
     } else {
       await humanInput(input, true);
     }
