@@ -561,7 +561,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   await save({ silent: true });
 };
 
-const generate = async (type, count, baseYaml) => {
+const generate = async (type, count, baseYaml, skipYaml = false) => {
   logger.debug("generate called, %s", type);
 
   speak("thinking...");
@@ -570,7 +570,7 @@ const generate = async (type, count, baseYaml) => {
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
-  if (baseYaml) {
+  if (baseYaml && !skipYaml) {
     await run(baseYaml, false, false);
   }
 
@@ -787,7 +787,8 @@ const firstPrompt = async () => {
         await run(file, shouldSave, shouldExit);
       }
     } else if (input.indexOf("/generate") == 0) {
-      await generate(commands[1], commands[2], commands[3]);
+      const skipYaml = commands[4] === "--skip-yaml";
+      await generate(commands[1], commands[2], commands[3], skipYaml);
     } else {
       await humanInput(input, true);
     }
