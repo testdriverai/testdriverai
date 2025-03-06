@@ -1,4 +1,44 @@
-#!/usr/bin/env node
+function enableExecFilePatch() {
+    const childProcess = require('child_process');
+
+    if (childProcess.execFile.__patched) {
+        return; // Prevent multiple patches
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    const originalExecFile = childProcess.execFile;
+
+    function isInsideSnapshot(filePath) {
+        return filePath.startsWith('/snapshot/') || filePath.includes('C:\\snapshot\\');
+    }
+
+    function getTempFilePath(originalPath) {
+        return path.join(os.tmpdir(), path.basename(originalPath));
+    }
+
+    childProcess.execFile = function (file, ...args) {
+        if (isInsideSnapshot(file)) {
+            const tempFilePath = getTempFilePath(file);
+            fs.copyFileSync(file, tempFilePath);
+            fs.chmodSync(tempFilePath, 0o755);
+            file = tempFilePath;
+        }
+
+        return originalExecFile(file, ...args);
+    };
+
+    Object.defineProperty(childProcess.execFile, "__patched", {
+        value: true,
+        configurable: false,
+        enumerable: false,
+        writable: false
+    });
+}
+
+enableExecFilePatch();
+
 const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");

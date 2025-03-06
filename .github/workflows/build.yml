@@ -1,0 +1,68 @@
+name: Build Binaries
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: [macos-14, windows-latest]
+        os: [ windows-latest ]
+        include:
+          # - os: macos-14
+          #   node_version: '20.11.1'
+          #   build_command: npm run build-mac-dev
+          #   binary_name: entry-macos
+          #   pkg_config: pkg.config-macos-arm64.json
+
+          - os: windows-latest
+            node_version: '20.11.1'
+            build_command: npx pkg -c pkg.config-windows-x64.json -o dist/testdriver.exe build/index.js
+            binary_name: testdriver.exe
+            pkg_config: pkg.config-windows-x64.json
+  
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+
+      - name: Install OS-specific dependencies
+        run: ${{ matrix.install_dependencies || 'echo "No extra dependencies required"' }}
+        shell: bash
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Chaos
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: Remove-Item -Recurse -Force node_modules\mac-screen-capture-permissions
+        shell: pwsh
+
+      - name: Bundle with esbuild
+        run: node esbuild.js
+
+      - name: Install pkg
+        run: npm install -g @yao-pkg/pkg
+
+      - name: Build binary
+        run: ${{ matrix.build_command }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}
+          path: ./dist/*
