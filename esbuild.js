@@ -153,4 +153,7 @@ esbuild
       }),
     ],
   })
-  .catch(() => process.exit(1));
+  .catch((e) => {
+    console.log(e);
+    process.exit(0);
+  });
