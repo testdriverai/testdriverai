@@ -11,10 +11,12 @@
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
+    "bundle2": "node esbuild.js",
     "test": "mocha test/*",
     "build-mac-dev": "pkg -d -c pkg.config-macos-arm64.json entrypoint.js",
     "build-win-dev": "pkg -d -c pkg.config-windows-x64.json entrypoint.js",
-    "build-exe": "node esbuild.js & pkg -c pkg.config-windows-x64.json index.js -o dist/testdriverai.exe"
+    "build-mac-dev2": "pkg -d -c pkg.config-macos-arm64.json build/index.js -o dist/testdriverai",
+    "build-win-dev2": "pkg -d -c pkg.config-windows-x64.json build/index.js -o dist/testdriverai.exe"
   },
   "author": "",
   "license": "ISC",

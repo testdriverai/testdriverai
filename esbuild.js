@@ -55,9 +55,13 @@ esbuild
     outfile: "build/index.js",
     bundle: true,
     platform: "node",
+    // packages: "external",
 
     // *.node modules will be bundled with exe
-    external: ["*.node"],
+    external: [
+      "*.node",
+      "mac-screen-capture-permissions",
+    ],
     loader: {
       ".html": "file",
     },

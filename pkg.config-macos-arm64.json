@@ -1,5 +1,14 @@
 {
   "pkg": {
-    "targets": ["node20-macos-arm64"]
+    "targets": ["node20-macos-arm64"],
+    "ignore": ["node_modules/mac-screen-capture-permissions"],
+    "assets": [
+      "node_modules/get-windows/**/*",
+      "build/get-windows/**/*",
+      "build/*.ps1",
+      "build/bin/*.exe",
+      "build/resources/*",
+      "build/*.node"
+    ]
   }
 }
