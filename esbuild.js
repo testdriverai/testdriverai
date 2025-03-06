@@ -51,6 +51,7 @@ const importMetaUrlPlugin = {
 
 esbuild
   .build({
+    logLevel: "debug",
     entryPoints: ["index.js"],
     outfile: "build/index.js",
     bundle: true,
