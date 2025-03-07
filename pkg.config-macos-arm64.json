@@ -4,6 +4,7 @@
     "ignore": ["node_modules/mac-screen-capture-permissions"],
     "assets": [
       "node_modules/get-windows/**/*",
+      "node_modules/@img/**/*",
       "build/get-windows/**/*",
       "build/*.ps1",
       "build/bin/*.exe",

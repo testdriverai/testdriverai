@@ -10,13 +10,22 @@ const importMetaUrlPlugin = {
     build.onLoad({ filter: /\.js$/ }, async (args) => {
       let contents = await require("fs").promises.readFile(args.path, "utf8");
 
-      if (contents.includes("sharp.node")) {
-        contents = contents.replace(
-          "@img/sharp-wasm32/sharp.node",
-          "build/sharp-win32-x64.node",
-        );
+
+      if (args.path.endsWith("sharp.js")) {
+        contents = `
+          module.exports = require("@img/sharp-win32-x64/lib/sharp-win32-x64.node");
+        `;
       }
 
+      // if (contents.includes("sharp.node")) {
+      //   contents = contents.replace(
+      //     // "@img/sharp-wasm32/sharp.node",
+      //     // "./build/sharp-win32-x64.node",
+      //     // "testdriverai/build/sharp-win32-x64.node",
+      //     // "sharp-win32-x64.node",
+      //   );
+      // }
+      //
       // Replace for 'get-windows npm module'
       if (args.path.includes("get-windows")) {
         contents = contents.replace(
@@ -26,18 +35,18 @@ const importMetaUrlPlugin = {
       }
 
       // Replace for 'get-windows npm module'
-      if (args.path.endsWith("robotjs\\index.js")) {
-        contents = contents.replace("require", "req");
-        contents = contents.replace(
-          "./build/Release/robotjs.node",
-          "./robotjs.node",
-        );
-
-        contents =
-          `
-          const req = require('module').createRequire('file://' + __filename);
-        ` + contents;
-      }
+      // if (args.path.endsWith("robotjs\\index.js")) {
+      //   contents = contents.replace("require", "req");
+      //   contents = contents.replace(
+      //     "./build/Release/robotjs.node",
+      //     "./robotjs.node",
+      //   );
+      //
+      //   contents =
+      //     `
+      //     const req = require('module').createRequire('file://' + __filename);
+      //   ` + contents;
+      // }
 
       contents = contents.replace(
         /import\.meta\.url/g,
@@ -52,7 +61,7 @@ const importMetaUrlPlugin = {
 esbuild
   .build({
     logLevel: "debug",
-    entryPoints: ["index.js"],
+    entryPoints: ["entry.js"],
     outfile: "build/index.js",
     bundle: true,
     platform: "node",
@@ -94,7 +103,6 @@ esbuild
         assets: {
           from: [
             "node_modules/robotjs/build/Release/robotjs.node",
-            "node_modules/mac-screen-capture-permissions/build/Release/screencapturepermissions.node",
           ],
           // to: ["./build/build/Release/"],
           to: ["./build/"],
@@ -118,7 +126,7 @@ esbuild
           from: [
             "node_modules/get-windows/lib/binding/napi-9-win32-unknown-x64/*.node",
           ],
-          to: ["./build/lib/binding/napi-9-win32-unknown-x64/*.node"],
+          to: ["./build/lib/binding/napi-9-win32-unknown-x64/"],
         },
       }),
 
