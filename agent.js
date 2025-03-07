@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const os = require("os");
 
 // Get the current process ID
@@ -28,7 +26,6 @@ const path = require("path");
 const chalk = require("chalk");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
-const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
 const speak = require("./lib/speak.js");
@@ -1059,7 +1056,7 @@ const start = async () => {
   // if os is mac, check for screen capture permissions
   if (
     process.platform === "darwin" &&
-    !macScreenPerms.hasScreenCapturePermission()
+    !require("mac-screen-capture-permissions").hasScreenCapturePermission()
   ) {
     logger.info(chalk.red("Screen capture permissions not enabled."));
     logger.info(
