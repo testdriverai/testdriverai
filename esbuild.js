@@ -35,18 +35,18 @@ const importMetaUrlPlugin = {
       }
 
       // Replace for 'get-windows npm module'
-      // if (args.path.endsWith("robotjs\\index.js")) {
-      //   contents = contents.replace("require", "req");
-      //   contents = contents.replace(
-      //     "./build/Release/robotjs.node",
-      //     "./robotjs.node",
-      //   );
-      //
-      //   contents =
-      //     `
-      //     const req = require('module').createRequire('file://' + __filename);
-      //   ` + contents;
-      // }
+      if (args.path.endsWith("robotjs\\index.js")) {
+        contents = contents.replace("require", "req");
+        contents = contents.replace(
+          "./build/Release/robotjs.node",
+          "./robotjs.node",
+        );
+
+        contents =
+          `
+          const req = require('module').createRequire('file://' + __filename);
+        ` + contents;
+      }
 
       contents = contents.replace(
         /import\.meta\.url/g,
