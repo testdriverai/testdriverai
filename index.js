@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// check for required dependencies
+require("./lib/dependencies.js");
+
 const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
