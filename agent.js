@@ -51,90 +51,28 @@ const { emitter, events } = require("./lib/events.js");
 
 const logger = log.logger;
 
-let lastPrompt = "";
-let terminalApp = "";
-let commandHistory = [];
-let executionHistory = [];
-let errorCounts = {};
-let errorLimit = 3;
-let checkCount = 0;
-let checkLimit = 7;
-let lastScreenshot = null;
-let rl;
+let gLastPrompt = "";
+let gTerminalApp = "";
+let gCommandHistory = [];
+let gExecutionHistory = [];
+let gErrorCounts = {};
+let gErrorLimit = 3;
+let gCheckCount = 0;
+let gCheckLimit = 7;
+let gLastScreenshot = null;
+let gReadline;
+let gExitOnError = false;
+let gCurrentFile;
 
 // list of prompts that the user has given us
-let tasks = [];
+let gTasks = [];
 
-let isInteractive = false;
+let gIsInteractive = false;
 emitter.on(events.interactive, (data) => {
-  isInteractive = data;
+  gIsInteractive = data;
 });
 
-// get args from terminal
-const args = process.argv.slice(2);
-
-const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
-
-let getArgs = () => {
-  let command = 0;
-  let file = 1;
-
-  // TODO use a arg parser library to simplify this
-  if (
-    args[command] == "--help" ||
-    args[command] == "-h" ||
-    args[file] == "--help" ||
-    args[file] == "-h"
-  ) {
-    logger.info("Command: testdriverai [init, run, edit] [yaml filepath]");
-    process.exit(0);
-  }
-
-  if (args[command] == "init") {
-    args[command] = "init";
-  } else if (args[command] !== "run" && !args[file]) {
-    args[file] = args[command];
-    args[command] = "edit";
-  } else if (!args[command]) {
-    args[command] = "edit";
-  }
-
-  if (!args[file]) {
-    // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(process.cwd(), "testdriver");
-    if (!fs.existsSync(testdriverFolder)) {
-      fs.mkdirSync(testdriverFolder);
-    }
-
-    args[file] = "testdriver/testdriver.yml";
-  }
-
-  // turn args[file] into local path
-  if (args[file]) {
-    args[file] = `${process.cwd()}/${args[file]}`;
-    if (!args[file].endsWith(".yml")) {
-      args[file] += ".yml";
-    }
-  }
-
-  return { command: args[command], file: args[file] };
-};
-
-let a = getArgs();
-
-const thisFile = a.file;
-const thisCommand = a.command;
-
-logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
-logger.info(chalk.dim(`Working on ${thisFile}`));
-logger.info("");
-logger.info(chalk.yellow(`This is beta software!`));
-logger.info(`Join our Discord for help`);
-logger.info(`https://discord.com/invite/cWDFW8DzPm`);
-logger.info("");
-
-// individual run ID for this session
-// let runID = new Date().getTime();
+const COMMAND_HISTORY_FILE = path.join(os.homedir(), ".testdriver_history");
 
 function fileCompleter(line) {
   line = line.slice(5); // remove /run
@@ -173,7 +111,7 @@ function completer(line) {
   if (line.startsWith("/run ")) {
     return fileCompleter(line);
   } else {
-    completions.concat(tasks);
+    completions.concat(gTasks);
 
     var hits = completions.filter(function (c) {
       return c.indexOf(line) == 0;
@@ -181,27 +119,6 @@ function completer(line) {
     // show all completions if none found
     return [hits.length ? hits : completions, line];
   }
-}
-
-if (!fs.existsSync(commandHistoryFile)) {
-  // make the file
-  fs.writeFileSync(commandHistoryFile, "");
-} else {
-  commandHistory = fs
-    .readFileSync(commandHistoryFile, "utf-8")
-    .split("\n")
-    .filter((line) => {
-      return line.trim() !== "";
-    })
-    .reverse();
-}
-
-if (!commandHistory.length) {
-  commandHistory = [
-    "open google chrome",
-    "type hello world",
-    "click on the current time",
-  ];
 }
 
 const exit = async (failed = true, shouldSave = false) => {
@@ -214,8 +131,8 @@ const exit = async (failed = true, shouldSave = false) => {
 
   // we purposly never resolve this promise so the process will hang
   return new Promise(() => {
-    rl?.close();
-    rl?.removeAllListeners();
+    gReadline?.close();
+    gReadline?.removeAllListeners();
     process.exit(failed ? 1 : 0);
   });
 };
@@ -230,14 +147,14 @@ const dieOnFatal = async (error) => {
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
 const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
-  if (thisCommand == "run" || error.fatal) {
+  if (gExitOnError || error.fatal) {
     return await dieOnFatal(error);
   }
 
   let eMessage = error.message ? error.message : error;
 
   let safeKey = JSON.stringify(eMessage);
-  errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
+  gErrorCounts[safeKey] = gErrorCounts[safeKey] ? gErrorCounts[safeKey] + 1 : 1;
 
   logger.error(eMessage);
 
@@ -247,7 +164,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
   log.prettyMarkdown(eMessage);
 
   // if we get the same error 3 times in `run` mode, we exit
-  if (errorCounts[safeKey] > errorLimit - 1) {
+  if (gErrorCounts[safeKey] > gErrorLimit - 1) {
     logger.info(chalk.red("Error loop detected. Exiting."));
     logger.info("%s", eMessage);
     await summarize(eMessage);
@@ -296,9 +213,9 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 // this checks that the task is "really done" using a screenshot of the desktop state
 // it's likely that the task will not be complete and the AI will respond with more codeblocks to execute
 const check = async () => {
-  checkCount++;
+  gCheckCount++;
 
-  if (checkCount >= checkLimit) {
+  if (gCheckCount >= gCheckLimit) {
     logger.info(chalk.red("Exploratory loop detected. Exiting."));
     await summarize("Check loop detected.");
     return await exit(true);
@@ -309,7 +226,7 @@ const check = async () => {
   logger.info("");
 
   let thisScreenshot = await system.captureScreenBase64(1, false, true);
-  let images = [lastScreenshot, thisScreenshot];
+  let images = [gLastScreenshot, thisScreenshot];
   let mousePosition = await system.getMousePosition();
   let activeWindow = await system.activeWin();
 
@@ -317,7 +234,7 @@ const check = async () => {
   let response = await sdk.req(
     "check",
     {
-      tasks,
+      tasks: gTasks,
       images,
       mousePosition,
       activeWindow,
@@ -330,7 +247,7 @@ const check = async () => {
   );
   mdStream.end();
 
-  lastScreenshot = thisScreenshot;
+  gLastScreenshot = thisScreenshot;
 
   return response.data;
 };
@@ -372,24 +289,24 @@ const runCommand = async (command, depth) => {
   }
 };
 
-let lastCommand = new Date().getTime();
-let csv = [["command,time"]];
+let gLastCommand = new Date().getTime();
+let gCsv = [["command,time"]];
 
 const executeCommands = async (commands, depth, pushToHistory = false) => {
   if (commands?.length) {
 
     for (const command of commands) {
       if (pushToHistory) {
-        executionHistory[executionHistory.length - 1]?.commands.push(command);
+        gExecutionHistory[gExecutionHistory.length - 1]?.commands.push(command);
       }
 
       await runCommand(command, depth);
 
-      let timeToComplete = (new Date().getTime() - lastCommand) / 1000;
+      let timeToComplete = (new Date().getTime() - gLastCommand) / 1000;
       // logger.info(timeToComplete, 'seconds')
 
-      csv.push([command.command, timeToComplete]);
-      lastCommand = new Date().getTime();
+      gCsv.push([command.command, timeToComplete]);
+      gLastCommand = new Date().getTime();
     }
   }
 };
@@ -422,7 +339,7 @@ const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
 // notice that depth is 0 here. when this function resolves, the task is considered complete
 // notice the call to `check()` which validates the prompt is complete
 const aiExecute = async (message, validateAndLoop = false) => {
-  executionHistory.push({ prompt: lastPrompt, commands: [] });
+  gExecutionHistory.push({ prompt: gLastPrompt, commands: [] });
 
   logger.debug("kicking off exploratory loop");
 
@@ -498,8 +415,8 @@ const assert = async (expect) => {
 
   let task = expect;
   if (!task) {
-    // set task to last value of tasks
-    let task = tasks[tasks.length - 1];
+    // set task to last value of gTasks
+    let task = gTasks[gTasks.length - 1];
 
     // throw error if no task
     if (!task) {
@@ -526,19 +443,19 @@ commands:
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
 const humanInput = async (currentTask, validateAndLoop = false) => {
-  lastPrompt = currentTask;
-  checkCount = 0;
+  gLastPrompt = currentTask;
+  gCheckCount = 0;
 
   logger.debug("humanInput called");
 
-  tasks.push(currentTask);
+  gTasks.push(currentTask);
 
   speak("thinking...");
   notify("thinking...");
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
-  lastScreenshot = await system.captureScreenBase64();
+  gLastScreenshot = await system.captureScreenBase64();
 
   const mdStream = log.createMarkdownStreamLogger();
   let message = await sdk.req(
@@ -547,7 +464,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
       input: currentTask,
       mousePosition: await system.getMousePosition(),
       activeWindow: await system.activeWin(),
-      image: lastScreenshot,
+      image: gLastScreenshot,
     },
     (chunk) => {
       if (chunk.type === "data") {
@@ -625,14 +542,14 @@ const generate = async (type, count) => {
 const popFromHistory = async (fullStep) => {
   logger.info(chalk.dim("undoing..."), true);
 
-  if (executionHistory.length) {
+  if (gExecutionHistory.length) {
     if (fullStep) {
-      executionHistory.pop();
+      gExecutionHistory.pop();
     } else {
-      executionHistory[executionHistory.length - 1].commands.pop();
+      gExecutionHistory[gExecutionHistory.length - 1].commands.pop();
     }
-    if (!executionHistory[executionHistory.length - 1].commands.length) {
-      executionHistory.pop();
+    if (!gExecutionHistory[gExecutionHistory.length - 1].commands.length) {
+      gExecutionHistory.pop();
     }
   }
 };
@@ -701,9 +618,9 @@ const firstPrompt = async () => {
   await newSession();
 
   // readline is what allows us to get user input
-  rl = readline.createInterface({
+  gReadline = readline.createInterface({
     terminal: true,
-    history: commandHistory,
+    history: gCommandHistory,
     removeHistoryDuplicates: true,
     input: process.stdin,
     output: process.stdout,
@@ -712,23 +629,23 @@ const firstPrompt = async () => {
 
   analytics.track("first prompt");
 
-  rl.on("SIGINT", async () => {
+  gReadline.on("SIGINT", async () => {
     analytics.track("sigint");
     await exit(false);
   });
 
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
-  rl.on("line", async (input) => {
-    if (!isInteractive) return;
+  gReadline.on("line", async (input) => {
+    if (!gIsInteractive) return;
     if (!input.trim().length) return promptUser();
 
     emitter.emit(events.interactive, false);
     setTerminalWindowTransparency(true);
-    errorCounts = {};
+    gErrorCounts = {};
 
-    // append this to commandHistoryFile
-    fs.appendFileSync(commandHistoryFile, input + "\n");
+    // append this to COMMAND_HISTORY_FILE
+    fs.appendFileSync(COMMAND_HISTORY_FILE, input + "\n");
 
     analytics.track("input", { input });
 
@@ -739,7 +656,7 @@ const firstPrompt = async () => {
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf("/summarize") == 0) {
       await summarize();
-    } else if (input.indexOf("/quit") == 0) {
+    } else if (input.indexOf("/quit") == 0 || input.indexOf("/exit") == 0) {
       await exit(false, true);
     } else if (input.indexOf("/save") == 0) {
       await save({ filepath: commands[1] });
@@ -762,33 +679,33 @@ const firstPrompt = async () => {
   });
 
   // if file exists, load it
-  if (fs.existsSync(thisFile)) {
+  if (fs.existsSync(gCurrentFile)) {
     analytics.track("load");
 
     // this will overwrite the session if we find one in the YML
     let object = await generator.hydrateFromYML(
-      fs.readFileSync(thisFile, "utf-8"),
+      fs.readFileSync(gCurrentFile, "utf-8"),
     );
 
     if (!object?.steps) {
       analytics.track("load invalid yaml");
       logger.error("Invalid YAML. No steps found.");
-      logger.info("Invalid YAML: " + thisFile);
+      logger.info("Invalid YAML: " + gCurrentFile);
       return await exit(true);
     }
 
-    // push each step to executionHistory from { commands: {steps: [ { commands: [Array] } ] } }
+    // push each step to gExecutionHistory from { commands: {steps: [ { commands: [Array] } ] } }
     object.steps.forEach((step) => {
-      executionHistory.push(step);
+      gExecutionHistory.push(step);
     });
 
-    let yml = fs.readFileSync(thisFile, "utf-8");
+    let yml = fs.readFileSync(gCurrentFile, "utf-8");
 
     let markdown = `\`\`\`yaml
 ${yml}
 \`\`\``;
 
-    logger.info(`Loaded test script ${thisFile}\n`);
+    logger.info(`Loaded test script ${gCurrentFile}\n`);
 
     log.prettyMarkdown(`
 
@@ -830,12 +747,12 @@ let setTerminalWindowTransparency = async (hide) => {
 
   try {
     if (hide) {
-      if (terminalApp) {
-        hideTerminal(terminalApp);
+      if (gTerminalApp) {
+        hideTerminal(gTerminalApp);
       }
     } else {
-      if (terminalApp) {
-        showTerminal(terminalApp);
+      if (gTerminalApp) {
+        showTerminal(gTerminalApp);
       }
     }
   } catch (e) {
@@ -853,7 +770,7 @@ let summarize = async (error = null) => {
 
   logger.info(chalk.dim("reviewing test..."), true);
 
-  // let text = prompts.summarize(tasks, error);
+  // let text = prompts.summarize(gTasks, error);
   let image = await system.captureScreenBase64();
 
   logger.info(chalk.dim("summarizing..."), true);
@@ -864,7 +781,7 @@ let summarize = async (error = null) => {
     {
       image,
       error: error?.toString(),
-      tasks,
+      tasks: gTasks,
     },
     (chunk) => {
       if (chunk.type === "data") {
@@ -883,7 +800,7 @@ let summarize = async (error = null) => {
 };
 
 // this function is responsible for saving the regression test script to a file
-let save = async ({ filepath = thisFile, silent = false } = {}) => {
+let save = async ({ filepath = gCurrentFile, silent = false } = {}) => {
 
   analytics.track("save", { silent });
 
@@ -892,12 +809,12 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
     logger.info("");
   }
 
-  if (!executionHistory.length) {
+  if (!gExecutionHistory.length) {
     return;
   }
 
   // write reply to /tmp/oiResult.log
-  let regression = await generator.dumpToYML(executionHistory);
+  let regression = await generator.dumpToYML(gExecutionHistory);
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
@@ -912,7 +829,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
 ${regression}
 \`\`\``);
 
-    // logger.info(csv.join('\n'))
+    // logger.info(gCsv.join('\n'))
 
     const fileName = filepath.split("/").pop();
     if (!silent) {
@@ -947,13 +864,13 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
     }
   }
 
-  executionHistory = [];
+  gExecutionHistory = [];
 
   for (const step of ymlObj.steps) {
     logger.info(``, null);
     logger.info(chalk.yellow(`${step.prompt || "no prompt"}`), null);
 
-    executionHistory.push({
+    gExecutionHistory.push({
       prompt: step.prompt,
       commands: [], // run will overwrite the commands
     });
@@ -965,7 +882,7 @@ ${yaml.dump(step)}
     logger.debug(markdown);
     logger.debug("load calling actOnMarkdown");
 
-    lastPrompt = step.prompt;
+    gLastPrompt = step.prompt;
     await actOnMarkdown(markdown, 0, true);
   }
 
@@ -984,15 +901,15 @@ ${yaml.dump(step)}
 
 const promptUser = () => {
   emitter.emit(events.interactive, true);
-  rl.prompt(true);
+  gReadline.prompt(true);
 };
 
 const setTerminalApp = async (win) => {
-  if (terminalApp) return;
+  if (gTerminalApp) return;
   if (process.platform === "win32") {
-    terminalApp = win?.title || "";
+    gTerminalApp = win?.title || "";
   } else {
-    terminalApp = win?.owner?.bundleId || "";
+    gTerminalApp = win?.owner?.bundleId || "";
   }
 };
 
@@ -1043,7 +960,36 @@ const embed = async (file, depth) => {
   logger.info(`${file} (end)`);
 };
 
-const start = async () => {
+const start = async ({file, command}) => {
+  logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
+  logger.info(chalk.dim(`Working on ${file}`));
+  logger.info("");
+  logger.info(chalk.yellow(`This is beta software!`));
+  logger.info(`Join our Discord for help`);
+  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+  logger.info("");
+
+  if (!fs.existsSync(COMMAND_HISTORY_FILE)) {
+    // make the file
+    fs.writeFileSync(COMMAND_HISTORY_FILE, "");
+  } else {
+    gCommandHistory = fs
+      .readFileSync(COMMAND_HISTORY_FILE, "utf-8")
+      .split("\n")
+      .filter((line) => {
+        return line.trim() !== "";
+      })
+      .reverse();
+  }
+
+  if (!gCommandHistory.length) {
+    gCommandHistory = [
+      "open google chrome",
+      "type hello world",
+      "click on the current time",
+    ];
+  }
+
   // logger.info(await  system.getPrimaryDisplay());
 
   // @todo add-auth
@@ -1072,7 +1018,7 @@ const start = async () => {
     return exit();
   }
 
-  if (thisCommand !== "run") {
+  if (command !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
 
     logger.info(
@@ -1085,14 +1031,19 @@ const start = async () => {
     logger.info("");
   }
 
-  analytics.track("command", { command: thisCommand, file: thisFile });
+  // Set the global file for use in functions
+  gCurrentFile = file;
+  analytics.track("command", { command, file });
 
-  if (thisCommand == "edit") {
+  if (command == "edit") {
+    gExitOnError = false;
     firstPrompt();
-  } else if (thisCommand == "run") {
-    errorLimit = 100;
-    run(thisFile);
-  } else if (thisCommand == "init") {
+  } else if (command == "run") {
+    gErrorLimit = 100;
+    gExitOnError = true;
+    run(file);
+  } else if (command == "init") {
+    gExitOnError = false;
     await init();
     process.exit(0);
   }
