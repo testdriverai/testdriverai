@@ -31,6 +31,7 @@ const sanitizeFilename = require("sanitize-filename");
 const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
+const wss = require("./lib/websockets.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const log = require("./lib/logger.js");
@@ -720,7 +721,7 @@ const firstPrompt = async () => {
 
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
-  rl.on("line", async (input) => {
+  const handleInput = async (input) => {
     if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
 
@@ -795,7 +796,14 @@ const firstPrompt = async () => {
 
     setTerminalWindowTransparency(false);
     promptUser();
+  };
+
+  rl.on("line", handleInput);
+
+  wss.addEventListener("input", async (message) => {
+    handleInput(message.data);
   });
+
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
