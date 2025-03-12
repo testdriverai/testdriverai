@@ -570,7 +570,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
-  if (baseYaml && !skipYaml) {
+  if (baseYaml && !skipYaml && fs.existsSync(baseYaml)) {
     await run(baseYaml, false, false);
   }
 
@@ -593,37 +593,45 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   );
   mdStream.end();
 
-  let testPrompts = await parser.findGenerativePrompts(message.data);
-
-  // for each testPrompt
-  for (const testPrompt of testPrompts) {
-    // with the contents of the testPrompt
-    let fileName =
-      sanitizeFilename(testPrompt.headings[0])
-        .trim()
-        .replace(/ /g, "-")
-        .replace(/['"`]/g, "")
-        .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
-        .toLowerCase() + ".md";
-    let path1 = path.join(process.cwd(), "testdriver", "generate", fileName);
-
-    // create generate directory if it doesn't exist
-    if (!fs.existsSync(path.join(process.cwd(), "testdriver", "generate"))) {
-      fs.mkdirSync(path.join(process.cwd(), "testdriver", "generate"));
-    }
-
-    let list = testPrompt.listsOrdered[0];
-
-    if (baseYaml && fs.existsSync(baseYaml)) {
-      list.unshift(`/run ${baseYaml} --embed`);
-    }
-    let contents = list
-      .map((item, index) => `${index + 1}. ${item}`)
-      .join("\n");
-    fs.writeFileSync(path1, contents);
+  const generateDir = path.join(process.cwd(), "testdriver", "generate");
+  // create generate directory if it doesn't exist
+  if (!fs.existsSync(generateDir)) {
+    fs.mkdirSync(generateDir);
   }
 
-  exit(false);
+  const existingFiles = new Set(
+    fs
+      .readdirSync(generateDir, { withFileTypes: true })
+      .filter((file) => file.isFile())
+      .map((file) => file.name),
+  );
+
+  const prompts = await parser.findGenerativePrompts(message.data);
+
+  prompts
+    .map((prompt) => {
+      const list = [];
+      if (baseYaml && fs.existsSync(baseYaml)) {
+        list.push(`/run ${baseYaml} --embed`);
+      }
+      list.push(...prompt.listsOrdered[0]);
+      return {
+        filename:
+          sanitizeFilename(prompt.headings[0])
+            .trim()
+            .replace(/ /g, "-")
+            .replace(/['"`]/g, "")
+            .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
+            .toLowerCase() + ".md",
+        content: list.map((item, index) => `${index + 1}. ${item}`).join("\n"),
+      };
+    })
+    .filter((prompt) => !existingFiles.has(prompt.filename))
+    .forEach((prompt) => {
+      fs.writeFileSync(path.join(generateDir, prompt.filename), prompt.content);
+    });
+
+  await exit(false);
 };
 
 const popFromHistory = async (fullStep) => {
