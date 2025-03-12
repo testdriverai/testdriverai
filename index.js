@@ -1,11 +1,9 @@
-#!/usr/bin/env node
 const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
 
 (async () => {
-
   let win = await system.activeWin();
 
   if (!config.TD_OVERLAY) {
@@ -23,7 +21,7 @@ const { logger } = require("./lib/logger.js");
       );
       originalStdoutWrite(...args);
     };
-  
+
     const originalStderrWrite = process.stderr.write.bind(process.stderr);
     process.stderr.write = (...args) => {
       const [data, encoding] = args;
@@ -33,7 +31,7 @@ const { logger } = require("./lib/logger.js");
       );
       originalStderrWrite(...args);
     };
-  
+
     require("./lib/overlay.js")
       .electronProcessPromise.then(() => {
         let agent = require("./agent.js");
@@ -45,6 +43,4 @@ const { logger } = require("./lib/logger.js");
         process.exit(1);
       });
   }
-
-  
-})()
+})();
