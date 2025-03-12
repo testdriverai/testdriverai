@@ -205,7 +205,6 @@ if (!commandHistory.length) {
 }
 
 const exit = async (failed = true, shouldSave = false) => {
-
   if (shouldSave) {
     await save();
   }
@@ -241,7 +240,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   logger.error(eMessage);
 
-  logger.debug("%j",  error);
+  logger.debug("%j", error);
   logger.debug("%s", error.stack);
 
   log.prettyMarkdown(eMessage);
@@ -377,7 +376,6 @@ let csv = [["command,time"]];
 
 const executeCommands = async (commands, depth, pushToHistory = false) => {
   if (commands?.length) {
-
     for (const command of commands) {
       if (pushToHistory) {
         executionHistory[executionHistory.length - 1]?.commands.push(command);
@@ -454,7 +452,6 @@ const aiExecute = async (message, validateAndLoop = false) => {
 };
 
 const loadYML = async (file) => {
-
   let yml;
 
   //wrap this in try/catch so if the file doesn't exist output an error message to the user
@@ -469,14 +466,15 @@ const loadYML = async (file) => {
     await exit(true);
   }
 
-  let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
+  let interpolationVars = JSON.parse(
+    process.env["TD_INTERPOLATION_VARS"] || "{}",
+  );
 
   // Inject environment variables into any ${VAR} strings
   yml = parser.interpolate(yml, process.env);
 
   // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
   yml = parser.interpolate(yml, interpolationVars);
-
 
   let ymlObj = null;
   try {
@@ -490,8 +488,7 @@ const loadYML = async (file) => {
   }
 
   return ymlObj;
-
-}
+};
 
 const assert = async (expect) => {
   analytics.track("assert");
@@ -564,7 +561,7 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   await save({ silent: true });
 };
 
-const generate = async (type, count) => {
+const generate = async (type, count, baseYaml, skipYaml = false) => {
   logger.debug("generate called, %s", type);
 
   speak("thinking...");
@@ -572,6 +569,10 @@ const generate = async (type, count) => {
 
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
+
+  if (baseYaml && !skipYaml) {
+    await run(baseYaml, false, false);
+  }
 
   let image = await system.captureScreenBase64();
   const mdStream = log.createMarkdownStreamLogger();
@@ -613,6 +614,9 @@ const generate = async (type, count) => {
 
     let list = testPrompt.listsOrdered[0];
 
+    if (baseYaml && fs.existsSync(baseYaml)) {
+      list.unshift(`/run ${baseYaml} --embed`);
+    }
     let contents = list
       .map((item, index) => `${index + 1}. ${item}`)
       .join("\n");
@@ -682,7 +686,6 @@ const actOnMarkdown = async (content, depth, pushToHistory = false) => {
 };
 
 const newSession = async () => {
-
   // should be start of new session
   const sessionRes = await sdk.req("session/start", {
     systemInformationOsInfo: await system.getSystemInformationOsInfo(),
@@ -691,13 +694,11 @@ const newSession = async () => {
   });
 
   session.set(sessionRes.data.id);
-
 };
 
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
-
   await newSession();
 
   // readline is what allows us to get user input
@@ -734,7 +735,10 @@ const firstPrompt = async () => {
 
     logger.info(""); // adds a nice break between submissions
 
-    let commands = input.split(" ");
+    let commands = input
+      .split(" ")
+      .map((l) => l.trim())
+      .filter((l) => l.length);
 
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf("/summarize") == 0) {
@@ -750,9 +754,41 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/manual") == 0) {
       await manualInput(commands.slice(1).join(" "));
     } else if (input.indexOf("/run") == 0) {
-      await run(commands[1], commands[2] == "true", commands[3] == "true");
+      const file = commands[1];
+      const flags = commands.slice(2);
+      let shouldSave = flags.includes("--save") ? true : false;
+      let shouldExit = flags.includes("--exit") ? true : false;
+      let shouldEmbed = flags.includes("--embed") ? true : false;
+
+      if (shouldEmbed && (shouldSave || shouldExit)) {
+        await dieOnFatal({
+          message:
+            "Cannot embed AND save or exit. Please either use --embed or  use any combination of --save and --exit.",
+        });
+      }
+
+      if (shouldEmbed) {
+        const relativePath = path.relative(
+          process.cwd(),
+          path.resolve(process.cwd(), file),
+        );
+
+        executionHistory.push({
+          prompt: `/run ${relativePath}`,
+          commands: [
+            {
+              command: "run",
+              file: relativePath,
+            },
+          ],
+        });
+        await embed(file, 0);
+      } else {
+        await run(file, shouldSave, shouldExit);
+      }
     } else if (input.indexOf("/generate") == 0) {
-      await generate(commands[1], commands[2]);
+      const skipYaml = commands[4] === "--skip-yaml";
+      await generate(commands[1], commands[2], commands[3], skipYaml);
     } else {
       await humanInput(input, true);
     }
@@ -884,7 +920,6 @@ let summarize = async (error = null) => {
 
 // this function is responsible for saving the regression test script to a file
 let save = async ({ filepath = thisFile, silent = false } = {}) => {
-
   analytics.track("save", { silent });
 
   if (!silent) {
@@ -925,7 +960,6 @@ ${regression}
 // it parses the markdown file and executes the codeblocks exactly as if they were
 // generated by the AI in a single prompt
 let run = async (file, shouldSave = false, shouldExit = true) => {
-
   await newSession();
 
   setTerminalWindowTransparency(true);
