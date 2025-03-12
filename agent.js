@@ -523,11 +523,11 @@ commands:
 
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
-const humanInput = async (currentTask, validateAndLoop = false) => {
+const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false) => {
   lastPrompt = currentTask;
   checkCount = 0;
 
-  logger.debug("humanInput called");
+  logger.debug("exploratoryLoop called");
 
   tasks.push(currentTask);
 
@@ -555,9 +555,11 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   );
   mdStream.end();
 
-  await aiExecute(message.data, validateAndLoop);
+  if (!dry) {
+    await aiExecute(message.data, validateAndLoop);
+  }
 
-  logger.debug("showing prompt from humanInput response check");
+  logger.debug("showing prompt from exploratoryLoop response check");
 
   await save({ silent: true });
 };
@@ -790,8 +792,10 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
       await generate(commands[1], commands[2], commands[3], skipYaml);
+    } else if (input.indexOf("/dry") == 0) {
+      await exploratoryLoop(input.replace('/dry', ''), true, false);
     } else {
-      await humanInput(input, true);
+      await exploratoryLoop(input, false, true);
     }
 
     setTerminalWindowTransparency(false);
@@ -801,6 +805,7 @@ const firstPrompt = async () => {
   rl.on("line", handleInput);
 
   wss.addEventListener("input", async (message) => {
+    console.log(message)
     handleInput(message.data);
   });
 
@@ -1025,6 +1030,8 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
+  console.log('sending "done"')
+  wss.sendToClients("done");
   emitter.emit(events.interactive, true);
   rl.prompt(true);
 };
