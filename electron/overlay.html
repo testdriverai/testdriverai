@@ -2,12 +2,19 @@
 <html>
 
 <head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
       padding: 0;
       overflow: hidden;
       box-sizing: border-box;
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 400;
+      font-style: normal;
+      font-size: 14px;
     }
 
     @keyframes animate-glow {
@@ -90,6 +97,7 @@
       animation-name: animate-glow;
       animation-timing-function: ease;
       animation-fill-mode: forwards;
+      border-radius: 5px;
     }
 
     .container {
@@ -159,7 +167,7 @@
       opacity: 0;
       z-index: -1;
       overflow-y: auto;
-      padding: 4px;
+      padding: 20px;
     }
 
     #terminal {
@@ -182,6 +190,7 @@
 </head>
 
 <body>
+  
   <div id="screenshot"></div>
   <div id="main" class="container">
     <div id="boxes">
@@ -279,7 +288,7 @@
       cursorInactiveStyle: "none",
       scrollback: 9999999,
       allowProposedApi: true,
-      fontSize: 18
+      fontSize: 14
     });
 
     const fitAddon = new FitAddon.FitAddon();

@@ -107,14 +107,14 @@ let getArgs = () => {
       fs.mkdirSync(testdriverFolder);
     }
 
-    args[file] = "testdriver/testdriver.yml";
+    args[file] = "testdriver/testdriver.yaml";
   }
 
   // turn args[file] into local path
   if (args[file]) {
     args[file] = path.join(process.cwd(), args[file]);
-    if (!args[file].endsWith(".yml")) {
-      args[file] += ".yml";
+    if (!args[file].endsWith(".yaml")) {
+      args[file] += ".yaml";
     }
   }
 
@@ -1054,7 +1054,6 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
-  console.log('sending "done"')
   wss.sendToClients("done");
   emitter.emit(events.interactive, true);
   rl.prompt(true);

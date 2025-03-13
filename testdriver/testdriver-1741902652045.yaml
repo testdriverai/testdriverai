@@ -1,0 +1,14 @@
+version: 4.2.18
+session: 67d3533f6fae4811a69e9280
+steps:
+  - prompt: ' open google chrome'
+    commands:
+      - command: press-keys
+        keys:
+          - command
+          - space
+      - command: type
+        text: Google Chrome
+      - command: press-keys
+        keys:
+          - enter
