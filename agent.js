@@ -512,7 +512,7 @@ const assert = async (expect) => {
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
-  let response = `\`\`\`yml
+  let response = `\`\`\`yaml
 commands:
   - command: assert
     expect: ${expect}
