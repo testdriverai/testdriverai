@@ -1,0 +1,11 @@
+version: 4.2.18
+session: 67d36efc6fae4811a69e9569
+steps:
+  - prompt: 'open chrome and go to big.com'
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: type
+        text: big.com
+      - command: press-keys
+        keys: [enter]

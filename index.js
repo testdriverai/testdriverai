@@ -34,7 +34,7 @@ const { logger } = require("./lib/logger.js");
       originalStderrWrite(...args);
     };
   
-    require("./lib/overlay.js")
+  require("./lib/overlay.js")
       .electronProcessPromise.then(() => {
         let agent = require("./agent.js");
         agent.setTerminalApp(win);
