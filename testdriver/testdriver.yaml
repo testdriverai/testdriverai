@@ -1,0 +1,7 @@
+version: 4.2.19
+session: 67d45b126fae4811a69ea00f
+steps:
+  - prompt: focus terminal
+    commands:
+      - command: focus-application
+        name: Terminal

@@ -1,7 +1,0 @@
-version: 4.2.18
-session: 67d36fd16fae4811a69e957a
-steps:
-  - prompt: ' focus google chrome'
-    commands:
-      - command: focus-application
-        name: Google Chrome
