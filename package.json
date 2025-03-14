@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@e2b/desktop": "^1.6.0",
     "@electerm/strip-ansi": "^1.0.0",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",

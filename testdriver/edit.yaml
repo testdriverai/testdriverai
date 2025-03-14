@@ -1,0 +1,31 @@
+version: 4.2.18
+session: default-session
+steps:
+  - prompt: 'Open Google Chrome and navigate to example.com'
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Search Google or type a URL
+        description: address bar in Google Chrome
+        action: click
+      - command: type
+        text: example.com
+      - command: press-keys
+        keys: [enter]
+      - command: wait
+        timeout: 5000
+      - command: assert
+        expect: the page has loaded
+  - prompt: 'Open Firefox and navigate to airbnb.com'
+    commands:
+      - command: focus-application
+        name: Firefox
+      - command: hover-text
+        text: Search or enter address
+        description: address bar in Firefox
+        action: click
+      - command: type
+        text: airbnb.com
+      - command: press-keys
+        keys: [enter]
