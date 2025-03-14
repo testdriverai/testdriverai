@@ -10,17 +10,19 @@ app.whenReady().then(() => {
   app.dock?.hide();
 
   const windowOptions = {
-    ...screen.getPrimaryDisplay().bounds,
-    enableLargerThanScreen: true,
-    frame: false,
-    show: false,
-    closable: false,
-    resizable: false,
-    focusable: false,
-    fullscreenable: true,
-    transparent: true,
-    alwaysOnTop: true,
-    skipTaskbar: true,
+    width: 1030,
+    height: 800,
+    // ...screen.getPrimaryDisplay().bounds,
+    // enableLargerThanScreen: true,
+    // frame: false,
+    // show: false,
+    closable: true,
+    resizable: true,
+    // focusable: false,
+    // fullscreenable: true,
+    // transparent: true,
+    // alwaysOnTop: true,
+    // skipTaskbar: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -33,11 +35,11 @@ app.whenReady().then(() => {
   }
 
   const window = new BrowserWindow(windowOptions);
-  window.setIgnoreMouseEvents(true);
-  window.setAlwaysOnTop(true, "screen-saver");
-  window.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-  });
+  // window.setIgnoreMouseEvents(true);
+  // window.setAlwaysOnTop(true, "screen-saver");
+  // window.setVisibleOnAllWorkspaces(true, {
+  //   visibleOnFullScreen: true,
+  // });
   window.loadFile("overlay.html");
 
   window.once('ready-to-show', () => {
@@ -45,7 +47,7 @@ app.whenReady().then(() => {
   });
 
   // open developer tools
-  // window.webContents.openDevTools();
+  window.webContents.openDevTools();
 
   ipc.serve(() => {
     for (const event of eventsArray) {

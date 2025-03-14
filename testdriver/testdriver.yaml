@@ -1,0 +1,83 @@
+version: 4.2.18
+session: 67d3642b52f23900c465c668
+steps:
+  - prompt: open google chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: press-keys
+        keys:
+          - command
+          - space
+      - command: type
+        text: Google Chrome
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: open chrome
+    commands:
+      - command: press-keys
+        keys:
+          - command
+          - space
+      - command: type
+        text: Google Chrome
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: ' open google chrome and navigate to pieces for developers'
+    commands:
+      - command: press-keys
+        keys:
+          - command
+          - space
+      - command: type
+        text: Google Chrome
+      - command: press-keys
+        keys:
+          - enter
+      - command: wait
+        timeout: 5000
+      - command: type
+        text: pieces.app/developers
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: open chrome
+    commands:
+      - command: press-keys
+        keys:
+          - command
+          - space
+      - command: type
+        text: Google Chrome
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: open chrome
+    commands:
+      - command: press-keys
+        keys:
+          - command
+          - space
+      - command: type
+        text: Google Chrome
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  - prompt: ' focus google chrome'
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome

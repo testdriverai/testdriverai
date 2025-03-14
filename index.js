@@ -3,6 +3,7 @@ const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
+const sandbox = require("./lib/sandbox.js");
 
 (async () => {
 
@@ -13,6 +14,7 @@ const { logger } = require("./lib/logger.js");
     agent.setTerminalApp(win);
     agent.start();
   } else {
+
     // Intercept all stdout and stderr calls (works with console as well)
     const originalStdoutWrite = process.stdout.write.bind(process.stdout);
     process.stdout.write = (...args) => {
@@ -35,10 +37,19 @@ const { logger } = require("./lib/logger.js");
     };
   
     require("./lib/overlay.js")
-      .electronProcessPromise.then(() => {
-        let agent = require("./agent.js");
-        agent.setTerminalApp(win);
-        agent.start();
+      .electronProcessPromise.then(async () => {
+
+          await sandbox.boot();
+
+          let url = await sandbox.stream();
+
+          emitter.emit(events.vm.show, {url});
+  
+          let agent = require("./agent.js");
+          agent.setTerminalApp(win);
+          agent.start();
+          
+        
       })
       .catch((err) => {
         logger.error("%s", err);
