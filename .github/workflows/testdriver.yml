@@ -15,7 +15,7 @@ jobs:
         with:
           key: ${{secrets.TESTDRIVER_API_KEY}}
           prompt: |
-            1. /run testdriver/test.yml
+            1. /run testdriver/testdriver.yml
           prerun: |
             cd $env:TEMP
             npm init -y

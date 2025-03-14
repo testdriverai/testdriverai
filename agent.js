@@ -267,6 +267,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   speak("thinking...");
   notify("thinking...");
+
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
