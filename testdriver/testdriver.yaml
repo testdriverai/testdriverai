@@ -5,3 +5,22 @@ steps:
     commands:
       - command: focus-application
         name: Terminal
+  - prompt: click on the browser icon
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: navigate to airbnb.com
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+      - command: hover-text
+        text: Search or enter address
+        description: address bar in the browser
+        action: click
+      - command: type
+        text: airbnb.com
+      - command: press-keys
+        keys:
+          - enter
