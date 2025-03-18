@@ -31,6 +31,7 @@ const sanitizeFilename = require("sanitize-filename");
 const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
+const wss = require("./lib/websockets.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const log = require("./lib/logger.js");
@@ -106,14 +107,14 @@ let getArgs = () => {
       fs.mkdirSync(testdriverFolder);
     }
 
-    args[file] = "testdriver/testdriver.yml";
+    args[file] = "testdriver/testdriver.yaml";
   }
 
   // turn args[file] into local path
   if (args[file]) {
-    args[file] = `${process.cwd()}/${args[file]}`;
-    if (!args[file].endsWith(".yml")) {
-      args[file] += ".yml";
+    args[file] = path.join(process.cwd(), args[file]);
+    if (!args[file].endsWith(".yaml")) {
+      args[file] += ".yaml";
     }
   }
 
@@ -167,7 +168,7 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions = "/summarize /save /run /quit /assert /undo /manual".split(
+  let completions = "/summarize /save /run /quit /assert /undo /manual /yml".split(
     " ",
   );
   if (line.startsWith("/run ")) {
@@ -266,6 +267,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   speak("thinking...");
   notify("thinking...");
+
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -374,14 +376,16 @@ const runCommand = async (command, depth) => {
 let lastCommand = new Date().getTime();
 let csv = [["command,time"]];
 
-const executeCommands = async (commands, depth, pushToHistory = false) => {
+const executeCommands = async (commands, depth, pushToHistory = false, dry = false) => {
   if (commands?.length) {
     for (const command of commands) {
       if (pushToHistory) {
         executionHistory[executionHistory.length - 1]?.commands.push(command);
       }
 
-      await runCommand(command, depth);
+      if (!dry) {
+        await runCommand(command, depth);
+      }
 
       let timeToComplete = (new Date().getTime() - lastCommand) / 1000;
       // logger.info(timeToComplete, 'seconds')
@@ -394,7 +398,7 @@ const executeCommands = async (commands, depth, pushToHistory = false) => {
 
 // note that commands are run in a recursive loop, so that the AI can respond to the output of the commands
 // like `click-image` and `click-text` for example
-const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
+const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false, dry = false) => {
   depth = depth + 1;
 
   logger.debug("%j", { message: "execute code blocks", depth });
@@ -412,20 +416,20 @@ const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
       );
     }
 
-    await executeCommands(commands, depth, pushToHistory);
+    await executeCommands(commands, depth, pushToHistory, dry);
   }
 };
 
 // this is the main function that interacts with the ai, runs commands, and checks the results
 // notice that depth is 0 here. when this function resolves, the task is considered complete
 // notice the call to `check()` which validates the prompt is complete
-const aiExecute = async (message, validateAndLoop = false) => {
+const aiExecute = async (message, validateAndLoop = false, dry = false) => {
   executionHistory.push({ prompt: lastPrompt, commands: [] });
 
   logger.debug("kicking off exploratory loop");
-
+  
   // kick everything off
-  await actOnMarkdown(message, 0, true);
+  await actOnMarkdown(message, 0, true, dry);
 
   if (validateAndLoop) {
     logger.debug("exploratory loop resolved, check your work");
@@ -509,7 +513,7 @@ const assert = async (expect) => {
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
-  let response = `\`\`\`yml
+  let response = `\`\`\`yaml
 commands:
   - command: assert
     expect: ${expect}
@@ -522,11 +526,11 @@ commands:
 
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
-const humanInput = async (currentTask, validateAndLoop = false) => {
+const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false) => {
   lastPrompt = currentTask;
   checkCount = 0;
 
-  logger.debug("humanInput called");
+  logger.debug("exploratoryLoop called");
 
   tasks.push(currentTask);
 
@@ -554,11 +558,11 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   );
   mdStream.end();
 
-  await aiExecute(message.data, validateAndLoop);
+  await aiExecute(message.data, validateAndLoop, dry);
 
-  logger.debug("showing prompt from humanInput response check");
+  logger.debug("showing prompt from exploratoryLoop response check");
 
-  await save({ silent: true });
+  await save({ silent: false });
 };
 
 const generate = async (type, count, baseYaml, skipYaml = false) => {
@@ -663,7 +667,7 @@ ${yml}
 };
 
 // this function is responsible for starting the recursive process of executing codeblocks
-const actOnMarkdown = async (content, depth, pushToHistory = false) => {
+const actOnMarkdown = async (content, depth, pushToHistory = false, dry = false) => {
   logger.debug("%j", {
     message: "actOnMarkdown called",
     depth,
@@ -678,7 +682,7 @@ const actOnMarkdown = async (content, depth, pushToHistory = false) => {
   }
 
   if (codeblocks.length) {
-    let executions = await executeCodeBlocks(codeblocks, depth, pushToHistory);
+    let executions = await executeCodeBlocks(codeblocks, depth, pushToHistory, dry);
     return executions;
   } else {
     return true;
@@ -720,7 +724,7 @@ const firstPrompt = async () => {
 
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
-  rl.on("line", async (input) => {
+  const handleInput = async (input) => {
     if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
 
@@ -789,12 +793,22 @@ const firstPrompt = async () => {
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
       await generate(commands[1], commands[2], commands[3], skipYaml);
+    } else if (input.indexOf("/dry") == 0) {
+      await exploratoryLoop(input.replace('/dry', ''), true, false);
+    } else if (input.indexOf("/yaml") == 0) {
+      await runRawYML(commands[1]);
     } else {
-      await humanInput(input, true);
+      await exploratoryLoop(input, false, true);
     }
 
     setTerminalWindowTransparency(false);
     promptUser();
+  };
+
+  rl.on("line", handleInput);
+
+  wss.addEventListener("input", async (message) => {
+    handleInput(message.data);
   });
 
   // if file exists, load it
@@ -923,11 +937,12 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
   analytics.track("save", { silent });
 
   if (!silent) {
-    logger.info(chalk.dim("saving..."), true);
+    logger.info(chalk.dim(`saving as ${filepath}...`), true);
     logger.info("");
   }
 
   if (!executionHistory.length) {
+    console.log('no exeuction history, not saving')
     return;
   }
 
@@ -936,6 +951,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
+    console.log(e)
     logger.error(e.message);
     logger.error("%s", e);
   }
@@ -956,14 +972,32 @@ ${regression}
   }
 };
 
+let runRawYML = async (yml) => {
+
+  const tmp = require("tmp");
+  let tmpobj = tmp.fileSync();
+
+  let decoded = decodeURIComponent(yml);
+
+  // saved the yml to a temp file using tmp
+  // and run it with run()
+  fs.writeFileSync(tmpobj.name, await generator.rawToFormatted(decoded));
+  
+  await run(tmpobj.name, false, true);
+
+}
+
 // this will load a regression test from a file location
 // it parses the markdown file and executes the codeblocks exactly as if they were
 // generated by the AI in a single prompt
-let run = async (file, shouldSave = false, shouldExit = true) => {
+let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
   await newSession();
 
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
+
+  // get the current wowrking directory where this file is being executed
+  let cwd = process.cwd();
 
   logger.info(chalk.cyan(`running ${file}...`));
 
@@ -1017,6 +1051,7 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
+  wss.sendToClients("done");
   emitter.emit(events.interactive, true);
   rl.prompt(true);
 };

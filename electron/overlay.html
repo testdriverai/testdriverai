@@ -2,12 +2,20 @@
 <html>
 
 <head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+  <title>TestDriver</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       overflow: hidden;
       box-sizing: border-box;
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 400;
+      font-style: normal;
+      font-size: 14px;
     }
 
     @keyframes animate-glow {
@@ -64,11 +72,14 @@
       position: relative;
     }
 
+    #main {
+      pointer-events: none;
+    }
+
     .screenshot {
       position: absolute;
       inset: 0;
-      border: 8px dashed #B0CF34;
-      border-radius: 20px;
+      z-index: 1;
       opacity: 0;
       animation-duration: 0.3s;
       animation-delay: 0;
@@ -77,6 +88,7 @@
       animation-name: animate-screenshot;
       animation-timing-function: ease;
       animation-fill-mode: forwards;
+      background-color: white;
     }
 
     .box {
@@ -90,6 +102,7 @@
       animation-name: animate-glow;
       animation-timing-function: ease;
       animation-fill-mode: forwards;
+      border-radius: 5px;
     }
 
     .container {
@@ -150,6 +163,7 @@
     }
 
     #terminal-wrapper {
+      pointer-events: none;
       position: absolute;
       left: calc(100vw - 700px);
       top: 0px;
@@ -159,7 +173,7 @@
       opacity: 0;
       z-index: -1;
       overflow-y: auto;
-      padding: 4px;
+      padding: 20px;
     }
 
     #terminal {
@@ -169,11 +183,22 @@
     }
 
     #boxes {
+      pointer-events: none;
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
+      z-index: 2;
+    }
+
+    #vm-iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
     }
   </style>
   <link rel="stylesheet" href="terminal/xterm.css" />
@@ -182,15 +207,19 @@
 </head>
 
 <body>
+  
   <div id="screenshot"></div>
   <div id="main" class="container">
     <div id="boxes">
       <div id="pointer"></div>
     </div>
     <div id="terminal-wrapper">
+      <img src="td.png" alt="td" style="position: absolute; top: 20; right: 20; height: 40px; z-index: 9999; background-color: black;">
       <div id="terminal"></div>
     </div>
   </div>
+  <iframe id="vm-iframe" frameborder="0"></iframe>
+  
   <script>
 
     const { ipcRenderer } = require("electron");
@@ -225,7 +254,6 @@
 
       });
     }
-
 
     ipcRenderer.on(events.screenCapture.start, (event, data) => {
       if (data?.silent) return
@@ -279,13 +307,18 @@
       cursorInactiveStyle: "none",
       scrollback: 9999999,
       allowProposedApi: true,
-      fontSize: 18
+      fontSize: 14
     });
 
     const fitAddon = new FitAddon.FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(terminalElement);
     fitAddon.fit();
+
+    ipcRenderer.on(events.vm.show, (event, data) => {
+      const iframe = document.querySelector("#vm-iframe");
+      iframe.src = data.url;
+    });
 
     ipcRenderer.on(events.terminal.stdout, (event, data) =>
       terminal.write(data),

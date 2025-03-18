@@ -1,0 +1,16 @@
+version: 4.2.19
+session: 67d458a26fae4811a69e9f99
+steps:
+  - prompt: ' open the browser'
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: ' click on search or enter address'
+    commands:
+      - command: focus-application
+        name: Firefox
+      - command: hover-text
+        text: Search or enter address
+        description: main search bar in Firefox
+        action: click
