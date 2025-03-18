@@ -808,10 +808,8 @@ const firstPrompt = async () => {
   rl.on("line", handleInput);
 
   wss.addEventListener("input", async (message) => {
-    console.log(message)
     handleInput(message.data);
   });
-
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
@@ -948,7 +946,6 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
     return;
   }
 
-  console.log('execution history', executionHistory)
   // write reply to /tmp/oiResult.log
   let regression = await generator.dumpToYML(executionHistory);
   try {
@@ -977,20 +974,13 @@ ${regression}
 
 let runRawYML = async (yml) => {
 
-  console.log("running raw yml")
-  console.log(yml)
-
   const tmp = require("tmp");
   let tmpobj = tmp.fileSync();
 
   let decoded = decodeURIComponent(yml);
-  
-  console.log("running raw yml")
-  console.log(decoded)
 
   // saved the yml to a temp file using tmp
   // and run it with run()
-  console.log(tmpobj.name)
   fs.writeFileSync(tmpobj.name, await generator.rawToFormatted(decoded));
   
   await run(tmpobj.name, false, true);

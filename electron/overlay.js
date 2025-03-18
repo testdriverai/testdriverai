@@ -19,7 +19,7 @@ app.whenReady().then(() => {
       height: 800,
       closable: true,
       resizable: true,
-      
+    
       alwaysOnTop: true,
       webPreferences: {
         nodeIntegration: true,
@@ -63,6 +63,8 @@ app.whenReady().then(() => {
     window.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
     });
+  } else {
+    window.setBackgroundColor('#000')
   }
   
   window.loadFile("overlay.html");

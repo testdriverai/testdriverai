@@ -39,17 +39,19 @@ const sandbox = require("./lib/sandbox.js");
     require("./lib/overlay.js")
       .electronProcessPromise.then(async () => {
 
-          await sandbox.boot();
-          await sandbox.send({type: 'create', resolution: [1024, 768]});
-          await sandbox.send({type: 'stream.start'});
-          let {url} = await sandbox.send({type: 'stream.getUrl'});
-
-          emitter.emit(events.vm.show, {url});
-          
           let agent = require("./agent.js");
-          agent.setTerminalApp(win);
+      
+          if (config.TD_VM) {
+            await sandbox.boot();
+            await sandbox.send({type: 'create', resolution: [1024, 768]});
+            await sandbox.send({type: 'stream.start'});
+            let {url} = await sandbox.send({type: 'stream.getUrl'});
+            emitter.emit(events.vm.show, {url}); 
+          } else {
+            agent.setTerminalApp(win);
+          }
+
           agent.start();
-          
         
       })
       .catch((err) => {

@@ -40,7 +40,6 @@
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
-    "screenshot-desktop": "^1.15.0",
     "semver": "^7.6.2",
     "sharp": "^0.33.5",
     "systeminformation": "^5.23.5",
@@ -66,6 +65,7 @@
   "optionalDependencies": {
     "get-windows": "^9.2.0",
     "robotjs": "^0.6.0",
+    "screenshot-desktop": "^1.15.0",
     "@esbuild/linux-x64": "^0.21.5",
     "@img/sharp-libvips-win32-x64": "^1.0.2",
     "@img/sharp-win32-x64": "^0.33.4"
