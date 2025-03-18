@@ -43,6 +43,7 @@ const sdk = require("./lib/sdk.js");
 const commands = require("./lib/commands.js");
 const init = require("./lib/init.js");
 const config = require("./lib/config.js");
+const sandbox = require("./lib/sandbox.js");
 
 const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
 const isValidVersion = require("./lib/valid-version.js");
@@ -1157,15 +1158,35 @@ const start = async () => {
   analytics.track("command", { command: thisCommand, file: thisFile });
 
   if (thisCommand == "edit") {
+    makeSandbox();
     firstPrompt();
   } else if (thisCommand == "run") {
     errorLimit = 100;
+    makeSandbox();
     run(thisFile);
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
   }
 };
+
+const makeSandbox = async () => {
+
+  if (config.TD_VM) {
+            
+    await sandbox.boot();
+    await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY });
+    await sandbox.send({type: 'create', resolution: [1024, 768]});
+    await sandbox.send({type: 'stream.start'});
+    
+    let {url} = await sandbox.send({type: 'stream.getUrl'});
+    emitter.emit(events.vm.show, {url}); 
+
+  } else {
+    agent.setTerminalApp(win);
+  }
+
+}
 
 process.on("uncaughtException", async (err) => {
   analytics.track("uncaughtException", { err });

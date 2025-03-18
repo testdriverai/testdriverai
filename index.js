@@ -3,7 +3,6 @@ const config = require("./lib/config.js");
 const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
-const sandbox = require("./lib/sandbox.js");
 
 (async () => {
 
@@ -40,17 +39,6 @@ const sandbox = require("./lib/sandbox.js");
       .electronProcessPromise.then(async () => {
 
           let agent = require("./agent.js");
-      
-          if (config.TD_VM) {
-            await sandbox.boot();
-            await sandbox.send({type: 'create', resolution: [1024, 768]});
-            await sandbox.send({type: 'stream.start'});
-            let {url} = await sandbox.send({type: 'stream.getUrl'});
-            emitter.emit(events.vm.show, {url}); 
-          } else {
-            agent.setTerminalApp(win);
-          }
-
           agent.start();
         
       })

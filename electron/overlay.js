@@ -19,7 +19,7 @@ app.whenReady().then(() => {
       height: 800,
       closable: true,
       resizable: true,
-    
+      show: false,
       alwaysOnTop: true,
       webPreferences: {
         nodeIntegration: true,
@@ -70,7 +70,7 @@ app.whenReady().then(() => {
   window.loadFile("overlay.html");
 
   window.once('ready-to-show', () => {
-    window.showInactive();
+    // window.showInactive();
   });
 
   // open developer tools
