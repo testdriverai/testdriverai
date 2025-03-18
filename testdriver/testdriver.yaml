@@ -24,3 +24,36 @@ steps:
       - command: press-keys
         keys:
           - enter
+  - prompt: >-
+      /yml
+      commands%3A%0A-%20command%3A%20click%20%23%20Move%20and%20click%20the%20mouse%20and%20perform%20a%20click%0A%20%20x%3A%209%0A%20%20y%3A%2012%0A%20%20action%3A%20click%20
+    commands:
+      - command: press-keys
+        keys:
+          - control
+          - alt
+          - t
+  - prompt: |2
+       open the browser
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: open the browser
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: navigate to airbnb.com
+    commands:
+      - command: focus-application
+        name: Firefox
+      - command: hover-text
+        text: Search or enter address
+        description: address bar in Firefox
+        action: click
+      - command: type
+        text: airbnb.com
+      - command: press-keys
+        keys:
+          - enter

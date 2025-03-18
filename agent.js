@@ -795,7 +795,7 @@ const firstPrompt = async () => {
       await generate(commands[1], commands[2], commands[3], skipYaml);
     } else if (input.indexOf("/dry") == 0) {
       await exploratoryLoop(input.replace('/dry', ''), true, false);
-    } else if (input.indexOf("/yml") == 0) {
+    } else if (input.indexOf("/yaml") == 0) {
       await runRawYML(commands[1]);
     } else {
       await exploratoryLoop(input, false, true);
@@ -977,16 +977,22 @@ ${regression}
 
 let runRawYML = async (yml) => {
 
-  const tmp = require("tmp");
-  let tmpobj = tmp.fileSync();
-  
   console.log("running raw yml")
   console.log(yml)
-  console.log('file', tmpobj.name)
+
+  const tmp = require("tmp");
+  let tmpobj = tmp.fileSync();
+
+  let decoded = decodeURIComponent(yml);
+  
+  console.log("running raw yml")
+  console.log(decoded)
 
   // saved the yml to a temp file using tmp
   // and run it with run()
-  fs.writeFileSync(tmpobj.name, yml);
+  console.log(tmpobj.name)
+  fs.writeFileSync(tmpobj.name, await generator.rawToFormatted(decoded));
+  
   await run(tmpobj.name, false, true);
 
 }
