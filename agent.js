@@ -1178,12 +1178,12 @@ const makeSandbox = async () => {
     await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY });
     await sandbox.send({type: 'create', resolution: [1024, 768]});
     await sandbox.send({type: 'stream.start'});
-    
     let {url} = await sandbox.send({type: 'stream.getUrl'});
+    let ready = await sandbox.send({type: 'ready'});
     emitter.emit(events.vm.show, {url}); 
+    emitter.emit(events.interactive, false);
+    emitter.emit(events.showWindow)
 
-  } else {
-    agent.setTerminalApp(win);
   }
 
 }

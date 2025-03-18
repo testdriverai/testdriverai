@@ -74,11 +74,15 @@ app.whenReady().then(() => {
   });
 
   // open developer tools
-  // window.webContents.openDevTools();
+  window.webContents.openDevTools();
 
   ipc.serve(() => {
     for (const event of eventsArray) {
       ipc.server.on(event, (data) => {
+        if (event === "show-window") {
+          window.showInactive();
+          return;
+        }
         window?.webContents.send(event, data);
       });
     }
