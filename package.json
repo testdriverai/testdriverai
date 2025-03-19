@@ -45,7 +45,8 @@
     "systeminformation": "^5.23.5",
     "tmp": "^0.2.3",
     "uuid": "^10.0.0",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "ws": "^8.18.1"
   },
   "overrides": {
     "glob": "^11.0.1",
