@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "4.2.18",
+  "version": "4.2.20",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -39,6 +39,7 @@
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
     "robotjs": "npm:@hurdlegroup/robotjs",
+    "robotjs": "^0.6.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
     "screenshot-desktop": "^1.15.0",
@@ -52,7 +53,6 @@
   "overrides": {
     "glob": "^11.0.1",
     "rimraf": "^5.0.10",
-    "robotjs": "npm:@hurdlegroup/robotjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
