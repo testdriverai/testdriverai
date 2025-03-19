@@ -1,4 +1,4 @@
-version: 5.0.0-beta.3
+version: 5.0.0-beta.5
 session: 67da097309f82d6c72a31d8b
 steps:
   - prompt: navigate to airbnbcom
@@ -39,6 +39,11 @@ steps:
         keys:
           - enter
   - prompt: click on the browser icon
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: open the browser
     commands:
       - command: hover-image
         description: browser icon in the dock

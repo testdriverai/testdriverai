@@ -1185,11 +1185,11 @@ const makeSandbox = async () => {
     let {url} = await sandbox.send({type: 'stream.getUrl'});
     logger.info(chalk.gray(`- rendering...`));
     await sandbox.send({type: 'ready'});
+    emitter.emit(events.vm.show, {url});
     logger.info(chalk.gray(`- booting...`));
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 3000)); 
     logger.info(chalk.green(``));
     logger.info(chalk.green(`sandbox runner ready!`));
-    emitter.emit(events.vm.show, {url}); 
 
   }
 
