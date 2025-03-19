@@ -1,4 +1,4 @@
-version: 5.0.0
+version: 5.0.0-beta.3
 session: 67da097309f82d6c72a31d8b
 steps:
   - prompt: navigate to airbnbcom
@@ -15,3 +15,31 @@ steps:
       - command: press-keys
         keys:
           - enter
+  - prompt: click on the browser icon
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: click on the browser icon
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: click on the browser icon
+    commands:
+      - command: focus-application
+        name: Firefox
+      - command: hover-text
+        text: Search or enter address
+        description: main address bar in Firefox
+        action: click
+      - command: type
+        text: airbnb.com
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: click on the browser icon
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
