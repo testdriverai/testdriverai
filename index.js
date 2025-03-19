@@ -37,10 +37,8 @@ const { logger } = require("./lib/logger.js");
   
     require("./lib/overlay.js")
       .electronProcessPromise.then(async () => {
-
-          let agent = require("./agent.js");
-          agent.start();
-        
+        let agent = require("./agent.js");
+        agent.start();
       })
       .catch((err) => {
         logger.error("%s", err);

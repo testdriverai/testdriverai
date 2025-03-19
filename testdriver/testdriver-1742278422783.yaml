@@ -1,8 +1,0 @@
-version: 4.2.19
-session: 67d90f1d5cdecc8cfacd14b5
-steps:
-  - prompt: ' open browser'
-    commands:
-      - command: hover-image
-        description: browser icon in the dock
-        action: click

@@ -1158,11 +1158,11 @@ const start = async () => {
   analytics.track("command", { command: thisCommand, file: thisFile });
 
   if (thisCommand == "edit") {
-    makeSandbox();
+    await makeSandbox();
     firstPrompt();
   } else if (thisCommand == "run") {
     errorLimit = 100;
-    makeSandbox();
+    await makeSandbox();
     run(thisFile);
   } else if (thisCommand == "init") {
     await init();
@@ -1173,18 +1173,28 @@ const start = async () => {
 const makeSandbox = async () => {
 
   if (config.TD_VM) {
-            
+          
+    logger.info(chalk.gray(`- creating linux sandbox...`));
     await sandbox.boot();
+    logger.info(chalk.gray(`- authenticating...`));
     await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY });
+    logger.info(chalk.gray(`- setting up...`));
     await sandbox.send({type: 'create', resolution: [1024, 768]});
+    logger.info(chalk.gray(`- starting stream...`));
     await sandbox.send({type: 'stream.start'});
     let {url} = await sandbox.send({type: 'stream.getUrl'});
-    let ready = await sandbox.send({type: 'ready'});
+    logger.info(chalk.gray(`- rendering...`));
+    await sandbox.send({type: 'ready'});
+    logger.info(chalk.gray(`- booting...`));
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    logger.info(chalk.green(``));
+    logger.info(chalk.green(`sandbox runner ready!`));
     emitter.emit(events.vm.show, {url}); 
-    emitter.emit(events.interactive, false);
-    emitter.emit(events.showWindow)
 
   }
+
+  emitter.emit(events.interactive, false);
+  emitter.emit(events.showWindow)
 
 }
 

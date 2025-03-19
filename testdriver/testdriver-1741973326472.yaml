@@ -1,8 +1,0 @@
-version: 4.2.19
-session: 67d467586fae4811a69ea4e4
-steps:
-  - prompt: ' open chrome'
-    commands:
-      - command: hover-image
-        description: Chrome icon in the dock
-        action: click

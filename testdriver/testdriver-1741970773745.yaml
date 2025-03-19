@@ -1,8 +1,0 @@
-version: 4.2.19
-session: 67d45d606fae4811a69ea092
-steps:
-  - prompt: ' run testdriver'
-    commands:
-      - command: hover-image
-        description: terminal icon in the dock
-        action: click
