@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "5.0.0-beta.1",
+  "version": "5.0.0-beta.2",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -63,11 +63,11 @@
     "prettier": "3.3.3"
   },
   "optionalDependencies": {
-    "get-windows": "^9.2.0",
-    "robotjs": "^0.6.0",
-    "screenshot-desktop": "^1.15.0",
     "@esbuild/linux-x64": "^0.21.5",
     "@img/sharp-libvips-win32-x64": "^1.0.2",
-    "@img/sharp-win32-x64": "^0.33.4"
+    "@img/sharp-win32-x64": "^0.33.4",
+    "get-windows": "^9.2.0",
+    "robotjs": "^0.6.0",
+    "screenshot-desktop": "^1.15.0"
   }
 }
