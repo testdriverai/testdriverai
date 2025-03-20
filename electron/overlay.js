@@ -15,8 +15,8 @@ app.whenReady().then(() => {
   if (config.TD_VM) {
 
     windowOptions = {
-      width: 1030,
-      height: 800,
+      width: 1024,
+      height: 768,
       closable: true,
       resizable: true,
       show: false,
@@ -64,6 +64,7 @@ app.whenReady().then(() => {
       visibleOnFullScreen: true,
     });
   } else {
+    window.setContentSize(1024, 768);
     window.setBackgroundColor('#000')
   }
   
@@ -74,7 +75,7 @@ app.whenReady().then(() => {
   });
 
   // open developer tools
-  window.webContents.openDevTools();
+  // window.webContents.openDevTools();
 
   ipc.serve(() => {
     for (const event of eventsArray) {
