@@ -48,10 +48,10 @@ app.whenReady().then(() => {
       autoHideMenuBar: true,
     };
 
-  }
+    if (process.platform !== 'darwin') {
+      windowOptions.fullscreen = true;
+    }
 
-  if (process.platform !== 'darwin') {
-    windowOptions.fullscreen = true;
   }
 
   const window = new BrowserWindow(windowOptions);
