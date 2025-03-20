@@ -20,7 +20,6 @@ app.whenReady().then(() => {
       closable: true,
       resizable: true,
       show: false,
-      alwaysOnTop: true,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
