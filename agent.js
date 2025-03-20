@@ -130,8 +130,9 @@ const thisCommand = a.command;
 logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
 logger.info(chalk.dim(`Working on ${thisFile}`));
 logger.info("");
-logger.info(chalk.yellow(`This is beta software!`));
-logger.info(`Join our Discord for help`);
+logger.info(`This is beta software!`);
+logger.info("");
+logger.info(chalk.yellow(`Join our Discord for help`));
 logger.info(`https://discord.com/invite/cWDFW8DzPm`);
 logger.info("");
 
@@ -1145,14 +1146,17 @@ const start = async () => {
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
 
-    logger.info(
-      chalk.red("Warning!") +
-        chalk.dim(" TestDriver sends screenshots of the desktop to our API."),
-    );
-    logger.info(
-      chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
-    );
-    logger.info("");
+    if (!config.TD_VM) {
+      logger.info(
+        chalk.red("Warning!") +
+          chalk.dim("Local mode sends screenshots of the desktop to our API."),
+      );
+      logger.info(
+        chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
+      );
+      logger.info("");
+    }
+    
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
@@ -1174,23 +1178,31 @@ const makeSandbox = async () => {
 
   if (config.TD_VM) {
           
-    logger.info(chalk.gray(`- creating linux sandbox...`));
-    await sandbox.boot();
-    logger.info(chalk.gray(`- authenticating...`));
-    await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY });
-    logger.info(chalk.gray(`- setting up...`));
-    await sandbox.send({type: 'create', resolution: [1024, 768]});
-    logger.info(chalk.gray(`- starting stream...`));
-    await sandbox.send({type: 'stream.start'});
-    let {url} = await sandbox.send({type: 'stream.getUrl'});
-    logger.info(chalk.gray(`- rendering...`));
-    await sandbox.send({type: 'ready'});
-    emitter.emit(events.vm.show, {url});
-    logger.info(chalk.gray(`- booting...`));
-    await new Promise(resolve => setTimeout(resolve, 3000)); 
-    logger.info(chalk.green(``));
-    logger.info(chalk.green(`sandbox runner ready!`));
+    try {
 
+      logger.info(chalk.gray(`- creating linux sandbox...`));
+      await sandbox.boot();
+      logger.info(chalk.gray(`- authenticating...`));
+      await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY });
+      logger.info(chalk.gray(`- setting up...`));
+      await sandbox.send({type: 'create', resolution: [1024, 768]});
+      logger.info(chalk.gray(`- starting stream...`));
+      await sandbox.send({type: 'stream.start'});
+      let {url} = await sandbox.send({type: 'stream.getUrl'});
+      logger.info(chalk.gray(`- rendering...`));
+      await sandbox.send({type: 'ready'});
+      emitter.emit(events.vm.show, {url});
+      logger.info(chalk.gray(`- booting...`));
+      await new Promise(resolve => setTimeout(resolve, 3000)); 
+      logger.info(chalk.green(``));
+      logger.info(chalk.green(`sandbox runner ready!`));
+
+    } catch  (e) {
+      logger.error(e)
+      logger.error(chalk.red(`sandbox runner failed to start`));
+      process.exit(1);
+    }
+ 
   }
 
   emitter.emit(events.interactive, false);
