@@ -19,6 +19,7 @@ app.whenReady().then(() => {
       height: 768,
       closable: true,
       resizable: true,
+      alwaysOnTop: true,
       show: false,
       webPreferences: {
         nodeIntegration: true,
