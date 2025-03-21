@@ -734,6 +734,14 @@ const firstPrompt = async () => {
     analytics.track("input", { input });
 
     logger.info(""); // adds a nice break between submissions
+    
+    let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
+
+    // Inject environment variables into any ${VAR} strings
+    input = parser.interpolate(input, process.env);
+
+    // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
+    input = parser.interpolate(input, interpolationVars);
 
     let commands = input
       .split(" ")
