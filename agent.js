@@ -232,7 +232,7 @@ const dieOnFatal = async (error) => {
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
 const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
-  if (thisCommand == "run" || error.fatal) {
+  if (error.fatal) {
     return await dieOnFatal(error);
   }
 

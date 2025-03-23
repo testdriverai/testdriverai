@@ -2,19 +2,33 @@
 
 # TestDriver.ai
 
-Automate and scale QA with agentic users. Next generation autonomous AI agent for end-to-end testing of web & desktop.
+Automate and scale QA with computer-use agents.
 
 [Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.gg/a8Cq739VWn)
 
 ---
 
+
+
+https://github.com/user-attachments/assets/4719e834-652a-43ba-8b8c-24ea6f357ae3
+
+
+
+# Install via NPM
+
 ```sh
 npm install testdriverai -g
 ```
 
-| Windows | MacOS | Linux |
----------|-------|-------|
-| ✅      | ✅    | ❌    |
+# Run Init
+
+```sh
+testdriverai init
+```
+
+[Follow the instructions on our docs for more.](https://docs.testdriver.ai/overview/quickstart).
+
+# About
 
 TestDriver isn't like any test framework you've used before. TestDriver is an OS Agent for QA. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
 
@@ -23,8 +37,6 @@ TestDriver isn't like any test framework you've used before. TestDriver is an OS
 - **More Power:** TestDriver can test any application and control any OS setting
 
 ### Demo
-
-https://github.com/user-attachments/assets/fba08020-a751-4d9e-9505-50db541fd38b
 
 # Examples
 
