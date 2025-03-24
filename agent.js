@@ -1183,7 +1183,7 @@ const makeSandbox = async () => {
       logger.info(chalk.gray(`- creating linux sandbox...`));
       await sandbox.boot();
       logger.info(chalk.gray(`- authenticating...`));
-      await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY });
+      await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY, secret: config.TD_SECRET} );
       logger.info(chalk.gray(`- setting up...`));
       await sandbox.send({type: 'create', resolution: [1024, 768]});
       logger.info(chalk.gray(`- starting stream...`));
