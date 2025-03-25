@@ -13,6 +13,7 @@ const { logger } = require("./lib/logger.js");
     agent.setTerminalApp(win);
     agent.start();
   } else {
+
     // Intercept all stdout and stderr calls (works with console as well)
     const originalStdoutWrite = process.stdout.write.bind(process.stdout);
     process.stdout.write = (...args) => {
@@ -35,9 +36,8 @@ const { logger } = require("./lib/logger.js");
     };
   
     require("./lib/overlay.js")
-      .electronProcessPromise.then(() => {
+      .electronProcessPromise.then(async () => {
         let agent = require("./agent.js");
-        agent.setTerminalApp(win);
         agent.start();
       })
       .catch((err) => {
