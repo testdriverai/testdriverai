@@ -50,7 +50,8 @@
   },
   "overrides": {
     "glob": "^11.0.1",
-    "rimraf": "^5.0.10"
+    "rimraf": "^5.0.10",
+    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
@@ -68,7 +69,7 @@
     "@img/sharp-libvips-win32-x64": "^1.0.2",
     "@img/sharp-win32-x64": "^0.33.4",
     "get-windows": "^9.2.0",
-    "robotjs": "^0.6.0",
+    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3",
     "screenshot-desktop": "^1.15.0"
   }
 }
