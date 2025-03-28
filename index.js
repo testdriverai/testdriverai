@@ -10,11 +10,9 @@ if (process.argv[2] === "--help" || process.argv[2] === "-h") {
 }
 
 (async () => {
-  let win = await system.activeWin();
 
   if (!config.TD_OVERLAY) {
     let agent = require("./agent.js");
-    agent.setTerminalApp(win);
     agent.start();
   } else {
     // Intercept all stdout and stderr calls (works with console as well)

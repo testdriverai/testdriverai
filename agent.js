@@ -691,6 +691,26 @@ const actOnMarkdown = async (content, depth, pushToHistory = false, dry = false)
   }
 };
 
+const ensureMacScreenPerms = async () => {
+
+  // if os is mac, check for screen capture permissions
+  if (
+    !config.TD_VM &&
+    process.platform === "darwin" &&
+    !macScreenPerms.hasScreenCapturePermission()
+  ) {
+    logger.info(chalk.red("Screen capture permissions not enabled."));
+    logger.info(
+      "You must enable screen capture permissions for the application calling `testdriverai`.",
+    );
+    logger.info(
+      "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
+    );
+    analytics.track("noMacPermissions");
+    return exit();
+  }
+}
+
 const newSession = async () => {
   // should be start of new session
   const sessionRes = await sdk.req("session/start", {
@@ -1122,6 +1142,13 @@ const embed = async (file, depth) => {
   logger.info(`${file} (end)`);
 };
 
+const buildEnv = async () => {
+  let win = await system.activeWin();
+  setTerminalApp(win);
+  await ensureMacScreenPerms();
+  await makeSandbox();
+}
+
 const start = async () => {
   // logger.info(await  system.getPrimaryDisplay());
 
@@ -1135,28 +1162,12 @@ const start = async () => {
 
   // await sdk.auth();
 
-  // if os is mac, check for screen capture permissions
-  if (
-    process.platform === "darwin" &&
-    !macScreenPerms.hasScreenCapturePermission()
-  ) {
-    logger.info(chalk.red("Screen capture permissions not enabled."));
-    logger.info(
-      "You must enable screen capture permissions for the application calling `testdriverai`.",
-    );
-    logger.info(
-      "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
-    );
-    analytics.track("noMacPermissions");
-    return exit();
-  }
-
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
 
     if (!config.TD_VM) {
       logger.info(
-        chalk.red("Warning!") +
+        chalk.red("Warning!" ) +
           chalk.dim("Local mode sends screenshots of the desktop to our API."),
       );
       logger.info(
@@ -1170,11 +1181,11 @@ const start = async () => {
   analytics.track("command", { command: thisCommand, file: thisFile });
 
   if (thisCommand == "edit") {
-    await makeSandbox();
+    await buildEnv();
     firstPrompt();
   } else if (thisCommand == "run") {
+    await buildEnv();
     errorLimit = 100;
-    await makeSandbox();
     run(thisFile);
   } else if (thisCommand == "init") {
     await init();
