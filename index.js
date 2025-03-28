@@ -4,8 +4,12 @@ const system = require("./lib/system.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
 
-(async () => {
+if (process.argv[2] === "--help" || process.argv[2] === "-h") {
+  console.log("Command: testdriverai [init, run, edit] [yaml filepath]");
+  process.exit(0);
+}
 
+(async () => {
   let win = await system.activeWin();
 
   if (!config.TD_OVERLAY) {
@@ -13,7 +17,6 @@ const { logger } = require("./lib/logger.js");
     agent.setTerminalApp(win);
     agent.start();
   } else {
-
     // Intercept all stdout and stderr calls (works with console as well)
     const originalStdoutWrite = process.stdout.write.bind(process.stdout);
     process.stdout.write = (...args) => {
@@ -24,7 +27,7 @@ const { logger } = require("./lib/logger.js");
       );
       originalStdoutWrite(...args);
     };
-  
+
     const originalStderrWrite = process.stderr.write.bind(process.stderr);
     process.stderr.write = (...args) => {
       const [data, encoding] = args;
@@ -34,7 +37,7 @@ const { logger } = require("./lib/logger.js");
       );
       originalStderrWrite(...args);
     };
-  
+
     require("./lib/overlay.js")
       .electronProcessPromise.then(async () => {
         let agent = require("./agent.js");
@@ -45,6 +48,4 @@ const { logger } = require("./lib/logger.js");
         process.exit(1);
       });
   }
-
-  
-})()
+})();
