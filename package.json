@@ -23,7 +23,7 @@
     "datadog-winston": "^1.6.0",
     "decompress": "^4.2.1",
     "dotenv": "^16.4.5",
-    "electron": "^33.0.2",
+    "electron": "^35.1.2",
     "get-windows": "^9.2.0",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
