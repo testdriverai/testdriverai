@@ -31,7 +31,7 @@ const sanitizeFilename = require("sanitize-filename");
 const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
-const wss = require("./lib/websockets.js");
+const websocketserver = require("./lib/websockets.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const log = require("./lib/logger.js");
@@ -63,6 +63,7 @@ let checkCount = 0;
 let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
+let wss; 
 
 // list of prompts that the user has given us
 let tasks = [];
@@ -837,7 +838,7 @@ const firstPrompt = async () => {
 
   rl.on("line", handleInput);
 
-  wss.addEventListener("input", async (message) => {
+  config.TD_VM && wss.addEventListener("input", async (message) => {
     handleInput(message.data);
   });
 
@@ -1081,7 +1082,7 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
-  wss.sendToClients("done");
+  config.TD_VM && wss.sendToClients("done");
   emitter.emit(events.interactive, true);
   rl.prompt(true);
 };
@@ -1144,6 +1145,9 @@ const embed = async (file, depth) => {
 
 const buildEnv = async () => {
   let win = await system.activeWin();
+  if (config.TD_VM) {
+    wss = websocketserver.create();
+  }
   setTerminalApp(win);
   await ensureMacScreenPerms();
   await makeSandbox();
