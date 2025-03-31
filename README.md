@@ -36,7 +36,9 @@ TestDriver isn't like any test framework you've used before. TestDriver is an OS
 - **Less Maintenance:** Tests don't break when code changes
 - **More Power:** TestDriver can test any application and control any OS setting
 
-### Demo
+### Demo (Playing Balatro Desktop)
+
+https://github.com/user-attachments/assets/7cb9ee5a-0d05-4ff0-a4fa-084bcee12e98
 
 # Examples
 
