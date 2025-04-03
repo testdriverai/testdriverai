@@ -3,9 +3,16 @@ const { app, screen, BrowserWindow } = require("electron");
 const { eventsArray } = require("../lib/events.js");
 const config = require("../lib/config.js");
 
-ipc.config.id = "testdriverai_overlay";
+// Seems like the direct process id is not the electron process id
+// so we use the parent process id
+ipc.config.id = `testdriverai_overlay_${process.ppid}`;
 ipc.config.retry = 1500;
 ipc.config.silent = true;
+
+if (!app) {
+  // Electron is not able to run in this environment
+  process.exit();
+}
 
 app.whenReady().then(() => {
   app.dock?.hide();
