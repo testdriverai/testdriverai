@@ -93,9 +93,9 @@
     }
 
     .box {
-      border: 2px solid #B0CF34;
+      border: 1px solid #B0CF34;
       position: absolute;
-
+      border-radius: 5px;
       animation-duration: 5s;
       animation-delay: 0s;
       animation-timing-function: cubic-bezier(0.26, 0.53, 0.74, 1.48);
@@ -109,6 +109,16 @@
     .container {
       inset: 0;
       position: absolute;
+    }
+
+    #mouse {
+      width: 50px;
+      height: 50px;
+      opacity: 50%;
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 70%;
+      background: #FFD700;
     }
 
     #pointer {
@@ -213,6 +223,7 @@
   <div id="main" class="container">
     <div id="boxes">
       <div id="pointer"></div>
+      <div id="mouse"></div>
     </div>
     <div id="terminal-wrapper">
       <img src="td.png" alt="td" style="position: absolute; top: 20; right: 20; height: 40px; z-index: 9999; background-color: black;">
@@ -226,6 +237,7 @@
     const { ipcRenderer } = require("electron");
     const { events } = require("../lib/events.js");
 
+    const mouse = document.querySelector("#mouse");
     const pointer = document.querySelector("#pointer");
     const container = document.querySelector("#main");
     const screenshotElement = document.querySelector("#screenshot");
@@ -277,9 +289,20 @@
         container.style.opacity = 1
       }, 2000)
     });
+    ipcRenderer.on(events.mouseMove,
+      (event, { x, y } = {}) => {
+        
+        console.log("mouseMove", x, y)
+
+        mouse.style.marginLeft = toCss(x);
+        mouse.style.marginTop = toCss(y);
+
+      },
+    );
 
     ipcRenderer.on(events.mouseClick,
       (event, { x, y, click = "single" } = {}) => {
+
         pointer.style.marginLeft = toCss(x);
         pointer.style.marginTop = toCss(y);
         pointer.setAttribute("class", "");
