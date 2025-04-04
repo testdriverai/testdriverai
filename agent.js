@@ -72,6 +72,9 @@ emitter.on(events.interactive, (data) => {
   isInteractive = data;
   server.broadcast("interactive", data);
 });
+emitter.on(events.vm.show, ({ url }) => {
+  server.broadcast("show:vm", url);
+});
 
 // get args from terminal
 const args = process.argv.slice(2);
