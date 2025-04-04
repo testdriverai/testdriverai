@@ -170,7 +170,7 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions = "/summarize /save /run /quit /assert /undo /manual /yml".split(
+  let completions = "/summarize /save /run /quit /assert /undo /manual /yml /exec".split(
     " ",
   );
   if (line.startsWith("/run ")) {
