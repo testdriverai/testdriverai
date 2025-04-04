@@ -171,7 +171,7 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions = "/summarize /save /run /quit /assert /undo /manual /yml".split(
+  let completions = "/summarize /save /run /quit /assert /undo /manual /yml /exec".split(
     " ",
   );
   if (line.startsWith("/run ")) {
@@ -828,6 +828,11 @@ const firstPrompt = async () => {
       await exploratoryLoop(input.replace('/dry', ''), true, false);
     } else if (input.indexOf("/yaml") == 0) {
       await runRawYML(commands[1]);
+    } else if (input.indexOf("/exec") == 0) {
+      await commander.run({
+        command: "exec",
+        cli: commands.slice(1).join(" "),
+      });
     } else {
       await exploratoryLoop(input, false, true);
     }
