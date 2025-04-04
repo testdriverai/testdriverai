@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const config = require("./lib/config.js");
-const system = require("./lib/system.js");
+// We need to initialize the IPC server quickly
+require("./lib/ipc.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
 
@@ -10,7 +11,6 @@ if (process.argv[2] === "--help" || process.argv[2] === "-h") {
 }
 
 (async () => {
-
   if (!config.TD_OVERLAY) {
     let agent = require("./agent.js");
     agent.start();
