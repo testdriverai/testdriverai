@@ -443,9 +443,17 @@ const aiExecute = async (message, validateAndLoop = false) => {
 
     if (checkCodeblocks.length > 0) {
       logger.debug("check thinks more needs to be done");
+      
+      logger.info(chalk.dim("not done yet!"), "testdriver");
+      logger.info("");
+
       return await aiExecute(response, validateAndLoop);
     } else {
       logger.debug("seems complete, returning");
+
+      logger.info(chalk.green("success!"), "testdriver");
+      logger.info("");
+
       return response;
     }
   }
