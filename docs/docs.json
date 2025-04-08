@@ -9,7 +9,6 @@
               "content/components/accordions",
               "content/components/accordion-groups",
               "content/components/callouts",
-              ...
             ]
           },
           {
@@ -17,7 +16,6 @@
             "pages": [
               "content/components/params",
               "content/components/responses",
-              ...
             ]
           }
         ]
@@ -31,7 +29,6 @@
               "integrations/analytics/overview",
               "integrations/analytics/amplitude",
               "integrations/analytics/clearbit",
-              ...
             ]
           },
           {
