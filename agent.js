@@ -70,10 +70,10 @@ let tasks = [];
 let isInteractive = true;
 emitter.on(events.interactive, (data) => {
   isInteractive = data;
-  server.broadcast("interactive", data);
+  server.broadcast(events.interactive, data);
 });
 emitter.on(events.vm.show, ({ url }) => {
-  server.broadcast("show:vm", url);
+  server.broadcast(events.vm.show, url);
 });
 
 // get args from terminal
