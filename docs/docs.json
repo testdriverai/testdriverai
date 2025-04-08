@@ -1,41 +1,14 @@
 {
-    "navigation": {
-      "tabs": [{
-        "tab": "Componentsaaa",
-        "groups": [
-          {
-            "group": "Components",
-            "pages": [
-              "content/components/accordions",
-              "content/components/accordion-groups",
-              "content/components/callouts"
-            ]
-          },
-          {
-            "group": "API Components",
-            "pages": [
-              "content/components/params",
-              "content/components/responses"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Integrations",
-        "groups": [
-          {
-            "group": "Analytics",
-            "pages": [
-              "integrations/analytics/overview",
-              "integrations/analytics/amplitude",
-              "integrations/analytics/clearbit"
-            ]
-          },
-          {
-            "group": "SDKs",
-            "pages": ["integrations/sdks/providers", "integrations/sdks/clients"]
-          }
-        ]
-      }]
-    }
+  "name": "Testdriver.ai"
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://testdriver.ai"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#2AB673",
+    "light": "#55D799",
+    "dark": "#117866",
   }
+}
