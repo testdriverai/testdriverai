@@ -1,0 +1,44 @@
+{
+    "navigation": {
+      "tabs": [{
+        "tab": "Components",
+        "groups": [
+          {
+            "group": "Components",
+            "pages": [
+              "content/components/accordions",
+              "content/components/accordion-groups",
+              "content/components/callouts",
+              ...
+            ]
+          },
+          {
+            "group": "API Components",
+            "pages": [
+              "content/components/params",
+              "content/components/responses",
+              ...
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Analytics",
+            "pages": [
+              "integrations/analytics/overview",
+              "integrations/analytics/amplitude",
+              "integrations/analytics/clearbit",
+              ...
+            ]
+          },
+          {
+            "group": "SDKs",
+            "pages": ["integrations/sdks/providers", "integrations/sdks/clients"]
+          }
+        ]
+      }]
+    }
+  }
