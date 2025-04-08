@@ -1,0 +1,6 @@
+version: 5.2.2
+steps:
+  - prompt: Click on the search bar at the top.
+  - prompt: Type a search query for an artist or song.
+  - prompt: Press enter to perform the search.
+  - prompt: Assert that the search results are displayed correctly.

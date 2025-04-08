@@ -1,0 +1,6 @@
+version: 5.2.2
+steps:
+  - prompt: Click on the options button for a song.
+  - prompt: Select "Add to Playlist" from the menu.
+  - prompt: Choose a playlist to add the song to.
+  - prompt: Assert that the song is successfully added to the playlist.
