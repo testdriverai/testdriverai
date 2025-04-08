@@ -8,14 +8,14 @@
             "pages": [
               "content/components/accordions",
               "content/components/accordion-groups",
-              "content/components/callouts",
+              "content/components/callouts"
             ]
           },
           {
             "group": "API Components",
             "pages": [
               "content/components/params",
-              "content/components/responses",
+              "content/components/responses"
             ]
           }
         ]
@@ -28,7 +28,7 @@
             "pages": [
               "integrations/analytics/overview",
               "integrations/analytics/amplitude",
-              "integrations/analytics/clearbit",
+              "integrations/analytics/clearbit"
             ]
           },
           {
