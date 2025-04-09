@@ -1199,19 +1199,25 @@ const makeSandbox = async () => {
           
     try {
 
-      logger.info(chalk.gray(`- creating linux sandbox...`));
+      logger.info(chalk.gray(`- creating Sandbox...`));
+      server.broadcast("status", `Creating Sandbox...`);
       await sandbox.boot();
       logger.info(chalk.gray(`- authenticating...`));
+      server.broadcast("status", `Authenticating...`);
       await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY, secret: config.TD_SECRET} );
       logger.info(chalk.gray(`- setting up...`));
+      server.broadcast("status", `Setting up...`);
       await sandbox.send({type: 'create', resolution: [1024, 768]});
       logger.info(chalk.gray(`- starting stream...`));
+      server.broadcast("status", `Starting stream...`);
       await sandbox.send({type: 'stream.start'});
       let {url} = await sandbox.send({type: 'stream.getUrl'});
       logger.info(chalk.gray(`- rendering...`));
+      server.broadcast("status", `Rendering...`);
       await sandbox.send({type: 'ready'});
       emitter.emit(events.vm.show, {url});
       logger.info(chalk.gray(`- booting...`));
+      server.broadcast("status", `Starting...`);
       await new Promise(resolve => setTimeout(resolve, 3000)); 
       logger.info(chalk.green(``));
       logger.info(chalk.green(`sandbox runner ready!`));
