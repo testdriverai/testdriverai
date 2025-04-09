@@ -1,0 +1,160 @@
+---
+title: "TestRail"
+---
+
+This guide explains how to extract **test cases** from TestRail and convert them into **TestDriver.ai YAML test files**. By automating this process, you can ensure that your TestRail test cases are directly translated into actionable tests for TestDriver.ai.
+
+---
+
+## Workflow Overview
+
+1. **Export Test Cases from TestRail**: Use the TestRail API to fetch test cases.
+2. **Convert Test Cases to TestDriver.ai YAML**: Transform the test cases into YAML test files.
+3. **Save and Organize Test Files**: Store the generated YAML files in a structured directory.
+4. **Run Tests with TestDriver.ai**: Execute the tests using the TestDriver.ai CLI.
+
+---
+
+## Step 1: Export Test Cases from TestRail
+
+### Prerequisites
+1. **TestRail API Key**: Obtain your API key from TestRail.
+2. **TestRail Base URL**: Your TestRail instance URL (e.g., `https://yourcompany.testrail.io`).
+3. **Node.js**: Ensure Node.js is installed on your system.
+
+### Script: Export Test Cases from TestRail
+
+The following script fetches TestRail test cases and extracts the **title** and **steps**.
+
+#### Install Dependencies:
+
+```bash
+npm install axios yaml fs
+```
+
+#### Node.js Script (`export-testrail-test-cases.js`):
+
+```javascript
+const axios = require('axios');
+const yaml = require('yaml');
+const fs = require('fs');
+const path = require('path');
+
+// TestRail credentials
+const TESTRAIL_BASE_URL = 'https://yourcompany.testrail.io';
+const TESTRAIL_USERNAME = 'your-email@example.com';
+const TESTRAIL_API_KEY = 'your-api-key';
+const TESTRAIL_PROJECT_ID = 1; // Replace with your TestRail project ID
+
+// Output directory
+const OUTPUT_DIR = './testdriver_tests';
+
+// Ensure the output directory exists
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+
+// Fetch TestRail test cases
+async function fetchTestRailTestCases() {
+  try {
+    const response = await axios.get(
+      `${TESTRAIL_BASE_URL}/index.php?/api/v2/get_cases/${TESTRAIL_PROJECT_ID}`,
+      {
+        auth: {
+          username: TESTRAIL_USERNAME,
+          password: TESTRAIL_API_KEY,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const testCases = response.data.map((testCase) => ({
+      id: testCase.id,
+      title: testCase.title,
+      steps: testCase.custom_steps || 'No steps provided', // Replace `custom_steps` with the field ID for test steps if applicable
+    }));
+
+    // Process each test case
+    testCases.forEach((testCase) => createYamlFile(testCase));
+    console.log(`Exported ${testCases.length} test cases to ${OUTPUT_DIR}`);
+  } catch (error) {
+    console.error('Error fetching TestRail test cases:', error.message);
+  }
+}
+
+// Create a YAML file for each test case
+function createYamlFile(testCase) {
+  const steps = testCase.steps
+    .split('\n')
+    .map((step) => ({
+      prompt: step.trim(),
+    }));
+
+  const yamlContent = {
+    version: '4.2.18',
+    steps,
+  };
+
+  const fileName = `test_${testCase.id}.yml`;
+  const filePath = path.join(OUTPUT_DIR, fileName);
+
+  fs.writeFileSync(filePath, yaml.stringify(yamlContent), 'utf8');
+  console.log(`Created file: ${filePath}`);
+}
+
+// Run the script
+fetchTestRailTestCases();
+```
+
+---
+
+## Step 2: Convert Test Cases to TestDriver.ai YAML
+
+The script above generates a YAML file for each TestRail test case. Each file contains the **steps** as `prompt` entries.
+
+### Example YAML File (`testdriver_tests/test_123.yml`):
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Navigate to the login page.
+  - prompt: Enter valid credentials.
+  - prompt: Click the "Log In" button.
+  - prompt: Verify the dashboard is displayed.
+```
+
+---
+
+## Step 3: Save and Organize Test Files
+
+1. The generated YAML files will be saved in the `testdriver_tests/` directory.
+2. Ensure the directory is part of your TestDriver.ai project structure.
+
+---
+
+## Step 4: Run Tests with TestDriver.ai
+
+Use the TestDriver.ai CLI to execute the generated test files.
+
+### Run a Single Test File:
+
+```bash
+testdriverai run testdriver_tests/test_123.yml
+```
+
+---
+
+## Best Practices
+
+1. **Field Mapping**: Ensure the correct TestRail field ID (e.g., `custom_steps`) is used for test steps.
+2. **Secure Credentials**: Store TestRail API credentials in environment variables or secrets.
+3. **Review Generated Files**: Manually review the YAML files to ensure they align with your testing requirements.
+4. **Organize Tests**: Use a structured directory (e.g., `testdriver_tests/`) to manage your test files.
+
+---
+
+## Summary
+
+By following this guide, you can automate the process of importing test cases from TestRail into TestDriver.ai test files. This ensures that your test steps are directly translated into actionable tests, streamlining your testing workflows and improving coverage.

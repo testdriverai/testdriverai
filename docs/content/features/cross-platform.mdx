@@ -1,0 +1,104 @@
+---
+title: "Cross Platform Support"
+---
+
+TestDriver.ai provides robust cross-platform support, enabling you to run tests seamlessly on **Windows**, **Linux**, and **Mac** operating systems. This flexibility ensures that your applications are tested in environments that match your users' setups.
+
+## Specifying the Operating System
+
+When using the TestDriver GitHub Action, you can specify the target operating system by setting the `os` field. Supported values are:
+
+- `windows`
+- `linux`
+- `mac`
+
+Example:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: testdriverai/action@main
+        with:
+          os: linux
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. Open the browser
+            2. Navigate to example.com
+
+```
+
+## Using the `prerun` Field
+
+The `prerun` field allows you to execute a shell script before running your tests. This is particularly useful for:
+
+1. **Downloading and Installing Applications**  
+   Example: Downloading and installing a custom app or dependency.
+
+2. **Installing Chrome Extensions**  
+   Example: Adding a browser extension required for testing.
+
+3. **Launching a Browser**  
+   Example: Starting a browser with specific arguments or configurations.
+
+### Example `prerun` Script
+
+```yaml
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: testdriverai/action@main
+        with:
+          os: mac
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. Open the browser
+            2. Navigate to example.com
+          prerun: |
+            # Download and install an app
+            curl -o app.dmg https://example.com/app.dmg
+            hdiutil attach app.dmg
+            cp -R /Volumes/App/App.app /Applications/
+            
+            # Install a Chrome extension
+            npm install dashcam-chrome
+            open -a "Google Chrome" --args --load-extension=$(pwd)/node_modules/dashcam-chrome/build
+            
+            # Launch the browser
+            open -a "Google Chrome"
+
+```
+
+## Write Once, Run Anywhere
+
+TestDriver.ai uses **selectorless testing**, meaning tests are written in a generic format that works across all platforms. The AI dynamically adapts to the environment, ensuring that the same test can run on Windows, Linux, and Mac without modification.
+
+### Benefits of Selectorless Testing
+
+- **Reduced Maintenance**: No need to update selectors when UI changes.
+- **Cross-Platform Compatibility**: Tests are not tied to platform-specific configurations.
+- **Ease of Use**: Write high-level, natural language prompts, and let TestDriver handle the rest.
+
+### Example Test
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Open the browser and search for "TestDriver.ai"
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Search Google or type a URL
+        description: main search bar
+        action: click
+      - command: type
+        text: TestDriver.ai
+      - command: press-keys
+        keys: [enter]
+
+```
+
+This test will work on any supported operating system without modification.

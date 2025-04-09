@@ -1,0 +1,146 @@
+# Authentication in TestDriver.ai GitHub Action
+
+This guide explains how to handle **authentication workflows** in **TestDriver.ai** using GitHub Actions. It covers securely passing credentials (e.g., usernames and passwords) to the TestDriver.ai action and using them in both the `prerun` script and test files.
+
+---
+
+## How Authentication Works in TestDriver.ai
+
+1. **Store Credentials Securely**:
+   - Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
+2. **Pass Credentials to the Workflow**:
+   - Supply credentials as environment variables or directly in the workflow.
+3. **Use Credentials in Tests**:
+   - Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
+
+---
+
+## Step 1: Store Credentials in GitHub Secrets
+
+1. Navigate to your repository's **Settings** > **Secrets and variables** > **Actions**.
+2. Add the following secrets:
+   - **`TD_USERNAME`**: The username for login.
+   - **`TD_PASSWORD`**: The password for login.
+   - **`TESTDRIVER_API_KEY`**: Your TestDriver.ai API key.
+   - **`WEBSITE_URL`**: The URL of the website to test.
+
+---
+
+## Step 2: Pass Credentials to the Workflow
+
+Secrets are passed to the GitHub Action using the `secrets` context. They can be supplied as:
+- **Environment Variables**: Passed via the `env` block.
+- **Inline in the `prerun` Script**: Used directly in the script.
+
+### Example Workflow:
+
+```yaml
+name: TestDriver.ai / Authentication
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-authentication:
+    name: Test Authentication
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run Authentication Test
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. Open the login page
+            2. Enter the username: ${{ secrets.TD_USERNAME }}
+            3. Enter the password: ${{ secrets.TD_PASSWORD }}
+            4. Click the "Log In" button
+            5. Verify the dashboard is displayed
+          prerun: |
+            cd $env:TEMP
+            npm init -y
+            npm install dashcam-chrome
+            Start-Process "msedge" -ArgumentList "--start-maximized", "--load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${{ secrets.WEBSITE_URL }}"
+            exit
+        env:
+          TD_USERNAME: ${{ secrets.TD_USERNAME }}
+          TD_PASSWORD: ${{ secrets.TD_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+
+```
+
+
+---
+
+## Step 3: Use Credentials in Test Files
+
+Secrets can be referenced in the test file using placeholders (e.g., `${TD_USERNAME}` and `${TD_PASSWORD}`).
+
+### Example Test File:
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Log in to the application
+    commands:
+      - command: hover-text
+        text: Email
+        description: Email input field
+        action: click
+      - command: type
+        text: ${TD_USERNAME}
+      - command: hover-text
+        text: Password
+        description: Password input field
+        action: click
+      - command: type
+        text: ${TD_PASSWORD}
+      - command: hover-text
+        text: Log In
+        description: Log In button
+        action: click
+      - command: assert
+        expect: The dashboard is displayed
+
+
+```
+
+
+---
+
+## How It Works Together
+
+1. **Secrets in the Workflow**:
+   - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver.ai action.
+
+2. **Secrets in the `prerun` Script**:
+   - The `WEBSITE_URL` secret is used to launch the browser with the correct URL.
+
+3. **Secrets in the Test File**:
+   - The test file dynamically references the secrets to fill in login credentials during the test.
+
+---
+
+## Benefits of Using Authentication in TestDriver.ai
+
+1. **Secure Handling of Credentials**:
+   - Secrets are encrypted and not exposed in logs.
+   - Even if printed, they appear as `***`.
+
+2. **Dynamic Testing**:
+   - Easily switch between different environments (e.g., staging, production) by updating the secrets.
+
+3. **Reusability**:
+   - Use the same workflow and test files across multiple repositories or environments.
+
+---
+
+By securely passing credentials and using them in the `prerun` script and test files, you can automate authentication workflows in TestDriver.ai while ensuring sensitive information remains protected.

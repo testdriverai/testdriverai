@@ -1,0 +1,13 @@
+version: 5.2.2
+session: 67f6b178b0f7fd893a9bb170
+steps:
+  - prompt: ' open the browser'
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
+  - prompt: /try open the browser
+    commands:
+      - command: hover-image
+        description: browser icon in the dock
+        action: click
