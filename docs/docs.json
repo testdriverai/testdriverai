@@ -70,7 +70,7 @@
               "authentication",
               "setup-and-teardown",
               "running-custom-code",
-              "security-and-privacy",
+              "security-and-privacy"
             ]
           }]
       },
@@ -118,15 +118,25 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Wall Of Fame",
+        "groups": [
+          {
+            "group": "Bugs",
+            "pages": [
+              "pieces",
+              "pubnub",
+              "microsoft",
+              "sterlingpdf",
+              "etc",
+              "etc"
+            ]
+          }]
       }
     ],
     "global": {
       "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
         {
           "anchor": "Community",
           "href": "https://mintlify.com/community",
