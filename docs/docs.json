@@ -11,66 +11,104 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Intro",
+        "tab": "Overview",
         "groups": [
           {
-            "group": "Overview",
+            "group": "Intro",
             "pages": [
-              "/content/overview/quickstart",
-              "/content/overview/what-is-testdriver",
-              "/content/overview/faq",
-              "/content/overview/comparison"
+              "/overview/quickstart",
+              "/overview/what-is-testdriver",
+              "/overview/faq",
+              "/overview/comparison"
             ]
           },
           {
             "group": "Features",
             "pages": [
-              "selectorless-testing",
-              "cross-platform-support",
-              "visual-assertions",
-              "auto-healing",
-              "reusable-snippets",
-              "parallel-testing",
-              "dynamic-import",
-              "playwright-export",
-              "github-integration"
+              "/features/selectorless",
+              "/features/generation",
+              "/features/visual-assertions",
+              "/features/auto-healing",
+              "/features/cross-platform",
+              "/features/reusable-snippets",
+              "/features/parallel-testing",
+              "/features/github"
             ]
           },
           {
-            "group": "Integrations",
+            "group": "Platform Setup",
             "pages": [
-              "vercel",
-              "netlify",
-              "heroku",
-              "electron"
+              "/integrations/vercel",
+              "/integrations/netlify",
+              "/integrations/electron"
+            ]
+          },
+          {
+            "group": "Test Importing",
+            "pages": [
+              "/importing/testrail",
+              "/importing/jira",
+              "/importing/gherkin",
+              "/importing/csv"
+            ]
+          },
+          {
+            "group": "Test Exporting",
+            "pages": [
+              "/exploting/playwright"
+            ]
+          },
+          {
+            "group": "Bug Reporting",
+            "pages": [
+              "/bugs/jira"
+            ]
+          },
+          {
+            "group": "Security & Privacy",
+            "pages": [
+              "/security/agent",
+              "/security/action",
+              "/security/platform"
             ]
           }
         ]
       },
       {
-        "tab": "Tutorials",
+        "tab": "Guide",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
-              "/content/getting-started/setup",
-              "/content/getting-started/writing-tests",
-              "generating-tests",
-              "running-and-debugging-tests",
-              "setting-up-CI"
+              "/getting-started/setup",
+              "/getting-started/writing",
+              "/getting-started/generating",
+              "/getting-started/running",
+              "/getting-started/ci"
             ]
           },
           {
-            "group": "Guides",
+            "group": "Writing Tests",
             "pages": [
-              "locating-elements",
-              "waiting-for-elements",
-              "writing-assertions",
-              "variables",
-              "authentication",
-              "setup-and-teardown",
-              "running-custom-code",
-              "security-and-privacy"
+              "/guide/locating",
+              "/guide/waiting",
+              "/guide/assertions",
+              "/guide/variables",
+              "/guide/authentication",
+              "/guide/setup-teardown",
+              "/guide/code"
+            ]
+          },
+          {
+            "group": "Running in CI",
+            "pages": [
+              "/action/setup",
+              "/action/browser",
+              "/action/os",
+              "/action/output",
+              "/action/performance",
+              "/action/prerun",
+              "/action/secrets"
             ]
           }]
       },
@@ -78,43 +116,40 @@
         "tab": "Reference",
         "groups": [
           {
-            "group": "YAML Schema",
+            "group": "Commands",
             "pages": [
-              "assert",
-              "exec",
-              "focus-application",
-              "hover-image",
-              "match-image",
-              "hover-text",
-              "if",
-              "press-keys",
-              "remember",
-              "run",
-              "scroll",
-              "scroll-until-image",
-              "scroll-until-text",
-              "type",
-              "wait",
-              "wait-for-image",
-              "wait-for-text"
+              "/commands/assert",
+              "/commands/exec",
+              "/commands/focus-application",
+              "/commands/hover-image",
+              "/commands/match-image",
+              "/commands/hover-text",
+              "/commands/if",
+              "/commands/press-keys",
+              "/commands/run",
+              "/commands/scroll",
+              "/commands/scroll-until-image",
+              "/commands/scroll-until-text",
+              "/commands/type",
+              "/commands/wait",
+              "/commands/wait-for-image",
+              "/commands/wait-for-text"
             ]
           },
           {
             "group": "Interactive Commands",
             "pages": [
-              "assert",
-              "undo",
-              "save",
-              "run",
-              "generate"
+              "/interactive/assert",
+              "/interactive/undo",
+              "/interactive/save",
+              "/interactive/run",
+              "/interactive/generate"
             ]
           },
           {
             "group": "CLI",
             "pages": [
-              "init",
-              "edit",
-              "run"
+              "/cli/overview"
             ]
           }
         ]

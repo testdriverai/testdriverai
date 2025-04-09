@@ -1,0 +1,120 @@
+---
+title: "FAQ"
+sidebarTitle: "FAQ"
+---
+
+### **🔧 Product Capabilities**
+
+**Q: What is TestDriver.ai?**  
+TestDriver.ai is an AI-powered testing platform that automates end-to-end testing for web, desktop, and mobile applications. It uses natural language prompts and AI-driven interactions to simulate real user behavior.
+
+**Q: What platforms does TestDriver support?**  
+TestDriver supports:
+- Web applications (any browser)
+- Desktop applications (Windows, Mac)
+- Mobile applications (via emulators or device farms)
+
+**Q: Can TestDriver test desktop applications?**  
+Yes, TestDriver can test native desktop applications by simulating mouse and keyboard input and identifying UI elements.
+
+**Q: Can TestDriver test mobile apps?**  
+Yes, it supports mobile app testing via emulators or integration with device farms.
+
+---
+
+### **🤖 Test Creation and Execution**
+
+**Q: How do I create tests with TestDriver?**  
+You can write high-level instructions in plain English, and TestDriver will interpret and generate test steps. For example:  
+```
+Open Google Chrome and search for "puppies"
+```
+
+**Q: Can TestDriver generate tests automatically?**  
+Yes, TestDriver can explore applications and generate test cases based on UI flows and user interactions.
+
+**Q: How do I run a test?**  
+Use the `/try` command in interactive mode or run a saved YAML file with:  
+```bash
+testdriverai run path/to/test.yml
+```
+
+**Q: Can I edit the generated YAML tests?**  
+Yes, you can manually edit the YAML files for advanced customization.
+
+---
+
+### **🛠️ Test Maintenance and Resilience**
+
+**Q: What happens if the UI changes?**  
+TestDriver uses AI to adapt to UI changes, such as updated button text or layout adjustments, reducing the need for manual updates.
+
+**Q: Do I need to rewrite tests often?**  
+No, TestDriver’s self-healing capabilities minimize test maintenance.
+
+**Q: How does TestDriver handle flaky tests?**  
+It retries failed actions, assigns confidence scores, and logs inconsistencies for debugging.
+
+---
+
+### **🚨 Debugging and Reporting**
+
+**Q: How does TestDriver report test failures?**  
+It provides detailed logs, screenshots, console output, and video replays of the test run.
+
+**Q: Can I debug why a test failed?**  
+Yes, you can view step-by-step logs, network traffic, DOM state, and video playback of the test execution.
+
+---
+
+### **🚀 Performance and Parallelism**
+
+**Q: Can I run tests in parallel?**  
+Yes, TestDriver supports parallel execution using multiple VMs or containers.
+
+**Q: Can TestDriver track performance metrics?**  
+Yes, it can log CPU, memory usage, load times, and frame rates to catch performance regressions.
+
+---
+
+### **🔒 Security and Privacy**
+
+**Q: Is TestDriver safe to use with sensitive data?**  
+Yes, TestDriver supports secure environments, variable obfuscation, and test data isolation.
+
+**Q: Does TestDriver store screenshots of my desktop?**  
+Screenshots are uploaded to the TestDriver API for processing but are not persisted in the database.
+
+---
+
+### **📊 Integration and CI/CD**
+
+**Q: Can TestDriver integrate with CI/CD pipelines?**  
+Yes, TestDriver integrates with GitHub Actions, Jenkins, and other CI/CD tools.
+
+**Q: Can I trigger tests on pull requests or merges?**  
+Yes, you can configure TestDriver to run tests automatically on pull requests or merges.
+
+---
+
+### **📦 Use Cases**
+
+**Q: What types of workflows can TestDriver test?**  
+TestDriver can handle:
+- Web app testing (e.g., login flows, search functionality)
+- Desktop app testing (e.g., menu interactions, file uploads)
+- Cross-application workflows (e.g., uploading files from desktop to web)
+- Mobile app testing (e.g., in-app purchases, navigation)
+
+**Q: Can TestDriver test dynamic or non-deterministic outputs?**  
+Yes, it uses AI assertions to validate outcomes even when outputs vary (e.g., dynamic UIs or generated text).
+
+---
+
+### **🧠 AI Behavior**
+
+**Q: How does TestDriver understand my prompts?**  
+It uses AI models to interpret your instructions, identify UI elements, and perform tasks based on the context.
+
+**Q: Can I adjust how the AI interprets my prompt?**  
+Yes, you can rewrite prompts, add constraints, or manually edit the generated YAML steps.

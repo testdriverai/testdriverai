@@ -1,0 +1,196 @@
+---
+title: "Getting Started with TestDriver.ai"
+sidebarTitle: "Getting Started"
+description: "Learn how to set up and run tests with TestDriver.ai using GitHub Actions for seamless end-to-end testing."
+---
+
+This guide explains how to set up a basic GitHub Actions workflow to run tests using **TestDriver.ai**.
+
+---
+
+## Step 1: Prerequisites
+
+1. **TestDriver.ai API Key**: Obtain your API key from TestDriver.ai and store it as a GitHub secret (e.g., `TESTDRIVER_API_KEY`).
+2. **Test Files**: Ensure your test files are saved in the `testdriver/` directory of your repository.
+
+---
+
+## Step 2: Create a GitHub Actions Workflow
+
+1. Create a new file in your repository: `.github/workflows/testdriver.yml`.
+2. Add the following workflow configuration:
+
+### Example Workflow: `.github/workflows/testdriver.yml`
+
+```yaml
+name: Run Tests with TestDriver.ai
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    name: Run TestDriver.ai Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver.ai
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. Run all tests in the testdriver directory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+
+```
+
+
+---
+
+## Step 3: Add Your Test Files
+
+1. Save your test files in the `testdriver/` directory of your repository.
+2. Example test file: `testdriver/test.yml`:
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Open the homepage
+  - prompt: Verify the login button is visible
+  - prompt: Click the login button
+  - prompt: Verify the login form is displayed
+
+
+```
+
+
+---
+
+## Step 4: Trigger the Workflow
+
+1. Push changes to the `main` branch or open a pull request.
+2. Alternatively, manually trigger the workflow from the **Actions** tab in your GitHub repository.
+
+---
+
+## Step 5: View Results
+
+1. Navigate to the **Actions** tab in your GitHub repository.
+2. Select the workflow run to view the test results.
+
+---
+
+## Example Output
+
+- ✅ **Run TestDriver.ai Tests**: All tests passed.
+- ❌ **Run TestDriver.ai Tests**: 1 test failed. View logs for details.
+
+---
+
+By following this guide, you can quickly set up and run tests using TestDriver.ai on GitHub Actions.
+
+# Debugging Tests in TestDriver.ai (app.testdriver.ai)
+
+TestDriver.ai provides a powerful debugging interface through its **app.testdriver.ai** platform (formerly Dashcam). This interface allows you to analyze test runs, identify failures, and optimize your test suite with detailed visual and textual feedback.
+
+---
+
+## Key Features of app.testdriver.ai for Debugging
+
+### 1. **Step-by-Step Execution Logs**
+- View each step of the test execution, including:
+  - The **action performed** (e.g., clicking a button, typing text).
+  - The **expected outcome** (e.g., verifying a specific element is visible).
+  - The **result** (pass, fail, or skipped).
+- Logs provide detailed context for each step, making it easier to pinpoint where and why a test failed.
+
+---
+
+### 2. **Visual Feedback**
+- **Screenshots**: See what the application looked like at each step of the test.
+- **GIF Previews**: Watch a replay of the entire test execution to understand the flow and identify UI issues.
+- **Highlighting**: Elements interacted with during the test are highlighted in screenshots, helping you verify that the correct elements were targeted.
+
+---
+
+### 3. **Error Details**
+- For failed steps, app.testdriver.ai provides:
+  - **Error messages**: Detailed descriptions of what went wrong (e.g., "Element not found").
+  - **Stack traces**: For advanced debugging of backend or script-related issues.
+  - **Suggestions**: Recommendations for fixing common issues, such as adjusting prompts or improving element descriptions.
+
+---
+
+### 4. **Test History**
+- Access the history of test runs to:
+  - Compare results across different builds or environments.
+  - Identify flaky tests by analyzing patterns in failures.
+  - Track improvements or regressions over time.
+
+---
+
+### 5. **Environment Context**
+- View the environment details for each test run, including:
+  - Operating system and browser version.
+  - Screen resolution and viewport size.
+  - Network conditions (if applicable).
+
+---
+
+### 6. **Collaboration Tools**
+- Share test results with your team by generating a shareable link.
+- Add comments or annotations to specific steps to facilitate discussions and debugging.
+
+---
+
+## How to Debug Tests in app.testdriver.ai
+
+1. **Access Test Results**:
+   - Navigate to [app.testdriver.ai](https://app.testdriver.ai).
+   - Log in with your TestDriver.ai account.
+   - Select the test run you want to debug from the dashboard.
+
+2. **Analyze the Test Run**:
+   - Review the **step-by-step logs** to identify where the test failed.
+   - Use the **screenshots** and **GIF previews** to visually verify the application's behavior.
+
+3. **Investigate Failures**:
+   - Click on the failed step to view detailed error messages and suggestions.
+   - Check the **highlighted elements** in the screenshots to ensure the correct elements were targeted.
+
+4. **Iterate and Fix**:
+   - Update your test prompts or application code based on the findings.
+   - Re-run the test to verify the fix.
+
+---
+
+## Best Practices for Debugging in app.testdriver.ai
+
+1. **Use Descriptive Prompts**:
+   - Ensure your test prompts are clear and specific to reduce ambiguity.
+   - Example: Instead of "Click the button," use "Click the 'Sign In' button in the header."
+
+2. **Leverage Visual Feedback**:
+   - Use screenshots and GIFs to quickly identify UI issues, such as misaligned elements or missing buttons.
+
+3. **Track Flaky Tests**:
+   - Use the test history to identify tests that fail intermittently and investigate potential causes (e.g., timing issues or dynamic content).
+
+4. **Collaborate with Your Team**:
+   - Share test results with developers and QA engineers to resolve issues faster.
+
+5. **Optimize Test Steps**:
+   - Combine or simplify test steps to make debugging easier and reduce test execution time.
+
+---
+
+By leveraging the debugging tools in **app.testdriver.ai**, you can efficiently analyze and resolve test failures, ensuring your application meets the highest quality standards.

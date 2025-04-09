@@ -1,0 +1,172 @@
+---
+title: "Jira"
+sidebarTitle: "Jira"
+---
+
+# Importing User Stories from Jira into TestDriver.ai Test Files
+
+This guide explains how to extract **user stories** from Jira and convert them into **TestDriver.ai test files**. By automating this process, you can ensure that your user stories are directly translated into actionable test cases for TestDriver.ai.
+
+---
+
+## Workflow Overview
+
+1. **Export User Stories from Jira**: Use the Jira API to fetch user stories.
+2. **Convert User Stories to TestDriver.ai YAML**: Transform the user stories into YAML test files.
+3. **Save and Organize Test Files**: Store the generated YAML files in a structured directory.
+4. **Run Tests with TestDriver.ai**: Execute the tests using the TestDriver.ai CLI.
+
+---
+
+## Step 1: Export User Stories from Jira
+
+### Prerequisites
+1. **Jira API Token**: Generate an API token from your Jira account.
+2. **Jira Base URL**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
+3. **Node.js**: Ensure Node.js is installed on your system.
+
+### Script: Export User Stories from Jira
+
+The following script fetches Jira tickets and extracts the **user story title** and **acceptance criteria**.
+
+#### Install Dependencies:
+
+```bash
+npm install axios yaml fs
+```
+
+#### Node.js Script (`export-jira-user-stories.js`):
+
+```javascript
+const axios = require('axios');
+const yaml = require('yaml');
+const fs = require('fs');
+const path = require('path');
+
+// Jira credentials
+const JIRA_BASE_URL = 'https://yourcompany.atlassian.net';
+const JIRA_USERNAME = 'your-email@example.com';
+const JIRA_API_TOKEN = 'your-api-token';
+const JIRA_PROJECT_KEY = 'PROJECT_KEY'; // Replace with your Jira project key
+
+// Output directory
+const OUTPUT_DIR = './testdriver_tests';
+
+// Ensure the output directory exists
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
+
+// Fetch Jira tickets
+async function fetchJiraTickets() {
+  try {
+    const response = await axios.get(
+      `${JIRA_BASE_URL}/rest/api/2/search?jql=project=${JIRA_PROJECT_KEY}`,
+      {
+        auth: {
+          username: JIRA_USERNAME,
+          password: JIRA_API_TOKEN,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const tickets = response.data.issues.map((issue) => ({
+      id: issue.key,
+      title: issue.fields.summary,
+      acceptanceCriteria: issue.fields.customfield_12345 || 'No acceptance criteria provided', // Replace `customfield_12345` with the field ID for "Acceptance Criteria"
+    }));
+
+    // Process each ticket
+    tickets.forEach((ticket) => createYamlFile(ticket));
+    console.log(`Exported ${tickets.length} user stories to ${OUTPUT_DIR}`);
+  } catch (error) {
+    console.error('Error fetching Jira tickets:', error.message);
+  }
+}
+
+// Create a YAML file for each user story
+function createYamlFile(ticket) {
+  const steps = ticket.acceptanceCriteria
+    .split('\n')
+    .map((criteria) => ({
+      prompt: criteria.trim(),
+    }));
+
+  const yamlContent = {
+    version: '4.2.18',
+    steps,
+  };
+
+  const fileName = `${ticket.id}.yml`;
+  const filePath = path.join(OUTPUT_DIR, fileName);
+
+  fs.writeFileSync(filePath, yaml.stringify(yamlContent), 'utf8');
+  console.log(`Created file: ${filePath}`);
+}
+
+// Run the script
+fetchJiraTickets();
+
+
+```
+
+---
+
+## Step 2: Convert User Stories to TestDriver.ai YAML
+
+The script above generates a YAML file for each Jira ticket. Each file contains the **acceptance criteria** as `prompt` entries.
+
+### Example YAML File (`testdriver_tests/PROJ-123.yml`):
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: The user can log in with valid credentials.
+  - prompt: An error message is displayed for invalid credentials.
+  - prompt: The login page is responsive on mobile devices.
+
+
+```---
+
+## Step 3: Save and Organize Test Files
+
+1. The generated YAML files will be saved in the `testdriver_tests/` directory.
+2. Ensure the directory is part of your TestDriver.ai project structure.
+
+---
+
+## Step 4: Run Tests with TestDriver.ai
+
+Use the TestDriver.ai CLI to execute the generated test files.
+
+### Run a Single Test File:
+
+```bash
+testdriverai run testdriver_tests/PROJ-123.yml
+
+
+```
+
+### Run All Test Files:
+
+```bash
+testdriverai run testdriver_tests/*.yml
+```
+
+---
+
+## Best Practices
+
+1. **Field Mapping**: Ensure the correct Jira field ID (e.g., `customfield_12345`) is used for "Acceptance Criteria."
+2. **Secure Credentials**: Store Jira API credentials in environment variables or secrets.
+3. **Review Generated Files**: Manually review the YAML files to ensure they align with your testing requirements.
+4. **Organize Tests**: Use a structured directory (e.g., `testdriver_tests/`) to manage your test files.
+
+---
+
+## Summary
+
+By following this guide, you can automate the process of importing user stories from Jira into TestDriver.ai test files. This ensures that your acceptance criteria are directly translated into actionable tests, streamlining your testing workflows and improving coverage.
