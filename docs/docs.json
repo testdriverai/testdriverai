@@ -36,35 +36,6 @@
             ]
           },
           {
-            "group": "Platform Setup",
-            "pages": [
-              "/integrations/vercel",
-              "/integrations/netlify",
-              "/integrations/electron"
-            ]
-          },
-          {
-            "group": "Test Importing",
-            "pages": [
-              "/importing/testrail",
-              "/importing/jira",
-              "/importing/gherkin",
-              "/importing/csv"
-            ]
-          },
-          {
-            "group": "Test Exporting",
-            "pages": [
-              "/exploting/playwright"
-            ]
-          },
-          {
-            "group": "Bug Reporting",
-            "pages": [
-              "/bugs/jira"
-            ]
-          },
-          {
             "group": "Security & Privacy",
             "pages": [
               "/security/agent",
@@ -113,6 +84,64 @@
           }]
       },
       {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Scenarios",
+            "pages": [
+              "cookie-banner",
+              "log-in",
+              "spell-check",
+              "form-filling",
+              "file-upload",
+              "pdf-generation",
+              "ai-chatbot"
+            ]
+          },
+          {
+            "group": "Apps",
+            "pages": [
+              "static-websites",
+              "chrome-extensions",
+              "mobile-apps",
+              "desktop-apps"
+            ]
+          }]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Buidling",
+            "pages": [
+              "/integrations/vercel",
+              "/integrations/netlify",
+              "/integrations/electron"
+            ]
+          },
+          {
+            "group": "Importing",
+            "pages": [
+              "/importing/testrail",
+              "/importing/jira",
+              "/importing/gherkin",
+              "/importing/csv"
+            ]
+          },
+          {
+            "group": "Exporting",
+            "pages": [
+              "/exploting/playwright"
+            ]
+          },
+          {
+            "group": "Bug Reporting",
+            "pages": [
+              "/bugs/jira"
+            ]
+          }]
+      },
+      {
         "tab": "Reference",
         "groups": [
           {
@@ -153,21 +182,6 @@
             ]
           }
         ]
-      },
-      {
-        "tab": "Wall Of Fame",
-        "groups": [
-          {
-            "group": "Bugs",
-            "pages": [
-              "pieces",
-              "pubnub",
-              "microsoft",
-              "sterlingpdf",
-              "etc",
-              "etc"
-            ]
-          }]
       }
     ],
     "global": {
