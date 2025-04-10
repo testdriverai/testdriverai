@@ -273,7 +273,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   speak("thinking...");
   notify("thinking...");
-
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -313,6 +313,7 @@ const check = async () => {
 
   logger.info("");
   logger.info(chalk.dim("checking..."), "testdriver");
+  server.broadcast("status", `checking...`);
   logger.info("");
 
   let thisScreenshot = await system.captureScreenBase64(1, false, true);
@@ -516,6 +517,7 @@ const assert = async (expect) => {
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -542,6 +544,7 @@ const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -576,7 +579,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
 
   speak("thinking...");
   notify("thinking...");
-
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
