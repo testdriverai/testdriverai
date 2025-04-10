@@ -1011,7 +1011,11 @@ let runRawYML = async (yml) => {
   const tmp = require("tmp");
   let tmpobj = tmp.fileSync();
 
+  console.log(tmpobj.name);
+
   let decoded = decodeURIComponent(yml);
+
+  console.log(decoded);
 
   // saved the yml to a temp file using tmp
   // and run it with run()
