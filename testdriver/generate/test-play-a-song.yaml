@@ -1,0 +1,6 @@
+version: 5.2.2
+steps:
+  - prompt: Click on the play button for the selected song.
+  - prompt: Assert that the song starts playing.
+  - prompt: Check that the play button changes to a pause button.
+  - prompt: Assert there are no playback errors.
