@@ -349,6 +349,8 @@ const check = async () => {
 const runCommand = async (command, depth) => {
   let yml = await yaml.dump(command);
 
+  await save({});
+
   logger.debug(`running command: \n\n${yml}`);
 
   try {
@@ -857,16 +859,8 @@ const firstPrompt = async () => {
     let object = await generator.hydrateFromYML(
       fs.readFileSync(thisFile, "utf-8"),
     );
-
-    if (!object?.steps) {
-      analytics.track("load invalid yaml");
-      logger.error("Invalid YAML. No steps found.");
-      logger.info("Invalid YAML: " + thisFile);
-      return await exit(true);
-    }
-
     // push each step to executionHistory from { commands: {steps: [ { commands: [Array] } ] } }
-    object.steps.forEach((step) => {
+    object.steps?.forEach((step) => {
       executionHistory.push(step);
     });
 
@@ -1074,10 +1068,14 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       return await exploratoryLoop(step.prompt);
     }
 
-    executionHistory.push({
-      prompt: step.prompt,
-      commands: [], // run will overwrite the commands
-    });
+    if (shouldSave) {
+
+      executionHistory.push({
+        prompt: step.prompt,
+        commands: [], // run will overwrite the commands
+      });
+
+    }
 
     let markdown = `\`\`\`yaml
 ${yaml.dump(step)}
@@ -1169,6 +1167,7 @@ const buildEnv = async () => {
   setTerminalApp(win);
   await ensureMacScreenPerms();
   await makeSandbox();
+  await runPrerun();
 };
 
 const start = async () => {
@@ -1189,7 +1188,7 @@ const start = async () => {
 
     if (!config.TD_VM) {
       logger.info(
-        chalk.red("Warning!" ) +
+        chalk.red("Warning! " ) +
           chalk.dim("Local mode sends screenshots of the desktop to our API."),
       );
       logger.info(
@@ -1221,14 +1220,14 @@ const makeSandbox = async () => {
           
     try {
 
-      logger.info(chalk.gray(`- creating Sandbox...`));
-      server.broadcast("status", `Creating Sandbox...`);
+      logger.info(chalk.gray(`- creating sandbox...`));
+      server.broadcast("status", `Creating sandbox...`);
       await sandbox.boot();
       logger.info(chalk.gray(`- authenticating...`));
       server.broadcast("status", `Authenticating...`);
       await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY, secret: config.TD_SECRET} );
-      logger.info(chalk.gray(`- setting up...`));
-      server.broadcast("status", `Setting up...`);
+      logger.info(chalk.gray(`- configuring...`));
+      server.broadcast("status", `configuring...`);
       await sandbox.send({type: 'create', resolution: config.TD_VM_RESOLUTION});
       logger.info(chalk.gray(`- starting stream...`));
       server.broadcast("status", `Starting stream...`);
@@ -1255,6 +1254,14 @@ const makeSandbox = async () => {
   emitter.emit(events.interactive, false);
   emitter.emit(events.showWindow)
 
+}
+
+const runPrerun = async () => {
+  const prerunFile = path.join(process.cwd(), "testdriver", "lifecycle", "prerun.yaml");
+  if (fs.existsSync(prerunFile)) {
+    logger.info(chalk.cyan(`Running prerun file: ${prerunFile}`));
+    await run(prerunFile, false, false);
+  }
 }
 
 process.on("uncaughtException", async (err) => {
