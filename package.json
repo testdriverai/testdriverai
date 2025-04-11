@@ -18,6 +18,7 @@
   "dependencies": {
     "@e2b/desktop": "^1.6.0",
     "@electerm/strip-ansi": "^1.0.0",
+    "arktype": "^2.1.19",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",
     "cli-progress": "^3.12.0",
