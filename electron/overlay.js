@@ -15,8 +15,8 @@ app.whenReady().then(() => {
   if (config.TD_VM) {
 
     windowOptions = {
-      width: 1024,
-      height: 768,
+      width: config.TD_VM_RESOLUTION[0],
+      height: config.TD_VM_RESOLUTION[1],
       closable: true,
       resizable: true,
       alwaysOnTop: true,
@@ -64,7 +64,7 @@ app.whenReady().then(() => {
       visibleOnFullScreen: true,
     });
   } else {
-    window.setContentSize(1024, 768);
+    window.setContentSize(config.TD_VM_RESOLUTION[0], config.TD_VM_RESOLUTION[1]);
     window.setBackgroundColor('#000')
   }
   
