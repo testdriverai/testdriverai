@@ -31,7 +31,7 @@ const sanitizeFilename = require("sanitize-filename");
 const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
-const websocketserver = require("./lib/websockets.js");
+const { server } = require("./lib/ipc.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const log = require("./lib/logger.js");
@@ -63,14 +63,17 @@ let checkCount = 0;
 let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
-let wss; 
 
 // list of prompts that the user has given us
 let tasks = [];
 
-let isInteractive = false;
+let isInteractive = true;
 emitter.on(events.interactive, (data) => {
   isInteractive = data;
+  server.broadcast(events.interactive, data);
+});
+emitter.on(events.vm.show, ({ url }) => {
+  server.broadcast(events.vm.show, url);
 });
 
 // get args from terminal
@@ -270,7 +273,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   speak("thinking...");
   notify("thinking...");
-
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -310,6 +313,7 @@ const check = async () => {
 
   logger.info("");
   logger.info(chalk.dim("checking..."), "testdriver");
+  server.broadcast("status", `checking...`);
   logger.info("");
 
   let thisScreenshot = await system.captureScreenBase64(1, false, true);
@@ -513,6 +517,7 @@ const assert = async (expect) => {
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -539,6 +544,7 @@ const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -573,7 +579,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
 
   speak("thinking...");
   notify("thinking...");
-
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -857,10 +863,7 @@ const firstPrompt = async () => {
   };
 
   rl.on("line", handleInput);
-
-  config.TD_VM && wss.addEventListener("input", async (message) => {
-    handleInput(message.data);
-  });
+  server.on("input", handleInput);
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
@@ -1028,7 +1031,11 @@ let runRawYML = async (yml) => {
   const tmp = require("tmp");
   let tmpobj = tmp.fileSync();
 
+  console.log(tmpobj.name);
+
   let decoded = decodeURIComponent(yml);
+
+  console.log(decoded);
 
   // saved the yml to a temp file using tmp
   // and run it with run()
@@ -1102,7 +1109,6 @@ ${yaml.dump(step)}
 };
 
 const promptUser = () => {
-  config.TD_VM && wss.sendToClients("done");
   emitter.emit(events.interactive, true);
   rl.prompt(true);
 };
@@ -1165,13 +1171,10 @@ const embed = async (file, depth) => {
 
 const buildEnv = async () => {
   let win = await system.activeWin();
-  if (config.TD_VM) {
-    wss = websocketserver.create();
-  }
   setTerminalApp(win);
   await ensureMacScreenPerms();
   await makeSandbox();
-}
+};
 
 const start = async () => {
   // logger.info(await  system.getPrimaryDisplay());
@@ -1223,19 +1226,25 @@ const makeSandbox = async () => {
           
     try {
 
-      logger.info(chalk.gray(`- creating linux sandbox...`));
+      logger.info(chalk.gray(`- creating Sandbox...`));
+      server.broadcast("status", `Creating Sandbox...`);
       await sandbox.boot();
       logger.info(chalk.gray(`- authenticating...`));
+      server.broadcast("status", `Authenticating...`);
       await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY, secret: config.TD_SECRET} );
       logger.info(chalk.gray(`- setting up...`));
+      server.broadcast("status", `Setting up...`);
       await sandbox.send({type: 'create', resolution: config.TD_VM_RESOLUTION});
       logger.info(chalk.gray(`- starting stream...`));
+      server.broadcast("status", `Starting stream...`);
       await sandbox.send({type: 'stream.start'});
       let {url} = await sandbox.send({type: 'stream.getUrl'});
       logger.info(chalk.gray(`- rendering...`));
+      server.broadcast("status", `Rendering...`);
       await sandbox.send({type: 'ready'});
       emitter.emit(events.vm.show, {url});
       logger.info(chalk.gray(`- booting...`));
+      server.broadcast("status", `Starting...`);
       await new Promise(resolve => setTimeout(resolve, 3000)); 
       logger.info(chalk.green(``));
       logger.info(chalk.green(`sandbox runner ready!`));
