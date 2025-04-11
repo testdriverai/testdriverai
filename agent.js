@@ -761,6 +761,7 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   const handleInput = async (input) => {
+
     if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
 
@@ -1093,7 +1094,6 @@ ${yaml.dump(step)}
   }
 
   setTerminalWindowTransparency(false);
-  emitter.emit(events.interactive, true);
 
   if (shouldExit) {
     await summarize();
@@ -1167,7 +1167,7 @@ const buildEnv = async () => {
   setTerminalApp(win);
   await ensureMacScreenPerms();
   await makeSandbox();
-  await runPrerun();
+  // await runPrerun();
 };
 
 const start = async () => {
