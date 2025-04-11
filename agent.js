@@ -569,10 +569,12 @@ const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false
   );
   mdStream.end();
 
-  await aiExecute(message.data, validateAndLoop, dry);
+  if (message) {
+    await aiExecute(message.data, validateAndLoop, dry);
+    logger.debug("showing prompt from exploratoryLoop response check");
+  }
 
-  logger.debug("showing prompt from exploratoryLoop response check");
-
+  
   await save({ silent: false });
 };
 
@@ -1167,7 +1169,7 @@ const buildEnv = async () => {
   setTerminalApp(win);
   await ensureMacScreenPerms();
   await makeSandbox();
-  // await runPrerun();
+  await runPrerun();
 };
 
 const start = async () => {
