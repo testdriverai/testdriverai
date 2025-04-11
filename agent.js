@@ -727,21 +727,9 @@ const ensureMacScreenPerms = async () => {
   }
 }
 
-const newSession = async () => {
-  // should be start of new session
-  const sessionRes = await sdk.req("session/start", {
-    systemInformationOsInfo: await system.getSystemInformationOsInfo(),
-    mousePosition: await system.getMousePosition(),
-    activeWindow: await system.activeWin(),
-  });
-
-  session.set(sessionRes.data.id);
-};
-
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
-  await newSession();
 
   // readline is what allows us to get user input
   rl = readline.createInterface({
@@ -763,6 +751,9 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   const handleInput = async (input) => {
+
+    console.log("handleInput called");
+    console.log(input)
 
     if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
@@ -862,6 +853,7 @@ const firstPrompt = async () => {
     let object = await generator.hydrateFromYML(
       fs.readFileSync(thisFile, "utf-8"),
     );
+
     // push each step to executionHistory from { commands: {steps: [ { commands: [Array] } ] } }
     object.steps?.forEach((step) => {
       executionHistory.push(step);
@@ -1033,8 +1025,6 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
 
   console.log("running %s", file);
 
-  await newSession();
-
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
@@ -1169,6 +1159,7 @@ const buildEnv = async () => {
   setTerminalApp(win);
   await ensureMacScreenPerms();
   await makeSandbox();
+  await newSession();
   await runPrerun();
 };
 
@@ -1257,6 +1248,19 @@ const makeSandbox = async () => {
   emitter.emit(events.showWindow)
 
 }
+
+
+
+const newSession = async () => {
+  // should be start of new session
+  const sessionRes = await sdk.req("session/start", {
+    systemInformationOsInfo: await system.getSystemInformationOsInfo(),
+    mousePosition: await system.getMousePosition(),
+    activeWindow: await system.activeWin(),
+  });
+
+  session.set(sessionRes.data.id);
+};
 
 const runPrerun = async () => {
   const prerunFile = path.join(process.cwd(), "testdriver", "lifecycle", "prerun.yaml");
