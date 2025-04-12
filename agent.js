@@ -477,6 +477,17 @@ const loadYML = async (file) => {
     process.env["TD_INTERPOLATION_VARS"] || "{}",
   );
 
+  let setupYmlObj = {};
+
+  // Load TD_SETUP_FILE and merge into file
+  if (fs.existsSync(config.TD_SETUP_FILE)) {
+    logger.info(chalk.cyan(`Loading ${config.TD_SETUP_FILE}...`));
+    let setupYml = fs.readFileSync(config.TD_SETUP_FILE, "utf-8");
+    setupYml = parser.interpolate(setupYml, process.env);
+    setupYml = parser.interpolate(setupYml, interpolationVars);
+    setupYmlObj = yaml.load(setupYml);
+  }
+
   // Inject environment variables into any ${VAR} strings
   yml = parser.interpolate(yml, process.env);
 
@@ -486,6 +497,10 @@ const loadYML = async (file) => {
   let ymlObj = null;
   try {
     ymlObj = await yaml.load(yml);
+    ymlObj = {
+      ...setupYmlObj,
+      ...ymlObj
+    };
   } catch (e) {
     logger.error("%s", e);
     logger.error(`Invalid YAML: ${file}`);
@@ -836,7 +851,7 @@ const firstPrompt = async () => {
       if (result.out) {
         logger.info(result.out.stdout);
       } else if (result.error) {
-        logger.error(result.error.result.stdout);
+        logger.error(result.error.result.stdout + result.error.result);
       }
     } else if (input.indexOf("/exec") == 0) {
       let result = await commander.run({
@@ -846,7 +861,10 @@ const firstPrompt = async () => {
       if (result.out) {
         logger.info(result.out.stdout);
       } else if (result.error) {
-        logger.error(result.error.result.stdout);
+        logger.error(
+          result.error.result.stdout + "\n" +
+          result.error.result.stderr
+        );
       }
     } else {
       await exploratoryLoop(input, false, true);
@@ -1065,6 +1083,30 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       await exit(true);
     }
   }
+
+  // Run prerun
+  if (ymlObj.prerun) {
+    logger.info(chalk.cyan(`running prerun...`));
+    logger.info(ymlObj.prerun)
+    let result = await commander.run({
+      command: "exec",
+      cli: ymlObj.prerun,
+    });
+
+    if (result.out) {
+      logger.info(chalk.cyan(`prerun result:`));
+      logger.info(result.out.stdout);
+    }
+    else if (result.error) {
+      logger.error(chalk.red(`prerun error:`));
+      logger.error(
+        result.error.result.stdout + "\n" +
+        result.error.result.stderr
+      );
+      await exit(false);
+    }
+  }
+
 
   executionHistory = [];
 
