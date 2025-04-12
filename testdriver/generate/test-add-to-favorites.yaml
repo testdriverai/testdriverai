@@ -1,0 +1,10 @@
+version: 5.2.2
+session: 67f9855c040dfa560f9b0e2a
+steps:
+  - prompt: Click on the heart icon for a listed accommodation.
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-image
+        description: heart icon in the accommodation listing
+        action: click

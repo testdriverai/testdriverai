@@ -1,0 +1,10 @@
+version: 5.2.2
+session: 67f9855e040dfa560f9b0e36
+steps:
+  - prompt: Click on the globe icon to change the language.
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-image
+        description: globe icon in the top right corner
+        action: click

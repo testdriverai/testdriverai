@@ -1001,6 +1001,8 @@ let runRawYML = async (yml) => {
 
   let decoded = decodeURIComponent(yml);
 
+  console.log('raw yaml input', decoded);
+
   // saved the yml to a temp file using tmp
   // and run it with run()
   fs.writeFileSync(tmpobj.name, await generator.rawToFormatted(decoded));

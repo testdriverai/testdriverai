@@ -1,7 +1,10 @@
 const { default: nodeIPC } = require("node-ipc");
-const { app: electronApp, remote, screen, BrowserWindow } = require("electron");
+const { app: electronApp, remote, screen, BrowserWindow, Tray, Menu } = require("electron");
 const { eventsArray } = require("../lib/events.js");
 const config = require("../lib/config.js");
+const path = require('path');
+
+let tray = null;
 
 const app = electronApp || remote;
 if (!app) {
@@ -19,6 +22,24 @@ ipc.config.retry = 0;
 ipc.config.silent = true;
 
 app.whenReady().then(() => {
+
+  // Path to tray icon (must be .ico on Windows, .png on Mac/Linux)
+  const iconPath = path.join(__dirname, 'tray.png');
+
+  tray = new Tray(iconPath);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Quit',
+      click: () => {
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setToolTip('TestDriver.ai');
+  tray.setContextMenu(contextMenu);
+
   app.dock?.hide();
 
   let windowOptions;
