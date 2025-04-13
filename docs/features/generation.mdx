@@ -1,14 +1,18 @@
 ---
 title: "Test Generation with TestDriver.ai"
 sidebarTitle: "Test Generation"
-description: "Learn how TestDriver.ai simplifies test generation from CSV files, Jira tickets, Gherkin scenarios, TestRail, and AI-driven exploratory testing."
+description: "Simplify test creation with AI-driven exploratory testing."
 ---
 
-TestDriver.ai provides a powerful and flexible framework for generating tests from various sources, including **CSV files**, **Jira tickets**, **Gherkin scenarios**, and **TestRail test cases**. Additionally, TestDriver.ai can autonomously generate its own tests by recursively mapping the UI and exploring workflows.
+TestDriver.ai provides a powerful and flexible framework for generating tests from various sources, including:
+- **TestRail test cases**
+- **CSV files**
+- **Jira tickets**
+- **Gherkin scenarios**
 
----
+Additionally, TestDriver.ai can autonomously generate its own tests by recursively mapping the UI and exploring workflows.
 
-## 1. **Test Generation from CSV Files**
+## **Test Generation from CSV Files**
 
 ### Workflow Overview
 CSV files are a simple and structured way to define test cases. Each row in the CSV file can represent a test case, with columns specifying the test steps, expected outcomes, or other metadata.
@@ -142,16 +146,8 @@ TestDriver.ai can autonomously generate tests by exploring the UI and mapping wo
 3. **Self-Healing**: If the UI changes, the AI adapts the tests to match the new structure.
 
 ### Example AI-Generated Test:
-For a login page, the AI might generate the following test:```yaml
-version: 4.2.18
-steps:
-  - prompt: Open the login page
-  - prompt: Enter "test@example.com" in the email field
-  - prompt: Enter "password123" in the password field
-  - prompt: Click the "Log In" button
-  - prompt: Verify that the dashboard is displayed
+For a login page, the AI might generate the following test:
 
-```
 
 ### Benefits:
 - **No Manual Input Required**: The AI generates tests automatically.

@@ -1,79 +1,73 @@
 ---
 title: "What is TestDriver?"
+description: "TestDriver is a computer-use agent for QA testing of user interfaces."
 ---
 
-TestDriver.ai is an AI-powered testing platform designed to automate end-to-end testing for web, desktop, and mobile applications. It uses natural language prompts and AI-driven interactions to simulate real user behavior, making it easier to create, maintain, and execute tests.
+TestDriver uses AI vision and keyboard and mouse control to automate end-to-end testing. TestDriver is `selectorless` meaning it is not aware of the underlying code structure.
 
----
+- **Easier set up:** No need to craft complex selectors
+- **Less Maintenance:** Tests don't break when code changes
+- **More Power:** TestDriver can test any application and control any OS setting
 
-## Key Features of TestDriver.ai
-
-### Natural Language Test Creation
-
-- Write tests in plain English, such as:
-  ```
-  > Open Google Chrome and search for "testdriver"
-  ```
-- TestDriver interprets these instructions and generates executable test steps.
+TestDriver is different from other computer-use agents in that it produces a `YAML` test script that increases the speed and repeatability of testing.
 
 ### Selectorless Testing
-- Unlike traditional frameworks (e.g., Selenium, Playwright), TestDriver doesn’t rely on CSS selectors or static analysis.
-- It uses AI vision and hardware emulation to interact with elements on the screen, reducing test maintenance when UI changes.
 
-###  Cross-Platform Support
-- **Web Applications**: Test any website in any browser.
-- **Desktop Applications**: Automate native desktop apps.
-- **Mobile Applications**: Test mobile apps via emulators or device farms.
+Unlike traditional frameworks (e.g., Selenium, Playwright), TestDriver doesn’t rely on CSS selectors or static analysis. Instead, tests are described in plain English, such as:
 
-### Self-Healing Tests
-- Tests adapt to UI changes (e.g., button text or layout changes) using AI, minimizing the need for manual updates.
+```
+> Open Google Chrome and search for "testdriver"
+```
 
-### Interactive and Exploratory Testing
+This means that you can write tests without worrying about the underlying code structure:
 
-- Use interactive commands like `/generate` to test dynamically.
-- Explore applications to discover potential issues or generate new test cases.
+- Test any user flow on any website in any browser
+- Clone, build, and test any desktop app
+- Render multiple browser windows and popups like 3rd party auth
+- Test `<canvas>`, `<iframe>`,  and `<video>` tags with ease
+- Use file selectors to upload files to the browser
+- Resize the browser
+- Test chrome extensions
+- Test integrations between applications
 
-### Integration with CI/CD
-- Seamlessly integrate with GitHub Actions, Jenkins, or other CI/CD pipelines to automate testing during development.
+### The problem with current approach to end-to-end testing
 
----
+End-to-end is commonly described as the most expensive and time-consuming test method. Right now we write end-to-end tests using complex selectors that are tightly coupled with the code. 
 
-## How TestDriver Works
+```js
+const e = await page.$('div[class="product-card"] >> text="Add to Cart" >> nth=2');
+```
 
-1. **Input Prompts**: You provide high-level instructions in natural language.
-2. **AI Interpretation**: TestDriver uses AI to understand the instructions and generate test steps.
-3. **Execution**: It simulates user interactions (e.g., clicks, typing) using computer vision and hardware emulation.
-4. **Validation**: Assertions and visual validations ensure the application behaves as expected.
+This tight coupling means developers need to spend time to understand the codebase and maintain the tests every time the code changes. And code is always changing!
 
----
+### End-to-end is about users, not code
 
-## Advantages of TestDriver.ai
+In end-to-end testing the business priority is usability. All that really matters is that the user can accomplish the goal. 
 
-- **Ease of Use**: No need to write complex scripts or selectors.
-- **Reduced Maintenance**: Tests adapt to UI changes automatically.
-- **Broad Coverage**: TestDriver can handle `<canvas>`, `<iframe>`, `<video>`, file uploads, and more.
-- **Debugging Tools**: Provides detailed logs, screenshots, and video replays for failed tests.
-- **Parallel Testing**: Run multiple tests simultaneously to save time.
+TestDriver uses human language to define test requirements. Then our simulated software tester figures out how to accomplish those goals.
 
----
+Old and Busted (Selectors)  | New Hotness (TestDriver)
+|:----------------------|:-------------------|
+```div[class="product-card"] >> text="Add to Cart" >> nth=2``` | buy the 2nd product
 
-## Example Use Cases
+These high level instructions are easier to create and maintain because they are loosely coupled from the codebase. We're describing a high level goal, not a low level interaction.
 
-1. **Web Testing**:
-- Open a browser, navigate to a website, and verify search functionality.
-2. **Desktop App Testing**:
-- Launch a desktop application, interact with menus, and validate outputs.
-3. **Mobile App Testing**:
-- Test login flows or in-app purchases on mobile devices.
-4. **Cross-Application Testing**:
-- Test workflows that involve multiple applications (e.g., uploading a file from a desktop app to a web app).
+The tests will still continue to work even when the junior developer changes .product-card to .product.card or the designers change Add to Cart to Buy Now . The concepts remain the same so the AI will adapt. 
 
----
+## How exactly does this work?
 
-## Why Choose TestDriver.ai?
+TestDriver uses a combination of reinforcement learning and computer vision. The context from successful text executions inform future executions. Here's an example of the context our model considers when locating a text match:
 
-Traditional testing frameworks often require significant setup, maintenance, and technical expertise. TestDriver.ai simplifies the process by focusing on user behavior rather than code structure. It’s ideal for teams looking to:
-
-- Automate testing with minimal setup.
-- Reduce test maintenance overhead.
-- Improve test coverage across platforms.
+Context| What is it? | Touchpoint
+|:----------|:------------------|:----------------|
+Prompt | Desired outcome | User Input
+Screenshot | Image of computer desktop | Runtime
+OCR | All possible text found on screen  Runtime
+Text Similarity | Closely matching text | Runtime 
+Redraw | Visual difference between previous and current desktop screenshots | Runtime
+Network | The current network activity compared to a baseline | Runtime
+Execution History | Previous test steps | Runtime
+System Information | Platform, Display Size, etc | Runtime
+Mouse Position | X, Y coordinates of mouse | Runtime
+Description | An elaborate description of the target element including it's position and function | Past Execution
+Text | The exact text value clicked | Past Execution

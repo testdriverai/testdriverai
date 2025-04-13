@@ -15,26 +15,15 @@ The `assert` command is used to validate that a specific condition is true. It e
 ```yaml
 command: assert
 expect: the video is playing
-
 ```
 
-
-
 ### Example with `async`
-
 
 ```yaml
 command: assert
 expect: There is no error message
 async: true
-
 ```
-
-
-
-Run Steps
-
-
 
 ## Notes
 - Use `async: true` to speed up tests by allowing non-blocking assertions. However, the test will still fail if the condition is not met.
