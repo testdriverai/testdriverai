@@ -6,15 +6,7 @@ Automate and scale QA with computer-use agents.
 
 [Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.gg/a8Cq739VWn)
 
----
-
-
-
-https://github.com/user-attachments/assets/4719e834-652a-43ba-8b8c-24ea6f357ae3
-
-
-
-# Install via NPM
+---https://github.com/user-attachments/assets/4719e834-652a-43ba-8b8c-24ea6f357ae3# Install via NPM
 
 ```sh
 npm install testdriverai -g
@@ -36,7 +28,9 @@ TestDriver isn't like any test framework you've used before. TestDriver is an OS
 - **Less Maintenance:** Tests don't break when code changes
 - **More Power:** TestDriver can test any application and control any OS setting
 
-### Demo
+### Demo (Playing Balatro Desktop)
+
+https://github.com/user-attachments/assets/7cb9ee5a-0d05-4ff0-a4fa-084bcee12e98
 
 # Examples
 

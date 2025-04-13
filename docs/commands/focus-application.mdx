@@ -1,0 +1,29 @@
+---
+title: "focus-application"
+---
+
+## Description
+The `focus-application` command is used to bring a specific application window to the foreground. This ensures that subsequent commands interact with the correct application during a test.
+
+## Arguments
+| Argument   | Type      | Description                                                                 |
+|------------|-----------|-----------------------------------------------------------------------------|
+| `name`     | `string`  | The name of the application to focus. This should match the application's display name. |
+
+## Example Usage
+```yaml
+command: focus-application
+name: Google Chrome
+```
+
+## Protips
+- Ensure the application name matches the exact name displayed in your operating system's task manager or application switcher.
+- Use this command at the start of a test or before interacting with an application to avoid focus-related issues.
+
+## Gotchas
+- If the specified application is not running, the command will fail. Ensure the application is open before using this command.
+- On macOS, the application name is case-sensitive.
+
+## Notes
+- The `focus-application` command is useful for multi-application workflows where you need to switch between different apps during a test.
+- This command is supported on both Windows and macOS environments.

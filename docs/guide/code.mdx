@@ -1,0 +1,169 @@
+---
+title: "Custom Code in TestDriver.ai"
+sidebarTitle: "Custom Code"
+description: "Learn how to integrate custom Node.js scripts into your TestDriver.ai workflows for dynamic testing."
+---
+
+TestDriver.ai allows you to execute custom **Node.js** scripts within your test workflows using the `exec` command. This feature, introduced in version `5.1.0`, enables you to integrate custom logic, such as generating one-time passwords (OTPs), hitting APIs, or performing other dynamic operations, directly into your tests.
+
+---
+
+## Key Features
+
+1. **Run Node.js Scripts**:
+   - Execute custom JavaScript code within your test steps.
+   - Use NPM modules to extend functionality.
+
+2. **Dynamic Outputs**:
+   - Store the result of your script in a variable for use in subsequent steps.
+
+3. **NPM Support**:
+   - Install and use NPM packages in your scripts.
+
+---
+
+## Example: One-Time Password (OTP) Validator
+
+This example demonstrates how to generate a one-time password (OTP) using the `totp-generator` NPM package and use it in a test.
+
+### Workflow File: `.github/workflows/testdriver-otp.yml`
+
+```yaml
+name: TestDriver.ai
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "TestDriver"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: testdriverai/action@main
+        with:
+          version: "5.1.0"
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. /run testdriver/testdriver.yaml
+          prerun: |
+            cd $env:TEMP
+            npm init -y
+            npm install totp-generator
+            exit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+
+```
+
+
+---
+
+### Test File: `testdriver/testdriver.yaml`
+
+```yaml
+version: 5.1.0
+session: 67e57d614dc25283aa0872a9
+steps:
+  - prompt: Log in with the totp
+    commands:
+      - command: exec
+        output: totp
+        js: |
+          const { TOTP } = require("totp-generator");
+          let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
+          result = otp;
+      - command: exec
+        js: |
+          console.log("${OUTPUT.totp}");
+      - command: type
+        text: ${OUTPUT.totp}
+
+
+```
+
+
+---
+
+## How It Works
+
+### Parameters for `exec`
+
+- **`js`**: The Node.js script to execute. The output must be assigned to the `result` variable.
+- **`output`**: The name of the variable to store the result. This variable can be referenced in subsequent steps as `${OUTPUT.<var>}`.
+
+---
+
+### Running the Demo Locally
+
+1. Clone the repository.
+2. Install dependencies:
+
+   ```bash
+   npm install
+
+```   
+
+3. Run the test:
+
+   ```bash
+   testdriverai run testdriver/testdriver.yaml
+
+```   
+
+---
+
+### Example Output
+
+- **Step 1**: Generates an OTP using the `totp-generator` package.
+- **Step 2**: Logs the OTP to the console.
+- **Step 3**: Types the OTP into the application.
+
+---
+
+## Pro Tips
+
+1. **Avoid Overwriting `result`**:
+   - Always assign the output of your script to the `result` variable.
+
+2. **Install Dependencies**:
+   - Ensure all required NPM packages are installed locally and in the `prerun` script when using GitHub Actions.
+
+3. **Node.js Context**:
+   - The script runs in the same context as the calling process and uses Node.js's [VM module](https://nodejs.org/api/vm.html) internally.
+
+---
+
+## Gotchas
+
+1. **Runner Support**:
+   - This feature is supported only on **hosted Windows runners**. Hosted Linux runners do not yet support `prerun`.
+
+2. **NPM Initialization**:
+   - Ensure you initialize NPM (`npm init`) and install required packages before running the test.
+
+---
+
+## Using NPM Modules from Scratch
+
+1. Initialize a new Node.js project:
+
+   ```bash
+   npm init
+
+```   
+
+2. Install the required package:
+
+   ```bash
+   npm install totp-generator --save
+
+```   
+
+---
+
+By leveraging the `exec` command, you can extend TestDriver.ai's capabilities with custom Node.js scripts, enabling dynamic and powerful test workflows.

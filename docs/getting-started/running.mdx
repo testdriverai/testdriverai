@@ -1,0 +1,67 @@
+---
+title: "Running Tests Locally with TestDriver.ai"
+sidebarTitle: "Running Tests"
+description: "Learn how to execute test plans locally using TestDriver.ai's `/run` command for debugging and validation."
+---
+
+# Running Tests Locally with `/run` in TestDriver.ai
+
+The `/run` command in TestDriver.ai allows you to execute previously created test plans locally. This is particularly useful for debugging, validating test scripts, or running tests in a controlled environment before committing them to a CI/CD pipeline.
+
+---
+
+## How to Use `/run`
+
+1. **Navigate to Your Test Directory**:
+Ensure you are in the directory where your test files are stored (e.g., `testdriver/`).
+
+2. **Run a Specific Test File**:
+Use the `/run` command followed by the path to the test file you want to execute. For example:
+
+```bash
+testdriverai
+> /run testdriver/test.yml
+```
+This will execute the test plan defined in `test.yml`.
+
+---
+
+## Benefits of Running Tests Locally
+
+1. **Quick Feedback**:
+- Test changes immediately without waiting for CI/CD pipelines.
+- Validate test scripts before committing them to version control.
+
+2. **Debugging**:
+- Identify and fix issues in test scripts or application behavior in a controlled environment.
+
+3. **Offline Testing**:
+- Run tests locally without requiring access to cloud-based runners or external environments.
+
+4. **Iterative Development**:
+- Modify test scripts and re-run them quickly to refine test cases.
+
+---
+
+## Example Workflow for Local Testing
+
+1. **Create a Test File**:
+Save the following YAML file as `testdriver/test.yml`:
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Open the homepage
+  - prompt: Verify the login button is visible
+  - prompt: Click the login button
+  - prompt: Verify the login form is displayed
+```
+
+2. **Run the Test Locally**:
+Execute the test using the `/run` command:
+
+```bash
+testdriverai
+> /run testdriver/test.yml   
+```
+

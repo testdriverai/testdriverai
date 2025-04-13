@@ -1,0 +1,36 @@
+---
+title: "/run"
+---
+
+## Description
+The `/run` command is used to execute a test plan from a specified file. This command performs each step defined in the test plan and outputs the results.
+
+## Usage
+```bash
+/run <file>
+```
+
+## Example Usage
+```bash
+testdriverai
+> /run helloworld.yml
+```
+This command runs the `helloworld.yml` test plan, executing each command in the file sequentially.
+
+## Behavior
+- TestDriver will execute the test plan, performing each command as defined in the file.
+- If the test completes successfully, the program will exit with code `0`.
+- If any failures occur during the test, the program will output the errors and exit with code `1`.
+
+## Protips
+- Ensure the test file path is correct and accessible before running the command.
+- Use descriptive filenames for your test plans to make them easier to identify.
+- Combine `/run` with debugging tools to troubleshoot failing tests.
+
+## Gotchas
+- This command will exit the program upon execution, so ensure all necessary setup is complete before running it.
+- Any errors in the test plan (e.g., invalid commands or missing arguments) will cause the test to fail.
+
+## Notes
+- The `/run` command is ideal for executing pre-created test plans in an interactive session.
+- Use this command to validate and debug your test plans during development.

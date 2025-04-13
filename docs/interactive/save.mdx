@@ -1,0 +1,53 @@
+---
+title: "/save"
+---
+
+## Description
+The `/save` command saves the current state of the test script to a file. This command generates a YAML file containing the history of executed commands and tasks, allowing you to reuse or modify the test script later.
+
+## Usage
+```bash
+/save
+```
+
+## Example Usage
+```bash
+testdriverai
+> /save
+
+  saving...
+
+  Current test script:
+
+  version: 4.0.0
+  steps:
+    - prompt: navigate to fiber.google.com
+      commands:
+        - command: focus-application
+          name: Google Chrome
+        - command: hover-text
+          text: Search Google or type a URL
+          description: main google search
+          action: click
+        - command: type
+          text: fiber.google.com
+        - command: press-keys
+          keys:
+            - enter
+```
+
+## Behavior
+- The `/save` command generates a YAML file with the current test script, including all executed steps and commands.
+- The file can be used as a reusable test plan for future executions.
+
+## Protips
+- Use `/save` frequently during interactive sessions to preserve your progress and avoid losing work.
+- Combine `/save` with `/run` to quickly test and iterate on your scripts.
+
+## Gotchas
+- Ensure you have write permissions in the directory where the file will be saved.
+- The saved script reflects the current state of the session. Any unexecuted commands will not be included.
+
+## Notes
+- The `/save` command is ideal for creating reusable test scripts from interactive sessions.
+- Use this command to document and share your test workflows with your team.
