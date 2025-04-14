@@ -81,6 +81,8 @@ const args = process.argv.slice(2);
 
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
+let workingDir = process.cwd();
+
 let getArgs = () => {
   let command = 0;
   let file = 1;
@@ -107,7 +109,7 @@ let getArgs = () => {
 
   if (!args[file]) {
     // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(process.cwd(), "testdriver");
+    let testdriverFolder = path.join(workingDir, "testdriver");
     if (!fs.existsSync(testdriverFolder)) {
       fs.mkdirSync(testdriverFolder);
     }
@@ -117,7 +119,7 @@ let getArgs = () => {
 
   // turn args[file] into local path
   if (args[file]) {
-    args[file] = path.join(process.cwd(), args[file]);
+    args[file] = path.join(workingDir, args[file]);
     if (!args[file].endsWith(".yaml")) {
       args[file] += ".yaml";
     }
@@ -128,7 +130,7 @@ let getArgs = () => {
 
 let a = getArgs();
 
-const thisFile = a.file;
+let thisFile = a.file;
 const thisCommand = a.command;
 
 logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
@@ -156,7 +158,7 @@ function fileCompleter(line) {
     partial = line.slice(lastSepIndex + 1);
   }
   try {
-    const dirPath = path.resolve(process.cwd(), dir);
+    const dirPath = path.resolve(workingDir, dir);
 
     let files = fs.readdirSync(dirPath);
     files = files.map((file) => {
@@ -473,7 +475,7 @@ const loadYML = async (file) => {
   } catch (e) {
     logger.error(e);
     logger.error(`File not found: ${file}`);
-    logger.error(`Current directory: ${process.cwd()}`);
+    logger.error(`Current directory: ${workingDir}`);
 
     await summarize("File not found");
     await exit(true);
@@ -623,11 +625,11 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
         .replace(/['"`]/g, "")
         .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
         .toLowerCase() + ".yaml";
-    let path1 = path.join(process.cwd(), "testdriver", "generate", fileName);
+    let path1 = path.join(workingDir, "testdriver", "generate", fileName);
 
     // create generate directory if it doesn't exist
-    if (!fs.existsSync(path.join(process.cwd(), "testdriver", "generate"))) {
-      fs.mkdirSync(path.join(process.cwd(), "testdriver", "generate"));
+    if (!fs.existsSync(path.join(workingDir, "testdriver", "generate"))) {
+      fs.mkdirSync(path.join(workingDir, "testdriver", "generate"));
     }
 
     let list = testPrompt.steps;
@@ -794,6 +796,7 @@ const firstPrompt = async () => {
       await manualInput(commands.slice(1).join(" "));
     } else if (input.indexOf("/run") == 0) {
       const file = commands[1];
+      thisFile = file;
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
@@ -1001,8 +1004,6 @@ let runRawYML = async (yml) => {
 
   let decoded = decodeURIComponent(yml);
 
-  console.log('raw yaml input', decoded);
-
   // saved the yml to a temp file using tmp
   // and run it with run()
   fs.writeFileSync(tmpobj.name, await generator.rawToFormatted(decoded));
@@ -1018,9 +1019,6 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
 
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
-
-  // get the current wowrking directory where this file is being executed
-  let cwd = process.cwd();
 
   logger.info(chalk.cyan(`running ${file}...`));
 
@@ -1040,6 +1038,8 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
 
   executionHistory = [];
 
+  console.log(ymlObj);
+
   for (const step of ymlObj.steps) {
     logger.info(``, null);
     logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
@@ -1049,7 +1049,7 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       return await exit(true);
     } else if (!step.commands) {
       logger.info(chalk.yellow("No commands found, running exploratory"));
-      return await exploratoryLoop(step.prompt);
+      return await exploratoryLoop(step.prompt, false, true);
     }
 
     if (shouldSave) {
@@ -1124,7 +1124,7 @@ const embed = async (file, depth) => {
   logger.info(`${file} (start)`);
 
   // get the current wowrking directory where this file is being executed
-  let cwd = process.cwd();
+  let cwd = workingDir;
 
   // if the file is not an absolute path, we will try to resolve it
   if (!path.isAbsolute(file)) {
@@ -1169,18 +1169,21 @@ const start = async () => {
 
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
+  }
+
+  if (thisCommand !== "init") {
 
     if (!config.TD_VM) {
       logger.info(
         chalk.red("Warning! " ) +
-          chalk.dim("Local mode sends screenshots of the desktop to our API."),
+          chalk.dim("Local mode sends screenshots of the desktop to our API. Set `TD_VM=true` to run in a secure VM."),
       );
       logger.info(
         chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
       );
       logger.info("");
     }
-    
+
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
@@ -1205,13 +1208,13 @@ const makeSandbox = async () => {
     try {
 
       logger.info(chalk.gray(`- creating sandbox...`));
-      server.broadcast("status", `Creating sandbox...`);
+      server.broadcast("status", `Creating new sandbox...`);
       await sandbox.boot();
       logger.info(chalk.gray(`- authenticating...`));
       server.broadcast("status", `Authenticating...`);
       await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY, secret: config.TD_SECRET} );
       logger.info(chalk.gray(`- configuring...`));
-      server.broadcast("status", `configuring...`);
+      server.broadcast("status", `Configuring...`);
       await sandbox.send({type: 'create', resolution: config.TD_VM_RESOLUTION});
       logger.info(chalk.gray(`- starting stream...`));
       server.broadcast("status", `Starting stream...`);
@@ -1254,9 +1257,8 @@ const newSession = async () => {
 };
 
 const runPrerun = async () => {
-  const prerunFile = path.join(process.cwd(), "testdriver", "lifecycle", "prerun.yaml");
+  const prerunFile = path.join(workingDir, "testdriver", "lifecycle", "prerun.yaml");
   if (fs.existsSync(prerunFile)) {
-    logger.info(chalk.cyan(`Running prerun file: ${prerunFile}`));
     await run(prerunFile, false, false);
   }
 }
