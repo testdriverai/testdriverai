@@ -57,6 +57,7 @@ app.whenReady().then(() => {
         contextIsolation: false,
       },
       autoHideMenuBar: true,
+      fullscreen: config.TD_VM_FULLSCREEN,
     };
   } else {
     windowOptions = {
