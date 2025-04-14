@@ -1,0 +1,51 @@
+---
+title: "/assert"
+---
+
+# Command: `/assert`
+
+## Description
+The `/assert` command ensures that a specific condition is true within your test. This is useful for verifying that tasks were completed successfully, just as a user would observe.
+
+## Usage
+```bash
+/assert <criteria>
+```
+
+## Behavior
+- The `/assert` command generates an assertion based on the specified criteria.
+- TestDriver.ai takes a screenshot and uses it to verify that the condition described in the `expect` field is true.
+- If the condition is not met, the test will fail and exit immediately.
+
+## Example Usage
+
+### Basic Assertion
+```bash
+/assert No error message is displayed
+```
+This generates the following command:
+```yaml
+- command: assert
+  expect: There is no error message
+```
+
+### Asynchronous Assertion
+To speed up tests, use `async: true` to allow the test to continue without waiting for the assertion to pass:
+```yaml
+- command: assert
+  expect: There is no error message
+  async: true
+```
+
+## Protips
+- Use assertions sparingly to avoid slowing down your tests.
+- Combine `async: true` with assertions to improve test performance while still validating critical conditions.
+- Ensure the `expect` field clearly describes the condition to avoid ambiguity.
+
+## Gotchas
+- If the condition in `expect` is not met, the test will fail and exit immediately.
+- Overusing assertions can make tests slower and harder to maintain.
+
+## Notes
+- The `/assert` command is ideal for validating key checkpoints in your test workflow.
+- Use this command to ensure that critical tasks, such as error-free execution or successful navigation, are completed as expected.

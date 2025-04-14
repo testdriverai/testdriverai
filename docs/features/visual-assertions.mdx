@@ -1,0 +1,123 @@
+---
+title: "Visual Assertions with TestDriver.ai"
+sidebarTitle: "Visual Assertions"
+description: "Discover how TestDriver.ai leverages AI-powered visual assertions to validate UI behavior and enhance end-to-end testing."
+---
+
+Visual assertions in TestDriver.ai allow you to validate that your application behaves as expected by analyzing what is displayed on the screen. This approach ensures that your tests mimic real user interactions and verify outcomes visually, making it ideal for testing UI-heavy applications and dynamic content.
+
+## What Are Visual Assertions?
+
+Visual assertions check the state of the screen to confirm that specific elements, content, or behaviors are present. Instead of relying on selectors or static code analysis, TestDriver uses AI-powered vision to interpret the screen, ensuring robust and adaptive testing.
+
+---
+
+## What Can TestDriver.ai Test with Visual Assertions?
+
+### AI Chatbots
+  - Validate that chatbot responses are displayed correctly.
+  - Ensure the chatbot interface is accessible and functional.
+
+### Desktop Applications
+  - Verify that desktop app windows, dialogs, and UI elements render as expected.
+  - Test cross-platform compatibility for Windows, Mac, and Linux.
+
+### Chrome Extensions
+  - Confirm that the extension UI integrates properly with the browser.
+  - Validate extension popups, settings, and interactions.
+
+### PDF Generation
+  - Assert that generated PDFs contain the correct text, images, and formatting.
+  - Verify that PDFs open and display properly in viewers.
+
+### Spelling & Grammar
+  - Check for spelling and grammar errors in displayed text.
+  - Validate that text content matches expected language rules.
+
+### Auth Signup & Login
+  - Ensure OAuth flows display the correct login screens.
+  - Verify that users are redirected to the correct pages after login.
+
+### File System & Uploads
+  - Confirm that file upload dialogs appear and function correctly.
+  - Validate that uploaded files are processed and displayed as expected.
+
+### Image Content
+  - Verify that images are displayed correctly and match expected content.
+  - Test for the presence of specific icons, logos, or visual elements.
+
+### Video Content
+  - Assert that videos play correctly and match expected visuals.
+  - Validate video controls (play, pause, fullscreen) and captions.
+
+### OS Accessibility Features
+  - Test high-contrast modes, screen readers, and other accessibility features.
+  - Validate that UI elements are accessible and readable.
+
+### Light / Dark Mode
+  - Verify that the application switches between light and dark modes correctly.
+  - Assert that UI elements are visible and styled appropriately in both modes.
+
+### Privacy Configuration
+  - Confirm that privacy settings are displayed and functional.
+  - Validate that toggles, checkboxes, and options reflect the correct state.
+
+### `<iframe>`
+  - Test content rendered inside `<iframe>` elements.
+  - Validate interactions within embedded frames.
+
+### `<canvas>`
+  - Verify that canvas elements render graphics, charts, or animations correctly.
+  - Assert that dynamic content within the canvas matches expectations.
+
+### `<video>`
+  - Ensure video elements load and play correctly.
+  - Validate video overlays, subtitles, and playback controls.
+
+---
+
+## How to Use Visual Assertions
+
+### Example: Asserting Text on the Screen
+
+```yaml
+- command: assert
+  expect: "The chatbot response is displayed correctly"
+
+```
+
+### Example: Asserting an Image is Present
+
+```yaml
+- command: assert
+  expect: The company logo appears in the header
+```
+
+### Example: Asserting Video Playback
+
+```yaml
+- command: assert
+  expect: "The video is playing"
+
+```
+---
+
+## Benefits of Visual Assertions
+
+1. **Selectorless Testing**: No need to rely on brittle selectors or static code.
+2. **Dynamic Adaptation**: Tests adapt to UI changes, reducing maintenance.
+3. **Real User Simulation**: Validates the application as a user would experience it.
+4. **Cross-Platform Support**: Works seamlessly across web, desktop, and mobile environments.
+
+---
+
+## Best Practices for Visual Assertions
+
+1. **Use Descriptive Prompts**: Provide clear descriptions for elements or behaviors you want to test.
+2. **Combine with Other Commands**: Use visual assertions alongside navigation and interaction commands for end-to-end testing.
+3. **Leverage AI Matching**: Use AI-powered matching for dynamic or non-deterministic content.
+4. **Test Across Modes**: Validate light/dark modes, accessibility features, and privacy settings for comprehensive coverage.
+
+---
+
+Visual assertions in TestDriver.ai empower you to test a wide range of applications and scenarios with confidence, ensuring your software delivers a seamless user experience.

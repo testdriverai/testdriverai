@@ -1,0 +1,124 @@
+---
+title: "Auto-Healing in TestDriver.ai"
+sidebarTitle: "Auto-Healing"
+description: "Learn how TestDriver.ai's auto-healing feature keeps your tests resilient and up-to-date with minimal manual effort."
+---
+
+Auto-healing is a powerful feature in TestDriver.ai that ensures your tests remain resilient even when the application under test changes. When text, UI elements, or other visual cues are modified, TestDriver.ai can detect the failure, adapt to the changes, and automatically update the test. It then opens a pull request (PR) with the updated test, ensuring your test suite stays up-to-date with minimal manual intervention.
+
+---
+
+## How Auto-Healing Works
+
+1. **Test Execution**: TestDriver.ai runs your test suite as usual.
+2. **Failure Detection**: If a test fails due to a change in the application (e.g., text or UI updates), the AI identifies the failure point.
+3. **Recovery Attempt**: The AI uses its adaptive capabilities to locate the updated element or text and retries the action.
+4. **Test Update**: If the recovery is successful, TestDriver.ai updates the test script with the new element or text.
+5. **Pull Request Creation**: The updated test script is committed to a new branch, and a pull request is automatically opened in your repository for review.
+
+---
+
+## Benefits of Auto-Healing
+
+- **Reduced Maintenance**: Eliminates the need for manual updates to tests when minor UI changes occur.
+- **Increased Test Resilience**: Ensures tests adapt to changes without breaking.
+- **Continuous Integration**: Keeps your test suite aligned with the latest application changes.
+- **Developer Collaboration**: Automatically opens a PR, allowing developers to review and approve updates.
+
+---
+
+## Example Workflow
+
+### Scenario: Button Text Changes from "Submit" to "Send"
+
+1. **Initial Test**:
+
+```yaml
+- command: hover-text
+  text: Submit
+  description: Submit button in the form
+  action: click
+```
+
+2. **Application Update**:
+  - The button text is changed from "Submit" to "Send" in the application.
+
+3. **Test Execution**:
+  - TestDriver.ai runs the test and fails to find the "Submit" button.
+
+4. **Auto-Healing**:
+  - The AI detects the failure and searches for a similar element.
+  - It identifies the "Send" button as the updated element and retries the action.
+
+5. **Test Update**:
+  - The test script is updated to reflect the new button text:
+  
+  ```yaml
+  - command: hover-text
+    text: Send
+    description: Submit button in the form
+    action: click
+  ```
+
+6. **Pull Request Creation**:
+   - TestDriver.ai commits the updated test to a new branch and opens a PR:
+     - **Branch Name**: `auto-heal-update-submit-to-send`
+     - **PR Title**: `Auto-Healed Test: Updated "Submit" to "Send"`
+
+---
+
+## Example GitHub Action for Auto-Healing
+
+Here’s how you can configure a GitHub Action to enable auto-healing and PR creation:
+
+```yaml
+name: TestDriver.ai Auto-Healing
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "Run Tests with Auto-Healing"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver.ai
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. /run testdriver/onboarding.yaml
+          create-pr: true
+          pr-title: "Auto-Healed Test Updates"
+          pr-base: main
+          pr-branch: auto-heal-updates
+```
+
+---
+
+## Best Practices for Auto-Healing
+
+1. **Enable PR Reviews**: Always review auto-healed PRs to ensure the updates align with the intended application behavior.
+2. **Use Descriptive Descriptions**: Provide clear descriptions for elements in your tests to help the AI identify changes more effectively.
+3. **Run Tests Frequently**: Integrate TestDriver.ai into your CI/CD pipeline to catch and heal changes as soon as they occur.
+4. **Monitor Auto-Healing Logs**: Review logs and screenshots provided by TestDriver.ai to understand why a test was updated.
+
+---
+
+## Limitations of Auto-Healing
+
+- **Major UI Overhauls**: Auto-healing is best suited for minor changes (e.g., text updates, small layout adjustments). Significant UI changes may still require manual intervention.
+- **Ambiguous Changes**: If multiple elements match the updated criteria, the AI may require additional context to make the correct decision.
+
+---
+
+## Conclusion
+
+Auto-healing in TestDriver.ai reduces the burden of test maintenance by automatically adapting to changes in your application. By leveraging this feature, you can ensure your test suite remains robust and up-to-date, allowing your team to focus on delivering high-quality software.

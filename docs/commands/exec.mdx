@@ -1,0 +1,42 @@
+---
+title: "exec"
+---
+
+## Description
+The `exec` command allows you to execute custom NodeJS scripts within your TestDriver.ai tests. This is useful for tasks like generating dynamic data, interacting with APIs, or performing custom logic during a test. The output of the script can be stored in a variable for use in subsequent steps.
+
+## Arguments
+| Argument   | Type      | Description                                                                 |
+|------------|-----------|-----------------------------------------------------------------------------|
+| `js`       | `string`  | The NodeJS script to execute. The script must define the output as `result`. |
+| `output`   | `string`  | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps. |
+
+## Example Usage
+```yaml
+version: 5.1.0
+session: 67e57d614dc25283aa0872a9
+steps:
+  - prompt: Log in with the totp
+    commands:
+      - command: exec
+        output: totp 
+        js: |
+          const { TOTP } = require("totp-generator");
+          let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
+          result = otp;
+      - command: type
+        text: ${OUTPUT.totp}
+```
+
+## Protips
+- Do not overwrite the `result` variable in your script, as it is used to store the output.
+- Ensure that all required NPM packages are installed locally using `npm install`. If using GitHub Actions, include the installation in the `prerun` step.
+- NodeJS code executes in the same context as the calling process on the host machine, using the [VM](https://nodejs.org/api/vm.html) module internally.
+
+## Gotchas
+- This command is only supported on hosted Windows runners. Hosted Linux runners do not yet support the `prerun` step.
+- Ensure your NodeJS environment is properly configured with all necessary dependencies.
+
+## Notes
+- The `exec` command is available starting from TestDriver.ai version `5.1.0`.
+- Use this command to integrate custom logic or external libraries into your tests.
