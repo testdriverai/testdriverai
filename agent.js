@@ -1000,8 +1000,6 @@ ${regression}
     }
   }
 
-  console.log('returning')
-
   return;
 };
 
@@ -1045,8 +1043,6 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
   }
 
   executionHistory = [];
-
-  console.log(ymlObj);
 
   for (const step of ymlObj.steps) {
     logger.info(``, null);

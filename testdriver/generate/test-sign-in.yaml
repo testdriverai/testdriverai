@@ -1,8 +1,0 @@
-version: 5.2.2
-session: 67f9855d040dfa560f9b0e2d
-steps:
-  - prompt: Click on the user icon in the top right corner.
-    commands:
-      - command: hover-image
-        description: user icon next to the clock in the top right corner
-        action: click
