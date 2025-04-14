@@ -44,6 +44,7 @@ const commands = require("./lib/commands.js");
 const init = require("./lib/init.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
+const uploadSecrets = require("./lib/upload-secrets.js");
 
 const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
 const isValidVersion = require("./lib/valid-version.js");
@@ -100,6 +101,8 @@ let getArgs = () => {
 
   if (args[command] == "init") {
     args[command] = "init";
+  } else if (args[command] == "upload-secrets") {
+    args[command] = "upload-secrets";
   } else if (args[command] !== "run" && !args[file]) {
     args[file] = args[command];
     args[command] = "edit";
@@ -575,9 +578,10 @@ const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false
     await aiExecute(message.data, validateAndLoop, dry);
     logger.debug("showing prompt from exploratoryLoop response check");
   }
-
   
   await save({ silent: false });
+
+  return;
 };
 
 const generate = async (type, count, baseYaml, skipYaml = false) => {
@@ -995,6 +999,10 @@ ${regression}
       logger.info(chalk.dim(`saved as ${fileName}`));
     }
   }
+
+  console.log('returning')
+
+  return;
 };
 
 let runRawYML = async (yml) => {
@@ -1049,7 +1057,7 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       return await exit(true);
     } else if (!step.commands) {
       logger.info(chalk.yellow("No commands found, running exploratory"));
-      return await exploratoryLoop(step.prompt, false, true);
+      await exploratoryLoop(step.prompt, false, true);
     }
 
     if (shouldSave) {
@@ -1171,7 +1179,7 @@ const start = async () => {
     speak("Howdy! I am TestDriver version " + package.version);
   }
 
-  if (thisCommand !== "init") {
+  if (thisCommand !== "init" || thisCommand !== "upload-secrets") {
 
     if (!config.TD_VM) {
       logger.info(
@@ -1198,6 +1206,8 @@ const start = async () => {
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
+  } else if (thisCommand == "upload-secrets") {
+    await uploadSecrets();
   }
 };
 
