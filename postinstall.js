@@ -1,7 +1,5 @@
 let platform = require("os").platform();
 let exec = require("child_process").exec;
-const { execSync } = require("child_process");
-const readline = require("readline");
 
 if (platform !== "darwin") {
   console.log("TestDriver Setup: Skipping codesign becasue not on Mac");
