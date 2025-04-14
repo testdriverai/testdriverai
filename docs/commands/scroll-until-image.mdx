@@ -1,0 +1,33 @@
+---
+title: "scroll-until-image"
+---
+
+## Description
+The `scroll-until-image` command is used to scroll the screen in a specified direction until an image matching the given description is found. This is useful for navigating to visual elements that are not initially visible on the screen.
+
+## Arguments
+| Argument      | Type     | Description                                                                 |
+|---------------|----------|-----------------------------------------------------------------------------|
+| `description` | `string` | A description of the image and what it represents.                         |
+| `direction`   | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. |
+| `distance`    | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `1200`. |
+
+## Example Usage
+```yaml
+command: scroll-until-image
+description: Submit at the bottom of the form
+direction: down
+```
+
+## Protips
+- Use clear and concise descriptions for the image to improve detection accuracy.
+- Adjust the `distance` value to control how far the command scrolls before giving up.
+- Combine this command with other commands like `hover-image` or `match-image` to interact with the located image.
+
+## Gotchas
+- If the image cannot be located within the specified `distance`, the command will fail.
+- Ensure the description accurately represents the image to avoid detection issues.
+
+## Notes
+- The `scroll-until-image` command is ideal for navigating to visual elements that are off-screen and cannot be located using text-based commands.
+- This command supports both vertical and horizontal scrolling for flexible navigation.
