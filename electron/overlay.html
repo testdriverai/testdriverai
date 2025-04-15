@@ -308,8 +308,6 @@
     });
     ipcRenderer.on(events.mouseMove,
       (event, { x, y } = {}) => {
-        
-        console.log("mouseMove", x, y)
 
         mouse.style.marginLeft = toCss(x);
         mouse.style.marginTop = toCss(y);
