@@ -1,10 +1,10 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "palm",
+  "theme": "mint",
   "name": "TestDriver",
   "colors": {
     "primary": "#b3d334",
-    "light": "#a3a4a0",
+    "light": "#b3d334",
     "dark": "#050d23"
   },
   "favicon": "/images/template/icon.png",
@@ -23,39 +23,16 @@
             ]
           },
           {
-            "group": "Features",
-            "pages": [
-              "/features/selectorless",
-              "/features/generation",
-              "/features/visual-assertions",
-              "/features/auto-healing",
-              "/features/cross-platform",
-              "/features/reusable-snippets",
-              "/features/parallel-testing",
-              "/features/github"
-            ]
-          },
-          {
-            "group": "Security & Privacy",
-            "pages": [
-              "/security/agent",
-              "/security/action",
-              "/security/platform"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Guide",
-        "groups": [
-          {
             "group": "Getting Started",
             "pages": [
+              "/getting-started/vscode",
               "/getting-started/setup",
-              "/getting-started/writing",
               "/getting-started/generating",
+              "/getting-started/writing",
               "/getting-started/running",
-              "/getting-started/ci"
+              "/getting-started/ci",
+              "/features/auto-healing",
+              "/getting-started/editing"
             ]
           },
           {
@@ -81,65 +58,16 @@
               "/action/prerun",
               "/action/secrets"
             ]
-          }]
-      },
-      {
-        "tab": "Examples",
-        "groups": [
-          {
-            "group": "Scenarios",
-            "pages": [
-              "cookie-banner",
-              "log-in",
-              "spell-check",
-              "form-filling",
-              "file-upload",
-              "pdf-generation",
-              "ai-chatbot"
-            ]
           },
           {
-            "group": "Apps",
+            "group": "Security & Privacy",
             "pages": [
-              "static-websites",
-              "chrome-extensions",
-              "mobile-apps",
-              "desktop-apps"
+              "/security/agent",
+              "/security/action",
+              "/security/platform"
             ]
-          }]
-      },
-      {
-        "tab": "Integrations",
-        "groups": [
-          {
-            "group": "Buidling",
-            "pages": [
-              "/integrations/vercel",
-              "/integrations/netlify",
-              "/integrations/electron"
-            ]
-          },
-          {
-            "group": "Importing",
-            "pages": [
-              "/importing/testrail",
-              "/importing/jira",
-              "/importing/gherkin",
-              "/importing/csv"
-            ]
-          },
-          {
-            "group": "Exporting",
-            "pages": [
-              "/exploting/playwright"
-            ]
-          },
-          {
-            "group": "Bug Reporting",
-            "pages": [
-              "/bugs/jira"
-            ]
-          }]
+          }
+        ]
       },
       {
         "tab": "Reference",
@@ -151,8 +79,8 @@
               "/commands/exec",
               "/commands/focus-application",
               "/commands/hover-image",
-              "/commands/match-image",
               "/commands/hover-text",
+              "/commands/match-image",
               "/commands/if",
               "/commands/press-keys",
               "/commands/run",
@@ -188,13 +116,13 @@
       "anchors": [
         {
           "anchor": "Community",
-          "href": "https://mintlify.com/community",
+          "href": "https://discord.com/invite/cWDFW8DzPm",
           "icon": "discord"
         },
         {
-          "anchor": "Enterprise",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Book a Demo",
+          "href": "https://calendly.com/d/cq23-qyn-3v6/testdriver-ai-demo",
+          "icon": "calendar"
         }
       ]
     }
@@ -208,7 +136,7 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "https://testdriver.canny.io/testdriver"
       }
     ],
     "primary": {

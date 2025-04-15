@@ -1,25 +1,39 @@
+---
+title: Waiting in TestDriver.ai
+sidebarTitle: Waiting
+icon: "hourglass-half"
+---
+
 # Waiting in TestDriver.ai: Ensuring Stability and Reducing Flakiness
 
-Waiting is a critical feature in TestDriver.ai that ensures tests are stable and reliable, even in dynamic or slow-loading environments. TestDriver.ai provides built-in mechanisms to wait for UI changes, network stabilization, and specific elements like text or images to appear on the screen. These features help reduce test flakiness and improve the accuracy of your test results.
+Waiting is a critical feature in TestDriver.ai that ensures tests are stable and reliable, even in dynamic or slow-loading environments. 
 
----
+
+## Summary of Waiting Features
+
+| **Feature**          | **Description**                                                                 |
+|-----------------------|---------------------------------------------------------------------------------|
+| **`redraw`(automatic)** | TestDriver automatically waits for UI changes and network activity to resolve. |
+| **`wait-for-text`**   | Waits for specific text to appear on the screen.                                |
+| **`wait-for-image`**  | Waits for a specific image or visual element to appear on the screen.           |
 
 ## Key Waiting Features in TestDriver.ai
 
-1. **`wait-for-text` Command**:
+1. **Automatic Waiting with `redraw`**:
+   - TestDriver.ai automatically waits for the machine before moving to the next step.
+   - This includes waiting for:
+     - UI changes to complete.
+     - Network activity to stabilize (e.g., API calls).
+   - Reduces the need for manual waits, making tests faster and less prone to flakiness.
+
+2. **`wait-for-text` Command**:
    - Waits for specific text to appear on the screen.
    - Useful for validating dynamic content or ensuring that a page has fully loaded before proceeding.
 
-2. **`wait-for-image` Command**:
+3. **`wait-for-image` Command**:
    - Waits for a specific image or visual element to appear on the screen.
    - Ideal for verifying the presence of icons, logos, or other graphical elements.
 
-3. **Automatic Waiting with `redraw`**:
-   - TestDriver.ai automatically waits for the screen to stabilize before moving to the next step.
-   - This includes waiting for:
-     - UI changes to complete.
-     - Network activity to stabilize (e.g., AJAX requests or API calls).
-   - Reduces the need for manual waits, making tests faster and less prone to flakiness.
 
 ---
 
@@ -73,7 +87,6 @@ The `wait-for-image` command pauses the test until the specified image or visual
 
 
 ```
-
 
 In this example, the test waits up to 8 seconds for the company logo to appear in the top-left corner.
 
@@ -160,10 +173,7 @@ steps:
     commands:
       - command: assert
         expect: The dashboard is displayed
-
-
 ```
-
 
 ---
 
@@ -183,17 +193,3 @@ steps:
 
 5. **Test Incrementally**:
    - Add waiting commands step-by-step to ensure each part of the workflow is stable.
-
----
-
-## Summary of Waiting Features
-
-| **Feature**          | **Description**                                                                 |
-|-----------------------|---------------------------------------------------------------------------------|
-| **`wait-for-text`**   | Waits for specific text to appear on the screen.                                |
-| **`wait-for-image`**  | Waits for a specific image or visual element to appear on the screen.           |
-| **`redraw` Function** | Automatically waits for UI changes, network stabilization, and screen updates. |
-
----
-
-By leveraging TestDriver.ai's waiting features, you can create stable and reliable tests that adapt to dynamic environments, reducing flakiness and improving overall test quality.
