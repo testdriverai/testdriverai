@@ -27,8 +27,8 @@
             "pages": [
               "/getting-started/vscode",
               "/getting-started/setup",
-              "/getting-started/generating",
               "/getting-started/writing",
+              "/getting-started/generating",
               "/getting-started/running",
               "/getting-started/ci",
               "/features/auto-healing",
@@ -105,9 +105,7 @@
           },
           {
             "group": "CLI",
-            "pages": [
-              "/cli/overview"
-            ]
+            "pages": ["/cli/overview"]
           }
         ]
       }

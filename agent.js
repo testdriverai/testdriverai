@@ -137,8 +137,6 @@ let thisFile = a.file;
 const thisCommand = a.command;
 
 logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
-logger.info(chalk.dim(`Working on ${thisFile}`));
-logger.info("");
 logger.info(`This is beta software!`);
 logger.info("");
 logger.info(chalk.yellow(`Join our Discord for help`));
@@ -179,9 +177,10 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions = "/summarize /save /run /quit /assert /undo /manual /yml /js /exec".split(
-    " ",
-  );
+  let completions =
+    "/summarize /save /run /quit /assert /undo /manual /yml /js /exec".split(
+      " ",
+    );
   if (line.startsWith("/run ") || line.startsWith("/explore ")) {
     return fileCompleter(line);
   } else {
@@ -390,7 +389,12 @@ const runCommand = async (command, depth) => {
 let lastCommand = new Date().getTime();
 let csv = [["command,time"]];
 
-const executeCommands = async (commands, depth, pushToHistory = false, dry = false) => {
+const executeCommands = async (
+  commands,
+  depth,
+  pushToHistory = false,
+  dry = false,
+) => {
   if (commands?.length) {
     for (const command of commands) {
       if (pushToHistory) {
@@ -412,7 +416,12 @@ const executeCommands = async (commands, depth, pushToHistory = false, dry = fal
 
 // note that commands are run in a recursive loop, so that the AI can respond to the output of the commands
 // like `click-image` and `click-text` for example
-const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false, dry = false) => {
+const executeCodeBlocks = async (
+  codeblocks,
+  depth,
+  pushToHistory = false,
+  dry = false,
+) => {
   depth = depth + 1;
 
   logger.debug("%j", { message: "execute code blocks", depth });
@@ -441,7 +450,7 @@ const aiExecute = async (message, validateAndLoop = false, dry = false) => {
   executionHistory.push({ prompt: lastPrompt, commands: [] });
 
   logger.debug("kicking off exploratory loop");
-  
+
   // kick everything off
   await actOnMarkdown(message, 0, true, dry);
 
@@ -461,7 +470,7 @@ const aiExecute = async (message, validateAndLoop = false, dry = false) => {
 
     if (checkCodeblocks.length > 0) {
       logger.debug("check thinks more needs to be done");
-      
+
       logger.info(chalk.dim("not done yet!"), "testdriver");
       logger.info("");
 
@@ -549,7 +558,11 @@ commands:
 
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
-const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false) => {
+const exploratoryLoop = async (
+  currentTask,
+  dry = false,
+  validateAndLoop = false,
+) => {
   lastPrompt = currentTask;
   checkCount = 0;
 
@@ -586,7 +599,7 @@ const exploratoryLoop = async (currentTask, dry = false, validateAndLoop = false
     await aiExecute(message.data, validateAndLoop, dry);
     logger.debug("showing prompt from exploratoryLoop response check");
   }
-  
+
   await save({ silent: false });
 
   return;
@@ -628,7 +641,6 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
 
   // for each testPrompt
   for (const testPrompt of testPrompts) {
-
     // with the contents of the testPrompt
     let fileName =
       sanitizeFilename(testPrompt.name)
@@ -647,14 +659,16 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
     let list = testPrompt.steps;
 
     if (baseYaml && fs.existsSync(baseYaml)) {
-      list.unshift({step: {
-        command: "run",
-        file: baseYaml,
-      }});
+      list.unshift({
+        step: {
+          command: "run",
+          file: baseYaml,
+        },
+      });
     }
-    let contents = yaml.dump({ 
+    let contents = yaml.dump({
       version: package.version,
-      steps: list
+      steps: list,
     });
     fs.writeFileSync(path1, contents);
   }
@@ -699,7 +713,12 @@ ${yml}
 };
 
 // this function is responsible for starting the recursive process of executing codeblocks
-const actOnMarkdown = async (content, depth, pushToHistory = false, dry = false) => {
+const actOnMarkdown = async (
+  content,
+  depth,
+  pushToHistory = false,
+  dry = false,
+) => {
   logger.debug("%j", {
     message: "actOnMarkdown called",
     depth,
@@ -714,7 +733,12 @@ const actOnMarkdown = async (content, depth, pushToHistory = false, dry = false)
   }
 
   if (codeblocks.length) {
-    let executions = await executeCodeBlocks(codeblocks, depth, pushToHistory, dry);
+    let executions = await executeCodeBlocks(
+      codeblocks,
+      depth,
+      pushToHistory,
+      dry,
+    );
     return executions;
   } else {
     return true;
@@ -722,7 +746,6 @@ const actOnMarkdown = async (content, depth, pushToHistory = false, dry = false)
 };
 
 const ensureMacScreenPerms = async () => {
-
   // if os is mac, check for screen capture permissions
   if (
     !config.TD_VM &&
@@ -739,12 +762,11 @@ const ensureMacScreenPerms = async () => {
     analytics.track("noMacPermissions");
     return exit();
   }
-}
+};
 
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
-
   // readline is what allows us to get user input
   rl = readline.createInterface({
     terminal: true,
@@ -765,7 +787,6 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   const handleInput = async (input) => {
-
     if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
 
@@ -779,8 +800,10 @@ const firstPrompt = async () => {
     analytics.track("input", { input });
 
     logger.info(""); // adds a nice break between submissions
-    
-    let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
+
+    let interpolationVars = JSON.parse(
+      process.env["TD_INTERPOLATION_VARS"] || "{}",
+    );
 
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
@@ -814,7 +837,6 @@ const firstPrompt = async () => {
       let shouldExit = flags.includes("--exit") ? true : false;
 
       await run(file, shouldSave, shouldExit);
-
     } else if (input.indexOf("/explore") == 0) {
       const file = commands[1];
       await run(file, true, true);
@@ -822,7 +844,7 @@ const firstPrompt = async () => {
       const skipYaml = commands[4] === "--skip-yaml";
       await generate(commands[1], commands[2], commands[3], skipYaml);
     } else if (input.indexOf("/dry") == 0) {
-      await exploratoryLoop(input.replace('/dry', ''), true, false);
+      await exploratoryLoop(input.replace("/dry", ""), true, false);
     } else if (input.indexOf("/yaml") == 0) {
       await runRawYML(commands[1]);
     } else if (input.indexOf("/js") == 0) {
@@ -988,7 +1010,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
-    console.log(e)
+    console.log(e);
     logger.error(e.message);
     logger.error("%s", e);
   }
@@ -1012,7 +1034,6 @@ ${regression}
 };
 
 let runRawYML = async (yml) => {
-
   const tmp = require("tmp");
   let tmpobj = tmp.fileSync();
 
@@ -1035,17 +1056,15 @@ let runRawYML = async (yml) => {
 
   // write the yaml to a file
   fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
-  
+
   // and run it with run()
   await run(tmpobj.name, false, true);
-
-}
+};
 
 // this will load a regression test from a file location
 // it parses the markdown file and executes the codeblocks exactly as if they were
 // generated by the AI in a single prompt
 let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
-
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
@@ -1080,12 +1099,10 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
     }
 
     if (shouldSave) {
-
       executionHistory.push({
         prompt: step.prompt,
         commands: [], // run will overwrite the commands
       });
-
     }
 
     let markdown = `\`\`\`yaml
@@ -1193,24 +1210,25 @@ const start = async () => {
   // }
 
   // await sdk.auth();
-
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
   }
 
-  if (thisCommand !== "init" || thisCommand !== "upload-secrets") {
+  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+    logger.info(chalk.dim(`Working on ${thisFile}`));
 
     if (!config.TD_VM) {
       logger.info(
-        chalk.red("Warning! " ) +
-          chalk.dim("Local mode sends screenshots of the desktop to our API. Set `TD_VM=true` to run in a secure VM."),
+        chalk.red("Warning! ") +
+          chalk.dim(
+            "Local mode sends screenshots of the desktop to our API. Set `TD_VM=true` to run in a secure VM.",
+          ),
       );
       logger.info(
         chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
       );
       logger.info("");
     }
-
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
@@ -1231,48 +1249,47 @@ const start = async () => {
 };
 
 const makeSandbox = async () => {
-
   if (config.TD_VM) {
-          
     try {
-
       logger.info(chalk.gray(`- creating sandbox...`));
       server.broadcast("status", `Creating new sandbox...`);
       await sandbox.boot();
       logger.info(chalk.gray(`- authenticating...`));
       server.broadcast("status", `Authenticating...`);
-      await sandbox.send({type: 'authenticate', apiKey: config.TD_API_KEY, secret: config.TD_SECRET} );
+      await sandbox.send({
+        type: "authenticate",
+        apiKey: config.TD_API_KEY,
+        secret: config.TD_SECRET,
+      });
       logger.info(chalk.gray(`- configuring...`));
       server.broadcast("status", `Configuring...`);
-      await sandbox.send({type: 'create', resolution: config.TD_VM_RESOLUTION});
+      await sandbox.send({
+        type: "create",
+        resolution: config.TD_VM_RESOLUTION,
+      });
       logger.info(chalk.gray(`- starting stream...`));
       server.broadcast("status", `Starting stream...`);
-      await sandbox.send({type: 'stream.start'});
-      let {url} = await sandbox.send({type: 'stream.getUrl'});
+      await sandbox.send({ type: "stream.start" });
+      let { url } = await sandbox.send({ type: "stream.getUrl" });
       logger.info(chalk.gray(`- rendering...`));
       server.broadcast("status", `Rendering...`);
-      await sandbox.send({type: 'ready'});
-      emitter.emit(events.vm.show, {url});
+      await sandbox.send({ type: "ready" });
+      emitter.emit(events.vm.show, { url });
       logger.info(chalk.gray(`- booting...`));
       server.broadcast("status", `Starting...`);
-      await new Promise(resolve => setTimeout(resolve, 3000)); 
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       logger.info(chalk.green(``));
       logger.info(chalk.green(`sandbox runner ready!`));
-
-    } catch  (e) {
-      logger.error(e)
+    } catch (e) {
+      logger.error(e);
       logger.error(chalk.red(`sandbox runner failed to start`));
       process.exit(1);
     }
- 
   }
 
   emitter.emit(events.interactive, false);
-  emitter.emit(events.showWindow)
-
-}
-
-
+  emitter.emit(events.showWindow);
+};
 
 const newSession = async () => {
   // should be start of new session
@@ -1286,11 +1303,16 @@ const newSession = async () => {
 };
 
 const runPrerun = async () => {
-  const prerunFile = path.join(workingDir, "testdriver", "lifecycle", "prerun.yaml");
+  const prerunFile = path.join(
+    workingDir,
+    "testdriver",
+    "lifecycle",
+    "prerun.yaml",
+  );
   if (fs.existsSync(prerunFile)) {
     await run(prerunFile, false, false);
   }
-}
+};
 
 process.on("uncaughtException", async (err) => {
   analytics.track("uncaughtException", { err });
