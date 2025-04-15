@@ -1,0 +1,4 @@
+steps:
+  - commands:
+      - command: focus-application
+        name: Google Chrome
