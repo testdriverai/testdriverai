@@ -158,6 +158,5 @@ node_modules
 settings.json
 saves/*
 .testdriver/screenshots/mac/*
-images
 entrypoint.js
 entrypoint
