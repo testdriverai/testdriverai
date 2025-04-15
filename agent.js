@@ -1018,10 +1018,25 @@ let runRawYML = async (yml) => {
 
   let decoded = decodeURIComponent(yml);
 
-  // saved the yml to a temp file using tmp
-  // and run it with run()
-  fs.writeFileSync(tmpobj.name, await generator.rawToFormatted(decoded));
+  // parse the yaml
+  let ymlObj = null;
+  try {
+    ymlObj = await yaml.load(decoded);
+  } catch (e) {
+    logger.error("%s", e);
+  }
+
+  // add the root key steps: with array of commands:
+  if (ymlObj && !ymlObj.steps) {
+    ymlObj = {
+      steps: [ymlObj],
+    };
+  }
+
+  // write the yaml to a file
+  fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
   
+  // and run it with run()
   await run(tmpobj.name, false, true);
 
 }
