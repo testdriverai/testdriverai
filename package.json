@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "5.3.5",
+  "version": "4.2.27",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -16,9 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@e2b/desktop": "^1.6.0",
     "@electerm/strip-ansi": "^1.0.0",
-    "arktype": "^2.1.19",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",
     "cli-progress": "^3.12.0",
@@ -26,6 +24,7 @@
     "decompress": "^4.2.1",
     "dotenv": "^16.4.5",
     "electron": "^33.0.2",
+    "get-windows": "^9.2.0",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
     "mac-screen-capture-permissions": "^2.1.0",
@@ -39,21 +38,20 @@
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
+    "robotjs": "^0.6.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
+    "screenshot-desktop": "^1.15.0",
     "semver": "^7.6.2",
     "sharp": "^0.33.5",
     "systeminformation": "^5.23.5",
     "tmp": "^0.2.3",
-    "totp-generator": "^1.0.0",
     "uuid": "^10.0.0",
-    "winston": "^3.13.0",
-    "ws": "^8.18.1"
+    "winston": "^3.13.0"
   },
   "overrides": {
     "glob": "^11.0.1",
-    "rimraf": "^5.0.10",
-    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3"
+    "rimraf": "^5.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
@@ -69,9 +67,6 @@
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5",
     "@img/sharp-libvips-win32-x64": "^1.0.2",
-    "@img/sharp-win32-x64": "^0.33.4",
-    "get-windows": "^9.2.0",
-    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3",
-    "screenshot-desktop": "^1.15.0"
+    "@img/sharp-win32-x64": "^0.33.4"
   }
 }

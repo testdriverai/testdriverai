@@ -1,5 +1,5 @@
 # Created by https://www.toptal.com/developers/gitignore/api/node
-testdriver.yaml
+testdriver.yml
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
 ### Node ###
@@ -133,7 +133,7 @@ dist
 # yarn v2
 .yarn/cache
 .yarn/unplugged
-.yarn/build-state.yaml
+.yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
 
@@ -158,5 +158,6 @@ node_modules
 settings.json
 saves/*
 .testdriver/screenshots/mac/*
+images
 entrypoint.js
 entrypoint
