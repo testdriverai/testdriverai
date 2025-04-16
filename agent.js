@@ -123,7 +123,7 @@ let getArgs = () => {
   // turn args[file] into local path
   if (args[file]) {
     args[file] = path.join(workingDir, args[file]);
-    if (!args[file].endsWith(".yaml")) {
+    if (!args[file].endsWith(".yaml") && !args[file].endsWith(".yml")) {
       args[file] += ".yaml";
     }
   }
