@@ -55,7 +55,7 @@ app.whenReady().then(() => {
       width: config.TD_VM_RESOLUTION[0],
       height: config.TD_VM_RESOLUTION[1],
       closable: true,
-      resizable: true,
+      resizable: false,
       // alwaysOnTop: true,
       show: false,
       webPreferences: {
