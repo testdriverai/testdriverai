@@ -353,8 +353,6 @@ const check = async () => {
 const runCommand = async (command, depth) => {
   let yml = await yaml.dump(command);
 
-  await save({});
-
   logger.debug(`running command: \n\n${yml}`);
 
   try {
@@ -384,6 +382,8 @@ const runCommand = async (command, depth) => {
       true,
     );
   }
+
+  await save({ silent: true });
 };
 
 let lastCommand = new Date().getTime();
@@ -996,11 +996,6 @@ let summarize = async (error = null) => {
 let save = async ({ filepath = thisFile, silent = false } = {}) => {
   analytics.track("save", { silent });
 
-  if (!silent) {
-    logger.info(chalk.dim(`saving as ${filepath}...`), true);
-    logger.info("");
-  }
-
   if (!executionHistory.length) {
     return;
   }
@@ -1026,7 +1021,7 @@ ${regression}
 
     const fileName = filepath.split("/").pop();
     if (!silent) {
-      logger.info(chalk.dim(`saved as ${fileName}`));
+      logger.info(chalk.dim(`saved as ${filepath}`));
     }
   }
 
@@ -1117,7 +1112,7 @@ ${yaml.dump(step)}
   }
 
   if (shouldSave) {
-    await save({ filepath: file });
+    await save({ filepath: file, silent: true });
   }
 
   setTerminalWindowTransparency(false);
@@ -1280,6 +1275,7 @@ const makeSandbox = async () => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       logger.info(chalk.green(``));
       logger.info(chalk.green(`sandbox runner ready!`));
+      logger.info(chalk.green(``));
     } catch (e) {
       logger.error(e);
       logger.error(chalk.red(`sandbox runner failed to start`));

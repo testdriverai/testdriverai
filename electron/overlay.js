@@ -1,8 +1,15 @@
 const { default: nodeIPC } = require("node-ipc");
-const { app: electronApp, remote, screen, BrowserWindow, Tray, Menu } = require("electron");
+const {
+  app: electronApp,
+  remote,
+  screen,
+  BrowserWindow,
+  Tray,
+  Menu,
+} = require("electron");
 const { eventsArray } = require("../lib/events.js");
 const config = require("../lib/config.js");
-const path = require('path');
+const path = require("path");
 
 let tray = null;
 
@@ -22,25 +29,22 @@ ipc.config.retry = 0;
 ipc.config.silent = true;
 
 app.whenReady().then(() => {
-
   // Path to tray icon (must be .ico on Windows, .png on Mac/Linux)
-  const iconPath = path.join(__dirname, 'tray.png');
+  const iconPath = path.join(__dirname, "tray.png");
 
   tray = new Tray(iconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Quit',
+      label: "Quit",
       click: () => {
         app.quit();
       },
     },
   ]);
 
-  tray.setToolTip('TestDriver.ai');
+  tray.setToolTip("TestDriver.ai");
   tray.setContextMenu(contextMenu);
-
-  app.dock?.hide();
 
   let windowOptions;
 
@@ -50,13 +54,13 @@ app.whenReady().then(() => {
       height: config.TD_VM_RESOLUTION[1],
       closable: true,
       resizable: true,
-      // alwaysOnTop: true,
       show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
       },
       autoHideMenuBar: true,
+      icon: "./icon.png",
     };
   } else {
     windowOptions = {
@@ -92,8 +96,11 @@ app.whenReady().then(() => {
       visibleOnFullScreen: true,
     });
   } else {
-    window.setContentSize(config.TD_VM_RESOLUTION[0], config.TD_VM_RESOLUTION[1]);
-    window.setBackgroundColor('#000')
+    window.setContentSize(
+      config.TD_VM_RESOLUTION[0],
+      config.TD_VM_RESOLUTION[1],
+    );
+    window.setBackgroundColor("#000");
   }
 
   window.loadFile("overlay.html");
