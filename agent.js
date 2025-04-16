@@ -378,7 +378,7 @@ const runCommand = async (command, depth, shouldSave) => {
     }
 
     if (response && typeof response === "string") {
-      return await actOnMarkdown(response, depth, true, false);
+      return await actOnMarkdown(response, depth, false, false, false);
     }
   } catch (error) {
     return await haveAIResolveError(
@@ -403,6 +403,7 @@ const executeCommands = async (
 ) => {
   if (commands?.length) {
     for (const command of commands) {
+
       if (pushToHistory) {
         executionHistory[executionHistory.length - 1]?.commands.push(command);
       }
@@ -738,7 +739,7 @@ const actOnMarkdown = async (
   depth,
   pushToHistory = false,
   dry = false,
-  shouldSave,
+  shouldSave = false,
 ) => {
   logger.debug("%j", {
     message: "actOnMarkdown called",
