@@ -89,7 +89,7 @@ jobs:
         with:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           prompt: |
-            1. /run testdriver/onboarding.yaml
+            1. /run testdriver/onboarding.yaml --save
           create-pr: true
           pr-title: "Auto-Healed Test Updates"
           pr-base: main
