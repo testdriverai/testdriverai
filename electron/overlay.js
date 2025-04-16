@@ -46,6 +46,8 @@ app.whenReady().then(() => {
   tray.setToolTip("TestDriver.ai");
   tray.setContextMenu(contextMenu);
 
+  app.dock?.hide();
+
   let windowOptions;
 
   if (config.TD_VM) {
@@ -54,13 +56,13 @@ app.whenReady().then(() => {
       height: config.TD_VM_RESOLUTION[1],
       closable: true,
       resizable: true,
+      // alwaysOnTop: true,
       show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
       },
       autoHideMenuBar: true,
-      icon: "./icon.png",
     };
   } else {
     windowOptions = {
