@@ -382,8 +382,6 @@ const runCommand = async (command, depth) => {
       true,
     );
   }
-
-  await save({ silent: true });
 };
 
 let lastCommand = new Date().getTime();
@@ -599,8 +597,6 @@ const exploratoryLoop = async (
     await aiExecute(message.data, validateAndLoop, dry);
     logger.debug("showing prompt from exploratoryLoop response check");
   }
-
-  await save({ silent: false });
 
   return;
 };
@@ -1109,10 +1105,14 @@ ${yaml.dump(step)}
 
     lastPrompt = step.prompt;
     await actOnMarkdown(markdown, 0, true);
+
+    if (shouldSave) {
+      await save({ silent: true });
+    }
   }
 
   if (shouldSave) {
-    await save({ filepath: file, silent: true });
+    await save({ filepath: file, silent: false });
   }
 
   setTerminalWindowTransparency(false);
