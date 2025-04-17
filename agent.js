@@ -1045,9 +1045,6 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
 ${regression}
 \`\`\``);
 
-    // logger.info(csv.join('\n'))
-
-    const fileName = filepath.split("/").pop();
     if (!silent) {
       logger.info(chalk.dim(`saved as ${filepath}`));
     }
