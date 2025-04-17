@@ -43,7 +43,7 @@
               "/guide/assertions",
               "/guide/variables",
               "/guide/authentication",
-              "/guide/setup-teardown",
+              "/guide/lifecycle",
               "/guide/code"
             ]
           },

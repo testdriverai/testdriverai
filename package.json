@@ -11,7 +11,8 @@
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
-    "test": "mocha test/*"
+    "test": "mocha test/*",
+    "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'"
   },
   "author": "",
   "license": "ISC",

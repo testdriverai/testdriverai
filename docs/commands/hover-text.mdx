@@ -10,7 +10,7 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 | Argument      | Type     | Description                                                                 |
 |---------------|----------|-----------------------------------------------------------------------------|
 | `text`        | `string` | The text to find on the screen. The longer and more unique, the better.     |
-| `description` | `string` | A description of the text and what it represents. The actual text itself should not be included here. |
+| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here. |
 | `action`      | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
 | `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default) and `ai`. |
 
@@ -30,9 +30,9 @@ action: click
 - Ensure the action specified matches the intended interaction with the text.
 
 ## Gotchas
-- If the text cannot be located, the command will fail. Ensure the text is visible on the screen and matches exactly.
+- If the text can't be located, the command will fail. Ensure the text is visible on the screen and matches exactly.
 - Variations in font size, style, or screen resolution may affect detection accuracy.
 
 ## Notes
-- The `hover-text` command is ideal for interacting with textual elements that cannot be identified using other selectors.
+- The `hover-text` command is ideal for interacting with textual elements that can't be identified using other selectors.
 - Supported actions allow flexibility in how the text is interacted with during the test.

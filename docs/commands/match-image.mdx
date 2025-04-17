@@ -4,12 +4,12 @@ icon: "images"
 ---
 
 ## Description
-The `match-image` command is used to locate an image on the screen by matching it with a reference image file and performing an action (e.g., click or hover) at its center. This command is particularly useful for interacting with elements that the AI has difficulty locating using descriptions or other methods.
+The `match-image` command is used to locate an image on the screen by matching it with a reference image file and performing an action (For example, click or hover) at its center. This command is particularly useful for interacting with elements that the AI has difficulty locating using descriptions or other methods.
 
 ## Arguments
 | Argument       | Type     | Description                                                                 |
 |----------------|----------|-----------------------------------------------------------------------------|
-| `path`         | `string` | The relative path to the image file that needs to be matched on the screen. Do not include `testdriver/screenshots/*/` in the path. |
+| `path`         | `string` | The relative path to the image file that needs to be matched on the screen. don't include `testdriver/screenshots/*/` in the path. |
 | `action`       | `string` | The action to perform when the image is found. Available actions are: `click` or `hover`. The action will be performed at the center of the matched image. |
 
 ## Example Usage
@@ -27,7 +27,7 @@ action: click
 ## Protips
 - To create high-quality screenshots for matching:
   - Download the video of the test and open it at "full" or "actual" size on your computer.
-  - Use a screenshot tool like Cleanshot X to capture the target element.
+  - Use a screenshot tool (like Cleanshot X) to capture the target element.
   - Center the clickable element as much as possible within the screenshot.
 - Ensure the image file is clear and free of unnecessary visual noise to improve matching accuracy.
 
@@ -37,6 +37,6 @@ action: click
 - Ensure the image file is stored in the correct directory structure (`testdriver/screenshots/(mac/linux/windows)/`) for dynamic resolution.
 
 ## Notes
-- The `match-image` command is ideal for interacting with visual elements that cannot be reliably described or located using other commands like `hover-image`.
+- The `match-image` command is ideal for interacting with visual elements that can't be reliably described or located using other commands like `hover-image`.
 - This command supports flexible scaling to account for minor differences in image size or resolution.
 - Use this command as a fallback when other methods fail to locate the desired element.

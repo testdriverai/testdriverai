@@ -12,13 +12,11 @@ This guide explains how to handle **authentication workflows** in **TestDriver.a
 ## How Authentication Works in TestDriver.ai
 
 1. **Store Credentials Securely**:
-   - Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
+  - Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
 2. **Pass Credentials to the Workflow**:
-   - Supply credentials as environment variables or directly in the workflow.
+  - Supply credentials as environment variables or directly in the workflow.
 3. **Use Credentials in Tests**:
-   - Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
-
----
+  - Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
 
 ## Step 1: Store Credentials in GitHub Secrets
 
@@ -28,8 +26,6 @@ This guide explains how to handle **authentication workflows** in **TestDriver.a
    - **`TD_PASSWORD`**: The password for login.
    - **`TESTDRIVER_API_KEY`**: Your TestDriver.ai API key.
    - **`WEBSITE_URL`**: The URL of the website to test.
-
----
 
 ## Step 2: Pass Credentials to the Workflow
 
@@ -78,12 +74,7 @@ jobs:
           TD_PASSWORD: ${{ secrets.TD_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
-
-
 ```
-
-
----
 
 ## Step 3: Use Credentials in Test Files
 
@@ -114,37 +105,30 @@ steps:
         action: click
       - command: assert
         expect: The dashboard is displayed
-
-
 ```
-
-
----
 
 ## How It Works Together
 
 1. **Secrets in the Workflow**:
-   - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver.ai action.
+  - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver.ai action.
 
 2. **Secrets in the `prerun` Script**:
-   - The `WEBSITE_URL` secret is used to launch the browser with the correct URL.
+  - The `WEBSITE_URL` secret is used to launch the browser with the correct URL.
 
 3. **Secrets in the Test File**:
-   - The test file dynamically references the secrets to fill in login credentials during the test.
-
----
+  - The test file dynamically references the secrets to fill in login credentials during the test.
 
 ## Benefits of Using Authentication in TestDriver.ai
 
 1. **Secure Handling of Credentials**:
-   - Secrets are encrypted and not exposed in logs.
-   - Even if printed, they appear as `***`.
+  - Secrets are encrypted and not exposed in logs.
+  - Even if printed, they appear as `***`.
 
 2. **Dynamic Testing**:
-   - Easily switch between different environments (e.g., staging, production) by updating the secrets.
+  - Easily switch between different environments (e.g., staging, production) by updating the secrets.
 
 3. **Reusability**:
-   - Use the same workflow and test files across multiple repositories or environments.
+  - Use the same workflow and test files across multiple repositories or environments.
 
 ---
 

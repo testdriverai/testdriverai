@@ -4,7 +4,7 @@ icon: "check"
 ---
 
 ## Description
-The `assert` command is used to validate that a specific condition is true. It ensures that a task was completed successfully by checking the screen for the expected outcome. If the condition is not met, the test will fail.
+The `assert` command validates that a specific condition is true. It ensures that a task completed successfully by checking the screen for the expected outcome. If the condition isn't met, the test will fail.
 
 ## Arguments
 | Argument   | Type      | Description                                                                 |
@@ -12,7 +12,8 @@ The `assert` command is used to validate that a specific condition is true. It e
 | `expect`   | `string`  | The condition to check. This should describe what you expect to see on the screen. |
 | `async`    | `boolean` | (Optional) If set to `true`, the test will continue without waiting for the assertion to pass. Default is `false`. |
 
-## Example Usage
+## Example usage
+
 ```yaml
 command: assert
 expect: the video is playing
@@ -27,6 +28,5 @@ async: true
 ```
 
 ## Notes
-- Use `async: true` to speed up tests by allowing non-blocking assertions. However, the test will still fail if the condition is not met.
-- Assertions should be used sparingly, as too many can slow down the test execution.
+- Use `async: true` to speed up tests by allowing non-blocking assertions. However, the test will still fail if the condition isn't met.
 - Ensure the `expect` string clearly describes the condition to avoid ambiguity.
