@@ -11,6 +11,7 @@ The `exec` command allows you to execute custom NodeJS scripts within your TestD
 |------------|-----------|-----------------------------------------------------------------------------|
 | `lang`     | `string`  | The language of the script to execute. Supported values are `shell` and `js`. |
 | `output`   | `string`  | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps. |
+| `silent`   | `string`  | Defaults to `true`. This is useful for suppressing unnecessary or private output in the test logs. If set to `false`, the command will print the output of the script. This is useful for debugging. |
 | `linux`    | `string`  | The script to execute on Linux systems. For `js`, the script must define the output as `result`. |
 | `windows`  | `string`  | The script to execute on Windows systems. For `js`, the script must define the output as `result`. |
 | `mac`      | `string`  | The script to execute on macOS systems. For `js`, the script must define the output as `result`. |
