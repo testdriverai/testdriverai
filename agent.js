@@ -28,7 +28,6 @@ const path = require("path");
 const chalk = require("chalk");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
-const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
 const { server } = require("./lib/ipc.js");
@@ -772,18 +771,24 @@ const ensureMacScreenPerms = async () => {
   // if os is mac, check for screen capture permissions
   if (
     !config.TD_VM &&
-    process.platform === "darwin" &&
-    !macScreenPerms.hasScreenCapturePermission()
+    process.platform === "darwin"
   ) {
-    logger.info(chalk.red("Screen capture permissions not enabled."));
-    logger.info(
-      "You must enable screen capture permissions for the application calling `testdriverai`.",
-    );
-    logger.info(
-      "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
-    );
-    analytics.track("noMacPermissions");
-    return exit();
+
+    const macScreenPerms = require("mac-screen-capture-permissions");
+    if (!macScreenPerms.hasScreenCapturePermission()) {
+
+      logger.info(chalk.red("Screen capture permissions not enabled."));
+      logger.info(
+        "You must enable screen capture permissions for the application calling `testdriverai`.",
+      );
+      logger.info(
+        "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
+      );
+      analytics.track("noMacPermissions");
+      return exit();
+      
+    }
+    
   }
 };
 
