@@ -1,43 +1,13 @@
-version: 4.0.0
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: enter fiber.google.com in url
+  - prompt: launch chrome
     commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: hover-text
-        text: Search Google or type a URL
-        description: main google search
-        action: click
-      - command: type
-        text: "asdfasf"
-      - command: press-keys
-        keys:
-          - enter
-  - prompt: enter a fake address and check availability
-    commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: hover-text
-        text: Enter your address
-        description: address input field
-        action: click
-      - command: type
-        text: 123 Fake Street
-      - command: hover-text
-        text: ZIP
-        description: ZIP code input field
-        action: click
-      - command: type
-        text: 12345
-      - command: hover-text
-        text: Check availability
-        description: check availability button
-        action: clicka
-  - prompt: assert a familiy appears on screen
-    commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: assert
-        expect: a family appears on screen
-      - command: if
-        
+      - command: exec
+        lang: shell
+        linux: |
+          jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
+          exit
+      - command: wait-for-text
+        text: "Google Chrome"
+        timeout: 30000
