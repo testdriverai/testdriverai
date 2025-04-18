@@ -1,0 +1,588 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "The version of the TestDriver framework."
+    },
+    "session": {
+      "type": "string",
+      "description": "A unique identifier for the test session."
+    },
+    "steps": {
+      "type": "array",
+      "description": "An array of test steps.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "A description of the step's purpose."
+          },
+          "commands": {
+            "type": "array",
+            "description": "An array of commands to execute in this step.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "The command to execute."
+                }
+              },
+              "required": [
+                "command"
+              ],
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "type"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                        "text": {
+                        "type": ["string", "integer"]
+                      },
+                      "delay": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "text"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "press-keys"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "keys": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "enum": [
+                          [
+                            "backspace", "delete", "enter", "tab", "escape", "up", "down", "right", "left",
+                            "home", "end", "pageup", "pagedown", "f1", "f2", "f3", "f4", "f5", "f6", "f7",
+                            "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15", "f16", "f17", "f18", "f19",
+                            "f20", "f21", "f22", "f23", "f24", "capslock", "command", "alt", "right_alt",
+                            "control", "left_control", "right_control", "shift", "right_shift", "space",
+                            "printscreen", "insert", "menu", "audio_mute", "audio_vol_down", "audio_vol_up",
+                            "audio_play", "audio_stop", "audio_pause", "audio_prev", "audio_next",
+                            "audio_rewind", "audio_forward", "audio_repeat", "audio_random", "numpad_lock",
+                            "numpad_0", "numpad_1", "numpad_2", "numpad_3", "numpad_4", "numpad_5",
+                            "numpad_6", "numpad_7", "numpad_8", "numpad_9", "numpad_+", "numpad_-",
+                            "numpad_*", "numpad_/", "numpad_.", "lights_mon_up", "lights_mon_down",
+                            "lights_kbd_toggle", "lights_kbd_up", "lights_kbd_down", "a", "b", "c", "d", "e",
+                            "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u",
+                            "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+                          ]
+                        ]
+                      }
+                    },
+                    "required": [
+                      "keys"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "scroll"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "up",
+                          "down",
+                          "left",
+                          "right"
+                        ]
+                      },
+                      "amount": {
+                        "type": "integer"
+                      },
+                      "method": {
+                        "type": "string",
+                        "enum": [
+                          "keyboard",
+                          "mouse"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "direction"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "wait"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "timeout": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "timeout"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "click"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "x": {
+                        "type": "integer"
+                      },
+                      "y": {
+                        "type": "integer"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "click",
+                          "right-click",
+                          "double-click",
+                          "hover",
+                          "drag-start",
+                          "drag-end"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "action"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "hover"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "x": {
+                        "type": "integer"
+                      },
+                      "y": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "drag"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "x": {
+                        "type": "integer"
+                      },
+                      "y": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "hover-text"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                        "action": {
+                        "type": "string",
+                        "enum": [
+                          "click",
+                          "right-click",
+                          "double-click",
+                          "hover",
+                          "drag-start",
+                          "drag-end"
+                        ]
+                        },
+                      "method": {
+                        "type": "string",
+                        "enum": [
+                          "ai",
+                          "turbo"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "description",
+                      "action"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "hover-image"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "click",
+                          "right-click",
+                          "double-click",
+                          "hover",
+                          "drag-start",
+                          "drag-end"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "description",
+                      "action"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "match-image"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "click",
+                          "right-click",
+                          "double-click",
+                          "hover",
+                          "drag-start",
+                          "drag-end"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "action"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "wait-for-image"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "timeout": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "description"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "wait-for-text"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      },
+                      "timeout": {
+                        "type": "integer"
+                      },
+                      "method": {
+                        "type": "string",
+                        "enum": [
+                          "ai",
+                          "turbo"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "text"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "scroll-until-text"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "up",
+                          "down",
+                          "left",
+                          "right"
+                        ]
+                      },
+                      "distance": {
+                        "type": "integer"
+                      },
+                      "method": {
+                        "type": "string",
+                        "enum": [
+                          "ai",
+                          "turbo"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "direction"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "scroll-until-image"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "up",
+                          "down",
+                          "left",
+                          "right"
+                        ]
+                      },
+                      "distance": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "description",
+                      "direction"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "focus-application"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "remember"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "description": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "description",
+                      "value"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "assert"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "expect": {
+                        "type": "string"
+                      },
+                      "async": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "expect"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "exec"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                        "lang": {
+                        "type": "string",
+                        "enum": ["js", "shell"]
+                        },
+                      "mac": {
+                        "type": "string"
+                      },
+                      "windows": {
+                        "type": "string"
+                      },
+                      "linux": {
+                        "type": "string"
+                      },
+                      "silent": {
+                        "type": "boolean"
+                      },
+                      "output": {
+                        "type": "string"
+                      }
+                    },
+                    "anyOf": [
+                      {
+                        "required": [
+                          "mac"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "windows"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "linux"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "commands"
+        ]
+      }
+    }
+  },
+  "required": [
+    "version",
+    "steps"
+  ]
+}

@@ -28,9 +28,9 @@ const path = require("path");
 const chalk = require("chalk");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
-const macScreenPerms = require("mac-screen-capture-permissions");
 
 // local modules
+const { server } = require("./lib/ipc.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const log = require("./lib/logger.js");
@@ -42,6 +42,8 @@ const sdk = require("./lib/sdk.js");
 const commands = require("./lib/commands.js");
 const init = require("./lib/init.js");
 const config = require("./lib/config.js");
+const sandbox = require("./lib/sandbox.js");
+const uploadSecrets = require("./lib/upload-secrets.js");
 
 const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
 const isValidVersion = require("./lib/valid-version.js");
@@ -65,15 +67,21 @@ let rl;
 // list of prompts that the user has given us
 let tasks = [];
 
-let isInteractive = false;
+let isInteractive = true;
 emitter.on(events.interactive, (data) => {
   isInteractive = data;
+  server.broadcast(events.interactive, data);
+});
+emitter.on(events.vm.show, ({ url }) => {
+  server.broadcast(events.vm.show, url);
 });
 
 // get args from terminal
 const args = process.argv.slice(2);
 
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
+
+let workingDir = process.cwd();
 
 let getArgs = () => {
   let command = 0;
@@ -92,6 +100,8 @@ let getArgs = () => {
 
   if (args[command] == "init") {
     args[command] = "init";
+  } else if (args[command] == "upload-secrets") {
+    args[command] = "upload-secrets";
   } else if (args[command] !== "run" && !args[file]) {
     args[file] = args[command];
     args[command] = "edit";
@@ -101,19 +111,19 @@ let getArgs = () => {
 
   if (!args[file]) {
     // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(process.cwd(), "testdriver");
+    let testdriverFolder = path.join(workingDir, "testdriver");
     if (!fs.existsSync(testdriverFolder)) {
       fs.mkdirSync(testdriverFolder);
     }
 
-    args[file] = "testdriver/testdriver.yml";
+    args[file] = "testdriver/testdriver.yaml";
   }
 
   // turn args[file] into local path
   if (args[file]) {
-    args[file] = `${process.cwd()}/${args[file]}`;
-    if (!args[file].endsWith(".yml")) {
-      args[file] += ".yml";
+    args[file] = path.join(workingDir, args[file]);
+    if (!args[file].endsWith(".yaml") && !args[file].endsWith(".yml")) {
+      args[file] += ".yaml";
     }
   }
 
@@ -122,14 +132,13 @@ let getArgs = () => {
 
 let a = getArgs();
 
-const thisFile = a.file;
+let thisFile = a.file;
 const thisCommand = a.command;
 
 logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
-logger.info(chalk.dim(`Working on ${thisFile}`));
+logger.info(`This is beta software!`);
 logger.info("");
-logger.info(chalk.yellow(`This is beta software!`));
-logger.info(`Join our Discord for help`);
+logger.info(chalk.yellow(`Join our Discord for help`));
 logger.info(`https://discord.com/invite/cWDFW8DzPm`);
 logger.info("");
 
@@ -149,7 +158,7 @@ function fileCompleter(line) {
     partial = line.slice(lastSepIndex + 1);
   }
   try {
-    const dirPath = path.resolve(process.cwd(), dir);
+    const dirPath = path.resolve(workingDir, dir);
 
     let files = fs.readdirSync(dirPath);
     files = files.map((file) => {
@@ -167,10 +176,11 @@ function fileCompleter(line) {
 }
 
 function completer(line) {
-  let completions = "/summarize /save /run /quit /assert /undo /manual".split(
-    " ",
-  );
-  if (line.startsWith("/run ")) {
+  let completions =
+    "/summarize /save /run /quit /assert /undo /manual /yml /js /exec".split(
+      " ",
+    );
+  if (line.startsWith("/run ") || line.startsWith("/explore ")) {
     return fileCompleter(line);
   } else {
     completions.concat(tasks);
@@ -228,7 +238,13 @@ const dieOnFatal = async (error) => {
 // creates a new "thread" in which the AI is given an error
 // and responds. notice `actOnMarkdown` which will continue
 // the thread until there are no more codeblocks to execute
-const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
+const haveAIResolveError = async (
+  error,
+  markdown,
+  depth = 0,
+  undo = true,
+  shouldSave,
+) => {
   if (error.fatal) {
     return await dieOnFatal(error);
   }
@@ -266,6 +282,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -287,7 +304,7 @@ const haveAIResolveError = async (error, markdown, depth = 0, undo = true) => {
   mdStream.end();
 
   if (response?.data) {
-    return await actOnMarkdown(response.data, depth, true);
+    return await actOnMarkdown(response.data, depth, true, false, shouldSave);
   }
 };
 
@@ -305,6 +322,7 @@ const check = async () => {
 
   logger.info("");
   logger.info(chalk.dim("checking..."), "testdriver");
+  server.broadcast("status", `checking...`);
   logger.info("");
 
   let thisScreenshot = await system.captureScreenBase64(1, false, true);
@@ -337,7 +355,7 @@ const check = async () => {
 // command is transformed from a single yml entry generated by the AI into a JSON object
 // it is mapped via `commander` to the `commands` module so the yaml
 // parameters can be mapped to actual functions
-const runCommand = async (command, depth) => {
+const runCommand = async (command, depth, shouldSave) => {
   let yml = await yaml.dump(command);
 
   logger.debug(`running command: \n\n${yml}`);
@@ -359,7 +377,7 @@ const runCommand = async (command, depth) => {
     }
 
     if (response && typeof response === "string") {
-      return await actOnMarkdown(response, depth);
+      return await actOnMarkdown(response, depth, false, false, false);
     }
   } catch (error) {
     return await haveAIResolveError(
@@ -367,6 +385,7 @@ const runCommand = async (command, depth) => {
       yaml.dump({ commands: [yml] }),
       depth,
       true,
+      shouldSave,
     );
   }
 };
@@ -374,14 +393,27 @@ const runCommand = async (command, depth) => {
 let lastCommand = new Date().getTime();
 let csv = [["command,time"]];
 
-const executeCommands = async (commands, depth, pushToHistory = false) => {
+const executeCommands = async (
+  commands,
+  depth,
+  pushToHistory = false,
+  dry = false,
+  shouldSave = false,
+) => {
   if (commands?.length) {
     for (const command of commands) {
+
       if (pushToHistory) {
         executionHistory[executionHistory.length - 1]?.commands.push(command);
       }
 
-      await runCommand(command, depth);
+      if (!dry) {
+        await runCommand(command, depth, shouldSave);
+      }
+
+      if (shouldSave) {
+        await save({ silent: true });
+      }
 
       let timeToComplete = (new Date().getTime() - lastCommand) / 1000;
       // logger.info(timeToComplete, 'seconds')
@@ -394,7 +426,13 @@ const executeCommands = async (commands, depth, pushToHistory = false) => {
 
 // note that commands are run in a recursive loop, so that the AI can respond to the output of the commands
 // like `click-image` and `click-text` for example
-const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
+const executeCodeBlocks = async (
+  codeblocks,
+  depth,
+  pushToHistory = false,
+  dry = false,
+  shouldSave = false,
+) => {
   depth = depth + 1;
 
   logger.debug("%j", { message: "execute code blocks", depth });
@@ -409,23 +447,33 @@ const executeCodeBlocks = async (codeblocks, depth, pushToHistory = false) => {
         e,
         yaml.dump(parser.getYAMLFromCodeBlock(codeblock)),
         depth,
+        shouldSave,
       );
     }
 
-    await executeCommands(commands, depth, pushToHistory);
+    await executeCommands(commands, depth, pushToHistory, dry, shouldSave);
   }
 };
 
 // this is the main function that interacts with the ai, runs commands, and checks the results
 // notice that depth is 0 here. when this function resolves, the task is considered complete
 // notice the call to `check()` which validates the prompt is complete
-const aiExecute = async (message, validateAndLoop = false) => {
+const aiExecute = async (
+  message,
+  validateAndLoop = false,
+  dry = false,
+  shouldSave = false,
+) => {
   executionHistory.push({ prompt: lastPrompt, commands: [] });
+
+  if (shouldSave) {
+    await save({ silent: true });
+  }
 
   logger.debug("kicking off exploratory loop");
 
   // kick everything off
-  await actOnMarkdown(message, 0, true);
+  await actOnMarkdown(message, 0, true, dry, shouldSave);
 
   if (validateAndLoop) {
     logger.debug("exploratory loop resolved, check your work");
@@ -436,16 +484,24 @@ const aiExecute = async (message, validateAndLoop = false) => {
     try {
       checkCodeblocks = await parser.findCodeBlocks(response);
     } catch (error) {
-      return await haveAIResolveError(error, response, 0);
+      return await haveAIResolveError(error, response, 0, true, true);
     }
 
     logger.debug(`found ${checkCodeblocks.length} codeblocks`);
 
     if (checkCodeblocks.length > 0) {
       logger.debug("check thinks more needs to be done");
+
+      logger.info(chalk.dim("not done yet!"), "testdriver");
+      logger.info("");
+
       return await aiExecute(response, validateAndLoop);
     } else {
       logger.debug("seems complete, returning");
+
+      logger.info(chalk.green("success!"), "testdriver");
+      logger.info("");
+
       return response;
     }
   }
@@ -460,7 +516,7 @@ const loadYML = async (file) => {
   } catch (e) {
     logger.error(e);
     logger.error(`File not found: ${file}`);
-    logger.error(`Current directory: ${process.cwd()}`);
+    logger.error(`Current directory: ${workingDir}`);
 
     await summarize("File not found");
     await exit(true);
@@ -469,6 +525,8 @@ const loadYML = async (file) => {
   let interpolationVars = JSON.parse(
     process.env["TD_INTERPOLATION_VARS"] || "{}",
   );
+
+  yml = await parser.validateYAML(yml);
 
   // Inject environment variables into any ${VAR} strings
   yml = parser.interpolate(yml, process.env);
@@ -506,10 +564,11 @@ const assert = async (expect) => {
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
-  let response = `\`\`\`yml
+  let response = `\`\`\`yaml
 commands:
   - command: assert
     expect: ${expect}
@@ -522,16 +581,22 @@ commands:
 
 // this function responds to the result of `promptUser()` which is the user input
 // it kicks off the exploratory loop, which is the main function that interacts with the AI
-const humanInput = async (currentTask, validateAndLoop = false) => {
+const exploratoryLoop = async (
+  currentTask,
+  dry = false,
+  validateAndLoop = false,
+  shouldSave = true,
+) => {
   lastPrompt = currentTask;
   checkCount = 0;
 
-  logger.debug("humanInput called");
+  logger.debug("exploratoryLoop called");
 
   tasks.push(currentTask);
 
   speak("thinking...");
   notify("thinking...");
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -554,11 +619,12 @@ const humanInput = async (currentTask, validateAndLoop = false) => {
   );
   mdStream.end();
 
-  await aiExecute(message.data, validateAndLoop);
+  if (message) {
+    await aiExecute(message.data, validateAndLoop, dry, shouldSave);
+    logger.debug("showing prompt from exploratoryLoop response check");
+  }
 
-  logger.debug("showing prompt from humanInput response check");
-
-  await save({ silent: true });
+  return;
 };
 
 const generate = async (type, count, baseYaml, skipYaml = false) => {
@@ -566,7 +632,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
 
   speak("thinking...");
   notify("thinking...");
-
+  server.broadcast("status", `thinking...`);
   logger.info(chalk.dim("thinking..."), true);
   logger.info("");
 
@@ -599,27 +665,33 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   for (const testPrompt of testPrompts) {
     // with the contents of the testPrompt
     let fileName =
-      sanitizeFilename(testPrompt.headings[0])
+      sanitizeFilename(testPrompt.name)
         .trim()
         .replace(/ /g, "-")
         .replace(/['"`]/g, "")
         .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
-        .toLowerCase() + ".md";
-    let path1 = path.join(process.cwd(), "testdriver", "generate", fileName);
+        .toLowerCase() + ".yaml";
+    let path1 = path.join(workingDir, "testdriver", "generate", fileName);
 
     // create generate directory if it doesn't exist
-    if (!fs.existsSync(path.join(process.cwd(), "testdriver", "generate"))) {
-      fs.mkdirSync(path.join(process.cwd(), "testdriver", "generate"));
+    if (!fs.existsSync(path.join(workingDir, "testdriver", "generate"))) {
+      fs.mkdirSync(path.join(workingDir, "testdriver", "generate"));
     }
 
-    let list = testPrompt.listsOrdered[0];
+    let list = testPrompt.steps;
 
     if (baseYaml && fs.existsSync(baseYaml)) {
-      list.unshift(`/run ${baseYaml} --embed`);
+      list.unshift({
+        step: {
+          command: "run",
+          file: baseYaml,
+        },
+      });
     }
-    let contents = list
-      .map((item, index) => `${index + 1}. ${item}`)
-      .join("\n");
+    let contents = yaml.dump({
+      version: package.version,
+      steps: list,
+    });
     fs.writeFileSync(path1, contents);
   }
 
@@ -663,7 +735,13 @@ ${yml}
 };
 
 // this function is responsible for starting the recursive process of executing codeblocks
-const actOnMarkdown = async (content, depth, pushToHistory = false) => {
+const actOnMarkdown = async (
+  content,
+  depth,
+  pushToHistory = false,
+  dry = false,
+  shouldSave = false,
+) => {
   logger.debug("%j", {
     message: "actOnMarkdown called",
     depth,
@@ -674,33 +752,51 @@ const actOnMarkdown = async (content, depth, pushToHistory = false) => {
     codeblocks = await parser.findCodeBlocks(content);
   } catch (error) {
     pushToHistory = false;
-    return await haveAIResolveError(error, content, depth);
+    return await haveAIResolveError(error, content, depth, false, shouldSave);
   }
 
   if (codeblocks.length) {
-    let executions = await executeCodeBlocks(codeblocks, depth, pushToHistory);
+    let executions = await executeCodeBlocks(
+      codeblocks,
+      depth,
+      pushToHistory,
+      dry,
+      shouldSave,
+    );
     return executions;
   } else {
     return true;
   }
 };
 
-const newSession = async () => {
-  // should be start of new session
-  const sessionRes = await sdk.req("session/start", {
-    systemInformationOsInfo: await system.getSystemInformationOsInfo(),
-    mousePosition: await system.getMousePosition(),
-    activeWindow: await system.activeWin(),
-  });
+const ensureMacScreenPerms = async () => {
+  // if os is mac, check for screen capture permissions
+  if (
+    !config.TD_VM &&
+    process.platform === "darwin"
+  ) {
 
-  session.set(sessionRes.data.id);
+    const macScreenPerms = require("mac-screen-capture-permissions");
+    if (!macScreenPerms.hasScreenCapturePermission()) {
+
+      logger.info(chalk.red("Screen capture permissions not enabled."));
+      logger.info(
+        "You must enable screen capture permissions for the application calling `testdriverai`.",
+      );
+      logger.info(
+        "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
+      );
+      analytics.track("noMacPermissions");
+      return exit();
+      
+    }
+    
+  }
 };
 
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
-  await newSession();
-
   // readline is what allows us to get user input
   rl = readline.createInterface({
     terminal: true,
@@ -720,7 +816,7 @@ const firstPrompt = async () => {
 
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
-  rl.on("line", async (input) => {
+  const handleInput = async (input) => {
     if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
 
@@ -734,8 +830,10 @@ const firstPrompt = async () => {
     analytics.track("input", { input });
 
     logger.info(""); // adds a nice break between submissions
-    
-    let interpolationVars = JSON.parse(process.env["TD_INTERPOLATION_VARS"] || '{}');
+
+    let interpolationVars = JSON.parse(
+      process.env["TD_INTERPOLATION_VARS"] || "{}",
+    );
 
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
@@ -763,47 +861,52 @@ const firstPrompt = async () => {
       await manualInput(commands.slice(1).join(" "));
     } else if (input.indexOf("/run") == 0) {
       const file = commands[1];
+      thisFile = file;
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
-      let shouldEmbed = flags.includes("--embed") ? true : false;
 
-      if (shouldEmbed && (shouldSave || shouldExit)) {
-        await dieOnFatal({
-          message:
-            "Cannot embed AND save or exit. Please either use --embed or  use any combination of --save and --exit.",
-        });
-      }
-
-      if (shouldEmbed) {
-        const relativePath = path.relative(
-          process.cwd(),
-          path.resolve(process.cwd(), file),
-        );
-
-        executionHistory.push({
-          prompt: `/run ${relativePath}`,
-          commands: [
-            {
-              command: "run",
-              file: relativePath,
-            },
-          ],
-        });
-        await embed(file, 0);
-      } else {
-        await run(file, shouldSave, shouldExit);
-      }
+      await run(file, shouldSave, shouldExit);
+    } else if (input.indexOf("/explore") == 0) {
+      const file = commands[1];
+      await run(file, true, true);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
       await generate(commands[1], commands[2], commands[3], skipYaml);
+    } else if (input.indexOf("/dry") == 0) {
+      await exploratoryLoop(input.replace("/dry", ""), true, false);
+    } else if (input.indexOf("/yaml") == 0) {
+      await runRawYML(commands[1]);
+    } else if (input.indexOf("/js") == 0) {
+      let result = await commander.run({
+        command: "exec",
+        js: commands.slice(1).join(" "),
+      });
+      if (result.out) {
+        logger.info(result.out.stdout);
+      } else if (result.error) {
+        logger.error(result.error.result.stdout);
+      }
+    } else if (input.indexOf("/exec") == 0) {
+      let result = await commander.run({
+        command: "exec",
+        cli: commands.slice(1).join(" "),
+      });
+      if (result.out) {
+        logger.info(result.out.stdout);
+      } else if (result.error) {
+        logger.error(result.error.result.stdout);
+      }
     } else {
-      await humanInput(input, true);
+      await exploratoryLoop(input, false, true, true);
     }
 
     setTerminalWindowTransparency(false);
     promptUser();
-  });
+  };
+
+  rl.on("line", handleInput);
+  server.on("input", handleInput);
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
@@ -814,15 +917,8 @@ const firstPrompt = async () => {
       fs.readFileSync(thisFile, "utf-8"),
     );
 
-    if (!object?.steps) {
-      analytics.track("load invalid yaml");
-      logger.error("Invalid YAML. No steps found.");
-      logger.info("Invalid YAML: " + thisFile);
-      return await exit(true);
-    }
-
     // push each step to executionHistory from { commands: {steps: [ { commands: [Array] } ] } }
-    object.steps.forEach((step) => {
+    object.steps?.forEach((step) => {
       executionHistory.push(step);
     });
 
@@ -930,11 +1026,6 @@ let summarize = async (error = null) => {
 let save = async ({ filepath = thisFile, silent = false } = {}) => {
   analytics.track("save", { silent });
 
-  if (!silent) {
-    logger.info(chalk.dim("saving..."), true);
-    logger.info("");
-  }
-
   if (!executionHistory.length) {
     return;
   }
@@ -944,6 +1035,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
   try {
     fs.writeFileSync(filepath, regression);
   } catch (e) {
+    console.log(e);
     logger.error(e.message);
     logger.error("%s", e);
   }
@@ -955,21 +1047,46 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
 ${regression}
 \`\`\``);
 
-    // logger.info(csv.join('\n'))
-
-    const fileName = filepath.split("/").pop();
     if (!silent) {
-      logger.info(chalk.dim(`saved as ${fileName}`));
+      logger.info(chalk.dim(`saved as ${filepath}`));
     }
   }
+
+  return;
+};
+
+let runRawYML = async (yml) => {
+  const tmp = require("tmp");
+  let tmpobj = tmp.fileSync();
+
+  let decoded = decodeURIComponent(yml);
+
+  // parse the yaml
+  let ymlObj = null;
+  try {
+    ymlObj = await yaml.load(decoded);
+  } catch (e) {
+    logger.error("%s", e);
+  }
+
+  // add the root key steps: with array of commands:
+  if (ymlObj && !ymlObj.steps) {
+    ymlObj = {
+      steps: [ymlObj],
+    };
+  }
+
+  // write the yaml to a file
+  fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
+
+  // and run it with run()
+  await run(tmpobj.name, false, true);
 };
 
 // this will load a regression test from a file location
 // it parses the markdown file and executes the codeblocks exactly as if they were
 // generated by the AI in a single prompt
-let run = async (file, shouldSave = false, shouldExit = true) => {
-  await newSession();
-
+let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
@@ -993,12 +1110,22 @@ let run = async (file, shouldSave = false, shouldExit = true) => {
 
   for (const step of ymlObj.steps) {
     logger.info(``, null);
-    logger.info(chalk.yellow(`${step.prompt || "no prompt"}`), null);
+    logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
 
-    executionHistory.push({
-      prompt: step.prompt,
-      commands: [], // run will overwrite the commands
-    });
+    if (!step.commands && !step.prompt) {
+      logger.info(chalk.red("No commands or prompt found"));
+      return await exit(true);
+    } else if (!step.commands) {
+      logger.info(chalk.yellow("No commands found, running exploratory"));
+      await exploratoryLoop(step.prompt, false, true);
+    }
+
+    if (shouldSave) {
+      executionHistory.push({
+        prompt: step.prompt,
+        commands: [], // run will overwrite the commands
+      });
+    }
 
     let markdown = `\`\`\`yaml
 ${yaml.dump(step)}
@@ -1008,15 +1135,18 @@ ${yaml.dump(step)}
     logger.debug("load calling actOnMarkdown");
 
     lastPrompt = step.prompt;
-    await actOnMarkdown(markdown, 0, true);
+    await actOnMarkdown(markdown, 0, true, false, shouldSave);
+
+    if (shouldSave) {
+      await save({ silent: true });
+    }
   }
 
   if (shouldSave) {
-    await save({ filepath: file });
+    await save({ filepath: file, silent: false });
   }
 
   setTerminalWindowTransparency(false);
-  emitter.emit(events.interactive, true);
 
   if (shouldExit) {
     await summarize();
@@ -1064,7 +1194,7 @@ const embed = async (file, depth) => {
   logger.info(`${file} (start)`);
 
   // get the current wowrking directory where this file is being executed
-  let cwd = process.cwd();
+  let cwd = workingDir;
 
   // if the file is not an absolute path, we will try to resolve it
   if (!path.isAbsolute(file)) {
@@ -1085,6 +1215,15 @@ const embed = async (file, depth) => {
   logger.info(`${file} (end)`);
 };
 
+const buildEnv = async () => {
+  let win = await system.activeWin();
+  setTerminalApp(win);
+  await ensureMacScreenPerms();
+  await makeSandbox();
+  await newSession();
+  await runPrerun();
+};
+
 const start = async () => {
   // logger.info(await  system.getPrimaryDisplay());
 
@@ -1097,46 +1236,110 @@ const start = async () => {
   // }
 
   // await sdk.auth();
-
-  // if os is mac, check for screen capture permissions
-  if (
-    process.platform === "darwin" &&
-    !macScreenPerms.hasScreenCapturePermission()
-  ) {
-    logger.info(chalk.red("Screen capture permissions not enabled."));
-    logger.info(
-      "You must enable screen capture permissions for the application calling `testdriverai`.",
-    );
-    logger.info(
-      "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
-    );
-    analytics.track("noMacPermissions");
-    return exit();
-  }
-
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
+  }
 
-    logger.info(
-      chalk.red("Warning!") +
-        chalk.dim(" TestDriver sends screenshots of the desktop to our API."),
-    );
-    logger.info(
-      chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
-    );
-    logger.info("");
+  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+    logger.info(chalk.dim(`Working on ${thisFile}`));
+
+    loadYML(thisFile)
+
+    if (!config.TD_VM) {
+      logger.info(
+        chalk.red("Warning! ") +
+          chalk.dim(
+            "Local mode sends screenshots of the desktop to our API. Set `TD_VM=true` to run in a secure VM.",
+          ),
+      );
+      logger.info(
+        chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
+      );
+      logger.info("");
+    }
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
 
   if (thisCommand == "edit") {
+    await buildEnv();
     firstPrompt();
   } else if (thisCommand == "run") {
+    await buildEnv();
     errorLimit = 100;
     run(thisFile);
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
+  } else if (thisCommand == "upload-secrets") {
+    await uploadSecrets();
+  }
+};
+
+const makeSandbox = async () => {
+  if (config.TD_VM) {
+    try {
+      logger.info(chalk.gray(`- creating sandbox...`));
+      server.broadcast("status", `Creating new sandbox...`);
+      await sandbox.boot();
+      logger.info(chalk.gray(`- authenticating...`));
+      server.broadcast("status", `Authenticating...`);
+      await sandbox.send({
+        type: "authenticate",
+        apiKey: config.TD_API_KEY,
+        secret: config.TD_SECRET,
+      });
+      logger.info(chalk.gray(`- configuring...`));
+      server.broadcast("status", `Configuring...`);
+      await sandbox.send({
+        type: "create",
+        resolution: config.TD_VM_RESOLUTION,
+      });
+      logger.info(chalk.gray(`- starting stream...`));
+      server.broadcast("status", `Starting stream...`);
+      await sandbox.send({ type: "stream.start" });
+      let { url } = await sandbox.send({ type: "stream.getUrl" });
+      logger.info(chalk.gray(`- rendering...`));
+      server.broadcast("status", `Rendering...`);
+      await sandbox.send({ type: "ready" });
+      emitter.emit(events.vm.show, { url });
+      logger.info(chalk.gray(`- booting...`));
+      server.broadcast("status", `Starting...`);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      logger.info(chalk.green(``));
+      logger.info(chalk.green(`sandbox runner ready!`));
+      logger.info(chalk.green(``));
+    } catch (e) {
+      logger.error(e);
+      logger.error(chalk.red(`sandbox runner failed to start`));
+      process.exit(1);
+    }
+  }
+
+  emitter.emit(events.interactive, false);
+  emitter.emit(events.showWindow);
+};
+
+const newSession = async () => {
+  // should be start of new session
+  const sessionRes = await sdk.req("session/start", {
+    systemInformationOsInfo: await system.getSystemInformationOsInfo(),
+    mousePosition: await system.getMousePosition(),
+    activeWindow: await system.activeWin(),
+  });
+
+  session.set(sessionRes.data.id);
+};
+
+const runPrerun = async () => {
+  const prerunFile = path.join(
+    workingDir,
+    "testdriver",
+    "lifecycle",
+    "prerun.yaml",
+  );
+  if (fs.existsSync(prerunFile)) {
+    await run(prerunFile, false, false);
   }
 };
 

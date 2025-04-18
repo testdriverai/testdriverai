@@ -1,0 +1,208 @@
+---
+title: "Reporting Failed Tests to Jira"
+sidebarTitle: "Jira"
+description: "Step-by-step instructions to integrate TestDriver.ai with Jira for automated test failure tracking in CI/CD workflows."
+---
+
+# Automating Jira Ticket Creation for Test Failures Using TestDriver.ai and Jira GitHub Actions
+
+This guide explains how to integrate the **TestDriver.ai GitHub Action** with the **Jira GitHub Action** to automatically create a Jira ticket whenever a TestDriver.ai test fails. This workflow ensures that test failures are tracked in Jira, enabling teams to address issues promptly.
+
+---
+
+## Workflow Overview
+
+1. **Run Tests with TestDriver.ai**: Use the TestDriver.ai GitHub Action to execute your test suite.
+2. **Check for Test Failures**: Capture the test results and determine if any tests failed.
+3. **Create a Jira Ticket**: Use the Jira GitHub Action to create a new ticket for each test failure, including relevant details such as the test name, failure reason, and logs.
+
+---
+
+## Prerequisites
+
+1. **TestDriver.ai API Key**: Store your API key as a GitHub secret (e.g., `TESTDRIVER_API_KEY`).
+2. **Jira API Token**: Generate an API token from your Jira account and store it as a GitHub secret (e.g., `JIRA_API_TOKEN`).
+3. **Jira Base URL**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
+4. **Jira Project Key**: The key of the Jira project where tickets will be created (e.g., `TEST`).
+
+---
+
+## GitHub Actions Workflow
+
+Here’s a complete workflow that integrates TestDriver.ai and Jira:
+
+### Workflow File: `.github/workflows/testdriver-jira.yml````yaml
+name: TestDriver.ai with Jira Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    name: Run Tests with TestDriver.ai
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver.ai
+        id: testdriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: |
+            1. Run all tests in the testdriver directory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+      - name: Check for Test Failures
+        id: check-failures
+        run: |
+          if [[ "${{ steps.testdriver.outputs.success }}" == "false" ]]; then
+            echo "TestDriver.ai tests failed."
+            echo "failure=true" >> $GITHUB_ENV
+          else
+            echo "All tests passed."
+            echo "failure=false" >> $GITHUB_ENV
+          fi
+
+  create-jira-ticket:
+    name: Create Jira Ticket for Test Failures
+    needs: run-tests
+    runs-on: ubuntu-latest
+    if: env.failure == 'true'
+    steps:
+      - name: Create Jira Ticket
+        uses: atlassian/gajira-create@v3
+        with:
+          url: ${{ secrets.JIRA_BASE_URL }}
+          user: ${{ secrets.JIRA_USERNAME }}
+          api-token: ${{ secrets.JIRA_API_TOKEN }}
+          project: TEST # Replace with your Jira project key
+          summary: "Test Failure: ${{ steps.testdriver.outputs.summary }}"
+          description: |
+            A test failure occurred during the TestDriver.ai workflow.
+
+            **Test Summary**:
+            ${{ steps.testdriver.outputs.summary }}
+
+            **Failure Details**:
+            ${{ steps.testdriver.outputs.markdown }}
+
+            Please investigate the issue and resolve it promptly.
+          issuetype: Bug
+
+```
+
+---
+
+## Workflow Steps Explained
+
+### 1. **Run Tests with TestDriver.ai**
+The `testdriverai/action@main` step runs your TestDriver.ai tests and captures the results. The `outputs.success` variable indicates whether the tests passed or failed.```yaml
+- name: Run TestDriver.ai
+  id: testdriver
+  uses: testdriverai/action@main
+  with:
+    key: ${{ secrets.TESTDRIVER_API_KEY }}
+    prompt: |
+      1. Run all tests in the testdriver directory
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    FORCE_COLOR: "3"
+
+```
+
+---
+
+### 2. **Check for Test Failures**
+This step checks the `outputs.success` variable from the TestDriver.ai action. If the tests failed, it sets an environment variable (`failure=true`) to trigger the Jira ticket creation step.```yaml
+- name: Check for Test Failures
+  id: check-failures
+  run: |
+    if [[ "${{ steps.testdriver.outputs.success }}" == "false" ]]; then
+      echo "TestDriver.ai tests failed."
+      echo "failure=true" >> $GITHUB_ENV
+    else
+      echo "All tests passed."
+      echo "failure=false" >> $GITHUB_ENV
+    fi
+
+```
+
+---
+
+### 3. **Create a Jira Ticket**
+If any tests failed, the `create-jira-ticket` job uses the `atlassian/gajira-create` action to create a new Jira ticket. The ticket includes:
+- **Summary**: A brief description of the failure.
+- **Description**: Detailed information about the failure, including the test summary and markdown output from TestDriver.ai.```yaml
+- name: Create Jira Ticket
+  uses: atlassian/gajira-create@v3
+  with:
+    url: ${{ secrets.JIRA_BASE_URL }}
+    user: ${{ secrets.JIRA_USERNAME }}
+    api-token: ${{ secrets.JIRA_API_TOKEN }}
+    project: TEST # Replace with your Jira project key
+    summary: "Test Failure: ${{ steps.testdriver.outputs.summary }}"
+    description: |
+      A test failure occurred during the TestDriver.ai workflow.
+
+      **Test Summary**:
+      ${{ steps.testdriver.outputs.summary }}
+
+      **Failure Details**:
+      ${{ steps.testdriver.outputs.markdown }}
+
+      Please investigate the issue and resolve it promptly.
+    issuetype: Bug
+
+```
+
+---
+
+## Secrets Configuration
+
+Add the following secrets to your GitHub repository:
+1. **`TESTDRIVER_API_KEY`**: Your TestDriver.ai API key.
+2. **`JIRA_API_TOKEN`**: Your Jira API token.
+3. **`JIRA_BASE_URL`**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
+4. **`JIRA_USERNAME`**: Your Jira account email.
+
+---
+
+## Example Jira Ticket
+
+### Summary:
+`Test Failure: Login Test Failed`
+
+### Description:
+
+
+```
+A test failure occurred during the TestDriver.ai workflow.
+
+**Test Summary**:
+Login Test Failed
+
+**Failure Details**:
+- The login button was not clickable.
+- The error message was not displayed.
+
+Please investigate the issue and resolve it promptly.
+
+```---
+
+## Benefits of This Workflow
+
+1. **Automated Issue Tracking**: Automatically creates Jira tickets for test failures, ensuring no issues are overlooked.
+2. **Detailed Context**: Includes test summaries and failure details in the Jira ticket for easier debugging.
+3. **Streamlined Workflow**: Integrates testing and issue tracking into a single automated pipeline.
+
+---
+
+By combining TestDriver.ai and Jira GitHub Actions, you can automate the process of tracking test failures, improving collaboration and ensuring faster resolution of issues.

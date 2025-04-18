@@ -1,0 +1,41 @@
+---
+title: "Setup & Teardown"
+sidebarTitle: "Setup & Teardown"
+description: "How to handle pre and post test tasks."
+icon: "hammer"
+---
+
+## Pre-run Configuration
+
+If a file is found at `testdriver/lifecycle/prerun.yaml`, it's executed before the test begins. This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
+
+For example, the `prerun.yaml` file can be used to open the Chrome browser and navigate to a page, similar to the example provided above. This ensures that the test environment is properly set up before the test starts.
+
+### Example
+
+Here is an example of a `prerun.yaml` file:
+
+```yaml
+version: 5.1.1
+steps:
+  - prompt: launch chrome
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
+          exit
+        mac: |
+          open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run --disable-features=PasswordManagerEnabled "${TD_WEBSITE}" &
+          exit
+        windows:
+          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
+          exit
+      - command: wait-for-text
+        text: "Google Chrome"
+        timeout: 30000
+```
+
+### Notes
+
+- Currently, there is no teardown task implemented. However, when running on GitHub Actions, the virtual machine (VM) is ephemeral, meaning everything is destroyed after the test run.

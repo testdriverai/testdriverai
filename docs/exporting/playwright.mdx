@@ -1,0 +1,159 @@
+---
+title: "Playwright Export"
+sidebarTitle: "Playwright"
+description: "A comprehensive guide to integrating TestDriver.ai with Playwright for automated test generation."
+---
+
+This guide explains how to use **TestDriver.ai** to generate Playwright test scripts and integrate them into your repository using a GitHub Actions workflow. The workflow automates the process of generating Playwright tests, creating a pull request with the generated test, and ensuring all dependencies are installed.
+
+---
+
+## Workflow Overview
+
+1. **Install Playwright**: The workflow installs Playwright and its dependencies.
+2. **Generate Playwright Test**: TestDriver.ai generates a Playwright test script using the `playwright codegen` tool.
+3. **Create Pull Request**: The generated test is committed to a new branch, and a pull request is created for review.
+
+---
+
+## Prerequisites
+
+1. **GitHub Repository**: Ensure your project is hosted on GitHub.
+2. **TestDriver.ai API Key**: Store your API key as a GitHub secret (e.g., `TESTDRIVER_API_KEY`).
+3. **Node.js Installed**: Playwright requires Node.js to run.
+
+---
+
+## GitHub Actions Workflow
+
+Here’s the GitHub Actions workflow to automate the process:
+
+### Workflow File: `.github/workflows/playwright.yml`
+
+```yaml
+name: TestDriver.ai / Playwright
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+  statuses: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.ref }}
+
+      - uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+
+          create-pr: true
+          pr-base: main
+          pr-title: "TestDriver.ai / Generate Playwright Test"
+          pr-branch: generate-playwright
+          pr-test-filename: generate-playwright.yml
+
+          prompt: 1. /run testdriver/test.yml
+          prerun: |
+            echo "Step 1: Installing Playwright globally"
+            npm install playwright -g
+
+            echo "Step 2: Installing Playwright dependencies"
+            playwright install --with-deps chromium
+
+            echo "Step 3: Generating Playwright script"
+            npx playwright codegen --target playwright-test -o testdriver/pw-test.spec.js https://airbnb.com
+
+            echo "Step 4: Completed Playwright test generation"
+            exit
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+
+```
+
+---
+
+## Workflow Steps Explained
+
+### 1. **Check Out Repository**
+The workflow checks out the repository to ensure the latest code is available for the test generation process.```yaml
+- name: Check out repository
+  uses: actions/checkout@v2
+  with:
+    ref: $\{\{ github.event.ref }}
+
+```
+
+---
+
+### 2. **Install Playwright**
+The `prerun` script installs Playwright globally and sets up its dependencies (e.g., Chromium browser).```bash
+npm install playwright -g
+playwright install --with-deps chromium
+
+```---
+
+### 3. **Generate Playwright Test**
+The `playwright codegen` command generates a Playwright test script (`pw-test.spec.js`) for the specified URL (`https://airbnb.com`).```bash
+npx playwright codegen --target playwright-test -o testdriver/pw-test.spec.js https://airbnb.com
+
+```---
+
+### 4. **Create Pull Request**
+The workflow commits the generated test script to a new branch (`generate-playwright`) and creates a pull request with the title `TestDriver.ai / Generate Playwright Test`.```yaml
+create-pr: true
+pr-base: main
+pr-title: "TestDriver.ai / Generate Playwright Test"
+pr-branch: generate-playwright
+pr-test-filename: generate-playwright.yml
+
+```
+
+---
+
+## Running the Workflow
+
+1. **Trigger the Workflow**:
+  - Push changes to the `main` branch.
+  - Open a pull request.
+  - Manually trigger the workflow using the **workflow_dispatch** event.
+
+2. **Review the Pull Request**:
+  - Navigate to the **Pull Requests** tab in your GitHub repository.
+  - Review the generated Playwright test script (`pw-test.spec.js`).
+
+3. **Merge the Pull Request**:
+  - Once reviewed, merge the pull request to include the generated test in your repository.
+
+---
+
+## Example Output
+
+- **Generated Test File**: `testdriver/pw-test.spec.js`
+- **Pull Request**: A new pull request titled `TestDriver.ai / Generate Playwright Test` will be created.
+
+---
+
+## Best Practices
+
+1. **Secure API Key**: Store the TestDriver.ai API key as a GitHub secret to avoid exposing sensitive information.
+2. **Review Generated Tests**: Always review the generated Playwright test scripts to ensure they meet your requirements.
+3. **Customize Test Generation**: Modify the `playwright codegen` command to target specific URLs or workflows.
+
+---
+
+By following this guide, you can seamlessly integrate TestDriver.ai with Playwright to generate and manage end-to-end tests in your GitHub repository.
