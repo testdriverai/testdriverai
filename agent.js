@@ -526,6 +526,8 @@ const loadYML = async (file) => {
     process.env["TD_INTERPOLATION_VARS"] || "{}",
   );
 
+  yml = await parser.validateYAML(yml);
+
   // Inject environment variables into any ${VAR} strings
   yml = parser.interpolate(yml, process.env);
 
@@ -1240,6 +1242,8 @@ const start = async () => {
 
   if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
     logger.info(chalk.dim(`Working on ${thisFile}`));
+
+    loadYML(thisFile)
 
     if (!config.TD_VM) {
       logger.info(

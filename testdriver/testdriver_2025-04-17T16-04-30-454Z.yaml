@@ -1,6 +1,43 @@
-version: 5.3.13
-session: 680126994a12078ae2a74ee5
+version: 4.0.0
 steps:
-  - prompt: /try log in
-    commands: []
-A
+  - prompt: enter fiber.google.com in url
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Search Google or type a URL
+        description: main google search
+        action: click
+      - command: type
+        text: "asdfasf"
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: enter a fake address and check availability
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Enter your address
+        description: address input field
+        action: click
+      - command: type
+        text: 123 Fake Street
+      - command: hover-text
+        text: ZIP
+        description: ZIP code input field
+        action: click
+      - command: type
+        text: 12345
+      - command: hover-text
+        text: Check availability
+        description: check availability button
+        action: clicka
+  - prompt: assert a familiy appears on screen
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: assert
+        expect: a family appears on screen
+      - command: if
+        

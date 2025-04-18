@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "5.3.17",
+  "version": "5.3.18",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -19,6 +19,7 @@
   "dependencies": {
     "@e2b/desktop": "^1.6.0",
     "@electerm/strip-ansi": "^1.0.0",
+    "ajv": "^8.17.1",
     "arktype": "^2.1.19",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",
