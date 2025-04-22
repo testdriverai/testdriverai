@@ -53,6 +53,7 @@ const { emitter, events } = require("./lib/events.js");
 
 const logger = log.logger;
 
+let thisFile;
 let lastPrompt = "";
 let terminalApp = "";
 let commandHistory = [];
@@ -110,12 +111,6 @@ let getArgs = () => {
   }
 
   if (!args[file]) {
-    // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(workingDir, "testdriver");
-    if (!fs.existsSync(testdriverFolder)) {
-      fs.mkdirSync(testdriverFolder);
-    }
-
     args[file] = "testdriver/testdriver.yaml";
   }
 
@@ -129,21 +124,6 @@ let getArgs = () => {
 
   return { command: args[command], file: args[file] };
 };
-
-let a = getArgs();
-
-let thisFile = a.file;
-const thisCommand = a.command;
-
-logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
-logger.info(`This is beta software!`);
-logger.info("");
-logger.info(chalk.yellow(`Join our Discord for help`));
-logger.info(`https://discord.com/invite/cWDFW8DzPm`);
-logger.info("");
-
-// individual run ID for this session
-// let runID = new Date().getTime();
 
 function fileCompleter(line) {
   line = line.slice(5); // remove /run
@@ -526,6 +506,10 @@ const loadYML = async (file) => {
     process.env["TD_INTERPOLATION_VARS"] || "{}",
   );
 
+  if (!yml) {
+    return {};
+  }
+
   yml = await parser.validateYAML(yml);
 
   // Inject environment variables into any ${VAR} strings
@@ -781,10 +765,10 @@ const ensureMacScreenPerms = async () => {
 
       logger.info(chalk.red("Screen capture permissions not enabled."));
       logger.info(
-        "You must enable screen capture permissions for the application calling `testdriverai`.",
+        "You must enable screen capture permissions for this terminal application within System Settings.",
       );
       logger.info(
-        "Read More: https://docs.testdriver.ai/faq/screen-recording-permissions-mac-only",
+        "Navigate to System Settings > Privacy & Security > Screen Recording and enable screen recording permissions for the terminal you are using to run this command.",
       );
       analytics.track("noMacPermissions");
       return exit();
@@ -797,6 +781,7 @@ const ensureMacScreenPerms = async () => {
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
+  
   // readline is what allows us to get user input
   rl = readline.createInterface({
     terminal: true,
@@ -806,8 +791,6 @@ const firstPrompt = async () => {
     output: process.stdout,
     completer,
   });
-
-  analytics.track("first prompt");
 
   rl.on("SIGINT", async () => {
     analytics.track("sigint");
@@ -902,6 +885,8 @@ const firstPrompt = async () => {
     }
 
     setTerminalWindowTransparency(false);
+
+    console.log('prompt user')
     promptUser();
   };
 
@@ -924,18 +909,21 @@ const firstPrompt = async () => {
 
     let yml = fs.readFileSync(thisFile, "utf-8");
 
-    let markdown = `\`\`\`yaml
-${yml}
-\`\`\``;
+    if (yml) {
 
-    logger.info(`Loaded test script ${thisFile}\n`);
-
-    log.prettyMarkdown(`
-
-${markdown}
-
-New commands will be appended.
-`);
+      let markdown = `\`\`\`yaml
+      ${yml}
+      \`\`\``;
+      
+          logger.info(`Loaded test script ${thisFile}\n`);
+      
+          log.prettyMarkdown(`
+      
+      ${markdown}
+      
+      New commands will be appended.
+      `);
+    }
   }
 
   promptUser();
@@ -1156,7 +1144,7 @@ ${yaml.dump(step)}
 
 const promptUser = () => {
   emitter.emit(events.interactive, true);
-  rl.prompt(true);
+  process.nextTick(() => rl.prompt());
 };
 
 const setTerminalApp = async (win) => {
@@ -1235,6 +1223,45 @@ const start = async () => {
   //   process.exit();
   // }
 
+  let a = getArgs();
+
+  // make testdriver directory if it doesn't exist
+  let testdriverFolder = path.join(workingDir, "testdriver");
+  if (!fs.existsSync(testdriverFolder)) {
+
+    console.log('does not exist')
+
+    fs.mkdirSync(testdriverFolder);
+    // log
+    logger.info(chalk.dim(`Created testdriver directory`));
+    console.log(
+      chalk.dim(`Created testdriver directory: ${testdriverFolder}`),
+    );
+
+  }
+
+  // if testdriver.yaml doesn't exist, make it
+  let testdriverFile = path.join(testdriverFolder, "testdriver.yaml");
+  if (!fs.existsSync(testdriverFile)) {
+    fs.writeFileSync(testdriverFile, "");
+    logger.info(chalk.dim(`Created testdriver.yaml`));
+    console.log(chalk.dim(`Created testdriver.yaml: ${testdriverFile}`));
+  }
+
+  thisFile = a.file;
+  const thisCommand = a.command;
+
+  logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
+  logger.info(`This is beta software!`);
+  logger.info("");
+  logger.info(chalk.yellow(`Join our Discord for help`));
+  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+  logger.info("");
+
+  // individual run ID for this session
+  // let runID = new Date().getTime();
+
+
   // await sdk.auth();
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
@@ -1242,6 +1269,7 @@ const start = async () => {
 
   if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
     logger.info(chalk.dim(`Working on ${thisFile}`));
+    console.log("");
 
     loadYML(thisFile)
 
@@ -1249,11 +1277,11 @@ const start = async () => {
       logger.info(
         chalk.red("Warning! ") +
           chalk.dim(
-            "Local mode sends screenshots of the desktop to our API. Set `TD_VM=true` to run in a secure VM.",
+            "Local mode sends screenshots of the desktop to our API. Set `TD_VM` to run in a secure VM.",
           ),
       );
       logger.info(
-        chalk.dim("https://docs.testdriver.ai/security-and-privacy/agent"),
+        chalk.dim("Read More: https://docs.testdriver.ai/security-and-privacy/agent"),
       );
       logger.info("");
     }
