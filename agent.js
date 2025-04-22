@@ -912,17 +912,13 @@ const firstPrompt = async () => {
     if (yml) {
 
       let markdown = `\`\`\`yaml
-      ${yml}
-      \`\`\``;
+${yml}\`\`\``;
       
-          logger.info(`Loaded test script ${thisFile}\n`);
-      
-          log.prettyMarkdown(`
-      
-      ${markdown}
-      
-      New commands will be appended.
-      `);
+      logger.info(`Loaded test script ${thisFile}\n`);
+      log.prettyMarkdown(markdown);
+      logger.info("New commands will be appended.")
+      console.log('')
+
     }
   }
 
