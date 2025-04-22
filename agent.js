@@ -387,14 +387,13 @@ const executeCommands = async (
         executionHistory[executionHistory.length - 1]?.commands.push(command);
       }
 
-      if (!dry) {
-        await runCommand(command, depth, shouldSave);
-      }
-
       if (shouldSave) {
         await save({ silent: true });
       }
 
+      if (!dry) {
+        await runCommand(command, depth, shouldSave);
+      }
       let timeToComplete = (new Date().getTime() - lastCommand) / 1000;
       // logger.info(timeToComplete, 'seconds')
 
@@ -886,7 +885,6 @@ const firstPrompt = async () => {
 
     setTerminalWindowTransparency(false);
 
-    console.log('prompt user')
     promptUser();
   };
 
