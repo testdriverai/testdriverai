@@ -30,7 +30,7 @@ const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
 
 // local modules
-const { server } = require("./lib/ipc.js");
+const server = require("./lib/ipc.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const log = require("./lib/logger.js");
@@ -753,8 +753,10 @@ const actOnMarkdown = async (
 };
 
 const ensureMacScreenPerms = async () => {
+
   // if os is mac, check for screen capture permissions
   if (
+    !config.TD_OVERLAY_ID && 
     !config.TD_VM &&
     process.platform === "darwin"
   ) {
@@ -889,7 +891,7 @@ const firstPrompt = async () => {
   };
 
   rl.on("line", handleInput);
-  server.on("input", handleInput);
+  server.emitter.on("input", handleInput);
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
@@ -1054,6 +1056,7 @@ let runRawYML = async (yml) => {
   // add the root key steps: with array of commands:
   if (ymlObj && !ymlObj.steps) {
     ymlObj = {
+      version: package.version,
       steps: [ymlObj],
     };
   }
@@ -1062,7 +1065,7 @@ let runRawYML = async (yml) => {
   fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
 
   // and run it with run()
-  await run(tmpobj.name, false, true);
+  await run(tmpobj.name, false, false);
 };
 
 // this will load a regression test from a file location
@@ -1222,8 +1225,6 @@ const start = async () => {
   // make testdriver directory if it doesn't exist
   let testdriverFolder = path.join(workingDir, "testdriver");
   if (!fs.existsSync(testdriverFolder)) {
-
-    console.log('does not exist')
 
     fs.mkdirSync(testdriverFolder);
     // log
