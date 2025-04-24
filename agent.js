@@ -891,7 +891,7 @@ const firstPrompt = async () => {
   };
 
   rl.on("line", handleInput);
-  server.emitter.on("input", handleInput);
+  server.on("input", handleInput);
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
