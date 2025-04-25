@@ -1,152 +1,237 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "TestDriver",
-  "colors": {
-    "primary": "#b3d334",
-    "light": "#b3d334",
-    "dark": "#050d23"
-  },
-  "favicon": "/images/template/icon.png",
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Overview",
-        "groups": [
-          {
-            "group": "Intro",
-            "pages": [
-              "/overview/quickstart",
-              "/overview/what-is-testdriver",
-              "/overview/faq",
-              "/overview/comparison"
+    "$schema": "https://mintlify.com/docs.json",
+    "theme": "mint",
+    "name": "TestDriver",
+    "colors": {
+        "primary": "#b3d334",
+        "light": "#b3d334",
+        "dark": "#050d23"
+    },
+    "favicon": "/images/template/icon.png",
+    "navigation": {
+        "tabs": [
+            {
+                "tab": "Overview",
+                "groups": [
+                    {
+                        "group": "Intro",
+                        "pages": [
+                            "/overview/quickstart",
+                            "/overview/what-is-testdriver",
+                            "/overview/faq",
+                            "/overview/comparison"
+                        ]
+                    },
+                    {
+                        "group": "Features",
+                        "pages": [
+                            "/features/selectorless",
+                            "/features/generation",
+                            "/features/visual-assertions",
+                            "/features/auto-healing",
+                            "/features/cross-platform",
+                            "/features/reusable-snippets",
+                            "/features/parallel-testing",
+                            "/features/github"
+                        ]
+                    },
+                    {
+                        "group": "Security & Privacy",
+                        "pages": [
+                            "/security/agent",
+                            "/security/action",
+                            "/security/platform"
+                        ]
+                    }
+                ]
+            },
+            {
+                "tab": "Guide",
+                "groups": [
+                    {
+                        "group": "Getting Started",
+                        "pages": [
+                            "/getting-started/vscode",
+                            "/getting-started/setup",
+                            "/getting-started/writing",
+                            "/getting-started/generating",
+                            "/getting-started/running",
+                            "/getting-started/ci",
+                            "/getting-started/editing"
+                        ]
+                    },
+                    {
+                        "group": "Writing Tests",
+                        "pages": [
+                            "/guide/locating",
+                            "/guide/waiting",
+                            "/guide/assertions",
+                            "/guide/variables",
+                            "/guide/authentication",
+                            "/guide/lifecycle",
+                            "/guide/code"
+                        ]
+                    },
+                    {
+                        "group": "Running in CI",
+                        "pages": [
+                            "/action/setup",
+                            "/action/browser",
+                            "/action/os",
+                            "/action/output",
+                            "/action/performance",
+                            "/action/prerun",
+                            "/action/secrets"
+                        ]
+                    }
+                ]
+            },
+            {
+                "tab": "Examples",
+                "groups": [
+                    {
+                        "group": "Scenarios",
+                        "pages": [
+                            "cookie-banner",
+                            "log-in",
+                            "spell-check",
+                            "form-filling",
+                            "file-upload",
+                            "pdf-generation",
+                            "ai-chatbot"
+                        ]
+                    },
+                    {
+                        "group": "Apps",
+                        "pages": [
+                            "static-websites",
+                            "chrome-extensions",
+                            "mobile-apps",
+                            "desktop-apps"
+                        ]
+                    }
+                ]
+            },
+            {
+                "tab": "Integrations",
+                "groups": [
+                    {
+                        "group": "Buidling",
+                        "pages": [
+                            "/integrations/vercel",
+                            "/integrations/netlify",
+                            "/integrations/electron"
+                        ]
+                    },
+                    {
+                        "group": "Importing",
+                        "pages": [
+                            "/importing/testrail",
+                            "/importing/jira",
+                            "/importing/gherkin",
+                            "/importing/csv"
+                        ]
+                    },
+                    {
+                        "group": "Exporting",
+                        "pages": [
+                            "/exploting/playwright"
+                        ]
+                    },
+                    {
+                        "group": "Bug Reporting",
+                        "pages": [
+                            "/bugs/jira"
+                        ]
+                    }
+                ]
+            },
+            {
+                "tab": "Reference",
+                "groups": [
+                    {
+                        "group": "Commands",
+                        "pages": [
+                            "/commands/assert",
+                            "/commands/exec",
+                            "/commands/focus-application",
+                            "/commands/hover-image",
+                            "/commands/hover-text",
+                            "/commands/match-image",
+                            "/commands/if",
+                            "/commands/press-keys",
+                            "/commands/run",
+                            "/commands/scroll",
+                            "/commands/scroll-until-image",
+                            "/commands/scroll-until-text",
+                            "/commands/type",
+                            "/commands/wait",
+                            "/commands/wait-for-image",
+                            "/commands/wait-for-text"
+                        ]
+                    },
+                    {
+                        "group": "Interactive Commands",
+                        "pages": [
+                            "/interactive/assert",
+                            "/interactive/undo",
+                            "/interactive/save",
+                            "/interactive/run",
+                            "/interactive/generate"
+                        ]
+                    },
+                    {
+                        "group": "CLI",
+                        "pages": [
+                            "/cli/overview"
+                        ]
+                    }
+                ]
+            }
+        ],
+        "global": {
+            "anchors": [
+                {
+                    "anchor": "Community",
+                    "href": "https://discord.com/invite/cWDFW8DzPm",
+                    "icon": "discord"
+                },
+                {
+                    "anchor": "Enterprise",
+                    "href": "https://mintlify.com/docs",
+                    "icon": "book-open"
+                },
+                {
+                    "anchor": "Book a Demo",
+                    "href": "https://calendly.com/d/cq23-qyn-3v6/testdriver-ai-demo",
+                    "icon": "calendar"
+                }
             ]
-          },
-          {
-            "group": "Getting Started",
-            "pages": [
-              "/getting-started/vscode",
-              "/getting-started/setup",
-              "/getting-started/writing",
-              "/getting-started/generating",
-              "/getting-started/running",
-              "/getting-started/ci",
-              "/features/auto-healing",
-              "/getting-started/editing"
-            ]
-          },
-          {
-            "group": "Writing Tests",
-            "pages": [
-              "/guide/locating",
-              "/guide/waiting",
-              "/guide/assertions",
-              "/guide/variables",
-              "/guide/authentication",
-              "/guide/lifecycle",
-              "/guide/code"
-            ]
-          },
-          {
-            "group": "Running in CI",
-            "pages": [
-              "/action/setup",
-              "/action/browser",
-              "/action/os",
-              "/action/output",
-              "/action/performance",
-              "/action/prerun",
-              "/action/secrets"
-            ]
-          },
-          {
-            "group": "Security & Privacy",
-            "pages": [
-              "/security/agent",
-              "/security/action",
-              "/security/platform"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Reference",
-        "groups": [
-          {
-            "group": "Commands",
-            "pages": [
-              "/commands/assert",
-              "/commands/exec",
-              "/commands/focus-application",
-              "/commands/hover-image",
-              "/commands/hover-text",
-              "/commands/match-image",
-              "/commands/if",
-              "/commands/press-keys",
-              "/commands/run",
-              "/commands/scroll",
-              "/commands/scroll-until-image",
-              "/commands/scroll-until-text",
-              "/commands/type",
-              "/commands/wait",
-              "/commands/wait-for-image",
-              "/commands/wait-for-text"
-            ]
-          },
-          {
-            "group": "Interactive Commands",
-            "pages": [
-              "/interactive/assert",
-              "/interactive/undo",
-              "/interactive/save",
-              "/interactive/run",
-              "/interactive/generate"
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": ["/cli/overview"]
-          }
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Community",
-          "href": "https://discord.com/invite/cWDFW8DzPm",
-          "icon": "discord"
-        },
-        {
-          "anchor": "Book a Demo",
-          "href": "https://calendly.com/d/cq23-qyn-3v6/testdriver-ai-demo",
-          "icon": "calendar"
         }
-      ]
+    },
+    "logo": {
+        "light": "/images/template/light.png",
+        "dark": "/images/template/dark.png",
+        "href": "https://testdriver.ai"
+    },
+    "navbar": {
+        "links": [
+            {
+                "label": "Support",
+                "href": "support@testdriver.ai" 
+                }
+        ],
+        "primary": {
+            "type": "button",
+            "label": "Dashboard",
+            "href": "https://app.testdriver.ai"
+        }
+    },
+    "footer": {
+        "socials": {
+            "x": "https://x.com/testdriverai",
+            "github": "https://github.com/testdriverai",
+            "youtube": "https://www.youtube.com/@testdriverai"
+        }
     }
-  },
-  "logo": {
-    "light": "/images/template/light.png",
-    "dark": "/images/template/dark.png",
-    "href": "https://testdriver.ai"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "https://testdriver.canny.io/testdriver"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.testdriver.ai"
-    }
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/testdriverai",
-      "github": "https://github.com/testdriverai"
-    }
-  }
 }

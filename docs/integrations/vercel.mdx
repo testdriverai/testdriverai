@@ -1,5 +1,8 @@
 ---
 title: "Vercel"
+sidebarTitle: "Vercel"
+description: "Integrate TestDriver.ai with Vercel deployments using GitHub Actions."
+icon: "cloud"
 ---
 
 # Testing Vercel Deployments with TestDriver.ai GitHub Action
@@ -26,10 +29,9 @@ This guide explains how to integrate **TestDriver.ai** with **Vercel deployments
 
 ## GitHub Actions Workflow
 
-Here’s a complete workflow to test Vercel deployments with TestDriver.ai:
+Here's a complete workflow to test Vercel deployments with TestDriver.ai:
 
 ### Workflow File: `.github/workflows/test-vercel.yml`
-
 ```yaml
 name: Test Vercel Deployment with TestDriver.ai
 
@@ -127,7 +129,9 @@ The TestDriver.ai GitHub Action runs tests on the deployed application using the
 
 ## Example TestDriver.ai Prompt
 
-The `prompt` field in the TestDriver.ai action specifies the steps to test the Vercel deployment. For example:```yaml
+The `prompt` field in the TestDriver.ai action specifies the steps to test the Vercel deployment. For example:
+
+```yaml
 prompt: |
   1. Open the deployment URL: ${{ steps.vercel.outputs.url }}
   2. Verify the homepage loads correctly

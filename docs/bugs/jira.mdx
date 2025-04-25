@@ -2,6 +2,7 @@
 title: "Reporting Failed Tests to Jira"
 sidebarTitle: "Jira"
 description: "Step-by-step instructions to integrate TestDriver.ai with Jira for automated test failure tracking in CI/CD workflows."
+icon: "jira"
 ---
 
 # Automating Jira Ticket Creation for Test Failures Using TestDriver.ai and Jira GitHub Actions
@@ -29,9 +30,10 @@ This guide explains how to integrate the **TestDriver.ai GitHub Action** with th
 
 ## GitHub Actions Workflow
 
-Here’s a complete workflow that integrates TestDriver.ai and Jira:
+Here's a complete workflow that integrates TestDriver.ai and Jira:
 
-### Workflow File: `.github/workflows/testdriver-jira.yml````yaml
+### Workflow File: `.github/workflows/testdriver-jira.yml
+```yaml
 name: TestDriver.ai with Jira Integration
 
 on:
@@ -104,7 +106,8 @@ jobs:
 ## Workflow Steps Explained
 
 ### 1. **Run Tests with TestDriver.ai**
-The `testdriverai/action@main` step runs your TestDriver.ai tests and captures the results. The `outputs.success` variable indicates whether the tests passed or failed.```yaml
+The `testdriverai/action@main` step runs your TestDriver.ai tests and captures the results. The `outputs.success` variable indicates whether the tests passed or failed.
+```yaml
 - name: Run TestDriver.ai
   id: testdriver
   uses: testdriverai/action@main
@@ -121,7 +124,8 @@ The `testdriverai/action@main` step runs your TestDriver.ai tests and captures t
 ---
 
 ### 2. **Check for Test Failures**
-This step checks the `outputs.success` variable from the TestDriver.ai action. If the tests failed, it sets an environment variable (`failure=true`) to trigger the Jira ticket creation step.```yaml
+This step checks the `outputs.success` variable from the TestDriver.ai action. If the tests failed, it sets an environment variable (`failure=true`) to trigger the Jira ticket creation step.
+```yaml
 - name: Check for Test Failures
   id: check-failures
   run: |
@@ -140,7 +144,8 @@ This step checks the `outputs.success` variable from the TestDriver.ai action. I
 ### 3. **Create a Jira Ticket**
 If any tests failed, the `create-jira-ticket` job uses the `atlassian/gajira-create` action to create a new Jira ticket. The ticket includes:
 - **Summary**: A brief description of the failure.
-- **Description**: Detailed information about the failure, including the test summary and markdown output from TestDriver.ai.```yaml
+- **Description**: Detailed information about the failure, including the test summary and markdown output from TestDriver.ai.
+```yaml
 - name: Create Jira Ticket
   uses: atlassian/gajira-create@v3
   with:

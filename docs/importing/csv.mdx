@@ -1,6 +1,8 @@
 ---
 title: "CSV Import"
 sidebarTitle: "CSV Import"
+description: "Convert user stories from CSV files into individual TestDriver.ai test files using Node.js and GitHub Actions."
+icon: "table"
 ---
 
 This guide demonstrates how to convert user stories from **CSV files** into individual TestDriver.ai test files using **Node.js**. Each user story will be saved as its own YAML test file, and the tests will be executed in parallel using a **GitHub Actions workflow**.
@@ -105,7 +107,8 @@ This script will generate individual YAML test files (e.g., `test_1.yml`, `test_
 
 Create a GitHub Actions workflow to execute the generated test files in parallel.
 
-### GitHub Actions Workflow (`.github/workflows/run-tests.yml`)```yaml
+### GitHub Actions Workflow (`.github/workflows/run-tests.yml`)
+```yaml
 name: Run TestDriver.ai Tests
 
 on:

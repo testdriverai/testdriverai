@@ -1,5 +1,8 @@
 ---
 title: "Electron"
+sidebarTitle: "Electron"
+description: "Integrate TestDriver.ai with Electron applications"
+icon: "atom"
 ---
 
 To integrate **TestDriver.ai** with a workflow that uses the **runner artifact URL** and **GitHub token** for downloading artifacts, you can modify the workflow to include these steps. Below is an example of how to adapt the workflow to ensure TestDriver.ai can access the artifacts.
@@ -10,7 +13,8 @@ To integrate **TestDriver.ai** with a workflow that uses the **runner artifact U
 
 This workflow builds the application, uploads the build as an artifact, and then uses TestDriver.ai to download the artifact via the runner artifact URL and run tests.
 
-### Workflow File: `.github/workflows/testdriver-integration.yml````yaml
+### Workflow File: `.github/workflows/testdriver-integration.yml
+```yaml
 name: Build and Test with TestDriver.ai
 
 on:
@@ -85,7 +89,8 @@ jobs:
 ## Key Changes and Explanation
 
 ### 1. **Artifact URL Retrieval**
-The `Get Artifact URL` step constructs the artifact URL dynamically using the GitHub repository and server URL. This ensures the TestDriver.ai runner can download the artifact.```yaml
+The `Get Artifact URL` step constructs the artifact URL dynamically using the GitHub repository and server URL. This ensures the TestDriver.ai runner can download the artifact.
+```yaml
 - name: Get Artifact URL
   id: artifact-url
   run: |
@@ -96,7 +101,8 @@ The `Get Artifact URL` step constructs the artifact URL dynamically using the Gi
 ---
 
 ### 2. **Downloading the Artifact**
-The `prerun` script in the TestDriver.ai action uses `curl` to download the artifact from the runner URL. The `GITHUB_TOKEN` is passed as a header for authentication.```yaml
+The `prerun` script in the TestDriver.ai action uses `curl` to download the artifact from the runner URL. The `GITHUB_TOKEN` is passed as a header for authentication.
+```yaml
 prerun: |
   echo "Downloading artifact..."
   curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -116,7 +122,8 @@ The TestDriver.ai action is configured to:
 - Download the artifact.
 - Extract the artifact.
 - Run the application.
-- Execute the specified test steps.```yaml
+- Execute the specified test steps.
+```yaml
 - name: Run Tests with TestDriver.ai
   uses: testdriverai/action@main
   with:
