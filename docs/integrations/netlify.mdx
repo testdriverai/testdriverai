@@ -1,5 +1,8 @@
 ---
 title: "Netlify"
+sidebarTitle: "Netlify"
+descripption: "Using Netlify CI with TestDriver"
+icon: "diff"
 ---
 
 # Testing Netlify Deployments with TestDriver.ai GitHub Action
@@ -26,25 +29,24 @@ This guide explains how to integrate **TestDriver.ai** with **Netlify deployment
 
 ## GitHub Actions Workflow
 
-Here’s a complete workflow to test Netlify deployments with TestDriver.ai:
+Here's a complete workflow to test Netlify deployments with TestDriver.ai:
 
-### Workflow File: `.github/workflows/test-netlify.yml````yaml
+### Workflow File: `.github/workflows/test-netlify.yml
+```yaml
 name: Test Netlify Deployment with TestDriver.ai
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+pull_request:
+push:
+branches: - main
+workflow_dispatch:
 
 jobs:
-  test-netlify:
-    name: Test Netlify Deployment
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
+test-netlify:
+name: Test Netlify Deployment
+runs-on: ubuntu-latest
+steps: - name: Check out repository
+uses: actions/checkout@v2
 
       - name: Wait for Netlify Deployment
         id: netlify
@@ -78,7 +80,8 @@ jobs:
 ## Workflow Steps Explained
 
 ### 1. **Wait for Netlify Deployment**
-Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.```yaml
+Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.
+```yaml
 - name: Wait for Netlify Deployment
   id: netlify
   run: |
@@ -94,5 +97,5 @@ Netlify automatically sets the `DEPLOY_URL` environment variable for each deploy
 ---
 
 ### 2. **Run Tests with TestDriver.ai**
-The TestDriver.ai GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
 
+The TestDriver.ai GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
