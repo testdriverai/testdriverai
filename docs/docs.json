@@ -8,6 +8,9 @@
         "dark": "#050d23"
     },
     "favicon": "/images/template/icon.png",
+    "icons": {
+        "library": "lucide"
+    },
     "navigation": {
         "tabs": [
             {
@@ -92,22 +95,22 @@
                     {
                         "group": "Scenarios",
                         "pages": [
-                            "cookie-banner",
-                            "log-in",
-                            "spell-check",
-                            "form-filling",
-                            "file-upload",
-                            "pdf-generation",
-                            "ai-chatbot"
+                            "scenarios/cookie-banner",
+                            "scenarios/log-in",
+                            "scenarios/spell-check",
+                            "scenarios/form-filling",
+                            "scenarios/file-upload",
+                            "scenarios/pdf-generation",
+                            "scenarios/ai-chatbot"
                         ]
                     },
                     {
                         "group": "Apps",
                         "pages": [
-                            "static-websites",
-                            "chrome-extensions",
-                            "mobile-apps",
-                            "desktop-apps"
+                            "apps/static-websites",
+                            "apps/chrome-extensions",
+                            "apps/mobile-apps",
+                            "apps/desktop-apps"
                         ]
                     }
                 ]
@@ -135,7 +138,7 @@
                     {
                         "group": "Exporting",
                         "pages": [
-                            "/exploting/playwright"
+                            "/exporting/playwright"
                         ]
                     },
                     {
@@ -218,8 +221,8 @@
         "links": [
             {
                 "label": "Support",
-                "href": "support@testdriver.ai" 
-                }
+                "href": "mailto:support@testdriver.ai"
+            }
         ],
         "primary": {
             "type": "button",
