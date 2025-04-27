@@ -1,20 +1,20 @@
 ---
 title: "Variables"
 sidebarTitle: "Variables"
-description: "Learn how to use variables in TestDriver.ai for dynamic data handling."
+description: "Learn how to use variables in TestDriver for dynamic data handling."
 icon: "variable"
 ---
 
-# Using Variables in TestDriver.ai
+# Using Variables in TestDriver
 
-Variables in **TestDriver.ai** allow you to dynamically store and reuse data during test execution. This feature is particularly useful for handling dynamic content, passing data between steps, and customizing test behavior based on runtime conditions.
+Variables in **TestDriver** allow you to dynamically store and reuse data during test execution. This feature is particularly useful for handling dynamic content, passing data between steps, and customizing test behavior based on runtime conditions.
 
 - Generate a random number or string and use it to fill out a form.
 - Capture API responses and validate their content.
 - Capture text or values from the screen and use them in assertions.
 - Pass different values to the test using environment variables for testing multiple scenarios.
 
-By leveraging variables in TestDriver.ai, you can create dynamic, flexible, and reusable test scripts that adapt to changing conditions and data.
+By leveraging variables in TestDriver, you can create dynamic, flexible, and reusable test scripts that adapt to changing conditions and data.
 
 #### Test File Example:
 
@@ -44,7 +44,7 @@ steps:
 ## GitHub Actions Example
 
 ```yaml
-name: TestDriver.ai with Variables
+name: TestDriver with Variables
 
 on:
   push:
@@ -61,10 +61,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Run TestDriver.ai
+      - name: Run TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Log in with username and password
             2. Verify the dashboard is displayed

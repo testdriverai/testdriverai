@@ -1,15 +1,19 @@
 ---
-title: "Authentication in TestDriver.ai"
+title: "Authentication in TestDriver"
 sidebarTitle: "Authentication"
-description: "Learn how to securely handle authentication workflows in TestDriver.ai using GitHub Actions."
+description: "Learn how to securely handle authentication workflows in TestDriver using GitHub Actions."
 icon: "fingerprint"
 ---
 
-This guide explains how to handle **authentication workflows** in **TestDriver.ai** using GitHub Actions. It covers securely passing credentials (e.g., usernames and passwords) to the TestDriver.ai action and using them in both the `prerun` script and test files.
+import GitignoreWarning from '/snippets/gitignore-warning.mdx';
+
+This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (e.g., usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as Github secrets.
+
+<GitignoreWarning/>
 
 ---
 
-## How Authentication Works in TestDriver.ai
+## How Authentication Works in TestDriver
 
 1. **Store Credentials Securely**:
   - Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
@@ -24,8 +28,8 @@ This guide explains how to handle **authentication workflows** in **TestDriver.a
 2. Add the following secrets:
    - **`TD_USERNAME`**: The username for login.
    - **`TD_PASSWORD`**: The password for login.
-   - **`TESTDRIVER_API_KEY`**: Your TestDriver.ai API key.
-   - **`WEBSITE_URL`**: The URL of the website to test.
+   - **`TD_API_KEY`**: Your TestDriver API key.
+   - **`TD_WEBSITE`**: The URL of the website to test.
 
 ## Step 2: Pass Credentials to the Workflow
 
@@ -36,7 +40,7 @@ Secrets are passed to the GitHub Action using the `secrets` context. They can be
 ### Example Workflow:
 
 ```yaml
-name: TestDriver.ai / Authentication
+name: TestDriver / Authentication
 
 on:
   push:
@@ -56,7 +60,7 @@ jobs:
       - name: Run Authentication Test
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the login page
             2. Enter the username: ${{ secrets.TD_USERNAME }}
@@ -67,7 +71,7 @@ jobs:
             cd $env:TEMP
             npm init -y
             npm install dashcam-chrome
-            Start-Process "msedge" -ArgumentList "--start-maximized", "--load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${{ secrets.WEBSITE_URL }}"
+            Start-Process "msedge" -ArgumentList "--start-maximized", "--load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${{ secrets.TD_WEBSITE }}"
             exit
         env:
           TD_USERNAME: ${{ secrets.TD_USERNAME }}
@@ -110,15 +114,15 @@ steps:
 ## How It Works Together
 
 1. **Secrets in the Workflow**:
-  - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver.ai action.
+  - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver action.
 
 2. **Secrets in the `prerun` Script**:
-  - The `WEBSITE_URL` secret is used to launch the browser with the correct URL.
+  - The `TD_WEBSITE` secret is used to launch the browser with the correct URL.
 
 3. **Secrets in the Test File**:
   - The test file dynamically references the secrets to fill in login credentials during the test.
 
-## Benefits of Using Authentication in TestDriver.ai
+## Benefits of Using Authentication in TestDriver
 
 1. **Secure Handling of Credentials**:
   - Secrets are encrypted and not exposed in logs.
@@ -132,4 +136,4 @@ steps:
 
 ---
 
-By securely passing credentials and using them in the `prerun` script and test files, you can automate authentication workflows in TestDriver.ai while ensuring sensitive information remains protected.
+By securely passing credentials and using them in the `prerun` script and test files, you can automate authentication workflows in TestDriver while ensuring sensitive information remains protected.
