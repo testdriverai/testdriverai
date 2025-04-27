@@ -5,10 +5,12 @@ description: "Understand the ephemeral VM runners, secrets handling, and environ
 icon: shield-check
 ---
 
+import GitignoreWarning from '/snippets/gitignore-warning.mdx';
+
 ## Open Source
 The TestDriver Action is open source, and its source code is available for review. You can find the repository here:
 
-[GitHub - testdriverai/action](https://github.com/testdriverai/action)
+<Card horizontal="true" icon="github"> [GitHub - testdriverai/action](https://github.com/testdriverai/action) </Card>
 
 ## Ephemeral Virtual Machine Runners
 TestDriver tests are executed on private virtual machines (VMs) managed by Amazon EC2. These VMs are ephemeral, meaning they only exist for the duration of the test execution. Once the test is complete:
@@ -27,6 +29,8 @@ To securely manage private information, we recommend storing sensitive data as s
 A common workflow involves using prerun scripts to securely access a private staging website via basic authentication. This allows you to log into staging environments without persisting sensitive data on TestDriver servers.
 
 ## Environment-Specific Security
+
+<GitignoreeWarning/>
 
 ### Production
 Testing production environments is the simplest and most secure starting point. 

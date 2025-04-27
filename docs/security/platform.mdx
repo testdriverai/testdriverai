@@ -5,6 +5,8 @@ description: "Learn about the security features of the TestDriver web dashboard,
 icon: folder-key
 ---
 
+import GitignoreWarning from '/snippets/gitignore-warning.mdx';
+
 ## Overview
 The TestDriver web dashboard provides a secure interface for managing and reviewing your tests. Tests executed via the GitHub Action are recorded and reported through Dashcam, another application developed by TestDriver. For more details, refer to the [Dashcam documentation](https://dashcam.docs.testdriver.ai).
 
@@ -33,6 +35,12 @@ Dashcam and TestDriver share the same API and web application back end, which in
 ### API Key Rotation
 - Teams can rotate their API key for enhanced security.
 - It is recommended to rotate the API key every 90 days to minimize risk.
+
+<Check>
+    For more details on **Team Management** see the [Team documentation](/account/team).
+</Check>
+
+<GitignoreWarning/>
 
 ### Secret Masking
 - Test replay logs and network requests are automatically scanned for sensitive information, such as:
