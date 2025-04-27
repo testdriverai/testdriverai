@@ -45,6 +45,16 @@
                             "/security/action",
                             "/security/platform"
                         ]
+                    },
+                    {
+                        "group": "Account",
+                        "pages": [
+                            "/account/dashboard",
+                            "/account/projects",
+                            "/account/pricing",
+                            "/account/enterprise",
+                            "/account/team"
+                        ]
                     }
                 ]
             },
@@ -95,22 +105,22 @@
                     {
                         "group": "Scenarios",
                         "pages": [
+                            "scenarios/ai-chatbot",
                             "scenarios/cookie-banner",
-                            "scenarios/log-in",
-                            "scenarios/spell-check",
-                            "scenarios/form-filling",
                             "scenarios/file-upload",
+                            "scenarios/form-filling",
+                            "scenarios/log-in",
                             "scenarios/pdf-generation",
-                            "scenarios/ai-chatbot"
+                            "scenarios/spell-check"
                         ]
                     },
                     {
                         "group": "Apps",
                         "pages": [
-                            "apps/static-websites",
                             "apps/chrome-extensions",
+                            "apps/desktop-apps",
                             "apps/mobile-apps",
-                            "apps/desktop-apps"
+                            "apps/static-websites"
                         ]
                     }
                 ]
@@ -119,20 +129,21 @@
                 "tab": "Integrations",
                 "groups": [
                     {
-                        "group": "Buidling",
+                        "group": "Building",
                         "pages": [
-                            "/integrations/vercel",
+                            "/integrations/electron",
+                            "/features/github",
                             "/integrations/netlify",
-                            "/integrations/electron"
+                            "/integrations/vercel"
                         ]
                     },
                     {
                         "group": "Importing",
                         "pages": [
-                            "/importing/testrail",
-                            "/importing/jira",
+                            "/importing/csv",
                             "/importing/gherkin",
-                            "/importing/csv"
+                            "/importing/jira",
+                            "/importing/testrail"
                         ]
                     },
                     {
@@ -160,8 +171,8 @@
                             "/commands/focus-application",
                             "/commands/hover-image",
                             "/commands/hover-text",
-                            "/commands/match-image",
                             "/commands/if",
+                            "/commands/match-image",
                             "/commands/press-keys",
                             "/commands/run",
                             "/commands/scroll",
@@ -195,14 +206,14 @@
         "global": {
             "anchors": [
                 {
+                    "anchor": "Website",
+                    "href": "https://testdriver.ai",
+                    "icon": "globe"
+                },
+                {
                     "anchor": "Community",
                     "href": "https://discord.com/invite/cWDFW8DzPm",
                     "icon": "discord"
-                },
-                {
-                    "anchor": "Enterprise",
-                    "href": "https://mintlify.com/docs",
-                    "icon": "book-open"
                 },
                 {
                     "anchor": "Book a Demo",
@@ -221,7 +232,7 @@
         "links": [
             {
                 "label": "Support",
-                "href": "mailto:support@testdriver.ai"
+                "href": "https://github.com/testdriverai/testdriverai/issues/new"
             }
         ],
         "primary": {
@@ -236,5 +247,6 @@
             "github": "https://github.com/testdriverai",
             "youtube": "https://www.youtube.com/@testdriverai"
         }
-    }
+    },
+    "redirects": []
 }
