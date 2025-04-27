@@ -60,4 +60,6 @@ For example:
 const button = await page.$('button[class="sign-up-btn"]');
 ```
 
-If the class name changes, the test will break, requiring updates to the test code. Selectorless testing avoids this by focusing on the intent of the interaction rather than the implementation details.
+<Warning>When using legacy frameworks, if the class name changes, the test will break, requiring updates to the test code!</Warning> 
+
+<Check>Selectorless testing avoids this by focusing on the intent of the interaction rather than the implementation details.</Check>

@@ -25,7 +25,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           os: linux
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the browser
             2. Navigate to example.com
@@ -55,7 +55,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           os: mac
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the browser
             2. Navigate to example.com

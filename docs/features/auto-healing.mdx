@@ -28,7 +28,8 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
 
 ### Example: Button Text Changes from "Submit" to "Send"
 
-1. **Initial Test**:
+<Steps>
+<Step title="Initial Test">
 
 ```yaml {2}
 - command: hover-text
@@ -36,18 +37,20 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
   description: Submit button in the form
   action: click
 ```
-
-2. **Application Update**:
+</Step>
+<Step title="Application Update">
   - The button text is changed from "Submit" to "Send" in the application.
+</Step>
 
-3. **Test Execution**:
+<Step title="Test Execution">
   - TestDriver.ai runs the test and fails to find the "Submit" button.
+</Step>
 
-4. **Auto-Healing**:
+<Step title="Auto-Healing">
   - The AI detects the failure and searches for a similar element.
   - It identifies the "Send" button as the updated element and retries the action.
-
-5. **Test Update**:
+</Step>
+<Step title="Test Update">
   - The test script is updated to reflect the new button text:
   
   ```yaml {2}
@@ -56,12 +59,14 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
     description: Submit button in the form
     action: click
   ```
-
-6. **Pull Request Creation**:
+</Step>
+<Step title="Pull Request Creation">
    - TestDriver.ai commits the updated test to a new branch and opens a PR:
      - **Branch Name**: `auto-heal-update-submit-to-send`
      - **PR Title**: `Auto-Healed Test: Updated "Submit" to "Send"`
 
+</Step>
+</Steps>
 ## Example GitHub Action for Auto-Healing
 
 Here's how you can configure a GitHub Action to enable auto-healing and PR creation:
@@ -87,7 +92,7 @@ jobs:
       - name: Run TestDriver.ai
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. /run testdriver/onboarding.yaml --save
           create-pr: true

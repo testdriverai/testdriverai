@@ -4,8 +4,11 @@ sidebarTitle: "GitHub Integration"
 description: "Explore how TestDriver.ai enhances GitHub workflows with branch creation, manual dispatch, and detailed outputs for seamless test management."
 icon: "github"
 ---
+import GitignoreWarning from '/snippets/gitignore-warning.mdx';
 
 TestDriver.ai offers advanced GitHub integration features, including the ability to create its own branches, trigger workflows manually from the GitHub Actions UI, and provide detailed outputs for debugging and reporting. These features make it easier to manage test workflows, collaborate on test results, and maintain a clean and automated testing pipeline.
+
+<GitignoreWarning/>
 
 ---
 
@@ -20,7 +23,7 @@ TestDriver.ai can create its own branches to store test results, updates, or aut
 
 ### Example Workflow with Branch Creation:
 
-```yaml
+```yaml {21-24}
 name: TestDriver.ai Auto-Healing
 
 on:
@@ -38,7 +41,7 @@ jobs:
       - name: Run TestDriver.ai
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Run all tests in the testdriver directory
           create-pr: true
@@ -88,7 +91,7 @@ jobs:
       - name: Run TestDriver.ai
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Run all tests in the testdriver directory
         env:
@@ -113,7 +116,7 @@ TestDriver.ai provides detailed outputs during workflow execution, which are vis
 - **Test Summary**: A high-level overview of the test results.
 - **Logs**: Step-by-step logs of the test execution.
 - **Screenshots and GIFs**: Visual feedback for debugging.
-- **Links to Dashcam.io**: Direct links to detailed test recordings and results.
+- **Links to TestDriver Dashcam.io Replays**: Direct links to detailed test recordings and results.
 
 ### Example Outputs:
 

@@ -5,6 +5,8 @@ description: "Discover how to modularize your test workflows using reusable YAML
 icon: "file-stack"
 ---
 
+import GitignoreWarning from '/snippets/gitignore-warning.mdx'
+
 Reusable snippets in TestDriver allow you to modularize your test steps by creating smaller, reusable YAML files that can be embedded into larger test workflows. This approach improves test maintainability, reduces duplication, and makes your test suite more organized and scalable.
 
 ---
@@ -25,8 +27,8 @@ Reusable snippets are YAML files containing a set of test steps that perform a s
 ---
 
 ## How to Create and Use Reusable Snippets
-
-### Step 1: Create a Snippet
+<Steps>
+<Step title="Create a Snippet">
 
 Save a YAML file containing the reusable steps. For example, create a `snippets/login.yaml` file for logging into an application:
 
@@ -52,10 +54,9 @@ steps:
         description: log in button
         action: click
 ```
+</Step>
 
----
-
-### Step 2: Reference the Snippet in a Test
+<Step title="Reference the Snippet in a Test">
 
 Use the `run` command to include the snippet in your main test file. For example:
 
@@ -71,10 +72,9 @@ steps:
         description: dashboard link in the navigation bar
         action: click
 ```
+</Step>
 
----
-
-### Step 3: Parameterize Inputs
+<Step title="Parameterize Inputs">
 
 Use environment variables to pass dynamic data like usernames and passwords. Define these variables in your `.env` file or CI/CD pipeline:
 
@@ -82,7 +82,11 @@ Use environment variables to pass dynamic data like usernames and passwords. Def
 TD_USERNAME=your_username
 TD_PASSWORD=your_password
 ```
----
+
+<GitignoreWarning/>
+</Step>
+</Steps>
+
 
 ## Example: Combining Multiple Snippets
 
@@ -100,8 +104,7 @@ steps:
       - command: run
         file: snippets/add_to_cart.yaml
 ```
-
----
+--- 
 
 ## Best Practices for Reusable Snippets
 
