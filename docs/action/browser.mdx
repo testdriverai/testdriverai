@@ -116,7 +116,7 @@ jobs:
           os: ${{ matrix.os }}
           prerun: |
             # Add prerun script here
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"

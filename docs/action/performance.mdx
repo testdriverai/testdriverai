@@ -19,6 +19,10 @@ Parallel testing allows you to split your test actions into multiple files and r
 - Divide your test steps into smaller, independent YAML files.
 - Use the `run` command or GitHub matrix strategy to execute these files in parallel.
 
+<Warning>
+  The `run` command is used in your test files to run other test files. This is useful for breaking down large tests into smaller, more manageable pieces. To run multiple separate tests, use the GitHub matrix strategy.
+</Warning>
+
 Example:
 ```yaml
 strategy:
