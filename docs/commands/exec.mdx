@@ -67,7 +67,7 @@ steps:
           npm install @sendgrid/mail
       - command: exec
         lang: js
-        output: tempEmail
+        output: accountData
         silent: false
         mac: |
           const Mailjs = require("@cemalgnlts/mailjs");
@@ -75,15 +75,21 @@ steps:
           let account = await mailjs.createOneAccount()
           console.log("Account created:", account);
           result = JSON.stringify(account.data)
+      - command: exec
+        lang: js
+        output: emailAddress
+        silent: false
+        mac: |
+          const accountData = ${OUTPUT.accountData};
+          result = accountData.username
   - prompt: Enter the generated email into the email field
     commands:
       - command: hover-text
-        text: Email address
+        text: standard_user
         description: email input field label
         action: click
-        silent: false
       - command: type
-        text: ${OUTPUT.tempEmail}
+        text: ${OUTPUT.emailAddress}
   - prompt: Wait for an email, extract links, and open each link
     commands:
       - command: exec
@@ -93,7 +99,7 @@ steps:
           const Mailjs = require("@cemalgnlts/mailjs");
           const { JSDOM } = require('jsdom'); // To parse HTML and extract links
 
-          const accountData = ${OUTPUT.tempEmail};
+          const accountData = ${OUTPUT.accountData};
 
           const getLatestEmailAndClickLinks = async () => {
             try {
@@ -141,5 +147,4 @@ steps:
           };
 
           getLatestEmailAndClickLinks();
-
 ```
