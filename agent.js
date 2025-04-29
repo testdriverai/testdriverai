@@ -1082,12 +1082,10 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
   if (ymlObj.version) {
     let valid = isValidVersion(ymlObj.version);
     if (!valid) {
-      logger.error(
-        `Version mismatch: ${file}. Trying to run a test with v${ymlObj.version} test when this package is v${package.version}.`,
-      );
-
-      await summarize("Version mismatch");
-      await exit(true);
+      console.log("")
+      logger.warn(chalk.red(`Version mismatch detected!`));
+      logger.warn(chalk.red(`Running a test created with v${ymlObj.version}.`));
+      logger.warn(chalk.red(`The current testdriverai version is v${package.version}.`));
     }
   }
 
