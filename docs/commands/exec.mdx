@@ -59,8 +59,6 @@ steps:
 
 The `exec` command in TestDriver.ai allows you to execute custom shell or JavaScript code during your test runs. This is particularly useful for integrating external APIs, performing complex logic, or interacting with external systems.
 
----
-
 ### **Shell Example: Installing a Node.js Package**
 
 You can use the `exec` command to run shell commands, such as installing a Node.js package.
@@ -72,14 +70,8 @@ You can use the `exec` command to run shell commands, such as installing a Node.
     npm install @sendgrid/mail
 ```
 
-Run Steps
-
-
-
 **Explanation**:  
 This command installs the `@sendgrid/mail` package using `npm`. It is useful when you need to interact with the SendGrid API or other Node.js libraries during your test.
-
----
 
 ### **JavaScript Example: Generating a Temporary Email**
 
@@ -97,14 +89,8 @@ You can use JavaScript to generate a temporary email address dynamically.
     result = email;
 ```
 
-Run Steps
-
-
-
 **Explanation**:  
 This command uses the SendGrid library to generate a unique email address. The `output` field stores the result in a variable (`tempEmail`) for use in subsequent steps.
-
----
 
 ### **Combined Example: Fetching Email and Clicking Links**
 
@@ -127,17 +113,11 @@ You can combine multiple actions, such as fetching email content and interacting
     });
 ```
 
-Run Steps
-
-
-
 **Explanation**:  
 This command:
 1. Fetches email messages sent to the generated email address.
 2. Extracts all links from the email content using a regular expression.
 3. Simulates clicking each link by logging the action.
-
----
 
 ### **Full YAML Example**
 
@@ -168,7 +148,7 @@ steps:
         action: click
       - command: type
         text: ${OUTPUT.tempEmail}
-  - prompt: Wait for an email, extract links, and click each link
+  - prompt: Wait for an email, extract links, and open each link
     commands:
       - command: exec
         lang: js
@@ -179,16 +159,17 @@ steps:
           sgMail.getMessages({ to: email }).then(messages => {
             const links = messages[0].content.match(/https?:\/\/\S+/g);
             console.log("Extracted links:", links);
-            links.forEach(link => {
-              console.log(`Clicking link: ${link}`);
-              // Simulate clicking the link
+            links.forEach(async (link) => {
+              console.log(`Opening link: ${link}`);
+              try {
+                const response = await fetch(link);
+                console.log(`Response status for ${link}: ${response.status}`);
+              } catch (error) {
+                console.error(`Failed to open link ${link}:`, error);
+              }
             });
           });
 ```
-
-Run Steps
-
-
 
 ---
 
