@@ -58,6 +58,30 @@ jobs:
             }
 ```
 
+## Example: Loading a Calculator App on Linux, Mac or Windows
+```yaml
+version: 5.5.5
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch a calculator
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          linux: |
+            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
+            exit
+        mac: |
+          open "/Applications/Calculator.app"
+          wait
+        windows:
+          start /B calc.exe
+          timeout /t 5
+      - command: wait-for-text
+        text: "galculator"
+        timeout: 30000
+```
+
 ---
 
 ## Key Points

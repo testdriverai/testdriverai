@@ -1,11 +1,11 @@
 ---
-title: "Auto-Healing in TestDriver.ai"
+title: "Auto-Healing in TestDriver"
 sidebarTitle: "Auto-Healing"
-description: "Learn how TestDriver.ai's auto-healing feature keeps your tests resilient and up-to-date with minimal manual effort."
+description: "Learn how TestDriver's auto-healing feature keeps your tests resilient and up-to-date with minimal manual effort."
 icon: "bandage"
 ---
 
-Auto-healing is a powerful feature in TestDriver.ai that ensures your tests remain resilient even when the application under test changes. 
+Auto-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes. 
 
 When TestDriver steps fail, the AI will progressively fall back to attempt to complete the test.
 
@@ -20,10 +20,10 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
 
 ## How Auto-Healing Works
 
-1. **Test Execution**: TestDriver.ai runs your test suite as usual.
+1. **Test Execution**: TestDriver runs your test suite as usual.
 2. **Failure Detection**: If a test fails due to a change in the application (e.g., text or UI updates), the AI identifies the failure point.
 3. **Recovery Attempt**: The AI uses its adaptive capabilities to locate the updated element or text and retries the action.
-4. **Test Update**: If the recovery is successful, TestDriver.ai updates the test script with the new element or text.
+4. **Test Update**: If the recovery is successful, TestDriver updates the test script with the new element or text.
 5. **Pull Request Creation**: The updated test script is committed to a new branch, and a pull request is automatically opened in your repository for review.
 
 ### Example: Button Text Changes from "Submit" to "Send"
@@ -43,7 +43,7 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
 </Step>
 
 <Step title="Test Execution">
-  - TestDriver.ai runs the test and fails to find the "Submit" button.
+  - TestDriver runs the test and fails to find the "Submit" button.
 </Step>
 
 <Step title="Auto-Healing">
@@ -61,7 +61,7 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
   ```
 </Step>
 <Step title="Pull Request Creation">
-   - TestDriver.ai commits the updated test to a new branch and opens a PR:
+   - TestDriver commits the updated test to a new branch and opens a PR:
      - **Branch Name**: `auto-heal-update-submit-to-send`
      - **PR Title**: `Auto-Healed Test: Updated "Submit" to "Send"`
 
@@ -72,7 +72,7 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
 Here's how you can configure a GitHub Action to enable auto-healing and PR creation:
 
 ```yaml {24-30} 
-name: TestDriver.ai Auto-Healing
+name: TestDriver Auto-Healing
 
 on:
   push:
@@ -89,7 +89,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Run TestDriver.ai
+      - name: Run TestDriver
         uses: testdriverai/action@main
         with:
           key: ${{ secrets.TD_API_KEY }}
