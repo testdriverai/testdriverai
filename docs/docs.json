@@ -22,7 +22,8 @@
                             "/overview/quickstart",
                             "/overview/what-is-testdriver",
                             "/overview/faq",
-                            "/overview/comparison"
+                            "/overview/comparison",
+                            "/overview/upgrading"
                         ]
                     },
                     {
@@ -181,7 +182,8 @@
                             "/commands/type",
                             "/commands/wait",
                             "/commands/wait-for-image",
-                            "/commands/wait-for-text"
+                            "/commands/wait-for-text",
+                            "/commands/issues"
                         ]
                     },
                     {
