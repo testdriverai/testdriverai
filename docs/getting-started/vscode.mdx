@@ -1,21 +1,23 @@
 ---
-title: "Install the TestDriver.ai VSCode Extension"
+title: "Install the TestDriver VSCode Extension"
 sidebarTitle: "VSCode Extension"
-description: "Comprehensive guide to installing and setting up TestDriver.ai for VSCode"
+description: "Comprehensive guide to installing and setting up TestDriver for VSCode"
 icon: "file-code"
 ---
 
 # Download the VSCode Extension
 
-The TestDriver.ai VSCode extension is available for download on our GitHub releases page. This extension integrates seamlessly with Visual Studio Code, allowing you to leverage the power of TestDriver.ai directly within your development environment.
+The TestDriver VSCode extension is available for download on our GitHub releases page. This extension integrates seamlessly with Visual Studio Code, allowing you to leverage the power of TestDriver directly within your development environment.
 
 <Card
   title="Download the VSCode Extension"
   icon="download"
   href="https://github.com/testdriverai/vscode/releases/latest/download/testdriver.vsix"
 >
-  Get the latest version of the TestDriver.ai VSCode extension from our GitHub releases page. 
+  Get the latest version of the TestDriver VSCode extension from our GitHub releases page. 
 </Card>
+
+---
 
 # Install the extension
 
@@ -24,43 +26,78 @@ The TestDriver.ai VSCode extension is available for download on our GitHub relea
 3. In the Extensions view, click on the three-dot menu in the top-right corner and select "Install from VSIX...".
 4. Navigate to the location where you downloaded the `testdriverai.vsix` file and select it.
 
-![](/images/content/vscode-install.png)
+<img height="200" src="/images/content/vscode/vscode-install.png" />
 
+---
 # Try the Walkthrough
 
 The extension should launch a walkthrough. If it doesn't, you can manually start it by running the command `TestDriver: Start Setup Walkthrough` from the Command Palette (`Ctrl+Shift+P`).
 
-![](/images/content/vscode-walkthrough.png)
+<img height="200" src="/images/content/vscode/vscode-setup-walkthrough.png" />
 
+---
 # Overview
 
-![](/images/content/vscode-overview.png)
+<Frame caption="VSCode Extension Overview">
+<img height="400" src="/images/content/vscode/vscode-overview.png" />
+</Frame>
 
-- Test Pane
+## 1. Test Pane
   - Located in the **Activity Bar** (left-hand side of the editor).
-  - Clicking the **flask icon** opens the TestDriver test explorer.
+  - Clicking the <Icon icon="flask-conical" iconType="solid" /> **flask icon** opens the TestDriver test explorer.
   - Lists all the available YAML-based test definitions.
-- Run all Tests
+
+<Frame caption="The test pane is here">
+   <img height="200" src="/images/content/vscode/vscode-testpane.png" /> 
+</Frame>
+
+## 2. Run all Tests
   - This button runs all tests shown in the Test Explorer.
   - Found near the top of the Test Explorer view.
   - Especially useful for quickly validating a batch of test cases.
-- AI Test Creation
+
+<Frame caption="Gotta run 'em all">
+    <img height="200" src="/images/content/vscode/vscode-testpane-runtests.png" /> 
+</Frame>
+
+## 3. AI Test Creation
   - New files created by TestDriver will automatically be focused in the editor.
   - Defines an automated test script created by TestDriver.
-- AI Agent Test Preview
-  - Sidebar chat panel shows the TestDriver agent’s response to the prompt.
+
+<Frame caption="You will create a new file every time you start a chat">
+    <img height="200" src="/images/content/vscode/vscode-file-creation.png" />
+</Frame>
+
+## 4. AI Agent Test Preview
+  - Sidebar chat panel shows the TestDriver agent's response to the prompt.
   - Offers feedback, interpretation, or suggested actions for the test steps.
   - Example: It identifies the context (e.g., a terminal is in focus) and suggests the correct automation action.
   - Additional files modified by the agent are listed for context.
-- Test Output
+
+<Frame caption="AI Agent Test Preview">
+    <img height="200" src="/images/content/vscode/vscode-agent-preview.png" />
+</Frame>
+
+## 5. Test Output
   - Terminal panel at the bottom of the screen.
   - Displays live output from running the test file.
   - Shows TestDriver version, current test script, and metadata like session ID.
   - Helpful for debugging and understanding test execution flow.
-- Test History
+
+<Frame caption="You can move the terminal panel to the right as well!">
+    <img height="200" src="/images/content/vscode/vscode-test-output.png" />
+</Frame>
+
+## 6. Test History
   - Shows a list of previously run test scripts.
   - Allows developers to review or re-run older tests.
   - Useful for regression testing or comparing AI-generated test iterations.
+
+<Frame caption="More history, less mystery">
+    <img height="200" src="/images/content/vscode/vscode-testhistory.png" />
+</Frame>
+
+---
 
 # Troubleshooting
 
@@ -72,18 +109,20 @@ You can still use the extension to run and manage tests. Use the CLI for test cr
 
 Make sure the GitHub Copilot Chat is set to "ask."
 
-![](/images/content/vscode-ask.png)
+<img src="/images/content/vscode/vscode-copilot-ask.png" />
 
 ## How do I stop a running execution?
 
-Click on the "Stop" button in the bottom of agent chat.
+Depending on the context, you can stop a running test execution in several ways:
 
-![](/images/content/vscode-stop-chat.png)
+### 1. Click on the "Stop" button in the bottom of agent chat.
 
-Click on the "Stop" button in the top right corner of the test execution. This only shows on hover.
+<img height="200" src="/images/content/vscode/vscode-stopchat.png" />
 
-![](/images/content/vscode-stop-test.png)
+### 2. Click on the "Stop" button in the top right corner of the test execution. This only shows on hover.
 
-A TestDriver icon will show in the tray bar. Click it, then click "quit."
+<img src="/images/content/vscode/vscode-stoptest.png" />
 
-![](/images/content/vscode-stop-quit.png)
+### 3. A TestDriver icon will show in the tray bar. Click it, then click "quit."
+
+<img src="/images/content/vscode/vscode-tdservice.png" />
