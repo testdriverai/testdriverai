@@ -1,11 +1,11 @@
 ---
 title: "Gherkin"
 sidebarTitle: "Gherkin"
-description: "Convert Gherkin scenarios to TestDriver.ai prompts"
+description: "Convert Gherkin scenarios to TestDriver prompts"
 icon: "file-code"
 ---
 
-This guide explains how to convert **Gherkin scenarios** into **TestDriver.ai prompts** for use in your testing workflows. By following this process, you can easily adapt existing Gherkin test cases into a format compatible with TestDriver.ai.
+This guide explains how to convert **Gherkin scenarios** into **TestDriver prompts** for use in your testing workflows. By following this process, you can easily adapt existing Gherkin test cases into a format compatible with TestDriver.
 
 ---
 
@@ -25,9 +25,9 @@ Scenario: Successful login
 
 ---
 
-## What Are TestDriver.ai Prompts?
+## What Are TestDriver Prompts?
 
-TestDriver.ai prompts are high-level instructions that describe what the AI should do. They are written in plain text and focus on user actions or expected outcomes.
+TestDriver prompts are high-level instructions that describe what the AI should do. They are written in plain text and focus on user actions or expected outcomes.
 
 ### Example Prompts:
 
@@ -41,11 +41,11 @@ TestDriver.ai prompts are high-level instructions that describe what the AI shou
 
 ---
 
-## Steps to Convert Gherkin to TestDriver.ai Prompts
+## Steps to Convert Gherkin to TestDriver Prompts
 
 ### Step 1: Understand the Mapping
 
-| **Gherkin Keyword** | **TestDriver.ai Prompt**                     |
+| **Gherkin Keyword** | **TestDriver Prompt**                     |
 |----------------------|----------------------------------------------|
 | `Given`             | Describes the initial state or setup.       |
 | `When`              | Describes the user action.                 |
@@ -60,7 +60,7 @@ Take each step from the Gherkin scenario and rewrite it as a plain-text prompt. 
 
 #### Example:
 
-| **Gherkin Step**                     | **TestDriver.ai Prompt**             |
+| **Gherkin Step**                     | **TestDriver Prompt**             |
 |--------------------------------------|--------------------------------------|
 | `Given the user is on the login page` | `the user is on the login page`      |
 | `When the user enters valid credentials` | `the user enters valid credentials` |
@@ -87,13 +87,13 @@ Combine the extracted prompts into a YAML file. Each step should be written as a
 ### Step 4: Save the YAML File
 
 1. Save the YAML content to a file (e.g., `login_test.yml`).
-2. Ensure the file is stored in the appropriate directory for your TestDriver.ai project (e.g., `testdriver/`).
+2. Ensure the file is stored in the appropriate directory for your TestDriver project (e.g., `testdriver/`).
 
 ---
 
-### Step 5: Run the Test with TestDriver.ai
+### Step 5: Run the Test with TestDriver
 
-Use the TestDriver.ai CLI to execute the test.
+Use the TestDriver CLI to execute the test.
 
 #### Command:
 
@@ -141,4 +141,4 @@ testdriverai run add_to_cart_test.yml
 
 ---
 
-By following this guide, you can efficiently convert Gherkin scenarios into TestDriver.ai prompts, enabling seamless integration of existing test cases into your TestDriver.ai workflows.
+By following this guide, you can efficiently convert Gherkin scenarios into TestDriver prompts, enabling seamless integration of existing test cases into your TestDriver workflows.

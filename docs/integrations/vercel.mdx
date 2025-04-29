@@ -1,20 +1,20 @@
 ---
 title: "Vercel"
 sidebarTitle: "Vercel"
-description: "Integrate TestDriver.ai with Vercel deployments using GitHub Actions."
+description: "Integrate TestDriver with Vercel deployments using GitHub Actions."
 icon: "cloud"
 ---
 
-# Testing Vercel Deployments with TestDriver.ai GitHub Action
+# Testing Vercel Deployments with TestDriver GitHub Action
 
-This guide explains how to integrate **TestDriver.ai** with **Vercel deployments** using the **GitHub Actions workflow**. By combining these tools, you can automatically test your Vercel preview deployments or production builds to ensure they meet your quality standards before merging or releasing.
+This guide explains how to integrate **TestDriver** with **Vercel deployments** using the **GitHub Actions workflow**. By combining these tools, you can automatically test your Vercel preview deployments or production builds to ensure they meet your quality standards before merging or releasing.
 
 ---
 
 ## Workflow Overview
 
 1. **Trigger Vercel Deployment**: Use Vercel's GitHub integration to deploy your application on every pull request or push to the main branch.
-2. **Run Tests on the Deployment URL**: Use the TestDriver.ai GitHub Action to test the deployed application using the Vercel deployment URL.
+2. **Run Tests on the Deployment URL**: Use the TestDriver GitHub Action to test the deployed application using the Vercel deployment URL.
 3. **Report Results**: View test results in the GitHub Actions dashboard or as comments on the pull request.
 
 ---
@@ -22,18 +22,18 @@ This guide explains how to integrate **TestDriver.ai** with **Vercel deployments
 ## Prerequisites
 
 1. **Vercel GitHub Integration**: Ensure your repository is connected to Vercel for automatic deployments.
-2. **TestDriver.ai API Key**: Store your API key as a GitHub secret (e.g., `TESTDRIVER_API_KEY`).
+2. **TestDriver API Key**: Store your API key as a GitHub secret (e.g., `TD_API_KEY`).
 3. **Vercel Deployment URL**: Use the `VERCEL_URL` environment variable provided by Vercel to access the deployment.
 
 ---
 
 ## GitHub Actions Workflow
 
-Here's a complete workflow to test Vercel deployments with TestDriver.ai:
+Here's a complete workflow to test Vercel deployments with TestDriver:
 
 ### Workflow File: `.github/workflows/test-vercel.yml`
 ```yaml
-name: Test Vercel Deployment with TestDriver.ai
+name: Test Vercel Deployment with TestDriver
 
 on:
   pull_request:
@@ -61,10 +61,10 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Run Tests with TestDriver.ai
+      - name: Run Tests with TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the deployment URL: ${{ steps.vercel.outputs.url }}
             2. Verify the homepage loads correctly
@@ -103,14 +103,14 @@ The `amondnet/vercel-action` waits for the Vercel deployment to complete and ret
 
 ---
 
-### 2. **Run Tests with TestDriver.ai**
-The TestDriver.ai GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
+### 2. **Run Tests with TestDriver**
+The TestDriver GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
 
 ```yaml
-- name: Run Tests with TestDriver.ai
+- name: Run Tests with TestDriver
   uses: testdriverai/action@main
   with:
-    key: ${{ secrets.TESTDRIVER_API_KEY }}
+    key: ${{ secrets.TD_API_KEY }}
     prompt: |
       1. Open the deployment URL: ${{ steps.vercel.outputs.url }}
       2. Verify the homepage loads correctly
@@ -127,9 +127,9 @@ The TestDriver.ai GitHub Action runs tests on the deployed application using the
 
 ---
 
-## Example TestDriver.ai Prompt
+## Example TestDriver Prompt
 
-The `prompt` field in the TestDriver.ai action specifies the steps to test the Vercel deployment. For example:
+The `prompt` field in the TestDriver action specifies the steps to test the Vercel deployment. For example:
 
 ```yaml
 prompt: |
@@ -147,7 +147,7 @@ prompt: |
 ## Secrets Configuration
 
 Add the following secrets to your GitHub repository:
-1. **`TESTDRIVER_API_KEY`**: Your TestDriver.ai API key.
+1. **`TD_API_KEY`**: Your TestDriver API key.
 2. **`VERCEL_TOKEN`**: Your Vercel API token.
 3. **`VERCEL_ORG_ID`**: Your Vercel organization ID.
 4. **`VERCEL_PROJECT_ID`**: Your Vercel project ID.
@@ -159,7 +159,7 @@ Add the following secrets to your GitHub repository:
 1. **Automated Deployment Testing**: Automatically test every Vercel deployment, including preview and production builds.
 2. **Early Issue Detection**: Catch issues in pull requests before merging.
 3. **Detailed Feedback**: View test results directly in the GitHub Actions dashboard.
-4. **Seamless Integration**: Combine Vercel's deployment capabilities with TestDriver.ai's testing power.
+4. **Seamless Integration**: Combine Vercel's deployment capabilities with TestDriver's testing power.
 
 ---
 
@@ -169,7 +169,7 @@ Add the following secrets to your GitHub repository:
 - ✅ **Test Vercel Deployment**: All tests passed.
 - ❌ **Test Vercel Deployment**: 1 test failed. View logs for details.
 
-### TestDriver.ai Logs:
+### TestDriver Logs:
 - **Step 1**: Opened the deployment URL.
 - **Step 2**: Verified the homepage loaded correctly.
 - **Step 3**: Clicked the "Sign Up" button.
@@ -178,4 +178,4 @@ Add the following secrets to your GitHub repository:
 
 ---
 
-By integrating TestDriver.ai with Vercel deployments, you can ensure that every deployment is thoroughly tested, reducing the risk of bugs reaching production and improving the overall quality of your application.
+By integrating TestDriver with Vercel deployments, you can ensure that every deployment is thoroughly tested, reducing the risk of bugs reaching production and improving the overall quality of your application.
