@@ -55,73 +55,6 @@ steps:
 - Overwrite the `result` variable in your script, as it is used to store the output.
 - NodeJS code executes in the same context as the calling process on the host machine, using the [VM](https://nodejs.org/api/vm.html) module internally.
 
-### TestDriver.ai: Using `exec` Command with Shell and JavaScript
-
-The `exec` command in TestDriver.ai allows you to execute custom shell or JavaScript code during your test runs. This is particularly useful for integrating external APIs, performing complex logic, or interacting with external systems.
-
-### **Shell Example: Installing a Node.js Package**
-
-You can use the `exec` command to run shell commands, such as installing a Node.js package.
-
-```yaml
-- command: exec
-  lang: shell
-  linux: |
-    npm install @sendgrid/mail
-```
-
-**Explanation**:  
-This command installs the `@sendgrid/mail` package using `npm`. It is useful when you need to interact with the SendGrid API or other Node.js libraries during your test.
-
-### **JavaScript Example: Generating a Temporary Email**
-
-You can use JavaScript to generate a temporary email address dynamically.
-
-```yaml
-- command: exec
-  lang: js
-  output: tempEmail
-  linux: |
-    const sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const email = `test_${Date.now()}@example.com`;
-    console.log(email);
-    result = email;
-```
-
-**Explanation**:  
-This command uses the SendGrid library to generate a unique email address. The `output` field stores the result in a variable (`tempEmail`) for use in subsequent steps.
-
-### **Combined Example: Fetching Email and Clicking Links**
-
-You can combine multiple actions, such as fetching email content and interacting with extracted links, into a single JavaScript block.
-
-```yaml
-- command: exec
-  lang: js
-  linux: |
-    const sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    const email = "${OUTPUT.tempEmail}";
-    sgMail.getMessages({ to: email }).then(messages => {
-      const links = messages[0].content.match(/https?:\/\/\S+/g);
-      console.log("Extracted links:", links);
-      links.forEach(link => {
-        console.log(`Clicking link: ${link}`);
-        // Simulate clicking the link
-      });
-    });
-```
-
-**Explanation**:  
-This command:
-1. Fetches email messages sent to the generated email address.
-2. Extracts all links from the email content using a regular expression.
-3. Simulates clicking each link by logging the action.
-
-### **Full YAML Example**
-
-Here’s a complete example combining shell and JavaScript commands:
 
 ```yaml
 version: 5.3.8
@@ -129,60 +62,84 @@ steps:
   - commands:
       - command: exec
         lang: shell
-        linux: |
+        silent: false
+        mac: |
           npm install @sendgrid/mail
       - command: exec
         lang: js
         output: tempEmail
-        linux: |
-          const sgMail = require('@sendgrid/mail');
-          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-          const email = `test_${Date.now()}@example.com`;
-          console.log(email);
-          result = email;
+        silent: false
+        mac: |
+          const Mailjs = require("@cemalgnlts/mailjs");
+          const mailjs = new Mailjs();
+          let account = await mailjs.createOneAccount()
+          console.log("Account created:", account);
+          result = JSON.stringify(account.data)
   - prompt: Enter the generated email into the email field
     commands:
       - command: hover-text
         text: Email address
         description: email input field label
         action: click
+        silent: false
       - command: type
         text: ${OUTPUT.tempEmail}
   - prompt: Wait for an email, extract links, and open each link
     commands:
       - command: exec
         lang: js
-        linux: |
-          const sgMail = require('@sendgrid/mail');
-          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-          const email = "${OUTPUT.tempEmail}";
-          sgMail.getMessages({ to: email }).then(messages => {
-            const links = messages[0].content.match(/https?:\/\/\S+/g);
-            console.log("Extracted links:", links);
-            links.forEach(async (link) => {
-              console.log(`Opening link: ${link}`);
-              try {
-                const response = await fetch(link);
-                console.log(`Response status for ${link}: ${response.status}`);
-              } catch (error) {
-                console.error(`Failed to open link ${link}:`, error);
+        silent: false
+        mac: |
+          const Mailjs = require("@cemalgnlts/mailjs");
+          const { JSDOM } = require('jsdom'); // To parse HTML and extract links
+
+          const accountData = ${OUTPUT.tempEmail};
+
+          const getLatestEmailAndClickLinks = async () => {
+            try {
+              // Initialize the Mailjs client
+              const mailjs = new Mailjs();
+
+              // Login to your account
+              await mailjs.login(accountData.username, accountData.password);
+
+              // Fetch list of messages
+              const messages = await mailjs.getMessages();
+
+              if (messages.length === 0) {
+                console.log('No emails found.');
+                return;
               }
-            });
-          });
+
+              // Assuming the latest email is the first one in the list
+              const latestMessage = messages[0];
+
+              // Fetch the full details of the latest email
+              const fullMessage = await mailjs.getMessage(latestMessage.id);
+
+              console.log('Latest Email Details:', fullMessage);
+
+              // Parse the HTML content to extract links
+              const dom = new JSDOM(fullMessage.html);
+              const links = Array.from(dom.window.document.querySelectorAll('a')).map(a => a.href);
+
+              console.log('Found Links:', links);
+
+              // Click (fetch) every link using native fetch
+              for (const link of links) {
+                try {
+                  const response = await fetch(link);
+                  console.log('Clicked ${link}: ${response.status}');
+                } catch (linkError) {
+                  console.error('Error clicking ${link}:', linkError);
+                }
+              }
+
+            } catch (error) {
+              console.error('Error fetching latest email or clicking links:', error);
+            }
+          };
+
+          getLatestEmailAndClickLinks();
+
 ```
-
----
-
-### Key Points:
-1. **Shell Commands**: Use `lang: shell` for executing terminal commands like installing packages or running scripts.
-2. **JavaScript Commands**: Use `lang: js` for more complex logic, such as interacting with APIs or processing data.
-3. **Output Variables**: Use the `output` field to store results from `exec` commands for use in later steps.
-
----
-
-### Use Cases:
-- **API Integration**: Fetch data from external APIs and use it in your tests.
-- **Dynamic Data**: Generate unique data (e.g., email addresses) for each test run.
-- **Custom Logic**: Perform advanced operations that are not natively supported by TestDriver.ai.
-
-By combining shell and JavaScript commands, you can extend the functionality of TestDriver.ai to handle complex workflows seamlessly.
