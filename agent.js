@@ -160,7 +160,7 @@ function completer(line) {
     "/summarize /save /run /quit /assert /undo /manual /yml /js /exec".split(
       " ",
     );
-  if (line.startsWith("/run ") || line.startsWith("/explore ")) {
+  if (line.startsWith("/run ")) {
     return fileCompleter(line);
   } else {
     completions.concat(tasks);
@@ -851,9 +851,6 @@ const firstPrompt = async () => {
       let shouldExit = flags.includes("--exit") ? true : false;
 
       await run(file, shouldSave, shouldExit);
-    } else if (input.indexOf("/explore") == 0) {
-      const file = commands[1];
-      await run(file, true, true);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
       await generate(commands[1], commands[2], commands[3], skipYaml);
@@ -882,7 +879,7 @@ const firstPrompt = async () => {
         logger.error(result.error.result.stdout);
       }
     } else {
-      await exploratoryLoop(input, false, true, true);
+      await exploratoryLoop(input.replace(/^\/explore\s+/, ""), false, true, true );
     }
 
     setTerminalWindowTransparency(false);
