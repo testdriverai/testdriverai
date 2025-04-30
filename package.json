@@ -12,6 +12,7 @@
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
+    "docs-lint": "cd docs && vale **/*.mdx",
     "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'"
   },
   "author": "",

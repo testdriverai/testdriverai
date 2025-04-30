@@ -5,7 +5,10 @@
     "colors": {
         "primary": "#b3d334",
         "light": "#b3d334",
-        "dark": "#050d23"
+        "dark": "#152a65"
+    },
+    "appearance": {
+      "default": "dark"
     },
     "favicon": "/images/template/icon.png",
     "navigation": {
@@ -20,7 +23,7 @@
                             "/overview/what-is-testdriver",
                             "/overview/faq",
                             "/overview/comparison",
-                            "/overview/upgrading"
+                            "/account/enterprise"
                         ]
                     },
                     {
@@ -49,8 +52,6 @@
                         "pages": [
                             "/account/dashboard",
                             "/account/projects",
-                            "/account/pricing",
-                            "/account/enterprise",
                             "/account/team"
                         ]
                     }
@@ -62,13 +63,13 @@
                     {
                         "group": "Getting Started",
                         "pages": [
-                            "/getting-started/vscode",
                             "/getting-started/setup",
                             "/getting-started/writing",
                             "/getting-started/generating",
                             "/getting-started/running",
                             "/getting-started/ci",
-                            "/getting-started/editing"
+                            "/getting-started/editing",
+                            "/overview/upgrading"
                         ]
                     },
                     {
@@ -130,7 +131,6 @@
                         "group": "Building",
                         "pages": [
                             "/integrations/electron",
-                            "/features/github",
                             "/integrations/netlify",
                             "/integrations/vercel"
                         ]
@@ -205,11 +205,6 @@
         "global": {
             "anchors": [
                 {
-                    "anchor": "Website",
-                    "href": "https://testdriver.ai",
-                    "icon": "globe"
-                },
-                {
                     "anchor": "Community",
                     "href": "https://discord.com/invite/cWDFW8DzPm",
                     "icon": "discord"
@@ -222,6 +217,10 @@
             ]
         }
     },
+    "modeToggle": {
+      "enabled": false,
+      "default": "dark"
+    },
     "logo": {
         "light": "/images/template/light.png",
         "dark": "/images/template/dark.png",
@@ -229,8 +228,13 @@
     },
     "navbar": {
         "links": [
-            {
-                "label": "Support",
+            
+          {
+            "label": "GitHub",
+            "href": "https://github.com/testdriverai/testdriverai"
+        },
+        {
+                "label": "Report an Issue",
                 "href": "https://github.com/testdriverai/testdriverai/issues/new"
             }
         ],
