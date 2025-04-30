@@ -1,18 +1,20 @@
 ---
 title: "TestRail"
 sidebarTitle: "TestRail"
+description: "Import test cases from TestRail into TestDriver."
+icon: "square-pen"
 ---
 
-This guide explains how to extract **test cases** from TestRail and convert them into **TestDriver.ai YAML test files**. By automating this process, you can ensure that your TestRail test cases are directly translated into actionable tests for TestDriver.ai.
+This guide explains how to extract **test cases** from TestRail and convert them into **TestDriver YAML test files**. By automating this process, you can ensure that your TestRail test cases are directly translated into actionable tests for TestDriver.
 
 ---
 
 ## Workflow Overview
 
 1. **Export Test Cases from TestRail**: Use the TestRail API to fetch test cases.
-2. **Convert Test Cases to TestDriver.ai YAML**: Transform the test cases into YAML test files.
+2. **Convert Test Cases to TestDriver YAML**: Transform the test cases into YAML test files.
 3. **Save and Organize Test Files**: Store the generated YAML files in a structured directory.
-4. **Run Tests with TestDriver.ai**: Execute the tests using the TestDriver.ai CLI.
+4. **Run Tests with TestDriver**: Execute the tests using the TestDriver CLI.
 
 ---
 
@@ -111,7 +113,7 @@ fetchTestRailTestCases();
 
 ---
 
-## Step 2: Convert Test Cases to TestDriver.ai YAML
+## Step 2: Convert Test Cases to TestDriver YAML
 
 The script above generates a YAML file for each TestRail test case. Each file contains the **steps** as `prompt` entries.
 
@@ -131,13 +133,13 @@ steps:
 ## Step 3: Save and Organize Test Files
 
 1. The generated YAML files will be saved in the `testdriver_tests/` directory.
-2. Ensure the directory is part of your TestDriver.ai project structure.
+2. Ensure the directory is part of your TestDriver project structure.
 
 ---
 
-## Step 4: Run Tests with TestDriver.ai
+## Step 4: Run Tests with TestDriver
 
-Use the TestDriver.ai CLI to execute the generated test files.
+Use the TestDriver CLI to execute the generated test files.
 
 ### Run a Single Test File:
 
@@ -158,4 +160,4 @@ testdriverai run testdriver_tests/test_123.yml
 
 ## Summary
 
-By following this guide, you can automate the process of importing test cases from TestRail into TestDriver.ai test files. This ensures that your test steps are directly translated into actionable tests, streamlining your testing workflows and improving coverage.
+By following this guide, you can automate the process of importing test cases from TestRail into TestDriver test files. This ensures that your test steps are directly translated into actionable tests, streamlining your testing workflows and improving coverage.

@@ -1,12 +1,13 @@
 ---
-title: Waiting in TestDriver.ai
+title: Waiting in TestDriver
 sidebarTitle: Waiting
-icon: "hourglass-half"
+description: "Waiting in TestDriver: Ensuring Stability and Reducing Flakiness"
+icon: "clock"
 ---
 
-# Waiting in TestDriver.ai: Ensuring Stability and Reducing Flakiness
+# Waiting in TestDriver: Ensuring Stability and Reducing Flakiness
 
-Waiting is a critical feature in TestDriver.ai that ensures tests are stable and reliable, even in dynamic or slow-loading environments. 
+Waiting is a critical feature in TestDriver that ensures tests are stable and reliable, even in dynamic or slow-loading environments. 
 
 - Automatically adjusts to varying load times, reducing the need for hardcoded delays.
 - Ensures that tests wait for dynamic elements to appear, reducing false negatives caused by incomplete rendering.
@@ -21,10 +22,10 @@ Waiting is a critical feature in TestDriver.ai that ensures tests are stable and
 | **`wait-for-text`**   | Waits for specific text to appear on the screen.                                |
 | **`wait-for-image`**  | Waits for a specific image or visual element to appear on the screen.           |
 
-## Key Waiting Features in TestDriver.ai
+## Key Waiting Features in TestDriver
 
 1. **Automatic Waiting with `redraw`**:
-  - TestDriver.ai automatically waits for the machine before moving to the next step.
+  - TestDriver automatically waits for the machine before moving to the next step.
   - This includes waiting for:
     - UI changes to complete.
     - Network activity to stabilize (e.g., API calls).
@@ -87,7 +88,7 @@ In this example, the test waits up to 8 seconds for the company logo to appear i
 
 ## Automatic Waiting with `redraw`
 
-TestDriver.ai's **`redraw` function** is a built-in mechanism that automatically waits for the screen to stabilize before proceeding to the next step. This includes:
+TestDriver's **`redraw` function** is a built-in mechanism that automatically waits for the screen to stabilize before proceeding to the next step. This includes:
 
 1. **UI Changes**:
   - Waits for animations, transitions, or DOM updates to complete.
@@ -105,7 +106,7 @@ TestDriver.ai's **`redraw` function** is a built-in mechanism that automatically
 ## Best Practices for Waiting
 
 2. **Leverage Automatic Waiting**:
-  - Rely on TestDriver.ai's `redraw` function to handle most waiting scenarios automatically.
+  - Rely on TestDriver's `redraw` function to handle most waiting scenarios automatically.
 
 1. **Use Explicit Waiting for Dynamic Elements**:
   - Use `wait-for-text` or `wait-for-image` for elements that take time to load.

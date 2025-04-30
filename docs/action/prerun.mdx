@@ -2,7 +2,7 @@
 title: "Prerun Scripts"
 sidebarTitle: "Prerun Scripts"
 description: "Learn how to customize and set up your TestDriver environment to optimize your CI/CD pipeline."
-icon: "hammer"
+icon: "terminal"
 ---
 
 ## Overview
@@ -58,6 +58,30 @@ jobs:
             }
 ```
 
+## Example: Loading a Calculator App on Linux, Mac or Windows
+```yaml
+version: 5.5.5
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch a calculator
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          linux: |
+            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
+            exit
+        mac: |
+          open "/Applications/Calculator.app"
+          wait
+        windows:
+          start /B calc.exe
+          timeout /t 5
+      - command: wait-for-text
+        text: "galculator"
+        timeout: 30000
+```
+
 ---
 
 ## Key Points
@@ -74,6 +98,38 @@ jobs:
 - **Security**: Avoid hardcoding sensitive information in prerun scripts. Use GitHub secrets to securely pass credentials or tokens.
 
 ---
+
+## A Note on the Default Prerun Script
+When setting up your TestDriver environment, a default prerun script is automatically generated. This script includes essential commands to ensure your VM is ready for testing. You can customize this script to suit your specific needs, but it's important to understand that it serves as a baseline for your test environment. It looks like this:
+
+```yaml
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch chrome
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
+          exit
+        mac: |
+          open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run --disable-features=PasswordManagerEnabled "${TD_WEBSITE}" &
+          exit
+        windows:
+          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
+          exit
+      - command: wait-for-text
+        text: "Google Chrome"
+        timeout: 30000
+```
+
+Take note that it defaults to launching the Chrome browser. If you want to use a different browser, you can modify the `prompt` and `commands` sections accordingly. 
+
+<Warning>
+The `wait-For-text` command is crucial for ensuring that the browser is fully loaded before proceeding with the test steps. If you are testing a webapplication, you may want to adjust the `text` parameter to match the expected title or content of the page.
+</Warning>
+
 
 ## Notes
 - Prerun scripts are executed on the VM before the test suite begins.

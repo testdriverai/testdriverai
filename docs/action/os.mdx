@@ -142,7 +142,7 @@ jobs:
           os: ${{ matrix.os }}
           prerun: |
             # Add prerun script here
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
@@ -155,4 +155,3 @@ jobs:
 - **Prerun Scripts**: Ensure your prerun scripts are compatible with the specified operating system.
 - **Cross-Platform Testing**: Use the matrix strategy to test across multiple OS and browser combinations for maximum coverage.
 - **Linux Default**: Linux is the default operating system for most workflows and is ideal for lightweight, fast testing.
-```

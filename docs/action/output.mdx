@@ -26,7 +26,7 @@ The following example demonstrates how to use the output variables to create a c
 
 ### Workflow Example
 ```yaml
-name: TestDriver.ai
+name: TestDriver
 
 permissions:
   actions: read
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: dashcamio/testdriver@main
         version: v4.0.0
-        key: ${{ secrets.TESTDRIVER_API_KEY }}
+        key: ${{ secrets.TD_API_KEY }}
         with:
           prompt: |
             1. /run /Users/ec2-user/actions-runner/_work/testdriver/testdriver/.testdriver/test.yml

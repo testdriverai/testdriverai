@@ -1,6 +1,8 @@
 ---
 title: "Tutorial: Basic Test"
 description: "Learn how to create and run a basic test using TestDriver."
+sidebarTitle: "Basic Test"
+icon: "test-tube"
 ---
 
 # Basic Test Tutorial
@@ -18,20 +20,19 @@ Before you begin, ensure you have the following:
 To create a test, follow these steps:
 1. Open your code editor.
 2. Write the test script using TestDriver's syntax.
-3. Save the test script with a `.td` extension.
+3. Save the test script with a `.yaml` extension.
 
 Example:
-```plaintext
-test("Example Test", () => {
-  expect(1 + 1).toBe(2);
-});
+```yaml
+
+
 ```
 
 ## Step 2: Run the Test
 
 To run the test, use the following command:
-```plaintext
-testdriver run example-test.td
+```bash
+testdriverai run example-test.yaml
 ```
 
 This will execute the test and display the results in the console.

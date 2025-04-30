@@ -1,10 +1,11 @@
 ---
-title: "Cross-Platform Testing with TestDriver.ai"
+title: "Cross-Platform Testing with TestDriver"
 sidebarTitle: "Cross-Platform Testing"
-description: "Discover how TestDriver.ai enables seamless cross-platform testing across Windows, Linux, and Mac operating systems."
+description: "Discover how TestDriver enables seamless cross-platform testing across Windows, Linux, and Mac operating systems."
+icon: "computer"
 ---
 
-TestDriver.ai provides robust cross-platform support, enabling you to run tests seamlessly on **Windows**, **Linux**, and **Mac** operating systems. This flexibility ensures that your applications are tested in environments that match your users' setups.
+TestDriver provides robust cross-platform support, enabling you to run tests seamlessly on **Windows**, **Linux**, and **Mac** operating systems. This flexibility ensures that your applications are tested in environments that match your users' setups.
 
 ## Specifying the Operating System
 
@@ -24,7 +25,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           os: linux
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the browser
             2. Navigate to example.com
@@ -54,7 +55,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           os: mac
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the browser
             2. Navigate to example.com
@@ -75,7 +76,7 @@ jobs:
 
 ## Write Once, Run Anywhere
 
-TestDriver.ai uses **selectorless testing**, meaning tests are written in a generic format that works across all platforms. The AI dynamically adapts to the environment, ensuring that the same test can run on Windows, Linux, and Mac without modification.
+TestDriver uses **selectorless testing**, meaning tests are written in a generic format that works across all platforms. The AI dynamically adapts to the environment, ensuring that the same test can run on Windows, Linux, and Mac without modification.
 
 ### Benefits of Selectorless Testing
 
@@ -88,7 +89,7 @@ TestDriver.ai uses **selectorless testing**, meaning tests are written in a gene
 ```yaml
 version: 4.2.18
 steps:
-  - prompt: Open the browser and search for "TestDriver.ai"
+  - prompt: Open the browser and search for "TestDriver"
     commands:
       - command: focus-application
         name: Google Chrome
@@ -97,7 +98,7 @@ steps:
         description: main search bar
         action: click
       - command: type
-        text: TestDriver.ai
+        text: TestDriver
       - command: press-keys
         keys: [enter]
 

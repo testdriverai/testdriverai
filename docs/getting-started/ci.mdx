@@ -1,15 +1,15 @@
 ---
 title: "Running in GitHub Actions"
 sidebarTitle: "Running in CI"
-description: "Learn how to set up and run tests with TestDriver.ai using GitHub Actions for seamless end-to-end testing."
+description: "Learn how to set up and run tests with TestDriver using GitHub Actions for seamless end-to-end testing."
 icon: "code-pull-request"
 ---
 
-This guide explains how to set up a basic GitHub Actions workflow to run tests using **TestDriver.ai**.
+This guide explains how to set up a basic GitHub Actions workflow to run tests using **TestDriver**.
 
 ## Prerequisites
 
-1. **TestDriver.ai API Key**: Obtain your API key from TestDriver.ai and store it as a GitHub secret (e.g., `TESTDRIVER_API_KEY`).
+1. **TestDriver API Key**: Obtain your API key from TestDriver and store it as a GitHub secret (e.g., `TD_API_KEY`).
 2. **Test Files**: Ensure your test files are saved in the `testdriver/` directory of your repository.
 
 ## Create a GitHub Actions Workflow
@@ -20,7 +20,7 @@ This guide explains how to set up a basic GitHub Actions workflow to run tests u
 ### Example Workflow: `.github/workflows/testdriver.yml`
 
 ```yaml
-name: TestDriver.ai / Run / Regressions
+name: TestDriver / Run / Regressions
 
 on:
   push:
@@ -75,7 +75,7 @@ jobs:
 
       - uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           os: ${{ matrix.os }}
           version: "5.2.3"
           prompt: 1. /run testdriver/${{ matrix.test }}
@@ -101,8 +101,7 @@ jobs:
 2. Select the workflow run to view the test results.
 
 # Debugging Tests
-
-TestDriver.ai provides a powerful debugging interface through its **app.testdriver.ai** platform (formerly Dashcam). This interface allows you to analyze test runs, identify failures, and optimize your test suite with detailed visual and textual feedback.
+TestDriver provides a powerful debugging interface through its **app.TestDriver** platform (formerly Dashcam). This interface allows you to analyze test runs, identify failures, and optimize your test suite with detailed visual and textual feedback.
 
 ### Step-by-Step Execution Logs
 - View each step of the test execution, including:
@@ -117,7 +116,7 @@ TestDriver.ai provides a powerful debugging interface through its **app.testdriv
 - **Highlighting**: Elements interacted with during the test are highlighted in screenshots, helping you verify that the correct elements were targeted.
 
 ### 3. Error Details
-- For failed steps, app.testdriver.ai provides:
+- For failed steps, app.TestDriver provides:
   - **Error messages**: Detailed descriptions of what went wrong (e.g., "Element not found").
   - **Stack traces**: For advanced debugging of backend or script-related issues.
   - **Suggestions**: Recommendations for fixing common issues, such as adjusting prompts or improving element descriptions.
