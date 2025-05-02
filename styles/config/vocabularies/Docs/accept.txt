@@ -1,7 +1,19 @@
 testdriverai
-npm
+(?i)npm
 Sonoma
-Prerun
+[Pp]rerun
 Protip
 Protips
 VS Code
+VSIX
+OAuth[2]?
+Dashcam
+VM[s]?
+[Cc]hatbot[s]?
+[Ss]electorless
+[Ww]alkthrough
+[Ss]ignup
+(?i)PDF
+Vercel
+Netlify
+[Jj]ira

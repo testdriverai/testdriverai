@@ -1,0 +1,64 @@
+---
+title: "Environment Variables"
+sidebarTitle: "Environment Variables"
+description: "Learn how which environment variables are supported by TestDriver."
+icon: "key"
+---
+
+import GitignoreWarning from '/snippets/gitignore-warning.mdx'
+
+
+The supported environment variables in TestDriver are:
+
+| Variable | Type |         Description          |
+|:--------:|:----:|:----------------------------|
+| `TD_SPEAK` | `boolean` | Use text to speech to hear TestDriver speak as commands are run. Helpful when you don't use `TD_OVERLAY` and just plain fun. |
+| `TD_ANALYTICS` | `boolean` | Send analytics to TestDriver servers. |
+| `TD_NOTIFY` | `boolean` | Send desktop notifications when commands are run. |
+| `TD_MINIMIZE` | `boolean` | When not using VMs, minimize the terminal window / calling app when running commands. Useful if you only have one monitor, you don't want the terminal to show up. |
+| `TD_API_ROOT` | `string` | Developer only. Set API root to another URL. For on-prem. |
+| `TD_API_KEY` | `string` | Set this to spawn VMs with TestDriver Pro. |
+| `TD_OVERLAY` | `boolean` | Spawn overlay window that shows both the TestDriver console output, and draws the cursor and squares on the screen as TestDriver thinks. Defaults to true if not provided.|
+| `TD_VM` | `boolean` | Run commands in a Linux VM instead of on own desktop. Requires API key. |
+| `TD_VM_RESOLUTION` | `number[]` | Change resolution when TD_VM is true. |
+| `TD_TYPE` | `string` | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required. |
+
+<GitignoreWarning />
+
+---
+## Example
+```
+TD_VM=true
+TD_API_KEY=your_api_key
+TD_VM_RESOLUTION=[1024,768]
+TD_MINIMIZE=true
+TD_TYPE=website
+TD_WEBSITE=www.jeep.com
+TD_ANALYTICS=true
+TD_OVERLAY=false
+
+```
+In this example `.env` file, we are running a website test in a local Linux VM with a resolution of 1024x768. The terminal will be minimized, and the overlay will not be shown. Analytics will be sent to TestDriver servers.
+
+---
+## Using Environment Variables in Deployed tests
+When running tests in a deployed environment, you can set environment variables in the `env` section of your GitHub Actions workflow file. This allows you to customize the behavior of TestDriver based on the environment in which it's running. Setup any environment variables you plan to use in the deployed test in your `.env` file and add them  as Github secrets. 
+
+<Tip>For more info on how to set up environment variables with Github Actions, see [Managing Secrets in GitHub Actions](/actions/secrets)</Tip>
+
+In this example, there is both a `TD_TEST_USERNAME` and `TD_TEST_PASSWORD` variables in the local `.env` file. This file is used to run tests locally and mask credentials used to log in to a website. When deployed, these variables are stored as secrets in GitHub and are passed to the TestDriver action when it runs.
+
+---
+## Example 2 
+
+```
+TD_VM=false
+TD_MINIMIZE=true
+TD_WEBSITE=www.rollsroyce.com
+TD_ANALYTICS=false
+TD_OVERLAY=true
+TD_TEST_USERNAME=me@mysite.com
+TD_TEST_PASSWORD=wokeupinanewbugatti
+```
+
+In this example `.env` file, we are running a website test with our desktop using the local agent. The terminal will be minimized, and the overlay will be shown. Analytics will not be sent to TestDriver servers. The `TD_TEST_USERNAME` and `TD_TEST_PASSWORD` variables are used to log in to the website. Be sure to expand these in your test with `${TD_TEST_USERNAME}` and `${TD_TEST_PASSWORD}` notation!

@@ -8,7 +8,7 @@
         "dark": "#152a65"
     },
     "appearance": {
-      "default": "dark"
+        "default": "dark"
     },
     "favicon": "/images/template/icon.png",
     "navigation": {
@@ -81,7 +81,8 @@
                             "/guide/variables",
                             "/guide/authentication",
                             "/guide/lifecycle",
-                            "/guide/code"
+                            "/guide/code",
+                            "/guide/environment-variables"
                         ]
                     },
                     {
@@ -187,10 +188,12 @@
                         "group": "Interactive Commands",
                         "pages": [
                             "/interactive/assert",
-                            "/interactive/undo",
-                            "/interactive/save",
+                            "/interactive/dry",
+                            "/interactive/explore",
+                            "/interactive/generate",
                             "/interactive/run",
-                            "/interactive/generate"
+                            "/interactive/save",
+                            "/interactive/undo"
                         ]
                     },
                     {
@@ -218,8 +221,8 @@
         }
     },
     "modeToggle": {
-      "enabled": false,
-      "default": "dark"
+        "enabled": false,
+        "default": "dark"
     },
     "logo": {
         "light": "/images/template/light.png",
@@ -228,12 +231,11 @@
     },
     "navbar": {
         "links": [
-            
-          {
-            "label": "GitHub",
-            "href": "https://github.com/testdriverai/testdriverai"
-        },
-        {
+            {
+                "label": "GitHub",
+                "href": "https://github.com/testdriverai/testdriverai"
+            },
+            {
                 "label": "Report an Issue",
                 "href": "https://github.com/testdriverai/testdriverai/issues/new"
             }
