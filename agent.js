@@ -1208,6 +1208,16 @@ const start = async () => {
 
   let a = getArgs();
 
+  thisFile = a.file;
+  const thisCommand = a.command;
+
+  logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
+  logger.info(`This is beta software!`);
+  logger.info("");
+  logger.info(chalk.yellow(`Join our Discord for help`));
+  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+  logger.info("");
+
   // make testdriver directory if it doesn't exist
   let testdriverFolder = path.join(workingDir, "testdriver");
   if (!fs.existsSync(testdriverFolder)) {
@@ -1226,25 +1236,13 @@ const start = async () => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     logger.info(chalk.dim(`Created directory ${dir}`));
-    console.log(chalk.dim(`Created directory ${dir}`));
   }
 
   // if thisFile doesn't exist, create it
   if (!fs.existsSync(thisFile)) {
     fs.writeFileSync(thisFile, "");
     logger.info(chalk.dim(`Created ${thisFile}`));
-    console.log(chalk.dim(`Created ${thisFile}`));
   }
-
-  thisFile = a.file;
-  const thisCommand = a.command;
-
-  logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
-  logger.info(`This is beta software!`);
-  logger.info("");
-  logger.info(chalk.yellow(`Join our Discord for help`));
-  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
-  logger.info("");
 
   if (config.TD_API_KEY) {
     await sdk.auth();
