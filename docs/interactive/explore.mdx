@@ -1,12 +1,12 @@
 ---
-title: "/try"
-sidebarTitle: "/try"
+title: "/explore"
+sidebarTitle: "/explore"
 description: "Tell VS Code to create a test plan."
 icon: "play-pause"
 ---
 
 ## Description
-The `/try` command is used to execute a single step in a test plan and add it to a specified file. This command generates and performs steps in an interactive way while creating a test plan.
+The `/explore` command is used to execute a single step in a test plan and add it to a specified file. This command generates and performs steps in an interactive way while creating a test plan.
 
 ## Usage
 ```bash
@@ -16,7 +16,7 @@ testdriverai <filename.yaml>
 
 ## Example Usage
 ```bash
-> /try add an item to the shopping cart
+> /explore add an item to the shopping cart
 ```
 This command creates the command step(s) necessary to add an item to the shopping cart in the specified test plan, executing the generated command(s) after writing them into the test plan. If there are intermediate steps to be taken, they are added to the test plan as well.
 
@@ -79,11 +79,11 @@ thinking...
 - If any failures occur during the test, the program will output the errors and exit with code `1`.
 
 ## Protips
-- Use descriptive prompts for higher success with generating test steps with `/try`.
-- Use `/try` multiple times in succession to build a comprehensive test plan.
+- Use descriptive prompts for higher success with generating test steps with `/explore`.
+- Use `/explore` multiple times in succession to build a comprehensive test plan.
 
 ## Gotchas
 - The AI will retry 3 times if it can't complete the task.
 
 ## Notes
-- The `/try` command is ideal for creating test plans in an interactive session.
+- The `/explore` command is ideal for creating test plans in an interactive session.

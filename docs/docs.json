@@ -188,10 +188,12 @@
                         "group": "Interactive Commands",
                         "pages": [
                             "/interactive/assert",
-                            "/interactive/undo",
-                            "/interactive/save",
+                            "/interactive/dry",
+                            "/interactive/explore",
+                            "/interactive/generate",
                             "/interactive/run",
-                            "/interactive/generate"
+                            "/interactive/save",
+                            "/interactive/undo"
                         ]
                     },
                     {
