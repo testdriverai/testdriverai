@@ -253,5 +253,13 @@
             "youtube": "https://www.youtube.com/@testdriverai"
         }
     },
-    "redirects": []
+    "redirects": [],
+    "integrations": {
+      "segment": {
+          "key": "oh4PK60u4Qvm2DKIjxfhxd0KCdRbQsQE"
+      },
+      "posthog": {
+          "apiKey": "phc_ovOQ2HFpqFwPVqaxE5plJmI9buPMsz024FB2iajItqn"
+    }
+  }
 }

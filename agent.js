@@ -1251,8 +1251,10 @@ const start = async () => {
   // individual run ID for this session
   // let runID = new Date().getTime();
 
+  if (config.TD_API_KEY) {
+    await sdk.auth();
+  }
 
-  // await sdk.auth();
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
   }
