@@ -1,11 +1,14 @@
 ---
 title: "/generate"
+sidebarTitle: "/generate"
+description: "Use the /generate command to create exploratory test cases automatically."
+icon: "wand-sparkles"
 ---
 
 # Command: `/generate`
 
 ## Description
-The `/generate` command is an experimental feature that instructs TestDriver.ai to create its own exploratory prompts. This command is used in the "Generate a Test Suite" demo and is designed to help automate the creation of exploratory test cases.
+The `/generate` command is an experimental feature that instructs TestDriver to create its own exploratory prompts. This command is used in the "Generate a Test Suite" demo and is designed to help automate the creation of exploratory test cases.
 
 ## Usage
 ```bash
@@ -15,11 +18,11 @@ The `/generate` command is an experimental feature that instructs TestDriver.ai 
 ## Behavior
 - The `/generate` command analyzes the display and generates exploratory prompts for testing.
 - Each exploratory test is saved as a simple Markdown file containing a list of steps.
-- TestDriver.ai generates 10 Markdown files every time the `/generate` command is called.
+- TestDriver generates 10 Markdown files every time the `/generate` command is called.
 - The generated files are stored in the `./testdriver/generate/*.md` directory.
 
 ## Example Output
-Here’s an example of a generated test file (`test-search-function.md`):
+Here's an example of a generated test file (`test-search-function.md`):
 ```markdown
 1. Click on the search icon.
 2. Type "real-time chat" into the search bar.

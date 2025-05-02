@@ -1,9 +1,11 @@
 ---
 title: "CSV Import"
 sidebarTitle: "CSV Import"
+description: "Convert user stories from CSV files into individual TestDriver test files using Node.js and GitHub Actions."
+icon: "table"
 ---
 
-This guide demonstrates how to convert user stories from **CSV files** into individual TestDriver.ai test files using **Node.js**. Each user story will be saved as its own YAML test file, and the tests will be executed in parallel using a **GitHub Actions workflow**.
+This guide demonstrates how to convert user stories from **CSV files** into individual TestDriver test files using **Node.js**. Each user story will be saved as its own YAML test file, and the tests will be executed in parallel using a **GitHub Actions workflow**.
 
 ---
 
@@ -105,8 +107,9 @@ This script will generate individual YAML test files (e.g., `test_1.yml`, `test_
 
 Create a GitHub Actions workflow to execute the generated test files in parallel.
 
-### GitHub Actions Workflow (`.github/workflows/run-tests.yml`)```yaml
-name: Run TestDriver.ai Tests
+### GitHub Actions Workflow (`.github/workflows/run-tests.yml`)
+```yaml
+name: Run TestDriver Tests
 
 on:
   push:
@@ -144,10 +147,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Run TestDriver.ai
+      - name: Run TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. /run ${{ matrix.test_file }}
         env:
@@ -160,7 +163,7 @@ jobs:
 
 ## Step 4: Secure API Key
 
-Store your TestDriver.ai API key as a GitHub secret (e.g., `TESTDRIVER_API_KEY`) to securely authenticate your tests.
+Store your TestDriver API key as a GitHub secret (e.g., `TD_API_KEY`) to securely authenticate your tests.
 
 ---
 

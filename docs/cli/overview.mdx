@@ -1,8 +1,11 @@
-```mdx
-# Command: `testdriverai`
+---
+title: Overview of the TestDriver CLI
+sidebarTitle: "CLI Overview"
+description: "Learn about the TestDriver CLI, its commands, and how to use it effectively."
+icon: "terminal"
+---
 
-## Description
-The `testdriverai` CLI is the primary interface for running, managing, and debugging TestDriver.ai scripts. It provides commands to execute tests, validate configurations, and interact with the TestDriver.ai framework.
+The `testdriverai` CLI is the primary interface for running, managing, and debugging TestDriver scripts. It provides commands to execute tests, validate configurations, and interact with the TestDriver framework.
 
 ## Usage
 ```bash
@@ -12,10 +15,10 @@ testdriverai <command> [options]
 ## Available Commands
 | Command       | Description                                                                 |
 |---------------|-----------------------------------------------------------------------------|
-| `run`         | Executes a TestDriver.ai script.                                           |
-| `validate`    | Validates the syntax and structure of a TestDriver.ai script.              |
-| `init`        | Initializes a new TestDriver.ai project in the current directory.          |
-| `version`     | Displays the current version of the TestDriver.ai CLI.                     |
+| `run`         | Executes a TestDriver script.                                           |
+| `validate`    | Validates the syntax and structure of a TestDriver script.              |
+| `init`        | Initializes a new TestDriver project in the current directory.          |
+| `version`     | Displays the current version of the TestDriver CLI.                     |
 | `help`        | Displays help information for the CLI or a specific command.               |
 
 ## Example Usage
@@ -24,7 +27,7 @@ testdriverai <command> [options]
 ```bash
 testdriverai run path/to/testdriver.yaml
 ```
-This command runs the specified TestDriver.ai script, executing all steps defined in the file.
+This command runs the specified TestDriver script, executing all steps defined in the file.
 
 ### Validating a Script
 ```bash
@@ -36,13 +39,13 @@ This command checks the syntax and structure of the script to ensure it is valid
 ```bash
 testdriverai init
 ```
-This command sets up a new TestDriver.ai project in the current directory, creating the necessary folder structure and configuration files.
+This command sets up a new TestDriver project in the current directory, creating the necessary folder structure and configuration files.
 
 ### Checking the Version
 ```bash
 testdriverai version
 ```
-This command displays the installed version of the TestDriver.ai CLI.
+This command displays the installed version of the TestDriver CLI.
 
 ### Getting Help
 ```bash
@@ -58,8 +61,11 @@ testdriverai help <command>
 - Combine `testdriverai run` with CI/CD pipelines to automate test execution.
 - Use the `--debug` flag with `run` to enable detailed logging for troubleshooting.
 
+<Info>
+Running `testdriverai init` will create a blank `testdriver.yaml` file in the current directory. You can then edit this file to define your test steps. 
+</Info>
+
 ## Notes
 - The `testdriverai` CLI is cross-platform and works on macOS, Windows, and Linux.
 - Ensure you have the required dependencies installed and configured before running scripts.
-- For more advanced usage, refer to the official TestDriver.ai documentation.
-```
+- For more advanced usage, refer to the official TestDriver documentation.

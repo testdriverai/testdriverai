@@ -1,17 +1,18 @@
 ---
 title: "Netlify"
+sidebarTitle: "Netlify"
+description: "Integrate TestDriver with Netlify deployments using GitHub Actions."
+icon: "cloud"
 ---
 
-# Testing Netlify Deployments with TestDriver.ai GitHub Action
-
-This guide explains how to integrate **TestDriver.ai** with **Netlify deployments** using the **GitHub Actions workflow**. By combining these tools, you can automatically test your Netlify preview deployments or production builds to ensure they meet your quality standards before merging or releasing.
+This guide explains how to integrate **TestDriver** with **Netlify deployments** using the **GitHub Actions workflow**. By combining these tools, you can automatically test your Netlify preview deployments or production builds to ensure they meet your quality standards before merging or releasing.
 
 ---
 
 ## Workflow Overview
 
 1. **Trigger Netlify Deployment**: Use Netlify's GitHub integration to deploy your application on every pull request or push to the main branch.
-2. **Run Tests on the Deployment URL**: Use the TestDriver.ai GitHub Action to test the deployed application using the Netlify deployment URL.
+2. **Run Tests on the Deployment URL**: Use the TestDriver GitHub Action to test the deployed application using the Netlify deployment URL.
 3. **Report Results**: View test results in the GitHub Actions dashboard or as comments on the pull request.
 
 ---
@@ -19,32 +20,31 @@ This guide explains how to integrate **TestDriver.ai** with **Netlify deployment
 ## Prerequisites
 
 1. **Netlify GitHub Integration**: Ensure your repository is connected to Netlify for automatic deployments.
-2. **TestDriver.ai API Key**: Store your API key as a GitHub secret (e.g., `TESTDRIVER_API_KEY`).
+2. **TestDriver API Key**: Store your API key as a GitHub secret (e.g., `TD_API_KEY`).
 3. **Netlify Deployment URL**: Use the `DEPLOY_URL` environment variable provided by Netlify to access the deployment.
 
 ---
 
 ## GitHub Actions Workflow
 
-Here’s a complete workflow to test Netlify deployments with TestDriver.ai:
+Here's a complete workflow to test Netlify deployments with TestDriver:
 
-### Workflow File: `.github/workflows/test-netlify.yml````yaml
-name: Test Netlify Deployment with TestDriver.ai
+### Workflow File: `.github/workflows/test-netlify.yml
+```yaml
+name: Test Netlify Deployment with TestDriver
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+pull_request:
+push:
+branches: - main
+workflow_dispatch:
 
 jobs:
-  test-netlify:
-    name: Test Netlify Deployment
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
+test-netlify:
+name: Test Netlify Deployment
+runs-on: ubuntu-latest
+steps: - name: Check out repository
+uses: actions/checkout@v2
 
       - name: Wait for Netlify Deployment
         id: netlify
@@ -56,10 +56,10 @@ jobs:
             exit 1
           fi
 
-      - name: Run Tests with TestDriver.ai
+      - name: Run Tests with TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Open the deployment URL: $DEPLOY_URL
             2. Verify the homepage loads correctly
@@ -78,7 +78,8 @@ jobs:
 ## Workflow Steps Explained
 
 ### 1. **Wait for Netlify Deployment**
-Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.```yaml
+Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.
+```yaml
 - name: Wait for Netlify Deployment
   id: netlify
   run: |
@@ -93,6 +94,6 @@ Netlify automatically sets the `DEPLOY_URL` environment variable for each deploy
 
 ---
 
-### 2. **Run Tests with TestDriver.ai**
-The TestDriver.ai GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
+### 2. **Run Tests with TestDriver**
 
+The TestDriver GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.

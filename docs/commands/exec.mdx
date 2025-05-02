@@ -1,5 +1,7 @@
 ---
 title: "exec"
+sidebarTitle: "exec"
+description: "Execute custom shell or NodeJS scripts within your tests."
 icon: "code"
 ---
 
@@ -52,3 +54,97 @@ steps:
 
 - Overwrite the `result` variable in your script, as it is used to store the output.
 - NodeJS code executes in the same context as the calling process on the host machine, using the [VM](https://nodejs.org/api/vm.html) module internally.
+
+
+```yaml
+version: 5.3.8
+steps:
+  - commands:
+      - command: exec
+        lang: shell
+        silent: false
+        mac: |
+          npm install @sendgrid/mail
+      - command: exec
+        lang: js
+        output: accountData
+        silent: false
+        mac: |
+          const Mailjs = require("@cemalgnlts/mailjs");
+          const mailjs = new Mailjs();
+          let account = await mailjs.createOneAccount()
+          console.log("Account created:", account);
+          result = JSON.stringify(account.data)
+      - command: exec
+        lang: js
+        output: emailAddress
+        silent: false
+        mac: |
+          const accountData = ${OUTPUT.accountData};
+          result = accountData.username
+  - prompt: Enter the generated email into the email field
+    commands:
+      - command: hover-text
+        text: standard_user
+        description: email input field label
+        action: click
+      - command: type
+        text: ${OUTPUT.emailAddress}
+  - prompt: Wait for an email, extract links, and open each link
+    commands:
+      - command: exec
+        lang: js
+        silent: false
+        mac: |
+          const Mailjs = require("@cemalgnlts/mailjs");
+          const { JSDOM } = require('jsdom'); // To parse HTML and extract links
+
+          const accountData = ${OUTPUT.accountData};
+
+          const getLatestEmailAndClickLinks = async () => {
+            try {
+              // Initialize the Mailjs client
+              const mailjs = new Mailjs();
+
+              // Login to your account
+              await mailjs.login(accountData.username, accountData.password);
+
+              // Fetch list of messages
+              const messages = await mailjs.getMessages();
+
+              if (messages.length === 0) {
+                console.log('No emails found.');
+                return;
+              }
+
+              // Assuming the latest email is the first one in the list
+              const latestMessage = messages[0];
+
+              // Fetch the full details of the latest email
+              const fullMessage = await mailjs.getMessage(latestMessage.id);
+
+              console.log('Latest Email Details:', fullMessage);
+
+              // Parse the HTML content to extract links
+              const dom = new JSDOM(fullMessage.html);
+              const links = Array.from(dom.window.document.querySelectorAll('a')).map(a => a.href);
+
+              console.log('Found Links:', links);
+
+              // Click (fetch) every link using native fetch
+              for (const link of links) {
+                try {
+                  const response = await fetch(link);
+                  console.log('Clicked ${link}: ${response.status}');
+                } catch (linkError) {
+                  console.error('Error clicking ${link}:', linkError);
+                }
+              }
+
+            } catch (error) {
+              console.error('Error fetching latest email or clicking links:', error);
+            }
+          };
+
+          getLatestEmailAndClickLinks();
+```

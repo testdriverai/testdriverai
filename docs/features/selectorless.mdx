@@ -1,10 +1,13 @@
 ---
-title: "Selectorless Testing with TestDriver.ai"
+title: "Selectorless Testing with TestDriver"
 sidebarTitle: "Selectorless Testing"
 description: "Selectorless testing approach simplifies end-to-end testing by using natural language and AI vision."
+icon: "eye"
 ---
 
-Selectorless testing eliminates the need for brittle selectors like CSS classes, IDs, or XPath. Instead, TestDriver uses natural language prompts and AI-powered vision to interact with applications as a user would. This makes tests more resilient to UI changes and reduces maintenance overhead.
+Selectorless testing eliminates the need for brittle selectors like CSS classes, IDs, or XPath. 
+
+Instead, TestDriver uses natural language prompts and AI-powered vision to interact with applications as a user would. This makes tests more resilient to UI changes and reduces maintenance overhead.
 
 - Selectorless testing focuses on **what the user sees** rather than **how the UI is implemented**.
 - Tests are resilient to changes like text updates, class renaming, or minor layout adjustments.
@@ -59,4 +62,6 @@ For example:
 const button = await page.$('button[class="sign-up-btn"]');
 ```
 
-If the class name changes, the test will break, requiring updates to the test code. Selectorless testing avoids this by focusing on the intent of the interaction rather than the implementation details.
+<Warning>When using legacy frameworks, if the class name changes, the test will break, requiring updates to the test code!</Warning> 
+
+<Check>Selectorless testing avoids this by focusing on the intent of the interaction rather than the implementation details.</Check>

@@ -1,7 +1,8 @@
 ---
-title: "Parallel Testing with TestDriver.ai"
+title: "Parallel Testing with TestDriver"
 sidebarTitle: "Parallel Testing"
-description: "Learn how to leverage GitHub Actions' matrix strategy to run TestDriver.ai tests in parallel, reducing execution time and improving scalability."
+description: "Learn how to leverage GitHub Actions' matrix strategy to run TestDriver tests in parallel, reducing execution time and improving scalability."
+icon: "server"
 ---
 
 Parallel testing allows you to run multiple tests simultaneously, significantly reducing the time required to execute your test suite. By leveraging GitHub Actions' **matrix strategy**, you can dynamically distribute your tests across multiple jobs, ensuring efficient and scalable test execution.
@@ -19,18 +20,19 @@ Parallel testing allows you to run multiple tests simultaneously, significantly 
 
 ## Setting Up Parallel Testing with Matrix Strategy
 
-### Step 1: Organize Your Test Files
+<Steps>
+<Step titel="Organize Your Test Files">
 
 Ensure your test files are stored in a directory (e.g., `testdriver/`) and follow a consistent naming convention (e.g., `test1.yml`, `test2.yml`, etc.).
 
----
+</Step>
 
-### Step 2: Define the GitHub Action Workflow
+<Step title="Define the GitHub Action Workflow">
 
-Here’s an example of a GitHub Action workflow that uses the matrix strategy to run tests in parallel:
+Here's an example of a GitHub Action workflow that uses the matrix strategy to run tests in parallel:
 
 ```yaml
-name: Parallel Testing with TestDriver.ai
+name: Parallel Testing with TestDriver
 
 on:
   push:
@@ -68,10 +70,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Run TestDriver.ai
+      - name: Run TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. /run ${{ matrix.test_file }}
         env:
@@ -79,6 +81,8 @@ jobs:
           FORCE_COLOR: "3"
 ```
 
+</Step>
+</Steps>
 ---
 
 ### Explanation of the Workflow
@@ -89,7 +93,7 @@ jobs:
 
 2. **`run-tests` Job**:
   - Uses the matrix strategy to dynamically create a job for each test file.
-  - Runs each test file in parallel using TestDriver.ai.
+  - Runs each test file in parallel using TestDriver.
 
 3. **Matrix Strategy**:
   - The `matrix.test_file` variable represents each test file.
@@ -127,4 +131,4 @@ When this workflow runs:
 
 ## Conclusion
 
-Parallel testing with the GitHub Action matrix strategy is a powerful way to speed up your TestDriver.ai test suite. By dynamically distributing tests across multiple jobs, you can ensure efficient execution and scalability, making it easier to maintain high-quality software.
+Parallel testing with the GitHub Action matrix strategy is a powerful way to speed up your TestDriver test suite. By dynamically distributing tests across multiple jobs, you can ensure efficient execution and scalability, making it easier to maintain high-quality software.

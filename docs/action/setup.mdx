@@ -2,7 +2,7 @@
 title: "GitHub Action Setup Guide"
 sidebarTitle: "Setup Guide"
 description: "Learn how to set up and configure the TestDriver GitHub Action for automated cloud-based testing in your CI/CD workflows."
-icon: "wrench"
+icon: "square-terminal"
 ---
 
 ## Overview
@@ -25,7 +25,7 @@ To execute TestDriver actions on our virtual machines, you'll need an API key. F
 3. **Copy Your API Key**: Locate and copy your API key.
 4. **Add the API Key as a GitHub Secret**:
    - Navigate to your repository settings in GitHub.
-   - Add a new secret named `TESTDRIVER_API_KEY` and paste your API key.
+   - Add a new secret named `TD_API_KEY` and paste your API key.
 
 ---
 
@@ -33,7 +33,7 @@ To execute TestDriver actions on our virtual machines, you'll need an API key. F
 Now it's time to create your first TestDriver workflow. Add the following configuration to `.github/workflows/testdriver.yml`:
 
 ```yaml
-name: TestDriver.ai
+name: TestDriver
 
 permissions:
   actions: read
@@ -57,7 +57,7 @@ jobs:
     steps:
       - uses: dashcamio/testdriver@main
         version: "v5.0.7"
-        key: ${{ secrets.TESTDRIVER_API_KEY }}
+        key: ${{ secrets.TD_API_KEY }}
         os: linux
         with:
           prompt: |
@@ -69,7 +69,7 @@ jobs:
 
 ### Key Points:
 - **Trigger Conditions**: The `on` section defines when the workflow runs (e.g., pull requests, scheduled events, or manual triggers).
-- **API Key**: The `key` field uses the `TESTDRIVER_API_KEY` secret for authentication.
+- **API Key**: The `key` field uses the `TD_API_KEY` secret for authentication.
 - **Prompt**: The `prompt` field specifies the commands to execute. In this example, the `/run` command is used to execute a test file from the repository.
 
 ---
@@ -106,7 +106,7 @@ gh pr create --web
 ---
 
 ## Output
-For details on interpreting the output of the GitHub Action, refer to the [Action Output Documentation](../output).
+For details on interpreting the output of the GitHub Action, refer to the [Action Output Documentation](action/output).
 
 ---
 

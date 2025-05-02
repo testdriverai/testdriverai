@@ -1,0 +1,68 @@
+---
+title: "Login Scenario"
+sidebarTitle: "Login"
+description: "Test login functionality with TestDriver"
+icon: "lock"
+---
+
+import TestPrereqs from '/snippets/test-prereqs.mdx'
+
+Test login functionality with TestDriver. This scenario demonstrates how to automate testing the login process for a web application using TestDriver.
+
+<TestPrereqs />
+
+## Scenario Overview
+1. Visit the login page of the web application.
+2. Enter the username and password into the respective fields (see [Reusable Snippets](/features/reusable-snippets#How-to Create-and-Use-Reusable-Snippets)).
+3. Click the "Login" button.
+4. Verify that the user is redirected to the dashboard or home page after a successful login.
+5. Optionally, check if the user is logged in by verifying the presence of a logout button or user profile information.
+
+
+### Setup your test environment with predefined credentials.
+In this example, we will use GitHub secret management to store our credentials.
+
+<Tip>You can also use the [`exec`](commands/exec) command to fetch a test user dynamically from a database or API.</Tip>
+
+To use GitHub secrets, create or modify an existing `.env` file in the root of your project and add the following lines:
+
+```bash
+TD_TEST_USERNAME=your_test_username
+TD_TEST_PASSWORD=your_test_password
+```
+
+2. Create a test file and use the creentials like this:
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Log in to the application
+    commands:
+      - command: hover-text
+        text: Email address
+        description: email input field label
+        action: click
+      - command: type
+        text: ${TD_USERNAME} # Use environment variable for username
+      - command: hover-text
+        text: Password
+        description: password input field label
+        action: click
+      - command: type
+        text: ${TD_PASSWORD} # Use environment variable for password
+      - command: hover-text
+        text: Log In
+        description: log in button
+        action: click
+```
+
+3. Run the test using the command line:
+
+```bash
+testdriverai run login.yaml
+```
+
+4. Watch replays at app.testdriver.ai
+
+### Conclusion
+In this scenario, we demonstrated how to automate the login process for a web application using TestDriver. By leveraging reusable snippets and environment variables, you can create efficient and maintainable tests for your applications. This approach not only saves time but also ensures that your tests are easily adaptable to changes in the application or test data.

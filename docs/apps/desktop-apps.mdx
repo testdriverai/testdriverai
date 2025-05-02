@@ -1,0 +1,87 @@
+---
+title: Using TestDriver with Desktop Apps
+sidebarTitle: "Desktop Apps"
+description: "TestDriver is designed to work with any desktop application, including Electron, Java, and .NET apps."
+icon: "desktop"
+---
+
+import TestPrereqs from '/snippets/test-prereqs.mdx'
+
+TestDriver is designed to work with any desktop application, including Electron, Java, and .NET apps. This guide provides an overview of how to use TestDriver with desktop applications, including installation, configuration, and running tests.
+
+<TestPrereqs />
+
+## Sample Test Steps
+
+## TestDriver in Action
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/IwJwGxHH8cA"
+  title="Assert 2+2=4"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+## Supported Desktop Applications
+TestDriver supports a wide range of desktop applications, including:
+- Electron apps
+- Java apps
+- .NET apps
+- Native Windows applications
+- Native Mac applications
+- Native Linux applications
+- Any other desktop application that can be run on Windows, Mac, or Linux
+## Installation
+To use TestDriver with desktop applications, no special setup is needed. Simply run the local agent to interact with applications on your local machine, or add instructions to `prerun.yaml` to tell the runner to launch or install the application. Here is an example that performs a calculation on a calculator app:
+```yaml
+version: 5.5.5
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch a calculator
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          linux: |
+            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
+            exit
+        mac: |
+          open "/Applications/Calculator.app"
+          wait
+        windows:
+          start /B calc.exe
+          timeout /t 5
+      - command: wait-for-text
+        text: "calculator"
+        timeout: 30000
+```
+
+A `calculator_test.yaml` file might look like this:
+```yaml
+version: 5.5.5
+session: 6810141e0e064b42739922f2
+steps:
+  - prompt: /try performing the operation 2 + 2 = on the calculator that is opened
+    commands:
+      - command: focus-application
+        name: galculator
+      - command: hover-image
+        description: button with number 2 on the calculator
+        action: click
+      - command: hover-image
+        description: plus button on the calculator
+        action: click
+      - command: hover-image
+        description: button with number 2 on the calculator
+        action: click
+      - command: hover-image
+        description: equals button on the calculator
+        action: click
+```
+
+## Conclusion
+TestDriver is a powerful tool for automating tests for desktop applications. With its support for a wide range of desktop platforms and its easy-to-use interface, you can quickly set up and run tests for your applications. Whether you are testing Electron apps, Java apps, or any other desktop application, TestDriver provides the tools you need to ensure your applications work as expected.
+
+

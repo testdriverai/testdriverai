@@ -1,26 +1,30 @@
 ---
-title: "GitHub Integration with TestDriver.ai"
+title: "GitHub Integration with TestDriver"
 sidebarTitle: "GitHub Integration"
-description: "Explore how TestDriver.ai enhances GitHub workflows with branch creation, manual dispatch, and detailed outputs for seamless test management."
+description: "Explore how TestDriver enhances GitHub workflows with branch creation, manual dispatch, and detailed outputs for seamless test management."
+icon: "github"
 ---
+import GitignoreWarning from '/snippets/gitignore-warning.mdx';
 
-TestDriver.ai offers advanced GitHub integration features, including the ability to create its own branches, trigger workflows manually from the GitHub Actions UI, and provide detailed outputs for debugging and reporting. These features make it easier to manage test workflows, collaborate on test results, and maintain a clean and automated testing pipeline.
+TestDriver offers advanced GitHub integration features, including the ability to create its own branches, trigger workflows manually from the GitHub Actions UI, and provide detailed outputs for debugging and reporting. These features make it easier to manage test workflows, collaborate on test results, and maintain a clean and automated testing pipeline.
+
+<GitignoreWarning/>
 
 ---
 
 ## 1. **Creating Branches Automatically**
 
-TestDriver.ai can create its own branches to store test results, updates, or auto-healed tests. This ensures that test-related changes are isolated from the main codebase and can be reviewed before merging.
+TestDriver can create its own branches to store test results, updates, or auto-healed tests. This ensures that test-related changes are isolated from the main codebase and can be reviewed before merging.
 
 ### How It Works:
 
-- **Branch Creation**: TestDriver.ai creates a new branch (e.g., `test-results` or `auto-heal-updates`) during the workflow execution.
+- **Branch Creation**: TestDriver creates a new branch (e.g., `test-results` or `auto-heal-updates`) during the workflow execution.
 - **Pull Request**: A pull request is automatically opened from the new branch to the base branch (e.g., `main`), allowing developers to review the changes.
 
 ### Example Workflow with Branch Creation:
 
-```yaml
-name: TestDriver.ai Auto-Healing
+```yaml {21-24}
+name: TestDriver Auto-Healing
 
 on:
   pull_request:
@@ -34,14 +38,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Run TestDriver.ai
+      - name: Run TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Run all tests in the testdriver directory
           create-pr: true
-          pr-title: "TestDriver.ai Test Results"
+          pr-title: "TestDriver Test Results"
           pr-branch: test-results
           pr-test-filename: testdriver-results.yml
         env:
@@ -71,7 +75,7 @@ GitHub Actions supports manual triggering of workflows using the **workflow_disp
 ### Example Workflow with Manual Dispatch:
 
 ```yaml
-name: TestDriver.ai Manual Dispatch
+name: TestDriver Manual Dispatch
 
 on:
   workflow_dispatch:
@@ -84,10 +88,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Run TestDriver.ai
+      - name: Run TestDriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           prompt: |
             1. Run all tests in the testdriver directory
         env:
@@ -108,11 +112,11 @@ Run Steps
 
 ## 3. **GitHub Actions Output**
 
-TestDriver.ai provides detailed outputs during workflow execution, which are visible in the **Actions** tab of your repository. These outputs include:
+TestDriver provides detailed outputs during workflow execution, which are visible in the **Actions** tab of your repository. These outputs include:
 - **Test Summary**: A high-level overview of the test results.
 - **Logs**: Step-by-step logs of the test execution.
 - **Screenshots and GIFs**: Visual feedback for debugging.
-- **Links to Dashcam.io**: Direct links to detailed test recordings and results.
+- **Links to TestDriver Dashcam.io Replays**: Direct links to detailed test recordings and results.
 
 ### Example Outputs:
 
@@ -120,7 +124,7 @@ TestDriver.ai provides detailed outputs during workflow execution, which are vis
 - ✅ All tests passed.
 - ❌ 2 tests failed.
 
-#### **TestDriver.ai Replay**:
+#### **TestDriver Replay**:
 
 ```markdown
 [View Full Test Results](https://app.testdriver.ai/...)
@@ -129,7 +133,7 @@ TestDriver.ai provides detailed outputs during workflow execution, which are vis
 ---
 
 ### Using Outputs in Workflows:
-You can capture and use TestDriver.ai outputs in subsequent steps of your workflow. For example, you can post the test summary as a comment on a pull request.
+You can capture and use TestDriver outputs in subsequent steps of your workflow. For example, you can post the test summary as a comment on a pull request.
 
 #### Example:
 
@@ -158,4 +162,4 @@ You can capture and use TestDriver.ai outputs in subsequent steps of your workfl
 2. **Manual Dispatch**: Trigger workflows on demand from the GitHub Actions UI.
 3. **Detailed Outputs**: Access logs, summaries, and visual feedback directly in the Actions tab.
 
-These features make TestDriver.ai a powerful tool for managing automated testing workflows in GitHub, enabling better collaboration, debugging, and test management.
+These features make TestDriver a powerful tool for managing automated testing workflows in GitHub, enabling better collaboration, debugging, and test management.
