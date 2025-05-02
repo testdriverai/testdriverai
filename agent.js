@@ -1205,15 +1205,6 @@ const buildEnv = async () => {
 };
 
 const start = async () => {
-  // logger.info(await  system.getPrimaryDisplay());
-
-  // @todo add-auth
-  // if (!process.env.DASHCAM_API_KEY) {
-  //   log('info', chalk.red(`You must supply an API key`), 'system')
-  //   log('info', `Supply your API key with the \`DASHCAM_API_KEY\` environment variable.`, 'system');
-  //   log('info', 'You can get a key in the Dashcam Discord server: https://discord.com/invite/cWDFW8DzPm', 'system')
-  //   process.exit();
-  // }
 
   let a = getArgs();
 
@@ -1230,12 +1221,19 @@ const start = async () => {
 
   }
 
-  // if testdriver.yaml doesn't exist, make it
-  let testdriverFile = path.join(testdriverFolder, "testdriver.yaml");
-  if (!fs.existsSync(testdriverFile)) {
-    fs.writeFileSync(testdriverFile, "");
-    logger.info(chalk.dim(`Created testdriver.yaml`));
-    console.log(chalk.dim(`Created testdriver.yaml: ${testdriverFile}`));
+  // if the directory for thisFile doesn't exist, create it
+  const dir = path.dirname(thisFile);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    logger.info(chalk.dim(`Created directory ${dir}`));
+    console.log(chalk.dim(`Created directory ${dir}`));
+  }
+
+  // if thisFile doesn't exist, create it
+  if (!fs.existsSync(thisFile)) {
+    fs.writeFileSync(thisFile, "");
+    logger.info(chalk.dim(`Created ${thisFile}`));
+    console.log(chalk.dim(`Created ${thisFile}`));
   }
 
   thisFile = a.file;
@@ -1247,9 +1245,6 @@ const start = async () => {
   logger.info(chalk.yellow(`Join our Discord for help`));
   logger.info(`https://discord.com/invite/cWDFW8DzPm`);
   logger.info("");
-
-  // individual run ID for this session
-  // let runID = new Date().getTime();
 
   if (config.TD_API_KEY) {
     await sdk.auth();
