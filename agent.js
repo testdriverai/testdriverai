@@ -352,6 +352,12 @@ const runCommand = async (command, depth, shouldSave) => {
         command.else,
         depth,
       );
+    } else if (command.command == "loop") {
+      response = await iffy(
+        command.until,
+        command.do,
+        depth,
+      );
     } else {
       response = await commander.run(command, depth);
     }
@@ -1164,10 +1170,29 @@ const iffy = async (condition, then, otherwise, depth) => {
   }
 };
 
+const loopy = async (condition, givenCommands, maxLoops, depth) => {
+
+  analytics.track("loop", { condition, maxLoops });
+
+  logger.info(generator.jsonToManual({ command: "loop", condition, maxLoops }));
+
+  for (let i = 0; i < maxLoops; i++) {
+    await executeCommands(givenCommands, depth);
+
+    if (await commands.assert(condition)) {
+      logger.info(chalk.green(`Condition met after ${i + 1} iterations.`));
+      return true; // Success
+    }
+  }
+
+  throw new Error(`Condition not met after ${maxLoops} iterations. Stopping loop.`);
+
+};
+
 const embed = async (file, depth) => {
   analytics.track("embed", { file });
 
-  logger.info(generator.jsonToManual({ command: "embed", file }));
+  logger.info(generator.jsonToManual({ command: "run", file }));
 
   depth = depth + 1;
 
