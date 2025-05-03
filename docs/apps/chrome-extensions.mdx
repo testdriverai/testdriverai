@@ -1,0 +1,41 @@
+---
+title: Testing Chrome Extensions with TestDriver
+sidebarTitle: "Chrome Extensions"
+description: "Test Chrome extensions with TestDriver"
+icon: "puzzle-piece"
+---
+
+import TestPrereqs from '/snippets/test-prereqs.mdx'
+
+# Testing Chrome Extensions with TestDriver
+TestDriver can be used to test Chrome extensions. This guide provides an overview of how to set up and run tests for your Chrome extension using TestDriver.
+
+<TestPrereqs />
+
+## How Do I Test Chrome Extensions?
+TestDriver provides a powerful solution for testing Chrome extensions. With our platform, you can easily create and run tests to ensure your extension functions as expected across different browsers and operating systems.
+## Getting Started
+You can test a preinstalled extension or test by installing an extension. If the extension is in developemt mode, turn this on by checking the "Developer mode" checkbox in the Chrome extensions page. From there you can load the unpacked extension by selecting the folder where your extension is located. To download the files onto the VM if you are performing a test on cloud hosted runners, see the [Lifecycle](/guide/lifecycle) or [Prerun](/action/prerun) docs.
+
+## Sample Test Steps
+1. Load a the Chrome Web Store.
+2. Search for the extension you want to test.
+3. Click on the extension to open its details page.
+4. Click on the "Add to Chrome" button to install the extension.
+5. Wait for the installation to complete.
+6. Click the 'puzzle piece' icon to pin the extension to the toolbar.
+7. Click on the extension icon to open it.
+
+## TestDriver in Action
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/czfq4It6-pQ"
+  title="Testing Chrome Extensions with TestDriver"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+## Now What?
+Once you have insstalled your extension, simply create a TestDriver test to test any functionality a user would use. 

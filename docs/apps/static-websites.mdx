@@ -1,0 +1,54 @@
+---
+title: "Testing Static Websites with TestDriver"
+sidebarTitle: "Static Websites"
+description: "Test static websites with TestDriver"
+icon: "browser"
+---
+TestDriver provides a powerful solution for testing static websites. With our platform, you can easily create and run tests to ensure your static website functions as expected across different browsers and devices.
+
+## TestDriver in Action
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/CqdRN_5_3I0"
+  title="Form Filling with TestDriver"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+## Getting Started
+To get started with testing static websites using TestDriver, follow these steps:
+1. **Follow our [quick start guide](/getting-started/setup) to set up your TestDriver account.**
+2. **Create a new test project** in your TestDriver dashboard.
+3. **Add your static website URL** to the test settings.
+It looks like this in the `prerun.yaml` file:
+
+```yaml
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch chrome
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
+          exit
+        mac: |
+          open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run --disable-features=PasswordManagerEnabled "${TD_WEBSITE}" &
+          exit
+        windows:
+          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
+          exit
+      - command: wait-for-text
+        text: "Google Chrome"
+        timeout: 30000
+```
+Set the `TD_WEBSITE` environment variable to the URL of your static website. This will allow TestDriver to launch the browser and navigate to your website. You can do this by adding this `prerun.yaml` file to your project or by simply using:
+```bash
+testdriverai init
+```
+Running init will create the `prerun.yaml` file for you and ask you which website to load with your test.
+
+

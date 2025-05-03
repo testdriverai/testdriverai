@@ -1,0 +1,17 @@
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch chrome
+    commands:
+      - command: exec
+        lang: shell
+        linux: | 
+          jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TESTDRIVER_WEBSITE}" &
+          exit
+        mac: |  
+          open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run "${TESTDRIVER_WEBSITE}" &
+          exit
+        windows:
+          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TESTDRIVER_WEBSITE}ß"
+          exit
+      - command: wait
