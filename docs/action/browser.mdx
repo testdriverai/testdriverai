@@ -15,17 +15,17 @@ By using prerun scripts, you can:
 
 ---
 
-## Supported Browsers
+## Supported browsers
 The following browsers can be installed and launched using prerun scripts:
 - **Google Chrome**
 - **Mozilla Firefox**
 
 ---
 
-## Prerun Script Example: Installing and Launching Browsers
+## Prerun script example: Installing and launching browsers
 The following example demonstrates how to install and launch Google Chrome or Firefox on Windows, macOS, and Linux using a prerun script.
 
-### Example: Prerun Script
+### Example: `prerun` script
 ```yaml
 prerun: |
   if [ "${{ matrix.browser }}" == "chrome" ]; then
@@ -67,10 +67,10 @@ prerun: |
 
 ---
 
-## Testing Multiple Browsers
+## Testing multiple browsers
 You can use the GitHub matrix strategy to test your application across multiple browsers. This ensures comprehensive browser compatibility testing.
 
-### Example: Matrix Strategy for Browser Testing
+### Example: Matrix strategy for browser testing
 ```yaml
 strategy:
   matrix:
@@ -78,7 +78,7 @@ strategy:
     browser: [chrome, firefox]
 ```
 
-### Full Workflow Example
+### Full workflow example
 ```yaml
 name: Test Action
 

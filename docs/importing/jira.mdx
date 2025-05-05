@@ -5,13 +5,13 @@ description: "Import user stories from Jira into TestDriver test files."
 icon: "file-image"
 ---
 
-# Importing User Stories from Jira into TestDriver Test Files
+# Importing user stories from Jira into TestDriver test files
 
 This guide explains how to extract **user stories** from Jira and convert them into **TestDriver test files**. By automating this process, you can ensure that your user stories are directly translated into actionable test cases for TestDriver.
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 1. **Export User Stories from Jira**: Use the Jira API to fetch user stories.
 2. **Convert User Stories to TestDriver YAML**: Transform the user stories into YAML test files.
@@ -20,24 +20,24 @@ This guide explains how to extract **user stories** from Jira and convert them i
 
 ---
 
-## Step 1: Export User Stories from Jira
+## Step 1: Export user stories from Jira
 
 ### Prerequisites
 1. **Jira API Token**: Generate an API token from your Jira account.
 2. **Jira Base URL**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
 3. **Node.js**: Ensure Node.js is installed on your system.
 
-### Script: Export User Stories from Jira
+### Script: Export user stories from Jira
 
 The following script fetches Jira tickets and extracts the **user story title** and **acceptance criteria**.
 
-#### Install Dependencies:
+#### Install dependencies:
 
 ```bash
 npm install axios yaml fs
 ```
 
-#### Node.js Script (`export-jira-user-stories.js`):
+#### Node.js script (`export-jira-user-stories.js`):
 
 ```javascript
 const axios = require('axios');
@@ -117,11 +117,11 @@ fetchJiraTickets();
 
 ---
 
-## Step 2: Convert User Stories to TestDriver YAML
+## Step 2: Convert user stories to TestDriver YAML
 
 The script above generates a YAML file for each Jira ticket. Each file contains the **acceptance criteria** as `prompt` entries.
 
-### Example YAML File (`testdriver_tests/PROJ-123.yml`):
+### Example YAML file (`testdriver_tests/PROJ-123.yml`):
 
 ```yaml
 version: 4.2.18
@@ -131,20 +131,21 @@ steps:
   - prompt: The login page is responsive on mobile devices.
 
 
-```---
+```
+---
 
-## Step 3: Save and Organize Test Files
+## Step 3: Save and organize test files
 
 1. The generated YAML files will be saved in the `testdriver_tests/` directory.
 2. Ensure the directory is part of your TestDriver project structure.
 
 ---
 
-## Step 4: Run Tests with TestDriver
+## Step 4: Run tests with TestDriver
 
 Use the TestDriver CLI to execute the generated test files.
 
-### Run a Single Test File:
+### Run a single test file:
 
 ```bash
 testdriverai run testdriver_tests/PROJ-123.yml
@@ -152,7 +153,7 @@ testdriverai run testdriver_tests/PROJ-123.yml
 
 ```
 
-### Run All Test Files:
+### Run all test files:
 
 ```bash
 testdriverai run testdriver_tests/*.yml
@@ -160,7 +161,7 @@ testdriverai run testdriver_tests/*.yml
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Field Mapping**: Ensure the correct Jira field ID (for example, `customfield_12345`) is used for "Acceptance Criteria."
 2. **Secure Credentials**: Store Jira API credentials in environment variables or secrets.

@@ -5,7 +5,7 @@ description: "Learn how to use variables in TestDriver for dynamic data handling
 icon: "square-root-variable"
 ---
 
-# Using Variables in TestDriver
+# Using variables in TestDriver
 
 Variables in **TestDriver** allow you to dynamically store and reuse data during test execution. This feature is particularly useful for handling dynamic content, passing data between steps, and customizing test behavior based on runtime conditions.
 
@@ -16,7 +16,7 @@ Variables in **TestDriver** allow you to dynamically store and reuse data during
 
 By leveraging variables in TestDriver, you can create dynamic, flexible, and reusable test scripts that adapt to changing conditions and data.
 
-#### Test File Example:
+#### Test file example:
 
 ```yaml
 version: 5.1.0
@@ -41,7 +41,7 @@ steps:
         text: ${OUTPUT.randomNumber}
 ```
 
-## GitHub Actions Example
+## GitHub Actions example
 
 ```yaml
 name: TestDriver with Variables
@@ -74,7 +74,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
 ```
-#### Test File
+#### Test file
 
 ```yaml
 version: 4.2.18
@@ -99,9 +99,9 @@ steps:
         action: click
 ```
 
-### **Capturing Outputs as Variables**
+### **Capturing outputs as variables**
 
-#### Test File Example:
+#### Test file example:
 
 ```yaml
 version: 5.1.0
@@ -121,7 +121,7 @@ steps:
         expect: "${OUTPUT.welcomeMessage}" == "Welcome, Test User!"
 ```
 
-## Best Practices for Using Variables
+## Best practices for using variables
 
 1. **Use Descriptive Names**:
   - Name variables clearly to indicate their purpose (for example, `capturedText`, `randomNumber`).

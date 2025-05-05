@@ -10,7 +10,7 @@ The TestDriver GitHub Action provides several output variables that can be used 
 
 ---
 
-## Output Variables
+## Output variables
 
 | Variable   | Description                                                                 |
 |------------|-----------------------------------------------------------------------------|
@@ -21,10 +21,10 @@ The TestDriver GitHub Action provides several output variables that can be used 
 
 ---
 
-## Example: Creating a Comment on a Pull Request
+## Example: Creating a comment on a pull request
 The following example demonstrates how to use the output variables to create a comment on a pull request after every TestDriver execution.
 
-### Workflow Example
+### Workflow example
 ```yaml
 name: TestDriver
 
@@ -71,12 +71,12 @@ jobs:
 
 ---
 
-## Use Cases for Output Variables
+## Use cases for output variables
 
-### 1. Post Test Results as Comments
+### 1. Post test results as comments
 Use the `summary` and `markdown` outputs to post detailed test results as comments on pull requests. This provides immediate feedback to developers.
 
-### 2. Send Notifications on Failure
+### 2. Send notifications on failure
 Use the `success` output to trigger notifications (for example, email or Slack) when a test fails.
 
 Example:
@@ -88,7 +88,7 @@ Example:
     # Add your notification logic here
 ```
 
-### 3. Integrate with Third-Party Tools
+### 3. Integrate with third-party tools
 Use the `link` output to upload test results to third-party test reporting tools or dashboards.
 
 ---

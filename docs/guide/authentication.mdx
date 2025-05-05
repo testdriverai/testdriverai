@@ -7,13 +7,13 @@ icon: "fingerprint"
 
 import GitignoreWarning from '/snippets/gitignore-warning.mdx';
 
-This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (for example, usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as Github secrets.
+This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (for example, usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as GitHub secrets.
 
 <GitignoreWarning/>
 
 ---
 
-## How Authentication Works in TestDriver
+## How authentication works in TestDriver
 
 1. **Store Credentials Securely**:
   - Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
@@ -22,7 +22,7 @@ This guide explains how to handle **authentication workflows** in **TestDriver**
 3. **Use Credentials in Tests**:
   - Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
 
-## Step 1: Store Credentials in GitHub Secrets
+store credentials in GitHub secrets
 
 1. Navigate to your repository's **Settings** > **Secrets and variables** > **Actions**.
 2. Add the following secrets:
@@ -31,13 +31,13 @@ This guide explains how to handle **authentication workflows** in **TestDriver**
    - **`TD_API_KEY`**: Your TestDriver API key.
    - **`TD_WEBSITE`**: The URL of the website to test.
 
-## Step 2: Pass Credentials to the Workflow
+## Step 2: Pass credentials to the workflow
 
 Secrets are passed to the GitHub Action using the `secrets` context. They can be supplied as:
 - **Environment Variables**: Passed via the `env` block.
 - **Inline in the `prerun` Script**: Used directly in the script.
 
-### Example Workflow:
+### Example workflow:
 
 ```yaml
 name: TestDriver / Authentication
@@ -80,11 +80,11 @@ jobs:
           FORCE_COLOR: "3"
 ```
 
-## Step 3: Use Credentials in Test Files
+## Step 3: Use credentials in test files
 
 Secrets can be referenced in the test file using placeholders (for example, `${TD_USERNAME}` and `${TD_PASSWORD}`).
 
-### Example Test File:
+### Example test file:
 
 ```yaml
 version: 4.2.18
@@ -111,7 +111,7 @@ steps:
         expect: The dashboard is displayed
 ```
 
-## How It Works Together
+## How it works together
 
 1. **Secrets in the Workflow**:
   - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver action.
@@ -122,7 +122,7 @@ steps:
 3. **Secrets in the Test File**:
   - The test file dynamically references the secrets to fill in login credentials during the test.
 
-## Benefits of Using Authentication in TestDriver
+## Benefits of using authentication in TestDriver
 
 1. **Secure Handling of Credentials**:
   - Secrets are encrypted and not exposed in logs.

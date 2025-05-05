@@ -9,7 +9,7 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 
 ---
 
-## Key Principles for Locating Elements
+## KeypPrinciples for locating elements
 
 1. **Describe the Element Visually**:
    - Focus on the **appearance** of the element, not its behavior or function.
@@ -29,7 +29,7 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 
 ---
 
-## Examples of Effective Descriptions
+## Examples of effective descriptions
 
 ### 1. Buttons
 - **Good**: "Blue button with the text 'Sign In' in the top-right corner."
@@ -43,7 +43,7 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 - **Good**: "Magnifying glass icon next to the search bar."
 - **Bad**: "Search icon that opens the search feature."
 
-### 4. Input Fields
+### 4. Input fields
 - **Good**: "White input box labeled 'Email Address' above the password field."
 - **Bad**: "Field where the user enters their email."
 
@@ -53,11 +53,11 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 
 ---
 
-## How to Write TestDriver Commands
+## How to write TestDriver commands
 
-### Example: Locating a Button
+### Example: Locating a button
 
-#### YAML Command:
+#### TestDriver command:
 
 ```yaml
 - command: hover-text
@@ -71,24 +71,21 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 
 ---
 
-### Example: Locating an Icon
+### Example: Locating an icon
 
-#### YAML Command:
+#### TestDriver command:
 
 ```yaml
 - command: hover-image
   description: Magnifying glass icon next to the search bar
   action: click
-
-
 ```
-
 
 ---
 
-### Example: Locating a Link
+### Example: Locating a link
 
-#### YAML Command:
+#### TestDriver command:
 
 ```yaml
 - command: hover-text
@@ -102,7 +99,7 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 
 ---
 
-## Debugging Element Detection
+## Debugging element detection
 
 1. **Run the Test**:
    - Execute the test using TestDriver.
@@ -118,7 +115,7 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Be Specific**:
    - Include as many unique visual traits as possible to differentiate the element from others.

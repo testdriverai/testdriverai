@@ -47,13 +47,13 @@ steps:
 
 <Tip>The `version` captured when you generate a test file is the version of TestDriver you used, and is not used when running the test. This does not affect your ability to use newer versions of TestDriver on existing test files nor do these need to be updated when migrating to a new version.</Tip>
 
-### Modify the Test Steps
+### Modify the test steps
 You can add, edit, or remove steps as needed. Each step contains:
 
 - **Prompt**: A description of the action.
 - **Commands**: The specific actions to perform.
 
-#### Example Edits:
+#### Example edits:
 - **Add a Wait Command**:
   ```yaml
   - command: wait
@@ -66,13 +66,13 @@ You can add, edit, or remove steps as needed. Each step contains:
     text: booking.com
   ```
 
-### Validate the YAML Syntax
+### Validate the YAML syntax
 Ensure the YAML file is properly formatted:
 - Use consistent indentation (2 spaces recommended).
 - Avoid trailing spaces or tabs.
 - Validate the file using a YAML linter if needed.
 
-### Test the Changes
+### Test the changes
 Run the updated test to verify it works as expected:
 ```bash
 testdriverai run path/to/test.yaml

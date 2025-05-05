@@ -15,7 +15,7 @@ By using prerun scripts, you can:
 
 ---
 
-## Use Cases
+## Use cases
 Prerun scripts are ideal for:
 - Installing necessary dependencies (for example, browsers, libraries, or tools).
 - Building your application or running setup scripts.
@@ -58,7 +58,7 @@ jobs:
             }
 ```
 
-## Example: Loading a Calculator App on Linux, Mac or Windows
+## Example: Loading a calculator app on Linux, MacOS or Windows
 ```yaml
 version: 5.5.5
 session: 67f00511acbd9ccac373edf7
@@ -84,14 +84,14 @@ steps:
 
 ---
 
-## Key Points
+## Key points
 - **Provisioning**: Prerun scripts allow you to provision the VM with the necessary tools and configurations before running tests.
 - **Reproducibility**: By ensuring a consistent environment, prerun scripts help prevent flaky tests caused by environmental differences.
 - **Flexibility**: You can use prerun scripts to customize the VM for specific test scenarios, such as installing alternative browsers or setting up staging environments.
 
 ---
 
-## Best Practices
+## Best practices
 - **Keep It Simple**: Write clear and concise prerun scripts to minimize setup time and reduce complexity.
 - **Error Handling**: Include checks to verify that dependencies are installed successfully. Log errors to help debug issues.
 - **Optimize Performance**: Cache dependencies or use lightweight tools to speed up the setup process.
@@ -99,7 +99,7 @@ steps:
 
 ---
 
-## A Note on the Default Prerun Script
+## A note on the default `prerun` script
 When setting up your TestDriver environment, a default prerun script is automatically generated. This script includes essential commands to ensure your VM is ready for testing. You can customize this script to suit your specific needs, but it's important to understand that it serves as a baseline for your test environment. It looks like this:
 
 ```yaml
@@ -127,7 +127,7 @@ steps:
 Take note that it defaults to launching the Chrome browser. If you want to use a different browser, you can modify the `prompt` and `commands` sections accordingly. 
 
 <Warning>
-The `wait-For-text` command is crucial for ensuring that the browser is fully loaded before proceeding with the test steps. If you are testing a webapplication, you may want to adjust the `text` parameter to match the expected title or content of the page.
+The `wait-For-text` command is crucial for ensuring that the browser is fully loaded before proceeding with the test steps. If you are testing a web application, you may want to adjust the `text` parameter to match the expected title or content of the page.
 </Warning>
 
 

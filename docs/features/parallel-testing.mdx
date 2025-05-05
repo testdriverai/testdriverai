@@ -9,7 +9,7 @@ Parallel testing allows you to run multiple tests simultaneously, significantly 
 
 ---
 
-## Why Use Parallel Testing?
+## Why use parallel testing?
 
 1. **Faster Execution**: Run multiple tests at the same time to reduce overall test duration.
 2. **Scalability**: Easily scale your testing efforts as your test suite grows.
@@ -18,7 +18,7 @@ Parallel testing allows you to run multiple tests simultaneously, significantly 
 
 ---
 
-## Setting Up Parallel Testing with Matrix Strategy
+## Setting Up parallel testing with a matrix strategy
 
 <Steps>
 <Step titel="Organize Your Test Files">
@@ -85,7 +85,7 @@ jobs:
 </Steps>
 ---
 
-### Explanation of the Workflow
+### Explanation of the workflow
 
 1. **`gather-test-files` Job**:
   - Collects all test files in the `testdriver/` directory.
@@ -104,7 +104,7 @@ jobs:
 
 ---
 
-## Benefits of Using the Matrix Strategy
+## Benefits of using the matrix strategy
 
 1. **Dynamic Test Distribution**: Automatically adapts to the number of test files.
 2. **Scalable**: Easily handles large test suites by distributing tests across multiple jobs.
@@ -112,7 +112,7 @@ jobs:
 
 ---
 
-## Example Output
+## Example output
 
 When this workflow runs:
 - Each test file (for example, `test1.yml`, `test2.yml`) is executed in its own job.
@@ -120,7 +120,7 @@ When this workflow runs:
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Organize Test Files**: Use a consistent naming convention for test files to simplify management.
 2. **Monitor Test Results**: Review the GitHub Actions dashboard to identify and debug failing tests.

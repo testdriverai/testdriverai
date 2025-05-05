@@ -9,7 +9,7 @@ This guide explains how to integrate **TestDriver** with **Vercel deployments** 
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 1. **Trigger Vercel Deployment**: Use Vercel's GitHub integration to deploy your application on every pull request or push to the main branch.
 2. **Run Tests on the Deployment URL**: Use the TestDriver GitHub Action to test the deployed application using the Vercel deployment URL.
@@ -25,11 +25,11 @@ This guide explains how to integrate **TestDriver** with **Vercel deployments** 
 
 ---
 
-## GitHub Actions Workflow
+## GitHub Actions workflow
 
 Here's a complete workflow to test Vercel deployments with TestDriver:
 
-### Workflow File: `.github/workflows/test-vercel.yml`
+### Workflow file: `.github/workflows/test-vercel.yml`
 ```yaml
 name: Test Vercel Deployment with TestDriver
 
@@ -79,9 +79,9 @@ jobs:
 
 ---
 
-## Workflow Steps Explained
+## Workflow steps explained
 
-### 1. **Wait for Vercel Deployment**
+### 1. **Wait for Vercel deployment**
 The `amondnet/vercel-action` waits for the Vercel deployment to complete and retrieves the deployment URL. This URL is stored in the `steps.vercel.outputs.url` variable.
 
 ```yaml
@@ -101,7 +101,7 @@ The `amondnet/vercel-action` waits for the Vercel deployment to complete and ret
 
 ---
 
-### 2. **Run Tests with TestDriver**
+### 2. **Run tests with TestDriver**
 The TestDriver GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
 
 ```yaml
@@ -125,7 +125,7 @@ The TestDriver GitHub Action runs tests on the deployed application using the de
 
 ---
 
-## Example TestDriver Prompt
+## Example TestDriver prompt
 
 The `prompt` field in the TestDriver action specifies the steps to test the Vercel deployment. For example:
 
@@ -142,7 +142,7 @@ prompt: |
 
 ---
 
-## Secrets Configuration
+## Secrets configuration
 
 Add the following secrets to your GitHub repository:
 1. **`TD_API_KEY`**: Your TestDriver API key.
@@ -152,7 +152,7 @@ Add the following secrets to your GitHub repository:
 
 ---
 
-## Benefits of This Workflow
+## Benefits of this workflow
 
 1. **Automated Deployment Testing**: Automatically test every Vercel deployment, including preview and production builds.
 2. **Early Issue Detection**: Catch issues in pull requests before merging.
@@ -161,13 +161,13 @@ Add the following secrets to your GitHub repository:
 
 ---
 
-## Example Output
+## Example output
 
-### GitHub Actions Dashboard:
+### GitHub Actions dashboard:
 - ✅ **Test Vercel Deployment**: All tests passed.
 - ❌ **Test Vercel Deployment**: 1 test failed. View logs for details.
 
-### TestDriver Logs:
+### TestDriver logs:
 - **Step 1**: Opened the deployment URL.
 - **Step 2**: Verified the homepage loaded correctly.
 - **Step 3**: Clicked the "Sign Up" button.

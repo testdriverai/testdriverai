@@ -9,7 +9,7 @@ This guide demonstrates how to convert user stories from **CSV files** into indi
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 1. **Export User Stories**: Extract user stories from TestRail, CSV, or Jira.
 2. **Convert to Test Files**: Use a Node.js script to generate individual YAML test files for each user story.
@@ -17,11 +17,11 @@ This guide demonstrates how to convert user stories from **CSV files** into indi
 
 ---
 
-## Step 1: Export User Stories
+## Step 1: Export user stories
 
 Export user stories from your source (TestRail, CSV, or Jira) and save them in a structured format (for example, JSON or CSV). For example:
 
-### Example CSV File (`user_stories.csv`):
+### Example CSV file (`user_stories.csv`):
 
 | User Story ID | User Story Title          | Description                          |
 |---------------|---------------------------|--------------------------------------|
@@ -31,18 +31,18 @@ Export user stories from your source (TestRail, CSV, or Jira) and save them in a
 
 ---
 
-## Step 2: Node.js Script to Convert User Stories into Test Files
+## Step 2: Node.js script to convert user stories into test files
 
 Create a Node.js script to read the exported data and generate individual YAML test files for each user story.
 
-### Install Required Dependencies
+### Install required dependencies
 
 ```bash
 npm install yaml fs csv-parser
 
 ```
 
-### Node.js Script (`generate-tests.js`)
+### Node.js script (`generate-tests.js`)
 
 ```javascript
 const fs = require('fs');
@@ -92,7 +92,7 @@ fs.createReadStream(inputFile)
 
 ```
 
-### Run the Script
+### Run the script
 
 ```bash
 node generate-tests.js
@@ -103,11 +103,11 @@ This script will generate individual YAML test files (for example, `test_1.yml`,
 
 ---
 
-## Step 3: GitHub Actions Workflow to Run Tests
+## Step 3: GitHub Actions workflow to run tests
 
 Create a GitHub Actions workflow to execute the generated test files in parallel.
 
-### GitHub Actions Workflow (`.github/workflows/run-tests.yml`)
+### GitHub Actions workflow (`.github/workflows/run-tests.yml`)
 ```yaml
 name: Run TestDriver Tests
 
@@ -161,20 +161,20 @@ jobs:
 
 ---
 
-## Step 4: Secure API Key
+## Step 4: Secure API key
 
 Store your TestDriver API key as a GitHub secret (for example, `TD_API_KEY`) to securely authenticate your tests.
 
 ---
 
-## Step 5: Commit and Push
+## Step 5: Commit and push
 
 1. Commit the `generate-tests.js` script, `user_stories.csv`, and `.github/workflows/run-tests.yml` to your repository.
 2. Push the changes to the `main` branch.
 
 ---
 
-## Step 6: Run the Workflow
+## Step 6: Run the workflow
 
 The GitHub Actions workflow will automatically:
 1. Gather all test files in the `testdriver/` directory.
@@ -182,7 +182,7 @@ The GitHub Actions workflow will automatically:
 
 ---
 
-## Example Output
+## Example output
 
 - **Generated Test Files**:
   - `testdriver/test_1.yml`

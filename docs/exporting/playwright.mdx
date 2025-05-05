@@ -9,7 +9,7 @@ This guide explains how to use **TestDriver** to generate Playwright test script
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 1. **Install Playwright**: The workflow installs Playwright and its dependencies.
 2. **Generate Playwright Test**: TestDriver generates a Playwright test script using the `playwright codegen` tool.
@@ -25,11 +25,11 @@ This guide explains how to use **TestDriver** to generate Playwright test script
 
 ---
 
-## GitHub Actions Workflow
+## GitHub Actions workflow
 
 Here's the GitHub Actions workflow to automate the process:
 
-### Workflow File: `.github/workflows/playwright.yml`
+### Workflow file: `.github/workflows/playwright.yml`
 
 ```yaml
 name: TestDriver / Playwright
@@ -88,7 +88,7 @@ jobs:
 
 ---
 
-## Workflow Steps Explained
+## Workflow steps explained
 
 ### 1. **Check Out Repository**
 The workflow checks out the repository to ensure the latest code is available for the test generation process.
@@ -110,14 +110,14 @@ playwright install --with-deps chromium
 ```
 ---
 
-### 3. **Generate Playwright Test**
+### 3. **Generate Playwright test**
 The `playwright codegen` command generates a Playwright test script (`pw-test.spec.js`) for the specified URL (`https://airbnb.com`).
 ```bash
 npx playwright codegen --target playwright-test -o testdriver/pw-test.spec.js https://airbnb.com
 ```
 ---
 
-### 4. **Create Pull Request**
+### 4. **Create pull request**
 The workflow commits the generated test script to a new branch (`generate-playwright`) and creates a pull request with the title `TestDriver / Generate Playwright Test`.
 ```yaml
 create-pr: true
@@ -129,7 +129,7 @@ pr-test-filename: generate-playwright.yml
 
 ---
 
-## Running the Workflow
+## Running the workflow
 
 <Steps>
 <Step title="Trigger the Workflow">
@@ -148,14 +148,14 @@ pr-test-filename: generate-playwright.yml
 </Steps>
 ---
 
-## Example Output
+## Example output
 
 - **Generated Test File**: `testdriver/pw-test.spec.js`
 - **Pull Request**: A new pull request titled `TestDriver / Generate Playwright Test` will be created.
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Secure API Key**: Store the TestDriver API key as a GitHub secret to avoid exposing sensitive information.
 2. **Review Generated Tests**: Always review the generated Playwright test scripts to ensure they meet your requirements.

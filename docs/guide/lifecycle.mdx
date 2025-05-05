@@ -5,7 +5,7 @@ description: "How to handle pre and post test tasks."
 icon: "hammer"
 ---
 
-## Pre-run Configuration
+## Pre-run configuration
 
 If a file is found at `testdriver/lifecycle/prerun.yaml`, it's executed before the test begins. This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
 
@@ -42,10 +42,10 @@ steps:
 - Currently, there is no teardown task implemented. However, when running on GitHub Actions, the virtual machine (VM) is ephemeral, meaning everything is destroyed after the test run.
 
 
-## Advanced Configuration
+## Advanced configuration
 If you need to perform more complex setup or teardown tasks, you can use the `lifecycle` folder in your repository. This folder can contain multiple files, each with a specific purpose.
 
-## Workflow Overview
+## Workflow overview
 
 1. **Setup Tasks**:
    - Use a dedicated action **before** the TestDriver action to prepare the environment (for example, create a test user via an API).
@@ -60,9 +60,9 @@ If you need to perform more complex setup or teardown tasks, you can use the `li
 
 ---
 
-## Example Workflow with Advanced Setup and Teardown
+## Example workflow with advanced setup and teardown
 
-### Workflow File: `.github/workflows/testdriver-setup-teardown.yml`
+### Workflow file: `.github/workflows/testdriver-setup-teardown.yml`
 
 ```yaml
 name: TestDriver with Setup and Teardown
@@ -83,7 +83,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      # Step 2: Setup - Create a test user via API
+      # Step 2: Setup - create a test user via API
       - name: Setup Test User
         id: setup-user
         run: |
@@ -95,7 +95,7 @@ jobs:
         env:
           API_KEY: ${{ secrets.API_KEY }}
 
-      # Step 3: Run Tests with TestDriver
+      # Step 3: Run tests with TestDriver
       - name: Run Tests with TestDriver
         uses: testdriverai/action@main
         with:
@@ -113,7 +113,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
 
-      # Step 4: Teardown - Delete the test user
+      # Step 4: Teardown - delete the test user
       - name: Teardown Test User
         if: always()
         run: |
@@ -127,9 +127,9 @@ jobs:
 
 ---
 
-## Workflow Steps Explained
+## Workflow steps explained
 
-### 1. **Setup Test User**
+### 1. **Setup test user**
 - **Purpose**: Create a test user via an API before running the tests.
 - **How It Works**:
   - The `Setup Test User` step sends a `POST` request to the API to create a new user.
@@ -141,7 +141,7 @@ jobs:
 
 ---
 
-### 2. **Run Tests with TestDriver**
+### 2. **Run tests with TestDriver**
 - **Purpose**: Execute tests using the TestDriver action.
 - **How It Works**:
   - The `USER_EMAIL` and `USER_PASSWORD` environment variables are passed to the `prerun` script.
@@ -149,7 +149,7 @@ jobs:
 
 ---
 
-### 3. **Teardown Test User**
+### 3. **Teardown test user**
 - **Purpose**: Delete the test user via an API after the tests are complete.
 - **How It Works**:
   - The `Teardown Test User` step sends a `DELETE` request to the API to remove the test user.
@@ -157,7 +157,7 @@ jobs:
 
 ---
 
-## Best Practices for Setup and Teardown
+## Best practices for setup and teardown
 
 1. **Use APIs for Setup and Teardown**:
    - Use APIs to create and delete test data dynamically, ensuring a clean environment for each test run.
@@ -176,17 +176,17 @@ jobs:
 
 ---
 
-## Example Use Cases
+## Example use cases
 
-### 1. **User Management**
+### 1. **User management**
 - Create a test user during setup.
 - Delete the test user during teardown.
 
-### 2. **Database Operations**
+### 2. **Database operations**
 - Insert test data into a database during setup.
 - Remove the test data during teardown.
 
-### 3. **Mock Services**
+### 3. **Mock services**
 - Start a mock API server during setup.
 - Stop the mock server during teardown.
 
