@@ -13,13 +13,27 @@ The `press-keys` command is used to simulate typing a keyboard combination. This
 |----------|---------------------|-----------------------------------------------------------------------------|
 | `keys`   | YAML sequence of strings | A list of keys to press together. Keys are automatically remapped for different operating systems. |
 
-## Example Usage
+<Warning>There is a breaking change in v5 that updates the syntax of `press-keys`. See Example usage below and if you are not sure which version you are running, see [Checking the version](/cli/overview#checking-the-version)</Warning>
+
+---
+
+## Example usage
+<AccordionGroup>
+<Accordion title="V5 Usage">
 ```yaml
 command: press-keys
 keys:
     - command
     - space
 ```
+</Accordion>
+<Accordion title="V4 Usage">
+```yaml
+command: press-keys
+keys: [command, space]
+```
+</Accordion>
+</AccordionGroup>
 
 ## Protips
 - Use this command to trigger system-wide or application-specific shortcuts, such as opening Spotlight on macOS or the Start menu on Windows.
