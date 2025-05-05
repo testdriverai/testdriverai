@@ -63,6 +63,7 @@
                     {
                         "group": "Getting Started",
                         "pages": [
+                            "/getting-started/vscode",
                             "/getting-started/setup",
                             "/getting-started/writing",
                             "/getting-started/generating",

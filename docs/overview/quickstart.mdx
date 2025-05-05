@@ -5,130 +5,216 @@ description: "Get started with TestDriver in minutes."
 icon: "gauge-high"
 ---
 
-The fastest way to get started with TestDriver is to install the VS Code extension. This guide will walk you through the installation process and provide an overview of the extension's features.
+TestDriver isn't just a computer-use agent, it's an entire AI-native workflow for creating end-to-end tests. Follow these steps to set up your environment and get started with TestDriver.
 
-<Card
-  title="Download the VS Code Extension"
-  icon="download"
-  href="https://github.com/testdriverai/vscode/releases/latest/download/testdriver.vsix"
->
-  Get the latest version from GitHub releases. 
+
+<Steps>
+<Step title="Set Up TestDriver">
+
+  <AccordionGroup>
+
+  <Accordion title="Set up your IDE">
+
+    <Tabs>
+      <Tab title="VS Code">
+
+      VS Code is the recommended IDE for TestDriver. First, install the following recommended extensions:
+
+      - [GitHub Copilot Chat](vscode://github.copilot-chat) (The free plan is just fine!)
+      - [VS Code YAML](vscode://redhat.vscode-yaml) (Optional, but recommended for YAML validation)
+
+      Then, download the TestDriver extension:
+
+      <Card
+        title="Download the VS Code Extension"
+        icon="download"
+        href="https://github.com/testdriverai/vscode/releases/latest/download/testdriver.vsix"
+      >
+        Get the latest version from GitHub releases. 
+      </Card>
+
+      Finally, install the extension in VS Code. You can do this by dragging and dropping the downloaded `.vsix` file into the VS Code window.
+
+      </Tab>
+      <Tab title="Cursor">
+
+      First, install the following recommended extension:
+
+      - [VS Code YAML](vscode://redhat.vscode-yaml) (Optional, but recommended for YAML validation)
+
+      Then download the TestDriver extension:
+
+      <Card
+        title="Download the VS Code Extension"
+        icon="download"
+        href="https://github.com/testdriverai/vscode/releases/latest/download/testdriver.vsix"
+      >
+        Install the TestDriver extension from the VS Code Marketplace.
+      </Card>
+
+      Finally, install the extension in Cursor. For more information on installing extensions in Cursor, check out the [Cursor documentation](https://forum.cursor.com/t/how-to-install-vsix-format-extension/1667).
+
+      </Tab>
+      <Tab title="Everything Else">
+
+    Use JetBrains IDEs, VIM, or other editors? No problem! You can use TestDriver with the CLI. This quickstart contains both GUI and terminal commands to help you get started.
+    </Tab>
+    </Tabs>
+  </Accordion>
+  <Accordion title="Install the CLI">
+
+    Ensure you have Node.js (v16 or higher) installed. Then, install the TestDriver CLI globally using `npm`:
+
+    ```bash
+    npm install -g testdriverai@beta
+    ```
+  </Accordion>
+  <Accordion title="Initialize your project">
+
+    Run `testdriverai init` in your project directory. This will launch an interactive setup process.
+
+    ```bash
+    testdriverai init
+    ```
+  </Accordion>
+  <Accordion title="Configure test runner">
+
+    Running `testdriverai init` will prompt you to set up your test runner; a target computer to run tests on. You can use either a hosted sandbox or your own computer.
+
+    - **Hosted Runners** - Run tests in a ephemeral linux virtual machine. Recommended for ease of use, added privacy, and parallelization. Requires a TestDriver API key.
+    - **Local Runner** - Run tests on your own computer. Recommended for working with existing user sessions, files, and applications. Requires additional setup.
+
+    <Tabs>
+      <Tab title="Hosted Runners (Recommended)">
+
+        Run `testdriverai init` in your project directory and choose "yes" for the sandbox option. This will prompt you for your API key.
+
+        ```
+        Beginning setup...
+        ✔ Use TestDriver Sandbox Runners? (Recommended) … yes
+        ? API KEY (from https://app.testdriver.ai/team) › ********
+        ```
+
+        This will write the `TD_VM=true` and `TD_API_KEY` values to `.env` file in your project directory. 
+
+      </Tab>
+      <Tab title="Windows">
+
+        Using your own computer as a test runner requires additional prerequisites. Follow the AccordionGroup below to set up your local environment.
+
+        #### Install Python & Visual Studio Build Tools
+
+        ```powershell
+        choco install python visualstudio2022-workload-vctools -y
+        ```
+
+        #### Install NodeJS
+
+        You will also need NodeJS if you don't have it yet.
+
+        ```powershell
+        choco install nodejs-lts --version="20.17.0"
+        ```
+
+        #### Set Execution Policy
+
+        Open a new terminal with admin privileges and execute the following command : 
+        ```powershell
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+        ```
+      
+        This gives TestDriver the right to execute it's scripts and is only valid for the current user. 
+      </Tab>
+      <Tab title="Mac">
+
+        Using your own computer as a test runner requires additional permissions. Follow the steps below to set up your local environment.
+
+        #### Enable Screen Recording Permissions
+        
+        TestDriver requires screen recording permissions to capture your screen during test execution.
+
+        - Open **System Preferences > Security & Privacy > Privacy > Screen Recording**.
+        - Check the box next to your terminal application (e.g., Terminal, iTerm2) to allow screen recording.
+        
+        This is required for TestDriver to capture your screen during test execution.
+        
+        #### Enable Accessibility Permissions
+        
+        - Open **System Preferences > Security & Privacy > Privacy > Accessibility**.
+        - Check the box next to your terminal application (e.g., Terminal, iTerm2) to allow accessibility features.
+
+        This is required for TestDriver to interact with your applications during test execution.
+
+      </Tab>
+    </Tabs>
+  </Accordion>
+</AccordionGroup>
+
+</Step>
+
+<Step title="Create your first test">
+
+Use the `/explore` command to supply test steps to the TestDriver agent. TestDriver will look at the screen and generate a test steps based on your input.  
+
+```
+> Open Google Chrome and search for "testdriverai"
+```
+
+TestDriver will generate and run test steps. See the [YAML Reference](/commands/assert). 
+
+```yaml
+- command: focus-application
+  name: Google Chrome
+- command: hover-text
+  text: Search Google or type a URL
+  description: main search bar
+  action: click
+- command: type
+  text: testdriverai
+- command: press-keys
+  keys: [enter]
+```
+
+Test steps are saved in the current working YAML file. 
+
+<Tip>Use Control + C in the CLI or the square "stop" button in the extension to stop test execution.</Tip>
+
+</Step>
+
+<Step title="Running tests">
+
+Once saved, you can run your test file anytime. Click the "Run" button in the extension or use the CLI command:
+
+```bash
+testdriverai run testdriver/your_test.yml
+```
+
+Running tests is about twice as fast as creating them, as the AI doesn't need to interpret your input.
+
+</Step>
+
+<Step title="Generate self-driving tests">
+TestDriver can also generate tests without any input! Instead, it will suggest test steps based on what it sees on the screen.
+<Card 
+  title="Self-Driving Test Guide"
+  icon="link"
+  href="/getting-started/generating">
+  Unleash TestDriver's full potential by letting it create tests for you.
 </Card>
 
-Don't use VS Code? <a href="/getting-started/setup">Get the TestDriver CLI →</a>
+</Step>
 
----
+<Step title="Deploy to CI/CD">
 
-# Install the extension
+  The `testdriverai init` command automatically sets up a GitHub Action workflow for you. Any test files found in the `testdriver` directory will run on every push to the main branch. 
 
-1. Open Visual Studio Code.
-2. Go to the Extensions view by clicking on the Extensions icon in the Activity Bar on the side of the window or by pressing `Ctrl+Shift+X`.
-3. In the Extensions view, click on the three-dot menu in the top-right corner and select "Install from VSIX...".
-4. Navigate to the location where you downloaded the `testdriverai.vsix` file and select it.
+  <Card
+    title="GitHub Actions"
+    icon="link"
+    href="action/setup">
+    Learn how to set up GitHub Actions for TestDriver.
+  </Card>
 
-<Frame>
-<img height="200" src="/images/content/vscode/vscode-install.png" />
-</Frame>
+</Step>
 
----
-
-# Try the Walkthrough
-
-The extension should launch a walkthrough. If it doesn't, you can manually start it by running the command `TestDriver: Start Setup Walkthrough` from the Command Palette (`Ctrl+Shift+P`).
-
-<Frame caption="Walkthrough">
-<img height="200" src="/images/content/vscode/vscode-setup-walkthrough.png" />
-</Frame>
-
----
-
-
-# Overview
-
-<Frame caption="VS Code Extension Overview">
-<img height="400" src="/images/content/vscode/vscode-overview.png" />
-</Frame>
-
-### 1. Test Pane
-  - Located in the **Activity Bar** (left-hand side of the editor).
-  - Clicking the <Icon icon="flask-conical" iconType="solid" /> **flask icon** opens the TestDriver test explorer.
-  - Lists all the available YAML-based test definitions.
-
-<Frame caption="The test pane is here">
-  <img height="100" src="/images/content/vscode/vscode-testpane.png" /> 
-</Frame>
-
-### 2. Run all Tests
-  - This button runs all tests shown in the Test Explorer.
-  - Found near the top of the Test Explorer view.
-  - Especially useful for quickly validating a batch of test cases.
-
-<Frame caption="Gotta run 'em all">
-    <img height="200" src="/images/content/vscode/vscode-testpane-runtests.png" /> 
-</Frame>
-
-### 3. AI Test Creation
-  - New files created by TestDriver will automatically be focused in the editor.
-  - Defines an automated test script created by TestDriver.
-
-<Frame caption="You will create a new file every time you start a chat">
-    <img height="200" src="/images/content/vscode/vscode-file-creation.png" />
-</Frame>
-
-### 4. AI Agent Test Preview
-  - Sidebar chat panel shows the TestDriver agent's response to the prompt.
-  - Offers feedback, interpretation, or suggested actions for the test steps.
-  - Example: It identifies the context (e.g., a terminal is in focus) and suggests the correct automation action.
-  - Additional files modified by the agent are listed for context.
-
-<img width="300" src="/images/content/vscode/vscode-agent-preview.png" />
-
-### 5. Test Output
-  - Terminal panel at the bottom of the screen.
-  - Displays live output from running the test file.
-  - Shows TestDriver version, current test script, and metadata like session ID.
-  - Helpful for debugging and understanding test execution flow.
-
-<Frame caption="You can move the terminal panel to the right as well!">
-    <img height="200" src="/images/content/vscode/vscode-test-output.png" />
-</Frame>
-
-### 6. Test History
-  - Shows a list of previously run test scripts.
-  - Allows developers to review or re-run older tests.
-  - Useful for regression testing or comparing AI-generated test iterations.
-
-<Frame caption="More history, less mystery">
-    <img src="/images/content/vscode/vscode-testhistory.png" />
-</Frame>
-
----
-
-## Troubleshooting
-
-###ß I don't have GitHub Copilot Chat
-
-You can still use the extension to run and manage tests. Use the CLI for test creation instead.
-
-### The @testdriver command doesn't show up
-
-Make sure the GitHub Copilot Chat is set to "ask."
-
-<img src="/images/content/vscode/vscode-copilot-ask.png" />
-
-### How do I stop a running execution?
-
-Depending on the context, you can stop a running test execution in several ways:
-
-### 1. Click on the "Stop" button in the bottom of agent chat.
-
-<img height="200" src="/images/content/vscode/vscode-stopchat.png" />
-
-### 2. Click on the "Stop" button in the top right corner of the test execution. This only shows on hover.
-
-<img src="/images/content/vscode/vscode-stoptest.png" />
-
-### 3. A TestDriver icon will show in the tray bar. Click it, then click "quit."
-
-<img src="/images/content/vscode/vscode-tdservice.png" />
-
+</Steps>
