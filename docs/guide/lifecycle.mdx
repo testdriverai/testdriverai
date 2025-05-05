@@ -5,17 +5,28 @@ description: "How to handle pre and post test tasks."
 icon: "hammer"
 ---
 
-## Pre-run configuration
+## Prerun configuration
 
-If a file is found at `testdriver/lifecycle/prerun.yaml`, it's executed before the test begins. This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
+If a file is found at `testdriver/lifecycle/prerun.yaml`, it's executed _before_ the test begins. This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
 
-For example, the `prerun.yaml` file can be used to open the Chrome browser and navigate to a page, similar to the example provided above. This ensures that the test environment is properly set up before the test starts.
+### Prerun diagram
+```mermaid
+graph TD
+    A{Is prerun available at ./lifecycle/prerun.yaml and a testfile present in ./somedirectory?}
+    A -->|Yes| B[Run ./lifecycle/prerun.yaml]
+    B --> C[Run ./somedirectory/testfile.yaml]
+    A -->|No| D{Is ./somedirectory/testfile.yaml present?}
+    D -->|Yes| C
+```
+---
 
 ### Example
+For example, the `prerun.yaml` file can be combined with the [`exec`](/commands/exec) command to open the Chrome browser and navigate to a page, similar to the example provided above. This ensures that the test environment is properly set up before the test starts. _Note that the prerun is a TestDriver test file like any other, combining commands to complete a task_.
 
-Here is an example of a `prerun.yaml` file:
 
-```yaml
+Here is an example of a `prerun.yaml` file that opens Chrome:
+
+```yaml {5, 16}
 version: 5.1.1
 steps:
   - prompt: launch chrome
@@ -64,7 +75,7 @@ If you need to perform more complex setup or teardown tasks, you can use the `li
 
 ### Workflow file: `.github/workflows/testdriver-setup-teardown.yml`
 
-```yaml
+```yaml [expandable]
 name: TestDriver with Setup and Teardown
 
 on:

@@ -96,7 +96,6 @@ fs.createReadStream(inputFile)
 
 ```bash
 node generate-tests.js
-
 ```
 
 This script will generate individual YAML test files (for example, `test_1.yml`, `test_2.yml`) in the `testdriver/` directory.
@@ -108,7 +107,7 @@ This script will generate individual YAML test files (for example, `test_1.yml`,
 Create a GitHub Actions workflow to execute the generated test files in parallel.
 
 ### GitHub Actions workflow (`.github/workflows/run-tests.yml`)
-```yaml
+```yaml [expandable]
 name: Run TestDriver Tests
 
 on:

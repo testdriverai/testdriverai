@@ -26,7 +26,7 @@ The following browsers can be installed and launched using prerun scripts:
 The following example demonstrates how to install and launch Google Chrome or Firefox on Windows, macOS, and Linux using a prerun script.
 
 ### Example: `prerun` script
-```yaml
+```yaml [expandable]
 prerun: |
   if [ "${{ matrix.browser }}" == "chrome" ]; then
     if [ "${{ matrix.os }}" == "windows" ]; then
@@ -79,7 +79,7 @@ strategy:
 ```
 
 ### Full workflow example
-```yaml
+```yaml [expandable]
 name: Test Action
 
 permissions:

@@ -53,7 +53,7 @@ Prerun scripts are executed on the specified operating system. The scripting lan
 ### Example: Installing browsers based on OS
 The following example demonstrates how to install Google Chrome or Firefox on Windows, macOS, and Linux using a prerun script:
 
-```yaml
+```yaml [expandable]
 prerun: |
   if [ "${{ matrix.browser }}" == "chrome" ]; then
     if [ "${{ matrix.os }}" == "windows" ]; then
@@ -100,7 +100,7 @@ strategy:
 ```
 
 ### Full workflow example
-```yaml
+```yaml [expandable]
 name: Test Action
 
 permissions:
