@@ -7,7 +7,7 @@ icon: "fingerprint"
 
 import GitignoreWarning from '/snippets/gitignore-warning.mdx';
 
-This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (e.g., usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as Github secrets.
+This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (for example, usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as Github secrets.
 
 <GitignoreWarning/>
 
@@ -82,7 +82,7 @@ jobs:
 
 ## Step 3: Use Credentials in Test Files
 
-Secrets can be referenced in the test file using placeholders (e.g., `${TD_USERNAME}` and `${TD_PASSWORD}`).
+Secrets can be referenced in the test file using placeholders (for example, `${TD_USERNAME}` and `${TD_PASSWORD}`).
 
 ### Example Test File:
 
@@ -129,7 +129,7 @@ steps:
   - Even if printed, they appear as `***`.
 
 2. **Dynamic Testing**:
-  - Easily switch between different environments (e.g., staging, production) by updating the secrets.
+  - Easily switch between different environments (for example, staging, production) by updating the secrets.
 
 3. **Reusability**:
   - Use the same workflow and test files across multiple repositories or environments.

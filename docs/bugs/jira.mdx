@@ -22,10 +22,10 @@ This guide explains how to integrate the **TestDriver GitHub Action** with the *
 
 ## Prerequisites
 
-1. **TestDriver API Key**: Store your API key as a GitHub secret (e.g., `TD_API_KEY`).
-2. **Jira API Token**: Generate an API token from your Jira account and store it as a GitHub secret (e.g., `JIRA_API_TOKEN`).
-3. **Jira Base URL**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
-4. **Jira Project Key**: The key of the Jira project where tickets will be created (e.g., `TEST`).
+1. **TestDriver API Key**: Store your API key as a GitHub secret (for example, `TD_API_KEY`).
+2. **Jira API Token**: Generate an API token from your Jira account and store it as a GitHub secret (for example, `JIRA_API_TOKEN`).
+3. **Jira Base URL**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
+4. **Jira Project Key**: The key of the Jira project where tickets will be created (for example, `TEST`).
 
 ---
 
@@ -176,7 +176,7 @@ If any tests failed, the `create-jira-ticket` job uses the `atlassian/gajira-cre
 Add the following secrets to your GitHub repository:
 1. **`TD_API_KEY`**: Your TestDriver API key.
 2. **`JIRA_API_TOKEN`**: Your Jira API token.
-3. **`JIRA_BASE_URL`**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
+3. **`JIRA_BASE_URL`**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
 4. **`JIRA_USERNAME`**: Your Jira account email.
 
 ---

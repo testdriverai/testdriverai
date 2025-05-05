@@ -18,8 +18,8 @@ TestDriver can create its own branches to store test results, updates, or auto-h
 
 ### How It Works:
 
-- **Branch Creation**: TestDriver creates a new branch (e.g., `test-results` or `auto-heal-updates`) during the workflow execution.
-- **Pull Request**: A pull request is automatically opened from the new branch to the base branch (e.g., `main`), allowing developers to review the changes.
+- **Branch Creation**: TestDriver creates a new branch (for example, `test-results` or `auto-heal-updates`) during the workflow execution.
+- **Pull Request**: A pull request is automatically opened from the new branch to the base branch (for example, `main`), allowing developers to review the changes.
 
 ### Example Workflow with Branch Creation:
 
@@ -56,7 +56,7 @@ jobs:
 
 ### Key Fields:
 - **`create-pr: true`**: Enables branch creation and pull request generation.
-- **`pr-branch`**: Specifies the branch name (e.g., `test-results`).
+- **`pr-branch`**: Specifies the branch name (for example, `test-results`).
 - **`pr-title`**: Sets the title of the pull request.
 - **`pr-test-filename`**: Specifies the filename for the test results.
 

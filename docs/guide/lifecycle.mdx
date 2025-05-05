@@ -48,14 +48,14 @@ If you need to perform more complex setup or teardown tasks, you can use the `li
 ## Workflow Overview
 
 1. **Setup Tasks**:
-   - Use a dedicated action **before** the TestDriver action to prepare the environment (e.g., create a test user via an API).
+   - Use a dedicated action **before** the TestDriver action to prepare the environment (for example, create a test user via an API).
    - Pass the created user credentials to the TestDriver action using environment variables.
 
 2. **Run Tests**:
-   - Execute the tests using TestDriver, leveraging the setup data (e.g., the test user).
+   - Execute the tests using TestDriver, leveraging the setup data (for example, the test user).
 
 3. **Teardown Tasks**:
-   - Use a dedicated action **after** the TestDriver action to clean up (e.g., delete the test user).
+   - Use a dedicated action **after** the TestDriver action to clean up (for example, delete the test user).
    - Ensure the teardown step runs **no matter the result** of the TestDriver action.
 
 ---
@@ -163,7 +163,7 @@ jobs:
    - Use APIs to create and delete test data dynamically, ensuring a clean environment for each test run.
 
 2. **Pass Data via Environment Variables**:
-   - Store setup data (e.g., user credentials) in environment variables and pass them to the TestDriver action.
+   - Store setup data (for example, user credentials) in environment variables and pass them to the TestDriver action.
 
 3. **Ensure Teardown Always Runs**:
    - Use `if: always()` to ensure teardown tasks are executed regardless of the test results.
