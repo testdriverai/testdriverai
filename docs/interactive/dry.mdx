@@ -1,12 +1,12 @@
 ---
 title: "/dry"
 sidebarTitle: "/dry"
-description: "See and write a test plan without running the commands."
+description: "See and write a test file without running the commands."
 icon: "forward-step"
 ---
 
 ## Description
-The `/dry` command is used to create a test plan and write to a specified file. This command won't run steps it creates. It's a **dry** run. 
+The `/dry` command is used to create a test file and write to a specified file. This command won't run steps it creates. It's a **dry** run. 
 
 ## Usage
 ```bash
@@ -18,10 +18,10 @@ The `/dry` command is used to create a test plan and write to a specified file. 
 testdriverai <filename.yaml>
 > /dry click the 'log in' button
 ```
-This command generates the steps to `click the 'log in' button` with an explanation and adds them to the current test plan, without executing any command.
+This command generates the steps to `click the 'log in' button` with an explanation and adds them to the current test file, without executing any command.
 
 ## Behavior
-- TestDriver will create steps for the test plan, writing them in the file.
+- TestDriver will create steps for the test file, writing them in the file.
 - TestDriver will also show the reasoning and test steps in the CLI:
 
 ```bash
@@ -43,8 +43,8 @@ thinking...
 ```
 ## Protips
 - Ensure you run the `testdriverai` command with a valid file path before using `/dry`.
-- Use descriptive filenames for your test plans to make them easier to identify.
-- Combine `/dry` with `/undo` to write test plans without executing them.
+- Use descriptive filenames for your test files to make them easier to identify.
+- Combine `/dry` with `/undo` to write test files without executing them.
 
 
 ## Notes

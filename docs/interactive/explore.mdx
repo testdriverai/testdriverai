@@ -1,13 +1,13 @@
 ---
 title: "/explore"
 sidebarTitle: "/explore"
-description: "Create and execute a test plan"
+description: "Create and execute a test file"
 icon: "play-pause"
 ---
 
 ## Description
 
-The `/explore` command is used to execute a single step in a test plan and add it to a specified file. This command generates and performs steps in an interactive way while creating a test plan.
+The `/explore` command is used to execute a single step in a test file and add it to a specified file. This command generates and performs steps in an interactive way while creating a test file.
 
 <Tip>`/explore` is the default command sent to TestDriver when no command is provided.</Tip>
 
@@ -21,7 +21,7 @@ testdriverai <filename.yaml>
 ```bash
 > /explore add an item to the shopping cart
 ```
-This command creates the command step(s) necessary to add an item to the shopping cart in the specified test plan, executing the generated command(s) after writing them into the test plan. If there are intermediate steps to be taken, they are added to the test plan as well.
+This command creates the command step(s) necessary to add an item to the shopping cart in the specified test file, executing the generated command(s) after writing them into the test file. If there are intermediate steps to be taken, they are added to the test file as well.
 
 ```bash
 thinking...
@@ -74,19 +74,19 @@ thinking...
 
 
 ## Behavior
-- TestDriver will generate an idea to complete the task, try to execute it, and add the steps to the test plan.
+- TestDriver will generate an idea to complete the task, try to execute it, and add the steps to the test file.
 - The steps will be executed in the order generated.
-- If the steps are successful, they are added to the test plan file.
+- If the steps are successful, they are added to the test file file.
 - If the steps fail, TestDriver will attempt to fall back to AI, undo the last step and provide an explanation of what went wrong. The AI will retry the step with new commands.
 - If the commands are successful, the program will output the results and exit with code `0`.
 - If any failures occur during the test, the program will output the errors and exit with code `1`.
 
 ## Protips
 - Use descriptive prompts for higher success with generating test steps with `/explore`.
-- Use `/explore` multiple times in succession to build a comprehensive test plan.
+- Use `/explore` multiple times in succession to build a comprehensive test file.
 
 ## Gotchas
 - The AI will retry 3 times if it can't complete the task.
 
 ## Notes
-- The `/explore` command is ideal for creating test plans in an interactive session.
+- The `/explore` command is ideal for creating test files in an interactive session.
