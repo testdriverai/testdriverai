@@ -38,6 +38,10 @@ validator
 OTP[s]?
 Reusability
 [Aa]sync
-Xpath
+XPath
 [Aa]uto-heal|ed|ing
 [Oo]nboarding
+Webkit
+[Rr]ollout
+[Bb]ackend
+Cleanshot

@@ -13,7 +13,7 @@ The `press-keys` command is used to simulate typing a keyboard combination. This
 |----------|---------------------|-----------------------------------------------------------------------------|
 | `keys`   | YAML sequence of strings | A list of keys to press together. Keys are automatically remapped for different operating systems. |
 
-<Warning>There is a breaking change in v5 that updates the syntax of `press-keys`. See Example usage below and if you are not sure which version you are running, see [Checking the version](/cli/overview#checking-the-version)</Warning>
+<Warning>There is a breaking change in v5 that updates the syntax of `press-keys`. See Example usage below and if you aren't sure which version you are running, see [Checking the version](/cli/overview#checking-the-version)</Warning>
 
 ---
 
@@ -40,7 +40,7 @@ keys: [command, space]
 - Ensure the keys specified are valid and supported by the operating system or application.
 
 ## Gotchas
-- The syntax of the `press-keys` command differs from `v4` to `v5`. Make note of which version you are using and write commands accordlingly.
+- The syntax of the `press-keys` command differs from `v4` to `v5`. Make note of which version you are using and write commands accordingly.
 - Key mappings may differ between operating systems. For example, `command` on macOS is remapped to `ctrl` on Windows.
 - Ensure the application or system is in focus when using this command to avoid unexpected behavior.
 

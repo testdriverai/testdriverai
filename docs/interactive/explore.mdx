@@ -21,7 +21,7 @@ testdriverai <filename.yaml>
 ```bash
 > /explore add an item to the shopping cart
 ```
-This command creates the command step(s) necessary to add an item to the shopping cart in the specified test file, executing the generated command(s) after writing them into the test file. If there are intermediate steps to be taken, they are added to the test file as well.
+This command creates the command step(s) necessary to add an item to the shopping cart in the specified test file, executing the generated command(s) after writing them into the test file. If there are intermediate steps to be taken, they're added to the test file as well.
 
 ```bash
 thinking...
@@ -29,7 +29,7 @@ thinking...
     To add an item to the shopping cart, we need to identify
     the "Add to Cart" button from the screenshot. However,
     since the screenshot shows a code editor, we need to
-    assume the button is not visible here. Let's proceed with
+    assume the button isn't visible here. Let's proceed with
     a generic approach:
     
     commands:
@@ -76,7 +76,7 @@ thinking...
 ## Behavior
 - TestDriver will generate an idea to complete the task, try to execute it, and add the steps to the test file.
 - The steps will be executed in the order generated.
-- If the steps are successful, they are added to the test file file.
+- If the steps are successful, they're added to the test file.
 - If the steps fail, TestDriver will attempt to fall back to AI, undo the last step and provide an explanation of what went wrong. The AI will retry the step with new commands.
 - If the commands are successful, the program will output the results and exit with code `0`.
 - If any failures occur during the test, the program will output the errors and exit with code `1`.
