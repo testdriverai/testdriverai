@@ -17,9 +17,9 @@ This guide explains how to set up a basic GitHub Actions workflow to run tests u
 1. Create a new file in your repository: `.github/workflows/testdriver.yml`.
 2. Add the following workflow configuration:
 
-### Example workflow: `.github/workflows/testdriver.yml`
+### Example workflow
 
-```yaml
+```yaml .github/workflows/testdriver.yml [expandable]
 name: TestDriver / Run / Regressions
 
 on:
@@ -103,7 +103,7 @@ jobs:
 # Debugging tests
 TestDriver provides a powerful debugging interface through its **app.TestDriver** platform (formerly Dashcam). This interface allows you to analyze test runs, identify failures, and optimize your test suite with detailed visual and textual feedback.
 
-### Step-by-step execution logs
+### 1. Step-by-step execution logs
 - View each step of the test execution, including:
   - The **action performed** (for example, clicking a button, typing text).
   - The **expected outcome** (for example, verifying a specific element is visible).

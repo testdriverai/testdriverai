@@ -17,10 +17,10 @@ To upgrade TestDriver, follow these steps:
    npm install -g testdriverai@beta
    ```
 
-In your existing Github Actions setup, you may need to update the `version` field in the `workflows/testdriver.yaml` file(s) to match the version of TestDriver you want to use. Leaving it blank will run `latest` by default. Here is an example of what to replace:
+In your existing GitHub Actions setup, you may need to update the `version` field in the `workflows/testdriver.yaml` file(s) to match the version of TestDriver you want to use. Leaving it blank will run `latest` by default. Here is an example of what to replace:
 
 ```yaml {16}
-name: TestDriver.ai
+name: TestDriver
 
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
 Would become:
 
 ```yaml {16}
-name: TestDriver.ai
+name: TestDriver
 
 on:
   push:

@@ -80,7 +80,7 @@
                             "/guide/assertions",
                             "/guide/variables",
                             "/guide/authentication",
-                            "/guide/lifecycle",
+                            "/guide/lifecycle-prerun",
                             "/guide/code",
                             "/guide/environment-variables"
                         ]
@@ -93,7 +93,7 @@
                             "/action/os",
                             "/action/output",
                             "/action/performance",
-                            "/action/prerun",
+                            "/action/pre-post-scripts",
                             "/action/secrets"
                         ]
                     }
@@ -255,11 +255,11 @@
     },
     "redirects": [],
     "integrations": {
-      "segment": {
-          "key": "oh4PK60u4Qvm2DKIjxfhxd0KCdRbQsQE"
-      },
-      "posthog": {
-          "apiKey": "phc_ovOQ2HFpqFwPVqaxE5plJmI9buPMsz024FB2iajItqn"
+        "segment": {
+            "key": "oh4PK60u4Qvm2DKIjxfhxd0KCdRbQsQE"
+        },
+        "posthog": {
+            "apiKey": "phc_ovOQ2HFpqFwPVqaxE5plJmI9buPMsz024FB2iajItqn"
+        }
     }
-  }
 }

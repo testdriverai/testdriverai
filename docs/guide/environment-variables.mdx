@@ -42,9 +42,9 @@ In this example `.env` file, we're running a website test in a local Linux VM wi
 
 ---
 ## Using environment variables in deployed tests
-When running tests in a deployed environment, you can set environment variables in the `env` section of your GitHub Actions workflow file. This allows you to customize the behavior of TestDriver based on the environment in which it's running. Setup any environment variables you plan to use in the deployed test in your `.env` file and add them  as Github secrets. 
+When running tests in a deployed environment, you can set environment variables in the `env` section of your GitHub Actions workflow file. This allows you to customize the behavior of TestDriver based on the environment in which it's running. Setup any environment variables you plan to use in the deployed test in your `.env` file and add them  as GitHub secrets. 
 
-<Tip>For more info on how to set up environment variables with Github Actions, see [Managing Secrets in GitHub Actions](/actions/secrets)</Tip>
+<Tip>For more info on how to set up environment variables with GitHub Actions, see [Managing Secrets in GitHub Actions](/actions/secrets)</Tip>
 
 In this example, there is both a `TD_TEST_USERNAME` and `TD_TEST_PASSWORD` variables in the local `.env` file. This file is used to run tests locally and mask credentials used to log in to a website. When deployed, these variables are stored as secrets in GitHub and are passed to the TestDriver action when it runs.
 

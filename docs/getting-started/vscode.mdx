@@ -36,6 +36,8 @@ Start TestDriver in interactive mode to create and refine tests dynamically:
 testdriverai
 ```  
 Once started, you can use commands like `/try`, `/undo`, and `/save` to interactively build and test your flows.
+
+<Warning>TestDriver v5 uses the `.yaml` file extension for all test files. This is a breaking change from v4 which uses the `.yml` extension!</Warning>
 </Step>
 
 <Step title="Define Your Test Steps">
@@ -66,7 +68,7 @@ TestDriver will generate steps like:
 <Step title="Run Saved Tests">
 Once saved, you can run your test file anytime:  
 ```bash
-testdriverai run path/to/test.yml
+testdriverai run path/to/test.yaml
 ```
 </Step>
 

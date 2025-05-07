@@ -77,7 +77,7 @@ uses: actions/checkout@v2
 
 ## Workflow steps explained
 
-### 1. **Wait for Netlify Deployment**
+### 1. **Wait for Netlify deployment**
 Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.
 ```yaml
 - name: Wait for Netlify Deployment

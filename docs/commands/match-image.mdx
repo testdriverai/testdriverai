@@ -14,14 +14,14 @@ The `match-image` command is used to locate an image on the screen by matching i
 | `path`         | `string` | The relative path to the image file that needs to be matched on the screen. don't include `testdriver/screenshots/*/` in the path. |
 | `action`       | `string` | The action to perform when the image is found. Available actions are: `click` or `hover`. The action will be performed at the center of the matched image. |
 
-## Example Usage
+## Example usage
 ```yaml
 command: match-image
 path: button.png
 action: click
 ```
 
-## How It Works
+## How it works
 - The `match-image` command takes a screenshot of the desktop and searches for the location of the reference image within the screenshot.
 - The matching logic looks for the most similar image within the screenshot, not an exact match. If the similarity is below ~80%, it will search additional scales. If no match is found, the command will fail.
 - Screenshots should be stored in the `testdriver/screenshots/(mac/linux/windows)/` directory. TestDriver dynamically resolves the correct image based on the current platform.
