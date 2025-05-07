@@ -13,14 +13,14 @@ The supported environment variables in TestDriver are:
 | Variable | Type |         Description          |
 |:--------:|:----:|:----------------------------|
 | `TD_SPEAK` | `boolean` | Use text to speech to hear TestDriver speak as commands are run. Helpful when you don't use `TD_OVERLAY` and just plain fun. |
-| `TD_ANALYTICS` | `boolean` | Send analytics to TestDriver servers. |
+| `TD_ANALYTICS` | `boolean` | Send analytics to TestDriver servers. This helps provide feedback to inform our roadmap. |
 | `TD_NOTIFY` | `boolean` | Send desktop notifications when commands are run. |
 | `TD_MINIMIZE` | `boolean` | When not using VMs, minimize the terminal window / calling app when running commands. Useful if you only have one monitor, you don't want the terminal to show up. |
 | `TD_API_ROOT` | `string` | Developer only. Set API root to another URL. For on-prem. |
 | `TD_API_KEY` | `string` | Set this to spawn VMs with TestDriver Pro. |
 | `TD_OVERLAY` | `boolean` | Spawn overlay window that shows both the TestDriver console output, and draws the cursor and squares on the screen as TestDriver thinks. Defaults to true if not provided.|
 | `TD_VM` | `boolean` | Run commands in a Linux VM instead of on own desktop. Requires API key. |
-| `TD_VM_RESOLUTION` | `number[]` | Change resolution when TD_VM is true. |
+| `TD_VM_RESOLUTION` | `string` | Change resolution when TD_VM is true. Format like `1280x1024`. |
 | `TD_TYPE` | `string` | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required. |
 
 <GitignoreWarning />
@@ -30,7 +30,7 @@ The supported environment variables in TestDriver are:
 ```
 TD_VM=true
 TD_API_KEY=your_api_key
-TD_VM_RESOLUTION=[1024,768]
+TD_VM_RESOLUTION=1024x768
 TD_MINIMIZE=true
 TD_TYPE=website
 TD_WEBSITE=www.jeep.com
@@ -58,7 +58,7 @@ TD_WEBSITE=www.rollsroyce.com
 TD_ANALYTICS=false
 TD_OVERLAY=true
 TD_TEST_USERNAME=me@mysite.com
-TD_TEST_PASSWORD=wokeupinanewbugatti
+TD_TEST_PASSWORD=iwokeupinanewbugatti
 ```
 
 In this example `.env` file, we're running a website test with our desktop using the local agent. The terminal will be minimized, and the overlay will be shown. Analytics won't be sent to TestDriver servers. The `TD_TEST_USERNAME` and `TD_TEST_PASSWORD` variables are used to log in to the website. Be sure to expand these in your test with `${TD_TEST_USERNAME}` and `${TD_TEST_PASSWORD}` notation!
