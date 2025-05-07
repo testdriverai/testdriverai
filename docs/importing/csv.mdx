@@ -73,7 +73,7 @@ function generateTestFile(userStory) {
   };
 
   const yamlContent = yaml.stringify(testContent);
-  const fileName = `test_${id}.yml`;
+  const fileName = `test_${id}.yaml`;
   const filePath = path.join(outputDir, fileName);
 
   fs.writeFileSync(filePath, yamlContent, 'utf8');
@@ -98,7 +98,7 @@ fs.createReadStream(inputFile)
 node generate-tests.js
 ```
 
-This script will generate individual YAML test files (for example, `test_1.yml`, `test_2.yml`) in the `testdriver/` directory.
+This script will generate individual YAML test files (for example, `test_1.yaml`, `test_2.yaml`) in the `testdriver/` directory.
 
 ---
 
@@ -106,7 +106,7 @@ This script will generate individual YAML test files (for example, `test_1.yml`,
 
 Create a GitHub Actions workflow to execute the generated test files in parallel.
 
-### GitHub Actions workflow (`.github/workflows/run-tests.yml`)
+### GitHub Actions workflow (`.github/workflows/run-tests.yaml`)
 ```yaml [expandable]
 name: Run TestDriver Tests
 
@@ -130,7 +130,7 @@ jobs:
       - name: Find all test files
         id: test_list
         run: |
-          FILES=$(ls ./testdriver/*.yml)
+          FILES=$(ls ./testdriver/*.yaml)
           FILES_JSON=$(echo "$FILES" | jq -R -s -c 'split("\n")[:-1]')
           echo "::set-output name=files::$FILES_JSON"
 
@@ -168,7 +168,7 @@ Store your TestDriver API key as a GitHub secret (for example, `TD_API_KEY`) to 
 
 ## Step 5: Commit and push
 
-1. Commit the `generate-tests.js` script, `user_stories.csv`, and `.github/workflows/run-tests.yml` to your repository.
+1. Commit the `generate-tests.js` script, `user_stories.csv`, and `.github/workflows/run-tests.yaml` to your repository.
 2. Push the changes to the `main` branch.
 
 ---
@@ -184,9 +184,9 @@ The GitHub Actions workflow will automatically:
 ## Example output
 
 - **Generated Test Files**:
-  - `testdriver/test_1.yml`
-  - `testdriver/test_2.yml`
-  - `testdriver/test_3.yml`
+  - `testdriver/test_1.yaml`
+  - `testdriver/test_2.yaml`
+  - `testdriver/test_3.yaml`
 
 - **GitHub Actions Dashboard**:
   - Each test file is executed as a separate job, and the results are displayed in the Actions tab.

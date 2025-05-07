@@ -5,6 +5,8 @@ description: "Simplify test creation with AI-driven exploratory testing."
 icon: "wand-sparkles"
 ---
 
+import YmlWarning from '/snippets/yml-warning.mdx'
+
 Writing tests can be a tedious and time-consuming task. TestDriver can generate tests just by exploring your app! This guide will show you how to generate tests using TestDriver.
 
 # Generate exploratory tests
@@ -81,6 +83,8 @@ No commands found, running exploratory
 When using the `--save` command, TestDriver appends any generated commands to the test file.
 
 So as your test run, TestDriver will append successful commands to the YAML file and save it.
+
+<YmlWarning/>
 
 ```yaml
 version: 5.3.11

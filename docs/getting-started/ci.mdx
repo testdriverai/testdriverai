@@ -14,12 +14,12 @@ This guide explains how to set up a basic GitHub Actions workflow to run tests u
 
 ## Create a GitHub Actions workflow
 
-1. Create a new file in your repository: `.github/workflows/testdriver.yml`.
+1. Create a new file in your repository: `.github/workflows/testdriver.yaml`.
 2. Add the following workflow configuration:
 
 ### Example workflow
 
-```yaml .github/workflows/testdriver.yml [expandable]
+```yaml .github/workflows/testdriver.yaml [expandable]
 name: TestDriver / Run / Regressions
 
 on:
@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   gather-test-files:
-    name: Setup Test Matrix (./testdriver/*.yml)
+    name: Setup Test Matrix (./testdriver/*.yaml)
     runs-on: ubuntu-latest
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
@@ -50,7 +50,7 @@ jobs:
       - name: Find all test files and extract filenames
         id: test_list
         run: |
-          FILES=$(ls ./testdriver/*.yml)
+          FILES=$(ls ./testdriver/*.yaml)
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
           echo "::set-output name=files::$FILES_JSON"

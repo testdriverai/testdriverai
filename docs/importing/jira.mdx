@@ -102,7 +102,7 @@ function createYamlFile(ticket) {
     steps,
   };
 
-  const fileName = `${ticket.id}.yml`;
+  const fileName = `${ticket.id}.yaml`;
   const filePath = path.join(OUTPUT_DIR, fileName);
 
   fs.writeFileSync(filePath, yaml.stringify(yamlContent), 'utf8');
@@ -119,7 +119,7 @@ fetchJiraTickets();
 
 The script above generates a YAML file for each Jira ticket. Each file contains the **acceptance criteria** as `prompt` entries.
 
-### Example YAML file (`testdriver_tests/PROJ-123.yml`):
+### Example YAML file (`testdriver_tests/PROJ-123.yaml`):
 
 ```yaml
 version: 4.2.18
@@ -146,7 +146,7 @@ Use the TestDriver CLI to execute the generated test files.
 ### Run a single test file:
 
 ```bash
-testdriverai run testdriver_tests/PROJ-123.yml
+testdriverai run testdriver_tests/PROJ-123.yaml
 
 
 ```
@@ -154,7 +154,7 @@ testdriverai run testdriver_tests/PROJ-123.yml
 ### Run all test files:
 
 ```bash
-testdriverai run testdriver_tests/*.yml
+testdriverai run testdriver_tests/*.yaml
 ```
 
 ---

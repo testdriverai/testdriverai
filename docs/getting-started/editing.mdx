@@ -5,7 +5,11 @@ description: "Edit previously generated tests."
 icon: "file-pen"
 ---
 
+import YmlWarning from '/snippets/yml-warning.mdx'
+
 Test scripts are written in YAML format, making them easy to read and modify manually if you need to.
+
+<YmlWarning/>
 
 <Card
   title="Commands Reference"
@@ -27,8 +31,9 @@ Each test file consists of:
 - **Session**: A unique identifier for the test session.
 - **Steps**: A list of prompts and commands to execute.
 
-```yaml
+```yaml testfile.yaml
 version: 4.2.18
+session: abc1234
 steps:
   - prompt: Open Google Chrome and navigate to Airbnb
     commands:
