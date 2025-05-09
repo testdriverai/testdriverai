@@ -63,6 +63,7 @@
                     {
                         "group": "Getting Started",
                         "pages": [
+                            "/getting-started/vscode",
                             "/getting-started/setup",
                             "/getting-started/writing",
                             "/getting-started/generating",
@@ -250,6 +251,7 @@
         "socials": {
             "x": "https://x.com/testdriverai",
             "github": "https://github.com/testdriverai",
+            "discord": "https://discord.com/invite/cWDFW8DzPm",
             "youtube": "https://www.youtube.com/@testdriverai"
         }
     },

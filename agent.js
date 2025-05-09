@@ -233,13 +233,13 @@ const haveAIResolveError = async (
 
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
+  
+  logger.error(chalk.red("Error detected"));
 
-  logger.error(eMessage);
+  log.prettyMarkdown(eMessage);
 
   logger.debug("%j", error);
   logger.debug("%s", error.stack);
-
-  log.prettyMarkdown(eMessage);
 
   // if we get the same error 3 times in `run` mode, we exit
   if (errorCounts[safeKey] > errorLimit - 1) {
