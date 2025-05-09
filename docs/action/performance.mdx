@@ -10,12 +10,12 @@ Optimizing your TestDriver tests can significantly reduce execution time, ensuri
 
 ---
 
-## Tips for Improving Performance
+## Tips for improving performance
 
-### 1. Use Parallel Testing
+### 1. Use parallel testing
 Parallel testing allows you to split your test actions into multiple files and run them simultaneously. This can drastically reduce the total runtime of your test suite.
 
-#### How to Implement Parallel Testing
+#### How to implement parallel testing
 - Divide your test steps into smaller, independent YAML files.
 - Use the `run` command or GitHub matrix strategy to execute these files in parallel.
 
@@ -28,17 +28,17 @@ Example:
 strategy:
   matrix:
     test_file: 
-      - tests/login.yml
-      - tests/search.yml
-      - tests/cart.yml
+      - tests/login.yaml
+      - tests/search.yaml
+      - tests/cart.yaml
 ```
 
 ---
 
-### 2. Use Optimized Matching Methods
+### 2. Use optimized matching methods
 For actions like `hover-text`, `wait-for-text`, and `scroll-until-text`, use the `turbo` matching method instead of `ai`. The `turbo` method uses text similarity to quickly compute the most relevant match, making it about 40% faster than the `ai` method.
 
-#### Example:
+#### Example
 ```yaml
 command: hover-text
 text: Sign In
@@ -49,10 +49,10 @@ method: turbo
 
 ---
 
-### 3. Use `async` Asserts
+### 3. Use `async` asserts
 The `assert` command supports the `async: true` property, allowing you to create non-blocking assertions. This means your tests can continue running while the assertion is being validated, saving valuable time.
 
-#### Example:
+#### Example
 ```yaml
 command: assert
 expect: The user is logged in
@@ -61,7 +61,7 @@ async: true
 
 ---
 
-## Best Practices
+## Best practices
 - **Minimize AI Matching**: Use AI-powered matching methods only when necessary. For common actions, rely on optimized methods like `turbo`.
 - **Break Down Tests**: Split large, monolithic test files into smaller, focused tests to enable parallel execution.
 - **Leverage Asynchronous Features**: Use `async` properties wherever possible to avoid blocking test execution.

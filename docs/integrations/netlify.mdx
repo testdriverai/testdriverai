@@ -9,7 +9,7 @@ This guide explains how to integrate **TestDriver** with **Netlify deployments**
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 1. **Trigger Netlify Deployment**: Use Netlify's GitHub integration to deploy your application on every pull request or push to the main branch.
 2. **Run Tests on the Deployment URL**: Use the TestDriver GitHub Action to test the deployed application using the Netlify deployment URL.
@@ -20,16 +20,16 @@ This guide explains how to integrate **TestDriver** with **Netlify deployments**
 ## Prerequisites
 
 1. **Netlify GitHub Integration**: Ensure your repository is connected to Netlify for automatic deployments.
-2. **TestDriver API Key**: Store your API key as a GitHub secret (e.g., `TD_API_KEY`).
+2. **TestDriver API Key**: Store your API key as a GitHub secret (for example, `TD_API_KEY`).
 3. **Netlify Deployment URL**: Use the `DEPLOY_URL` environment variable provided by Netlify to access the deployment.
 
 ---
 
-## GitHub Actions Workflow
+## GitHub Actions workflow
 
 Here's a complete workflow to test Netlify deployments with TestDriver:
 
-### Workflow File: `.github/workflows/test-netlify.yml
+### Workflow file: `.github/workflows/test-netlify.yaml
 ```yaml
 name: Test Netlify Deployment with TestDriver
 
@@ -75,9 +75,9 @@ uses: actions/checkout@v2
 
 ---
 
-## Workflow Steps Explained
+## Workflow steps explained
 
-### 1. **Wait for Netlify Deployment**
+### 1. **Wait for Netlify deployment**
 Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.
 ```yaml
 - name: Wait for Netlify Deployment
@@ -94,6 +94,6 @@ Netlify automatically sets the `DEPLOY_URL` environment variable for each deploy
 
 ---
 
-### 2. **Run Tests with TestDriver**
+### 2. **Run tests with TestDriver**
 
 The TestDriver GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.

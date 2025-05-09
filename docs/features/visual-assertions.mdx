@@ -7,57 +7,60 @@ icon: "binoculars"
 
 Visual assertions in TestDriver allow you to validate that your application behaves as expected by analyzing what's displayed on the screen. This approach ensures that your tests mimic real user interactions and verify outcomes visually, making it ideal for testing UI-heavy applications and dynamic content.
 
-## What Can TestDriver Test with Visual Assertions?
+## What can TestDriver test with visual assertions?
 
-<Info>
-    See many of the following examples in the [TestDriver Scenarios](/scenarios/ai-chatbot)
-</Info>
-
-### AI Chatbots
+### AI chatbots
   - Validate that chatbot responses are displayed correctly.
   - Ensure the chatbot interface is accessible and functional.
+  - See [AI Chatbots](/scenarios/ai-chatbot) for an example.
 
-### Desktop Applications
+### Desktop applications
   - Verify that desktop app windows, dialogs, and UI elements render as expected.
   - Test cross-platform compatibility for Windows, Mac, and Linux.
+  - See [Using TestDriver with Desktop Apps](/apps/desktop-apps) for an example.
 
-### Chrome Extensions
+### Chrome extensions
   - Confirm that the extension UI integrates properly with the browser.
   - Validate extension popups, settings, and interactions.
+  - See [Using TestDriver with Chrome Extensions](/apps/chrome-extensions) for an example.
 
-### PDF Generation
+### PDF generation
   - Assert that generated PDFs contain the correct text, images, and formatting.
   - Verify that PDFs open and display properly in viewers.
+  - See [PDF Generation](/scenarios/pdf-generation) for an example.
 
-### Spelling & Grammar
+### Spelling & grammar
   - Check for spelling and grammar errors in displayed text.
   - Validate that text content matches expected language rules.
+  - See [Spell Check](/scenarios/spell-check) for an example.
 
-### Auth Signup & Login
+### Auth signup & login
   - Ensure OAuth flows display the correct login screens.
   - Verify that users are redirected to the correct pages after login.
+  - See [Login](/scenarios/log-in) for an example.
 
-### File System & Uploads
+### File system & uploads
   - Confirm that file upload dialogs appear and function correctly.
   - Validate that uploaded files are processed and displayed as expected.
+  - See [File Upload](/scenarios/file-upload) for an example.
 
-### Image Content
+### Image content
   - Verify that images are displayed correctly and match expected content.
   - Test for the presence of specific icons, logos, or visual elements.
 
-### Video Content
+### Video content
   - Assert that videos play correctly and match expected visuals.
   - Validate video controls (play, pause, fullscreen) and captions.
 
-### OS Accessibility Features
+### OS accessibility features
   - Test high-contrast modes, screen readers, and other accessibility features.
   - Validate that UI elements are accessible and readable.
 
-### Light / Dark Mode
+### Light / Dark mode
   - Verify that the application switches between light and dark modes correctly.
   - Assert that UI elements are visible and styled appropriately in both modes.
 
-### Privacy Configuration
+### Privacy configuration
   - Confirm that privacy settings are displayed and functional.
   - Validate that toggles, checkboxes, and options reflect the correct state.
 
@@ -75,9 +78,9 @@ Visual assertions in TestDriver allow you to validate that your application beha
 
 ---
 
-## How to Use Visual Assertions
+## How to use visual assertions
 
-### Example: Asserting Text on the Screen
+### Example: Asserting text on the screen
 
 ```yaml
 - command: assert
@@ -85,14 +88,14 @@ Visual assertions in TestDriver allow you to validate that your application beha
 
 ```
 
-### Example: Asserting an Image is Present
+### Example: Asserting an image is present
 
 ```yaml
 - command: assert
   expect: The company logo appears in the header
 ```
 
-### Example: Asserting Video Playback
+### Example: Asserting video playback
 
 ```yaml
 - command: assert
@@ -101,7 +104,7 @@ Visual assertions in TestDriver allow you to validate that your application beha
 ```
 ---
 
-## Benefits of Visual Assertions
+## Benefits of visual assertions
 
 1. **Selectorless Testing**: No need to rely on brittle selectors or static code.
 2. **Dynamic Adaptation**: Tests adapt to UI changes, reducing maintenance.
@@ -110,7 +113,7 @@ Visual assertions in TestDriver allow you to validate that your application beha
 
 ---
 
-## Best Practices for Visual Assertions
+## Best Practices for visual assertions
 
 1. **Use Descriptive Prompts**: Provide clear descriptions for elements or behaviors you want to test.
 2. **Combine with Other Commands**: Use visual assertions alongside navigation and interaction commands for end-to-end testing.

@@ -9,17 +9,17 @@ This guide explains how to set up a basic GitHub Actions workflow to run tests u
 
 ## Prerequisites
 
-1. **TestDriver API Key**: Obtain your API key from TestDriver and store it as a GitHub secret (e.g., `TD_API_KEY`).
+1. **TestDriver API Key**: Obtain your API key from TestDriver and store it as a GitHub secret (for example, `TD_API_KEY`).
 2. **Test Files**: Ensure your test files are saved in the `testdriver/` directory of your repository.
 
-## Create a GitHub Actions Workflow
+## Create a GitHub Actions workflow
 
-1. Create a new file in your repository: `.github/workflows/testdriver.yml`.
+1. Create a new file in your repository: `.github/workflows/testdriver.yaml`.
 2. Add the following workflow configuration:
 
-### Example Workflow: `.github/workflows/testdriver.yml`
+### Example workflow
 
-```yaml
+```yaml .github/workflows/testdriver.yaml [expandable]
 name: TestDriver / Run / Regressions
 
 on:
@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   gather-test-files:
-    name: Setup Test Matrix (./testdriver/*.yml)
+    name: Setup Test Matrix (./testdriver/*.yaml)
     runs-on: ubuntu-latest
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
@@ -50,7 +50,7 @@ jobs:
       - name: Find all test files and extract filenames
         id: test_list
         run: |
-          FILES=$(ls ./testdriver/*.yml)
+          FILES=$(ls ./testdriver/*.yaml)
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
           echo "::set-output name=files::$FILES_JSON"
@@ -90,49 +90,49 @@ jobs:
           FORCE_COLOR: "3"
 ```
 
-## Trigger the Workflow
+## Trigger the workflow
 
 1. Push changes to the `main` branch or open a pull request.
 2. Alternatively, manually trigger the workflow from the **Actions** tab in your GitHub repository.
 
-## View Results
+## View results
 
 1. Navigate to the **Actions** tab in your GitHub repository.
 2. Select the workflow run to view the test results.
 
-# Debugging Tests
+# Debugging tests
 TestDriver provides a powerful debugging interface through its **app.TestDriver** platform (formerly Dashcam). This interface allows you to analyze test runs, identify failures, and optimize your test suite with detailed visual and textual feedback.
 
-### Step-by-Step Execution Logs
+### 1. Step-by-step execution logs
 - View each step of the test execution, including:
-  - The **action performed** (e.g., clicking a button, typing text).
-  - The **expected outcome** (e.g., verifying a specific element is visible).
+  - The **action performed** (for example, clicking a button, typing text).
+  - The **expected outcome** (for example, verifying a specific element is visible).
   - The **result** (pass, fail, or skipped).
 - Logs provide detailed context for each step, making it easier to pinpoint where and why a test failed.
 
-### 2. Visual Feedback
+### 2. Visual feedback
 - **Screenshots**: See what the application looked like at each step of the test.
 - **GIF Previews**: Watch a replay of the entire test execution to understand the flow and identify UI issues.
 - **Highlighting**: Elements interacted with during the test are highlighted in screenshots, helping you verify that the correct elements were targeted.
 
-### 3. Error Details
+### 3. Error details
 - For failed steps, app.TestDriver provides:
-  - **Error messages**: Detailed descriptions of what went wrong (e.g., "Element not found").
+  - **Error messages**: Detailed descriptions of what went wrong (for example, "Element not found").
   - **Stack traces**: For advanced debugging of backend or script-related issues.
   - **Suggestions**: Recommendations for fixing common issues, such as adjusting prompts or improving element descriptions.
 
-### 4. Test History
+### 4. Test history
 - Access the history of test runs to:
   - Compare results across different builds or environments.
   - Identify flaky tests by analyzing patterns in failures.
   - Track improvements or regressions over time.
 
-### 5. Environment Context
+### 5. Environment context
 - View the environment details for each test run, including:
   - Operating system and browser version.
   - Screen resolution and viewport size.
   - Network conditions (if applicable).
 
-### 6. Collaboration Tools
+### 6. Collaboration tools
 - Share test results with your team by generating a shareable link.
 - Add comments or annotations to specific steps to facilitate discussions and debugging.

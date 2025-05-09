@@ -11,22 +11,22 @@ When TestDriver steps fail, the AI will progressively fall back to attempt to co
 
 If running on CI, TestDriver will open a pull request (PR) with the updated test, ensuring your test suite stays up-to-date with minimal manual intervention.
 
-## Benefits of Auto-Healing
+## Benefits of auto-healing
 
 - **Reduced Maintenance**: Eliminates the need for manual updates to tests when minor UI changes occur.
 - **Increased Test Resilience**: Ensures tests adapt to changes without breaking.
 - **Continuous Integration**: Keeps your test suite aligned with the latest application changes.
 - **Developer Collaboration**: Automatically opens a PR, allowing developers to review and approve updates.
 
-## How Auto-Healing Works
+## How auto-healing works
 
 1. **Test Execution**: TestDriver runs your test suite as usual.
-2. **Failure Detection**: If a test fails due to a change in the application (e.g., text or UI updates), the AI identifies the failure point.
+2. **Failure Detection**: If a test fails due to a change in the application (for example, text or UI updates), the AI identifies the failure point.
 3. **Recovery Attempt**: The AI uses its adaptive capabilities to locate the updated element or text and retries the action.
 4. **Test Update**: If the recovery is successful, TestDriver updates the test script with the new element or text.
 5. **Pull Request Creation**: The updated test script is committed to a new branch, and a pull request is automatically opened in your repository for review.
 
-### Example: Button Text Changes from "Submit" to "Send"
+### Example: Button text changes from "Submit" to "Send"
 
 <Steps>
 <Step title="Initial Test">
@@ -105,6 +105,6 @@ jobs:
 
 ## Limitations of Auto-Healing
 
-- **Major UI Overhauls**: Auto-healing is best suited for minor changes (e.g., text updates, small layout adjustments). Significant UI changes may still require manual intervention.
+- **Major UI Overhauls**: Auto-healing is best suited for minor changes (for example, text updates, small layout adjustments). Significant UI changes may still require manual intervention.
 - **Ambiguous Changes**: If multiple elements match the updated criteria, the AI may require additional context to make the correct decision.
 - **Step Deletion**: If UI or wizard pages are removed, the AI may not be able to recover. In such cases, manual updates are necessary.

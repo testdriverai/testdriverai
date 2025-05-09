@@ -10,7 +10,7 @@ The TestDriver GitHub Action allows you to run tests on multiple operating syste
 
 ---
 
-## Supported Operating Systems
+## Supported operating systems
 The following operating systems are currently supported:
 
 | OS       | Version                  | Instance Type | Architecture   | Notes                          |
@@ -21,22 +21,22 @@ The following operating systems are currently supported:
 
 ---
 
-## Configuring the Operating System
+## Configuring the operating system
 To specify the operating system, use the `os` parameter in the GitHub Action configuration. For example:
 
-### Example: Running a Test on Windows
+### Example: Running a test on Windows
 ```yaml
 with:
   os: windows
 ```
 
-### Example: Running a Test on macOS
+### Example: Running a test on macOS
 ```yaml
 with:
   os: mac
 ```
 
-### Example: Running a Test on Linux
+### Example: Running a test on Linux
 ```yaml
 with:
   os: linux
@@ -44,16 +44,16 @@ with:
 
 ---
 
-## Prerun Scripts and OS-Specific Commands
+## Prerun scripts and OS-specific commands
 Prerun scripts are executed on the specified operating system. The scripting language depends on the OS:
 - **Windows**: Use PowerShell.
 - **macOS**: Use Bash.
 - **Linux**: Use Bash.
 
-### Example: Installing Browsers Based on OS
+### Example: Installing browsers based on OS
 The following example demonstrates how to install Google Chrome or Firefox on Windows, macOS, and Linux using a prerun script:
 
-```yaml
+```yaml [expandable]
 prerun: |
   if [ "${{ matrix.browser }}" == "chrome" ]; then
     if [ "${{ matrix.os }}" == "windows" ]; then
@@ -88,10 +88,10 @@ prerun: |
 
 ---
 
-## Testing Multiple Operating Systems and Browsers
+## Testing multiple operating systems and browsers
 You can use the GitHub matrix strategy to test your application across multiple operating systems and browsers. This ensures comprehensive coverage for your tests.
 
-### Example: Matrix Strategy for OS and Browser Testing
+### Example: Matrix strategy for OS and browser testing
 ```yaml
 strategy:
   matrix:
@@ -99,8 +99,8 @@ strategy:
     browser: [chrome, firefox]
 ```
 
-### Full Workflow Example
-```yaml
+### Full workflow example
+```yaml [expandable]
 name: Test Action
 
 permissions:

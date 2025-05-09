@@ -5,13 +5,13 @@ description: "Step-by-step instructions to integrate TestDriver with Jira for au
 icon: "jira"
 ---
 
-# Automating Jira Ticket Creation for Test Failures Using TestDriver and Jira GitHub Actions
+# Automating Jira ticket creation for test failures using TestDriver and Jira GitHub Actions
 
 This guide explains how to integrate the **TestDriver GitHub Action** with the **Jira GitHub Action** to automatically create a Jira ticket whenever a TestDriver test fails. This workflow ensures that test failures are tracked in Jira, enabling teams to address issues promptly.
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 <Steps>
 <Step title="Run Tests with TestDriver">Use the TestDriver GitHub Action to execute your test suite.</Step>
@@ -22,19 +22,19 @@ This guide explains how to integrate the **TestDriver GitHub Action** with the *
 
 ## Prerequisites
 
-1. **TestDriver API Key**: Store your API key as a GitHub secret (e.g., `TD_API_KEY`).
-2. **Jira API Token**: Generate an API token from your Jira account and store it as a GitHub secret (e.g., `JIRA_API_TOKEN`).
-3. **Jira Base URL**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
-4. **Jira Project Key**: The key of the Jira project where tickets will be created (e.g., `TEST`).
+1. **TestDriver API Key**: Store your API key as a GitHub secret (for example, `TD_API_KEY`).
+2. **Jira API Token**: Generate an API token from your Jira account and store it as a GitHub secret (for example, `JIRA_API_TOKEN`).
+3. **Jira Base URL**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
+4. **Jira Project Key**: The key of the Jira project where tickets will be created (for example, `TEST`).
 
 ---
 
-## GitHub Actions Workflow
+## GitHub Actions workflow
 
 Here's a complete workflow that integrates TestDriver and Jira:
 
-### Workflow File: `.github/workflows/testdriver-jira.yml`
-```yaml
+### Workflow File: `.github/workflows/testdriver-jira.yaml`
+```yaml [expandable]
 name: TestDriver with Jira Integration
 
 on:
@@ -104,7 +104,7 @@ jobs:
 
 ---
 
-## Workflow Steps Explained
+## Workflow steps explained
 
 ### 1. **Run Tests with TestDriver**
 The `testdriverai/action@main` step runs your TestDriver tests and captures the results. The `outputs.success` variable indicates whether the tests passed or failed.
@@ -124,7 +124,7 @@ The `testdriverai/action@main` step runs your TestDriver tests and captures the 
 
 ---
 
-### 2. **Check for Test Failures**
+### 2. **Check for test failures**
 This step checks the `outputs.success` variable from the TestDriver action. If the tests failed, it sets an environment variable (`failure=true`) to trigger the Jira ticket creation step.
 ```yaml
 - name: Check for Test Failures
@@ -142,7 +142,7 @@ This step checks the `outputs.success` variable from the TestDriver action. If t
 
 ---
 
-### 3. **Create a Jira Ticket**
+### 3. **Create a Jira ticket**
 If any tests failed, the `create-jira-ticket` job uses the `atlassian/gajira-create` action to create a new Jira ticket. The ticket includes:
 - **Summary**: A brief description of the failure.
 - **Description**: Detailed information about the failure, including the test summary and markdown output from TestDriver.
@@ -171,17 +171,17 @@ If any tests failed, the `create-jira-ticket` job uses the `atlassian/gajira-cre
 
 ---
 
-## Secrets Configuration
+## Secrets configuration
 
 Add the following secrets to your GitHub repository:
 1. **`TD_API_KEY`**: Your TestDriver API key.
 2. **`JIRA_API_TOKEN`**: Your Jira API token.
-3. **`JIRA_BASE_URL`**: Your Jira instance URL (e.g., `https://yourcompany.atlassian.net`).
+3. **`JIRA_BASE_URL`**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
 4. **`JIRA_USERNAME`**: Your Jira account email.
 
 ---
 
-## Example Jira Ticket
+## Example Jira ticket
 
 ### Summary:
 `Test Failure: Login Test Failed`
@@ -204,7 +204,7 @@ Please investigate the issue and resolve it promptly.
 ```
 ---
 
-## Benefits of This Workflow
+## Benefits of this workflow
 
 1. **Automated Issue Tracking**: Automatically creates Jira tickets for test failures, ensuring no issues are overlooked.
 2. **Detailed Context**: Includes test summaries and failure details in the Jira ticket for easier debugging.

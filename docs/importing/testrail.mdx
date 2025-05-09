@@ -9,7 +9,7 @@ This guide explains how to extract **test cases** from TestRail and convert them
 
 ---
 
-## Workflow Overview
+## Workflow overview
 
 1. **Export Test Cases from TestRail**: Use the TestRail API to fetch test cases.
 2. **Convert Test Cases to TestDriver YAML**: Transform the test cases into YAML test files.
@@ -18,26 +18,26 @@ This guide explains how to extract **test cases** from TestRail and convert them
 
 ---
 
-## Step 1: Export Test Cases from TestRail
+## Step 1: Export test cases from TestRail
 
 ### Prerequisites
 1. **TestRail API Key**: Obtain your API key from TestRail.
-2. **TestRail Base URL**: Your TestRail instance URL (e.g., `https://yourcompany.testrail.io`).
+2. **TestRail Base URL**: Your TestRail instance URL (for example, `https://yourcompany.testrail.io`).
 3. **Node.js**: Ensure Node.js is installed on your system.
 
-### Script: Export Test Cases from TestRail
+### Script: Export test cases from TestRail
 
 The following script fetches TestRail test cases and extracts the **title** and **steps**.
 
-#### Install Dependencies:
+#### Install dependencies:
 
 ```bash
 npm install axios yaml fs
 ```
 
-#### Node.js Script (`export-testrail-test-cases.js`):
+#### Node.js script (`export-testrail-test-cases.js`):
 
-```javascript
+```javascript [expandable]
 const axios = require('axios');
 const yaml = require('yaml');
 const fs = require('fs');
@@ -100,7 +100,7 @@ function createYamlFile(testCase) {
     steps,
   };
 
-  const fileName = `test_${testCase.id}.yml`;
+  const fileName = `test_${testCase.id}.yaml`;
   const filePath = path.join(OUTPUT_DIR, fileName);
 
   fs.writeFileSync(filePath, yaml.stringify(yamlContent), 'utf8');
@@ -113,11 +113,11 @@ fetchTestRailTestCases();
 
 ---
 
-## Step 2: Convert Test Cases to TestDriver YAML
+## Step 2: Convert test cases to TestDriver YAML
 
 The script above generates a YAML file for each TestRail test case. Each file contains the **steps** as `prompt` entries.
 
-### Example YAML File (`testdriver_tests/test_123.yml`):
+### Example YAML file (`testdriver_tests/test_123.yaml`):
 
 ```yaml
 version: 4.2.18
@@ -130,31 +130,31 @@ steps:
 
 ---
 
-## Step 3: Save and Organize Test Files
+## Step 3: Save and organize test files
 
 1. The generated YAML files will be saved in the `testdriver_tests/` directory.
 2. Ensure the directory is part of your TestDriver project structure.
 
 ---
 
-## Step 4: Run Tests with TestDriver
+## Step 4: Run tests with TestDriver
 
 Use the TestDriver CLI to execute the generated test files.
 
-### Run a Single Test File:
+### Run a Single test file:
 
 ```bash
-testdriverai run testdriver_tests/test_123.yml
+testdriverai run testdriver_tests/test_123.yaml
 ```
 
 ---
 
-## Best Practices
+## Best practices
 
-1. **Field Mapping**: Ensure the correct TestRail field ID (e.g., `custom_steps`) is used for test steps.
+1. **Field Mapping**: Ensure the correct TestRail field ID (for example, `custom_steps`) is used for test steps.
 2. **Secure Credentials**: Store TestRail API credentials in environment variables or secrets.
 3. **Review Generated Files**: Manually review the YAML files to ensure they align with your testing requirements.
-4. **Organize Tests**: Use a structured directory (e.g., `testdriver_tests/`) to manage your test files.
+4. **Organize Tests**: Use a structured directory (for example, `testdriver_tests/`) to manage your test files.
 
 ---
 

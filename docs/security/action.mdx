@@ -7,12 +7,12 @@ icon: shield-check
 
 import GitignoreWarning from '/snippets/gitignore-warning.mdx';
 
-## Open Source
+## Open source
 The TestDriver Action is open source, and its source code is available for review. You can find the repository here:
 
 <Card horizontal="true" icon="github"> [GitHub - testdriverai/action](https://github.com/testdriverai/action) </Card>
 
-## Ephemeral Virtual Machine Runners
+## Ephemeral virtual machine runners
 TestDriver tests are executed on private virtual machines (VMs) managed by Amazon EC2. These VMs are ephemeral, meaning they only exist for the duration of the test execution. Once the test is complete:
 - The VM is destroyed.
 - The hard disk is wiped to ensure no residual data remains.
@@ -20,15 +20,15 @@ TestDriver tests are executed on private virtual machines (VMs) managed by Amazo
 ## Secrets
 To securely manage private information, we recommend storing sensitive data as secrets in your GitHub repository. Learn more about [storing secrets in GitHub](https://docs.github.com/en/actions/security-guides/encrypted-secrets).
 
-### Handling Secrets
+### Handling secrets
 - **Prerun Scripts**: Any secrets supplied within prerun scripts or prompts are transmitted over SSL to the TestDriver API. Prerun scripts are **not persisted**.
 - **Agent Prompts**: Secrets supplied to agent prompts are persisted (see [Agent Security](/security/agent)).
 - **Secure Workflows**: If your workflow requires secret sharing and you encounter issues, please contact us for assistance.
 
-### Common Use Case
+### Common use case
 A common workflow involves using prerun scripts to securely access a private staging website via basic authentication. This allows you to log into staging environments without persisting sensitive data on TestDriver servers.
 
-## Environment-Specific Security
+## Environment-specific security
 
 <GitignoreeWarning/>
 
@@ -46,7 +46,7 @@ Testing staging environments may require secure information, such as credentials
 ### Development
 TestDriver can clone feature branches and build code on its virtual machines using workflows similar to GitHub Actions.
 
-#### GitHub Token for Development
+#### GitHub token for development
 To test development branches of private codebases, you must supply a GitHub personal access token within the GitHub Action. This token is used to:
 - Clone the codebase onto the VM.
 - Build and test the code in an isolated environment.

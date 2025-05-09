@@ -1,13 +1,13 @@
 ---
 title: "Self-Driving Tests"
 sidebarTitle: "Self-Driving Tests"
-description: "Generate test plans and integrate them into your testing workflow."
+description: "Generate test files and integrate them into your testing workflow."
 icon: "steering-wheel"
 ---
 
 Writing tests can be a tedious and time-consuming task. TestDriver can generate tests just by exploring your app! This guide will show you how to generate tests using TestDriver.
 
-# Launch TestDriver in Interactive Mode
+# Launch TestDriver in interactive mode
 
 Launch `testdriverai` in interactive mode with the following command:
 
@@ -61,7 +61,7 @@ steps:
   - prompt: Assert that there are issues during checkout and an error is displayed.
 ```
 
-# Generate Regression Tests from Exploratory Tests
+# Generate regression tests from exploratory tests
 
 Now it's time to generate the regression test.
 
@@ -80,11 +80,10 @@ No commands found, running exploratory
 
 When using the `--save` command, TestDriver appends any generated commands to the test file.
 
-So as your test run, TestDriver will append successful commands to the yaml file and save it.
+So as your test run, TestDriver will append successful commands to the YAML file and save it.
 
 ```yaml
 version: 5.3.11
-session: 6801430b5f2c252a8f4bed60
 steps:
   - prompt: Focus the browser window.
     commands:

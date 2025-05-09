@@ -9,11 +9,11 @@ To integrate **TestDriver** with a workflow that uses the **runner artifact URL*
 
 ---
 
-## Updated Workflow with TestDriver Integration
+## Updated workflow with TestDriver integration
 
 This workflow builds the application, uploads the build as an artifact, and then uses TestDriver to download the artifact via the runner artifact URL and run tests.
 
-### Workflow File: `.github/workflows/testdriver-integration.yml
+### Workflow file: `.github/workflows/testdriver-integration.yaml`
 ```yaml
 name: Build and Test with TestDriver
 
@@ -86,7 +86,7 @@ jobs:
 
 ---
 
-## Key Changes and Explanation
+## Key changes and explanation
 
 ### 1. **Artifact URL Retrieval**
 The `Get Artifact URL` step constructs the artifact URL dynamically using the GitHub repository and server URL. This ensures the TestDriver runner can download the artifact.
@@ -100,7 +100,7 @@ The `Get Artifact URL` step constructs the artifact URL dynamically using the Gi
 
 ---
 
-### 2. **Downloading the Artifact**
+### 2. **Downloading the artifact**
 The `prerun` script in the TestDriver action uses `curl` to download the artifact from the runner URL. The `GITHUB_TOKEN` is passed as a header for authentication.
 ```yaml
 prerun: |
@@ -117,7 +117,7 @@ prerun: |
 
 ---
 
-### 3. **TestDriver Integration**
+### 3. **TestDriver integration**
 The TestDriver action is configured to:
 - Download the artifact.
 - Extract the artifact.
@@ -139,7 +139,7 @@ The TestDriver action is configured to:
 
 ---
 
-## Secrets Configuration
+## Secrets configuration
 
 Add the following secrets to your GitHub repository:
 1. **`TD_API_KEY`**: Your TestDriver API key.
@@ -147,7 +147,7 @@ Add the following secrets to your GitHub repository:
 
 ---
 
-## Benefits of This Workflow
+## Benefits of this workflow
 
 1. **Dynamic Artifact Access**: Ensures TestDriver can download artifacts directly from the runner.
 2. **Automated Testing**: Integrates TestDriver to validate the application after the build.

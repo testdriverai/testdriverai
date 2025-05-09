@@ -11,13 +11,13 @@ Reusable snippets in TestDriver allow you to modularize your test steps by creat
 
 ---
 
-## What Are Reusable Snippets?
+## What are reusable snippets?
 
 Reusable snippets are YAML files containing a set of test steps that perform a specific task, such as logging in, navigating to a page, or setting up test prerequisites. These snippets can be referenced in other test files using the `run` command, enabling you to reuse common actions across multiple tests.
 
 ---
 
-## Why Use Reusable Snippets?
+## Why use reusable snippets?
 
 1. **Maintainability**: Update a snippet in one place, and all tests using it will automatically reflect the changes.
 2. **Reusability**: Avoid duplicating common actions like login or setup across multiple tests.
@@ -26,7 +26,7 @@ Reusable snippets are YAML files containing a set of test steps that perform a s
 
 ---
 
-## How to Create and Use Reusable Snippets
+## How to create and use reusable snippets
 <Steps>
 <Step title="Create a Snippet">
 
@@ -88,7 +88,7 @@ TD_PASSWORD=your_password
 </Steps>
 
 
-## Example: Combining Multiple Snippets
+## Example: Combining multiple snippets
 
 You can chain multiple snippets together to create complex workflows. For example:
 
@@ -106,17 +106,17 @@ steps:
 ```
 --- 
 
-## Best Practices for Reusable Snippets
+## Best practices for reusable snippets
 
 1. **Organize Snippets**: Store reusable snippets in a dedicated `snippets/` directory for better organization.
-2. **Use Descriptive Names**: Name snippet files clearly (e.g., `login.yaml`, `setup.yaml`) to indicate their purpose.
+2. **Use Descriptive Names**: Name snippet files clearly (for example, `login.yaml`, `setup.yaml`) to indicate their purpose.
 3. **Test Snippets Independently**: Validate each snippet before integrating it into larger workflows.
 4. **Parameterize Inputs**: Use placeholders or environment variables for dynamic data.
 5. **Document Snippets**: Add comments or documentation to explain the purpose and usage of each snippet.
 
 ---
 
-## Benefits of Reusable Snippets
+## Benefits of reusable snippets
 
 - **Efficiency**: Save time by reusing existing logic.
 - **Scalability**: Easily extend your test suite by combining snippets.

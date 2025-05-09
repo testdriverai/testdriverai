@@ -11,12 +11,12 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 ## Arguments
 | Argument      | Type     | Description                                                                 |
 |---------------|----------|-----------------------------------------------------------------------------|
-| `text`        | `string` | The text to find on the screen. The longer and more unique, the better.     |
+| `text`        | `string` | The text to find on the screen. Longer and unique is better.     |
 | `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here. |
 | `action`      | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
 | `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default) and `ai`. |
 
-## Example Usage
+## Example usage
 ```yaml
 command: hover-text
 text: Sign Up

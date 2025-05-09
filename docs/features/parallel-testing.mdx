@@ -9,7 +9,7 @@ Parallel testing allows you to run multiple tests simultaneously, significantly 
 
 ---
 
-## Why Use Parallel Testing?
+## Why use parallel testing?
 
 1. **Faster Execution**: Run multiple tests at the same time to reduce overall test duration.
 2. **Scalability**: Easily scale your testing efforts as your test suite grows.
@@ -18,12 +18,12 @@ Parallel testing allows you to run multiple tests simultaneously, significantly 
 
 ---
 
-## Setting Up Parallel Testing with Matrix Strategy
+## Setting Up parallel testing with a matrix strategy
 
 <Steps>
 <Step titel="Organize Your Test Files">
 
-Ensure your test files are stored in a directory (e.g., `testdriver/`) and follow a consistent naming convention (e.g., `test1.yml`, `test2.yml`, etc.).
+Ensure your test files are stored in a directory (for example, `testdriver/`) and follow a consistent naming convention (for example, `test1.yaml`, `test2.yaml`, etc.).
 
 </Step>
 
@@ -54,7 +54,7 @@ jobs:
       - name: Find all test files
         id: test_list
         run: |
-          FILES=$(ls ./testdriver/*.yml)
+          FILES=$(ls ./testdriver/*.yaml)
           FILES_JSON=$(echo "$FILES" | jq -R -s -c 'split("\n")[:-1]')
           echo "::set-output name=files::$FILES_JSON"
 
@@ -85,7 +85,7 @@ jobs:
 </Steps>
 ---
 
-### Explanation of the Workflow
+### Explanation of the workflow
 
 1. **`gather-test-files` Job**:
   - Collects all test files in the `testdriver/` directory.
@@ -104,7 +104,7 @@ jobs:
 
 ---
 
-## Benefits of Using the Matrix Strategy
+## Benefits of using the matrix strategy
 
 1. **Dynamic Test Distribution**: Automatically adapts to the number of test files.
 2. **Scalable**: Easily handles large test suites by distributing tests across multiple jobs.
@@ -112,15 +112,15 @@ jobs:
 
 ---
 
-## Example Output
+## Example output
 
 When this workflow runs:
-- Each test file (e.g., `test1.yml`, `test2.yml`) is executed in its own job.
+- Each test file (for example, `test1.yaml`, `test2.yaml`) is executed in its own job.
 - The results of all tests are displayed in the GitHub Actions dashboard.
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Organize Test Files**: Use a consistent naming convention for test files to simplify management.
 2. **Monitor Test Results**: Review the GitHub Actions dashboard to identify and debug failing tests.

@@ -13,7 +13,7 @@ Instead, TestDriver uses natural language prompts and AI-powered vision to inter
 - Tests are resilient to changes like text updates, class renaming, or minor layout adjustments.
 - By using natural language and AI vision, TestDriver simplifies test creation and maintenance.
 
-## What is Selectorless Testing?
+## What's selectorless testing?
 
 The following is an example of a TestDriver test.
 
@@ -38,10 +38,10 @@ This allows TestDriver locates the target for `hover-text` based on its context 
 - `description` - a description of the element given the exact text isn't found, or there are multiple matches
 - `prompt` - a high level prompt used to regenerate the test if no match is found
 
-### What Happens When "Sign Up" Changes to "Register"?
+### What happens when "Sign Up" changes to "Register"?
 
 If the button text changes to "Register," TestDriver's AI vision will still locate the button based on its context and description. You don't need to update the test manually. 
-TestDriver will then update the test to reflect the new UI by modifing the `text` field. Then, it will open a new pull request with the changes.
+TestDriver will then update the test to reflect the new UI by modifying the `text` field. Then, it will open a new pull request with the changes.
 
 ```yaml
 version: 4.2.18
@@ -53,7 +53,7 @@ steps:
         description: button in the header for user registration
         action: click
 ```
-## Why Selectorless Testing?
+## Why selectorless testing?
 
 Traditional testing frameworks rely on selectors tightly coupled to the codebase. 
 For example:

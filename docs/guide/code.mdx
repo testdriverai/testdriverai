@@ -7,7 +7,7 @@ icon: "code"
 
 TestDriver allows you to execute custom **Node.js** scripts and shell scripts within your test workflows using the `exec` command. This feature, introduced in version `5.1.0`, enables you to integrate custom logic, such as generating one-time passwords (OTPs), hitting APIs, or performing other dynamic operations, directly into your tests.
 
-## Key Features
+## Key features
 
 1. **Run Node.js Scripts**:
   - Execute custom JavaScript code within your test steps.
@@ -19,11 +19,11 @@ TestDriver allows you to execute custom **Node.js** scripts and shell scripts wi
 3. **NPM Support**:
   - Install and use NPM packages in your scripts.
 
-## Updated Example: One-Time Password (OTP) Validator
+## Updated example: One-time password (OTP) validator
 
 This example demonstrates how to generate a one-time password (OTP) using the `totp-generator` NPM package and use it in a test.
 
-### Test File: `testdriver/testdriver.yaml`
+### Test file: `testdriver/testdriver.yaml`
 
 ```yaml
 version: 5.3.8
@@ -45,15 +45,15 @@ steps:
       text: ${OUTPUT.totp}
 ```
 
-## Additional Details
+## Additional details
 
 - The `exec` command now takes a `lang` argument and supports different operating systems (`linux`, `mac`, and `windows`).
 - Supported `lang` values are `js` or `shell`:
-  - `js` code is executed in a NodeJS VM on the host machine (your computer).
+  - `js` code is executed in a Node.js VM on the host machine (your computer).
   - `shell` code is executed in the shell on the runner.
 - Code specified in `linux`, `mac`, and `windows` is executed based on the platform of the runner machine.
 
-## Pro Tips
+## Protips
 
 - Always assign the output of your script to the `result` variable.
 - Ensure all required NPM packages are installed locally and in the `prerun` script when using GitHub Actions.

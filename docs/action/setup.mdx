@@ -17,7 +17,7 @@ TestDriver Cloud Testing is performed via the TestDriver GitHub Action. You can 
 
 ---
 
-## Step 2: Get Your API Key
+## Step 2: Get Your API key
 To execute TestDriver actions on our virtual machines, you'll need an API key. Follow these steps to retrieve and configure your API key:
 
 1. **Upgrade Your Account**: Ensure you have a paid TestDriver account.
@@ -29,8 +29,8 @@ To execute TestDriver actions on our virtual machines, you'll need an API key. F
 
 ---
 
-## Step 3: Create Your Workflow
-Now it's time to create your first TestDriver workflow. Add the following configuration to `.github/workflows/testdriver.yml`:
+## Step 3: Create your workflow
+Now it's time to create your first TestDriver workflow. Add the following configuration to `.github/workflows/testdriver.yaml`:
 
 ```yaml
 name: TestDriver
@@ -67,14 +67,14 @@ jobs:
           FORCE_COLOR: "3"
 ```
 
-### Key Points:
-- **Trigger Conditions**: The `on` section defines when the workflow runs (e.g., pull requests, scheduled events, or manual triggers).
+### Key points:
+- **Trigger Conditions**: The `on` section defines when the workflow runs (for example, pull requests, scheduled events, or manual triggers).
 - **API Key**: The `key` field uses the `TD_API_KEY` secret for authentication.
 - **Prompt**: The `prompt` field specifies the commands to execute. In this example, the `/run` command is used to execute a test file from the repository.
 
 ---
 
-## Step 4: Deploy the Workflow
+## Step 4: Deploy the workflow
 Save the workflow file, create a new branch, and push it to your repository. Then, create a pull request to trigger the workflow.
 
 ```bash
@@ -86,7 +86,7 @@ gh pr create --web
 
 ---
 
-## How It Works
+## How it works
 1. **Trigger**: The GitHub Action is triggered based on the conditions defined in the `on` section.
 2. **Authentication**: The `key` value authenticates your account.
 3. **VM Setup**: An ephemeral virtual machine is spawned on TestDriver's infrastructure.
@@ -99,7 +99,7 @@ gh pr create --web
 
 ---
 
-## Additional Features
+## Additional features
 - **Dynamic Prompts**: You can use commands like `/explore`, supply variables, or dynamically generate prompts from earlier steps.
 - **Staging Workflows**: A common workflow involves waiting for staging to deploy before executing tests.
 

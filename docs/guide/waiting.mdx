@@ -5,7 +5,7 @@ description: "Waiting in TestDriver: Ensuring Stability and Reducing Flakiness"
 icon: "clock"
 ---
 
-# Waiting in TestDriver: Ensuring Stability and Reducing Flakiness
+# Waiting in TestDriver: Ensuring stability and reducing flakiness
 
 Waiting is a critical feature in TestDriver that ensures tests are stable and reliable, even in dynamic or slow-loading environments. 
 
@@ -14,7 +14,7 @@ Waiting is a critical feature in TestDriver that ensures tests are stable and re
 - By waiting for the screen and network to stabilize, `redraw` minimizes the risk of interacting with incomplete or incorrect elements.
 
 
-## Summary of Waiting Features
+## Summary of waiting features
 
 | **Feature**          | **Description**                                                                 |
 |-----------------------|---------------------------------------------------------------------------------|
@@ -22,13 +22,13 @@ Waiting is a critical feature in TestDriver that ensures tests are stable and re
 | **`wait-for-text`**   | Waits for specific text to appear on the screen.                                |
 | **`wait-for-image`**  | Waits for a specific image or visual element to appear on the screen.           |
 
-## Key Waiting Features in TestDriver
+## Key waiting features in TestDriver
 
 1. **Automatic Waiting with `redraw`**:
   - TestDriver automatically waits for the machine before moving to the next step.
   - This includes waiting for:
     - UI changes to complete.
-    - Network activity to stabilize (e.g., API calls).
+    - Network activity to stabilize (for example, API calls).
   - Reduces the need for manual waits, making tests faster and less prone to flakiness.
 
 2. **`wait-for-text` Command**:
@@ -40,13 +40,13 @@ Waiting is a critical feature in TestDriver that ensures tests are stable and re
   - Ideal for verifying the presence of icons, logos, or other graphical elements.
 
 
-## Commands for Explicit Waiting
+## Commands for explicit waiting
 
 ### 1. **`wait-for-text`**
 
 The `wait-for-text` command pauses the test until the specified text appears on the screen. This is particularly useful for dynamic content that takes time to load.
 
-#### Syntax:
+#### Syntax
 
 ```yaml
 - command: wait-for-text
@@ -54,7 +54,7 @@ The `wait-for-text` command pauses the test until the specified text appears on 
   timeout: <time in milliseconds> # Optional, defaults to 5000ms
 ```
 
-#### Example:
+#### Example
 
 ```yaml
 - command: wait-for-text
@@ -86,7 +86,7 @@ The `wait-for-image` command pauses the test until the specified image or visual
 
 In this example, the test waits up to 8 seconds for the company logo to appear in the top-left corner.
 
-## Automatic Waiting with `redraw`
+## Automatic waiting with `redraw`
 
 TestDriver's **`redraw` function** is a built-in mechanism that automatically waits for the screen to stabilize before proceeding to the next step. This includes:
 
@@ -95,7 +95,7 @@ TestDriver's **`redraw` function** is a built-in mechanism that automatically wa
   - Ensures that the screen is fully rendered before interacting with elements.
 
 2. **Network Stabilization**:
-  - Waits for network activity (e.g., API calls, AJAX requests) to finish.
+  - Waits for network activity (for example, API calls, AJAX requests) to finish.
   - Ensures that dynamic content is fully loaded before proceeding.
 
 3. **Screen Stabilization**:
@@ -103,7 +103,7 @@ TestDriver's **`redraw` function** is a built-in mechanism that automatically wa
 
 ---
 
-## Best Practices for Waiting
+## Best practices for waiting
 
 2. **Leverage Automatic Waiting**:
   - Rely on TestDriver's `redraw` function to handle most waiting scenarios automatically.

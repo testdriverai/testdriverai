@@ -9,11 +9,11 @@ This guide explains how to convert **Gherkin scenarios** into **TestDriver promp
 
 ---
 
-## What is Gherkin?
+## What's Gherkin?
 
 Gherkin is a plain-text language used to describe test scenarios in a human-readable format. It uses keywords like `Given`, `When`, `Then`, and `And` to define steps in a test.
 
-### Example Gherkin Scenario:
+### Example Gherkin scenario:
 
 ```gherkin
 Scenario: Successful login
@@ -25,11 +25,11 @@ Scenario: Successful login
 
 ---
 
-## What Are TestDriver Prompts?
+## What are TestDriver prompts?
 
-TestDriver prompts are high-level instructions that describe what the AI should do. They are written in plain text and focus on user actions or expected outcomes.
+TestDriver prompts are high-level instructions that describe what the AI should do. They're written in plain text and focus on user actions or expected outcomes.
 
-### Example Prompts:
+### Example prompts:
 
 ```yaml
 - prompt: the user is on the login page
@@ -41,9 +41,9 @@ TestDriver prompts are high-level instructions that describe what the AI should 
 
 ---
 
-## Steps to Convert Gherkin to TestDriver Prompts
+## Steps to convert Gherkin to TestDriver prompts
 
-### Step 1: Understand the Mapping
+### Step 1: Understand the mapping
 
 | **Gherkin Keyword** | **TestDriver Prompt**                     |
 |----------------------|----------------------------------------------|
@@ -54,7 +54,7 @@ TestDriver prompts are high-level instructions that describe what the AI should 
 
 ---
 
-### Step 2: Extract Steps from Gherkin
+### Step 2: Extract steps from Gherkin
 
 Take each step from the Gherkin scenario and rewrite it as a plain-text prompt. Remove the `Given`, `When`, `Then`, and `And` keywords, and focus on the action or expectation.
 
@@ -69,7 +69,7 @@ Take each step from the Gherkin scenario and rewrite it as a plain-text prompt. 
 
 ---
 
-### Step 3: Write the Prompts in YAML Format
+### Step 3: Write the prompts in YAML format
 
 Combine the extracted prompts into a YAML file. Each step should be written as a `prompt` entry.
 
@@ -84,28 +84,28 @@ Combine the extracted prompts into a YAML file. Each step should be written as a
 
 ---
 
-### Step 4: Save the YAML File
+### Step 4: Save the YAML file
 
-1. Save the YAML content to a file (e.g., `login_test.yml`).
-2. Ensure the file is stored in the appropriate directory for your TestDriver project (e.g., `testdriver/`).
+1. Save the YAML content to a file (for example, `login_test.yaml`).
+2. Ensure the file is stored in the appropriate directory for your TestDriver project (for example, `testdriver/`).
 
 ---
 
-### Step 5: Run the Test with TestDriver
+### Step 5: Run the test with TestDriver
 
 Use the TestDriver CLI to execute the test.
 
 #### Command:
 
 ```bash
-testdriverai run login_test.yml
+testdriverai run login_test.yaml
 ```
 
 ---
 
-## Example: Full Conversion Workflow
+## Example: Full conversion workflow
 
-### Input Gherkin Scenario:
+### Input Gherkin scenario:
 
 ```gherkin
 Scenario: Add a product to the cart
@@ -124,20 +124,20 @@ Scenario: Add a product to the cart
 - prompt: the product should appear in the cart
 ```
 
-### Run the Test:
+### Run the test:
 
 ```bash
-testdriverai run add_to_cart_test.yml
+testdriverai run add_to_cart_test.yaml
 ```
 
 ---
 
-## Best Practices
+## Best practices
 
 1. **Keep Prompts Simple**: Focus on high-level actions or outcomes. Avoid including unnecessary details.
 2. **Use Descriptive Prompts**: Ensure each prompt clearly describes the action or expectation.
 3. **Test the YAML**: Run the converted YAML file to verify that it works as expected.
-4. **Organize Files**: Store YAML files in a structured directory (e.g., `testdriver/`) for easy management.
+4. **Organize Files**: Store YAML files in a structured directory (for example, `testdriver/`) for easy management.
 
 ---
 

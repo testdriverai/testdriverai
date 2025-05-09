@@ -5,7 +5,9 @@ description: "Learn how to upgrade TestDriver for the latest features and improv
 icon: "circle-up"
 ---
 
-## How to Upgrade TestDriver
+import YmlWarning from '/snippets/yml-warning.mdx'
+
+## How to upgrade TestDriver
 To upgrade TestDriver, follow these steps:
 1. **Check for Updates**: Regularly check the [TestDriver NPM Package](https://www.npmjs.com/package/testdriverai)
 2. **Update Command**: Use the following command to update TestDriver to the latest version:
@@ -17,10 +19,12 @@ To upgrade TestDriver, follow these steps:
    npm install -g testdriverai@beta
    ```
 
-In your existing Github Action setup, you may need to update the `version` field in the `workflows/testdriver.yaml` file(s) to match the version of TestDriver you want to use. Leaving it blank will run `latest` by default. Here is an example of what to replace:
+<YmlWarning/>
+
+In your existing GitHub Actions setup, you may need to update the `version` field in the `workflows/testdriver.yaml` file(s) to match the version of TestDriver you want to use. Leaving it blank will run `latest` by default. Here is an example of what to replace:
 
 ```yaml {16}
-name: TestDriver.ai
+name: TestDriver
 
 on:
   push:
@@ -56,7 +60,7 @@ jobs:
 Would become:
 
 ```yaml {16}
-name: TestDriver.ai
+name: TestDriver
 
 on:
   push:
