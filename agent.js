@@ -1097,7 +1097,7 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       return await exit(true);
     } else if (!step.commands) {
       logger.info(chalk.yellow("No commands found, running exploratory"));
-      await exploratoryLoop(step.prompt, false, true);
+      return await exploratoryLoop(step.prompt, false, true);
     }
 
     if (shouldSave) {
