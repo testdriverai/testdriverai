@@ -1092,14 +1092,6 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
     logger.info(``, null);
     logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
 
-    if (!step.commands && !step.prompt) {
-      logger.info(chalk.red("No commands or prompt found"));
-      return await exit(true);
-    } else if (!step.commands) {
-      logger.info(chalk.yellow("No commands found, running exploratory"));
-      return await exploratoryLoop(step.prompt, false, true, false);
-    }
-
     if (shouldSave) {
       executionHistory.push({
         prompt: step.prompt,
@@ -1107,15 +1099,25 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       });
     }
 
-    let markdown = `\`\`\`yaml
-${yaml.dump(step)}
-\`\`\``;
+    if (!step.commands && !step.prompt) {
+      logger.info(chalk.red("No commands or prompt found"));
+      await exit(true);
+    } else if (!step.commands) {
+      logger.info(chalk.yellow("No commands found, running exploratory"));
+      await exploratoryLoop(step.prompt, false, true, false);
+    } else {
 
-    logger.debug(markdown);
-    logger.debug("load calling actOnMarkdown");
+      let markdown = `\`\`\`yaml
+  ${yaml.dump(step)}
+  \`\`\``;
 
-    lastPrompt = step.prompt;
-    await actOnMarkdown(markdown, 0, true, false, shouldSave);
+      logger.debug(markdown);
+      logger.debug("load calling actOnMarkdown");
+
+      lastPrompt = step.prompt;
+      await actOnMarkdown(markdown, 0, true, false, shouldSave);
+    }
+
 
     if (shouldSave) {
       await save({ silent: true });
