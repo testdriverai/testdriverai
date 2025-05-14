@@ -1108,7 +1108,7 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
     } else {
 
       let markdown = `\`\`\`yaml
-  ${yaml.dump(step)}
+${yaml.dump(step)}
   \`\`\``;
 
       logger.debug(markdown);
