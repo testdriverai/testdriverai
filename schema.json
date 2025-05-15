@@ -488,13 +488,13 @@
                       "description": {
                         "type": "string"
                       },
-                      "value": {
+                      "output": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "description",
-                      "value"
+                      "output"
                     ]
                   }
                 },
