@@ -233,7 +233,7 @@ const haveAIResolveError = async (
 
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
-  
+
   logger.error(chalk.red("Error detected"));
 
   log.prettyMarkdown(eMessage);
@@ -910,7 +910,7 @@ const firstPrompt = async () => {
 
       let markdown = `\`\`\`yaml
 ${yml}\`\`\``;
-      
+
       logger.info(`Loaded test script ${thisFile}\n`);
       log.prettyMarkdown(markdown);
       logger.info("New commands will be appended.")
@@ -1006,6 +1006,7 @@ let summarize = async (error = null) => {
 // this function is responsible for saving the regression test script to a file
 let save = async ({ filepath = thisFile, silent = false } = {}) => {
   analytics.track("save", { silent });
+  logger.debug("saving script to " + filepath);
 
   if (!executionHistory.length) {
     return;
@@ -1092,12 +1093,11 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
     logger.info(``, null);
     logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
 
-    if (shouldSave) {
+
       executionHistory.push({
         prompt: step.prompt,
         commands: [], // run will overwrite the commands
       });
-    }
 
     if (!step.commands && !step.prompt) {
       logger.info(chalk.red("No commands or prompt found"));
@@ -1106,7 +1106,6 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
       logger.info(chalk.yellow("No commands found, running exploratory"));
       await exploratoryLoop(step.prompt, false, true, false);
     } else {
-
       let markdown = `\`\`\`yaml
 ${yaml.dump(step)}
   \`\`\``;
@@ -1116,11 +1115,6 @@ ${yaml.dump(step)}
 
       lastPrompt = step.prompt;
       await actOnMarkdown(markdown, 0, true, false, shouldSave);
-    }
-
-
-    if (shouldSave) {
-      await save({ silent: true });
     }
   }
 
