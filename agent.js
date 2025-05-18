@@ -850,6 +850,8 @@ const firstPrompt = async () => {
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
 
+      console.log(flags)
+
       await run(file, shouldSave, shouldExit);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
@@ -1092,12 +1094,10 @@ let run = async (file = thisFile, shouldSave = false, shouldExit = true) => {
     logger.info(``, null);
     logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
 
-    if (shouldSave) {
-      executionHistory.push({
-        prompt: step.prompt,
-        commands: [], // run will overwrite the commands
-      });
-    }
+    executionHistory.push({
+      prompt: step.prompt,
+      commands: [], // run will overwrite the commands
+    });
 
     if (!step.commands && !step.prompt) {
       logger.info(chalk.red("No commands or prompt found"));
