@@ -115,7 +115,7 @@ After this, we will type the URL and press Enter.
 
 TestDriver will execute the commands found in the yml codeblocks of the response.
 
-See the yml TestDriver generated? That's our own schema. You can learn more about it in the [reference](https://docs.testdriver.ai/reference/yml-schema).
+See the yml TestDriver generated? That's our own schema. You can learn more about it in the [reference](https://docs.testdriver.ai/getting-started/editing).
 
 > Take your hands off the mouse and keyboard while TestDriver executes! TestDriver is not a fan of backseat drivers.
 
@@ -152,6 +152,6 @@ git commit -am "Add TestDriver tests"
 gh pr create --web
 ```
 
-Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/continuous-integration/overview).
+Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/action/setup).
 
 # vscode

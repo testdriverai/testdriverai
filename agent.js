@@ -1265,7 +1265,7 @@ const start = async () => {
           ),
       );
       logger.info(
-        chalk.dim("Read More: https://docs.testdriver.ai/security-and-privacy/agent"),
+        chalk.dim("Read More: https://docs.testdriver.ai/security/agent"),
       );
       logger.info("");
     }
