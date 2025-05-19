@@ -256,7 +256,20 @@
             "youtube": "https://www.youtube.com/@testdriverai"
         }
     },
-    "redirects": [],
+    "redirects": [
+        {
+            "source": "/guides/github-actions",
+            "destination": "/action/setup"
+        },
+         {
+            "source": "/reference/test-steps",
+            "destination": "/features/selectorless"
+        },
+         {
+            "source": "/guides/debugging-test-runs",
+            "destination": "/getting-started/editing"
+        }
+    ],
     "integrations": {
         "segment": {
             "key": "oh4PK60u4Qvm2DKIjxfhxd0KCdRbQsQE"
