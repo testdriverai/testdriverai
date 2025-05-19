@@ -23,6 +23,7 @@
                             "/overview/what-is-testdriver",
                             "/overview/faq",
                             "/overview/comparison",
+                            "/overview/performance",
                             "/account/enterprise"
                         ]
                     },
@@ -63,8 +64,8 @@
                     {
                         "group": "Getting Started",
                         "pages": [
-                            "/getting-started/vscode",
                             "/getting-started/setup",
+                            "/getting-started/vscode",
                             "/getting-started/writing",
                             "/getting-started/generating",
                             "/getting-started/running",
