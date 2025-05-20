@@ -57,18 +57,16 @@ If a file is found at `./lifecycle/prerun.yaml`, it's executed _before_ the test
 
 Note that the `prerun` script is found in the GitHub Actions workflow file for deployed tests.
 
-### Prerun diagram
+### Prerun flow
 ```mermaid
 graph TD
     A{Is the test deployed to CI?}
     A -->|Yes| B[Run .github/workflows/testdriver.yml]
-    
-    A -->|No| C{Is prerun available at ./lifecycle/prerun.yaml and a testfile present in ./somedirectory?}
+    B --> F
+    A -->|No| C{Is prerun available at ./lifecycle/prerun.yaml}
     C -->|Yes| D[Run ./lifecycle/prerun.yaml]
-    D --> E[Run ./somedirectory/testfile.yaml]
-    C -->|No| F{Is ./somedirectory/testfile.yaml present?}
-    F -->|Yes| G[Run prerun from lifecycle folder]
-    G --> E
+    C -->|No| F
+    D --> F[Run ./testdriver/testfile.yaml]
 ```
 ---
 
