@@ -16,7 +16,34 @@ import YmlWarning from '/snippets/yml-warning.mdx'
 </Card>
 
 <Steps>
+<Accordion title="Install the Extension">
 
+    <Tabs>
+      <Tab title="VS Code">
+
+      VS Code is the recommended IDE for TestDriver. First, install the following recommended extensions:
+
+      - [GitHub Copilot Chat](vscode://github.copilot-chat) (The free plan is just fine!)
+      - [VS Code YAML](vscode://redhat.vscode-yaml) (Optional, but recommended for YAML validation)
+
+      Then, download the TestDriver extension:
+
+      <Card
+        title="Download the VS Code Extension"
+        icon="download"
+        href="https://github.com/testdriverai/vscode/releases/latest/download/testdriver.vsix"
+      >
+        Get the latest version from GitHub releases. 
+      </Card>
+
+      Finally, install the extension in VS Code. You can do this by dragging and dropping the downloaded `.vsix` file into the VS Code window.
+    </Tab>
+    <Tab title="Everything Else">
+
+    Use JetBrains IDEs, VIM, or other editors? No problem! You can use TestDriver with the CLI. This quickstart contains both GUI and terminal commands to help you get started.
+    </Tab>
+    </Tabs>
+  </Accordion>
 <Step title="Install TestDriver">
 Install the TestDriver CLI globally:  
 ```bash
