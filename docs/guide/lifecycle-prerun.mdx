@@ -5,7 +5,11 @@ description: "Learn how to customize and set up your TestDriver environment to o
 icon: "terminal"
 ---
 
+import LifecycleWarning from '/snippets/lifecycle-warning.mdx'
+
 ## Prerun configuration
+
+<LifecycleWarning/>
 
 ## The default `prerun` script
 When setting up your TestDriver environment, a default prerun script is automatically generated when you run:
@@ -20,7 +24,7 @@ testdriver
 │   └── prerun.yaml
 ```
 
-This script includes essential commands to ensure your VM is ready for testing. You can customize this script to suit your specific needs, but it's important to understand that it serves as a baseline for your test environment. It looks like this:
+This script includes essential commands to ensure your **local agent or sandbox** VM is ready for testing. You can customize this script to suit your specific needs, but it's important to understand that it serves as a baseline for your test environment. It looks like this:
  
 
 ```yaml ./lifecycle/prerun.yaml
@@ -51,14 +55,18 @@ The `wait-For-text` command is crucial for ensuring that the browser is fully lo
 
 If a file is found at `./lifecycle/prerun.yaml`, it's executed _before_ the test begins. _This will happen even if you have a pre or post test script defined in your GitHub Actions workflow._ This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
 
-### Prerun diagram
+Note that the `prerun` script is found in the GitHub Actions workflow file for deployed tests.
+
+### Prerun flow
 ```mermaid
 graph TD
-    A{Is prerun available at ./lifecycle/prerun.yaml and a testfile present in ./somedirectory?}
-    A -->|Yes| B[Run ./lifecycle/prerun.yaml]
-    B --> C[Run ./somedirectory/testfile.yaml]
-    A -->|No| D{Is ./somedirectory/testfile.yaml present?}
-    D -->|Yes| C
+    A{Is the test deployed to CI?}
+    A -->|Yes| B[Run .github/workflows/testdriver.yml]
+    B --> F
+    A -->|No| C{Is prerun available at ./lifecycle/prerun.yaml}
+    C -->|Yes| D[Run ./lifecycle/prerun.yaml]
+    C -->|No| F
+    D --> F[Run ./testdriver/testfile.yaml]
 ```
 ---
 

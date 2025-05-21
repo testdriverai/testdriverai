@@ -7,22 +7,28 @@ icon: "desktop"
 
 import TestPrereqs from '/snippets/test-prereqs.mdx'
 
-TestDriver is designed to work with any desktop application, including Electron, Java, and .NET apps. This guide provides an overview of how to use TestDriver with desktop applications, including installation, configuration, and running tests.
-
-<TestPrereqs />
-
-## Sample test steps
-
-## TestDriver in action
 <iframe
-  width="560"
-  height="315"
-  src="https://www.youtube.com/embed/IwJwGxHH8cA"
+  width="600"
+  height="400"
+  src="https://www.youtube.com/embed/DzgZf2b5XJs"
   title="Assert 2+2=4"
   frameborder="0"
   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
   allowfullscreen
 ></iframe>
+---
+# Using TestDriver with Desktop Apps
+
+TestDriver is designed to work with any desktop application, including Electron, Java, and .NET apps. This guide provides an overview of how to use TestDriver with desktop applications, including installation, configuration, and running tests.
+
+<TestPrereqs />
+
+## Sample test steps
+1. **Launch the application**: Use the `exec` command to launch the application. You can specify the path to the executable file and any command-line arguments needed to start the application.
+2. **Wait for the application to load**: Use the `wait-for-text` command to wait for a specific text or element to appear in the application window. This ensures that the application is fully loaded before proceeding with the test.
+3. **Interact with the application**: Use the `focus-application` command to bring the application window to the foreground. Then, use the `hover-image` command to interact with specific elements in the application, such as buttons or text fields.
+4. **Perform actions**: Use the `hover-image` command to click on buttons or enter text in input fields. You can also use the `wait-for-text` command to verify that the expected output appears after performing an action.
+5. **Verify results**: Use the `assert` command to check if the expected result matches the actual output. This step is crucial for validating the functionality of the application.
 
 ## Supported desktop applications
 TestDriver supports a wide range of desktop applications, including:
