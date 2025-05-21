@@ -1152,7 +1152,7 @@ const iffy = async (condition, then, otherwise, depth) => {
 
   logger.info(generator.jsonToManual({ command: "if", condition }));
 
-  let response = await commands.assert(condition);
+  let response = await commands.assert(condition, false);
 
   depth = depth + 1;
 
