@@ -175,6 +175,7 @@
                             "/commands/if",
                             "/commands/match-image",
                             "/commands/press-keys",
+                            "/commands/remember",
                             "/commands/run",
                             "/commands/scroll",
                             "/commands/scroll-until-image",
@@ -261,11 +262,11 @@
             "source": "/guides/github-actions",
             "destination": "/action/setup"
         },
-         {
+        {
             "source": "/reference/test-steps",
             "destination": "/features/selectorless"
         },
-         {
+        {
             "source": "/guides/debugging-test-runs",
             "destination": "/getting-started/editing"
         }
