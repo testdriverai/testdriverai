@@ -60,7 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
           TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
-          TD_RESOLUTION: "1920x1080"
+          TD_VM_RESOLUTION: "1920x1080"
 
       - name: Write MDX to shared snippets dir
         run: |
