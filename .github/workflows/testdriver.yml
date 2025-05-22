@@ -69,11 +69,21 @@ jobs:
           TEST_FILE="testdriver/$FILE_NAME"
           DEST_FILE="snippets/${{ matrix.os }}-${FILE_NAME}.mdx"
 
-          echo "<iframe src=\"${{ steps.testdriver.outputs.link }}\" />" > "$DEST_FILE"
+          URL="${{ steps.testdriver.outputs.link }}"
+          PARAMS="embed=true&timestamp=60000&playbackRate=2"
+
+          if [[ "$URL" == *\?* ]]; then
+            EMBED_URL="${URL}&${PARAMS}"
+          else
+            EMBED_URL="${URL}?${PARAMS}"
+          fi
+
+          echo "<iframe src=\"$EMBED_URL\" />" > "$DEST_FILE"
           echo >> "$DEST_FILE"
           echo '```yaml' >> "$DEST_FILE"
           cat "$TEST_FILE" >> "$DEST_FILE"
           echo '```' >> "$DEST_FILE"
+
 
       - name: Upload snippets artifact
         uses: actions/upload-artifact@v4
