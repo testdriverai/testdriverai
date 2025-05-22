@@ -1,6 +1,9 @@
 version: 5.7.7
 session: 682f62f6811bd5a322c0e726
 steps:
+  - commands:
+    - command: run
+      file: testdriver/snippets/login.yaml
   - prompt: click on add to cart under the testdriver hat
     commands:
       - command: focus-application
