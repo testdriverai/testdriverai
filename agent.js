@@ -225,6 +225,7 @@ const haveAIResolveError = async (
   undo = true,
   shouldSave,
 ) => {
+  
   if (error.fatal) {
     return await dieOnFatal(error);
   }
