@@ -58,4 +58,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
+          TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
           WEBSITE_URL: "example.com"
