@@ -49,7 +49,7 @@ jobs:
       - uses: testdriverai/action@main
         with:
           os: ${{ contains(matrix.os, 'windows') && 'windows' || 'linux' }}
-          version: "5.5.5"
+          version: "alpha"
           prerun: |
             exit
           key: ${{ secrets.TESTDRIVER_API_KEY }}
