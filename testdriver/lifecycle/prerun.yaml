@@ -11,7 +11,7 @@ steps:
         mac: |
           open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run --disable-features=PasswordManagerEnabled "${TD_WEBSITE}" &
           exit
-        windows:
+        windows: |
           Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
           exit
       - command: wait-for-text
