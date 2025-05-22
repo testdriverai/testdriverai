@@ -1,0 +1,13 @@
+version: 5.7.7
+session: 682f645a2856e2eb406642f8
+steps:
+  - prompt: press command d
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: press-keys
+        keys:
+          - command
+          - d
+      - command: assert
+        expect: the bookmark dialog is open

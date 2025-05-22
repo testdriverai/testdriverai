@@ -1169,7 +1169,7 @@ const iffy = async (condition, then, otherwise, depth) => {
 const embed = async (file, depth) => {
   analytics.track("embed", { file });
 
-  logger.info(generator.jsonToManual({ command: "embed", file }));
+  logger.info(generator.jsonToManual({ command: "run", file }));
 
   depth = depth + 1;
 
@@ -1282,7 +1282,7 @@ const start = async () => {
   } else if (thisCommand == "run") {
     await buildEnv();
     errorLimit = 100;
-    run(thisFile, true, true, true);
+    run(thisFile, false, true, true);
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
