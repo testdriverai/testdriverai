@@ -76,7 +76,7 @@ jobs:
       - name: Upload snippets artifact
         uses: actions/upload-artifact@v4
         with:
-          name: snippets
+          name: snippets-${{ matrix.os }}-${{ matrix.test }}
           path: snippets/
           retention-days: 1
 
@@ -88,11 +88,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Download snippet artifacts
+      - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
         with:
-          name: snippets
           path: docs/snippets/tests
+          pattern: snippets-*
+          merge-multiple: true
+
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
