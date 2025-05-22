@@ -1,0 +1,68 @@
+name: TestDriver.ai / Run / Regressions
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 13 * * *'  # Every day at 1 PM UTC (adjust if needed for timezone)
+
+permissions:
+  actions: read
+  contents: read
+  statuses: write
+  pull-requests: write
+
+jobs:
+  gather-test-files:
+    name: Setup Test Matrix (./testdriver/*.yml)
+    runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.ref }}
+      - name: Find all test files and extract filenames
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/*.yml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "::set-output name=files::$FILES_JSON"
+
+  test:
+    needs: gather-test-files
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+        os: ['linux', 'windows']
+      fail-fast: false
+    name: ${{ matrix.test }} (${{ matrix.os }})
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.ref }}
+
+      - name: Display filename being tested
+        run: echo "Running job for file: ${{ matrix.test }} on ${{ matrix.os }}"
+
+      - uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          os: ${{ matrix.os }}
+          version: "5.2.3"
+          prompt: 1. /run testdriver/${{ matrix.test }}
+          prerun: |
+            cd $env:TEMP
+            npm init -y
+            npm install dashcam-chrome
+            Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${{ env.TD_WEBSITE }}"
+            exit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"

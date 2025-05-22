@@ -1,0 +1,61 @@
+---
+title: "Security Features of the TestDriver Agent"
+sidebarTitle: "TestDriver Agent "
+description: "Explore the data collected, persistence, and privacy practices of the TestDriver Agent."
+icon: lock-keyhole
+---
+
+## Source
+The TestDriver Agent is open-source and available on NPM. You can browse the source code to see all the data collected and understand how everything works.
+
+## API
+The TestDriver Agent doesn't contain any AI models within it. Instead, it uploads desktop context to the TestDriver API, which uses that context to make decisions about what actions to perform. 
+
+The TestDriver API leverages OpenAI models behind the scenes. For more information about OpenAI and its privacy practices, visit their [privacy center](https://openai.com/privacy).
+
+## Desktop context collected
+During execution, the TestDriver Agent uploads the following information to the API:
+
+- **User Input Prompts**: The commands and prompts you provide to TestDriver.
+- **Active Window and Other Windows**: Information about the active window and other open windows, including application and window titles.
+- **System Information**: Details about the computer system running TestDriver.
+- **Mouse Position**: The current position of the mouse pointer.
+- **Desktop Screenshots**: Screenshots of the primary display.
+
+### Data persistence
+- **Desktop Context**: All collected desktop context, except for screenshots, is persisted in the TestDriver database.
+- **Desktop Screenshots**: Screenshots are uploaded to the server for processing but aren't stored in the database.
+
+### Desktop screenshots
+TestDriver frequently captures screenshots of the desktop to provide the AI with decision-making context. These screenshots are uploaded to the API but aren't persisted in the database. 
+
+- **Primary Display Only**: Screenshots are limited to the primary display.
+- **Privacy Recommendation**: For complete privacy, it's recommended to run TestDriver within a virtual machine on your desktop.
+
+**Important**: TestDriver can't operate without visual context. don't install TestDriver if you are uncomfortable with capturing images of the desktop.
+
+## Collected data details
+
+### Active window
+Information about the open windows on the desktop is reported using the `active-window` module. This includes details such as the application name and window titles.
+
+### System information
+System details, such as operating system, CPU, and memory, are reported using the `systeminformation` module.
+
+### User prompts
+The prompts you input into TestDriver are uploaded to the API and stored in a database. This data is used to provide the AI with a history of context for better decision-making.
+
+## Additional analytics
+When running `testdriver init`, you will be asked if you would like to share additional analytics. Sharing usage analytics is **opt-in**, and no extra data will be collected unless explicitly enabled.
+
+To disable additional analytics, set the `TD_ANALYTICS` environment variable to `false`:
+```bash
+TD_ANALYTICS=false
+```
+
+## Rate limiting and restrictions
+While the TestDriver Agent is free to use, TestDriver reserves the right to rate limit or restrict usage by IP address for any reason.
+
+## Notes
+- The TestDriver Agent is essential for providing the AI with the necessary context to operate effectively.
+- For privacy-conscious users, running TestDriver in a virtual machine is recommended to limit exposure of sensitive desktop information.

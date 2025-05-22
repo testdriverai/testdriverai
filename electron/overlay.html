@@ -2,12 +2,26 @@
 <html>
 
 <head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+  <title>TestDriver</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       overflow: hidden;
       box-sizing: border-box;
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 400;
+      font-style: normal;
+      font-size: 14px;
+      scrollbar-width: none; /* Hide scrollbars for Firefox */
+      pointer-events: none;
+    }
+
+    *::-webkit-scrollbar {
+      display: none; /* Hide scrollbars for WebKit browsers */
     }
 
     @keyframes animate-glow {
@@ -67,8 +81,7 @@
     .screenshot {
       position: absolute;
       inset: 0;
-      border: 8px dashed #B0CF34;
-      border-radius: 20px;
+      z-index: 1;
       opacity: 0;
       animation-duration: 0.3s;
       animation-delay: 0;
@@ -77,12 +90,13 @@
       animation-name: animate-screenshot;
       animation-timing-function: ease;
       animation-fill-mode: forwards;
+      background-color: white;
     }
 
     .box {
-      border: 2px solid #B0CF34;
+      border: 1px solid #B0CF34;
       position: absolute;
-
+      border-radius: 5px;
       animation-duration: 5s;
       animation-delay: 0s;
       animation-timing-function: cubic-bezier(0.26, 0.53, 0.74, 1.48);
@@ -90,11 +104,35 @@
       animation-name: animate-glow;
       animation-timing-function: ease;
       animation-fill-mode: forwards;
+      border-radius: 5px;
     }
 
     .container {
       inset: 0;
       position: absolute;
+    }
+
+    #mouse {
+      margin-left: -100px;
+      margin-top: -100px;
+      width: 50px;
+      height: 50px;
+      opacity: 50%;
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 70%;
+      background: #FFD700;
+    }
+
+    #mouse #dot {
+      width: 7px;
+      height: 7px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background-color: black;
     }
 
     #pointer {
@@ -151,15 +189,15 @@
 
     #terminal-wrapper {
       position: absolute;
-      left: calc(100vw - 700px);
+      right: calc(100vw - 600px);
       top: 0px;
       height: 100vh;
-      width: 700px;
+      width: 600px;
       background: black;
       opacity: 0;
       z-index: -1;
       overflow-y: auto;
-      padding: 4px;
+      padding: 20px;
     }
 
     #terminal {
@@ -174,6 +212,18 @@
       left: 0;
       right: 0;
       bottom: 0;
+      z-index: 2;
+    }
+
+    #vm-iframe {
+      position: absolute;
+      display: none;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      pointer-events: auto;
     }
   </style>
   <link rel="stylesheet" href="terminal/xterm.css" />
@@ -182,20 +232,25 @@
 </head>
 
 <body>
+  
   <div id="screenshot"></div>
   <div id="main" class="container">
     <div id="boxes">
       <div id="pointer"></div>
+      <div id="mouse"><div id="dot"></div></div>
     </div>
     <div id="terminal-wrapper">
       <div id="terminal"></div>
     </div>
   </div>
+  <iframe id="vm-iframe" frameborder="0"></iframe>
+  
   <script>
 
     const { ipcRenderer } = require("electron");
     const { events } = require("../lib/events.js");
 
+    const mouse = document.querySelector("#mouse");
     const pointer = document.querySelector("#pointer");
     const container = document.querySelector("#main");
     const screenshotElement = document.querySelector("#screenshot");
@@ -226,7 +281,6 @@
       });
     }
 
-
     ipcRenderer.on(events.screenCapture.start, (event, data) => {
       if (data?.silent) return
       // Hide everything whlie the app takes the screenshot
@@ -248,9 +302,18 @@
         container.style.opacity = 1
       }, 2000)
     });
+    ipcRenderer.on(events.mouseMove,
+      (event, { x, y } = {}) => {
+
+        mouse.style.marginLeft = toCss(x);
+        mouse.style.marginTop = toCss(y);
+
+      },
+    );
 
     ipcRenderer.on(events.mouseClick,
       (event, { x, y, click = "single" } = {}) => {
+
         pointer.style.marginLeft = toCss(x);
         pointer.style.marginTop = toCss(y);
         pointer.setAttribute("class", "");
@@ -279,13 +342,19 @@
       cursorInactiveStyle: "none",
       scrollback: 9999999,
       allowProposedApi: true,
-      fontSize: 18
+      fontSize: 14
     });
 
     const fitAddon = new FitAddon.FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(terminalElement);
     fitAddon.fit();
+
+    ipcRenderer.on(events.vm.show, (event, data) => {
+      const iframe = document.querySelector("#vm-iframe");
+      iframe.style.display = "block";
+      iframe.src = data.url;
+    });
 
     ipcRenderer.on(events.terminal.stdout, (event, data) =>
       terminal.write(data),

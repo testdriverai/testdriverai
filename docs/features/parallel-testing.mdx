@@ -1,0 +1,134 @@
+---
+title: "Parallel Testing with TestDriver"
+sidebarTitle: "Parallel Testing"
+description: "Learn how to leverage GitHub Actions' matrix strategy to run TestDriver tests in parallel, reducing execution time and improving scalability."
+icon: "server"
+---
+
+Parallel testing allows you to run multiple tests simultaneously, significantly reducing the time required to execute your test suite. By leveraging GitHub Actions' **matrix strategy**, you can dynamically distribute your tests across multiple jobs, ensuring efficient and scalable test execution.
+
+---
+
+## Why use parallel testing?
+
+1. **Faster Execution**: Run multiple tests at the same time to reduce overall test duration.
+2. **Scalability**: Easily scale your testing efforts as your test suite grows.
+3. **Dynamic Distribution**: Automatically distribute tests across jobs using GitHub's matrix strategy.
+4. **Cost Efficiency**: Optimize resource usage by running tests in parallel.
+
+---
+
+## Setting Up parallel testing with a matrix strategy
+
+<Steps>
+<Step titel="Organize Your Test Files">
+
+Ensure your test files are stored in a directory (for example, `testdriver/`) and follow a consistent naming convention (for example, `test1.yaml`, `test2.yaml`, etc.).
+
+</Step>
+
+<Step title="Define the GitHub Action Workflow">
+
+Here's an example of a GitHub Action workflow that uses the matrix strategy to run tests in parallel:
+
+```yaml
+name: Parallel Testing with TestDriver
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gather-test-files:
+    name: Gather Test Files
+    runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/*.yaml)
+          FILES_JSON=$(echo "$FILES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "::set-output name=files::$FILES_JSON"
+
+  run-tests:
+    name: Run Tests in Parallel
+    needs: gather-test-files
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_file: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+      fail-fast: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TD_API_KEY }}
+          prompt: |
+            1. /run ${{ matrix.test_file }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+```
+
+</Step>
+</Steps>
+---
+
+### Explanation of the workflow
+
+1. **`gather-test-files` Job**:
+  - Collects all test files in the `testdriver/` directory.
+  - Outputs the list of test files as a JSON array.
+
+2. **`run-tests` Job**:
+  - Uses the matrix strategy to dynamically create a job for each test file.
+  - Runs each test file in parallel using TestDriver.
+
+3. **Matrix Strategy**:
+  - The `matrix.test_file` variable represents each test file.
+  - Each job runs a single test file from the `testdriver/` directory.
+
+4. **Fail-Fast**:
+  - Set to `false` to ensure all tests run even if one fails.
+
+---
+
+## Benefits of using the matrix strategy
+
+1. **Dynamic Test Distribution**: Automatically adapts to the number of test files.
+2. **Scalable**: Easily handles large test suites by distributing tests across multiple jobs.
+3. **Efficient Resource Usage**: Runs tests in parallel, reducing idle time.
+
+---
+
+## Example output
+
+When this workflow runs:
+- Each test file (for example, `test1.yaml`, `test2.yaml`) is executed in its own job.
+- The results of all tests are displayed in the GitHub Actions dashboard.
+
+---
+
+## Best practices
+
+1. **Organize Test Files**: Use a consistent naming convention for test files to simplify management.
+2. **Monitor Test Results**: Review the GitHub Actions dashboard to identify and debug failing tests.
+3. **Optimize Test Files**: Ensure each test file is self-contained and doesn't depend on the execution of other tests.
+4. **Use Fail-Fast Judiciously**: Enable `fail-fast: true` only if you want to stop all tests when one fails.
+
+---
+
+## Conclusion
+
+Parallel testing with the GitHub Action matrix strategy is a powerful way to speed up your TestDriver test suite. By dynamically distributing tests across multiple jobs, you can ensure efficient execution and scalability, making it easier to maintain high-quality software.

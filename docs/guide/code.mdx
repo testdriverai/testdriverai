@@ -1,0 +1,60 @@
+---
+title: "Custom Code in TestDriver"
+sidebarTitle: "Custom Code"
+description: "Learn how to integrate custom Node.js scripts into your TestDriver workflows for dynamic testing."
+icon: "code"
+---
+
+TestDriver allows you to execute custom **Node.js** scripts and shell scripts within your test workflows using the `exec` command. This feature, introduced in version `5.1.0`, enables you to integrate custom logic, such as generating one-time passwords (OTPs), hitting APIs, or performing other dynamic operations, directly into your tests.
+
+## Key features
+
+1. **Run Node.js Scripts**:
+  - Execute custom JavaScript code within your test steps.
+  - Use NPM modules to extend functionality.
+
+2. **Dynamic Outputs**:
+  - Store the result of your script in a variable for use in subsequent steps.
+
+3. **NPM Support**:
+  - Install and use NPM packages in your scripts.
+
+## Updated example: One-time password (OTP) validator
+
+This example demonstrates how to generate a one-time password (OTP) using the `totp-generator` NPM package and use it in a test.
+
+### Test file: `testdriver/testdriver.yaml`
+
+```yaml
+version: 5.3.8
+steps:
+  - commands:
+    - command: exec
+      lang: shell
+      linux: |
+        npm install totp-generator
+    - command: exec
+      lang: js
+      output: totp
+      linux: |
+        const { TOTP } = require("totp-generator");
+        let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
+        console.log(otp);
+        result = otp;
+    - command: type
+      text: ${OUTPUT.totp}
+```
+
+## Additional details
+
+- The `exec` command now takes a `lang` argument and supports different operating systems (`linux`, `mac`, and `windows`).
+- Supported `lang` values are `js` or `shell`:
+  - `js` code is executed in a Node.js VM on the host machine (your computer).
+  - `shell` code is executed in the shell on the runner.
+- Code specified in `linux`, `mac`, and `windows` is executed based on the platform of the runner machine.
+
+## Protips
+
+- Always assign the output of your script to the `result` variable.
+- Ensure all required NPM packages are installed locally and in the `prerun` script when using GitHub Actions.
+- The script runs in the same context as the calling process and uses Node.js's [VM module](https://nodejs.org/api/vm.html) internally.

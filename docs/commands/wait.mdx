@@ -1,0 +1,33 @@
+---
+title: "wait"
+sidebarTitle: "wait"
+description: "Pause the execution of the script for a specified duration."
+icon: "clock"
+---
+
+## Description
+The `wait` command pauses the execution of the script for a specified number of milliseconds before continuing. This is useful for adding delays between commands or waiting for certain conditions to stabilize.
+
+## Arguments
+| Argument  | Type     | Description                              |
+|-----------|----------|------------------------------------------|
+| `timeout` | `number` | The duration in milliseconds to wait.    |
+
+## Example usage
+```yaml
+command: wait
+timeout: 5000
+```
+
+## Protips
+- Use the `wait` command to handle timing issues, such as waiting for animations to complete or elements to load.
+- Avoid using excessively long timeouts to keep tests efficient.
+
+## Gotchas
+- Overusing the `wait` command can slow down test execution. Use it only when necessary.
+- Ensure the timeout value is appropriate for the scenario to avoid unnecessary delays.
+
+## Notes
+- The `wait` command is ideal for introducing controlled pauses in your test scripts.
+- This command is supported across all platforms for consistent behavior.
+

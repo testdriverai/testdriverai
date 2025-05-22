@@ -1,0 +1,110 @@
+---
+title: "Auto-Healing in TestDriver"
+sidebarTitle: "Auto-Healing"
+description: "Learn how TestDriver's auto-healing feature keeps your tests resilient and up-to-date with minimal manual effort."
+icon: "bandage"
+---
+
+Auto-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes. 
+
+When TestDriver steps fail, the AI will progressively fall back to attempt to complete the test.
+
+If running on CI, TestDriver will open a pull request (PR) with the updated test, ensuring your test suite stays up-to-date with minimal manual intervention.
+
+## Benefits of auto-healing
+
+- **Reduced Maintenance**: Eliminates the need for manual updates to tests when minor UI changes occur.
+- **Increased Test Resilience**: Ensures tests adapt to changes without breaking.
+- **Continuous Integration**: Keeps your test suite aligned with the latest application changes.
+- **Developer Collaboration**: Automatically opens a PR, allowing developers to review and approve updates.
+
+## How auto-healing works
+
+1. **Test Execution**: TestDriver runs your test suite as usual.
+2. **Failure Detection**: If a test fails due to a change in the application (for example, text or UI updates), the AI identifies the failure point.
+3. **Recovery Attempt**: The AI uses its adaptive capabilities to locate the updated element or text and retries the action.
+4. **Test Update**: If the recovery is successful, TestDriver updates the test script with the new element or text.
+5. **Pull Request Creation**: The updated test script is committed to a new branch, and a pull request is automatically opened in your repository for review.
+
+### Example: Button text changes from "Submit" to "Send"
+
+<Steps>
+<Step title="Initial Test">
+
+```yaml {2}
+- command: hover-text
+  text: Submit
+  description: Submit button in the form
+  action: click
+```
+</Step>
+<Step title="Application Update">
+  - The button text is changed from "Submit" to "Send" in the application.
+</Step>
+
+<Step title="Test Execution">
+  - TestDriver runs the test and fails to find the "Submit" button.
+</Step>
+
+<Step title="Auto-Healing">
+  - The AI detects the failure and searches for a similar element.
+  - It identifies the "Send" button as the updated element and retries the action.
+</Step>
+<Step title="Test Update">
+  - The test script is updated to reflect the new button text:
+  
+  ```yaml {2}
+  - command: hover-text
+    text: Send
+    description: Submit button in the form
+    action: click
+  ```
+</Step>
+<Step title="Pull Request Creation">
+   - TestDriver commits the updated test to a new branch and opens a PR:
+     - **Branch Name**: `auto-heal-update-submit-to-send`
+     - **PR Title**: `Auto-Healed Test: Updated "Submit" to "Send"`
+
+</Step>
+</Steps>
+## Example GitHub Action for Auto-Healing
+
+Here's how you can configure a GitHub Action to enable auto-healing and PR creation:
+
+```yaml {24-30} 
+name: TestDriver Auto-Healing
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "Run Tests with Auto-Healing"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TD_API_KEY }}
+          prompt: |
+            1. /run testdriver/onboarding.yaml --save
+          create-pr: true
+          pr-title: "Auto-Healed Test Updates"
+          pr-base: main
+          pr-branch: auto-heal-updates
+```
+
+---
+
+## Limitations of Auto-Healing
+
+- **Major UI Overhauls**: Auto-healing is best suited for minor changes (for example, text updates, small layout adjustments). Significant UI changes may still require manual intervention.
+- **Ambiguous Changes**: If multiple elements match the updated criteria, the AI may require additional context to make the correct decision.
+- **Step Deletion**: If UI or wizard pages are removed, the AI may not be able to recover. In such cases, manual updates are necessary.

@@ -1,0 +1,29 @@
+---
+title: "Known Issues"
+sidebarTitle: "Known Issues"
+description: "Known issues and limitations of TestDriver."
+icon: "bug"
+---
+
+## Reporting issues
+If you encounter any issues while using TestDriver, please report them to us. You can do this by creating a new issue in our [GitHub repository](https://github.com/testdriverai/testdriverai/issues/new). We appreciate your feedback and will work to resolve any problems as quickly as possible.
+
+
+## Known issues
+
+### Image description matches
+TestDriver may not accurately match image descriptions in certain cases. This can lead to unexpected behavior when using the `hover-image` command. For example, if you specify a description that's too generic or similar to other images on the screen, TestDriver may not be able to identify the correct image to interact with. To improve accuracy, use specific and unique descriptions for images.
+
+### Text substrings
+TestDriver may not accurately match text substrings in certain cases. This can lead to unexpected behavior when using the `hover-text` command. 
+
+### Scrolling 
+TestDriver may not scroll the browser window to the correct position when using the `scroll` command. This can result in elements being out of view or not clickable. To work around this, you can use the `scroll` command with a specific `amount` or `direction` to ensure the element is in view before interacting with it. **Note** be sure to focus the application you are trying to scroll before using the command.
+
+
+
+```yaml
+  - command: scroll
+        direction: down
+        amount: 500
+```

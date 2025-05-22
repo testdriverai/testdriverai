@@ -1,0 +1,159 @@
+---
+title: "Electron"
+sidebarTitle: "Electron"
+description: "Integrate TestDriver with Electron applications"
+icon: "atom"
+---
+
+To integrate **TestDriver** with a workflow that uses the **runner artifact URL** and **GitHub token** for downloading artifacts, you can modify the workflow to include these steps. Below is an example of how to adapt the workflow to ensure TestDriver can access the artifacts.
+
+---
+
+## Updated workflow with TestDriver integration
+
+This workflow builds the application, uploads the build as an artifact, and then uses TestDriver to download the artifact via the runner artifact URL and run tests.
+
+### Workflow file: `.github/workflows/testdriver-integration.yaml`
+```yaml
+name: Build and Test with TestDriver
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build # Ensure your project has a build script
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-build
+          path: dist/ # Replace with the path to your built application
+
+  test:
+    name: Test Application with TestDriver
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Get Artifact URL
+        id: artifact-url
+        run: |
+          echo "ARTIFACT_URL=${{ github.server_url }}/repos/${{ github.repository }}/actions/artifacts" >> $GITHUB_ENV
+
+      - name: Run Tests with TestDriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TD_API_KEY }}
+          prompt: |
+            1. Download the artifact from the runner URL
+            2. Extract the artifact
+            3. Run the application
+            4. Verify the main window loads correctly
+            5. Perform additional tests
+          prerun: |
+            echo "Downloading artifact..."
+            curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -L "${{ env.ARTIFACT_URL }}" \
+              --output artifact.zip
+            echo "Extracting artifact..."
+            unzip artifact.zip -d ./app
+            echo "Running application..."
+            ./app/your-app-binary # Replace with the actual binary or executable path
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+```
+
+---
+
+## Key changes and explanation
+
+### 1. **Artifact URL Retrieval**
+The `Get Artifact URL` step constructs the artifact URL dynamically using the GitHub repository and server URL. This ensures the TestDriver runner can download the artifact.
+```yaml
+- name: Get Artifact URL
+  id: artifact-url
+  run: |
+    echo "ARTIFACT_URL=${{ github.server_url }}/repos/${{ github.repository }}/actions/artifacts" >> $GITHUB_ENV
+
+```
+
+---
+
+### 2. **Downloading the artifact**
+The `prerun` script in the TestDriver action uses `curl` to download the artifact from the runner URL. The `GITHUB_TOKEN` is passed as a header for authentication.
+```yaml
+prerun: |
+  echo "Downloading artifact..."
+  curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+    -L "${{ env.ARTIFACT_URL }}" \
+    --output artifact.zip
+  echo "Extracting artifact..."
+  unzip artifact.zip -d ./app
+  echo "Running application..."
+  ./app/your-app-binary # Replace with the actual binary or executable path
+
+```
+
+---
+
+### 3. **TestDriver integration**
+The TestDriver action is configured to:
+- Download the artifact.
+- Extract the artifact.
+- Run the application.
+- Execute the specified test steps.
+```yaml
+- name: Run Tests with TestDriver
+  uses: testdriverai/action@main
+  with:
+    key: ${{ secrets.TD_API_KEY }}
+    prompt: |
+      1. Download the artifact from the runner URL
+      2. Extract the artifact
+      3. Run the application
+      4. Verify the main window loads correctly
+      5. Perform additional tests
+
+```
+
+---
+
+## Secrets configuration
+
+Add the following secrets to your GitHub repository:
+1. **`TD_API_KEY`**: Your TestDriver API key.
+2. **`GITHUB_TOKEN`**: Automatically provided by GitHub Actions for authentication.
+
+---
+
+## Benefits of this workflow
+
+1. **Dynamic Artifact Access**: Ensures TestDriver can download artifacts directly from the runner.
+2. **Automated Testing**: Integrates TestDriver to validate the application after the build.
+3. **Secure Authentication**: Uses the GitHub token for secure artifact access.
+4. **Cross-Platform Support**: Can be adapted for different operating systems and environments.
+
+---
+
+By integrating TestDriver with the runner artifact URL and GitHub token, this workflow ensures seamless testing of your application builds.
