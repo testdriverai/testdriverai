@@ -95,11 +95,13 @@ jobs:
     name: Commit Snippets
     needs: run-tests
     runs-on: ubuntu-latest
+    env:
+      BASE_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name }}
     steps:
       - name: Check out current branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ env.BASE_BRANCH }}
 
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
