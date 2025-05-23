@@ -62,28 +62,28 @@ jobs:
           TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
           TD_VM_RESOLUTION: "1920x1080"
 
-      - name: Write MDX to shared snippets dir
+      - name: Write MDX snippets separately
         run: |
           mkdir -p snippets
-          FILE_NAME=$(basename "${{ matrix.test }}")
-          TEST_FILE="testdriver/$FILE_NAME"
-          DEST_FILE="snippets/${{ matrix.os }}-${FILE_NAME}.mdx"
+          FILE_NAME=$(basename "${{ matrix.test }}" .yaml)
+          TEST_FILE="testdriver/${FILE_NAME}.yaml"
 
-          URL="${{ steps.testdriver.outputs.link }}"
+          EMBED_URL="${{ steps.testdriver.outputs.link }}"
           PARAMS="embed=true&timestamp=60000&playbackRate=2"
 
-          if [[ "$URL" == *\?* ]]; then
-            EMBED_URL="${URL}&${PARAMS}"
+          if [[ "$EMBED_URL" == *\?* ]]; then
+            EMBED_URL="${EMBED_URL}&${PARAMS}"
           else
-            EMBED_URL="${URL}?${PARAMS}"
+            EMBED_URL="${EMBED_URL}?${PARAMS}"
           fi
 
-          echo "<iframe src=\"$EMBED_URL\" />" > "$DEST_FILE"
-          echo >> "$DEST_FILE"
-          echo '```yaml' >> "$DEST_FILE"
-          cat "$TEST_FILE" >> "$DEST_FILE"
-          echo '```' >> "$DEST_FILE"
+          # Write iframe MDX
+          echo "<iframe src=\"$EMBED_URL\" />" > "snippets/${FILE_NAME}-replay.mdx"
 
+          # Write YAML MDX
+          echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
+          cat "$TEST_FILE" >> "snippets/${FILE_NAME}-yaml.mdx"
+          echo '```' >> "snippets/${FILE_NAME}-yaml.mdx"
 
       - name: Upload snippets artifact
         uses: actions/upload-artifact@v4
@@ -91,7 +91,6 @@ jobs:
           name: snippets-${{ matrix.os }}-${{ matrix.test }}
           path: snippets/
           retention-days: 1
-
   create-snippets-commit:
     name: Commit Snippets
     needs: run-tests
@@ -110,32 +109,9 @@ jobs:
           merge-multiple: true
 
       - name: Commit updated snippets
-        run: |
-          #!/usr/bin/env bash
-          set -e
-
-          # Set Git config
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-          # Stage changes
-          git add docs/snippets/tests
-
-          # Commit if there are staged changes
-          if ! git diff --cached --quiet; then
-            git commit -m "Update test snippets [skip ci]"
-
-            # Extract the current branch name from GitHub Actions environment
-            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-
-            # Fallback if BRANCH_NAME is empty (e.g., pull request event)
-            if [ -z "$BRANCH_NAME" ]; then
-              echo "Branch name not found in GITHUB_REF; defaulting to 'main'"
-              BRANCH_NAME="main"
-            fi
-
-            # Push the commit to the correct branch
-            git push origin HEAD:"$BRANCH_NAME"
-          else
-            echo "No changes to commit"
-          fi
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: github-actions[bot]
+          author_email: github-actions[bot]@users.noreply.github.com
+          message: "Update test snippets [skip ci]"
+          add: "docs/snippets/tests"
