@@ -3,66 +3,60 @@ title: "Quickstart"
 ---
 
 <Steps>
+  <Step title="Initialize Your Project" stepNumber={1}>
+    Set up your project with:
 
-<Step title="Install TestDriver">
+    ```bash
+    npx testdriverai@beta init
+    ```
 
-Install the TestDriver CLI globally:  
+    This creates a `.env` file and sample workflow files.
+  </Step>
+  <Step title="Run TestDriver in Interactive Mode" stepNumber={2}>
+    <Tip>
+      Always start with interactive mode (`testdriverai`) to explore and refine your tests before saving them. It's faster and more intuitive\!
+    </Tip>
+    Start TestDriver in interactive mode to create and refine tests dynamically:
 
-```bash
-npm install -g testdriverai@beta
-```
-</Step>
+    ```bash
+    npx testdriverai@beta
+    ```
 
-<Step title="Initialize Your Project">
-Set up your project with:  
-```bash
-testdriverai init
-```  
-This creates a `.env` file and sample workflow files.
-</Step>
+    Once started, you can use commands like `/explore`, `/undo`, and `/save` to interactively build and test your flows.
+  </Step>
+  <Step title="Define Your Test Steps" stepNumber={3}>
+    Use natural language to describe what you want to test. For example:
 
-<Step title="Run TestDriver in Interactive Mode">
-Start TestDriver in interactive mode to create and refine tests dynamically:  
-```bash
-testdriverai
-```  
-Once started, you can use commands like `/explore`, `/undo`, and `/save` to interactively build and test your flows.
-</Step>
+    ```
+    > Open Google Chrome and search for "testdriverai"
+    ```
 
-<Step title="Define Your Test Steps">
-Use natural language to describe what you want to test. For example:  
-```
-> Open Google Chrome and search for "testdriverai"
-```
-TestDriver will generate steps like:  
-```yaml
-- command: focus-application
-  name: Google Chrome
-- command: hover-text
-  text: Search Google or type a URL
-  description: main search bar
-  action: click
-- command: type
-  text: testdriverai
-- command: press-keys
-  keys: [enter]
-```
-</Step>
+    TestDriver will generate steps like:
 
-<Step title="Refine and Save Your Test">
-- Use `/undo` to remove the last step if needed.  
-- Save your test with `/save` to generate a reusable YAML file.
-</Step>
+    ```yaml
+    - command: focus-application
+      name: Google Chrome
+    - command: hover-text
+      text: Search Google or type a URL
+      description: main search bar
+      action: click
+    - command: type
+      text: testdriverai
+    - command: press-keys
+      keys: [enter]
+    ```
+  </Step>
+  <Step title="Refine and Save Your Test" stepNumber={4}>
+    - Use `/undo` to remove the last step if needed.
+    - Save your test with `/save` to generate a reusable YAML file.
+  </Step>
+  <Step title="Run Saved Tests" stepNumber={5}>
+    Once saved, you can run your test file anytime:
 
-<Step title="Run Saved Tests">
-Once saved, you can run your test file anytime:  
-```bash
-testdriverai run path/to/test.yaml
-```
-</Step>
-
+    ```bash
+    npx testdriverai@beta run path/to/test.yaml
+    ```
+  </Step>
 </Steps>
 
 ---
-
-**Pro Tip:** Always start with interactive mode (`testdriverai`) to explore and refine your tests before saving them. It's faster and more intuitive!
