@@ -19,6 +19,15 @@
 
 1. `npx testdriverai testdriver/test.yml`
 
+## Logging
+
+- `DEV` to log the config
+- `VERBOSE` to log `logger.debug` (Default: `logger.info` and above)
+
+```sh
+DEV=true VERBOSE=true npx testdriverai
+```
+
 ## Debugging with Chrome Node Inspector
 
 > https://nodejs.org/en/learn/getting-started/debugging
