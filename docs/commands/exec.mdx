@@ -5,6 +5,12 @@ description: "Execute custom shell or Node.js scripts within your tests."
 icon: "code"
 ---
 
+import Replay from '/snippets/tests/exec-shell-replay.mdx'
+import Example from '/snippets/tests/exec-shell-yaml.mdx'
+
+<Replay />
+<Example />
+
 ## Description
 The `exec` command allows you to execute custom Node.js scripts within your TestDriver tests. This is useful for tasks like generating dynamic data, interacting with APIs, or performing custom logic during a test. The output of the script can be stored in a variable for use in subsequent steps. It's important to note that the output from `exec` must be a `string`. 
 

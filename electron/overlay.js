@@ -15,8 +15,7 @@ let tray = null;
 
 const app = electronApp || remote;
 if (!app) {
-  console.log("No app");
-  process.exit(1);
+  exit(1, "No Electron app");
 }
 
 // Seems like the direct process id is not the electron process id
@@ -115,7 +114,7 @@ app.whenReady().then(() => {
   // window.webContents.openDevTools();
 
   ipc.serve(() => {
-    console.log("Serving IPC");
+    console.error("Serving IPC");
     for (const event of eventsArray) {
       ipc.server.on(event, (data) => {
         if (event === "show-window") {
@@ -132,33 +131,35 @@ app.whenReady().then(() => {
   // overlay processes alive
   const timeout = setTimeout(
     () => {
-      console.log("No connected clients for 5 minutes");
-      process.exit(0);
+      exit(0, "IPC No connected clients for 5 minutes");
     },
     1000 * 60 * 5,
   );
 
   ipc.server.on("connect", () => {
-    console.log("Client connected");
+    console.error("Client connected");
     clearTimeout(timeout);
   });
 
   ipc.server.on("socket.disconnected", function () {
     // We exit because we want the renderer process to be single use
     // and not stay alive if the cli gets disconnected
-    console.log("Client disconnected");
-    process.exit();
+    exit(0, "IPC Client disconnected");
   });
 
   ipc.server.on("error", () => {
-    console.log("Server error");
-    process.exit(1);
+    exit(1, "IPC Server error");
   });
 
   ipc.server.on("destroy", () => {
-    console.log("Server destroyed");
-    process.exit(1);
+    exit(1, "IPC Server destroyed");
   });
 
   ipc.server.start();
 });
+
+function exit(code = 0, reason = "") {
+  console.error(`Exiting with code ${code} and reason: "${reason}"`);
+  console.log(`Exiting with code ${code} and reason: "${reason}"`);
+  process.exit(code);
+}

@@ -1,6 +1,3 @@
-<iframe src="https://app.dashcam.io/replay/6830c61fea8e9461fd8d574e?share=fui8CykmadkVS6uXgPZw&embed=true&timestamp=60000&playbackRate=2" />
-
-```yaml
 version: 5.7.7
 session: 682f5aab811bd5a322c0e5a1
 steps:
@@ -14,4 +11,3 @@ steps:
         action: click
       - command: assert
         expect: an error shows that fields are required
-```

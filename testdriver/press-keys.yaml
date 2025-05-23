@@ -1,6 +1,3 @@
-<iframe src="https://app.dashcam.io/replay/6830c5fd3aef88e5ef0e07d5?share=ZUa0j8mRdgFT33LGCjfRTQ&embed=true&timestamp=60000&playbackRate=2" />
-
-```yaml
 version: 5.7.7
 session: 682f645a2856e2eb406642f8
 steps:
@@ -14,4 +11,3 @@ steps:
           - t
       - command: assert
         expect: a new tab was created
-```
