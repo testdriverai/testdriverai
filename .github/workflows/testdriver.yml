@@ -101,7 +101,7 @@ jobs:
       - name: Check out current branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.BASE_BRANCH }}
+          ref: ${{ github.head_ref }}
 
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
@@ -117,3 +117,4 @@ jobs:
           author_email: github-actions[bot]@users.noreply.github.com
           message: "Update test snippets [skip ci]"
           add: "docs/snippets/tests"
+          new_branch: ${{ github.head_ref }}

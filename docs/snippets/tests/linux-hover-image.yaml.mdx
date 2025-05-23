@@ -1,0 +1,21 @@
+<iframe src="https://app.dashcam.io/replay/6830c638ea8e9461fd8d5761?share=Rpmih4K2SKfRVYYT0b3ftg&embed=true&timestamp=60000&playbackRate=2" />
+
+```yaml
+version: 5.7.7
+session: 682f60bf2856e2eb4066427f
+steps:
+  - commands:
+    - command: run
+      file: testdriver/snippets/login.yaml
+  - prompt: click on the image of a shopping cart
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-image
+        description: shopping cart icon next to the Cart text in the top right corner
+        action: click
+  - prompt: assert that you see an empty shopping cart
+    commands:
+      - command: assert
+        expect: Your cart is empty
+```

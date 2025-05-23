@@ -1,0 +1,24 @@
+<iframe src="https://app.dashcam.io/replay/6830c6283aef88e5ef0e0810?share=EHchelsCbgewEQa8939qw&embed=true&timestamp=60000&playbackRate=2" />
+
+```yaml
+version: 5.7.7
+session: 682f62a1811bd5a322c0e70b
+steps:
+  - commands:
+    - command: run
+      file: testdriver/snippets/login.yaml
+  - prompt: scroll until text testdriver socks
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: scroll-until-text
+        text: testdriver socks
+        direction: down
+        method: keyboard
+  - prompt: assert testdriver socks appears on screen
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: assert
+        expect: TestDriver Socks appears on screen
+```
