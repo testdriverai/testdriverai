@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
 const config = require("./lib/config.js");
+
 // We need to initialize the IPC server quickly
 require("./lib/ipc.js");
 const { emitter, events } = require("./lib/events.js");
 const { logger } = require("./lib/logger.js");
+
+logger.info('Config is')
+console.log(config)
 
 if (process.argv[2] === "--help" || process.argv[2] === "-h") {
   console.log("Command: testdriverai [init, run, edit] [yaml filepath]");
