@@ -17,7 +17,7 @@
    > Working on **/private/var/folders/4w/\_l20wtfj41n2dx0xyhb8xd740000gn/T/tmp.PDxTlOLJBS/testdriver/testdriver.yml**
    > ...
 
-1. `npx testdriverai`
+1. `npx testdriverai testdriver/test.yml`
 
 ## Debugging with Chrome Node Inspector
 
