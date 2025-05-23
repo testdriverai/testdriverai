@@ -69,7 +69,7 @@ jobs:
           TEST_FILE="testdriver/${FILE_NAME}.yaml"
 
           EMBED_URL="${{ steps.testdriver.outputs.link }}"
-          PARAMS="embed=true&timestamp=60000&playbackRate=2"
+          PARAMS="embed=true&timestamp=60000&playbackRate=5"
 
           if [[ "$EMBED_URL" == *\?* ]]; then
             EMBED_URL="${EMBED_URL}&${PARAMS}"
@@ -78,7 +78,7 @@ jobs:
           fi
 
           # Write iframe MDX
-          echo "<iframe src=\"$EMBED_URL\" />" > "snippets/${FILE_NAME}-replay.mdx"
+          echo "<iframe src=\"$EMBED_URL\" width="100%" height="300" />" > "snippets/${FILE_NAME}-replay.mdx"
 
           # Write YAML MDX
           echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
