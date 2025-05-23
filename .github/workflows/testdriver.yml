@@ -111,8 +111,31 @@ jobs:
 
       - name: Commit updated snippets
         run: |
+          #!/usr/bin/env bash
+          set -e
+
+          # Set Git config
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          # Stage changes
           git add docs/snippets/tests
-          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update test snippets [skip ci]"
-          git push
+
+          # Commit if there are staged changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Update test snippets [skip ci]"
+
+            # Extract the current branch name from GitHub Actions environment
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+
+            # Fallback if BRANCH_NAME is empty (e.g., pull request event)
+            if [ -z "$BRANCH_NAME" ]; then
+              echo "Branch name not found in GITHUB_REF; defaulting to 'main'"
+              BRANCH_NAME="main"
+            fi
+
+            # Push the commit to the correct branch
+            git push origin HEAD:"$BRANCH_NAME"
+          else
+            echo "No changes to commit"
+          fi
