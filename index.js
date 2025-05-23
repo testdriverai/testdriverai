@@ -33,7 +33,7 @@ if (process.argv[2] === "--renderer") {
         detached: true,
       });
       logger.info(`Started renderer, process ID: ${electronProcess.pid}`);
-      process.exit(0);
+      setTimeout(() => process.exit(0), 200);
     } catch (err) {
       logger.error("%s", err);
       process.exit(1);
