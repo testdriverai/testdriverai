@@ -101,7 +101,7 @@ jobs:
       - name: Check out current branch
         uses: actions/checkout@v3
         with:
-          ref: ${{ env.BASE_BRANCH }}
+          ref: ${{ github.head_ref }}
 
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
