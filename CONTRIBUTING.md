@@ -19,6 +19,14 @@
 
 1. `npx testdriverai testdriver/test.yml`
 
+## Testing against local `api`
+
+When running [replayableio/api](https://github.com/replayableio/api/) locally, specify `TD_API_ROOT` in your `.env` file or shell:
+
+```sh
+TD_API_ROOT=http://localhost:1337 npx testdriverai
+```
+
 ## Logging
 
 - `DEV` to log the config
