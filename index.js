@@ -1,5 +1,25 @@
 #!/usr/bin/env node
 
+// being called on server with 
+// {
+//  TD_SPEAK: false,
+//  TD_ANALYTICS: true,
+//  TD_NOTIFY: false,
+//  TD_MINIMIZE: false,
+//  TD_API_ROOT: 'https://api.testdriver.ai',
+//  TD_API_KEY: 'xxx',
+//  TD_DEV: undefined,
+//  TD_PROFILE: false,
+//  TD_OVERLAY: true,
+//  TD_SECRET: 'xxx',
+//  TD_VM: true,
+//  TD_OVERLAY_ID: null,
+//  TD_VM_RESOLUTION: [ 1920, 1080 ],
+//  TD_IPC_ID: 'testdriverai_4708',
+//  TD_INTERPOLATION_VARS: '{"TD_WEBSITE":"https://testdriver-sandbox.vercel.app","TD_VM_RESOLUTION":"1920x1080"}',
+//  TD_WEBSITE: 'https://testdriver-sandbox.vercel.app'
+// }
+
 const config = require("./lib/config.js");
 
 // We need to initialize the IPC server quickly
