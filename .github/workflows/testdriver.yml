@@ -92,14 +92,16 @@ jobs:
           path: snippets/
           retention-days: 1
 
-  create-snippet-pr:
-    name: Create Snippet PR
+  create-snippets-commit:
+    name: Commit Snippets
     needs: run-tests
     runs-on: ubuntu-latest
-    if: always()
+    if: github.event_name != 'pull_request'
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v2
+      - name: Check out current branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
 
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
@@ -108,17 +110,10 @@ jobs:
           pattern: snippets-*
           merge-multiple: true
 
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Update test snippets"
-          branch: "update/test-snippets"
-          title: "Update test snippets"
-          body: |
-            This PR includes the latest test snippet updates for all testdriver YAML files.
-          labels: |
-            automated
-            test-snippet
-          delete-branch: true
+      - name: Commit updated snippets
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add docs/snippets/tests
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Update test snippets [skip ci]"
+          git push
