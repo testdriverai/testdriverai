@@ -18,3 +18,11 @@
    > ...
 
 1. `npx testdriverai`
+
+## Debugging with Chrome Node Inspector
+
+> https://nodejs.org/en/learn/getting-started/debugging
+
+```sh
+npx --node-options=--inspect testdriverai init
+```
