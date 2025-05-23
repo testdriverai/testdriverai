@@ -43,11 +43,3 @@ DEV=true VERBOSE=true npx testdriverai
 ```sh
 npx --node-options=--inspect testdriverai init
 ```
-
-## Debugging with Chrome Node Inspector
-
-> https://nodejs.org/en/learn/getting-started/debugging
-
-```sh
-npx --node-options=--inspect testdriverai init
-```
