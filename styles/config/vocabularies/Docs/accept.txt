@@ -1,0 +1,47 @@
+testdriverai
+TestDriver
+(?i)npm
+(?i)csv
+Sonoma
+[Pp]rerun
+Protip
+Protips
+VS Code
+VSIX
+OAuth2?
+Dashcam
+VM[s]?
+OCR
+[Cc]hatbot|s
+[Ss]electorless
+[Ww]alkthrough
+[Ss]ignup
+(?i)PDF|s
+Vercel
+Netlify
+[Jj]ira
+RBAC
+SSL
+GitHub Action|s
+GitHub
+[Vv]iewport
+TestRail
+YAML
+Gherkin
+Arc Browser
+Touchpoint
+[Hh]ardcod|ed|ing
+[Ff]ullscreen
+AJAX
+[Tt]eardown
+validator
+OTP[s]?
+Reusability
+[Aa]sync
+XPath
+[Aa]uto-heal|ed|ing
+[Oo]nboarding
+Webkit
+[Rr]ollout
+[Bb]ackend
+Cleanshot

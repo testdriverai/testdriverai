@@ -1,0 +1,217 @@
+---
+title: "Setup & Teardown"
+sidebarTitle: "Setup & Teardown"
+description: "How to handle pre and post test tasks."
+icon: "hammer"
+---
+
+import LifecycleWarning from '/snippets/lifecycle-warning.mdx'
+
+## Overview
+Prerun scripts are commands executed on a TestDriver virtual machine (VM) before each test in a CI/CD pipeline. They are used to prepare the environment by provisioning the VM, installing dependencies, configuring settings, or building the application. This ensures a consistent and reproducible environment for every test execution.
+
+By using prerun scripts, you can:
+- Speed up test setup.
+- Prevent test failures caused by inconsistent environments.
+- Promote reproducible builds for reliable test results.
+
+---
+
+## Use cases
+Prerun scripts are ideal for:
+- Installing necessary dependencies (for example, browsers, libraries, or tools).
+- Building your application or running setup scripts.
+- Configuring the VM to match specific test requirements.
+- Preparing staging environments or accessing private resources.
+
+<LifecycleWarning/>
+
+---
+
+## Example: Installing Arc Browser
+The following example demonstrates how to use a prerun script within the GitHub Actions workflow folder to download and install the Arc Browser on a Windows VM before running tests. 
+
+<Warning>Note this will be deprecated in favor of [lifecycle prerun scripts](/guide/lifecycle-prerun) from `v5` onward.</Warning>
+
+```yaml ./github/workflows/testdriver.yaml
+# Permissions and other setup here
+
+jobs:
+  test:
+    name: "TestDriver"
+    runs-on: ubuntu-latest
+    steps:
+      # Use the TestDriver GitHub Action
+      - uses: testdriverai/action@main
+        with:
+          prerun: |
+            # Get the IPv6 address of the VM
+            Get-NetIPAddress -AddressFamily IPv6
+            # URL for the Arc browser installer
+            $installerUrl = "https://releases.arc.net/windows/ArcInstaller.exe"
+            # Location to save the installer
+            $installerPath = "$env:USERPROFILE\Downloads\ArcInstaller.exe"
+            # Download the Arc browser installer
+            Write-Host "Downloading Arc browser installer..."
+            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
+            # Check if the download was successful
+            if (Test-Path $installerPath) {
+                Write-Host "Download successful. Running the installer..."
+                Start-Process -FilePath $installerPath -ArgumentList '/silent' -Wait
+                Start-Sleep -Seconds 10
+            } else {
+                Write-Host "Failed to download the Arc browser installer."
+            }
+```
+
+---
+
+
+## Example workflow with advanced setup and teardown
+
+### Workflow file
+
+```yaml .github/workflows/testdriver-setup-teardown.yaml  [expandable]
+name: TestDriver with Setup and Teardown
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "TestDriver with Setup and Teardown"
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Check out the repository
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Step 2: Setup - create a test user via API
+      - name: Setup Test User
+        id: setup-user
+        run: |
+          echo "Creating test user via API..."
+          RESPONSE=$(curl -X POST -H "Content-Type: application/json" -d '{"name": "Test User", "email": "test@example.com", "password": "password123"}' https://api.example.com/users)
+          echo "USER_ID=$(echo $RESPONSE | jq -r '.id')" >> $GITHUB_ENV
+          echo "USER_EMAIL=$(echo $RESPONSE | jq -r '.email')" >> $GITHUB_ENV
+          echo "USER_PASSWORD=password123" >> $GITHUB_ENV
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+
+      # Step 3: Run tests with TestDriver
+      - name: Run Tests with TestDriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TD_API_KEY }}
+          prompt: |
+            1. Log in with the test user
+            2. Perform actions on the dashboard
+          prerun: |
+            echo "Launching browser with test user credentials..."
+            echo "Email: $USER_EMAIL"
+            echo "Password: $USER_PASSWORD"
+        env:
+          USER_EMAIL: ${{ env.USER_EMAIL }}
+          USER_PASSWORD: ${{ env.USER_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+
+      # Step 4: Teardown - delete the test user
+      - name: Teardown Test User
+        if: always()
+        run: |
+          echo "Deleting test user via API..."
+          curl -X DELETE -H "Authorization: Bearer ${{ secrets.API_KEY }}" https://api.example.com/users/$USER_ID
+          echo "Test user deleted."
+        env:
+          USER_ID: ${{ env.USER_ID }}
+          API_KEY: ${{ secrets.API_KEY }}
+```
+
+---
+
+## Workflow overview
+
+1. **Setup Tasks**:
+   - Use a dedicated action **before** the TestDriver action to prepare the environment (for example, create a test user via an API).
+   - Pass the created user credentials to the TestDriver action using environment variables.
+
+2. **Run Tests**:
+   - Execute the tests using TestDriver, leveraging the setup data (for example, the test user).
+
+3. **Teardown Tasks**:
+   - Use a dedicated action **after** the TestDriver action to clean up (for example, delete the test user).
+   - Ensure the teardown step runs **no matter the result** of the TestDriver action.
+
+### Workflow steps explained
+
+<Steps>
+<Step title="Setup test user">
+- **Purpose**: Create a test user via an API before running the tests.
+- **How It Works**:
+  - The `Setup Test User` step sends a `POST` request to the API to create a new user.
+  - The user ID, email, and password are extracted from the API response and stored as environment variables (`USER_ID`, `USER_EMAIL`, `USER_PASSWORD`).
+- **Example Output**:
+  - `USER_ID`: `12345`
+  - `USER_EMAIL`: `test@example.com`
+  - `USER_PASSWORD`: `password123`
+</Step>
+<Step title="Run tests with TestDriver">
+- **Purpose**: Execute tests using the TestDriver action.
+- **How It Works**:
+  - The `USER_EMAIL` and `USER_PASSWORD` environment variables are passed to the `prerun` script.
+  - The test prompts use these credentials to log in and perform actions.
+</Step>
+<Step title="Teardown test user">
+- **Purpose**: Delete the test user via an API after the tests are complete.
+- **How It Works**:
+  - The `Teardown Test User` step sends a `DELETE` request to the API to remove the test user.
+  - The `if: always()` condition ensures this step runs even if the TestDriver action fails.
+</Step>
+</Steps>
+---
+
+## Best practices for setup and teardown
+
+1. **Use APIs for Setup and Teardown**:
+   - Use APIs to create and delete test data dynamically, ensuring a clean environment for each test run.
+
+2. **Pass Data via Environment Variables**:
+   - Store setup data (for example, user credentials) in environment variables and pass them to the TestDriver action.
+
+3. **Ensure Teardown Always Runs**:
+   - Use [`if: always()`](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/evaluate-expressions-in-workflows-and-actions) to ensure teardown tasks are executed regardless of the test results.
+
+4. **Log Setup and Teardown Steps**:
+   - Add `echo` statements to log the progress of setup and teardown tasks for easier debugging.
+
+5. **Test Locally**:
+   - Verify setup and teardown scripts locally before integrating them into the workflow.
+
+---
+
+## Advanced configuration
+If you need to perform more complex setup or teardown tasks, you can use the [`lifecycle`](/guide/lifecycle-prerun) folder in your repository. This folder can contain multiple files, each with a specific purpose.
+
+## Example use cases
+
+### 1. **User management**
+- Create a test user during setup.
+- Delete the test user during teardown.
+
+### 2. **Database operations**
+- Insert test data into a database during setup.
+- Remove the test data during teardown.
+
+### 3. **Mock services**
+- Start a mock API server during setup.
+- Stop the mock server during teardown.
+
+---
+
+## Conclusion
+By structuring your GitHub Actions workflow to handle **setup** before the TestDriver action and **teardown** after it, you can ensure a clean and reliable test environment for every run. This approach also ensures that teardown tasks are executed regardless of the test results, maintaining a consistent state for subsequent runs.

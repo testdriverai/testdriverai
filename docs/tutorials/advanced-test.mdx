@@ -1,0 +1,81 @@
+---
+title: "Tutorial: Advanced test"
+description: "Explore advanced testing techniques and features in TestDriver."
+sidebarTitle: "Advanced test"
+icon: "flask-round"
+---
+
+# Advanced test tutorial
+
+Welcome to the Advanced Test Tutorial. In this guide, we will explore advanced testing techniques and features available in TestDriver. This tutorial assumes you have a basic understanding of TestDriver and its functionalities.
+
+## Prerequisites
+
+Before starting, ensure you have completed the basic TestDriver tutorial and have the following:
+
+- TestDriver installed and configured.
+- A sample project to test.
+
+## Advanced features overview
+
+TestDriver provides several advanced features to enhance your testing capabilities:
+
+1. **Custom Assertions**: Create custom assertions to validate specific conditions.
+2. **Parameterized Tests**: Run tests with different sets of input data.
+3. **Test Hooks**: Use hooks to execute code before or after tests.
+4. **Parallel Execution**: Speed up testing by running tests in parallel.
+
+## Step-by-step guide
+
+### Step 1: Setting up custom assertions
+
+Custom assertions allow you to define specific conditions for your tests. Here's an example:
+
+```python
+def assert_custom_condition(value):
+    assert value > 0, "Value must be greater than 0"
+```
+
+### Step 2: Using parameterized tests
+
+Parameterized tests enable you to test multiple scenarios with different inputs. Example:
+
+```python
+import pytest
+
+@pytest.mark.parametrize("input,expected", [(1, True), (0, False)])
+def test_is_positive(input, expected):
+    assert (input > 0) == expected
+```
+
+### Step 3: Implementing test hooks
+
+Test hooks let you execute code before or after tests. Example:
+
+```python
+def setup_function():
+    print("Setting up test environment")
+
+def teardown_function():
+    print("Cleaning up test environment")
+```
+
+### Step 4: Running tests in parallel
+
+Parallel execution can be achieved using pytest-xdist. Install it with:
+
+```bash
+pip install pytest-xdist
+```
+
+Run tests in parallel using:
+
+```bash
+pytest -n 4
+```
+
+## Conclusion
+
+By leveraging these advanced features, you can create more robust and efficient tests for your projects. Experiment with these techniques to find the best fit for your testing needs.
+
+Happy testing!

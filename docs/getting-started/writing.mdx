@@ -1,0 +1,106 @@
+---
+title: "Test Copilot"
+sidebarTitle: "Test Copilot"
+description: "Create tests with the help of TestDriver's interactive computer-use agent."
+icon: "glasses"
+---
+
+import YmlWarning from '/snippets/yml-warning.mdx'
+
+The TestDriver interactive CLI allows you to create, refine, and execute tests dynamically using natural language commands. Here's how to get started.
+
+### Prepare your environment
+
+Before we get started, let's set up your machine to collaborate with TestDriver.
+
+#### Displays
+
+TestDriver isn't like any framework you've used before. TestDriver makes decisions based on what it can see on your display!
+
+<Tip>TestDriver only knows about what it can see on your primary display!</Tip>
+
+When you enter commands into TestDriver, the current window will minimize and the `focus-window` command will bring Chrome or other applications to the foreground. 
+
+For now, set up your environment with a browser window and your terminal side by side like so:
+
+<Frame caption="Left or right, it doesn't matter!">
+<img height="200" src="/images/content/side-by-side.png" />
+</Frame>
+
+#### Application state
+
+The application you want to test should be visible before you run the testdriverai command. 
+
+For our example, make a new incognito window in Chrome and load our test webpage:
+
+```
+https://testdriverai.github.io/example-react-todo/
+```
+
+<Tip>Make sure to reset your application state before running every test!</Tip>
+
+### Launch interactive mode
+
+Run the following command to launch the TestDriver interactive mode:
+
+```bash
+testdriverai
+```
+You'll see a prompt (`>`) where you can enter commands.
+
+### Write tests using natural language
+
+Simply describe what you want to test in plain English. For example:
+
+```
+> click sign up 
+```
+
+TestDriver will analyze your screen, interpret your instruction, and generate a test script to achieve the goal. It can see your UI, control the mouse and keyboard, and automate complex workflows—all through simple commands.
+
+```yaml
+thinking...
+
+To accomplish the goal of clicking "Sign Up," we need to
+focus on the Google Chrome application and then click on
+the "Sign Up" button.
+
+Here are the steps:
+
+1. Focus the Google Chrome application.
+2. Click on the "Sign Up" button.
+
+commands:
+  - command: focus-application
+    name: Google Chrome
+  - command: hover-text
+    text: Sign Up
+    description: button in the header
+    action: click
+
+command='focus-application' name='Google Chrome'
+command='hover-text' text='Sign Up' description='button in the header' action='click'
+```
+
+### 4. Refine your test
+
+If something doesn't work as intended:
+
+- Use `/undo` to remove the last step:
+  ```
+  > /undo
+  ```
+
+Modify your prompt or add new steps to refine the test.
+
+### 5. Save your test
+
+Once you're satisfied with the test, save it to a YAML file:
+
+```
+> /save
+```
+
+This generates a reusable YAML file (for example, `testdriver.yaml`) with all the steps.
+
+<YmlWarning/>
