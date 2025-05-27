@@ -49,7 +49,7 @@
     "systeminformation": "^5.23.5",
     "tmp": "^0.2.3",
     "totp-generator": "^1.0.0",
-    "uuid": "^10.0.0",
+    "uuid": "^11.1.0",
     "winston": "^3.13.0",
     "ws": "^8.18.1"
   },
