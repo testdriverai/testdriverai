@@ -78,7 +78,7 @@ jobs:
           fi
 
           # Write iframe MDX
-          echo "<iframe src=\"$EMBED_URL\" width="100%" height="300" />" > "snippets/${FILE_NAME}-replay.mdx"
+          echo "<iframe src=\"$EMBED_URL\" width=\"100%\" height=\"300\" />" > "snippets/${FILE_NAME}-replay.mdx"
 
           # Write YAML MDX
           echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
