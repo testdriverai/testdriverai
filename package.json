@@ -70,7 +70,7 @@
     "prettier": "3.3.3"
   },
   "optionalDependencies": {
-    "@esbuild/linux-x64": "^0.21.5",
+    "@esbuild/linux-x64": "^0.25.5",
     "@img/sharp-libvips-win32-x64": "^1.0.2",
     "@img/sharp-win32-x64": "^0.33.4",
     "get-windows": "^9.2.0",
