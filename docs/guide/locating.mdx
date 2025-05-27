@@ -1,0 +1,134 @@
+---
+title: "Locating Elements in TestDriver"
+sidebarTitle: "Locating Elements"
+description: "Learn how to effectively describe and locate elements using TestDriver's visual understanding capabilities."
+icon: "magnifying-glass"
+---
+
+TestDriver uses **visual understanding** to locate elements on the screen. Unlike traditional testing frameworks that rely on selectors or element IDs, TestDriver identifies elements based on their **visual appearance**. This guide explains how to describe elements effectively to ensure TestDriver can locate them accurately.
+
+---
+
+## KeypPrinciples for locating elements
+
+1. **Describe the Element Visually**:
+   - Focus on the **appearance** of the element, not its behavior or function.
+   - Mention unique visual traits such as **text**, **color**, **size**, **position**, or **icon**.
+
+2. **Avoid Behavioral Descriptions**:
+   - don't describe what the element does (for example, "button that submits the form").
+   - Instead, describe how it looks (for example, "blue button with the text 'Submit' in the bottom-right corner").
+
+3. **Use Unique Identifiers**:
+   - If the element has visible text, include it in the description.
+   - For icons or images, describe their shape, color, or associated label.
+
+4. **Leverage Visual Feedback**:
+   - TestDriver will draw **yellow boxes** around detected elements during test execution.
+   - Use this feedback to verify that the correct element is being targeted.
+
+---
+
+## Examples of effective descriptions
+
+### 1. Buttons
+- **Good**: "Blue button with the text 'Sign In' in the top-right corner."
+- **Bad**: "Button that logs the user in."
+
+### 2. Links
+- **Good**: "Hyperlink with the text 'Learn More' in the footer."
+- **Bad**: "Link that navigates to the About page."
+
+### 3. Icons
+- **Good**: "Magnifying glass icon next to the search bar."
+- **Bad**: "Search icon that opens the search feature."
+
+### 4. Input fields
+- **Good**: "White input box labeled 'Email Address' above the password field."
+- **Bad**: "Field where the user enters their email."
+
+### 5. Images
+- **Good**: "Company logo in the top-left corner, a blue circle with white text."
+- **Bad**: "Logo that redirects to the homepage."
+
+---
+
+## How to write TestDriver commands
+
+### Example: Locating a button
+
+#### TestDriver command:
+
+```yaml
+- command: hover-text
+  text: Sign In
+  description: Blue button with the text 'Sign In' in the top-right corner
+  action: click
+
+
+```
+
+
+---
+
+### Example: Locating an icon
+
+#### TestDriver command:
+
+```yaml
+- command: hover-image
+  description: Magnifying glass icon next to the search bar
+  action: click
+```
+
+---
+
+### Example: Locating a link
+
+#### TestDriver command:
+
+```yaml
+- command: hover-text
+  text: Learn More
+  description: Hyperlink with the text 'Learn More' in the footer
+  action: click
+
+
+```
+
+
+---
+
+## Debugging element detection
+
+1. **Run the Test**:
+   - Execute the test using TestDriver.
+   - TestDriver will draw **yellow boxes** around detected elements.
+
+2. **Verify the Correct Element**:
+   - Ensure the yellow box highlights the intended element.
+   - If the wrong element is highlighted, refine your description.
+
+3. **Adjust the Description**:
+   - Add more specific visual details (for example, color, position, associated text).
+   - Avoid generic terms like "button" or "icon" without additional context.
+
+---
+
+## Best practices
+
+1. **Be Specific**:
+   - Include as many unique visual traits as possible to differentiate the element from others.
+
+2. **Test Incrementally**:
+   - Run tests after adding or modifying commands to verify element detection.
+
+3. **Use Visual Feedback**:
+   - Leverage the yellow boxes drawn by TestDriver to confirm the correct element is being targeted.
+
+4. **Avoid Overloading Descriptions**:
+   - Keep descriptions concise but detailed enough to uniquely identify the element.
+
+---
+
+By focusing on **visual descriptions** and leveraging TestDriver's feedback, you can accurately locate elements and create robust, reliable tests.

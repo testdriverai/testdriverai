@@ -1,0 +1,147 @@
+---
+title: "Setting up TestDriver CLI"
+sidebarTitle: "CLI Setup"
+description: "Follow these steps to install and set up TestDriver CLI."
+icon: "square-terminal"
+---
+
+
+<Steps>
+
+  <Step title="Install Node.js">
+
+    Ensure you have Node.js (v16 or higher) installed.
+
+    Check your Node.js version:
+    
+    ```bash
+    node -v
+    ```
+    
+    If not installed, download it from [Node.js Official Website](https://nodejs.org/).
+
+  </Step>
+  <Step title="Install NPM">
+    **npm**: Comes with Node.js. Verify `npm` is installed:
+    
+    ```bash
+    npm -v
+    ```
+  </Step>
+  <Step title="Install TestDriver">
+  
+    Install the TestDriver CLI globally using npm:
+  
+    ```bash
+    npm install -g testdriverai
+    ```
+  
+    Verify the installation:
+  
+    ```bash
+    testdriverai --version
+    ```
+  </Step>
+
+
+  <Step title="Set Up Your Test Runner">
+
+    TestDriver requires a runner to execute tests. You can use either a hosted sandbox or your own computer.
+    
+    - **TestDriver Sandbox** - Run tests in a ephemeral linux virtual machine. Recommended for ease of use, added privacy, and parallelization. Requires a TestDriver API key.
+    - **Local Runner** - Run tests on your own computer. Recommended for working with existing user sessions, files, and applications. Requires additional setup.
+
+    <Tabs>
+      <Tab title="Hosted Sandbox Setup">
+
+        Run `testdriverai init` in your project directory and choose "yes" for the sandbox option. This will prompt you for your API key.
+
+        ```
+        Beginning setup...
+        ✔ Use TestDriver Sandbox Runners? (Recommended) … yes
+        ? API KEY (from https://app.testdriver.ai/team) › ********
+        ```
+
+        This will write the `TD_VM` and `TD_API_KEY` values to `.env` file in your project directory.
+
+      </Tab>
+      <Tab title="Local Windows Setup">
+
+        #### Install Python & Visual Studio build tools
+
+        ```powershell
+        choco install python visualstudio2022-workload-vctools -y
+        ```
+
+        #### Install Node.js
+
+        You will also need Node.js if you don't have it yet.
+
+        ```powershell
+        choco install nodejs-lts --version="20.17.0"
+        ```
+
+        #### Set execution policy
+
+        Open a new terminal with admin privileges and execute the following command : 
+        ```powershell
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+        ```
+      This gives TestDriver the right to execute it's scripts and is only valid for the current user. 
+      </Tab>
+      <Tab title="Local Mac Setup">
+        #### Enable screen recording permissions
+        
+        TestDriver requires screen recording permissions to capture your screen during test execution.
+
+        - Open **System Preferences > Security & Privacy > Privacy > Screen Recording**.
+        - Check the box next to your terminal application (for example, Terminal, iTerm2) to allow screen recording.
+        
+        This is required for TestDriver to capture your screen during test execution.
+        
+        #### Enable accessibility permissions
+        
+        - Open **System Preferences > Security & Privacy > Privacy > Accessibility**.
+        - Check the box next to your terminal application (for example, Terminal, iTerm2) to allow accessibility features.
+
+        This is required for TestDriver to interact with your applications during test execution.
+
+      </Tab>
+    </Tabs>
+</Step>
+
+<Step title="Run TestDriver in Interactive Mode">
+  Start TestDriver in interactive mode. 
+  
+  ```bash
+  testdriverai
+  ```
+
+  You should see a prompt like this:
+
+  ```bash
+  Howdy! I'm TestDriver v4.2.26
+  ```
+</Step>
+
+</Steps>
+
+<CardGroup cols={2}>
+
+  <Card
+    title="Self-Driving Tests"
+    icon="link"
+    href="/getting-started/generating"
+  >
+    TestDriver will come up with it's own ideas for testing.
+  </Card>
+
+  <Card
+    title="Test Copilot"
+    icon="link"
+    href="/getting-started/writing"
+  >
+    Write custom tests
+  </Card>
+
+</CardGroup>

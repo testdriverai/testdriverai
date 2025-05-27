@@ -1,0 +1,86 @@
+---
+title: "Upgrading Existing Tests"
+sidebarTitle: "Upgrading"
+description: "Learn how to upgrade TestDriver for the latest features and improvements."
+icon: "circle-up"
+---
+
+import YmlWarning from '/snippets/yml-warning.mdx'
+
+## How to upgrade TestDriver
+To upgrade TestDriver, follow these steps:
+1. **Check for Updates**: Regularly check the [TestDriver NPM Package](https://www.npmjs.com/package/testdriverai)
+2. **Update Command**: Use the following command to update TestDriver to the latest version:
+   ```bash
+   npm install -g testdriverai
+   ```
+   If you want to use the beta version, use:
+   ```bash
+   npm install -g testdriverai
+   ```
+
+<YmlWarning/>
+
+In your existing GitHub Actions setup, you may need to update the `version` field in the `workflows/testdriver.yaml` file(s) to match the version of TestDriver you want to use. Leaving it blank will run `latest` by default. Here is an example of what to replace:
+
+```yaml {16}
+name: TestDriver
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "TestDriver"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: testdriverai/action@main
+        with:
+          version: "4.2.2"
+          key: ${{secrets.TD_API_KEY}}
+          prompt: |
+            1. /run testdriver/test.yaml
+          prerun: |
+            cd $env:TEMP
+            npm init -y
+            npm install dashcam-chrome
+            Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${{ env.WEBSITE_URL }}"
+            exit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+          WEBSITE_URL: "https://orgfarm-abvxdff-dev-ed.develop.my.salesforce.com/" # Define the website URL here
+          TD_TEST_USERNAME: ${{secrets.TD_TEST_USERNAME}}
+          TD_TEST_PASSWORD: ${{secrets.TD_TEST_PASSWORD}}
+```
+
+Would become:
+
+```yaml {16}
+name: TestDriver
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "TestDriver"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: testdriverai/action@main
+        with:
+          version: "5.3.0"
+          key: ${{secrets.TESTDRIVER_API_KEY}}
+          prompt: |
+            1. /run testdriver/test.yaml
+            ...
+...
+```
+
+Now existing tests will run on v5.3.0

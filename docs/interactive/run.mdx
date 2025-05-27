@@ -1,0 +1,39 @@
+---
+title: "/run"
+sidebarTitle: "/run"
+description: "Run a test file from a file."
+icon: "play"
+---
+
+## Description
+The `/run` command is used to execute a test file from a specified file. This command performs each step defined in the test file and outputs the results.
+
+## Usage
+```bash
+/run <file>
+```
+
+## Example usage
+```bash
+testdriverai
+> /run helloworld.yaml
+```
+This command runs the `helloworld.yaml` test file, executing each command in the file sequentially.
+
+## Behavior
+- TestDriver will execute the test file, performing each command as defined in the file.
+- If the test completes successfully, the program will exit with code `0`.
+- If any failures occur during the test, the program will output the errors and exit with code `1`.
+
+## Protips
+- Ensure the test file path is correct and accessible before running the command.
+- Use descriptive filenames for your test files to make them easier to identify.
+- Combine `/run` with debugging tools to troubleshoot failing tests.
+
+## Gotchas
+- This command will exit the program upon execution, so ensure all necessary setup is complete before running it.
+- Any errors in the test file (for example, invalid commands or missing arguments) will cause the test to fail.
+
+## Notes
+- The `/run` command is ideal for executing pre-created test files in an interactive session.
+- Use this command to validate and debug your test files during development.

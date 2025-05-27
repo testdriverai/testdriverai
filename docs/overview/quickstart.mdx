@@ -1,0 +1,179 @@
+---
+title: "Quickstart"
+sidebarTitle: "Quickstart"
+description: "Get started with TestDriver in minutes."
+icon: "gauge-high"
+---
+
+import Comments from '/snippets/comments.mdx'
+
+TestDriver isn't just a computer-use agent, it's an entire AI-native workflow for creating end-to-end tests. Follow these steps to set up your environment and get started with TestDriver.
+
+
+<Steps>
+<Step title="Set Up TestDriver">
+
+  <AccordionGroup>
+
+  
+  <Accordion title="Install the CLI">
+
+    Ensure you have Node.js (v16 or higher) installed. Then, install the TestDriver CLI globally using `npm`:
+
+    ```bash
+    npm install -g testdriverai
+    ```
+  </Accordion>
+  <Accordion title="Initialize your project">
+
+    Run `testdriverai init` in your project directory. This will launch an interactive setup process.
+
+    ```bash
+    testdriverai init
+    ```
+  </Accordion>
+  <Accordion title="Configure test runner">
+
+    Running `testdriverai init` will prompt you to set up your test runner; a target computer to run tests on. You can use either a hosted sandbox or your own computer.
+
+    - **Hosted Runners** - Run tests in a ephemeral linux virtual machine. Recommended for ease of use, added privacy, and parallelization. Requires a TestDriver API key.
+    - **Local Runner** - Run tests on your own computer. Recommended for working with existing user sessions, files, and applications. Requires additional setup.
+
+    <Tabs>
+      <Tab title="Hosted Runners (Recommended)">
+
+        Run `testdriverai init` in your project directory and choose "yes" for the sandbox option. This will prompt you for your API key.
+
+        ```
+        Beginning setup...
+        ✔ Use TestDriver Sandbox Runners? (Recommended) … yes
+        ? API KEY (from https://app.testdriver.ai/team) › ********
+        ```
+
+        This will write the `TD_VM=true` and `TD_API_KEY` values to `.env` file in your project directory. 
+
+      </Tab>
+      <Tab title="Windows">
+
+        Using your own computer as a test runner requires additional prerequisites. Follow the AccordionGroup below to set up your local environment.
+
+        #### Install Python & Visual Studio Build Tools
+
+        ```powershell
+        choco install python visualstudio2022-workload-vctools -y
+        ```
+
+        #### Install NodeJS
+
+        You will also need NodeJS if you don't have it yet.
+
+        ```powershell
+        choco install nodejs-lts --version="20.17.0"
+        ```
+
+        #### Set Execution Policy
+
+        Open a new terminal with admin privileges and execute the following command : 
+        ```powershell
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+        ```
+      
+        This gives TestDriver the right to execute it's scripts and is only valid for the current user. 
+      </Tab>
+      <Tab title="Mac">
+
+        Using your own computer as a test runner requires additional permissions. Follow the steps below to set up your local environment.
+
+        #### Enable Screen Recording Permissions
+        
+        TestDriver requires screen recording permissions to capture your screen during test execution.
+
+        - Open **System Preferences > Security & Privacy > Privacy > Screen Recording**.
+        - Check the box next to your terminal application (e.g., Terminal, iTerm2) to allow screen recording.
+        
+        This is required for TestDriver to capture your screen during test execution.
+        
+        #### Enable Accessibility Permissions
+        
+        - Open **System Preferences > Security & Privacy > Privacy > Accessibility**.
+        - Check the box next to your terminal application (e.g., Terminal, iTerm2) to allow accessibility features.
+
+        This is required for TestDriver to interact with your applications during test execution.
+
+      </Tab>
+    </Tabs>
+  </Accordion>
+</AccordionGroup>
+
+</Step>
+
+<Step title="Create your first test">
+
+Use the `/explore` command to supply test steps to the TestDriver agent. TestDriver will look at the screen and generate a test steps based on your input.  
+
+```
+> Open Google Chrome and search for "testdriverai"
+```
+
+TestDriver will generate and run test steps. See the [YAML Reference](/commands/assert). 
+
+```yaml
+- command: focus-application
+  name: Google Chrome
+- command: hover-text
+  text: Search Google or type a URL
+  description: main search bar
+  action: click
+- command: type
+  text: testdriverai
+- command: press-keys
+  keys: [enter]
+```
+
+Test steps are saved in the current working YAML file. 
+
+<Tip>Use Control + C in the CLI or the square "stop" button in the extension to stop test execution.</Tip>
+
+</Step>
+
+<Step title="Running tests">
+
+Once saved, you can run your test file anytime. Click the "Run" button in the extension or use the CLI command:
+
+```bash
+testdriverai run testdriver/your_test.yml
+```
+
+Running tests is about twice as fast as creating them, as the AI doesn't need to interpret your input.
+
+</Step>
+
+<Step title="Generate self-driving tests">
+TestDriver can also generate tests without any input! Instead, it will suggest test steps based on what it sees on the screen.
+<Card 
+  title="Self-Driving Test Guide"
+  icon="link"
+  href="/getting-started/generating">
+  Unleash TestDriver's full potential by letting it create tests for you.
+</Card>
+
+</Step>
+
+<Step title="Deploy to CI/CD">
+
+  The `testdriverai init` command automatically sets up a GitHub Action workflow for you. Any test files found in the `testdriver` directory will run on every push to the main branch. 
+
+  <Card
+    title="GitHub Actions"
+    icon="link"
+    href="/action/setup">
+    Learn how to set up GitHub Actions for TestDriver.
+  </Card>
+
+</Step>
+
+</Steps>
+
+
+
+<Comments />

@@ -1,0 +1,13 @@
+version: 5.7.7
+session: 682f645a2856e2eb406642f8
+steps:
+  - prompt: create a new tab
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: press-keys
+        keys:
+          - command
+          - t
+      - command: assert
+        expect: a new tab was created

@@ -6,15 +6,7 @@ Automate and scale QA with computer-use agents.
 
 [Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.com/invite/cWDFW8DzPm)
 
----
-
-
-
-https://github.com/user-attachments/assets/4719e834-652a-43ba-8b8c-24ea6f357ae3
-
-
-
-# Install via NPM
+---https://github.com/user-attachments/assets/4719e834-652a-43ba-8b8c-24ea6f357ae3# Install via NPM
 
 ```sh
 npm install testdriverai -g
@@ -74,7 +66,7 @@ npm install testdriverai -g
 Let's show TestDriver what we want to test. Run the following command:
 
 ```sh
-testdriverai .testdriver/test.yml
+testdriverai .testdriver/test.yaml
 ```
 
 ## Reset the test state
@@ -123,7 +115,7 @@ After this, we will type the URL and press Enter.
 
 TestDriver will execute the commands found in the yml codeblocks of the response.
 
-See the yml TestDriver generated? That's our own schema. You can learn more about it in the [reference](https://docs.testdriver.ai/reference/yml-schema).
+See the yml TestDriver generated? That's our own schema. You can learn more about it in the [reference](https://docs.testdriver.ai/getting-started/editing).
 
 > Take your hands off the mouse and keyboard while TestDriver executes! TestDriver is not a fan of backseat drivers.
 
@@ -145,7 +137,7 @@ If something didn't work, you can use `/undo` to remove all of the test steps ad
 Now it's time to make sure the test plan works before we deploy it. Use testdriver run to run the test file you just created with /save .
 
 ```sh
-testdriverai run testdriver/test.yml
+testdriverai run testdriver/test.yaml
 ```
 
 Make sure to reset the test state!
@@ -160,4 +152,4 @@ git commit -am "Add TestDriver tests"
 gh pr create --web
 ```
 
-Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/continuous-integration/overview).
+Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/action/setup).
