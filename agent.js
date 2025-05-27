@@ -850,7 +850,12 @@ const firstPrompt = async () => {
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
-      await run(file, shouldSave, shouldExit);
+      await run(file, shouldSave);
+      if (shouldExit) {
+        await runPostrun();
+        await summarize();
+        await exit(false);
+      }
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
       await generate(commands[1], commands[2], commands[3], skipYaml);
@@ -1062,7 +1067,7 @@ let runRawYML = async (yml) => {
   fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
 
   // and run it with run()
-  await run(tmpobj.name, false, false);
+  await run(tmpobj.name, false);
 };
 
 // this will load a regression test from a file location
@@ -1130,10 +1135,6 @@ ${yaml.dump(step)}
 
   setTerminalWindowTransparency(false);
 
-  if (shouldExit) {
-    await summarize();
-    await exit(false);
-  }
 };
 
 const promptUser = () => {
@@ -1283,6 +1284,9 @@ const start = async () => {
     await buildEnv();
     errorLimit = 100;
     run(thisFile, false, true, true);
+    await runPostrun();
+    await summarize();
+    await exit(false);
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
@@ -1355,6 +1359,18 @@ const runPrerun = async () => {
   );
   if (fs.existsSync(prerunFile)) {
     await run(prerunFile, false, false, false);
+  }
+};
+
+const runPostrun = async () => {
+  const postrunFile = path.join(
+    workingDir,
+    "testdriver",
+    "lifecycle",
+    "postrun.yaml",
+  );
+  if (fs.existsSync(postrunFile)) {
+    await run(postrunFile, false, false, false);
   }
 };
 
