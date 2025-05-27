@@ -159,7 +159,9 @@ app.whenReady().then(() => {
 });
 
 function exit(code = 0, reason = "") {
-  console.error(`Exiting with code ${code} and reason: "${reason}"`);
-  console.log(`Exiting with code ${code} and reason: "${reason}"`);
+  if (code && reason) {
+    console.error(`Exiting with code ${code} and reason: "${reason}"`);
+  }
+
   process.exit(code);
 }
