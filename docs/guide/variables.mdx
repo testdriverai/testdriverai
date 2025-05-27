@@ -1,0 +1,139 @@
+---
+title: "Variables"
+sidebarTitle: "Variables"
+description: "Learn how to use variables in TestDriver for dynamic data handling."
+icon: "square-root-variable"
+---
+
+# Using variables in TestDriver
+
+Variables in **TestDriver** allow you to dynamically store and reuse data during test execution. This feature is particularly useful for handling dynamic content, passing data between steps, and customizing test behavior based on runtime conditions.
+
+- Generate a random number or string and use it to fill out a form.
+- Capture API responses and validate their content.
+- Capture text or values from the screen and use them in assertions.
+- Pass different values to the test using environment variables for testing multiple scenarios.
+
+By leveraging variables in TestDriver, you can create dynamic, flexible, and reusable test scripts that adapt to changing conditions and data.
+
+#### Test file example:
+
+```yaml
+version: 5.1.0
+steps:
+  - prompt: Generate a random number
+    commands:
+      - command: exec
+        output: randomNumber
+        js: |
+          result = Math.floor(Math.random() * 1000);
+      - command: exec
+        js: |
+          console.log("Generated Random Number: ${OUTPUT.randomNumber}");
+
+  - prompt: Use the random number in a form
+    commands:
+      - command: hover-text
+        text: Enter Number
+        description: Input field for numbers
+        action: click
+      - command: type
+        text: ${OUTPUT.randomNumber}
+```
+
+## GitHub Actions example
+
+```yaml
+name: TestDriver with Variables
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test with Variables
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TD_API_KEY }}
+          prompt: |
+            1. Log in with username and password
+            2. Verify the dashboard is displayed
+        env:
+          TD_USERNAME: ${{ secrets.TD_USERNAME }}
+          TD_PASSWORD: ${{ secrets.TD_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+```
+#### Test file
+
+```yaml
+version: 4.2.18
+steps:
+  - prompt: Log in to the application
+    commands:
+      - command: hover-text
+        text: Email
+        description: Email input field
+        action: click
+      - command: type
+        text: ${TD_USERNAME}
+      - command: hover-text
+        text: Password
+        description: Password input field
+        action: click
+      - command: type
+        text: ${TD_PASSWORD}
+      - command: hover-text
+        text: Log In
+        description: Log In button
+        action: click
+```
+
+### **Capturing outputs as variables**
+
+#### Test file example:
+
+```yaml
+version: 5.1.0
+steps:
+  - prompt: Capture text from the screen
+    commands:
+      - command: capture-text
+        description: Capture the welcome message
+        output: welcomeMessage
+
+  - prompt: Verify the captured text
+    commands:
+      - command: exec
+        js: |
+          console.log("Captured Text: ${OUTPUT.welcomeMessage}");
+      - command: assert
+        expect: "${OUTPUT.welcomeMessage}" == "Welcome, Test User!"
+```
+
+## Best practices for using variables
+
+1. **Use Descriptive Names**:
+  - Name variables clearly to indicate their purpose (for example, `capturedText`, `randomNumber`).
+
+2. **Secure Sensitive Data**:
+  - Use environment variables for sensitive information like credentials or API keys.
+
+3. **Log Variable Values**:
+  - Use `console.log` or similar commands to log variable values for debugging.
+
+4. **Test Variable Logic Locally**:
+  - Verify the logic for custom variables locally before integrating them into workflows.
+
+5. **Combine Variables with Assertions**:
+  - Use variables in assertions to validate dynamic content or conditions.

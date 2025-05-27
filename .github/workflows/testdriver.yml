@@ -1,0 +1,119 @@
+name: TestDriver.ai
+
+permissions:
+  contents: write
+  pull-requests: write  
+  actions: read
+  statuses: write
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  gather-test-files:
+    name: Gather Test Files
+    runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/*.yaml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+
+  run-tests:
+    name: Run Tests
+    needs: gather-test-files
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows]
+        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+      fail-fast: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Run TestDriver
+        id: testdriver
+        uses: testdriverai/action@main
+        with:
+          os: ${{ contains(matrix.os, 'windows') && 'windows' || 'linux' }}
+          prerun: |
+            exit
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          prompt: | 
+            1. /run testdriver/${{ matrix.test }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_COLOR: "3"
+          TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
+          TD_VM_RESOLUTION: "1920x1080"
+
+      - name: Write MDX snippets separately
+        run: |
+          mkdir -p snippets
+          FILE_NAME=$(basename "${{ matrix.test }}" .yaml)
+          TEST_FILE="testdriver/${FILE_NAME}.yaml"
+
+          EMBED_URL="${{ steps.testdriver.outputs.link }}"
+          PARAMS="embed=true&timestamp=90000&playbackRate=5"
+
+          if [[ "$EMBED_URL" == *\?* ]]; then
+            EMBED_URL="${EMBED_URL}&${PARAMS}"
+          else
+            EMBED_URL="${EMBED_URL}?${PARAMS}"
+          fi
+
+          # Write iframe MDX
+          echo "<iframe src=\"$EMBED_URL\" width=\"100%\" height=\"300\" />" > "snippets/${FILE_NAME}-replay.mdx"
+
+          # Write YAML MDX
+          echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
+          cat "$TEST_FILE" >> "snippets/${FILE_NAME}-yaml.mdx"
+          echo '```' >> "snippets/${FILE_NAME}-yaml.mdx"
+
+      - name: Upload snippets artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snippets-${{ matrix.os }}-${{ matrix.test }}
+          path: snippets/
+          retention-days: 1
+  create-snippets-commit:
+    name: Commit Snippets
+    needs: run-tests
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    env:
+      BASE_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name }}
+    steps:
+      - name: Check out current branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Download all snippets artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: docs/snippets/tests
+          pattern: snippets-*
+          merge-multiple: true
+
+      - name: Commit updated snippets
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: github-actions[bot]
+          author_email: github-actions[bot]@users.noreply.github.com
+          message: "Update test snippets [skip ci]"
+          add: "docs/snippets/tests"
+          new_branch: ${{ github.head_ref }}

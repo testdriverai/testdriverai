@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "4.2.3",
+  "version": "5.7.20",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -12,12 +12,16 @@
     "debug": "DEV=true VERBOSE=true node index.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
-    "preinstall": "node -e \"process.platform === 'win32' || process.exit(1)\" && npm install node-screenshots-win32-x64-msvc"
+    "docs-lint": "cd docs && vale **/*.mdx",
+    "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@e2b/desktop": "^1.6.0",
     "@electerm/strip-ansi": "^1.0.0",
+    "ajv": "^8.17.1",
+    "arktype": "^2.1.19",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",
     "cli-progress": "^3.12.0",
@@ -39,19 +43,21 @@
     "odiff-bin": "^3.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
-    "robotjs": "^0.6.0",
     "sanitize-filename": "^1.6.3",
     "say": "^0.16.0",
     "semver": "^7.6.2",
     "sharp": "^0.33.5",
     "systeminformation": "^5.23.5",
     "tmp": "^0.2.3",
+    "totp-generator": "^1.0.0",
     "uuid": "^10.0.0",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "ws": "^8.18.1"
   },
   "overrides": {
     "glob": "^11.0.1",
-    "rimraf": "^5.0.10"
+    "rimraf": "^5.0.10",
+    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
@@ -67,6 +73,9 @@
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5",
     "@img/sharp-libvips-win32-x64": "^1.0.2",
-    "@img/sharp-win32-x64": "^0.33.4"
+    "@img/sharp-win32-x64": "^0.33.4",
+    "get-windows": "^9.2.0",
+    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3",
+    "screenshot-desktop": "^1.15.0"
   }
 }
