@@ -12,6 +12,6 @@ jobs:
       - name: npm install
         run: npm ci --ignore-scripts
       - name: Run ESLint
-        run: npx eslint
+        run: npx eslint . --max-warnings 0
       - name: Run Prettier
         run: npx prettier --check .
