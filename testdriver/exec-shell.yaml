@@ -1,6 +1,3 @@
-<iframe src="https://app.dashcam.io/replay/6830c5f5ea8e9461fd8d5712?share=1LJLtWp81pR2QsFFF9x8pA&embed=true&timestamp=60000&playbackRate=2" />
-
-```yaml
 version: 5.1.1
 session: 67f00511acbd9ccac373edf7
 steps:
@@ -22,4 +19,3 @@ steps:
         timeout: 30000
       - command: assert
         expect: Google Chrome is running
-```

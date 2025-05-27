@@ -1,6 +1,3 @@
-<iframe src="https://app.dashcam.io/replay/6830c638ea8e9461fd8d5761?share=Rpmih4K2SKfRVYYT0b3ftg&embed=true&timestamp=60000&playbackRate=2" />
-
-```yaml
 version: 5.7.7
 session: 682f60bf2856e2eb4066427f
 steps:
@@ -18,4 +15,3 @@ steps:
     commands:
       - command: assert
         expect: Your cart is empty
-```

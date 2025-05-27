@@ -1,6 +1,3 @@
-<iframe src="https://app.dashcam.io/replay/6830c6003aef88e5ef0e07de?share=FYIGdDLnXKg3fvPUO1QhsA&embed=true&timestamp=60000&playbackRate=2" />
-
-```yaml
 version: 5.7.7
 session: 682f5fc22856e2eb40664269
 steps:
@@ -50,4 +47,3 @@ steps:
         expect: >-
           the username field contains "Sincere@april.biz" which is a valid email
           address
-```
