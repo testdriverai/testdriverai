@@ -41,5 +41,5 @@ DEV=true VERBOSE=true npx testdriverai
 > https://nodejs.org/en/learn/getting-started/debugging
 
 ```sh
-npx --node-options=--inspect testdriverai init
+npx --node-options=--inspect-wait testdriverai init
 ```
