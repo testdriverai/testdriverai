@@ -211,11 +211,6 @@
         "global": {
             "anchors": [
                 {
-                    "anchor": "Community",
-                    "href": "https://discord.com/invite/cWDFW8DzPm",
-                    "icon": "discord"
-                },
-                {
                     "anchor": "Book a Demo",
                     "href": "https://calendly.com/d/cq23-qyn-3v6/testdriver-ai-demo",
                     "icon": "calendar"
@@ -239,8 +234,12 @@
                 "href": "https://github.com/testdriverai/testdriverai"
             },
             {
+                "label": "Forums",
+                "href": "https://forums.testdriver.ai"
+            },
+            {
                 "label": "Report an Issue",
-                "href": "https://github.com/testdriverai/testdriverai/issues/new"
+                "href": "https://forums.testdriver.ai/new-topic?category=help"
             }
         ],
         "primary": {

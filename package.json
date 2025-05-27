@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "5.7.20",
+  "version": "5.7.24",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -29,7 +29,8 @@
     "decompress": "^4.2.1",
     "dotenv": "^16.4.5",
     "electron": "^33.0.2",
-    "jimp": "^0.22.12",
+    "get-windows": "^9.2.0",
+    "jimp": "^1.6.0",
     "js-yaml": "^4.1.0",
     "mac-screen-capture-permissions": "^2.1.0",
     "markdown-parser": "0.0.8",
@@ -61,7 +62,7 @@
   "devDependencies": {
     "@eslint/js": "^9.10.0",
     "chai": "^5.1.2",
-    "esbuild": "0.20.2",
+    "esbuild": "0.25.5",
     "esbuild-plugin-fileloc": "^0.0.6",
     "eslint": "^9.10.0",
     "globals": "^15.9.0",
