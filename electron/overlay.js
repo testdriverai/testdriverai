@@ -114,7 +114,6 @@ app.whenReady().then(() => {
   // window.webContents.openDevTools();
 
   ipc.serve(() => {
-    console.error("Serving IPC");
     for (const event of eventsArray) {
       ipc.server.on(event, (data) => {
         if (event === "show-window") {
@@ -137,7 +136,6 @@ app.whenReady().then(() => {
   );
 
   ipc.server.on("connect", () => {
-    console.error("Client connected");
     clearTimeout(timeout);
   });
 
@@ -159,7 +157,9 @@ app.whenReady().then(() => {
 });
 
 function exit(code = 0, reason = "") {
-  console.error(`Exiting with code ${code} and reason: "${reason}"`);
-  console.log(`Exiting with code ${code} and reason: "${reason}"`);
+  if (code && reason) {
+    console.error(`Exiting with code ${code} and reason: "${reason}"`);
+  }
+
   process.exit(code);
 }
