@@ -69,7 +69,7 @@ jobs:
           TEST_FILE="testdriver/${FILE_NAME}.yaml"
 
           EMBED_URL="${{ steps.testdriver.outputs.link }}"
-          PARAMS="embed=true&timestamp=60000&playbackRate=5"
+          PARAMS="embed=true&timestamp=90000&playbackRate=5"
 
           if [[ "$EMBED_URL" == *\?* ]]; then
             EMBED_URL="${EMBED_URL}&${PARAMS}"
