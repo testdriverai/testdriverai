@@ -9,7 +9,6 @@ permissions:
 on:
   push:
     branches: ["main"]
-  pull_request:
   workflow_dispatch:
   schedule:
     - cron: "0 0 * * *"
@@ -50,7 +49,6 @@ jobs:
         uses: testdriverai/action@main
         with:
           os: ${{ contains(matrix.os, 'windows') && 'windows' || 'linux' }}
-          version: "alpha"
           prerun: |
             exit
           key: ${{ secrets.TESTDRIVER_API_KEY }}
