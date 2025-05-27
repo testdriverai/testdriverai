@@ -5,6 +5,8 @@ description: "How to handle pre and post test tasks."
 icon: "hammer"
 ---
 
+import LifecycleWarning from '/snippets/lifecycle-warning.mdx'
+
 ## Overview
 Prerun scripts are commands executed on a TestDriver virtual machine (VM) before each test in a CI/CD pipeline. They are used to prepare the environment by provisioning the VM, installing dependencies, configuring settings, or building the application. This ensures a consistent and reproducible environment for every test execution.
 
@@ -21,6 +23,8 @@ Prerun scripts are ideal for:
 - Building your application or running setup scripts.
 - Configuring the VM to match specific test requirements.
 - Preparing staging environments or accessing private resources.
+
+<LifecycleWarning/>
 
 ---
 

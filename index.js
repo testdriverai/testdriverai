@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-
 const config = require("./lib/config.js");
+
 // We need to initialize the IPC server quickly
 require("./lib/ipc.js");
 const { emitter, events } = require("./lib/events.js");
@@ -33,7 +33,7 @@ if (process.argv[2] === "--renderer") {
         detached: true,
       });
       logger.info(`Started renderer, process ID: ${electronProcess.pid}`);
-      process.exit(0);
+      setTimeout(() => process.exit(0), 200);
     } catch (err) {
       logger.error("%s", err);
       process.exit(1);

@@ -1,16 +1,7 @@
-version: 5.6.2
-session: 681cdec532fef6c6f161c4a4
+version: 5.7.7
+session: 682f66241f5b5f003ee139cb
 steps:
-  - prompt: search for the current track in spotify
+  - prompt: remember the username of the user who cannot login
     commands:
       - command: focus-application
-        name: spotify
-      - command: remember
-        output: track
-        description: the track now playing in spotify
-      - command: hover-text
-        text: What do you want to play?
-        description: the spotify search bar
-        action: click
-      - command: type
-        text: ${OUTPUT.track}
+        name: Google Chrome
