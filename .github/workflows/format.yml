@@ -5,6 +5,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          # We need to fetch the full history to check for changes since `main`
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
@@ -13,5 +16,6 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Run ESLint
         run: npx eslint . --max-warnings 0
+      # Only check files that have been Added/Created/Modified/Renamed/Type-changed since `main`
       - name: Run Prettier
-        run: npx prettier --check .
+        run: git diff --name-only --diff-filter=ACMRT origin/main HEAD | xargs -r npx prettier --check --ignore-unknown
