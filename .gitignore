@@ -148,15 +148,12 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node
 
-.envrc
-index-K4K5CPUZ.html
-settings.json
-saves/*
-node_modules
-.tmp/*
 .DS_Store
-settings.json
-saves/*
+.envrc
 .testdriver/screenshots/mac/*
-entrypoint.js
+.tmp/*
 entrypoint
+entrypoint.js
+index-K4K5CPUZ.html
+node_modules
+saves/*
