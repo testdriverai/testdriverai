@@ -43,4 +43,5 @@ jobs:
           node-version: "20"
       - uses: JS-DevTools/npm-publish@v3
         with:
+          tag: "beta"
           token: ${{ secrets.NPM_AUTH_TOKEN }}

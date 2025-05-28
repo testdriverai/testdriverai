@@ -7,8 +7,10 @@ permissions:
   statuses: write
 
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: ["Publish to NPM"]
+    types:
+      - completed
   workflow_dispatch:
   schedule:
     - cron: "0 0 * * *"
@@ -48,6 +50,7 @@ jobs:
         id: testdriver
         uses: testdriverai/action@main
         with:
+          version: "beta"
           os: ${{ contains(matrix.os, 'windows') && 'windows' || 'linux' }}
           prerun: |
             exit
@@ -114,3 +117,19 @@ jobs:
           message: "Update test snippets [skip ci]"
           add: "docs/snippets/tests"
           new_branch: ${{ github.head_ref }}
+
+  publish:
+    name: Publish
+    needs: create-snippets-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          tag: "latest"
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
