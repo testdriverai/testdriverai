@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "5.7.31",
+  "version": "5.7.32",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
