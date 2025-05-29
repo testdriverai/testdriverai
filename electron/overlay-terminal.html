@@ -7,7 +7,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap"
       rel="stylesheet"
     />
-    <title>TestDriver</title>
+    <title>TestDriver Output</title>
     <style>
       /* ...existing styles for terminal only... */
       #terminal-wrapper {
@@ -80,9 +80,9 @@
         fontSize: 13,
         theme: testdriverTheme,
         fontFamily: '"IBM Plex Mono", monospace',
-        lineHeight: 1.2,
+        lineHeight: 1.1,
         letterSpacing: 0,
-        disableStdin: false, // Enable stdin
+        disableStdin: true, // Enable stdin
       });
       const fitAddon = new FitAddon.FitAddon();
       terminal.loadAddon(fitAddon);

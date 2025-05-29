@@ -125,9 +125,9 @@ app.whenReady().then(() => {
     });
     // terminalWindow.setContentProtection(true);
     terminalWindow.loadFile("overlay-terminal.html");
-    terminalWindow.openDevTools({
-      mode: "detach",
-    });
+    // terminalWindow.openDevTools({
+    //   mode: "detach",
+    // });
   }
 
   // --- Event Routing ---
@@ -148,11 +148,9 @@ app.whenReady().then(() => {
             event === "screen-capture:start" ||
             event === "mouse-click:start"
           ) {
-            console.log("Hiding terminal window for event:", event);
             terminalWindow.hide();
           }
           if (event === "screen-capture:end" || event === "mouse-click:end") {
-            console.log("Showing terminal window for event:", event);
             terminalWindow.showInactive();
           }
           terminalWindow?.webContents.send(event, data);
