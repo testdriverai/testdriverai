@@ -99,8 +99,6 @@ jobs:
     steps:
       - name: Check out current branch
         uses: actions/checkout@v3
-        with:
-          ref: main
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
         with:
