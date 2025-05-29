@@ -111,7 +111,9 @@ app.whenReady().then(() => {
   });
 
   // open developer tools
-  // window.webContents.openDevTools();
+  if (process.env.TD_DEV) {
+    window.webContents.openDevTools({ mode: "detach" });
+  }
 
   ipc.serve(() => {
     for (const event of eventsArray) {
