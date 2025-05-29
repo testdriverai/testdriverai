@@ -33,4 +33,4 @@ jobs:
         run: npm install -g testdriverai
 
       - name: Verify Installation
-        run: testdriverai --help || echo "TestDriverAI not found"
+        run: testdriverai --help
