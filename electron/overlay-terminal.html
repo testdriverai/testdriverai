@@ -7,17 +7,17 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap"
       rel="stylesheet"
     />
-    <title>TestDriver Terminal</title>
+    <title>TestDriver Output</title>
     <style>
       /* ...existing styles for terminal only... */
       #terminal-wrapper {
         position: absolute;
-        top: 0;
+        top: 52px;
         left: 0;
         bottom: 0;
         right: 0;
         padding: 10px;
-        background: black;
+        background: #0d0e14;
         z-index: 1;
       }
       #terminal {
@@ -28,7 +28,7 @@
       body {
         margin: 0;
         padding: 0;
-        background: black;
+        background: #0d0e14;
         font-family: "IBM Plex Mono", monospace;
         font-size: 14px;
       }
@@ -38,6 +38,11 @@
     <script src="terminal/xterm-fit.js" type="text/javascript"></script>
   </head>
   <body>
+    <img
+      src="td.png"
+      alt="TestDriver Logo"
+      style="display: block; margin: 10px; height: 32px"
+    />
     <div id="terminal-wrapper">
       <div id="terminal"></div>
     </div>
@@ -45,17 +50,47 @@
       const { ipcRenderer } = require("electron");
       const { events } = require("../lib/events.js");
       const terminalElement = document.querySelector("#terminal");
+      const testdriverTheme = {
+        background: "#0d0e14",
+        foreground: "#f8f8f2",
+        cursor: "#b0cf34",
+        selection: "#1e2a5a",
+        black: "#0d0e14",
+        red: "#ff5555",
+        green: "#b0cf34",
+        yellow: "#ffd700",
+        blue: "#4f8cff",
+        magenta: "#c792ea",
+        cyan: "#80cbc4",
+        white: "#f8f8f2",
+        brightBlack: "#282a36",
+        brightRed: "#ff6e6e",
+        brightGreen: "#d6ff57",
+        brightYellow: "#fff59d",
+        brightBlue: "#82aaff",
+        brightMagenta: "#e1acff",
+        brightCyan: "#a7ffeb",
+        brightWhite: "#ffffff",
+      };
       const terminal = new Terminal({
         convertEol: true,
         cursorInactiveStyle: "none",
         scrollback: 9999999,
         allowProposedApi: true,
-        fontSize: 14,
+        fontSize: 13,
+        theme: testdriverTheme,
+        fontFamily: '"IBM Plex Mono", monospace',
+        lineHeight: 1.2,
+        letterSpacing: 0,
+        disableStdin: true,
       });
       const fitAddon = new FitAddon.FitAddon();
       terminal.loadAddon(fitAddon);
       terminal.open(terminalElement);
       fitAddon.fit();
+      window.addEventListener("resize", () => {
+        fitAddon.fit();
+      });
       ipcRenderer.on(events.terminal.stdout, (event, data) =>
         terminal.write(data),
       );
