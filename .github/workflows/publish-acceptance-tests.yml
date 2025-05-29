@@ -8,15 +8,30 @@ permissions:
   statuses: write
 
 on:
-  workflow_run:
-    workflows: ["Publish to NPM"]
-    types:
-      - completed
+  # Run in Merge Queue rather than individual PRs
+  merge_group:
+  # Through the GitHub UI
   workflow_dispatch:
+  # Run every day at midnight to ensure CLI -> API works
   schedule:
     - cron: "0 0 * * *"
 
 jobs:
+  publish-beta:
+    name: Publish testdriverai@beta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          tag: "beta"
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+
   gather-test-files:
     name: Gather Test Files
     runs-on: ubuntu-latest
@@ -118,19 +133,3 @@ jobs:
           message: "Update test snippets [skip ci]"
           add: "docs/snippets/tests"
           new_branch: ${{ github.head_ref }}
-
-  publish:
-    name: Publish
-    needs: create-snippets-commit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "20"
-      - uses: JS-DevTools/npm-publish@v3
-        with:
-          tag: "latest"
-          token: ${{ secrets.NPM_AUTH_TOKEN }}
