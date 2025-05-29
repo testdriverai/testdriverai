@@ -251,7 +251,10 @@ const haveAIResolveError = async (
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
-  logger.error(chalk.red("Error detected"));
+  logger.info("");
+  logger.error(
+    chalk.red("Error detected. Attempting to recover (via --heal)..."),
+  );
 
   log.prettyMarkdown(eMessage);
 
@@ -1103,6 +1106,11 @@ let run = async (
 
   executionHistory = [];
 
+  if (!ymlObj.steps || !ymlObj.steps.length) {
+    logger.info(chalk.red("No steps found in the YAML file"));
+    await exit(true);
+  }
+
   for (const step of ymlObj.steps) {
     logger.info(``, null);
     logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
@@ -1143,9 +1151,8 @@ ${yaml.dump(step)}
 
   setTerminalWindowTransparency(false);
 
-  await summarize();
-
   if (shouldExit) {
+    await summarize();
     await exit(false);
   }
 };
