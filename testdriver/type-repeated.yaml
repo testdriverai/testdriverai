@@ -1,0 +1,21 @@
+version: 5.7.7
+session: 682f5c4c811bd5a322c0e5c1
+steps:
+  - prompt: enter aabbcc within the username field
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Username
+        description: input field for username
+        action: click
+      - command: type
+        text: aabbcc
+  - prompt: assert that aabbcc shows in the username field
+    commands:
+      - command: hover-text
+        text: password
+        description: input field for password
+        action: click
+      - command: assert
+        expect: the username field contains the text "aabbcc"
