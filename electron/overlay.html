@@ -307,12 +307,13 @@
       ipcRenderer.on(
         events.mouseClick,
         (event, { x, y, click = "single" } = {}) => {
-          pointer.style.marginLeft = toCss(x);
-          pointer.style.marginTop = toCss(y);
-          pointer.setAttribute("class", "");
+          mouse.style.marginLeft = toCss(x);
+          mouse.style.marginTop = toCss(y);
+          // Reset class so animation can restart
+          mouse.setAttribute("class", "");
           // Force reflow
-          void pointer.offsetWidth;
-          pointer.classList.add(`${click}-click`);
+          void mouse.offsetWidth;
+          mouse.classList.add(`${click}-click`);
         },
       );
 
