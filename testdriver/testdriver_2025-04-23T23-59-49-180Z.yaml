@@ -1,0 +1,11 @@
+version: 5.5.1
+session: 68097efc522f14879ad47ef2
+steps:
+  - prompt: /try log in
+    commands:
+      - command: focus-application
+        name: Visual Studio Code
+      - command: hover-text
+        text: What can I test for you?
+        description: chat input area in Visual Studio Code
+        action: click
