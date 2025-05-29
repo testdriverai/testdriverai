@@ -7,6 +7,26 @@ icon: "bandage"
 
 Auto-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes.
 
+Use `--heal` to enable auto-healing in your test runs. This feature allows TestDriver to automatically update tests when minor changes occur, such as text updates or small UI adjustments, without requiring manual intervention.
+
+## Why use auto-healing?
+
+In modern software development, applications frequently undergo changes, whether it's UI updates, text modifications, or layout adjustments. These changes can lead to test failures, requiring developers to manually update test scripts to reflect the new state of the application.
+
+This means that if a test fails due to a change in the application, TestDriver will attempt to recover by finding the updated element or text and retrying the action. If successful, it will update the test script accordingly.
+
+This feature is particularly useful in continuous integration (CI) environments, where tests need to adapt to frequent changes in the application.
+
+## How to enable auto-healing
+
+To enable auto-healing in TestDriver, simply add the `--heal` flag when running your tests. This instructs TestDriver to attempt to automatically update any failing tests due to minor changes in the application.
+
+```bash
+testdriver run my-tests.yaml --heal
+```
+
+## How auto-healing works
+
 When TestDriver steps fail, the AI will progressively fall back to attempt to complete the test.
 
 If running on CI, TestDriver will open a pull request (PR) with the updated test, ensuring your test suite stays up-to-date with minimal manual intervention.
@@ -95,7 +115,7 @@ jobs:
         with:
           key: ${{ secrets.TD_API_KEY }}
           prompt: |
-            1. /run testdriver/onboarding.yaml --save
+            1. /run testdriver/onboarding.yaml --save --heal
           create-pr: true
           pr-title: "Auto-Healed Test Updates"
           pr-base: main
