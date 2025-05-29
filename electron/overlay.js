@@ -49,96 +49,114 @@ app.whenReady().then(() => {
   app.dock?.hide();
 
   // --- Overlay Window (UI) ---
+  let overlayWindow;
   let overlayWindowOptions;
-  if (config.TD_VM) {
-    overlayWindowOptions = {
-      width: config.TD_VM_RESOLUTION[0],
-      height: config.TD_VM_RESOLUTION[1],
-      closable: true,
-      resizable: false,
-      show: false,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      autoHideMenuBar: true,
-    };
-  } else {
-    overlayWindowOptions = {
-      ...screen.getPrimaryDisplay().bounds,
-      closable: true,
-      resizable: true,
-      alwaysOnTop: true,
-      enableLargerThanScreen: true,
-      frame: false,
-      show: false,
-      focusable: false,
-      fullscreenable: true,
-      transparent: true,
-      skipTaskbar: true,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      autoHideMenuBar: true,
-    };
-    if (process.platform !== "darwin") {
-      overlayWindowOptions.fullscreen = true;
+  const showOverlayGUI = config.TD_OVERLAY_GUI !== false;
+  if (showOverlayGUI) {
+    if (config.TD_VM) {
+      overlayWindowOptions = {
+        width: config.TD_VM_RESOLUTION[0],
+        height: config.TD_VM_RESOLUTION[1],
+        closable: true,
+        resizable: false,
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
+        autoHideMenuBar: true,
+      };
+    } else {
+      overlayWindowOptions = {
+        ...screen.getPrimaryDisplay().bounds,
+        closable: true,
+        resizable: true,
+        alwaysOnTop: true,
+        enableLargerThanScreen: true,
+        frame: false,
+        show: false,
+        focusable: false,
+        fullscreenable: true,
+        transparent: true,
+        skipTaskbar: true,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
+        autoHideMenuBar: true,
+      };
+      if (process.platform !== "darwin") {
+        overlayWindowOptions.fullscreen = true;
+      }
     }
+    overlayWindow = new BrowserWindow(overlayWindowOptions);
+    if (!config.TD_VM) {
+      overlayWindow.setIgnoreMouseEvents(true);
+      overlayWindow.setAlwaysOnTop(true, "screen-saver");
+      overlayWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+    } else {
+      overlayWindow.setContentSize(
+        config.TD_VM_RESOLUTION[0],
+        config.TD_VM_RESOLUTION[1],
+      );
+    }
+    overlayWindow.loadFile("overlay.html");
   }
-  const overlayWindow = new BrowserWindow(overlayWindowOptions);
-  if (!config.TD_VM) {
-    overlayWindow.setIgnoreMouseEvents(true);
-    overlayWindow.setAlwaysOnTop(true, "screen-saver");
-    overlayWindow.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-    });
-  } else {
-    overlayWindow.setContentSize(
-      config.TD_VM_RESOLUTION[0],
-      config.TD_VM_RESOLUTION[1],
-    );
-  }
-  overlayWindow.loadFile("overlay.html");
 
   // --- Terminal Window ---
-  const terminalWindow = new BrowserWindow({
-    width: 600,
-    height: overlayWindowOptions.height || 800,
-    x: (overlayWindowOptions.width || 1920) - 600,
-    y: 0,
-    show: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-  });
-  terminalWindow.setContentProtection(true);
-  terminalWindow.loadFile("overlay-terminal.html");
-  terminalWindow.openDevTools({
-    mode: "detach",
-  });
+  let terminalWindow;
+  const showOverlayTerminal = config.TD_OVERLAY_TERMINAL !== false;
+  if (showOverlayTerminal) {
+    terminalWindow = new BrowserWindow({
+      width: 600,
+      height: (overlayWindowOptions && overlayWindowOptions.height) || 800,
+      x:
+        (overlayWindowOptions && overlayWindowOptions.width
+          ? overlayWindowOptions.width
+          : 1920) - 600,
+      y: 0,
+      show: false,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
+    });
+    // terminalWindow.setContentProtection(true);
+    terminalWindow.loadFile("overlay-terminal.html");
+    terminalWindow.openDevTools({
+      mode: "detach",
+    });
+  }
 
   // --- Event Routing ---
   ipc.serve(() => {
     for (const event of eventsArray) {
       ipc.server.on(event, (data) => {
         if (event === "show-window") {
-          overlayWindow.showInactive();
-          terminalWindow.showInactive();
+          if (showOverlayGUI && overlayWindow) overlayWindow.showInactive();
+          if (showOverlayTerminal && terminalWindow)
+            terminalWindow.showInactive();
           return;
         }
-        overlayWindow?.webContents.send(event, data);
+        if (showOverlayGUI && overlayWindow)
+          overlayWindow?.webContents.send(event, data);
 
-        if (event === "screen-capture:start" || event === "mouse-click:start") {
-          console.log("Hiding terminal window for event:", event);
-          terminalWindow.hide();
+        if (showOverlayTerminal && terminalWindow) {
+          if (
+            event === "screen-capture:start" ||
+            event === "mouse-click:start"
+          ) {
+            console.log("Hiding terminal window for event:", event);
+            terminalWindow.hide();
+          }
+          if (event === "screen-capture:end" || event === "mouse-click:end") {
+            console.log("Showing terminal window for event:", event);
+            terminalWindow.showInactive();
+          }
+          terminalWindow?.webContents.send(event, data);
         }
-        if (event === "screen-capture:end" || event === "mouse-click:end") {
-          console.log("Showing terminal window for event:", event);
-          terminalWindow.showInactive();
-        }
-        terminalWindow?.webContents.send(event, data);
       });
     }
   });
