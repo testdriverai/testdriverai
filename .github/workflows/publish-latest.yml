@@ -32,10 +32,10 @@ jobs:
         run: |
           git push https://${{ secrets.GH_TOKEN }}@github.com/testdriverai/testdriverai.git HEAD:main --force
 
-  publish:
-    name: Publish
-    runs-on: ubuntu-latest
+  publish-latest:
+    name: Publish testdriverai@latest
     needs: bump_version
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
