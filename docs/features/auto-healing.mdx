@@ -5,7 +5,7 @@ description: "Learn how TestDriver's auto-healing feature keeps your tests resil
 icon: "bandage"
 ---
 
-Auto-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes. 
+Auto-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes.
 
 When TestDriver steps fail, the AI will progressively fall back to attempt to complete the test.
 
@@ -37,6 +37,7 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
   description: Submit button in the form
   action: click
 ```
+
 </Step>
 <Step title="Application Update">
   - The button text is changed from "Submit" to "Send" in the application.
@@ -71,7 +72,7 @@ If running on CI, TestDriver will open a pull request (PR) with the updated test
 
 Here's how you can configure a GitHub Action to enable auto-healing and PR creation:
 
-```yaml {24-30} 
+```yaml {24-30}
 name: TestDriver Auto-Healing
 
 on:

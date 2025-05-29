@@ -858,6 +858,9 @@ const firstPrompt = async () => {
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
+      if (flags.includes("--heal")) {
+        healMode = true;
+      }
       await run(file, shouldSave, shouldExit);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
