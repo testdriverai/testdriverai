@@ -137,16 +137,6 @@
         background-color: black;
       }
 
-      #pointer {
-        width: 25px;
-        height: 25px;
-        opacity: 0;
-        position: absolute;
-        transform: translate(-50%, -50%);
-        border-radius: 50%;
-        background-color: #b0cf34;
-      }
-
       .single-click {
         animation: singleClick 0.7s ease-in-out forwards;
       }
@@ -237,7 +227,6 @@
     <div id="screenshot"></div>
     <div id="main" class="container">
       <div id="boxes">
-        <div id="pointer"></div>
         <div id="mouse"><div id="dot"></div></div>
       </div>
       <div id="terminal-wrapper">
@@ -251,7 +240,6 @@
       const { events } = require("../lib/events.js");
 
       const mouse = document.querySelector("#mouse");
-      const pointer = document.querySelector("#pointer");
       const container = document.querySelector("#main");
       const screenshotElement = document.querySelector("#screenshot");
       const terminalElement = document.querySelector("#terminal");
