@@ -82,7 +82,7 @@
         fontFamily: '"IBM Plex Mono", monospace',
         lineHeight: 1.2,
         letterSpacing: 0,
-        disableStdin: true,
+        disableStdin: false, // Enable stdin
       });
       const fitAddon = new FitAddon.FitAddon();
       terminal.loadAddon(fitAddon);
@@ -97,6 +97,10 @@
       ipcRenderer.on(events.terminal.stderr, (event, data) =>
         terminal.write(data),
       );
+      // Forward terminal input to main process
+      terminal.onData((data) => {
+        ipcRenderer.send("terminal:stdin", data);
+      });
     </script>
   </body>
 </html>

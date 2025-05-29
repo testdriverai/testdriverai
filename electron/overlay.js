@@ -6,8 +6,9 @@ const {
   BrowserWindow,
   Tray,
   Menu,
+  ipcMain,
 } = require("electron");
-const { eventsArray } = require("../lib/events.js");
+const { eventsArray, events } = require("../lib/events.js");
 const config = require("../lib/config.js");
 const path = require("path");
 
@@ -140,6 +141,12 @@ app.whenReady().then(() => {
         terminalWindow?.webContents.send(event, data);
       });
     }
+  });
+
+  // Listen for terminal:stdin from renderer and forward to main process (agent.js)
+  ipcMain.on(events.terminal.stdin, (event, data) => {
+    // Forward stdin data to agent.js via node-ipc (use broadcast, not emit)
+    ipc.server.broadcast(events.terminal.stdin, data);
   });
 
   // We do this because node-ipc doesn't prevent new servers from using the same id
