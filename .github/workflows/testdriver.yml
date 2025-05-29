@@ -2,7 +2,7 @@ name: TestDriver.ai
 
 permissions:
   contents: write
-  pull-requests: write  
+  pull-requests: write
   actions: read
   statuses: write
 
@@ -52,7 +52,7 @@ jobs:
           prerun: |
             exit
           key: ${{ secrets.TESTDRIVER_API_KEY }}
-          prompt: | 
+          prompt: |
             1. /run testdriver/${{ matrix.test }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,9 +99,6 @@ jobs:
     steps:
       - name: Check out current branch
         uses: actions/checkout@v3
-        with:
-          ref: ${{ github.head_ref }}
-
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
         with:
