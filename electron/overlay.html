@@ -146,11 +146,11 @@
     }
 
     .single-click {
-      animation: singleClick 0.7s ease-in-out forwards;
+      animation: singleClick 0.7s ease-in-out 2 alternate;
     }
 
     .double-click {
-      animation: doubleClick 0.7s ease-in-out forwards;
+      animation: doubleClick 0.7s ease-in-out 2 alternate;
     }
 
     @keyframes singleClick {
@@ -322,6 +322,12 @@
         pointer.classList.add(`${click}-click`);
       },
     );
+
+    // Remove animation class after animation ends to ensure pointer disappears
+    pointer.addEventListener('animationend', (event) => {
+      const click = event.animationName === 'doubleClick' ? 'double' : 'single';
+      pointer.classList.remove(`${click}-click`);
+    });
 
     ipcRenderer.on(events.matches.show, (event, closeMatches = []) => {
       if (boundingBoxesTimeout) clearTimeout(boundingBoxesTimeout)
