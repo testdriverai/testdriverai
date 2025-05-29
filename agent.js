@@ -1343,6 +1343,12 @@ const newSession = async () => {
     activeWindow: await system.activeWin(),
   });
 
+  if (!sessionRes) {
+    throw new Error(
+      "Unable to start TestDriver session.  Check your network connection or restart the CLI.",
+    );
+  }
+
   session.set(sessionRes.data.id);
 };
 
