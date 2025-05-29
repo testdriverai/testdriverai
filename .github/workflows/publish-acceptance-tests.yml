@@ -1,4 +1,5 @@
-name: TestDriver.ai
+# CLI Acceptance Tests that validate & document E2E behavior with the CLI & TestDriver.ai API
+name: Acceptance Tests
 
 permissions:
   contents: write
