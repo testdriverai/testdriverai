@@ -1,9 +1,11 @@
+# `main` is always published to `testdriverai@latest`. Checks are performed in PRs and the Merge Queue to ensure a healthy `main` branch."
+name: Publish to NPM
+
 on:
   push:
     branches:
       - main
 
-name: Publish to NPM
 jobs:
   bump_version:
     name: "Bump Version"
@@ -30,10 +32,10 @@ jobs:
         run: |
           git push https://${{ secrets.GH_TOKEN }}@github.com/testdriverai/testdriverai.git HEAD:main --force
 
-  publish:
-    name: Publish
-    runs-on: ubuntu-latest
+  publish-latest:
+    name: Publish testdriverai@latest
     needs: bump_version
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:

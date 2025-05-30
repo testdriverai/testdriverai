@@ -1,5 +1,8 @@
+# Ensure affected code follows standards and is formatted correctly. Otherwise, automatic formatting in future changes will cause larger diffs.
 name: Lint + Prettier
+
 on: push
+
 jobs:
   lint:
     runs-on: ubuntu-latest
