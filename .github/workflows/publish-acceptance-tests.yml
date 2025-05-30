@@ -51,7 +51,9 @@ jobs:
 
   run-tests:
     name: Run Tests
-    needs: gather-test-files
+    needs:
+      - gather-test-files
+      - publish-beta
     runs-on: ubuntu-latest
     strategy:
       matrix:
