@@ -1,4 +1,4 @@
-<a href="https://testdriver.ai"><img src="https://github.com/dashcamio/testdriver/assets/318295/2a0ad981-8504-46f0-ad97-60cb6c26f1e7"/></a>
+<a href="https://testdriver.ai"><img src="https://github.com/testdriverai/action/assets/318295/2a0ad981-8504-46f0-ad97-60cb6c26f1e7"/></a>
 
 # TestDriver.ai
 
@@ -153,5 +153,3 @@ gh pr create --web
 ```
 
 Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/action/setup).
-
-

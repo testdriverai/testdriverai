@@ -19,9 +19,19 @@ This guide explains how to integrate **TestDriver** with **Vercel deployments** 
 
 ## Prerequisites
 
-1. **Vercel GitHub Integration**: Ensure your repository is connected to Vercel for automatic deployments.
-2. **TestDriver API Key**: Store your API key as a GitHub secret (for example, `TD_API_KEY`).
-3. **Vercel Deployment URL**: Use the `VERCEL_URL` environment variable provided by Vercel to access the deployment.
+<Steps>
+  <Step title="Vercel GitHub integration setup">
+    Ensure your repository is connected to Vercel for automatic deployments.
+  </Step>
+  <Step title="Store TestDriver API key as a secret">
+    Store your TestDriver API key as a GitHub secret (for example,
+    `TD_API_KEY`).
+  </Step>
+  <Step title="Configure Vercel deployment URL">
+    Use the `VERCEL_URL` environment variable provided by Vercel to access the
+    deployment.
+  </Step>
+</Steps>
 
 ---
 
@@ -30,6 +40,7 @@ This guide explains how to integrate **TestDriver** with **Vercel deployments** 
 Here's a complete workflow to test Vercel deployments with TestDriver:
 
 ### Workflow file: `.github/workflows/test-vercel.yaml`
+
 ```yaml
 name: Test Vercel Deployment with TestDriver
 
@@ -54,7 +65,7 @@ jobs:
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-args: '--prod' # Optional: Use '--prod' for production builds
+          vercel-args: "--prod" # Optional: Use '--prod' for production builds
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -73,55 +84,27 @@ jobs:
           DEPLOYMENT_URL: ${{ steps.vercel.outputs.url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
-
-
 ```
 
 ---
 
 ## Workflow steps explained
 
-### 1. **Wait for Vercel deployment**
-The `amondnet/vercel-action` waits for the Vercel deployment to complete and retrieves the deployment URL. This URL is stored in the `steps.vercel.outputs.url` variable.
-
-```yaml
-- name: Wait for Vercel Deployment
-  id: vercel
-  uses: amondnet/vercel-action@v20
-  with:
-    vercel-token: ${{ secrets.VERCEL_TOKEN }}
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    vercel-args: '--prod'
-  env:
-    VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-    VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-
-```
-
----
-
-### 2. **Run tests with TestDriver**
-The TestDriver GitHub Action runs tests on the deployed application using the deployment URL. The `prompt` field specifies the test steps to execute.
-
-```yaml
-- name: Run Tests with TestDriver
-  uses: testdriverai/action@main
-  with:
-    key: ${{ secrets.TD_API_KEY }}
-    prompt: |
-      1. Open the deployment URL: ${{ steps.vercel.outputs.url }}
-      2. Verify the homepage loads correctly
-      3. Click the "Sign Up" button
-      4. Fill out the registration form
-      5. Submit the form and verify the success message
-  env:
-    DEPLOYMENT_URL: ${{ steps.vercel.outputs.url }}
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    FORCE_COLOR: "3"
-
-
-```
+<Steps>
+  <Step title="Wait for Vercel deployment">
+    The `amondnet/vercel-action` waits for the Vercel deployment to complete and
+    retrieves the deployment URL. This URL is stored in the
+    `steps.vercel.outputs.url` variable.
+  </Step>
+  <Step title="Run tests with TestDriver">
+    The TestDriver GitHub Action runs tests on the deployed application using
+    the deployment URL. The `prompt` field specifies the test steps to execute.
+  </Step>
+  <Step title="Review test results">
+    View test results in the GitHub Actions dashboard or as comments on the pull
+    request.
+  </Step>
+</Steps>
 
 ---
 
@@ -136,8 +119,6 @@ prompt: |
   3. Click the "Sign Up" button
   4. Fill out the registration form
   5. Submit the form and verify the success message
-
-
 ```
 
 ---
@@ -145,6 +126,7 @@ prompt: |
 ## Secrets configuration
 
 Add the following secrets to your GitHub repository:
+
 1. **`TD_API_KEY`**: Your TestDriver API key.
 2. **`VERCEL_TOKEN`**: Your Vercel API token.
 3. **`VERCEL_ORG_ID`**: Your Vercel organization ID.
@@ -164,10 +146,12 @@ Add the following secrets to your GitHub repository:
 ## Example output
 
 ### GitHub Actions dashboard:
+
 - ✅ **Test Vercel Deployment**: All tests passed.
 - ❌ **Test Vercel Deployment**: 1 test failed. View logs for details.
 
 ### TestDriver logs:
+
 - **Step 1**: Opened the deployment URL.
 - **Step 2**: Verified the homepage loaded correctly.
 - **Step 3**: Clicked the "Sign Up" button.

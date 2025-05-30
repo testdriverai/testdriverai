@@ -6,25 +6,28 @@ icon: "film"
 ---
 
 ## Overview
+
 The TestDriver GitHub Action provides several output variables that can be used to create powerful workflows by chaining actions together. These outputs allow you to post results as comments, send notifications, or integrate with third-party test reporting tools.
 
 ---
 
 ## Output variables
 
-| Variable   | Description                                                                 |
-|------------|-----------------------------------------------------------------------------|
-| `summary`  | Contains the TestDriver AI text summary result of the action execution.     |
-| `link`     | A link to the Dashcam dashboard for debugging test runs.                   |
-| `markdown` | Markdown-formatted shareable link, including a screenshot of the desktop.  |
-| `success`  | Indicates whether the action passed successfully (`true` or `false`).      |
+| Variable   | Description                                                               |
+| ---------- | ------------------------------------------------------------------------- |
+| `summary`  | Contains the TestDriver AI text summary result of the action execution.   |
+| `link`     | A link to the Dashcam dashboard for debugging test runs.                  |
+| `markdown` | Markdown-formatted shareable link, including a screenshot of the desktop. |
+| `success`  | Indicates whether the action passed successfully (`true` or `false`).     |
 
 ---
 
 ## Example: Creating a comment on a pull request
+
 The following example demonstrates how to use the output variables to create a comment on a pull request after every TestDriver execution.
 
 ### Workflow example
+
 ```yaml [expandable]
 name: TestDriver
 
@@ -43,8 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     id: run-testdriver
     steps:
-      - uses: dashcamio/testdriver@main
-        version: v4.0.0
+      - uses: testdriverai/action@main
         key: ${{ secrets.TD_API_KEY }}
         with:
           prompt: |
@@ -74,12 +76,15 @@ jobs:
 ## Use cases for output variables
 
 ### 1. Post test results as comments
+
 Use the `summary` and `markdown` outputs to post detailed test results as comments on pull requests. This provides immediate feedback to developers.
 
 ### 2. Send notifications on failure
+
 Use the `success` output to trigger notifications (for example, email or Slack) when a test fails.
 
 Example:
+
 ```yaml
 - name: Notify on Failure
   if: ${{ steps.run-testdriver.outputs.success == 'false' }}
@@ -89,11 +94,13 @@ Example:
 ```
 
 ### 3. Integrate with third-party tools
+
 Use the `link` output to upload test results to third-party test reporting tools or dashboards.
 
 ---
 
 ## Notes
+
 - The `link` output provides a direct URL to the Dashcam dashboard, making it easy to debug test runs.
 - The `markdown` output includes a screenshot of the desktop, which is useful for visualizing test results.
 - Always use the `success` output to handle conditional workflows based on test outcomes.
