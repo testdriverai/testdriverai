@@ -44,6 +44,7 @@ const init = require("./lib/init.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
 const uploadSecrets = require("./lib/upload-secrets.js");
+const theme = require("./lib/theme.js");
 
 const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
 const isValidVersion = require("./lib/valid-version.js");
@@ -210,7 +211,7 @@ const exit = async (failed = true, shouldSave = false) => {
 };
 
 const dieOnFatal = async (error) => {
-  logger.error(chalk.red("Fatal Error") + `\n${error.message}`);
+  logger.error(theme.red("Fatal Error") + `\n${error.message}`);
   await summarize(error.message);
   return await exit(true);
 };
@@ -234,7 +235,7 @@ const haveAIResolveError = async (
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
-  logger.error(chalk.red("Error detected"));
+  logger.error(theme.red("Error detected"));
 
   log.prettyMarkdown(eMessage);
 
@@ -243,7 +244,7 @@ const haveAIResolveError = async (
 
   // if we get the same error 3 times in `run` mode, we exit
   if (errorCounts[safeKey] > errorLimit - 1) {
-    logger.info(chalk.red("Error loop detected. Exiting."));
+    logger.info(theme.red("Error loop detected. Exiting."));
     logger.info("%s", eMessage);
     await summarize(eMessage);
     return await exit(true);
@@ -263,7 +264,7 @@ const haveAIResolveError = async (
   speak("thinking...");
   notify("thinking...");
   server.broadcast("status", `thinking...`);
-  logger.info(chalk.dim("thinking..."), true);
+  logger.info(theme.dim("thinking..."), true);
   logger.info("");
 
   const mdStream = log.createMarkdownStreamLogger();
@@ -295,13 +296,13 @@ const check = async () => {
   checkCount++;
 
   if (checkCount >= checkLimit) {
-    logger.info(chalk.red("Exploratory loop detected. Exiting."));
+    logger.info(theme.red("Exploratory loop detected. Exiting."));
     await summarize("Check loop detected.");
     return await exit(true);
   }
 
   logger.info("");
-  logger.info(chalk.dim("checking..."), "testdriver");
+  logger.info(theme.dim("checking..."), "testdriver");
   server.broadcast("status", `checking...`);
   logger.info("");
 
@@ -470,14 +471,14 @@ const aiExecute = async (
     if (checkCodeblocks.length > 0) {
       logger.debug("check thinks more needs to be done");
 
-      logger.info(chalk.dim("not done yet!"), "testdriver");
+      logger.info(theme.dim("not done yet!"), "testdriver");
       logger.info("");
 
       return await aiExecute(response, validateAndLoop);
     } else {
       logger.debug("seems complete, returning");
 
-      logger.info(chalk.green("success!"), "testdriver");
+      logger.info(theme.green("success!"), "testdriver");
       logger.info("");
 
       return response;
@@ -547,7 +548,7 @@ const assert = async (expect) => {
   speak("thinking...");
   notify("thinking...");
   server.broadcast("status", `thinking...`);
-  logger.info(chalk.dim("thinking..."), true);
+  logger.info(theme.dim("thinking..."), true);
   logger.info("");
 
   let response = `\`\`\`yaml
@@ -579,7 +580,7 @@ const exploratoryLoop = async (
   speak("thinking...");
   notify("thinking...");
   server.broadcast("status", `thinking...`);
-  logger.info(chalk.dim("thinking..."), true);
+  logger.info(theme.dim("thinking..."), true);
   logger.info("");
 
   lastScreenshot = await system.captureScreenBase64();
@@ -615,7 +616,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   speak("thinking...");
   notify("thinking...");
   server.broadcast("status", `thinking...`);
-  logger.info(chalk.dim("thinking..."), true);
+  logger.info(theme.dim("thinking..."), true);
   logger.info("");
 
   if (baseYaml && !skipYaml) {
@@ -681,7 +682,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
 };
 
 const popFromHistory = async (fullStep) => {
-  logger.info(chalk.dim("undoing..."), true);
+  logger.info(theme.dim("undoing..."), true);
 
   if (executionHistory.length) {
     if (fullStep) {
@@ -756,7 +757,7 @@ const ensureMacScreenPerms = async () => {
   if (!config.TD_OVERLAY_ID && !config.TD_VM && process.platform === "darwin") {
     const macScreenPerms = require("mac-screen-capture-permissions");
     if (!macScreenPerms.hasScreenCapturePermission()) {
-      logger.info(chalk.red("Screen capture permissions not enabled."));
+      logger.info(theme.red("Screen capture permissions not enabled."));
       logger.info(
         "You must enable screen capture permissions for this terminal application within System Settings.",
       );
@@ -963,12 +964,12 @@ let summarize = async (error = null) => {
 
   logger.info("");
 
-  logger.info(chalk.dim("reviewing test..."), true);
+  logger.info(theme.dim("reviewing test..."), true);
 
   // let text = prompts.summarize(tasks, error);
   let image = await system.captureScreenBase64();
 
-  logger.info(chalk.dim("summarizing..."), true);
+  logger.info(theme.dim("summarizing..."), true);
 
   const mdStream = log.createMarkdownStreamLogger();
   let reply = await sdk.req(
@@ -1020,7 +1021,7 @@ ${regression}
 \`\`\``);
 
     if (!silent) {
-      logger.info(chalk.dim(`saved as ${filepath}`));
+      logger.info(theme.dim(`saved as ${filepath}`));
     }
   }
 
@@ -1068,7 +1069,7 @@ let run = async (
   setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
-  logger.info(chalk.cyan(`running ${file}...`));
+  logger.info(theme.cyan(`running ${file}...`));
 
   let ymlObj = await loadYML(file);
 
@@ -1076,10 +1077,10 @@ let run = async (
     let valid = isValidVersion(ymlObj.version);
     if (!valid) {
       console.log("");
-      logger.warn(chalk.red(`Version mismatch detected!`));
-      logger.warn(chalk.red(`Running a test created with v${ymlObj.version}.`));
+      logger.warn(theme.red(`Version mismatch detected!`));
+      logger.warn(theme.red(`Running a test created with v${ymlObj.version}.`));
       logger.warn(
-        chalk.red(`The current testdriverai version is v${package.version}.`),
+        theme.red(`The current testdriverai version is v${package.version}.`),
       );
     }
   }
@@ -1088,7 +1089,7 @@ let run = async (
 
   for (const step of ymlObj.steps) {
     logger.info(``, null);
-    logger.info(chalk.yellow(`> ${step.prompt || "no prompt"}`), null);
+    logger.info(theme.yellow(`> ${step.prompt || "no prompt"}`), null);
 
     if (pushToHistory) {
       executionHistory.push({
@@ -1098,10 +1099,10 @@ let run = async (
     }
 
     if (!step.commands && !step.prompt) {
-      logger.info(chalk.red("No commands or prompt found"));
+      logger.info(theme.red("No commands or prompt found"));
       await exit(true);
     } else if (!step.commands) {
-      logger.info(chalk.yellow("No commands found, running exploratory"));
+      logger.info(theme.yellow("No commands found, running exploratory"));
       await exploratoryLoop(step.prompt, false, true, false);
     } else {
       let markdown = `\`\`\`yaml
@@ -1208,10 +1209,10 @@ const start = async () => {
   thisFile = a.file;
   const thisCommand = a.command;
 
-  logger.info(chalk.green(`Howdy! I'm TestDriver v${package.version}`));
+  logger.info(theme.green(`Howdy! I'm TestDriver v${package.version}`));
   logger.info(`This is beta software!`);
   logger.info("");
-  logger.info(chalk.yellow(`Join our Discord for help`));
+  logger.info(theme.yellow(`Join our Discord for help`));
   logger.info(`https://discord.com/invite/cWDFW8DzPm`);
   logger.info("");
 
@@ -1220,21 +1221,21 @@ const start = async () => {
   if (!fs.existsSync(testdriverFolder)) {
     fs.mkdirSync(testdriverFolder);
     // log
-    logger.info(chalk.dim(`Created testdriver directory`));
-    console.log(chalk.dim(`Created testdriver directory: ${testdriverFolder}`));
+    logger.info(theme.dim(`Created testdriver directory`));
+    console.log(theme.dim(`Created testdriver directory: ${testdriverFolder}`));
   }
 
   // if the directory for thisFile doesn't exist, create it
   const dir = path.dirname(thisFile);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
-    logger.info(chalk.dim(`Created directory ${dir}`));
+    logger.info(theme.dim(`Created directory ${dir}`));
   }
 
   // if thisFile doesn't exist, create it
   if (!fs.existsSync(thisFile)) {
     fs.writeFileSync(thisFile, "");
-    logger.info(chalk.dim(`Created ${thisFile}`));
+    logger.info(theme.dim(`Created ${thisFile}`));
   }
 
   if (config.TD_API_KEY) {
@@ -1246,20 +1247,20 @@ const start = async () => {
   }
 
   if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
-    logger.info(chalk.dim(`Working on ${thisFile}`));
+    logger.info(theme.dim(`Working on ${thisFile}`));
     console.log("");
 
     loadYML(thisFile);
 
     if (!config.TD_VM) {
       logger.info(
-        chalk.red("Warning! ") +
-          chalk.dim(
+        theme.red("Warning! ") +
+          theme.dim(
             "Local mode sends screenshots of the desktop to our API. Set `TD_VM` to run in a secure VM.",
           ),
       );
       logger.info(
-        chalk.dim("Read More: https://docs.testdriver.ai/security/agent"),
+        theme.dim("Read More: https://docs.testdriver.ai/security/agent"),
       );
       logger.info("");
     }
@@ -1285,39 +1286,39 @@ const start = async () => {
 const makeSandbox = async () => {
   if (config.TD_VM) {
     try {
-      logger.info(chalk.gray(`- creating sandbox...`));
+      logger.info(theme.gray(`- creating sandbox...`));
       server.broadcast("status", `Creating new sandbox...`);
       await sandbox.boot();
-      logger.info(chalk.gray(`- authenticating...`));
+      logger.info(theme.gray(`- authenticating...`));
       server.broadcast("status", `Authenticating...`);
       await sandbox.send({
         type: "authenticate",
         apiKey: config.TD_API_KEY,
         secret: config.TD_SECRET,
       });
-      logger.info(chalk.gray(`- configuring...`));
+      logger.info(theme.gray(`- configuring...`));
       server.broadcast("status", `Configuring...`);
       await sandbox.send({
         type: "create",
         resolution: config.TD_VM_RESOLUTION,
       });
-      logger.info(chalk.gray(`- starting stream...`));
+      logger.info(theme.gray(`- starting stream...`));
       server.broadcast("status", `Starting stream...`);
       await sandbox.send({ type: "stream.start" });
       let { url } = await sandbox.send({ type: "stream.getUrl" });
-      logger.info(chalk.gray(`- rendering...`));
+      logger.info(theme.gray(`- rendering...`));
       server.broadcast("status", `Rendering...`);
       await sandbox.send({ type: "ready" });
       emitter.emit(events.vm.show, { url });
-      logger.info(chalk.gray(`- booting...`));
+      logger.info(theme.gray(`- booting...`));
       server.broadcast("status", `Starting...`);
       await new Promise((resolve) => setTimeout(resolve, 3000));
-      logger.info(chalk.green(``));
-      logger.info(chalk.green(`sandbox runner ready!`));
-      logger.info(chalk.green(``));
+      logger.info(theme.green(``));
+      logger.info(theme.green(`sandbox runner ready!`));
+      logger.info(theme.green(``));
     } catch (e) {
       logger.error(e);
-      logger.error(chalk.red(`sandbox runner failed to start`));
+      logger.error(theme.red(`sandbox runner failed to start`));
       process.exit(1);
     }
   }
