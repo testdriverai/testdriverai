@@ -98,6 +98,9 @@ jobs:
     steps:
       - name: Check out current branch
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          ref: ${{ github.head_ref }}
       - name: Download all snippets artifacts
         uses: actions/download-artifact@v4
         with:
@@ -113,3 +116,4 @@ jobs:
           message: "Update test snippets [skip ci]"
           add: "docs/snippets/tests"
           new_branch: ${{ github.head_ref }}
+          tag_push: "--force"
