@@ -25,7 +25,6 @@ const http = require("http");
 
 // third party modules
 const path = require("path");
-const chalk = require("chalk");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
 
