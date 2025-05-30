@@ -153,5 +153,3 @@ gh pr create --web
 ```
 
 Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/action/setup).
-
-
