@@ -8,16 +8,6 @@ Automate and scale QA with computer-use agents.
 
 ---https://github.com/user-attachments/assets/4719e834-652a-43ba-8b8c-24ea6f357ae3# Install via NPM
 
-```sh
-npm install testdriverai -g
-```
-
-# Run Init
-
-```sh
-testdriverai init
-```
-
 [Follow the instructions on our docs for more.](https://docs.testdriver.ai/overview/quickstart).
 
 # About
@@ -53,12 +43,12 @@ Check out [the docs](https://docs.testdriver.ai/).
 
 # Quickstart
 
-## Install TestDriver via NPM
+## Initialize TestDriver
 
-Install testdriverai via NPM. This will make testdriverai available as a global command.
+In your project directory:
 
 ```sh
-npm install testdriverai -g
+npx testdriverai@latest init
 ```
 
 ## Teach TestDriver a test
@@ -66,7 +56,7 @@ npm install testdriverai -g
 Let's show TestDriver what we want to test. Run the following command:
 
 ```sh
-testdriverai .testdriver/test.yaml
+npx testdriverai@latest .testdriver/test.yaml
 ```
 
 ## Reset the test state
@@ -137,7 +127,7 @@ If something didn't work, you can use `/undo` to remove all of the test steps ad
 Now it's time to make sure the test plan works before we deploy it. Use testdriver run to run the test file you just created with /save .
 
 ```sh
-testdriverai run testdriver/test.yaml
+npx testdriverai@latest run testdriver/test.yaml
 ```
 
 Make sure to reset the test state!
