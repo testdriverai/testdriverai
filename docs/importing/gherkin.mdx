@@ -36,41 +36,35 @@ TestDriver prompts are high-level instructions that describe what the AI should 
 - prompt: the user enters valid credentials
 - prompt: clicks the "Log In" button
 - prompt: the user should see the dashboard
-
 ```
 
 ---
 
 ## Steps to convert Gherkin to TestDriver prompts
 
-### Step 1: Understand the mapping
-
+<Steps>
+<Step title="Understand the mapping">
 | **Gherkin Keyword** | **TestDriver Prompt**                     |
 |----------------------|----------------------------------------------|
 | `Given`             | Describes the initial state or setup.       |
 | `When`              | Describes the user action.                 |
 | `Then`              | Describes the expected outcome or result.  |
 | `And`               | Adds additional steps to the same context. |
-
----
-
-### Step 2: Extract steps from Gherkin
-
+</Step>
+<Step title="Extract steps from Gherkin">
 Take each step from the Gherkin scenario and rewrite it as a plain-text prompt. Remove the `Given`, `When`, `Then`, and `And` keywords, and focus on the action or expectation.
 
 #### Example:
 
-| **Gherkin Step**                     | **TestDriver Prompt**             |
-|--------------------------------------|--------------------------------------|
-| `Given the user is on the login page` | `the user is on the login page`      |
+| **Gherkin Step**                         | **TestDriver Prompt**               |
+| ---------------------------------------- | ----------------------------------- |
+| `Given the user is on the login page`    | `the user is on the login page`     |
 | `When the user enters valid credentials` | `the user enters valid credentials` |
-| `And clicks the "Log In" button`     | `clicks the "Log In" button`         |
+| `And clicks the "Log In" button`         | `clicks the "Log In" button`        |
 | `Then the user should see the dashboard` | `the user should see the dashboard` |
 
----
-
-### Step 3: Write the prompts in YAML format
-
+</Step>
+<Step title="Write the prompts in YAML format">
 Combine the extracted prompts into a YAML file. Each step should be written as a `prompt` entry.
 
 #### Example YAML:
@@ -82,17 +76,12 @@ Combine the extracted prompts into a YAML file. Each step should be written as a
 - prompt: the user should see the dashboard
 ```
 
----
-
-### Step 4: Save the YAML file
-
+</Step>
+<Step title="Save the YAML file">
 1. Save the YAML content to a file (for example, `login_test.yaml`).
 2. Ensure the file is stored in the appropriate directory for your TestDriver project (for example, `testdriver/`).
-
----
-
-### Step 5: Run the test with TestDriver
-
+</Step>
+<Step title="Run the test with TestDriver">
 Use the TestDriver CLI to execute the test.
 
 #### Command:
@@ -100,6 +89,9 @@ Use the TestDriver CLI to execute the test.
 ```bash
 testdriverai run login_test.yaml
 ```
+
+</Step>
+</Steps>
 
 ---
 

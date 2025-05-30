@@ -27,8 +27,8 @@ TestDriver provides several advanced features to enhance your testing capabiliti
 
 ## Step-by-step guide
 
-### Step 1: Setting up custom assertions
-
+<Steps>
+<Step title="Setting up custom assertions">
 Custom assertions allow you to define specific conditions for your tests. Here's an example:
 
 ```python
@@ -36,8 +36,8 @@ def assert_custom_condition(value):
     assert value > 0, "Value must be greater than 0"
 ```
 
-### Step 2: Using parameterized tests
-
+</Step>
+<Step title="Using parameterized tests">
 Parameterized tests enable you to test multiple scenarios with different inputs. Example:
 
 ```python
@@ -48,8 +48,8 @@ def test_is_positive(input, expected):
     assert (input > 0) == expected
 ```
 
-### Step 3: Implementing test hooks
-
+</Step>
+<Step title="Implementing test hooks">
 Test hooks let you execute code before or after tests. Example:
 
 ```python
@@ -60,8 +60,8 @@ def teardown_function():
     print("Cleaning up test environment")
 ```
 
-### Step 4: Running tests in parallel
-
+</Step>
+<Step title="Running tests in parallel">
 Parallel execution can be achieved using pytest-xdist. Install it with:
 
 ```bash
@@ -73,6 +73,9 @@ Run tests in parallel using:
 ```bash
 pytest -n 4
 ```
+
+</Step>
+</Steps>
 
 ## Conclusion
 

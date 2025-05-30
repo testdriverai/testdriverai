@@ -6,18 +6,19 @@ icon: "square-terminal"
 ---
 
 ## Overview
+
 The TestDriver GitHub Action enables cloud-based testing using TestDriver's infrastructure. This guide will walk you through the steps to install and configure the GitHub Action for your repository.
 
 ---
 
-## Step 1: Install the GitHub Action
+<Steps>
+<Step title="Install the GitHub Action">
 TestDriver Cloud Testing is performed via the TestDriver GitHub Action. You can find and install the action from the GitHub Marketplace:
 
 [**TestDriver.ai - GitHub Marketplace**](https://github.com/marketplace/actions/testdriver-ai)
 
----
-
-## Step 2: Get Your API key
+</Step>
+<Step title="Get Your API key">
 To execute TestDriver actions on our virtual machines, you'll need an API key. Follow these steps to retrieve and configure your API key:
 
 1. **Upgrade Your Account**: Ensure you have a paid TestDriver account.
@@ -26,13 +27,11 @@ To execute TestDriver actions on our virtual machines, you'll need an API key. F
 4. **Add the API Key as a GitHub Secret**:
    - Navigate to your repository settings in GitHub.
    - Add a new secret named `TD_API_KEY` and paste your API key.
-
----
-
-## Step 3: Create your workflow
+     </Step>
+<Step title="Create your workflow">
 Now it's time to create your first TestDriver workflow. Add the following configuration to `.github/workflows/testdriver.yaml`:
 
-```yaml
+```yaml {24,27}
 name: TestDriver
 
 permissions:
@@ -44,7 +43,7 @@ permissions:
 on:
   pull_request: # Run on every pull request event
   schedule:
-    - cron: '0 * * * *' # Run every hour
+    - cron: "0 * * * *" # Run every hour
   push:
     branches:
       - main # Run on merge to the main branch
@@ -55,10 +54,8 @@ jobs:
     name: "TestDriver"
     runs-on: ubuntu-latest
     steps:
-      - uses: dashcamio/testdriver@main
-        version: "v5.0.7"
+      - uses: testdriverai/action@main
         key: ${{ secrets.TD_API_KEY }}
-        os: linux
         with:
           prompt: |
             1. /run testdriver.yaml
@@ -67,14 +64,13 @@ jobs:
           FORCE_COLOR: "3"
 ```
 
-### Key points:
+**Key points:**
+
 - **Trigger Conditions**: The `on` section defines when the workflow runs (for example, pull requests, scheduled events, or manual triggers).
 - **API Key**: The `key` field uses the `TD_API_KEY` secret for authentication.
 - **Prompt**: The `prompt` field specifies the commands to execute. In this example, the `/run` command is used to execute a test file from the repository.
-
----
-
-## Step 4: Deploy the workflow
+  </Step>
+<Step title="Deploy the workflow">
 Save the workflow file, create a new branch, and push it to your repository. Then, create a pull request to trigger the workflow.
 
 ```bash
@@ -84,9 +80,13 @@ git push origin testdriver
 gh pr create --web
 ```
 
+</Step>
+</Steps>
+
 ---
 
 ## How it works
+
 1. **Trigger**: The GitHub Action is triggered based on the conditions defined in the `on` section.
 2. **Authentication**: The `key` value authenticates your account.
 3. **VM Setup**: An ephemeral virtual machine is spawned on TestDriver's infrastructure.
@@ -100,17 +100,20 @@ gh pr create --web
 ---
 
 ## Additional features
+
 - **Dynamic Prompts**: You can use commands like `/explore`, supply variables, or dynamically generate prompts from earlier steps.
 - **Staging Workflows**: A common workflow involves waiting for staging to deploy before executing tests.
 
 ---
 
 ## Output
+
 For details on interpreting the output of the GitHub Action, refer to the [Action Output Documentation](action/output).
 
 ---
 
 ## Notes
+
 - The TestDriver GitHub Action is a powerful tool for automating cloud-based testing.
 - Ensure your API key is securely stored as a GitHub secret.
 - For advanced workflows, consider using prerun scripts or dynamic prompts to customize your tests.
