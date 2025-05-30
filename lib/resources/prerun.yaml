@@ -5,10 +5,10 @@ steps:
     commands:
       - command: exec
         lang: shell
-        linux: | 
+        linux: |
           jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TESTDRIVER_WEBSITE}" &
           exit
-        mac: |  
+        mac: |
           open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run "${TESTDRIVER_WEBSITE}" &
           exit
         windows:
