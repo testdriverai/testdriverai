@@ -111,6 +111,7 @@ app.whenReady().then(() => {
   if (showOverlayTerminal) {
     terminalWindow = new BrowserWindow({
       width: 600,
+      resizable: true,
       height: (overlayWindowOptions && overlayWindowOptions.height) || 800,
       x:
         (overlayWindowOptions && overlayWindowOptions.width
