@@ -119,11 +119,11 @@
         margin-top: -100px;
         width: 50px;
         height: 50px;
-        opacity: 50%;
+        opacity: 0;
         position: absolute;
         transform: translate(-50%, -50%);
         border-radius: 70%;
-        background: #ffd700;
+        background: #b0cf34;
       }
 
       #mouse #dot {
@@ -135,16 +135,6 @@
         transform: translate(-50%, -50%);
         border-radius: 50%;
         background-color: black;
-      }
-
-      #pointer {
-        width: 25px;
-        height: 25px;
-        opacity: 0;
-        position: absolute;
-        transform: translate(-50%, -50%);
-        border-radius: 50%;
-        background-color: #b0cf34;
       }
 
       .single-click {
@@ -237,7 +227,6 @@
     <div id="screenshot"></div>
     <div id="main" class="container">
       <div id="boxes">
-        <div id="pointer"></div>
         <div id="mouse"><div id="dot"></div></div>
       </div>
       <div id="terminal-wrapper">
@@ -251,7 +240,6 @@
       const { events } = require("../lib/events.js");
 
       const mouse = document.querySelector("#mouse");
-      const pointer = document.querySelector("#pointer");
       const container = document.querySelector("#main");
       const screenshotElement = document.querySelector("#screenshot");
       const terminalElement = document.querySelector("#terminal");
@@ -307,12 +295,13 @@
       ipcRenderer.on(
         events.mouseClick,
         (event, { x, y, click = "single" } = {}) => {
-          pointer.style.marginLeft = toCss(x);
-          pointer.style.marginTop = toCss(y);
-          pointer.setAttribute("class", "");
+          mouse.style.marginLeft = toCss(x);
+          mouse.style.marginTop = toCss(y);
+          // Reset class so animation can restart
+          mouse.setAttribute("class", "");
           // Force reflow
-          void pointer.offsetWidth;
-          pointer.classList.add(`${click}-click`);
+          void mouse.offsetWidth;
+          mouse.classList.add(`${click}-click`);
         },
       );
 
