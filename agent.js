@@ -237,7 +237,7 @@ const haveAIResolveError = async (
 ) => {
   if (!healMode) {
     logger.error(
-      chalk.yellow("Error detected, but recovery mode is not enabled."),
+      theme.yellow("Error detected, but recovery mode is not enabled."),
     );
     logger.info("To attempt automatic recovery, re-run with the --heal flag.");
     return;
@@ -253,7 +253,7 @@ const haveAIResolveError = async (
 
   logger.info("");
   logger.error(
-    chalk.red("Error detected. Attempting to recover (via --heal)..."),
+    theme.red("Error detected. Attempting to recover (via --heal)..."),
   );
 
   log.prettyMarkdown(eMessage);
@@ -1110,7 +1110,7 @@ let run = async (
   executionHistory = [];
 
   if (!ymlObj.steps || !ymlObj.steps.length) {
-    logger.info(chalk.red("No steps found in the YAML file"));
+    logger.info(theme.red("No steps found in the YAML file"));
     await exit(true);
   }
 
