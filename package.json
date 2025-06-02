@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "5.7.41",
+  "version": "5.7.43",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -10,6 +10,7 @@
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
+    "docs": "npx mint dev",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "docs-lint": "cd docs && vale **/*.mdx",
