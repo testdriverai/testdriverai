@@ -28,7 +28,7 @@ To execute TestDriver actions on our virtual machines, you'll need an API key. F
    - Navigate to your repository settings in GitHub.
    - Add a new secret named `TD_API_KEY` and paste your API key.
      </Step>
-<Step title="Create your workflow">
+     <Step title="Create your workflow">
 Now it's time to create your first TestDriver workflow. Add the following configuration to `.github/workflows/testdriver.yaml`:
 
 ```yaml {24,27}
@@ -69,8 +69,8 @@ jobs:
 - **Trigger Conditions**: The `on` section defines when the workflow runs (for example, pull requests, scheduled events, or manual triggers).
 - **API Key**: The `key` field uses the `TD_API_KEY` secret for authentication.
 - **Prompt**: The `prompt` field specifies the commands to execute. In this example, the `/run` command is used to execute a test file from the repository.
-    </Step>
-  <Step title="Deploy the workflow">
+  </Step>
+    <Step title="Deploy the workflow">
 Save the workflow file, create a new branch, and push it to your repository. Then, create a pull request to trigger the workflow.
 
 ```bash
