@@ -6,21 +6,26 @@ icon: "forward-step"
 ---
 
 ## Description
-The `/dry` command is used to create a test file and write to a specified file. This command won't run steps it creates. It's a **dry** run. 
+
+The `/dry` command is used to create a test file and write to a specified file. This command won't run steps it creates. It's a **dry** run.
 
 ## Usage
+
 ```bash
 /dry <file>
 ```
 
 ## Example usage
+
 ```bash
-testdriverai <filename.yaml>
+npx testdriverai@latest <filename.yaml>
 > /dry click the 'log in' button
 ```
+
 This command generates the steps to `click the 'log in' button` with an explanation and adds them to the current test file, without executing any command.
 
 ## Behavior
+
 - TestDriver will create steps for the test file, writing them in the file.
 - TestDriver will also show the reasoning and test steps in the CLI:
 
@@ -41,11 +46,13 @@ thinking...
     
     1. Click the 'Log in' Button: We use hover-text to locate and click on the "Log in" text visible in the code editor. This ensures the button is activated.
 ```
+
 ## Protips
+
 - Ensure you run the `testdriverai` command with a valid file path before using `/dry`.
 - Use descriptive filenames for your test files to make them easier to identify.
 - Combine `/dry` with `/undo` to write test files without executing them.
 
-
 ## Notes
+
 - The `/dry` command is ideal for writing out a series of steps before executing.
