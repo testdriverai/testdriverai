@@ -9,24 +9,24 @@ import YmlWarning from '/snippets/yml-warning.mdx'
 
 Test scripts are written in YAML format, making them easy to read and modify manually if you need to.
 
-<YmlWarning/>
+<YmlWarning />
 
-<Card
-  title="Commands Reference"
-  icon="link"
-  href="/commands/assert"
->
+<Card title="Commands Reference" icon="link" href="/commands/assert">
   Explore the available commands and their parameters.
 </Card>
 
 ## Locate the Test File
+
 TestDriver test files are typically stored in the `testdriver/` directory of your project. The default file is `testdriver/testdriver.yaml`.
 
 ### Open the Test File
+
 Use your preferred text editor or IDE (for example, Visual Studio Code) to open the YAML file.
 
 ### YAML Structure
+
 Each test file consists of:
+
 - **Version**: Specifies the TestDriver version.
 - **Session**: A unique identifier for the test session.
 - **Steps**: A list of prompts and commands to execute.
@@ -49,35 +49,45 @@ steps:
         keys: [enter]
 ```
 
-<Tip>The `version` captured when you generate a test file is the version of TestDriver you used, and isn't used when running the test. This doesn't affect your ability to use newer versions of TestDriver on existing test files nor do these need to be updated when migrating to a new version.</Tip>
+<Tip>
+  The `version` captured when you generate a test file is the version of TestDriver you used, and isn't used when running the test. This doesn't affect your ability to use newer versions of TestDriver on existing test files nor do these need to be updated when migrating to a new version.
+</Tip>
 
 ### Modify the test steps
+
 You can add, edit, or remove steps as needed. Each step contains:
 
 - **Prompt**: A description of the action.
 - **Commands**: The specific actions to perform.
 
 #### Example edits:
+
 - **Add a Wait Command**:
+
   ```yaml
   - command: wait
     timeout: 3000
   ```
 - **Change the URL**:
   Update the `text` field in the `type` command:
+
   ```yaml
   - command: type
     text: booking.com
   ```
 
 ### Validate the YAML syntax
+
 Ensure the YAML file is properly formatted:
+
 - Use consistent indentation (2 spaces recommended).
 - Avoid trailing spaces or tabs.
 - Validate the file using a YAML linter if needed.
 
 ### Test the changes
+
 Run the updated test to verify it works as expected:
+
 ```bash
-testdriverai run path/to/test.yaml
+npx testdriverai@latest run path/to/test.yaml
 ```
