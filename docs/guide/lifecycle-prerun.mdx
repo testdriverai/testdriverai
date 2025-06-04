@@ -9,15 +9,18 @@ import LifecycleWarning from '/snippets/lifecycle-warning.mdx'
 
 ## Prerun configuration
 
-<LifecycleWarning/>
+<LifecycleWarning />
 
 ## The default `prerun` script
+
 When setting up your TestDriver environment, a default prerun script is automatically generated when you run:
+
 ```bash
- testdriverai init
-``` 
+npx testdriverai@latest init
+```
 
 The directory structure is created like this:
+
 ```bash
 testdriver
 ├── lifecycle
@@ -25,7 +28,6 @@ testdriver
 ```
 
 This script includes essential commands to ensure your **local agent or sandbox** VM is ready for testing. You can customize this script to suit your specific needs, but it's important to understand that it serves as a baseline for your test environment. It looks like this:
- 
 
 ```yaml ./lifecycle/prerun.yaml
 version: 5.1.1
@@ -47,10 +49,11 @@ steps:
         text: "Google Chrome"
         timeout: 30000
 ```
-Take note that it defaults to launching the Chrome browser. If you want to use a different browser, you can modify the `prompt` and `commands` sections accordingly. 
+
+Take note that it defaults to launching the Chrome browser. If you want to use a different browser, you can modify the `prompt` and `commands` sections accordingly.
 
 <Warning>
-The `wait-For-text` command is crucial for ensuring that the browser is fully loaded before proceeding with the test steps. If you are testing a web application, you may want to adjust the `text` parameter to match the expected app name, title or content of the page.
+  The `wait-For-text` command is crucial for ensuring that the browser is fully loaded before proceeding with the test steps. If you are testing a web application, you may want to adjust the `text` parameter to match the expected app name, title or content of the page.
 </Warning>
 
 If a file is found at `./lifecycle/prerun.yaml`, it's executed _before_ the test begins. _This will happen even if you have a pre or post test script defined in your GitHub Actions workflow._ This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
@@ -58,6 +61,7 @@ If a file is found at `./lifecycle/prerun.yaml`, it's executed _before_ the test
 Note that the `prerun` script is found in the GitHub Actions workflow file for deployed tests.
 
 ### Prerun flow
+
 ```mermaid
 graph TD
     A{Is the test deployed to CI?}
@@ -68,17 +72,20 @@ graph TD
     C -->|No| F
     D --> F[Run ./testdriver/testfile.yaml]
 ```
+
 ---
 
 ## Examples
+
 For example, the `prerun.yaml` file can be combined with the [`exec`](/commands/exec) command to open the Chrome browser and navigate to a page, similar to the example provided above. This ensures that the test environment is properly set up before the test starts. _Note that the prerun is a TestDriver test file like any other, combining commands to complete a task_.
 
 ---
 
 ### Opening a different browser
+
 Here is an example of a `prerun.yaml` file that opens Firefox instead of Chrome (note the `wait-for-text` command at the end):
 
-```yaml {5, 16} ./lifecycle/prerun.yaml
+```yaml ./lifecycle/prerun.yaml {5, 16}
 version: 5.1.1
 steps:
   - prompt: launch firefox
@@ -102,7 +109,9 @@ steps:
 ```
 
 ---
+
 ### Loading a calculator app on Linux, MacOS or Windows
+
 ```yaml ./lifecycle/prerun.yaml
 version: 5.5.5
 steps:
@@ -126,6 +135,7 @@ steps:
 ```
 
 ## Key points
+
 - **Provisioning**: Prerun scripts allow you to provision the VM with the necessary tools and configurations before running tests.
 - **Reproducibility**: By ensuring a consistent environment, prerun scripts help prevent flaky tests caused by environmental differences.
 - **Flexibility**: You can use prerun scripts to customize the VM for specific test scenarios, such as installing alternative browsers or setting up staging environments.
@@ -133,16 +143,18 @@ steps:
 ---
 
 ## Best practices
+
 - **Keep It Simple**: Write clear and concise prerun scripts to minimize setup time and reduce complexity.
 - **Error Handling**: Include checks to verify that dependencies are installed successfully. Log errors to help debug issues.
 - **Optimize Performance**: Cache dependencies or use lightweight tools to speed up the setup process.
 - **Security**: Avoid hardcoding sensitive information in prerun scripts. Use GitHub secrets to securely pass credentials or tokens.
 
-
 ---
+
 ## Example
 
 ### Using `exec` shell commands in prerun to set up a test file
+
 Here we're doing the exact same thing as the previous example, except the `shell` context is setting up the calculator app to be used by the test file. This method is useful if you are going to use the same application over again in many tests.
 
 ```yaml ./lifecycle/prerun.yaml
@@ -167,6 +179,7 @@ steps:
 ```
 
 Then in the test file, the runner will already have the calculator loaded before it runs this test:
+
 ```yaml testfile.yaml
 version: 5.5.5
 steps:
@@ -188,11 +201,14 @@ steps:
             action: click
 ```
 
-<Tip>See [`exec`](/commands/exec) for more examples and use cases of including `shell` or `js` context and proper usage within your prerun!</Tip>
+<Tip>
+  See [`exec`](/commands/exec) for more examples and use cases of including `shell` or `js` context and proper usage within your prerun\!
+</Tip>
 
 ---
 
 ## Notes
+
 - Prerun scripts are executed on the VM before the test suite begins.
 - They're essential for ensuring a consistent and reliable test environment.
 - For advanced workflows, combine prerun scripts with TestDriver prompts to create dynamic and flexible test setups.

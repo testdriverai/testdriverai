@@ -23,6 +23,7 @@ This guide explains how to extract **user stories** from Jira and convert them i
 ## Step 1: Export user stories from Jira
 
 ### Prerequisites
+
 1. **Jira API Token**: Generate an API token from your Jira account.
 2. **Jira Base URL**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
 3. **Node.js**: Ensure Node.js is installed on your system.
@@ -128,8 +129,8 @@ steps:
   - prompt: An error message is displayed for invalid credentials.
   - prompt: The login page is responsive on mobile devices.
 
-
 ```
+
 ---
 
 ## Step 3: Save and organize test files
@@ -146,15 +147,13 @@ Use the TestDriver CLI to execute the generated test files.
 ### Run a single test file:
 
 ```bash
-testdriverai run testdriver_tests/PROJ-123.yaml
-
-
+npx testdriverai@latest run testdriver_tests/PROJ-123.yaml
 ```
 
 ### Run all test files:
 
 ```bash
-testdriverai run testdriver_tests/*.yaml
+npx testdriverai@latest run testdriver_tests/*.yaml
 ```
 
 ---
