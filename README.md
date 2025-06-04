@@ -134,7 +134,7 @@ Make sure to reset the test state!
 
 ## Deploy
 
-Now it's time to deploy your test using our GitHub action! testdriver init already did the work for you and will start triggering tests once you commit the new files to your repository.
+Now it's time to deploy your test using our GitHub action! `testdriver init` already did the work for you and will start triggering tests once you commit the new files to your repository.
 
 ```sh
 git add .
