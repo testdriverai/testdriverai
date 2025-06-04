@@ -8,12 +8,9 @@ permissions:
   statuses: write
 
 on:
-  # Required checks have to exist in both PRs & Merge Queue:
-  # https://github.com/orgs/community/discussions/103114#discussioncomment-8359045
-  pull_request:
-  # Run in Merge Queue
-  merge_group:
-    types: [checks_requested]
+  # Instead of a Merge Queue, we'll just run this on main.
+  push:
+    branches: [main]
   # Through the GitHub UI
   workflow_dispatch:
   # Run every day at midnight to ensure CLI -> API works
@@ -22,8 +19,6 @@ on:
 
 jobs:
   publish-canary:
-    # Only run this job if in the Merge Queue
-    if: github.event_name == 'merge_group'
     name: Publish testdriverai@canary
     runs-on: ubuntu-latest
     steps:
@@ -43,8 +38,6 @@ jobs:
           token: ${{ secrets.NPM_AUTH_TOKEN }}
 
   gather-test-files:
-    # Only run this job if in the Merge Queue
-    if: github.event_name == 'merge_group'
     name: Gather Test Files
     runs-on: ubuntu-latest
     outputs:
@@ -62,7 +55,6 @@ jobs:
           echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
 
   run-tests:
-    # Should be automatically skipped outside of Merge Queue
     name: Run Tests
     needs:
       - gather-test-files
@@ -125,7 +117,6 @@ jobs:
           retention-days: 1
 
   create-snippets-commit:
-    # Should be automatically skipped outside of Merge Queue
     name: Commit Snippets
     needs: run-tests
     runs-on: ubuntu-latest
