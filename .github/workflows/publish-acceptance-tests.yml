@@ -142,5 +142,5 @@ jobs:
           author_email: github-actions[bot]@users.noreply.github.com
           message: "Update test snippets [skip ci]"
           add: "docs/snippets/tests"
-          new_branch: main
+          new_branch: ${{ github.head_ref }}
           tag_push: "--force-with-lease"
