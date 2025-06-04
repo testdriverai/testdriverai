@@ -1,7 +1,0 @@
-version: 5.6.6
-session: 6824e7ff58a65c2836a75af3
-steps:
-  - prompt: log in
-    commands:
-      - command: focus-application
-        name: Google Chrome

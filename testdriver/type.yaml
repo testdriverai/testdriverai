@@ -1,0 +1,29 @@
+version: 5.7.7
+session: 682f5c4c811bd5a322c0e5c1
+steps:
+  - prompt: enter standard_user within the username field
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Username
+        description: input field for username
+        action: click
+      - command: type
+        text: standard_user
+  - prompt: assert that standard_user shows in the username field
+    commands:
+      - command: assert
+        expect: the username field contains "standard_user"
+  - prompt: click on sign in
+    commands:
+      - command: hover-text
+        text: Sign in
+        description: black button below the password field
+        action: click
+  - prompt: assert that "please fill out this field" shows in the password field
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: assert
+        expect: Please fill out this field is visible near the password field
