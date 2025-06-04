@@ -5,7 +5,7 @@ description: "Learn how to customize and set up your TestDriver environment to o
 icon: "terminal"
 ---
 
-import LifecycleWarning from '/snippets/lifecycle-warning.mdx'
+import LifecycleWarning from "/snippets/lifecycle-warning.mdx";
 
 ## Prerun configuration
 
@@ -53,7 +53,10 @@ steps:
 Take note that it defaults to launching the Chrome browser. If you want to use a different browser, you can modify the `prompt` and `commands` sections accordingly.
 
 <Warning>
-  The `wait-For-text` command is crucial for ensuring that the browser is fully loaded before proceeding with the test steps. If you are testing a web application, you may want to adjust the `text` parameter to match the expected app name, title or content of the page.
+  The `wait-For-text` command is crucial for ensuring that the browser is fully
+  loaded before proceeding with the test steps. If you are testing a web
+  application, you may want to adjust the `text` parameter to match the expected
+  app name, title or content of the page.
 </Warning>
 
 If a file is found at `./lifecycle/prerun.yaml`, it's executed _before_ the test begins. _This will happen even if you have a pre or post test script defined in your GitHub Actions workflow._ This file works like any other TestDriver file and is commonly used to perform tasks such as opening a browser, navigating to a specific page, or resetting the application state.
@@ -93,16 +96,16 @@ steps:
       - command: exec
         lang: shell
         linux: |
-            jumpapp firefox --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
-            exit
+          jumpapp firefox --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
+          exit
 
         mac: |
-            open -na "Firefox" --args --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
-            exit
+          open -na "Firefox" --args --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
+          exit
 
         windows: |
-            Start-Process "C:/Program Files/Mozilla Firefox/firefox.exe" -ArgumentList "--no-default-browser-check", "--no-first-run", "${TD_WEBSITE}"
-            exit
+          Start-Process "C:/Program Files/Mozilla Firefox/firefox.exe" -ArgumentList "--no-default-browser-check", "--no-first-run", "${TD_WEBSITE}"
+          exit
       - command: wait-for-text
         text: "Firefox"
         timeout: 30000
@@ -126,8 +129,7 @@ steps:
         mac: |
           open "/Applications/Calculator.app"
           wait
-        windows:
-          start /B calc.exe
+        windows: start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "galculator"
@@ -202,7 +204,8 @@ steps:
 ```
 
 <Tip>
-  See [`exec`](/commands/exec) for more examples and use cases of including `shell` or `js` context and proper usage within your prerun\!
+  See [`exec`](/commands/exec) for more examples and use cases of including
+  `shell` or `js` context and proper usage within your prerun\!
 </Tip>
 
 ---

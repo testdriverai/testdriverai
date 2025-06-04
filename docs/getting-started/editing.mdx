@@ -5,7 +5,7 @@ description: "Edit previously generated tests."
 icon: "file-pen"
 ---
 
-import YmlWarning from '/snippets/yml-warning.mdx'
+import YmlWarning from "/snippets/yml-warning.mdx";
 
 Test scripts are written in YAML format, making them easy to read and modify manually if you need to.
 
@@ -50,7 +50,10 @@ steps:
 ```
 
 <Tip>
-  The `version` captured when you generate a test file is the version of TestDriver you used, and isn't used when running the test. This doesn't affect your ability to use newer versions of TestDriver on existing test files nor do these need to be updated when migrating to a new version.
+  The `version` captured when you generate a test file is the version of
+  TestDriver you used, and isn't used when running the test. This doesn't affect
+  your ability to use newer versions of TestDriver on existing test files nor do
+  these need to be updated when migrating to a new version.
 </Tip>
 
 ### Modify the test steps
@@ -68,6 +71,7 @@ You can add, edit, or remove steps as needed. Each step contains:
   - command: wait
     timeout: 3000
   ```
+
 - **Change the URL**:
   Update the `text` field in the `type` command:
 

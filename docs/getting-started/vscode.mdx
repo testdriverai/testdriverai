@@ -5,10 +5,15 @@ description: "Comprehensive guide to installing and setting up TestDriver for VS
 icon: "file-code"
 ---
 
-import YmlWarning from '/snippets/yml-warning.mdx'
+import YmlWarning from "/snippets/yml-warning.mdx";
 
-<Card title="Get the VS Code Extension" icon="link" href="/getting-started/vscode">
-  Turn your IDE into a powerful computer-use automation tool with our VS Code extension.
+<Card
+  title="Get the VS Code Extension"
+  icon="link"
+  href="/getting-started/vscode"
+>
+  Turn your IDE into a powerful computer-use automation tool with our VS Code
+  extension.
 </Card>
 
 <Steps>
@@ -20,6 +25,7 @@ import YmlWarning from '/snippets/yml-warning.mdx'
     ```
 
     This creates a `.env` file and sample workflow files.
+
   </Step>
   <Step title="Run TestDriver in Interactive Mode" stepNumber={2}>
     Start TestDriver in interactive mode to create and refine tests dynamically:
@@ -31,6 +37,7 @@ import YmlWarning from '/snippets/yml-warning.mdx'
     Once started, you can use commands like `/try`, `/undo`, and `/save` to interactively build and test your flows.
 
     <YmlWarning />
+
   </Step>
   <Step title="Define Your Test Steps" stepNumber={3}>
     Use natural language to describe what you want to test. For example:
@@ -53,6 +60,7 @@ import YmlWarning from '/snippets/yml-warning.mdx'
     - command: press-keys
       keys: [enter]
     ```
+
   </Step>
   <Step title="Refine and Save Your Test" stepNumber={4}>
     - Use `/undo` to remove the last step if needed.
@@ -64,6 +72,7 @@ import YmlWarning from '/snippets/yml-warning.mdx'
     ```bash
     npx testdriverai@latest run path/to/test.yaml
     ```
+
   </Step>
 </Steps>
 

@@ -39,19 +39,19 @@ npm install axios yaml fs
 #### Node.js script (`export-testrail-test-cases.js`):
 
 ```javascript [expandable]
-const axios = require('axios');
-const yaml = require('yaml');
-const fs = require('fs');
-const path = require('path');
+const axios = require("axios");
+const yaml = require("yaml");
+const fs = require("fs");
+const path = require("path");
 
 // TestRail credentials
-const TESTRAIL_BASE_URL = 'https://yourcompany.testrail.io';
-const TESTRAIL_USERNAME = 'your-email@example.com';
-const TESTRAIL_API_KEY = 'your-api-key';
+const TESTRAIL_BASE_URL = "https://yourcompany.testrail.io";
+const TESTRAIL_USERNAME = "your-email@example.com";
+const TESTRAIL_API_KEY = "your-api-key";
 const TESTRAIL_PROJECT_ID = 1; // Replace with your TestRail project ID
 
 // Output directory
-const OUTPUT_DIR = './testdriver_tests';
+const OUTPUT_DIR = "./testdriver_tests";
 
 // Ensure the output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -69,42 +69,40 @@ async function fetchTestRailTestCases() {
           password: TESTRAIL_API_KEY,
         },
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     const testCases = response.data.map((testCase) => ({
       id: testCase.id,
       title: testCase.title,
-      steps: testCase.custom_steps || 'No steps provided', // Replace `custom_steps` with the field ID for test steps if applicable
+      steps: testCase.custom_steps || "No steps provided", // Replace `custom_steps` with the field ID for test steps if applicable
     }));
 
     // Process each test case
     testCases.forEach((testCase) => createYamlFile(testCase));
     console.log(`Exported ${testCases.length} test cases to ${OUTPUT_DIR}`);
   } catch (error) {
-    console.error('Error fetching TestRail test cases:', error.message);
+    console.error("Error fetching TestRail test cases:", error.message);
   }
 }
 
 // Create a YAML file for each test case
 function createYamlFile(testCase) {
-  const steps = testCase.steps
-    .split('\n')
-    .map((step) => ({
-      prompt: step.trim(),
-    }));
+  const steps = testCase.steps.split("\n").map((step) => ({
+    prompt: step.trim(),
+  }));
 
   const yamlContent = {
-    version: '4.2.18',
+    version: "4.2.18",
     steps,
   };
 
   const fileName = `test_${testCase.id}.yaml`;
   const filePath = path.join(OUTPUT_DIR, fileName);
 
-  fs.writeFileSync(filePath, yaml.stringify(yamlContent), 'utf8');
+  fs.writeFileSync(filePath, yaml.stringify(yamlContent), "utf8");
   console.log(`Created file: ${filePath}`);
 }
 
