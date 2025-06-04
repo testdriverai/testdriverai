@@ -84,9 +84,19 @@ const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
 let workingDir = process.cwd();
 
-let getArgs = () => {
+let healMode = false;
+
+const getArgs = () => {
   let command = 0;
   let file = 1;
+
+  // Check for --heal flag
+  if (args.includes("--heal")) {
+    healMode = true;
+    // Remove --heal from args so it doesn't interfere with command/file logic
+    const idx = args.indexOf("--heal");
+    args.splice(idx, 1);
+  }
 
   // TODO use a arg parser library to simplify this
   if (
@@ -225,6 +235,13 @@ const haveAIResolveError = async (
   undo = true,
   shouldSave,
 ) => {
+  if (!healMode) {
+    logger.error(
+      theme.yellow("Error detected, but recovery mode is not enabled."),
+    );
+    logger.info("To attempt automatic recovery, re-run with the --heal flag.");
+    return;
+  }
   if (error.fatal) {
     return await dieOnFatal(error);
   }
@@ -234,7 +251,10 @@ const haveAIResolveError = async (
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
-  logger.error(theme.red("Error detected"));
+  logger.info("");
+  logger.error(
+    theme.red("Error detected. Attempting to recover (via --heal)..."),
+  );
 
   log.prettyMarkdown(eMessage);
 
@@ -838,6 +858,9 @@ const firstPrompt = async () => {
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
+      if (flags.includes("--heal")) {
+        healMode = true;
+      }
       await run(file, shouldSave, shouldExit);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
@@ -1085,6 +1108,11 @@ let run = async (
   }
 
   executionHistory = [];
+
+  if (!ymlObj.steps || !ymlObj.steps.length) {
+    logger.info(theme.red("No steps found in the YAML file"));
+    await exit(true);
+  }
 
   for (const step of ymlObj.steps) {
     logger.info(``, null);
