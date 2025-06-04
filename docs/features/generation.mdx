@@ -7,17 +7,17 @@ icon: "wand-sparkles"
 
 import YmlWarning from '/snippets/yml-warning.mdx'
 
-Writing tests can be a tedious and time-consuming task. TestDriver can generate tests just by exploring your app! This guide will show you how to generate tests using TestDriver.
+Writing tests can be a tedious and time-consuming task. TestDriver can generate tests just by exploring your app\! This guide will show you how to generate tests using TestDriver.
 
 # Generate exploratory tests
 
 Launch `testdriverai` in interactive mode with the following command:
 
 ```bash
-testdriverai
+npx testdriverai@latest
 ```
 
-TestDriver will boot up. 
+TestDriver will boot up.
 
 ```bash
 ❯ testdriverai                                                        
@@ -52,7 +52,7 @@ testdriver
 │   └── test-standard-user-login.yaml
 ```
 
-Notice that each test file has no commands! It's only a list of prompts. This is similar to an exploratory test.
+Notice that each test file has no commands\! It's only a list of prompts. This is similar to an exploratory test.
 
 ```yaml
 version: 5.3.11
@@ -70,10 +70,10 @@ Now it's time to generate the regression test.
 Run the tests with the `run` command and use the `--save` parameter:
 
 ```bash
-testdriverai run testdriver/generate/test-error-user-login.yaml --save
+npx testdriverai@latest run testdriver/generate/test-error-user-login.yaml --save
 ```
 
-When a test has no `commands`, TestDriver falls back to the `prompt`. 
+When a test has no `commands`, TestDriver falls back to the `prompt`.
 
 ```
 > Fill in the "Username" field with "error_user".
@@ -84,7 +84,7 @@ When using the `--save` command, TestDriver appends any generated commands to th
 
 So as your test run, TestDriver will append successful commands to the YAML file and save it.
 
-<YmlWarning/>
+<YmlWarning />
 
 ```yaml
 version: 5.3.11
@@ -111,8 +111,8 @@ steps:
         action: click
 ```
 
-Now the next time you run the test, TestDriver will use the commands instead of the prompt!
+Now the next time you run the test, TestDriver will use the commands instead of the prompt\!
 
 ```bash
-testdriverai run testdriver/generate/test-error-user-login.yaml
+npx testdriverai@latest run testdriver/generate/test-error-user-login.yaml
 ```
