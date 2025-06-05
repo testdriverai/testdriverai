@@ -237,11 +237,12 @@ const haveAIResolveError = async (
 ) => {
   if (!healMode) {
     logger.error(
-      theme.yellow("Error detected, but recovery mode is not enabled."),
+      theme.red("Error detected, but recovery mode is not enabled."),
     );
     logger.info("To attempt automatic recovery, re-run with the --heal flag.");
-    return;
+    return await dieOnFatal(error);
   }
+
   if (error.fatal) {
     return await dieOnFatal(error);
   }
