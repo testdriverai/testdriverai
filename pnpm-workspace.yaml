@@ -1,5 +1,9 @@
+packages:
+  - "examples/*"
+  - "packages/*"
+
 onlyBuiltDependencies:
-  - '@hurdlegroup/robotjs'
+  - "@hurdlegroup/robotjs"
   - electron
   - esbuild
   - get-windows
