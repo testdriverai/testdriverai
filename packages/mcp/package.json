@@ -1,17 +1,31 @@
 {
+  "type": "module",
   "name": "@testdriver.ai/mcp",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "MCP server for TestDriver.ai",
+  "author": "Eric Clemmons <eric@testdriver.ai>",
+  "license": "ISC",
+  "bin": {
+    "testdriverai-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
   "packageManager": "pnpm@10.11.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
     "arktype": "catalog:"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
   }
 }

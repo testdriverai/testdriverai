@@ -1,6 +1,8 @@
 catalog:
   "@modelcontextprotocol/sdk": "^1.12.1"
   "arktype": "^2.1.20"
+  "tsdown": "^0.12.7"
+  "typescript": "^5.8.3"
 
 catalogMode: "prefer"
 
