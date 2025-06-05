@@ -1,6 +1,8 @@
-packages:
-  - "examples/*"
-  - "packages/*"
+catalog:
+  "@modelcontextprotocol/sdk": "^1.12.1"
+  "arktype": "^2.1.20"
+
+catalogMode: "prefer"
 
 onlyBuiltDependencies:
   - "@hurdlegroup/robotjs"
@@ -10,3 +12,7 @@ onlyBuiltDependencies:
   - mac-screen-capture-permissions
   - odiff-bin
   - sharp
+
+packages:
+  - examples/*
+  - packages/*
