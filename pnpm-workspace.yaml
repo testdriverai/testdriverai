@@ -1,0 +1,8 @@
+onlyBuiltDependencies:
+  - '@hurdlegroup/robotjs'
+  - electron
+  - esbuild
+  - get-windows
+  - mac-screen-capture-permissions
+  - odiff-bin
+  - sharp
