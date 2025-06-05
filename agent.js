@@ -1261,9 +1261,10 @@ const start = async () => {
   }
 
   // if thisFile doesn't exist, create it
-  if (thisCommand !== "init" && thisCommand !== "upload-secrets") { // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
-  if (!fs.existsSync(thisFile)) {
-    fs.writeFileSync(thisFile, "");
+  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+    // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
+    if (!fs.existsSync(thisFile)) {
+      fs.writeFileSync(thisFile, "");
       logger.info(theme.dim(`Created ${thisFile}`));
     }
   }
