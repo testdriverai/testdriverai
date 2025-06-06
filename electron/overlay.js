@@ -6,8 +6,9 @@ const {
   BrowserWindow,
   Tray,
   Menu,
+  ipcMain,
 } = require("electron");
-const { eventsArray } = require("../lib/events.js");
+const { eventsArray, events } = require("../lib/events.js");
 const config = require("../lib/config.js");
 const path = require("path");
 
@@ -47,82 +48,122 @@ app.whenReady().then(() => {
 
   app.dock?.hide();
 
-  let windowOptions;
-
-  if (config.TD_VM) {
-    windowOptions = {
-      width: config.TD_VM_RESOLUTION[0],
-      height: config.TD_VM_RESOLUTION[1],
-      closable: true,
-      resizable: false,
-      // alwaysOnTop: true,
-      show: false,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      autoHideMenuBar: true,
-    };
-  } else {
-    windowOptions = {
-      ...screen.getPrimaryDisplay().bounds,
-      closable: true,
-      resizable: true,
-      alwaysOnTop: true,
-      enableLargerThanScreen: true,
-      frame: false,
-      show: false,
-      focusable: false,
-      fullscreenable: true,
-      transparent: true,
-      skipTaskbar: true,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      autoHideMenuBar: true,
-    };
-
-    if (process.platform !== "darwin") {
-      windowOptions.fullscreen = true;
+  // --- Overlay Window (UI) ---
+  let overlayWindow;
+  let overlayWindowOptions;
+  const showOverlayGUI = config.TD_OVERLAY_GUI !== false;
+  if (showOverlayGUI) {
+    if (config.TD_VM) {
+      overlayWindowOptions = {
+        width: config.TD_VM_RESOLUTION[0],
+        height: config.TD_VM_RESOLUTION[1],
+        closable: true,
+        resizable: false,
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
+        autoHideMenuBar: true,
+      };
+    } else {
+      overlayWindowOptions = {
+        ...screen.getPrimaryDisplay().bounds,
+        closable: true,
+        resizable: true,
+        alwaysOnTop: true,
+        enableLargerThanScreen: true,
+        frame: false,
+        show: false,
+        focusable: false,
+        fullscreenable: true,
+        transparent: true,
+        skipTaskbar: true,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+        },
+        autoHideMenuBar: true,
+      };
+      if (process.platform !== "darwin") {
+        overlayWindowOptions.fullscreen = true;
+      }
     }
+    overlayWindow = new BrowserWindow(overlayWindowOptions);
+    if (!config.TD_VM) {
+      overlayWindow.setIgnoreMouseEvents(true);
+      overlayWindow.setAlwaysOnTop(true, "screen-saver");
+      overlayWindow.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+    } else {
+      overlayWindow.setContentSize(
+        config.TD_VM_RESOLUTION[0],
+        config.TD_VM_RESOLUTION[1],
+      );
+    }
+    overlayWindow.loadFile("overlay.html");
   }
 
-  const window = new BrowserWindow(windowOptions);
-
-  if (!config.TD_VM) {
-    window.setIgnoreMouseEvents(true);
-    window.setAlwaysOnTop(true, "screen-saver");
-    window.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
+  // --- Terminal Window ---
+  let terminalWindow;
+  const showOverlayTerminal = config.TD_OVERLAY_TERMINAL !== false;
+  if (showOverlayTerminal) {
+    terminalWindow = new BrowserWindow({
+      width: 600,
+      resizable: true,
+      height: (overlayWindowOptions && overlayWindowOptions.height) || 800,
+      x:
+        (overlayWindowOptions && overlayWindowOptions.width
+          ? overlayWindowOptions.width
+          : 1920) - 600,
+      y: 0,
+      show: false,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+      },
     });
-  } else {
-    window.setContentSize(
-      config.TD_VM_RESOLUTION[0],
-      config.TD_VM_RESOLUTION[1],
-    );
-    window.setBackgroundColor("#000");
+    // terminalWindow.setContentProtection(true);
+    terminalWindow.loadFile("overlay-terminal.html");
+    // terminalWindow.openDevTools({
+    //   mode: "detach",
+    // });
   }
 
-  window.loadFile("overlay.html");
-
-  window.once("ready-to-show", () => {
-    // window.showInactive();
-  });
-
-  // open developer tools
-  // window.webContents.openDevTools();
-
+  // --- Event Routing ---
   ipc.serve(() => {
     for (const event of eventsArray) {
       ipc.server.on(event, (data) => {
         if (event === "show-window") {
-          window.showInactive();
+          if (showOverlayGUI && overlayWindow) overlayWindow.showInactive();
+          if (showOverlayTerminal && terminalWindow)
+            terminalWindow.showInactive();
           return;
         }
-        window?.webContents.send(event, data);
+        if (showOverlayGUI && overlayWindow)
+          overlayWindow?.webContents.send(event, data);
+
+        if (showOverlayTerminal && terminalWindow) {
+          if (
+            event === "screen-capture:start" ||
+            event === "mouse-click:start"
+          ) {
+            terminalWindow.hide();
+          }
+          if (event === "screen-capture:end" || event === "mouse-click:end") {
+            terminalWindow.showInactive();
+          }
+          terminalWindow?.webContents.send(event, data);
+        }
       });
     }
+  });
+
+  // Listen for terminal:stdin from renderer and forward to main process (agent.js)
+  ipcMain.on(events.terminal.stdin, (event, data) => {
+    // Forward stdin data to agent.js via node-ipc (use broadcast, not emit)
+    ipc.server.broadcast(events.terminal.stdin, data);
   });
 
   // We do this because node-ipc doesn't prevent new servers from using the same id

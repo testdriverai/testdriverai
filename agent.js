@@ -905,6 +905,12 @@ const firstPrompt = async () => {
 
   rl.on("line", handleInput);
   server.on("input", handleInput);
+  emitter.on(events.terminal.stdin, (data) => {
+    // If readline is active, write data to it
+    if (rl && typeof rl.write === "function") {
+      rl.write(data);
+    }
+  });
 
   // if file exists, load it
   if (fs.existsSync(thisFile)) {
