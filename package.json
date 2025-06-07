@@ -10,7 +10,7 @@
     "start": "node index.js",
     "dev": "DEV=true node index.js",
     "debug": "DEV=true VERBOSE=true node index.js",
-    "docs": "npx mint dev",
+    "docs": "cd docs && npx mint dev",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "docs-lint": "cd docs && vale **/*.mdx",

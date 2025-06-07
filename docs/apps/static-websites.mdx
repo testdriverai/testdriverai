@@ -4,6 +4,7 @@ sidebarTitle: "Static Websites"
 description: "Test static websites with TestDriver"
 icon: "browser"
 ---
+
 <iframe
   width="600"
   height="400"
@@ -12,20 +13,22 @@ icon: "browser"
   frameborder="0"
   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
   allowfullscreen
-></iframe>
+/>
 
 ---
+
 # Testing Static Websites with TestDriver
 
 TestDriver provides a powerful solution for testing static websites. With our platform, you can easily create and run tests to ensure your static website functions as expected across different browsers and devices.
 
-
 ## Getting started
+
 To get started with testing static websites using TestDriver, follow these steps:
-1. **Follow our [quick start guide](/getting-started/setup) to set up your TestDriver account.**
+
+1. [**Follow our quick start guide to set up your TestDriver account.**](/getting-started/setup)
 2. **Create a new test project** in your TestDriver dashboard.
 3. **Add your static website URL** to the test settings.
-It looks like this in the `prerun.yaml` file:
+   It looks like this in the `prerun.yaml` file:
 
 ```yaml
 version: 5.1.1
@@ -47,10 +50,11 @@ steps:
         text: "Google Chrome"
         timeout: 30000
 ```
+
 Set the `TD_WEBSITE` environment variable to the URL of your static website. This will allow TestDriver to launch the browser and navigate to your website. You can do this by adding this `prerun.yaml` file to your project or by simply using:
+
 ```bash
-testdriverai init
+npx testdriverai@latest init
 ```
+
 Running init will create the `prerun.yaml` file for you and ask you which website to load with your test.
-
-

@@ -25,8 +25,5 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install TestDriverAI globally
-        run: npm install -g testdriverai
-
-      - name: Verify Installation
-        run: testdriverai --help
+      - name: Verify `testdriverai` is executable
+        run: npx testdriverai@latest -y --help

@@ -23,6 +23,7 @@ This guide explains how to extract **user stories** from Jira and convert them i
 ## Step 1: Export user stories from Jira
 
 ### Prerequisites
+
 1. **Jira API Token**: Generate an API token from your Jira account.
 2. **Jira Base URL**: Your Jira instance URL (for example, `https://yourcompany.atlassian.net`).
 3. **Node.js**: Ensure Node.js is installed on your system.
@@ -40,19 +41,19 @@ npm install axios yaml fs
 #### Node.js script (`export-jira-user-stories.js`):
 
 ```javascript [expandable]
-const axios = require('axios');
-const yaml = require('yaml');
-const fs = require('fs');
-const path = require('path');
+const axios = require("axios");
+const yaml = require("yaml");
+const fs = require("fs");
+const path = require("path");
 
 // Jira credentials
-const JIRA_BASE_URL = 'https://yourcompany.atlassian.net';
-const JIRA_USERNAME = 'your-email@example.com';
-const JIRA_API_TOKEN = 'your-api-token';
-const JIRA_PROJECT_KEY = 'PROJECT_KEY'; // Replace with your Jira project key
+const JIRA_BASE_URL = "https://yourcompany.atlassian.net";
+const JIRA_USERNAME = "your-email@example.com";
+const JIRA_API_TOKEN = "your-api-token";
+const JIRA_PROJECT_KEY = "PROJECT_KEY"; // Replace with your Jira project key
 
 // Output directory
-const OUTPUT_DIR = './testdriver_tests';
+const OUTPUT_DIR = "./testdriver_tests";
 
 // Ensure the output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -70,42 +71,41 @@ async function fetchJiraTickets() {
           password: JIRA_API_TOKEN,
         },
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     const tickets = response.data.issues.map((issue) => ({
       id: issue.key,
       title: issue.fields.summary,
-      acceptanceCriteria: issue.fields.customfield_12345 || 'No acceptance criteria provided', // Replace `customfield_12345` with the field ID for "Acceptance Criteria"
+      acceptanceCriteria:
+        issue.fields.customfield_12345 || "No acceptance criteria provided", // Replace `customfield_12345` with the field ID for "Acceptance Criteria"
     }));
 
     // Process each ticket
     tickets.forEach((ticket) => createYamlFile(ticket));
     console.log(`Exported ${tickets.length} user stories to ${OUTPUT_DIR}`);
   } catch (error) {
-    console.error('Error fetching Jira tickets:', error.message);
+    console.error("Error fetching Jira tickets:", error.message);
   }
 }
 
 // Create a YAML file for each user story
 function createYamlFile(ticket) {
-  const steps = ticket.acceptanceCriteria
-    .split('\n')
-    .map((criteria) => ({
-      prompt: criteria.trim(),
-    }));
+  const steps = ticket.acceptanceCriteria.split("\n").map((criteria) => ({
+    prompt: criteria.trim(),
+  }));
 
   const yamlContent = {
-    version: '4.2.18',
+    version: "4.2.18",
     steps,
   };
 
   const fileName = `${ticket.id}.yaml`;
   const filePath = path.join(OUTPUT_DIR, fileName);
 
-  fs.writeFileSync(filePath, yaml.stringify(yamlContent), 'utf8');
+  fs.writeFileSync(filePath, yaml.stringify(yamlContent), "utf8");
   console.log(`Created file: ${filePath}`);
 }
 
@@ -127,9 +127,8 @@ steps:
   - prompt: The user can log in with valid credentials.
   - prompt: An error message is displayed for invalid credentials.
   - prompt: The login page is responsive on mobile devices.
-
-
 ```
+
 ---
 
 ## Step 3: Save and organize test files
@@ -146,15 +145,13 @@ Use the TestDriver CLI to execute the generated test files.
 ### Run a single test file:
 
 ```bash
-testdriverai run testdriver_tests/PROJ-123.yaml
-
-
+npx testdriverai@latest run testdriver_tests/PROJ-123.yaml
 ```
 
 ### Run all test files:
 
 ```bash
-testdriverai run testdriver_tests/*.yaml
+npx testdriverai@latest run testdriver_tests/*.yaml
 ```
 
 ---
