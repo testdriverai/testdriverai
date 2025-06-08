@@ -1237,10 +1237,9 @@ const start = async () => {
   const thisCommand = a.command;
 
   logger.info(theme.green(`Howdy! I'm TestDriver v${package.version}`));
-  logger.info(`This is beta software!`);
   logger.info("");
-  logger.info(theme.yellow(`Join our Discord for help`));
-  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+  logger.info(theme.green(`Join our forums for help!`));
+  logger.info(`https://forums.testdriver.ai`);
   logger.info("");
 
   // make testdriver directory if it doesn't exist
@@ -1259,8 +1258,11 @@ const start = async () => {
     logger.info(theme.dim(`Created directory ${dir}`));
   }
 
-  // if thisFile doesn't exist, create it
-  if (!fs.existsSync(thisFile)) {
+  if (
+    thisCommand !== "init" &&
+    thisCommand !== "upload-secrets" &&
+    !fs.existsSync(thisFile)
+  ) {
     fs.writeFileSync(thisFile, "");
     logger.info(theme.dim(`Created ${thisFile}`));
   }
