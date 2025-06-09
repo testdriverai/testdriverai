@@ -1,22 +1,20 @@
 // From https://modelcontextprotocol.io/quickstart/server#core-mcp-concepts
 {
+  "extends": "@total-typescript/tsconfig/bundler/no-dom/library-monorepo",
+
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
-    "outDir": "./build",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    // For `import { name, version }`
+    // https://www.typescriptlang.org/tsconfig#resolveJsonModule
+    "resolveJsonModule": true,
 
     // https://tsdown.dev/options/dts#enable-in-tsdown-config
     "declaration": true,
     "declarationMap": true,
+
     // https://tsdown.dev/options/dts#with-isolateddeclarations
+    "allowJs": false,
     "isolatedDeclarations": true
   },
-  "include": ["src/**/*"],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }
