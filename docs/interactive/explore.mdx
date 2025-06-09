@@ -9,18 +9,24 @@ icon: "play-pause"
 
 The `/explore` command is used to execute a single step in a test file and add it to a specified file. This command generates and performs steps in an interactive way while creating a test file.
 
-<Tip>`/explore` is the default command sent to TestDriver when no command is provided.</Tip>
+<Tip>
+  `/explore` is the default command sent to TestDriver when no command is
+  provided.
+</Tip>
 
 ## Usage
+
 ```bash
-testdriverai <filename.yaml>
+npx testdriverai@latest <filename.yaml>
 /run prompt
 ```
 
 ## Example usage
+
 ```bash
 > /explore add an item to the shopping cart
 ```
+
 This command creates the command step(s) necessary to add an item to the shopping cart in the specified test file, executing the generated command(s) after writing them into the test file. If there are intermediate steps to be taken, they're added to the test file as well.
 
 ```bash
@@ -31,7 +37,7 @@ thinking...
     since the screenshot shows a code editor, we need to
     assume the button isn't visible here. Let's proceed with
     a generic approach:
-    
+
     commands:
       - command: focus-application
         name: Google Chrome
@@ -39,9 +45,9 @@ thinking...
         text: Add to Cart
         description: add to cart button on the shopping page
         action: click
-    
+
     ### Explanation:
-    
+
     1. Focus Google Chrome: Ensure the browser is active to interact with the shopping page.
     2. Click 'Add to Cart': Use hover-text to find and click the "Add to Cart" button, assuming it's present on the shopping page.
 
@@ -60,7 +66,7 @@ thinking...
     The screenshot shows a "Sign In" button on the webpage.
     Let's try clicking that instead, as it might be necessary
     before adding items to the cart.
-    
+
     commands:
       - command: hover-text
         text: Sign In
@@ -72,8 +78,8 @@ command='hover-text' text='Sign In' description='sign in button on the webpage' 
 thinking...
 ```
 
-
 ## Behavior
+
 - TestDriver will generate an idea to complete the task, try to execute it, and add the steps to the test file.
 - The steps will be executed in the order generated.
 - If the steps are successful, they're added to the test file.
@@ -82,11 +88,14 @@ thinking...
 - If any failures occur during the test, the program will output the errors and exit with code `1`.
 
 ## Protips
+
 - Use descriptive prompts for higher success with generating test steps with `/explore`.
 - Use `/explore` multiple times in succession to build a comprehensive test file.
 
 ## Gotchas
+
 - The AI will retry 3 times if it can't complete the task.
 
 ## Notes
+
 - The `/explore` command is ideal for creating test files in an interactive session.
