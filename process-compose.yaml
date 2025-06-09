@@ -1,0 +1,10 @@
+processes:
+  inspector:
+    command: "pnpm inspect"
+    namespace: "mcp"
+    working_dir: "packages/mcp"
+
+  mcp:
+    command: "pnpm dev"
+    namespace: "mcp"
+    working_dir: "packages/mcp"
