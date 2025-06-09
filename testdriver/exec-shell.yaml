@@ -13,7 +13,6 @@ steps:
           exit
         windows: |
           Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--disable-fre", "--no-default-browser-check", "--no-first-run", "--guest", "${TD_WEBSITE}"
-          exit
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 30000
