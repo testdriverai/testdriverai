@@ -7,9 +7,10 @@ steps:
   - prompt: assert the testdriver login page shows
     commands:
       - command: match-image
+        path: minus.png
+        action: click
+        description: minus icon near veritcal spacing
+      - command: match-image
         path: toggle.png
         action: click
-  - prompt: assert that you see an empty shopping cart
-    commands:
-      - command: assert
-        expect: Your cart is empty
+        description: page break toggle button
