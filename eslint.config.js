@@ -10,13 +10,13 @@ module.exports = [
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.jest
+        ...globals.jest,
       },
     },
   },
   {
     // this needs to be it's own object for some reason
     // https://github.com/eslint/eslint/issues/17400
-    ignores: ["lib/subimage/opencv.js", "node_modules/**", ".git", "electron/terminal/xterm*"],
+    ignores: ["node_modules/**", ".git", "electron/terminal/xterm*"],
   },
 ];
