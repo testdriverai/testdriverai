@@ -85,6 +85,7 @@ const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 let workingDir = process.cwd();
 
 let healMode = false;
+let skipPrerun = false;
 
 const getArgs = () => {
   let command = 0;
@@ -95,6 +96,13 @@ const getArgs = () => {
     healMode = true;
     // Remove --heal from args so it doesn't interfere with command/file logic
     const idx = args.indexOf("--heal");
+    args.splice(idx, 1);
+  }
+  // Check for --skip-prerun flag
+  if (args.includes("--skip-prerun")) {
+    skipPrerun = true;
+    // Remove --skip-prerun from args so it doesn't interfere with command/file logic
+    const idx = args.indexOf("--skip-prerun");
     args.splice(idx, 1);
   }
 
@@ -1376,6 +1384,9 @@ const newSession = async () => {
 };
 
 const runPrerun = async () => {
+  if (skipPrerun) {
+    return;
+  }
   const prerunFile = path.join(
     workingDir,
     "testdriver",
