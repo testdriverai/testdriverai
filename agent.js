@@ -1387,19 +1387,19 @@ const runPrerun = async () => {
   }
 };
 
-// process.on("uncaughtException", async (err) => {
-//   analytics.track("uncaughtException", { err });
-//   logger.error("Uncaught Exception: %s", err);
-//   // You might want to exit the process after handling the error
-//   await exit(true);
-// });
+process.on("uncaughtException", async (err) => {
+  analytics.track("uncaughtException", { err });
+  logger.error("Uncaught Exception: %s", err);
+  // You might want to exit the process after handling the error
+  await exit(true);
+});
 
-// process.on("unhandledRejection", async (reason, promise) => {
-//   analytics.track("unhandledRejection", { reason, promise });
-//   logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
-//   // Optionally, you might want to exit the process
-//   await exit(true);
-// });
+process.on("unhandledRejection", async (reason, promise) => {
+  analytics.track("unhandledRejection", { reason, promise });
+  logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
+  // Optionally, you might want to exit the process
+  await exit(true);
+});
 
 module.exports = {
   setTerminalApp,
