@@ -9,7 +9,7 @@ steps:
       - command: match-image
         path: minus.png
         action: click
-        description: minus icon near veritcal spacing
+        description: minus icon near vertical spacing
       - command: match-image
         path: toggle.png
         action: click
