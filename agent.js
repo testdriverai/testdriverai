@@ -237,11 +237,12 @@ const haveAIResolveError = async (
 ) => {
   if (!healMode) {
     logger.error(
-      theme.yellow("Error detected, but recovery mode is not enabled."),
+      theme.red("Error detected, but recovery mode is not enabled."),
     );
     logger.info("To attempt automatic recovery, re-run with the --heal flag.");
-    return;
+    return await dieOnFatal(error);
   }
+
   if (error.fatal) {
     return await dieOnFatal(error);
   }
@@ -1266,9 +1267,12 @@ const start = async () => {
   }
 
   // if thisFile doesn't exist, create it
-  if (!fs.existsSync(thisFile)) {
-    fs.writeFileSync(thisFile, "");
-    logger.info(theme.dim(`Created ${thisFile}`));
+  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+    // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
+    if (!fs.existsSync(thisFile)) {
+      fs.writeFileSync(thisFile, "");
+      logger.info(theme.dim(`Created ${thisFile}`));
+    }
   }
 
   if (config.TD_API_KEY) {
