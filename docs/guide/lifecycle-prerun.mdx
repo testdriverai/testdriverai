@@ -65,19 +65,6 @@ Note that the `prerun` script is found in the GitHub Actions workflow file for d
 
 ### Prerun flow
 
-```mermaid
-graph TD
-    A{Is the test deployed to CI?}
-    A -->|Yes| B[Run .github/workflows/testdriver.yml]
-    B --> F
-    A -->|No| C{Is prerun available at ./lifecycle/prerun.yaml}
-    C -->|Yes| D[Run ./lifecycle/prerun.yaml]
-    C -->|No| F
-    D --> F[Run ./testdriver/testfile.yaml]
-```
-
----
-
 ## Examples
 
 For example, the `prerun.yaml` file can be combined with the [`exec`](/commands/exec) command to open the Chrome browser and navigate to a page, similar to the example provided above. This ensures that the test environment is properly set up before the test starts. _Note that the prerun is a TestDriver test file like any other, combining commands to complete a task_.
