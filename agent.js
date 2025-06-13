@@ -1216,7 +1216,15 @@ const embed = async (file, depth) => {
   let ymlObj = await loadYML(file);
 
   for (const step of ymlObj.steps) {
-    await executeCommands(step.commands, depth);
+    if (!step.commands && !step.prompt) {
+      logger.info(theme.red("No commands or prompt found"));
+      await exit(true);
+    } else if (!step.commands) {
+      logger.info(theme.yellow("No commands found, running exploratory"));
+      await exploratoryLoop(step.prompt, false, true, false);
+    } else {
+      await executeCommands(step.commands, depth);
+    }
   }
 
   logger.info(`${file} (end)`);
