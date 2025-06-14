@@ -4,27 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    '@modelcontextprotocol/sdk':
-      specifier: ^1.12.1
-      version: 1.12.1
-    '@total-typescript/tsconfig':
-      specifier: ^1.0.4
-      version: 1.0.4
-    arktype:
-      specifier: ^2.1.20
-      version: 2.1.20
-    fastmcp:
-      specifier: ^2.2.2
-      version: 2.2.2
-    tsdown:
-      specifier: ^0.12.7
-      version: 0.12.7
-    typescript:
-      specifier: ^5.8.3
-      version: 5.8.3
-
 importers:
 
   .:
