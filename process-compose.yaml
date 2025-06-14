@@ -5,6 +5,6 @@ processes:
     working_dir: "packages/mcp"
 
   mcp:
-    command: "pnpm dev"
+    command: "pnpm build"
     namespace: "mcp"
     working_dir: "packages/mcp"
