@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsdown",
     "dev": "node --no-warnings --watch src/index.ts",
-    "inspect": "pnpx @modelcontextprotocol/inspector pnpm --silent dev"
+    "inspect": "DANGEROUSLY_OMIT_AUTH=true pnpx @modelcontextprotocol/inspector ./bin/dev.sh"
   },
   "engines": {
     "node": ">=22"
