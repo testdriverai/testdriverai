@@ -157,3 +157,9 @@ entrypoint.js
 index-K4K5CPUZ.html
 node_modules
 saves/*
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
