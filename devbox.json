@@ -1,5 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.2/.schema/devbox.schema.json",
+  "env": {
+    "PATH": "$PATH:$PWD/node_modules/.bin"
+  },
   "packages": ["pnpm@latest", "nodejs@latest"],
   "shell": {
     "init_hook": ["pnpm install"],
