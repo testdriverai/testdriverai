@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "@testdriver.localhost/mcp": {
+      "command": "./packages/mcp/bin/dev.sh",
+      "env": {
+        "TD_API_KEY": null
+      }
+    }
+  }
+}

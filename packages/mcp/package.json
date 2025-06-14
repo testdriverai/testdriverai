@@ -13,8 +13,8 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "dev": "tsdown --watch",
-    "inspect": "pnpx @modelcontextprotocol/inspector node dist/index.js"
+    "dev": "node --no-warnings --watch src/index.ts",
+    "inspect": "pnpx @modelcontextprotocol/inspector pnpm --silent dev"
   },
   "engines": {
     "node": ">=22"
