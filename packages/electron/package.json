@@ -1,0 +1,17 @@
+{
+  "name": "@testdriver.ai/electron",
+  "version": "1.0.0",
+  "description": "Electron bindings for TestDriver.ai",
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "devDependencies": {
+    "electron": "catalog:"
+  }
+}
