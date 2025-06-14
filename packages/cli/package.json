@@ -1,13 +1,29 @@
 {
   "name": "@testdriver.ai/cli",
+  "description": "TestDriver.ai CLI",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.11.0"
+  "scripts": {
+    "build": "tsdown",
+    "dev": "node --no-warnings --watch src/index.ts"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "@testdriver.ai/electron": "workspace:*",
+    "citty": "catalog:",
+    "consola": "catalog:"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:"
+  }
 }
