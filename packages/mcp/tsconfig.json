@@ -3,6 +3,10 @@
   "extends": "@total-typescript/tsconfig/bundler/no-dom/library-monorepo",
 
   "compilerOptions": {
+    // https://nodejs.org/docs/latest-v23.x/api/esm.html#mandatory-file-extensions
+    // https://www.typescriptlang.org/vo/tsconfig/#allowImportingTsExtensions
+    "rewriteRelativeImportExtensions": true,
+
     // For `import { name, version }`
     // https://www.typescriptlang.org/tsconfig#resolveJsonModule
     "resolveJsonModule": true,
@@ -12,8 +16,10 @@
     "declarationMap": true,
 
     // https://tsdown.dev/options/dts#with-isolateddeclarations
-    "allowJs": false,
-    "isolatedDeclarations": true
+    "allowJs": false
+
+    // Disabled for ArkType
+    // "isolatedDeclarations": true
   },
   "include": ["src"],
   "exclude": ["node_modules"]
