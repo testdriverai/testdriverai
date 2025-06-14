@@ -1,13 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.2/.schema/devbox.schema.json",
-  "packages": [
-    "pnpm@latest",
-    "nodejs@latest"
-  ],
+  "packages": ["pnpm@latest", "nodejs@latest"],
   "shell": {
     "init_hook": ["pnpm install"],
     "scripts": {
-      "dev": ["devbox services up"]
+      "dev": ["devbox services up"],
+      "mcp": ["pnpm --filter=@testdriver.ai/mcp --silent dev"]
     }
   }
 }
