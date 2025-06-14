@@ -1,4 +1,7 @@
 processes:
+  browser:
+    command: "playwright open --channel chrome https://testdriver-sandbox.vercel.app/"
+
   inspector:
     command: "pnpm inspect"
     namespace: "mcp"
