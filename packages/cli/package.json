@@ -21,9 +21,11 @@
   "dependencies": {
     "@testdriver.ai/electron": "workspace:*",
     "citty": "catalog:",
-    "consola": "catalog:"
+    "consola": "catalog:",
+    "node-screenshots": "catalog:"
   },
   "devDependencies": {
+    "@nut-tree-fork/nut-js": "catalog:",
     "tsdown": "catalog:"
   }
 }
