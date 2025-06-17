@@ -1,0 +1,23 @@
+version: 5.7.7
+session: 682f6071811bd5a322c0e6dd
+steps:
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  - prompt: enter a username
+    commands:
+      - command: hover-text
+        text: Username
+        description: username input field
+        action: click
+      - command: type
+        text: standard_user
+  - prompt: >-
+      enter a valid password
+  - prompt: click sign in
+    commands:
+      - command: hover-text
+        text: Sign in
+        description: sign in button
+        action: click

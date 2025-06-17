@@ -5,6 +5,10 @@ steps:
     commands:
       - command: focus-application
         name: Google Chrome
+      - command: hover-text
+        text: Sign In
+        description: black button below the password field
+        action: click
       - command: press-keys
         keys:
           - command
