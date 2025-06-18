@@ -437,6 +437,9 @@
                       "description": {
                         "type": "string"
                       },
+                      "path": {
+                        "type": "string"
+                      },
                       "direction": {
                         "type": "string",
                         "enum": [
@@ -450,8 +453,11 @@
                         "type": "integer"
                       }
                     },
+                    "anyOf": [
+                      { "required": ["description"] },
+                      { "required": ["path"] }
+                    ],
                     "required": [
-                      "description",
                       "direction"
                     ]
                   }
