@@ -11,11 +11,12 @@ The `scroll-until-image` command is used to scroll the screen in a specified dir
 
 ## Arguments
 
-| Argument      | Type     | Description                                                                 |
-|---------------|----------|-----------------------------------------------------------------------------|
-| `description` | `string` | A description of the image and what it represents.                         |
-| `direction`   | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. |
-| `distance`    | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `1200`. |
+| Argument      | Type     | Description                                                                                                                        |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `description` | `string` | A description of the image and what it represents.                                                                                 |
+| `direction`   | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`.                                                  |
+| `distance`    | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `1200`.                                             |
+| `path`        | `string` | The relative path to the image file that needs to be matched on the screen. Don't include `testdriver/screenshots/*/` in the path. |
 
 ## Example usage
 
@@ -25,15 +26,26 @@ description: Submit at the bottom of the form
 direction: down
 ```
 
+Or, you can use the `path` argument to match an image on the screen (similar to [`match-image`](./match-image)):
+
+```yaml
+command: scroll-until-image
+path: button.png
+direction: down
+```
+
 ## Protips
+
 - Use clear and concise descriptions for the image to improve detection accuracy.
 - Adjust the `distance` value to control how far the command scrolls before giving up.
 - Combine this command with other commands like `hover-image` or `match-image` to interact with the located image.
 
 ## Gotchas
+
 - If the image can't be located within the specified `distance`, the command will fail.
 - Ensure the description accurately represents the image to avoid detection issues.
 
 ## Notes
+
 - The `scroll-until-image` command is ideal for navigating to visual elements that are off-screen and can't be located using text-based commands.
 - This command supports both vertical and horizontal scrolling for flexible navigation.
