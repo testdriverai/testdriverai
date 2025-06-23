@@ -23,9 +23,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Re-export secrets to environment
         run: |
           echo "SOME_SECRET_2=${SOME_SECRET}" >> $GITHUB_ENV
+
+      - name: Verify secrets are exported to environment
+        run: |
+          printf '%s\n' "$SOME_SECRET"
+          printf '%s\n' "$SOME_SECRET_2"
+          printf '%s\n' "$SOME_SCRIPT"
 
       - name: Run TestDriver
         id: testdriver
