@@ -20,7 +20,6 @@ jobs:
       SOME_SECRET: "secrets.SOME_SECRET"
       SOME_SCRIPT: |
         echo "SOME_SECRET: $SOME_SECRET"
-      TD_API_KEY: ${{ secrets.TD_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +31,7 @@ jobs:
         id: testdriver
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TD_API_KEY }}
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
           prerun: |
             echo "SOME_SECRET: $SOME_SECRET"
