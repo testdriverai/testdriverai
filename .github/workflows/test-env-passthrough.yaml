@@ -13,45 +13,22 @@ on:
 
 jobs:
   test:
-    name: "Run TestDriver"
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
-
     env:
-      GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      SOME_SECRET: "secrets.SOME_SECRET"
+      SOME_SCRIPT: |
+        echo "SOME_SECRET: $SOME_SECRET"
+      TD_API_KEY: ${{ secrets.TD_API_KEY }}
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup Google Auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
-
-      - name: Setup gcloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Get secrets from Secret Manager
-        id: secrets
-        uses: google-github-actions/get-secretmanager-secrets@v2
-        with:
-          export_to_environment: true
-          secrets: |
-            TD_API_KEY:projects/17279051920/secrets/TESTDRIVER_API_KEY:latest
-            TD_SSH_SETUP_SCRIPT:projects/17279051920/secrets/testdriver_ssh_setup_script:latest
-            TD_SSH_KEY:projects/17279051920/secrets/TESTDRIVER_SSH_KEY:latest
-
-      - name: Export secrets to environment
+      - uses: actions/checkout@v4
+      - name: Re-export secrets to environment
         run: |
-          echo ${TD_SSH_KEY} > key
-          cat key
-          echo "TD_API_KEY=$(cat key)" >> $GITHUB_ENV
-          echo ${TD_SSH_SETUP_SCRIPT} > ssh_setup_script
-          cat ssh_setup_script
-          echo "TD_SSH_SETUP_SCRIPT=$(cat ssh_setup_script)" >> $GITHUB_ENV
+          echo ${TD_API_KEY} > key
+          echo "TD_API_KEY_2=$(cat key)" >> $GITHUB_ENV
 
       - name: Run TestDriver
         id: testdriver
