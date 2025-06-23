@@ -26,27 +26,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Re-export secrets to environment
         run: |
-          echo ${TD_API_KEY} > key
-          echo "TD_API_KEY_2=$(cat key)" >> $GITHUB_ENV
+          echo "SOME_SECRET_2=${SOME_SECRET}" >> $GITHUB_ENV
 
       - name: Run TestDriver
         id: testdriver
         uses: testdriverai/action@main
         with:
-          key: ${{ env.TD_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           os: linux
           prerun: |
             echo "SOME_SECRET: $SOME_SECRET"
+            echo "SOME_SECRET_2: $SOME_SECRET_2"
+            echo "SOME_SCRIPT: $SOME_SCRIPT"
           prompt: |
-            1. check that Visual Studio Code is visible with the cdc_fifo folder open
-
+            Page should contain "TestDriver.ai Sandbox"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TD_VM: true
-          TD_VM_RESOLUTION: 1280x1024
-          TD_OVERLAY: true
-          TD_ANALYTICS: false
-          FORCE_COLOR: "3"
-          TD_API_KEY: ${{ env.TD_API_KEY }}
-          TD_SSH_SETUP_SCRIPT: ${{ env.TD_SSH_SETUP_SCRIPT }}
-          TD_SSH_KEY: ${{ env.TD_SSH_KEY }}
+          SOME_SECRET: ${{ env.SOME_SECRET }}
+          SOME_SCRIPT: ${{ env.SOME_SCRIPT }}
+          TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
