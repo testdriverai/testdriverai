@@ -34,9 +34,9 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
           prerun: |
-            echo "SOME_SECRET: $SOME_SECRET"
-            echo "SOME_SECRET_2: $SOME_SECRET_2"
-            echo "SOME_SCRIPT: $SOME_SCRIPT"
+            echo "SOME_SECRET: ${SOME_SECRET}"
+            echo "SOME_SECRET_2: ${SOME_SECRET_2}"
+            echo "SOME_SCRIPT: ${SOME_SCRIPT}"
           prompt: |
             Page should contain "TestDriver.ai Sandbox"
         env:
