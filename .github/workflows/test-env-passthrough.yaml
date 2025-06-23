@@ -36,7 +36,7 @@ jobs:
           key: ${{ env.TD_API_KEY }}
           os: linux
           prerun: |
-            printenv
+            echo "SOME_SECRET: $SOME_SECRET"
           prompt: |
             1. check that Visual Studio Code is visible with the cdc_fifo folder open
 
