@@ -1,5 +1,4 @@
-name: TestDriver QA
-run-name: Running TestDriver QA
+name: Test – Environment Passthrough to VM
 
 permissions:
   contents: read
@@ -41,7 +40,7 @@ jobs:
           pr-title: "TestDriver QA Results"
           pr-test-filename: testdriver-results.yaml
           prerun: |
-            echo "TD_SSH_SETUP_SCRIPT: $TD_SSH_SETUP_SCRIPT"
+            printenv
           prompt: |
             1. check that Visual Studio Code is visible with the cdc_fifo folder open
 
