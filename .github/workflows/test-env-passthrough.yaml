@@ -35,10 +35,6 @@ jobs:
         with:
           key: ${{ env.TD_API_KEY }}
           os: linux
-          create-pr: false
-          pr-branch: testdriver-results
-          pr-title: "TestDriver QA Results"
-          pr-test-filename: testdriver-results.yaml
           prerun: |
             printenv
           prompt: |
@@ -54,20 +50,3 @@ jobs:
           TD_API_KEY: ${{ env.TD_API_KEY }}
           TD_SSH_SETUP_SCRIPT: ${{ env.TD_SSH_SETUP_SCRIPT }}
           TD_SSH_KEY: ${{ env.TD_SSH_KEY }}
-
-      - name: Comment results on PR
-        if: github.event_name == 'pull_request'
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## 🧪 TestDriver QA Report
-
-            **✅ Summary:**  
-            ${{ steps.testdriver.outputs.summary || 'No summary available.' }}
-
-            **🖼️ Markdown Report:**  
-            ${{ steps.testdriver.outputs.markdown || 'No markdown report.' }}
-
-            **🔗 Replay Link:**  
-            [View Dashcam Replay](${{ steps.testdriver.outputs.link || '#' }})
