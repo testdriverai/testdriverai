@@ -1,6 +1,15 @@
 version: 5.1.1
 session: 67f00511acbd9ccac373edf7
 steps:
+  - prompt: print environment variables
+    commands:
+      - command: exec
+        lang: shell
+        linux: |
+          printf '%s\n' "${SOME_SECRET}"
+          printf '%s\n' "${SOME_SECRET_2}"
+          printf '%s\n' "${SOME_SCRIPT}"
+        mac: |
   - prompt: launch chrome
     commands:
       - command: exec
