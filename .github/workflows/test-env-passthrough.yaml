@@ -1,0 +1,97 @@
+name: TestDriver QA
+run-name: Running TestDriver QA
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "Run TestDriver"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          export_to_environment: true
+          secrets: |
+            TD_API_KEY:projects/17279051920/secrets/TESTDRIVER_API_KEY:latest
+            TD_SSH_SETUP_SCRIPT:projects/17279051920/secrets/testdriver_ssh_setup_script:latest
+            TD_SSH_KEY:projects/17279051920/secrets/TESTDRIVER_SSH_KEY:latest
+
+      - name: Export secrets to environment
+        run: |
+          echo ${TD_SSH_KEY} > key
+          cat key
+          echo "TD_API_KEY=$(cat key)" >> $GITHUB_ENV
+          echo ${TD_SSH_SETUP_SCRIPT} > ssh_setup_script
+          cat ssh_setup_script
+          echo "TD_SSH_SETUP_SCRIPT=$(cat ssh_setup_script)" >> $GITHUB_ENV
+
+      - name: Run TestDriver
+        id: testdriver
+        uses: testdriverai/action@main
+        with:
+          key: ${{ env.TD_API_KEY }}
+          os: linux
+          create-pr: false
+          pr-branch: testdriver-results
+          pr-title: "TestDriver QA Results"
+          pr-test-filename: testdriver-results.yaml
+          prerun: |
+            echo "TD_SSH_SETUP_SCRIPT: $TD_SSH_SETUP_SCRIPT"
+          prompt: |
+            1. check that Visual Studio Code is visible with the cdc_fifo folder open
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TD_VM: true
+          TD_VM_RESOLUTION: 1280x1024
+          TD_OVERLAY: true
+          TD_ANALYTICS: false
+          FORCE_COLOR: "3"
+          TD_API_KEY: ${{ env.TD_API_KEY }}
+          TD_SSH_SETUP_SCRIPT: ${{ env.TD_SSH_SETUP_SCRIPT }}
+          TD_SSH_KEY: ${{ env.TD_SSH_KEY }}
+
+      - name: Comment results on PR
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 🧪 TestDriver QA Report
+
+            **✅ Summary:**  
+            ${{ steps.testdriver.outputs.summary || 'No summary available.' }}
+
+            **🖼️ Markdown Report:**  
+            ${{ steps.testdriver.outputs.markdown || 'No markdown report.' }}
+
+            **🔗 Replay Link:**  
+            [View Dashcam Replay](${{ steps.testdriver.outputs.link || '#' }})
