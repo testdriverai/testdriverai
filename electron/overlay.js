@@ -111,7 +111,7 @@ app.whenReady().then(() => {
   });
 
   // open developer tools
-  // window.webContents.openDevTools();
+  window.webContents.openDevTools();
 
   ipc.serve(() => {
     for (const event of eventsArray) {

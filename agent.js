@@ -1337,21 +1337,15 @@ const makeSandbox = async () => {
       });
       logger.info(theme.gray(`- configuring...`));
       server.broadcast("status", `Configuring...`);
-      await sandbox.send({
+      let instance = await sandbox.send({
         type: "create",
         resolution: config.TD_VM_RESOLUTION,
       });
-      logger.info(theme.gray(`- starting stream...`));
-      server.broadcast("status", `Starting stream...`);
-      await sandbox.send({ type: "stream.start" });
-      let { url } = await sandbox.send({ type: "stream.getUrl" });
-      logger.info(theme.gray(`- rendering...`));
-      server.broadcast("status", `Rendering...`);
-      await sandbox.send({ type: "ready" });
-      emitter.emit(events.vm.show, { url });
-      logger.info(theme.gray(`- booting...`));
-      server.broadcast("status", `Starting...`);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      console.log("sandbox");
+      console.log(instance);
+      emitter.emit(events.vm.show, {
+        url: instance.sandbox.vncUrl + "/vnc_lite.html",
+      });
       logger.info(theme.green(``));
       logger.info(theme.green(`sandbox runner ready!`));
       logger.info(theme.green(``));

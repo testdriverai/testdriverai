@@ -1,0 +1,11 @@
+version: 5.7.62
+session: 685a051d8024d51f12b5f044
+steps:
+  - prompt: double click on google chrome
+    commands:
+      - command: focus-application
+        name: Program Manager
+      - command: hover-text
+        text: Google Chrome
+        description: label under the multicolored circle icon on the desktop
+        action: double-click
