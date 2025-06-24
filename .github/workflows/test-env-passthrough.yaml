@@ -43,9 +43,9 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
           prerun: |
-            echo "# Asserting all values are empty in testdriverai/action's prerun"
-            if [[ -n "$SOME_SECRET" ]]; then echo "SOME_SECRET should be empty"; exit 1; fi
-            if [[ -n "$TD_SOME_SECRET" ]]; then echo "TD_SOME_SECRET should be empty"; exit 1; fi
+            Write-Host "# Asserting all values are empty in testdriverai/action's prerun"
+            if ($env:SOME_SECRET) { Write-Host "SOME_SECRET should be empty"; exit 1 }
+            if ($env:TD_SOME_SECRET) { Write-Host "TD_SOME_SECRET should be empty"; exit 1 }
           prompt: |
             Page should contain "TestDriver.ai Sandbox"
         env:
