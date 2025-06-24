@@ -1,15 +1,15 @@
 version: 5.1.1
 session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: print environment variables
+  - prompt: Only TD_* values should be available to TestDriver
     commands:
       - command: exec
         lang: shell
         linux: |
-          printf 'SOME_SECRET:%s\n' "$SOME_SECRET"
-          printf 'SOME_SCRIPT:%s\n' "$SOME_SCRIPT"
-          printf 'TD_SOME_SECRET:%s\n' "$TD_SOME_SECRET"
-          printf 'TD_SOME_SCRIPT:%s\n' "$TD_SOME_SCRIPT"
+          [ -z "$SOME_SECRET" ] || { echo "SOME_SECRET should be empty"; exit 1; }
+          [ "$TD_SOME_SECRET" = "secrets.SOME_SECRET" ] || { echo "TD_SOME_SECRET should be 'secrets.SOME_SECRET' but is $TD_SOME_SECRET"; exit 1; }
+
+  # Normal test behavior now...
   - prompt: launch chrome
     commands:
       - command: exec

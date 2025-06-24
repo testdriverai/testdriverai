@@ -17,24 +17,24 @@ jobs:
       run:
         shell: bash
     env:
+      # Pretend we have a secret from GitHub
       SOME_SECRET: "secrets.SOME_SECRET"
-      SOME_SCRIPT: |
-        echo "SOME_SECRET: $SOME_SECRET"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Re-export secrets to environment
+      - name: Expose secrets to TestDriver with TD_* prefix
         run: |
           echo "TD_SOME_SECRET=${SOME_SECRET}" >> $GITHUB_ENV
-          echo "TD_SOME_SCRIPT=${SOME_SCRIPT}" >> $GITHUB_ENV
 
-      - name: Verify secrets are exported to environment
+      - name: Assert that all secrets are correctly in GitHub environment
         run: |
-          printf 'SOME_SECRET:%s\n' "$SOME_SECRET"
-          printf 'SOME_SCRIPT:%s\n' "$SOME_SCRIPT"
-          printf 'TD_SOME_SECRET:%s\n' "$TD_SOME_SECRET"
-          printf 'TD_SOME_SCRIPT:%s\n' "$TD_SOME_SCRIPT"
+          if [[ "$SOME_SECRET" != "secrets.SOME_SECRET" ]]; then
+            echo "SOME_SECRET is not set correctly: $SOME_SECRET"; exit 1;
+          fi
+          if [[ "$TD_SOME_SECRET" != "secrets.SOME_SECRET" ]]; then
+            echo "TD_SOME_SECRET is not set correctly: $TD_SOME_SECRET"; exit 1;
+          fi
 
       - name: Run TestDriver
         id: testdriver
@@ -43,14 +43,11 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
           prerun: |
-            printf 'SOME_SECRET:%s\n' "$SOME_SECRET"
-            printf 'SOME_SCRIPT:%s\n' "$SOME_SCRIPT"
-            printf 'TD_SOME_SECRET:%s\n' "$TD_SOME_SECRET"
-            printf 'TD_SOME_SCRIPT:%s\n' "$TD_SOME_SCRIPT"
+            echo "# Asserting all values are empty in testdriverai/action's prerun"
+            if [[ -n "$SOME_SECRET" ]]; then echo "SOME_SECRET should be empty"; exit 1; fi
+            if [[ -n "$TD_SOME_SECRET" ]]; then echo "TD_SOME_SECRET should be empty"; exit 1; fi
           prompt: |
             Page should contain "TestDriver.ai Sandbox"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SOME_SECRET: ${{ env.SOME_SECRET }}
-          SOME_SCRIPT: ${{ env.SOME_SCRIPT }}
           TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
