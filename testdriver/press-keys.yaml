@@ -15,3 +15,7 @@ steps:
           - t
       - command: assert
         expect: a new tab was created
+      - command: press-keys
+        keys:
+          - command
+          - right
