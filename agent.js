@@ -772,24 +772,6 @@ const actOnMarkdown = async (
   }
 };
 
-const ensureMacScreenPerms = async () => {
-  // if os is mac, check for screen capture permissions
-  if (!config.TD_OVERLAY_ID && !config.TD_VM && process.platform === "darwin") {
-    const macScreenPerms = require("mac-screen-capture-permissions");
-    if (!macScreenPerms.hasScreenCapturePermission()) {
-      logger.info(theme.red("Screen capture permissions not enabled."));
-      logger.info(
-        "You must enable screen capture permissions for this terminal application within System Settings.",
-      );
-      logger.info(
-        "Navigate to System Settings > Privacy & Security > Screen Recording and enable screen recording permissions for the terminal you are using to run this command.",
-      );
-      analytics.track("noMacPermissions");
-      return exit();
-    }
-  }
-};
-
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
@@ -1233,7 +1215,6 @@ const embed = async (file, depth) => {
 const buildEnv = async () => {
   let win = await system.activeWin();
   setTerminalApp(win);
-  await ensureMacScreenPerms();
   await makeSandbox();
   await newSession();
   await runPrerun();
@@ -1290,19 +1271,6 @@ const start = async () => {
     console.log("");
 
     loadYML(thisFile);
-
-    if (!config.TD_VM) {
-      logger.info(
-        theme.red("Warning! ") +
-          theme.dim(
-            "Local mode sends screenshots of the desktop to our API. Set `TD_VM` to run in a secure VM.",
-          ),
-      );
-      logger.info(
-        theme.dim("Read More: https://docs.testdriver.ai/security/agent"),
-      );
-      logger.info("");
-    }
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
@@ -1323,37 +1291,35 @@ const start = async () => {
 };
 
 const makeSandbox = async () => {
-  if (config.TD_VM) {
-    try {
-      logger.info(theme.gray(`- creating sandbox...`));
-      server.broadcast("status", `Creating new sandbox...`);
-      await sandbox.boot();
-      logger.info(theme.gray(`- authenticating...`));
-      server.broadcast("status", `Authenticating...`);
-      await sandbox.send({
-        type: "authenticate",
-        apiKey: config.TD_API_KEY,
-        secret: config.TD_SECRET,
-      });
-      logger.info(theme.gray(`- configuring...`));
-      server.broadcast("status", `Configuring...`);
-      let instance = await sandbox.send({
-        type: "create",
-        resolution: config.TD_VM_RESOLUTION,
-      });
-      console.log("sandbox");
-      console.log(instance);
-      emitter.emit(events.vm.show, {
-        url: instance.sandbox.vncUrl + "/vnc_lite.html",
-      });
-      logger.info(theme.green(``));
-      logger.info(theme.green(`sandbox runner ready!`));
-      logger.info(theme.green(``));
-    } catch (e) {
-      logger.error(e);
-      logger.error(theme.red(`sandbox runner failed to start`));
-      process.exit(1);
-    }
+  try {
+    logger.info(theme.gray(`- creating sandbox...`));
+    server.broadcast("status", `Creating new sandbox...`);
+    await sandbox.boot();
+    logger.info(theme.gray(`- authenticating...`));
+    server.broadcast("status", `Authenticating...`);
+    await sandbox.send({
+      type: "authenticate",
+      apiKey: config.TD_API_KEY,
+      secret: config.TD_SECRET,
+    });
+    logger.info(theme.gray(`- configuring...`));
+    server.broadcast("status", `Configuring...`);
+    let instance = await sandbox.send({
+      type: "create",
+      resolution: config.TD_RESOLUTION,
+    });
+    console.log("sandbox");
+    console.log(instance);
+    emitter.emit(events.vm.show, {
+      url: instance.sandbox.vncUrl + "/vnc_lite.html",
+    });
+    logger.info(theme.green(``));
+    logger.info(theme.green(`sandbox runner ready!`));
+    logger.info(theme.green(``));
+  } catch (e) {
+    logger.error(e);
+    logger.error(theme.red(`sandbox runner failed to start`));
+    process.exit(1);
   }
 
   emitter.emit(events.interactive, false);

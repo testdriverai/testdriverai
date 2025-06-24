@@ -49,60 +49,24 @@ app.whenReady().then(() => {
 
   let windowOptions;
 
-  if (config.TD_VM) {
-    windowOptions = {
-      width: config.TD_VM_RESOLUTION[0],
-      height: config.TD_VM_RESOLUTION[1],
-      closable: true,
-      resizable: false,
-      // alwaysOnTop: true,
-      show: false,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      autoHideMenuBar: true,
-    };
-  } else {
-    windowOptions = {
-      ...screen.getPrimaryDisplay().bounds,
-      closable: true,
-      resizable: true,
-      alwaysOnTop: true,
-      enableLargerThanScreen: true,
-      frame: false,
-      show: false,
-      focusable: false,
-      fullscreenable: true,
-      transparent: true,
-      skipTaskbar: true,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false,
-      },
-      autoHideMenuBar: true,
-    };
-
-    if (process.platform !== "darwin") {
-      windowOptions.fullscreen = true;
-    }
-  }
+  windowOptions = {
+    width: config.TD_RESOLUTION[0],
+    height: config.TD_RESOLUTION[1],
+    closable: true,
+    resizable: false,
+    // alwaysOnTop: true,
+    show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+    autoHideMenuBar: true,
+  };
 
   const window = new BrowserWindow(windowOptions);
 
-  if (!config.TD_VM) {
-    window.setIgnoreMouseEvents(true);
-    window.setAlwaysOnTop(true, "screen-saver");
-    window.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-    });
-  } else {
-    window.setContentSize(
-      config.TD_VM_RESOLUTION[0],
-      config.TD_VM_RESOLUTION[1],
-    );
-    window.setBackgroundColor("#000");
-  }
+  window.setContentSize(config.TD_RESOLUTION[0], config.TD_RESOLUTION[1]);
+  window.setBackgroundColor("#000");
 
   window.loadFile("overlay.html");
 
