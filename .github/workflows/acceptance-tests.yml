@@ -28,7 +28,7 @@ jobs:
       - name: Run changed tests
         uses: testdriverai/action@main
         with:
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          key: ${{ secrets.TD_API_KEY }}
           os: ${{ matrix.os }}
           prompt: |
             /run ${{ steps.list_changed_tests.outputs.FILES }}
