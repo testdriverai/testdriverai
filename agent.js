@@ -21,7 +21,6 @@ const package = require("./package.json");
 
 const fs = require("fs");
 const readline = require("readline");
-const http = require("http");
 
 // third party modules
 const path = require("path");
@@ -62,6 +61,7 @@ let checkCount = 0;
 let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
+let resultFile = null; // Output file for summarize results (only set when --summary is provided)
 
 // list of prompts that the user has given us
 let tasks = [];
@@ -134,6 +134,7 @@ const parseArgs = () => {
     .option("--exit", "Exit after completion")
     .option("--headless", "Run in headless mode (no GUI)")
     .option("--sandbox <id>", "Connect to existing sandbox with ID")
+    .option("--summary <file>", "Specify output file for summarize results")
     .action((file, options) => {
       handleGlobalOptions(options);
       cliArgs = {
@@ -143,6 +144,7 @@ const parseArgs = () => {
         save: options.save,
         exit: options.exit,
         headless: options.headless,
+        summary: options.summary,
       };
     });
 
@@ -152,12 +154,14 @@ const parseArgs = () => {
     .argument("[file]", "Test file to edit", "testdriver/testdriver.yaml")
     .option("--heal", "Enable automatic error recovery mode")
     .option("--sandbox <id>", "Connect to existing sandbox with ID")
+    .option("--summary <file>", "Specify output file for summarize results")
     .action((file, options) => {
       handleGlobalOptions(options);
       cliArgs = {
         command: "edit",
         file: normalizeFilePath(file),
         sandboxId: sandboxId,
+        summary: options.summary,
       };
     });
 
@@ -882,7 +886,15 @@ const firstPrompt = async () => {
 
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf("/summarize") == 0) {
-      await summarize();
+      // Check if an output file is specified
+      if (commands[1]) {
+        const originalResultFile = resultFile;
+        resultFile = path.resolve(commands[1]);
+        await summarize();
+        resultFile = originalResultFile; // Restore original for subsequent operations
+      } else {
+        await summarize();
+      }
     } else if (input.indexOf("/quit") == 0) {
       await exit(false, true);
     } else if (input.indexOf("/save") == 0) {
@@ -912,16 +924,6 @@ const firstPrompt = async () => {
       await exploratoryLoop(input.replace("/dry", ""), true, false);
     } else if (input.indexOf("/yaml") == 0) {
       await runRawYML(commands[1]);
-    } else if (input.indexOf("/js") == 0) {
-      let result = await commander.run({
-        command: "exec",
-        js: commands.slice(1).join(" "),
-      });
-      if (result.out) {
-        logger.info(result.out.stdout);
-      } else if (result.error) {
-        logger.error(result.error.result.stdout);
-      }
     } else if (input.indexOf("/exec") == 0) {
       let result = await commander.run({
         command: "exec",
@@ -978,7 +980,7 @@ ${yml}\`\`\``;
 };
 
 // this function is responsible for summarizing the test script that has already executed
-// it is what is saved to the `/tmp/oiResult.log` file and output to the action as a summary
+// it is what is saved to the `/tmp/testdriver-summary.md` file and output to the action as a summary
 let summarize = async (error = null) => {
   analytics.track("summarize");
 
@@ -1007,12 +1009,21 @@ let summarize = async (error = null) => {
   );
   mdStream.end();
 
-  let resultFile = "/tmp/oiResult.log";
-  if (process.platform === "win32") {
-    resultFile = "/Windows/Temp/oiResult.log";
+  // Only write summary to file if --summary option was provided
+  if (resultFile) {
+    // Ensure the output directory exists
+    const outputDir = path.dirname(resultFile);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    fs.writeFileSync(resultFile, reply.data);
+    logger.info(theme.dim(`Summary written to: ${resultFile}`));
+  } else {
+    const tmpFile = path.join(os.tmpdir(), "testdriver-summary.md");
+    fs.writeFileSync(tmpFile, reply.data);
+    logger.info(theme.dim(`Summary written to: ${tmpFile}`));
   }
-  // write reply to /tmp/oiResult.log
-  fs.writeFileSync(resultFile, reply.data);
 };
 
 // this function is responsible for saving the regression test script to a file
@@ -1023,7 +1034,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
     return;
   }
 
-  // write reply to /tmp/oiResult.log
+  // write reply to /tmp/testdriver-summary.md
   let regression = await generator.dumpToYML(executionHistory);
   try {
     fs.writeFileSync(filepath, regression);
@@ -1271,10 +1282,8 @@ const createSandbox = async () => {
 };
 
 const buildEnv = async (headless = false) => {
-  let win = await system.activeWin();
-
   if (sandboxId) {
-    await connectToSandbox();
+    await connectToSandbox(headless);
   } else {
     await ensureSandboxEnvironment(headless);
     await runLifecycle("provision");
@@ -1290,11 +1299,16 @@ const start = async () => {
   const thisCommand = a.command;
   sandboxId = a.sandboxId;
 
+  // Set output file for summarize results if specified
+  if (a.summary) {
+    resultFile = path.resolve(a.summary);
+  }
+
   logger.info(theme.green(`Howdy! I'm TestDriver v${package.version}`));
   logger.info(`This is beta software!`);
   logger.info("");
-  logger.info(theme.yellow(`Join our Discord for help`));
-  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+  logger.info(theme.yellow(`Join our Forums for help`));
+  logger.info(`https://forums.testdriver.ai`);
   logger.info("");
 
   // make testdriver directory if it doesn't exist
@@ -1357,7 +1371,7 @@ const start = async () => {
   }
 };
 
-const connectToSandbox = async () => {
+const connectToSandbox = async (headless = false) => {
   try {
     logger.info(theme.gray(`- connecting to sandbox ${sandboxId}...`));
     server.broadcast("status", `Connecting to sandbox ${sandboxId}...`);
@@ -1374,8 +1388,7 @@ const connectToSandbox = async () => {
       type: "connect",
       sandboxId: sandboxId,
     });
-    console.log("connected to sandbox");
-    console.log(instance);
+
     emitter.emit(events.vm.show, {
       url: instance.sandbox.vncUrl + "/vnc_lite.html",
     });
@@ -1389,7 +1402,10 @@ const connectToSandbox = async () => {
   }
 
   emitter.emit(events.interactive, false);
-  emitter.emit(events.showWindow);
+
+  if (!headless) {
+    emitter.emit(events.showWindow);
+  }
 };
 
 const ensureSandboxConnection = async () => {
@@ -1421,11 +1437,9 @@ const ensureSandboxEnvironment = async (headless = false) => {
   try {
     await ensureSandboxConnection();
     let instance = await launchSandbox();
-    if (!headless) {
-      emitter.emit(events.vm.show, {
-        url: instance.sandbox.vncUrl + "/vnc_lite.html",
-      });
-    }
+    emitter.emit(events.vm.show, {
+      url: instance.sandbox.vncUrl + "/vnc_lite.html",
+    });
   } catch (e) {
     logger.error(e);
     logger.error(theme.red(`sandbox runner failed to start`));
@@ -1433,7 +1447,9 @@ const ensureSandboxEnvironment = async (headless = false) => {
   }
 
   emitter.emit(events.interactive, false);
-  emitter.emit(events.showWindow);
+  if (!headless) {
+    emitter.emit(events.showWindow);
+  }
 };
 
 const newSession = async () => {

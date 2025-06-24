@@ -18,12 +18,12 @@ The `exec` command allows you to execute custom Node.js scripts within your Test
 
 ## Arguments
 
-| Argument | Type     | Description                                                                                                                                                                                          |
-| -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lang`   | `string` | The language of the script to execute. Supported values are `shell` and `js`.                                                                                                                        |
-| `output` | `string` | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps.                                                                             |
-| `silent` | `string` | Defaults to `true`. This is useful for suppressing unnecessary or private output in the test logs. If set to `false`, the command will print the output of the script. This is useful for debugging. |
-| `code`   | `string` | The script to execute on Windows systems. For `js`, the script must define the output as `result`.                                                                                                   |
+| Argument | Type     | Description                                                                                                                                                                        |
+| -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lang`   | `string` | The language of the script to execute. Supported values are `shell` and `js`.                                                                                                      |
+| `output` | `string` | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps.                                                           |
+| `silent` | `string` | Defaults to `false`. The command will print the output of the script. This is useful for suppressing unnecessary or private output in the test logs. This is useful for debugging. |
+| `code`   | `string` | The script to execute on Windows systems. For `js`, the script must define the output as `result`.                                                                                 |
 
 ## Example usage
 
