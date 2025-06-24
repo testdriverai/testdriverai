@@ -43,11 +43,11 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
           prerun: |
-            Write-Host "# Asserting all values are empty in testdriverai/action's prerun"
+            Write-Host "# Asserting values in testdriverai/action's prerun"
             Write-Host "SOME_SECRET actual value: '$($env:SOME_SECRET)'"
-            if ($env:SOME_SECRET) { Write-Host "SOME_SECRET should be empty"; }
+            if ($env:SOME_SECRET) { Write-Host "SOME_SECRET should be empty"; exit 1 }
             Write-Host "TD_SOME_SECRET actual value: '$($env:TD_SOME_SECRET)'"
-            if ($env:TD_SOME_SECRET) { Write-Host "TD_SOME_SECRET should be empty"; }
+            if ($env:TD_SOME_SECRET -ne "secrets.SOME_SECRET") { Write-Host "TD_SOME_SECRET should be 'secrets.SOME_SECRET'"; exit 1 }
           prompt: |
             Page should contain "TestDriver.ai Sandbox"
         env:
