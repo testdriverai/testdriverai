@@ -1,0 +1,34 @@
+name: Acceptance Tests
+
+on:
+  pull_request:
+    paths:
+      - "testdriver/**"
+
+jobs:
+  testdriverai:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, windows]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # We need to fetch the full history to check for changes since `main`
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 20
+      # Only test files that have been Added/Created/Modified/Renamed/Type-changed since `main`
+      - name: List changed tests
+        id: list_changed_tests
+        run: echo "FILES=$(git diff --name-only --diff-filter=ACMRT origin/main HEAD | xargs -r echo)" >> $GITHUB_OUTPUT
+      - name: Run changed tests
+        uses: testdriverai/action@main
+        with:
+          key: ${{ secrets.TESTDRIVER_API_KEY }}
+          os: ${{ matrix.os }}
+          prompt: |
+            /run ${{ steps.list_changed_tests.outputs.FILES }}
