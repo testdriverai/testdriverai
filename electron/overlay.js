@@ -65,7 +65,10 @@ app.whenReady().then(() => {
 
   const window = new BrowserWindow(windowOptions);
 
-  window.setContentSize(config.TD_RESOLUTION[0], config.TD_RESOLUTION[1]);
+  window.setContentSize(
+    config.TD_RESOLUTION[0] + 5,
+    config.TD_RESOLUTION[1] + 25,
+  );
   window.setBackgroundColor("#000");
 
   window.loadFile("overlay.html");

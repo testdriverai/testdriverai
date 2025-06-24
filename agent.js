@@ -27,6 +27,7 @@ const http = require("http");
 const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
+const { Command } = require("commander");
 
 // local modules
 const server = require("./lib/ipc.js");
@@ -42,10 +43,8 @@ const commands = require("./lib/commands.js");
 const init = require("./lib/init.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
-const uploadSecrets = require("./lib/upload-secrets.js");
 const theme = require("./lib/theme.js");
 
-const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
 const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
 const notify = require("./lib/notify.js");
@@ -55,7 +54,6 @@ const logger = log.logger;
 
 let thisFile;
 let lastPrompt = "";
-let terminalApp = "";
 let commandHistory = [];
 let executionHistory = [];
 let errorCounts = {};
@@ -77,62 +75,122 @@ emitter.on(events.vm.show, ({ url }) => {
   server.broadcast(events.vm.show, url);
 });
 
-// get args from terminal
-const args = process.argv.slice(2);
-
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
 let workingDir = process.cwd();
 
 let healMode = false;
+let sandboxId = null;
 
-const getArgs = () => {
-  let command = 0;
-  let file = 1;
+let cliArgs = {};
 
-  // Check for --heal flag
-  if (args.includes("--heal")) {
-    healMode = true;
-    // Remove --heal from args so it doesn't interfere with command/file logic
-    const idx = args.indexOf("--heal");
-    args.splice(idx, 1);
-  }
+const parseArgs = () => {
+  const program = new Command();
 
-  // TODO use a arg parser library to simplify this
-  if (
-    args[command] == "--help" ||
-    args[command] == "-h" ||
-    args[file] == "--help" ||
-    args[file] == "-h"
-  ) {
-    logger.info("Command: testdriverai [init, run, edit] [yaml filepath]");
-    process.exit(0);
-  }
+  program
+    .name("testdriverai")
+    .description(
+      "Next generation autonomous AI agent for end-to-end testing of web & desktop",
+    )
+    .version(package.version);
 
-  if (args[command] == "init") {
-    args[command] = "init";
-  } else if (args[command] == "upload-secrets") {
-    args[command] = "upload-secrets";
-  } else if (args[command] !== "run" && !args[file]) {
-    args[file] = args[command];
-    args[command] = "edit";
-  } else if (!args[command]) {
-    args[command] = "edit";
-  }
-
-  if (!args[file]) {
-    args[file] = "testdriver/testdriver.yaml";
-  }
-
-  // turn args[file] into local path
-  if (args[file]) {
-    args[file] = path.join(workingDir, args[file]);
-    if (!args[file].endsWith(".yaml") && !args[file].endsWith(".yml")) {
-      args[file] += ".yaml";
+  // Helper to normalize file path
+  const normalizeFilePath = (file) => {
+    if (!file) {
+      file = "testdriver/testdriver.yaml";
     }
+
+    file = path.join(workingDir, file);
+    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
+      file += ".yaml";
+    }
+
+    return file;
+  };
+
+  // Helper to handle global options
+  const handleGlobalOptions = (options) => {
+    if (options.heal) {
+      healMode = true;
+    }
+    if (options.sandbox) {
+      sandboxId = options.sandbox;
+    }
+  };
+
+  program
+    .command("init")
+    .description("Initialize a new test project")
+    .action(() => {
+      cliArgs = { command: "init", file: null, sandboxId: null };
+    });
+
+  program
+    .command("run")
+    .description("Run a test file")
+    .argument("[file]", "Test file to run", "testdriver/testdriver.yaml")
+    .option("--heal", "Enable automatic error recovery mode")
+    .option("--save", "Save test results")
+    .option("--exit", "Exit after completion")
+    .option("--headless", "Run in headless mode (no GUI)")
+    .option("--sandbox <id>", "Connect to existing sandbox with ID")
+    .action((file, options) => {
+      handleGlobalOptions(options);
+      cliArgs = {
+        command: "run",
+        file: normalizeFilePath(file),
+        sandboxId: sandboxId,
+        save: options.save,
+        exit: options.exit,
+        headless: options.headless,
+      };
+    });
+
+  program
+    .command("edit")
+    .description("Edit a test file interactively")
+    .argument("[file]", "Test file to edit", "testdriver/testdriver.yaml")
+    .option("--heal", "Enable automatic error recovery mode")
+    .option("--sandbox <id>", "Connect to existing sandbox with ID")
+    .action((file, options) => {
+      handleGlobalOptions(options);
+      cliArgs = {
+        command: "edit",
+        file: normalizeFilePath(file),
+        sandboxId: sandboxId,
+      };
+    });
+
+  program
+    .command("sandbox")
+    .description("Manage sandbox instances")
+    .option("--list", "List all sandbox instances")
+    .option("--destroy <id>", "Destroy a sandbox instance by ID")
+    .option("--create", "Create a new sandbox instance")
+    .action((options) => {
+      cliArgs = {
+        command: "sandbox",
+        file: null,
+        sandboxId: null,
+        list: options.list,
+        destroy: options.destroy,
+        create: options.create,
+      };
+    });
+
+  // Just parse normally - let commander handle help, version, etc.
+  program.parse();
+
+  // If no command was run (no action triggered), default to edit
+  if (!cliArgs.command) {
+    cliArgs = {
+      command: "edit",
+      file: normalizeFilePath(null),
+      sandboxId: null,
+    };
   }
 
-  return { command: args[command], file: args[file] };
+  return cliArgs;
 };
 
 function fileCompleter(line) {
@@ -640,6 +698,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   logger.info("");
 
   if (baseYaml && !skipYaml) {
+    await runLifecycle("prerun");
     await run(baseYaml, false, false, false);
   }
 
@@ -797,7 +856,6 @@ const firstPrompt = async () => {
     if (!input.trim().length) return promptUser();
 
     emitter.emit(events.interactive, false);
-    setTerminalWindowTransparency(true);
     errorCounts = {};
 
     // append this to commandHistoryFile
@@ -844,6 +902,8 @@ const firstPrompt = async () => {
       if (flags.includes("--heal")) {
         healMode = true;
       }
+
+      await runLifecycle("prerun");
       await run(file, shouldSave, shouldExit);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
@@ -881,8 +941,6 @@ const firstPrompt = async () => {
       );
     }
 
-    setTerminalWindowTransparency(false);
-
     promptUser();
   };
 
@@ -917,49 +975,6 @@ ${yml}\`\`\``;
   }
 
   promptUser();
-};
-
-let setTerminalWindowTransparency = async (hide) => {
-  if (hide) {
-    try {
-      http
-        .get("http://localhost:60305/hide")
-        .on("error", function () {})
-        .end();
-    } catch (e) {
-      // Suppress error
-      logger.error("Caught exception: %s", e);
-    }
-  } else {
-    try {
-      http
-        .get("http://localhost:60305/hide")
-        .on("error", function () {})
-        .end();
-    } catch (e) {
-      // Suppress error
-      logger.error("Caught exception:", e);
-    }
-  }
-
-  if (!config.TD_MINIMIZE) {
-    return;
-  }
-
-  try {
-    if (hide) {
-      if (terminalApp) {
-        hideTerminal(terminalApp);
-      }
-    } else {
-      if (terminalApp) {
-        showTerminal(terminalApp);
-      }
-    }
-  } catch (e) {
-    // Suppress error
-    logger.error("Caught exception: %s", e);
-  }
 };
 
 // this function is responsible for summarizing the test script that has already executed
@@ -1059,6 +1074,8 @@ let runRawYML = async (yml) => {
   fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
 
   // and run it with run()
+
+  await runLifecycle("prerun");
   await run(tmpobj.name, false, false);
 };
 
@@ -1071,7 +1088,6 @@ let run = async (
   shouldExit = true,
   pushToHistory = true,
 ) => {
-  setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
   logger.info(theme.cyan(`running ${file}...`));
@@ -1082,10 +1098,12 @@ let run = async (
     let valid = isValidVersion(ymlObj.version);
     if (!valid) {
       console.log("");
-      logger.warn(theme.red(`Version mismatch detected!`));
-      logger.warn(theme.red(`Running a test created with v${ymlObj.version}.`));
+      logger.warn(theme.yellow(`Version mismatch detected!`));
       logger.warn(
-        theme.red(`The current testdriverai version is v${package.version}.`),
+        theme.yellow(`Running a test created with v${ymlObj.version}.`),
+      );
+      logger.warn(
+        theme.yellow(`The local testdriverai version is v${package.version}.`),
       );
     }
   }
@@ -1135,8 +1153,6 @@ ${yaml.dump(step)}
     await save({ filepath: file, silent: false });
   }
 
-  setTerminalWindowTransparency(false);
-
   if (shouldExit) {
     await summarize();
     await exit(false);
@@ -1146,15 +1162,6 @@ ${yaml.dump(step)}
 const promptUser = () => {
   emitter.emit(events.interactive, true);
   process.nextTick(() => rl.prompt());
-};
-
-const setTerminalApp = async (win) => {
-  if (terminalApp) return;
-  if (process.platform === "win32") {
-    terminalApp = win?.title || "";
-  } else {
-    terminalApp = win?.owner?.bundleId || "";
-  }
 };
 
 const iffy = async (condition, then, otherwise, depth) => {
@@ -1212,19 +1219,76 @@ const embed = async (file, depth) => {
   logger.info(`${file} (end)`);
 };
 
-const buildEnv = async () => {
+const handleSandboxCommand = async (cliArgs) => {
+  // TODO: Implement sandbox command handling
+  if (cliArgs.list) {
+    await listSandboxes();
+  } else if (cliArgs.destroy) {
+    await destroySandbox(cliArgs.destroy);
+  } else if (cliArgs.create) {
+    await createSandbox();
+  } else {
+    logger.error(
+      "Please specify a sandbox action: --list, --destroy <id>, or --create",
+    );
+    process.exit(1);
+  }
+};
+
+const listSandboxes = async () => {
+  await ensureSandboxConnection();
+
+  logger.info("");
+  logger.info("Listing sandboxes...");
+
+  let reply = await sandbox.send({
+    type: "list",
+  });
+
+  console.table(reply.sandboxes);
+};
+
+const destroySandbox = async (sandboxId) => {
+  await ensureSandboxConnection();
+
+  let reply = await sandbox.send({
+    type: "destroy",
+    id: sandboxId,
+  });
+
+  console.table(reply.sandboxes);
+};
+
+const createSandbox = async () => {
+  await ensureSandboxConnection();
+
+  logger.info("");
+  logger.info("Creating new sandbox...");
+
+  let instance = await launchSandbox();
+
+  console.table([instance.sandbox]);
+};
+
+const buildEnv = async (headless = false) => {
   let win = await system.activeWin();
-  setTerminalApp(win);
-  await makeSandbox();
+
+  if (sandboxId) {
+    await connectToSandbox();
+  } else {
+    await ensureSandboxEnvironment(headless);
+    await runLifecycle("provision");
+  }
+
   await newSession();
-  await runPrerun();
 };
 
 const start = async () => {
-  let a = getArgs();
+  let a = parseArgs();
 
   thisFile = a.file;
   const thisCommand = a.command;
+  sandboxId = a.sandboxId;
 
   logger.info(theme.green(`Howdy! I'm TestDriver v${package.version}`));
   logger.info(`This is beta software!`);
@@ -1243,14 +1307,14 @@ const start = async () => {
   }
 
   // if the directory for thisFile doesn't exist, create it
-  const dir = path.dirname(thisFile);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    logger.info(theme.dim(`Created directory ${dir}`));
-  }
+  if (thisCommand !== "init" && thisCommand !== "sandbox") {
+    const dir = path.dirname(thisFile);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      logger.info(theme.dim(`Created directory ${dir}`));
+    }
 
-  // if thisFile doesn't exist, create it
-  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+    // if thisFile doesn't exist, create it
     // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
     if (!fs.existsSync(thisFile)) {
       fs.writeFileSync(thisFile, "");
@@ -1266,7 +1330,7 @@ const start = async () => {
     speak("Howdy! I am TestDriver version " + package.version);
   }
 
-  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+  if (thisCommand !== "init" && thisCommand !== "sandbox") {
     logger.info(theme.dim(`Working on ${thisFile}`));
     console.log("");
 
@@ -1279,43 +1343,89 @@ const start = async () => {
     await buildEnv();
     firstPrompt();
   } else if (thisCommand == "run") {
-    await buildEnv();
+    await buildEnv(a.headless);
     errorLimit = 100;
+
+    await runLifecycle("prerun");
     run(thisFile, false, true, true);
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
-  } else if (thisCommand == "upload-secrets") {
-    await uploadSecrets();
+  } else if (thisCommand == "sandbox") {
+    await handleSandboxCommand(cliArgs);
+    process.exit(0);
   }
 };
 
-const makeSandbox = async () => {
+const connectToSandbox = async () => {
   try {
-    logger.info(theme.gray(`- creating sandbox...`));
-    server.broadcast("status", `Creating new sandbox...`);
+    logger.info(theme.gray(`- connecting to sandbox ${sandboxId}...`));
+    server.broadcast("status", `Connecting to sandbox ${sandboxId}...`);
     await sandbox.boot();
     logger.info(theme.gray(`- authenticating...`));
     server.broadcast("status", `Authenticating...`);
     await sandbox.send({
       type: "authenticate",
       apiKey: config.TD_API_KEY,
-      secret: config.TD_SECRET,
     });
-    logger.info(theme.gray(`- configuring...`));
-    server.broadcast("status", `Configuring...`);
+    logger.info(theme.gray(`- connecting...`));
+    server.broadcast("status", `Connecting...`);
     let instance = await sandbox.send({
-      type: "create",
-      resolution: config.TD_RESOLUTION,
+      type: "connect",
+      sandboxId: sandboxId,
     });
-    console.log("sandbox");
+    console.log("connected to sandbox");
     console.log(instance);
     emitter.emit(events.vm.show, {
       url: instance.sandbox.vncUrl + "/vnc_lite.html",
     });
     logger.info(theme.green(``));
-    logger.info(theme.green(`sandbox runner ready!`));
+    logger.info(theme.green(`connected to sandbox ${sandboxId}!`));
     logger.info(theme.green(``));
+  } catch (e) {
+    logger.error(e);
+    logger.error(theme.red(`sandbox connection failed`));
+    process.exit(1);
+  }
+
+  emitter.emit(events.interactive, false);
+  emitter.emit(events.showWindow);
+};
+
+const ensureSandboxConnection = async () => {
+  logger.info(theme.gray(`- creating sandbox...`));
+  server.broadcast("status", `Creating new sandbox...`);
+  await sandbox.boot();
+  logger.info(theme.gray(`- authenticating...`));
+  server.broadcast("status", `Authenticating...`);
+  await sandbox.send({
+    type: "authenticate",
+    apiKey: config.TD_API_KEY,
+  });
+};
+
+const launchSandbox = async () => {
+  logger.info(theme.gray(`- launching...`));
+  server.broadcast("status", `Configuring...`);
+  let instance = await sandbox.send({
+    type: "create",
+    resolution: config.TD_RESOLUTION,
+  });
+  logger.info(theme.green(``));
+  logger.info(theme.green(`sandbox runner ready!`));
+  logger.info(theme.green(``));
+  return instance;
+};
+
+const ensureSandboxEnvironment = async (headless = false) => {
+  try {
+    await ensureSandboxConnection();
+    let instance = await launchSandbox();
+    if (!headless) {
+      emitter.emit(events.vm.show, {
+        url: instance.sandbox.vncUrl + "/vnc_lite.html",
+      });
+    }
   } catch (e) {
     logger.error(e);
     logger.error(theme.red(`sandbox runner failed to start`));
@@ -1343,15 +1453,15 @@ const newSession = async () => {
   session.set(sessionRes.data.id);
 };
 
-const runPrerun = async () => {
-  const prerunFile = path.join(
+const runLifecycle = async (lifecycleName) => {
+  const lifecycleFile = path.join(
     workingDir,
     "testdriver",
     "lifecycle",
-    "prerun.yaml",
+    `${lifecycleName}.yaml`,
   );
-  if (fs.existsSync(prerunFile)) {
-    await run(prerunFile, false, false, false);
+  if (fs.existsSync(lifecycleFile)) {
+    await run(lifecycleFile, false, false, false);
   }
 };
 
@@ -1370,6 +1480,5 @@ process.on("unhandledRejection", async (reason, promise) => {
 });
 
 module.exports = {
-  setTerminalApp,
   start,
 };
