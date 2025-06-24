@@ -35,14 +35,8 @@ steps:
   - prompt: launch chrome
     commands:
       - command: exec
-        lang: shell
-        linux: |
-          jumpapp google-chrome --disable-fre --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
-          exit
-        mac: |
-          open -na "Google Chrome" --args --disable-fre --no-default-browser-check --no-first-run --disable-features=PasswordManagerEnabled "${TD_WEBSITE}" &
-          exit
-        windows:
+        lang: pwsh
+        code:
           Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
           exit
       - command: wait-for-text
@@ -81,16 +75,8 @@ steps:
   - prompt: launch firefox
     commands:
       - command: exec
-        lang: shell
-        linux: |
-          jumpapp firefox --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
-          exit
-
-        mac: |
-          open -na "Firefox" --args --no-default-browser-check --no-first-run "${TD_WEBSITE}" &
-          exit
-
-        windows: |
+        lang: pwsh
+        code: |
           Start-Process "C:/Program Files/Mozilla Firefox/firefox.exe" -ArgumentList "--no-default-browser-check", "--no-first-run", "${TD_WEBSITE}"
           exit
       - command: wait-for-text
@@ -108,15 +94,8 @@ steps:
   - prompt: launch a calculator
     commands:
       - command: exec
-        lang: shell
-        linux: |
-          linux: |
-            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
-            exit
-        mac: |
-          open "/Applications/Calculator.app"
-          wait
-        windows: start /B calc.exe
+        lang: pwsh
+        code: start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "galculator"
@@ -152,15 +131,8 @@ steps:
   - prompt: launch a calculator
     commands:
       - command: exec
-        lang: shell
-        linux: |
-          linux: |
-            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
-            exit
-        mac: |
-          open "/Applications/Calculator.app"
-          wait
-        windows: start /B calc.exe
+        lang: pwsh
+        code: start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "calculator"

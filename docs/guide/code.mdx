@@ -10,14 +10,17 @@ TestDriver allows you to execute custom **Node.js** scripts and shell scripts wi
 ## Key features
 
 1. **Run Node.js Scripts**:
-  - Execute custom JavaScript code within your test steps.
-  - Use NPM modules to extend functionality.
+
+- Execute custom JavaScript code within your test steps.
+- Use NPM modules to extend functionality.
 
 2. **Dynamic Outputs**:
-  - Store the result of your script in a variable for use in subsequent steps.
+
+- Store the result of your script in a variable for use in subsequent steps.
 
 3. **NPM Support**:
-  - Install and use NPM packages in your scripts.
+
+- Install and use NPM packages in your scripts.
 
 ## Updated example: One-time password (OTP) validator
 
@@ -29,20 +32,20 @@ This example demonstrates how to generate a one-time password (OTP) using the `t
 version: 5.3.8
 steps:
   - commands:
-    - command: exec
-      lang: shell
-      linux: |
-        npm install totp-generator
-    - command: exec
-      lang: js
-      output: totp
-      linux: |
-        const { TOTP } = require("totp-generator");
-        let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
-        console.log(otp);
-        result = otp;
-    - command: type
-      text: ${OUTPUT.totp}
+      - command: exec
+        lang: pwsh
+        linux: |
+          npm install totp-generator
+      - command: exec
+        lang: js
+        output: totp
+        linux: |
+          const { TOTP } = require("totp-generator");
+          let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
+          console.log(otp);
+          result = otp;
+      - command: type
+        text: ${OUTPUT.totp}
 ```
 
 ## Additional details
