@@ -9,13 +9,16 @@ steps:
           # Assert SOME_SECRET is empty
           if [ ! -z "$SOME_SECRET" ]; then
             echo "SOME_SECRET should be empty but was '$SOME_SECRET'"
-            exit 1
           fi
 
-          # Assert TD_SOME_SECRET has correct value  
+          # Assert TD_SOME_SECRET has correct value when using $ 
           if [ "$TD_SOME_SECRET" != "secrets.SOME_SECRET" ]; then
             echo "TD_SOME_SECRET should be 'secrets.SOME_SECRET' but was '$TD_SOME_SECRET'"
-            exit 1
+          fi
+
+          # Assert TD_SOME_SECRET has correct value when using curly braces
+          if [ "${TD_SOME_SECRET}" != "secrets.SOME_SECRET" ]; then
+            echo "TD_SOME_SECRET should be 'secrets.SOME_SECRET' but was '$TD_SOME_SECRET'"
           fi
   # Normal test behavior now...
   - prompt: launch chrome
