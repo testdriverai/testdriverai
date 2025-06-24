@@ -6,9 +6,11 @@ steps:
       - command: exec
         lang: shell
         linux: |
-          printf '%s\n' "${SOME_SECRET}"
-          printf '%s\n' "${SOME_SECRET_2}"
-          printf '%s\n' "${SOME_SCRIPT}"
+          printf 'SOME_SECRET:%s\n' "${SOME_SECRET}"
+          printf 'SOME_SECRET_2:%s\n' "${SOME_SECRET_2}"
+          printf 'SOME_SCRIPT:%s\n' "${SOME_SCRIPT}"
+          printf 'TD_SOME_SECRET:%s\n' "${TD_SOME_SECRET}"
+          printf 'TD_SOME_SCRIPT:%s\n' "${TD_SOME_SCRIPT}"
   - prompt: launch chrome
     commands:
       - command: exec

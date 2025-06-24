@@ -26,13 +26,15 @@ jobs:
 
       - name: Re-export secrets to environment
         run: |
-          echo "SOME_SECRET_2=${SOME_SECRET}" >> $GITHUB_ENV
+          echo "TD_SOME_SECRET=${SOME_SECRET}" >> $GITHUB_ENV
+          echo "TD_SOME_SCRIPT=${SOME_SCRIPT}" >> $GITHUB_ENV
 
       - name: Verify secrets are exported to environment
         run: |
-          printf '%s\n' "$SOME_SECRET"
-          printf '%s\n' "$SOME_SECRET_2"
-          printf '%s\n' "$SOME_SCRIPT"
+          printf 'SOME_SECRET:%s\n' "$SOME_SECRET"
+          printf 'SOME_SCRIPT:%s\n' "$SOME_SCRIPT"
+          printf 'TD_SOME_SECRET:%s\n' "$TD_SOME_SECRET"
+          printf 'TD_SOME_SCRIPT:%s\n' "$TD_SOME_SCRIPT"
 
       - name: Run TestDriver
         id: testdriver
@@ -41,9 +43,10 @@ jobs:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
           prerun: |
-            echo "SOME_SECRET: ${SOME_SECRET}"
-            echo "SOME_SECRET_2: ${SOME_SECRET_2}"
-            echo "SOME_SCRIPT: ${SOME_SCRIPT}"
+            echo "SOME_SECRET: $SOME_SECRET"
+            echo "SOME_SCRIPT: $SOME_SCRIPT"
+            echo "TD_SOME_SECRET: $TD_SOME_SECRET"
+            echo "TD_SOME_SCRIPT: $TD_SOME_SCRIPT"
           prompt: |
             Page should contain "TestDriver.ai Sandbox"
         env:
