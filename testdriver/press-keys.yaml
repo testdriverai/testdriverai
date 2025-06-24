@@ -11,7 +11,7 @@ steps:
         action: click
       - command: press-keys
         keys:
-          - command
+          - ctrl
           - t
       - command: assert
         expect: a new tab was created

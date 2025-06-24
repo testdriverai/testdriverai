@@ -21,12 +21,12 @@ const package = require("./package.json");
 
 const fs = require("fs");
 const readline = require("readline");
-const http = require("http");
 
 // third party modules
 const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
+const { Command } = require("commander");
 
 // local modules
 const server = require("./lib/ipc.js");
@@ -42,10 +42,8 @@ const commands = require("./lib/commands.js");
 const init = require("./lib/init.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
-const uploadSecrets = require("./lib/upload-secrets.js");
 const theme = require("./lib/theme.js");
 
-const { showTerminal, hideTerminal } = require("./lib/focus-application.js");
 const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
 const notify = require("./lib/notify.js");
@@ -55,7 +53,6 @@ const logger = log.logger;
 
 let thisFile;
 let lastPrompt = "";
-let terminalApp = "";
 let commandHistory = [];
 let executionHistory = [];
 let errorCounts = {};
@@ -64,6 +61,7 @@ let checkCount = 0;
 let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
+let resultFile = null; // Output file for summarize results (only set when --summary is provided)
 
 // list of prompts that the user has given us
 let tasks = [];
@@ -77,62 +75,126 @@ emitter.on(events.vm.show, ({ url }) => {
   server.broadcast(events.vm.show, url);
 });
 
-// get args from terminal
-const args = process.argv.slice(2);
-
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
 let workingDir = process.cwd();
 
 let healMode = false;
+let sandboxId = null;
 
-const getArgs = () => {
-  let command = 0;
-  let file = 1;
+let cliArgs = {};
 
-  // Check for --heal flag
-  if (args.includes("--heal")) {
-    healMode = true;
-    // Remove --heal from args so it doesn't interfere with command/file logic
-    const idx = args.indexOf("--heal");
-    args.splice(idx, 1);
-  }
+const parseArgs = () => {
+  const program = new Command();
 
-  // TODO use a arg parser library to simplify this
-  if (
-    args[command] == "--help" ||
-    args[command] == "-h" ||
-    args[file] == "--help" ||
-    args[file] == "-h"
-  ) {
-    logger.info("Command: testdriverai [init, run, edit] [yaml filepath]");
-    process.exit(0);
-  }
+  program
+    .name("testdriverai")
+    .description(
+      "Next generation autonomous AI agent for end-to-end testing of web & desktop",
+    )
+    .version(package.version);
 
-  if (args[command] == "init") {
-    args[command] = "init";
-  } else if (args[command] == "upload-secrets") {
-    args[command] = "upload-secrets";
-  } else if (args[command] !== "run" && !args[file]) {
-    args[file] = args[command];
-    args[command] = "edit";
-  } else if (!args[command]) {
-    args[command] = "edit";
-  }
-
-  if (!args[file]) {
-    args[file] = "testdriver/testdriver.yaml";
-  }
-
-  // turn args[file] into local path
-  if (args[file]) {
-    args[file] = path.join(workingDir, args[file]);
-    if (!args[file].endsWith(".yaml") && !args[file].endsWith(".yml")) {
-      args[file] += ".yaml";
+  // Helper to normalize file path
+  const normalizeFilePath = (file) => {
+    if (!file) {
+      file = "testdriver/testdriver.yaml";
     }
+
+    file = path.join(workingDir, file);
+    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
+      file += ".yaml";
+    }
+
+    return file;
+  };
+
+  // Helper to handle global options
+  const handleGlobalOptions = (options) => {
+    if (options.heal) {
+      healMode = true;
+    }
+    if (options.sandbox) {
+      sandboxId = options.sandbox;
+    }
+  };
+
+  program
+    .command("init")
+    .description("Initialize a new test project")
+    .action(() => {
+      cliArgs = { command: "init", file: null, sandboxId: null };
+    });
+
+  program
+    .command("run")
+    .description("Run a test file")
+    .argument("[file]", "Test file to run", "testdriver/testdriver.yaml")
+    .option("--heal", "Enable automatic error recovery mode")
+    .option("--save", "Save test results")
+    .option("--exit", "Exit after completion")
+    .option("--headless", "Run in headless mode (no GUI)")
+    .option("--sandbox <id>", "Connect to existing sandbox with ID")
+    .option("--summary <file>", "Specify output file for summarize results")
+    .action((file, options) => {
+      handleGlobalOptions(options);
+      cliArgs = {
+        command: "run",
+        file: normalizeFilePath(file),
+        sandboxId: sandboxId,
+        save: options.save,
+        exit: options.exit,
+        headless: options.headless,
+        summary: options.summary,
+      };
+    });
+
+  program
+    .command("edit")
+    .description("Edit a test file interactively")
+    .argument("[file]", "Test file to edit", "testdriver/testdriver.yaml")
+    .option("--heal", "Enable automatic error recovery mode")
+    .option("--sandbox <id>", "Connect to existing sandbox with ID")
+    .option("--summary <file>", "Specify output file for summarize results")
+    .action((file, options) => {
+      handleGlobalOptions(options);
+      cliArgs = {
+        command: "edit",
+        file: normalizeFilePath(file),
+        sandboxId: sandboxId,
+        summary: options.summary,
+      };
+    });
+
+  program
+    .command("sandbox")
+    .description("Manage sandbox instances")
+    .option("--list", "List all sandbox instances")
+    .option("--destroy <id>", "Destroy a sandbox instance by ID")
+    .option("--create", "Create a new sandbox instance")
+    .action((options) => {
+      cliArgs = {
+        command: "sandbox",
+        file: null,
+        sandboxId: null,
+        list: options.list,
+        destroy: options.destroy,
+        create: options.create,
+      };
+    });
+
+  // Just parse normally - let commander handle help, version, etc.
+  program.parse();
+
+  // If no command was run (no action triggered), default to edit
+  if (!cliArgs.command) {
+    cliArgs = {
+      command: "edit",
+      file: normalizeFilePath(null),
+      sandboxId: null,
+    };
   }
 
-  return { command: args[command], file: args[file] };
+  return cliArgs;
 };
 
 function fileCompleter(line) {
@@ -640,6 +702,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   logger.info("");
 
   if (baseYaml && !skipYaml) {
+    await runLifecycle("prerun");
     await run(baseYaml, false, false, false);
   }
 
@@ -772,24 +835,6 @@ const actOnMarkdown = async (
   }
 };
 
-const ensureMacScreenPerms = async () => {
-  // if os is mac, check for screen capture permissions
-  if (!config.TD_OVERLAY_ID && !config.TD_VM && process.platform === "darwin") {
-    const macScreenPerms = require("mac-screen-capture-permissions");
-    if (!macScreenPerms.hasScreenCapturePermission()) {
-      logger.info(theme.red("Screen capture permissions not enabled."));
-      logger.info(
-        "You must enable screen capture permissions for this terminal application within System Settings.",
-      );
-      logger.info(
-        "Navigate to System Settings > Privacy & Security > Screen Recording and enable screen recording permissions for the terminal you are using to run this command.",
-      );
-      analytics.track("noMacPermissions");
-      return exit();
-    }
-  }
-};
-
 // simple function to backfill the chat history with a prompt and
 // then call `promptUser()` to get the user input
 const firstPrompt = async () => {
@@ -815,7 +860,6 @@ const firstPrompt = async () => {
     if (!input.trim().length) return promptUser();
 
     emitter.emit(events.interactive, false);
-    setTerminalWindowTransparency(true);
     errorCounts = {};
 
     // append this to commandHistoryFile
@@ -842,7 +886,15 @@ const firstPrompt = async () => {
 
     // if last character is a question mark, we assume the user is asking a question
     if (input.indexOf("/summarize") == 0) {
-      await summarize();
+      // Check if an output file is specified
+      if (commands[1]) {
+        const originalResultFile = resultFile;
+        resultFile = path.resolve(commands[1]);
+        await summarize();
+        resultFile = originalResultFile; // Restore original for subsequent operations
+      } else {
+        await summarize();
+      }
     } else if (input.indexOf("/quit") == 0) {
       await exit(false, true);
     } else if (input.indexOf("/save") == 0) {
@@ -862,6 +914,8 @@ const firstPrompt = async () => {
       if (flags.includes("--heal")) {
         healMode = true;
       }
+
+      await runLifecycle("prerun");
       await run(file, shouldSave, shouldExit);
     } else if (input.indexOf("/generate") == 0) {
       const skipYaml = commands[4] === "--skip-yaml";
@@ -870,16 +924,6 @@ const firstPrompt = async () => {
       await exploratoryLoop(input.replace("/dry", ""), true, false);
     } else if (input.indexOf("/yaml") == 0) {
       await runRawYML(commands[1]);
-    } else if (input.indexOf("/js") == 0) {
-      let result = await commander.run({
-        command: "exec",
-        js: commands.slice(1).join(" "),
-      });
-      if (result.out) {
-        logger.info(result.out.stdout);
-      } else if (result.error) {
-        logger.error(result.error.result.stdout);
-      }
     } else if (input.indexOf("/exec") == 0) {
       let result = await commander.run({
         command: "exec",
@@ -898,8 +942,6 @@ const firstPrompt = async () => {
         true,
       );
     }
-
-    setTerminalWindowTransparency(false);
 
     promptUser();
   };
@@ -937,51 +979,8 @@ ${yml}\`\`\``;
   promptUser();
 };
 
-let setTerminalWindowTransparency = async (hide) => {
-  if (hide) {
-    try {
-      http
-        .get("http://localhost:60305/hide")
-        .on("error", function () {})
-        .end();
-    } catch (e) {
-      // Suppress error
-      logger.error("Caught exception: %s", e);
-    }
-  } else {
-    try {
-      http
-        .get("http://localhost:60305/hide")
-        .on("error", function () {})
-        .end();
-    } catch (e) {
-      // Suppress error
-      logger.error("Caught exception:", e);
-    }
-  }
-
-  if (!config.TD_MINIMIZE) {
-    return;
-  }
-
-  try {
-    if (hide) {
-      if (terminalApp) {
-        hideTerminal(terminalApp);
-      }
-    } else {
-      if (terminalApp) {
-        showTerminal(terminalApp);
-      }
-    }
-  } catch (e) {
-    // Suppress error
-    logger.error("Caught exception: %s", e);
-  }
-};
-
 // this function is responsible for summarizing the test script that has already executed
-// it is what is saved to the `/tmp/oiResult.log` file and output to the action as a summary
+// it is what is saved to the `/tmp/testdriver-summary.md` file and output to the action as a summary
 let summarize = async (error = null) => {
   analytics.track("summarize");
 
@@ -1010,12 +1009,21 @@ let summarize = async (error = null) => {
   );
   mdStream.end();
 
-  let resultFile = "/tmp/oiResult.log";
-  if (process.platform === "win32") {
-    resultFile = "/Windows/Temp/oiResult.log";
+  // Only write summary to file if --summary option was provided
+  if (resultFile) {
+    // Ensure the output directory exists
+    const outputDir = path.dirname(resultFile);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    fs.writeFileSync(resultFile, reply.data);
+    logger.info(theme.dim(`Summary written to: ${resultFile}`));
+  } else {
+    const tmpFile = path.join(os.tmpdir(), "testdriver-summary.md");
+    fs.writeFileSync(tmpFile, reply.data);
+    logger.info(theme.dim(`Summary written to: ${tmpFile}`));
   }
-  // write reply to /tmp/oiResult.log
-  fs.writeFileSync(resultFile, reply.data);
 };
 
 // this function is responsible for saving the regression test script to a file
@@ -1026,7 +1034,7 @@ let save = async ({ filepath = thisFile, silent = false } = {}) => {
     return;
   }
 
-  // write reply to /tmp/oiResult.log
+  // write reply to /tmp/testdriver-summary.md
   let regression = await generator.dumpToYML(executionHistory);
   try {
     fs.writeFileSync(filepath, regression);
@@ -1077,6 +1085,8 @@ let runRawYML = async (yml) => {
   fs.writeFileSync(tmpobj.name, yaml.dump(ymlObj));
 
   // and run it with run()
+
+  await runLifecycle("prerun");
   await run(tmpobj.name, false, false);
 };
 
@@ -1089,7 +1099,6 @@ let run = async (
   shouldExit = true,
   pushToHistory = true,
 ) => {
-  setTerminalWindowTransparency(true);
   emitter.emit(events.interactive, false);
 
   logger.info(theme.cyan(`running ${file}...`));
@@ -1100,10 +1109,12 @@ let run = async (
     let valid = isValidVersion(ymlObj.version);
     if (!valid) {
       console.log("");
-      logger.warn(theme.red(`Version mismatch detected!`));
-      logger.warn(theme.red(`Running a test created with v${ymlObj.version}.`));
+      logger.warn(theme.yellow(`Version mismatch detected!`));
       logger.warn(
-        theme.red(`The current testdriverai version is v${package.version}.`),
+        theme.yellow(`Running a test created with v${ymlObj.version}.`),
+      );
+      logger.warn(
+        theme.yellow(`The local testdriverai version is v${package.version}.`),
       );
     }
   }
@@ -1153,8 +1164,6 @@ ${yaml.dump(step)}
     await save({ filepath: file, silent: false });
   }
 
-  setTerminalWindowTransparency(false);
-
   if (shouldExit) {
     await summarize();
     await exit(false);
@@ -1164,15 +1173,6 @@ ${yaml.dump(step)}
 const promptUser = () => {
   emitter.emit(events.interactive, true);
   process.nextTick(() => rl.prompt());
-};
-
-const setTerminalApp = async (win) => {
-  if (terminalApp) return;
-  if (process.platform === "win32") {
-    terminalApp = win?.title || "";
-  } else {
-    terminalApp = win?.owner?.bundleId || "";
-  }
 };
 
 const iffy = async (condition, then, otherwise, depth) => {
@@ -1230,26 +1230,85 @@ const embed = async (file, depth) => {
   logger.info(`${file} (end)`);
 };
 
-const buildEnv = async () => {
-  let win = await system.activeWin();
-  setTerminalApp(win);
-  await ensureMacScreenPerms();
-  await makeSandbox();
+const handleSandboxCommand = async (cliArgs) => {
+  // TODO: Implement sandbox command handling
+  if (cliArgs.list) {
+    await listSandboxes();
+  } else if (cliArgs.destroy) {
+    await destroySandbox(cliArgs.destroy);
+  } else if (cliArgs.create) {
+    await createSandbox();
+  } else {
+    logger.error(
+      "Please specify a sandbox action: --list, --destroy <id>, or --create",
+    );
+    process.exit(1);
+  }
+};
+
+const listSandboxes = async () => {
+  await ensureSandboxConnection();
+
+  logger.info("");
+  logger.info("Listing sandboxes...");
+
+  let reply = await sandbox.send({
+    type: "list",
+  });
+
+  console.table(reply.sandboxes);
+};
+
+const destroySandbox = async (sandboxId) => {
+  await ensureSandboxConnection();
+
+  let reply = await sandbox.send({
+    type: "destroy",
+    id: sandboxId,
+  });
+
+  console.table(reply.sandboxes);
+};
+
+const createSandbox = async () => {
+  await ensureSandboxConnection();
+
+  logger.info("");
+  logger.info("Creating new sandbox...");
+
+  let instance = await launchSandbox();
+
+  console.table([instance.sandbox]);
+};
+
+const buildEnv = async (headless = false) => {
+  if (sandboxId) {
+    await connectToSandbox(headless);
+  } else {
+    await ensureSandboxEnvironment(headless);
+    await runLifecycle("provision");
+  }
+
   await newSession();
-  await runPrerun();
 };
 
 const start = async () => {
-  let a = getArgs();
+  let a = parseArgs();
 
   thisFile = a.file;
   const thisCommand = a.command;
+  sandboxId = a.sandboxId;
+
+  // Set output file for summarize results if specified
+  if (a.summary) {
+    resultFile = path.resolve(a.summary);
+  }
 
   logger.info(theme.green(`Howdy! I'm TestDriver v${package.version}`));
   logger.info(`This is beta software!`);
   logger.info("");
-  logger.info(theme.yellow(`Join our Discord for help`));
-  logger.info(`https://discord.com/invite/cWDFW8DzPm`);
+  logger.info(theme.yellow(`Join our Forums for help`));
+  logger.info(`https://forums.testdriver.ai`);
   logger.info("");
 
   // make testdriver directory if it doesn't exist
@@ -1262,14 +1321,14 @@ const start = async () => {
   }
 
   // if the directory for thisFile doesn't exist, create it
-  const dir = path.dirname(thisFile);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-    logger.info(theme.dim(`Created directory ${dir}`));
-  }
+  if (thisCommand !== "init" && thisCommand !== "sandbox") {
+    const dir = path.dirname(thisFile);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      logger.info(theme.dim(`Created directory ${dir}`));
+    }
 
-  // if thisFile doesn't exist, create it
-  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+    // if thisFile doesn't exist, create it
     // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
     if (!fs.existsSync(thisFile)) {
       fs.writeFileSync(thisFile, "");
@@ -1285,24 +1344,11 @@ const start = async () => {
     speak("Howdy! I am TestDriver version " + package.version);
   }
 
-  if (thisCommand !== "init" && thisCommand !== "upload-secrets") {
+  if (thisCommand !== "init" && thisCommand !== "sandbox") {
     logger.info(theme.dim(`Working on ${thisFile}`));
     console.log("");
 
     loadYML(thisFile);
-
-    if (!config.TD_VM) {
-      logger.info(
-        theme.red("Warning! ") +
-          theme.dim(
-            "Local mode sends screenshots of the desktop to our API. Set `TD_VM` to run in a secure VM.",
-          ),
-      );
-      logger.info(
-        theme.dim("Read More: https://docs.testdriver.ai/security/agent"),
-      );
-      logger.info("");
-    }
   }
 
   analytics.track("command", { command: thisCommand, file: thisFile });
@@ -1311,59 +1357,99 @@ const start = async () => {
     await buildEnv();
     firstPrompt();
   } else if (thisCommand == "run") {
-    await buildEnv();
+    await buildEnv(a.headless);
     errorLimit = 100;
+
+    await runLifecycle("prerun");
     run(thisFile, false, true, true);
   } else if (thisCommand == "init") {
     await init();
     process.exit(0);
-  } else if (thisCommand == "upload-secrets") {
-    await uploadSecrets();
+  } else if (thisCommand == "sandbox") {
+    await handleSandboxCommand(cliArgs);
+    process.exit(0);
   }
 };
 
-const makeSandbox = async () => {
-  if (config.TD_VM) {
-    try {
-      logger.info(theme.gray(`- creating sandbox...`));
-      server.broadcast("status", `Creating new sandbox...`);
-      await sandbox.boot();
-      logger.info(theme.gray(`- authenticating...`));
-      server.broadcast("status", `Authenticating...`);
-      await sandbox.send({
-        type: "authenticate",
-        apiKey: config.TD_API_KEY,
-        secret: config.TD_SECRET,
-      });
-      logger.info(theme.gray(`- configuring...`));
-      server.broadcast("status", `Configuring...`);
-      await sandbox.send({
-        type: "create",
-        resolution: config.TD_VM_RESOLUTION,
-      });
-      logger.info(theme.gray(`- starting stream...`));
-      server.broadcast("status", `Starting stream...`);
-      await sandbox.send({ type: "stream.start" });
-      let { url } = await sandbox.send({ type: "stream.getUrl" });
-      logger.info(theme.gray(`- rendering...`));
-      server.broadcast("status", `Rendering...`);
-      await sandbox.send({ type: "ready" });
-      emitter.emit(events.vm.show, { url });
-      logger.info(theme.gray(`- booting...`));
-      server.broadcast("status", `Starting...`);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      logger.info(theme.green(``));
-      logger.info(theme.green(`sandbox runner ready!`));
-      logger.info(theme.green(``));
-    } catch (e) {
-      logger.error(e);
-      logger.error(theme.red(`sandbox runner failed to start`));
-      process.exit(1);
-    }
+const connectToSandbox = async (headless = false) => {
+  try {
+    logger.info(theme.gray(`- connecting to sandbox ${sandboxId}...`));
+    server.broadcast("status", `Connecting to sandbox ${sandboxId}...`);
+    await sandbox.boot();
+    logger.info(theme.gray(`- authenticating...`));
+    server.broadcast("status", `Authenticating...`);
+    await sandbox.send({
+      type: "authenticate",
+      apiKey: config.TD_API_KEY,
+    });
+    logger.info(theme.gray(`- connecting...`));
+    server.broadcast("status", `Connecting...`);
+    let instance = await sandbox.send({
+      type: "connect",
+      sandboxId: sandboxId,
+    });
+
+    emitter.emit(events.vm.show, {
+      url: instance.sandbox.vncUrl + "/vnc_lite.html",
+    });
+    logger.info(theme.green(``));
+    logger.info(theme.green(`connected to sandbox ${sandboxId}!`));
+    logger.info(theme.green(``));
+  } catch (e) {
+    logger.error(e);
+    logger.error(theme.red(`sandbox connection failed`));
+    process.exit(1);
   }
 
   emitter.emit(events.interactive, false);
-  emitter.emit(events.showWindow);
+
+  if (!headless) {
+    emitter.emit(events.showWindow);
+  }
+};
+
+const ensureSandboxConnection = async () => {
+  logger.info(theme.gray(`- creating sandbox...`));
+  server.broadcast("status", `Creating new sandbox...`);
+  await sandbox.boot();
+  logger.info(theme.gray(`- authenticating...`));
+  server.broadcast("status", `Authenticating...`);
+  await sandbox.send({
+    type: "authenticate",
+    apiKey: config.TD_API_KEY,
+  });
+};
+
+const launchSandbox = async () => {
+  logger.info(theme.gray(`- launching...`));
+  server.broadcast("status", `Configuring...`);
+  let instance = await sandbox.send({
+    type: "create",
+    resolution: config.TD_RESOLUTION,
+  });
+  logger.info(theme.green(``));
+  logger.info(theme.green(`sandbox runner ready!`));
+  logger.info(theme.green(``));
+  return instance;
+};
+
+const ensureSandboxEnvironment = async (headless = false) => {
+  try {
+    await ensureSandboxConnection();
+    let instance = await launchSandbox();
+    emitter.emit(events.vm.show, {
+      url: instance.sandbox.vncUrl + "/vnc_lite.html",
+    });
+  } catch (e) {
+    logger.error(e);
+    logger.error(theme.red(`sandbox runner failed to start`));
+    process.exit(1);
+  }
+
+  emitter.emit(events.interactive, false);
+  if (!headless) {
+    emitter.emit(events.showWindow);
+  }
 };
 
 const newSession = async () => {
@@ -1383,15 +1469,15 @@ const newSession = async () => {
   session.set(sessionRes.data.id);
 };
 
-const runPrerun = async () => {
-  const prerunFile = path.join(
+const runLifecycle = async (lifecycleName) => {
+  const lifecycleFile = path.join(
     workingDir,
     "testdriver",
     "lifecycle",
-    "prerun.yaml",
+    `${lifecycleName}.yaml`,
   );
-  if (fs.existsSync(prerunFile)) {
-    await run(prerunFile, false, false, false);
+  if (fs.existsSync(lifecycleFile)) {
+    await run(lifecycleFile, false, false, false);
   }
 };
 
@@ -1410,6 +1496,5 @@ process.on("unhandledRejection", async (reason, promise) => {
 });
 
 module.exports = {
-  setTerminalApp,
   start,
 };
