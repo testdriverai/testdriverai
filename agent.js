@@ -61,7 +61,7 @@ let checkCount = 0;
 let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
-let resultFile = null; // Output file for summarize results (only set when --summary is provided)
+let resultFile = null;
 
 // list of prompts that the user has given us
 let tasks = [];
@@ -1395,6 +1395,7 @@ const connectToSandbox = async (headless = false) => {
     logger.info(theme.green(``));
     logger.info(theme.green(`connected to sandbox ${sandboxId}!`));
     logger.info(theme.green(``));
+    sandboxReady = true;
   } catch (e) {
     logger.error(e);
     logger.error(theme.red(`sandbox connection failed`));

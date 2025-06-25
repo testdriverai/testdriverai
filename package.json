@@ -30,6 +30,7 @@
     "datadog-winston": "^1.6.0",
     "decompress": "^4.2.1",
     "dotenv": "^16.4.5",
+    "electron": "^33.0.2",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
     "mac-screen-capture-permissions": "^2.1.0",
@@ -52,8 +53,7 @@
     "totp-generator": "^1.0.0",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
-    "ws": "^8.18.1",
-    "electron": "^33.0.2"
+    "ws": "^8.18.1"
   },
   "overrides": {
     "glob": "^11.0.1",
