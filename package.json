@@ -53,6 +53,7 @@
     "totp-generator": "^1.0.0",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
+    "winston-transport": "^4.9.0",
     "ws": "^8.18.1"
   },
   "overrides": {

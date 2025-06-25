@@ -32,7 +32,6 @@ const { Command } = require("commander");
 const server = require("./lib/ipc.js");
 const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
-const log = require("./lib/logger.js");
 const parser = require("./lib/parser.js");
 const commander = require("./lib/commander.js");
 const system = require("./lib/system.js");
@@ -43,6 +42,7 @@ const init = require("./lib/init.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
 const theme = require("./lib/theme.js");
+const log = require("./lib/logger.js");
 
 const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
@@ -1247,7 +1247,7 @@ const handleSandboxCommand = async (cliArgs) => {
 };
 
 const listSandboxes = async () => {
-  await ensureSandboxConnection();
+  await connectToSandboxService();
 
   logger.info("");
   logger.info("Listing sandboxes...");
@@ -1260,7 +1260,7 @@ const listSandboxes = async () => {
 };
 
 const destroySandbox = async (sandboxId) => {
-  await ensureSandboxConnection();
+  await connectToSandboxService();
 
   let reply = await sandbox.send({
     type: "destroy",
@@ -1271,21 +1271,25 @@ const destroySandbox = async (sandboxId) => {
 };
 
 const createSandbox = async () => {
-  await ensureSandboxConnection();
+  await connectToSandboxService();
 
   logger.info("");
   logger.info("Creating new sandbox...");
 
-  let instance = await launchSandbox();
+  let instance = await createNewSandbox();
 
   console.table([instance.sandbox]);
 };
 
 const buildEnv = async (headless = false) => {
+  await connectToSandboxService();
   if (sandboxId) {
-    await connectToSandbox(headless);
+    let instance = await connectToSandboxDirect(sandboxId);
+    await renderSandbox(instance, headless);
   } else {
-    await ensureSandboxEnvironment(headless);
+    let instance = await createNewSandbox();
+    await connectToSandboxDirect(instance.sandbox.instanceId);
+    await renderSandbox(instance, headless);
     await runLifecycle("provision");
   }
 
@@ -1371,31 +1375,17 @@ const start = async () => {
   }
 };
 
-const connectToSandbox = async (headless = false) => {
+const renderSandbox = async (instance, headless = false) => {
   try {
-    logger.info(theme.gray(`- connecting to sandbox ${sandboxId}...`));
-    server.broadcast("status", `Connecting to sandbox ${sandboxId}...`);
-    await sandbox.boot();
-    logger.info(theme.gray(`- authenticating...`));
-    server.broadcast("status", `Authenticating...`);
-    await sandbox.send({
-      type: "authenticate",
-      apiKey: config.TD_API_KEY,
-    });
-    logger.info(theme.gray(`- connecting...`));
-    server.broadcast("status", `Connecting...`);
-    let instance = await sandbox.send({
-      type: "connect",
-      sandboxId: sandboxId,
-    });
+    console.log("render sandbox");
+    console.log(instance);
 
     emitter.emit(events.vm.show, {
-      url: instance.sandbox.vncUrl + "/vnc_lite.html",
+      url: instance.vncUrl + "/vnc_lite.html",
     });
     logger.info(theme.green(``));
     logger.info(theme.green(`connected to sandbox ${sandboxId}!`));
     logger.info(theme.green(``));
-    sandboxReady = true;
   } catch (e) {
     logger.error(e);
     logger.error(theme.red(`sandbox connection failed`));
@@ -1409,20 +1399,24 @@ const connectToSandbox = async (headless = false) => {
   }
 };
 
-const ensureSandboxConnection = async () => {
-  logger.info(theme.gray(`- creating sandbox...`));
-  server.broadcast("status", `Creating new sandbox...`);
-  await sandbox.boot();
+const connectToSandboxService = async () => {
+  logger.info(theme.gray(`- connecting to sandbox ${sandboxId}...`));
+  server.broadcast("status", `Connecting to sandbox ${sandboxId}...`);
+  await sandbox.boot(config.TD_API_ROOT);
   logger.info(theme.gray(`- authenticating...`));
   server.broadcast("status", `Authenticating...`);
-  await sandbox.send({
-    type: "authenticate",
-    apiKey: config.TD_API_KEY,
-  });
+  await sandbox.auth(config.TD_API_KEY);
 };
 
-const launchSandbox = async () => {
-  logger.info(theme.gray(`- launching...`));
+const connectToSandboxDirect = async (sandboxId) => {
+  logger.info(theme.gray(`- connecting...`));
+  server.broadcast("status", `Connecting...`);
+  let instance = await sandbox.connect(sandboxId);
+  return instance;
+};
+
+const createNewSandbox = async () => {
+  logger.info(theme.gray(`- creating new sandbox...`));
   server.broadcast("status", `Configuring...`);
   let instance = await sandbox.send({
     type: "create",
@@ -1432,25 +1426,6 @@ const launchSandbox = async () => {
   logger.info(theme.green(`sandbox runner ready!`));
   logger.info(theme.green(``));
   return instance;
-};
-
-const ensureSandboxEnvironment = async (headless = false) => {
-  try {
-    await ensureSandboxConnection();
-    let instance = await launchSandbox();
-    emitter.emit(events.vm.show, {
-      url: instance.sandbox.vncUrl + "/vnc_lite.html",
-    });
-  } catch (e) {
-    logger.error(e);
-    logger.error(theme.red(`sandbox runner failed to start`));
-    process.exit(1);
-  }
-
-  emitter.emit(events.interactive, false);
-  if (!headless) {
-    emitter.emit(events.showWindow);
-  }
 };
 
 const newSession = async () => {
