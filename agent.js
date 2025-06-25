@@ -273,6 +273,8 @@ const exit = async (failed = true, shouldSave = false) => {
 
   analytics.track("exit", { failed });
 
+  await runLifecycle("postrun");
+
   // we purposly never resolve this promise so the process will hang
   return new Promise(() => {
     rl?.close();
@@ -1400,8 +1402,8 @@ const renderSandbox = async (instance, headless = false) => {
 };
 
 const connectToSandboxService = async () => {
-  logger.info(theme.gray(`- connecting to sandbox ${sandboxId}...`));
-  server.broadcast("status", `Connecting to sandbox ${sandboxId}...`);
+  logger.info(theme.gray(`- connecting to sandbox...`));
+  server.broadcast("status", `Connecting to sandbox...`);
   await sandbox.boot(config.TD_API_ROOT);
   logger.info(theme.gray(`- authenticating...`));
   server.broadcast("status", `Authenticating...`);

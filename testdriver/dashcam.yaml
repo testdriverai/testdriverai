@@ -3,17 +3,7 @@ session: 685b38f0eb7de6d6447396cf
 steps:
   - prompt: fetch user data from API
     commands:
-      - command: exec
-        lang: pwsh
-        code: dashcam start
       - command: hover-text
         text: Sign In
         description: black button below the password field
         action: click
-      - command: exec
-        lang: pwsh
-        code: dashcam -t 'first test' -p
-  - prompt: close documents
-    commands:
-      - command: focus-application
-        name: File Explorer

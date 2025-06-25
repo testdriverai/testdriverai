@@ -5,6 +5,12 @@ steps:
     commands:
       - command: exec
         lang: pwsh
+        code: dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
+      - command: exec
+        lang: pwsh
+        code: dashcam start
+      - command: exec
+        lang: pwsh
         code: Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest", "${TD_WEBSITE}"
       - command: wait-for-text
         text: ${TD_WEBSITE}

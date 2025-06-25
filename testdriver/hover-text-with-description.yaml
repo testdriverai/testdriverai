@@ -1,9 +1,9 @@
-version: 5.7.7
-session: 682f62f6811bd5a322c0e726
+version: 6.0.0
+session: 685c63558f43d1527c84d053
 steps:
   - commands:
-    - command: run
-      file: testdriver/snippets/login.yaml
+      - command: run
+        file: testdriver/snippets/login.yaml
   - prompt: click on add to cart under the testdriver hat
     commands:
       - command: focus-application
@@ -26,3 +26,17 @@ steps:
         name: Google Chrome
       - command: assert
         expect: TestDriver Hat is in the cart
+  - prompt: log in
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Username
+        description: label for the username input
+        action: click
+      - command: type
+        text: standard_user
+      - command: hover-text
+        text: Password
+        description: label for the password input
+        action: click
