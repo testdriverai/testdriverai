@@ -29,4 +29,4 @@ jobs:
         run: node index.js run testdriver/hover-text-with-description.yaml
         env:
           FORCE_COLOR: 3
-          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
