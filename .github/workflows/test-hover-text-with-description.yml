@@ -1,16 +1,9 @@
 # Test the hover-text-with-description workflow in headless mode
-name: Test Hover Text with Description
+name: Test v6
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "testdriver/hover-text-with-description.yaml"
-      - ".github/workflows/test-hover-text-with-description.yml"
   pull_request:
-    paths:
-      - "testdriver/hover-text-with-description.yaml"
-      - ".github/workflows/test-hover-text-with-description.yml"
 
 jobs:
   test-hover-text-workflow:
