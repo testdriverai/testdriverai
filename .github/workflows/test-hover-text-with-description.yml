@@ -1,0 +1,38 @@
+# Test the hover-text-with-description workflow in headless mode
+name: Test Hover Text with Description
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "testdriver/hover-text-with-description.yaml"
+      - ".github/workflows/test-hover-text-with-description.yml"
+  pull_request:
+    paths:
+      - "testdriver/hover-text-with-description.yaml"
+      - ".github/workflows/test-hover-text-with-description.yml"
+
+jobs:
+  test-hover-text-workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run hover-text-with-description test in headless mode
+        run: node index.js run testdriver/hover-text-with-description.yaml --headless
+        env:
+          # Add any necessary environment variables here
+          NODE_ENV: test
