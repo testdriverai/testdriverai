@@ -267,13 +267,17 @@ if (!commandHistory.length) {
 }
 
 const exit = async (failed = true, shouldSave = false) => {
+  let a = parseArgs();
+
   if (shouldSave) {
     await save();
   }
 
   analytics.track("exit", { failed });
 
-  await runLifecycle("postrun");
+  if (a.command == "run") {
+    await runLifecycle("postrun");
+  }
 
   // we purposly never resolve this promise so the process will hang
   return new Promise(() => {
@@ -1284,18 +1288,19 @@ const createSandbox = async () => {
 };
 
 const buildEnv = async (headless = false) => {
+  // order is important!
   await connectToSandboxService();
   if (sandboxId) {
     let instance = await connectToSandboxDirect(sandboxId);
     await renderSandbox(instance, headless);
+    await newSession();
   } else {
-    let instance = await createNewSandbox();
-    await connectToSandboxDirect(instance.sandbox.instanceId);
+    let newSandbox = await createNewSandbox();
+    let instance = await connectToSandboxDirect(newSandbox.sandbox.instanceId);
     await renderSandbox(instance, headless);
+    await newSession();
     await runLifecycle("provision");
   }
-
-  await newSession();
 };
 
 const start = async () => {
