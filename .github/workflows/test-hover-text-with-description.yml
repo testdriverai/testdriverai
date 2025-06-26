@@ -4,6 +4,7 @@ name: Test v6
 on:
   workflow_dispatch:
   pull_request:
+  push:
 
 jobs:
   test-hover-text-workflow:
