@@ -20,8 +20,6 @@ steps:
           - enter
   - prompt: scroll down with the mouse 1000 pixels
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: hover-text
         text: "HTML: HyperText Markup Language"
         description: main heading of the article
@@ -30,10 +28,10 @@ steps:
         direction: down
         method: mouse
         amount: 1000
-  - prompt: Done
+  - prompt: assert the page is scrolled
     commands:
-      - command: focus-application
-        name: Google Chrome
+      - command: assert
+        expect: the page is scrolled down
       - command: press-keys
         keys:
           - alt
