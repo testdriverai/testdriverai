@@ -40,7 +40,7 @@ if (process.argv[2] === "--renderer") {
   })();
 } else {
   (async () => {
-    if (!config.TD_OVERLAY) {
+    if (!config.TD_OVERLAY || process.env.CI) {
       let agent = require("./agent.js");
       await agent.start();
     } else {

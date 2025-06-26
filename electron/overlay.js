@@ -2,7 +2,6 @@ const { default: nodeIPC } = require("node-ipc");
 const {
   app: electronApp,
   remote,
-  screen,
   BrowserWindow,
   Tray,
   Menu,

@@ -29,10 +29,9 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-optional
 
       - name: Run hover-text-with-description test in headless mode
-        run: node index.js run testdriver/hover-text-with-description.yaml --headless
+        run: node index.js run testdriver/hover-text-with-description.yaml
         env:
-          # Add any necessary environment variables here
-          NODE_ENV: test
+          FORCE_COLOR: 3
