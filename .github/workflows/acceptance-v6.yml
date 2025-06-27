@@ -30,7 +30,6 @@ jobs:
 
     strategy:
       matrix:
-        os: [linux, windows]
         test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
       fail-fast: false
     steps:
