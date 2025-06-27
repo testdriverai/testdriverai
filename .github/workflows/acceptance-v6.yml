@@ -1,5 +1,5 @@
 # Test the hover-text-with-description workflow in headless mode
-name: Test v6
+name: Test v6 Spawner
 
 on:
   workflow_dispatch:
