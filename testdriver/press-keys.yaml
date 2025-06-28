@@ -13,7 +13,7 @@ steps:
         keys:
           - command
           - t
-      - command: wait-for-text
+       - command: wait-for-text
         text: "Learn more"
       - command: press-keys
         keys:
@@ -22,3 +22,14 @@ steps:
           - i
       - command: wait-for-text
         text: "Elements"
+      - command: press-keys
+        keys:
+          - command
+          - t
+      - command: type
+        text: google.com
+      - command: press-keys
+        keys:
+          - enter
+      - command: assert
+        expect: google appears
