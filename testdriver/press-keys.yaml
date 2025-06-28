@@ -13,7 +13,7 @@ steps:
         keys:
           - command
           - t
-       - command: wait-for-text
+      - command: wait-for-text
         text: "Learn more"
       - command: press-keys
         keys:
