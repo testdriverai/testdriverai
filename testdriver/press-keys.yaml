@@ -22,3 +22,14 @@ steps:
           - i
       - command: wait-for-text
         text: "Elements"
+      - command: press-keys
+        keys:
+          - command
+          - t
+      - command: type
+        text: google.com
+      - command: press-keys
+        keys:
+          - enter
+      - command: assert
+        expect: google appears
