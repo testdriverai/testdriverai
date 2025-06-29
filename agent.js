@@ -855,7 +855,6 @@ const firstPrompt = async () => {
       await manualInput(commands.slice(1).join(" "));
     } else if (input.indexOf("/run") == 0) {
       const file = commands[1];
-      thisFile = file;
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
