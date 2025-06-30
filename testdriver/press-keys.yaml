@@ -1,5 +1,5 @@
-version: 5.7.7
-session: 682f645a2856e2eb406642f8
+version: 5.7.62
+session: 685af99e5652a7099e99e171
 steps:
   - prompt: create a new tab
     commands:
@@ -13,5 +13,23 @@ steps:
         keys:
           - command
           - t
+      - command: wait-for-text
+        text: "Learn more"
+      - command: press-keys
+        keys:
+          - control
+          - shift
+          - i
+      - command: wait-for-text
+        text: "Elements"
+      - command: press-keys
+        keys:
+          - command
+          - t
+      - command: type
+        text: google.com
+      - command: press-keys
+        keys:
+          - enter
       - command: assert
-        expect: a new tab was created
+        expect: google appears
