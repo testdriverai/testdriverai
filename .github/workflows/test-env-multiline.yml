@@ -17,9 +17,7 @@ jobs:
       run:
         shell: bash
     env:
-      # Single-line example
-      TD_SINGLE_LINE_SECRET: "my-super-secret"
-      # Multiline example
+      TD_SINGLE_LINE_SECRET: my-super-secret
       TD_MULTILINE_SECRET: |
         -----BEGIN FAKE SSH KEY-----
         line-one-of-key
@@ -30,41 +28,55 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assert env values are handled correctly
+      - name: Assert env values are handled correctly on GitHub Runner
         run: |
           echo "::group::GitHub Runner – Environment Check"
           if [[ "$TD_SINGLE_LINE_SECRET" != "my-super-secret" ]]; then
-            echo "TD_SINGLE_LINE_SECRET is incorrect: $TD_SINGLE_LINE_SECRET"; exit 1; fi
+            echo "TD_SINGLE_LINE_SECRET is incorrect: $TD_SINGLE_LINE_SECRET"
+            exit 1
+          fi
 
           if [[ "$(echo "$TD_MULTILINE_SECRET" | wc -l)" -lt 3 ]]; then
-            echo "TD_MULTILINE_SECRET does not appear multiline"; exit 1; fi
-          echo "Env values verified"
+            echo "TD_MULTILINE_SECRET does not appear multiline"
+            exit 1
+          fi
+
+          echo "Env values verified on GitHub Runner"
           echo "::endgroup::"
 
-      - name: Assert env values are still rendered correctly in sandbox
+      - name: Assert env values are handled correctly in TestDriver sandbox
         id: testdriver
         uses: testdriverai/action@main
         with:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
-          prerun: |
-            echo "::group::Inside TestDriver Runtime"
-
-            if [ "$TD_SINGLE_LINE_SECRET" != "my-super-secret" ]; then
-              echo "TD_SINGLE_LINE_SECRET incorrect: $TD_SINGLE_LINE_SECRET"; exit 1; fi
-
-            if [ -z "$TD_MULTILINE_SECRET" ]; then
-              echo "TD_MULTILINE_SECRET not set"; exit 1; fi
-
-            echo "$TD_MULTILINE_SECRET" > /tmp/testdriver_multiline
-            lines=$(wc -l < /tmp/testdriver_multiline)
-            if [ "$lines" -lt 3 ]; then
-              echo "TD_MULTILINE_SECRET is not multiline inside TestDriver"; exit 1; fi
-
-            echo "TD_* env vars validated inside TestDriver"
-            echo "::endgroup::"
           prompt: |
-            Page should contain "TestDriver.ai Sandbox"
+            Validate env vars inside TestDriver
+            commands:
+              - command: exec
+                lang: shell
+                linux: |
+                  echo "::group::Inside TestDriver Runtime"
+
+                  if [ "$TD_SINGLE_LINE_SECRET" != "my-super-secret" ]; then
+                    echo "TD_SINGLE_LINE_SECRET incorrect: $TD_SINGLE_LINE_SECRET"
+                    exit 1
+                  fi
+
+                  if [ -z "$TD_MULTILINE_SECRET" ]; then
+                    echo "TD_MULTILINE_SECRET not set"
+                    exit 1
+                  fi
+
+                  echo "$TD_MULTILINE_SECRET" > /tmp/testdriver_multiline
+                  lines=$(wc -l < /tmp/testdriver_multiline)
+                  if [ "$lines" -lt 3 ]; then
+                    echo "TD_MULTILINE_SECRET is not multiline inside TestDriver"
+                    exit 1
+                  fi
+
+                  echo "TD_* env vars validated inside TestDriver"
+                  echo "::endgroup::"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app
