@@ -830,8 +830,8 @@ const firstPrompt = async () => {
     );
 
     for (const [k, v] of Object.entries(interpolationVars)) {
-      if (typeof v === 'string') {
-        interpolationVars[k] = v.replace(/\\n/g, '\n');
+      if (typeof v === "string") {
+        interpolationVars[k] = v.replace(/\\n/g, "\n");
       }
     }
 

@@ -44,39 +44,30 @@ jobs:
           echo "Env values verified on GitHub Runner"
           echo "::endgroup::"
 
-      - name: Assert env values are handled correctly in TestDriver sandbox
+      - name: Run TestDriver
         id: testdriver
         uses: testdriverai/action@main
         with:
           key: ${{ secrets.TESTDRIVER_API_KEY }}
           os: linux
+          prerun: |
+            Write-Host "# Asserting TD_* env vars"
+            if ($env:TD_SINGLE_LINE_SECRET -ne "my-super-secret") {
+              Write-Host "TD_SINGLE_LINE_SECRET incorrect: '$($env:TD_SINGLE_LINE_SECRET)'"
+              exit 1
+            }
+            if (-not $env:TD_MULTILINE_SECRET) {
+              Write-Host "TD_MULTILINE_SECRET not set"
+              exit 1
+            }
+            $lines = $env:TD_MULTILINE_SECRET.Split("`n").Length
+            if ($lines -lt 3) {
+              Write-Host "TD_MULTILINE_SECRET is not multiline inside TestDriver (lines: $lines)"
+              exit 1
+            }
+            Write-Host "TD_* env vars validated in PowerShell prerun"
           prompt: |
-            Validate env vars inside TestDriver
-            commands:
-              - command: exec
-                lang: shell
-                linux: |
-                  echo "::group::Inside TestDriver Runtime"
-
-                  if [ "$TD_SINGLE_LINE_SECRET" != "my-super-secret" ]; then
-                    echo "TD_SINGLE_LINE_SECRET incorrect: $TD_SINGLE_LINE_SECRET"
-                    exit 1
-                  fi
-
-                  if [ -z "$TD_MULTILINE_SECRET" ]; then
-                    echo "TD_MULTILINE_SECRET not set"
-                    exit 1
-                  fi
-
-                  echo "$TD_MULTILINE_SECRET" > /tmp/testdriver_multiline
-                  lines=$(wc -l < /tmp/testdriver_multiline)
-                  if [ "$lines" -lt 3 ]; then
-                    echo "TD_MULTILINE_SECRET is not multiline inside TestDriver"
-                    exit 1
-                  fi
-
-                  echo "TD_* env vars validated inside TestDriver"
-                  echo "::endgroup::"
+            Page should contain "TestDriver.ai Sandbox"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
