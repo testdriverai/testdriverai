@@ -829,6 +829,14 @@ const firstPrompt = async () => {
       process.env["TD_INTERPOLATION_VARS"] || "{}",
     );
 
+    for (const [k, v] of Object.entries(interpolationVars)) {
+      if (typeof v === "string") {
+        interpolationVars[k] = v.replace(/\\n/g, "\n");
+      }
+    }
+
+    Object.assign(process.env, interpolationVars);
+
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
 
