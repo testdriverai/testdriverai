@@ -879,6 +879,14 @@ const firstPrompt = async () => {
       process.env["TD_INTERPOLATION_VARS"] || "{}",
     );
 
+    for (const [k, v] of Object.entries(interpolationVars)) {
+      if (typeof v === "string") {
+        interpolationVars[k] = v.replace(/\\n/g, "\n");
+      }
+    }
+
+    Object.assign(process.env, interpolationVars);
+
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
 
@@ -913,7 +921,6 @@ const firstPrompt = async () => {
       await manualInput(commands.slice(1).join(" "));
     } else if (input.indexOf("/run") == 0) {
       const file = commands[1];
-      thisFile = file;
       const flags = commands.slice(2);
       let shouldSave = flags.includes("--save") ? true : false;
       let shouldExit = flags.includes("--exit") ? true : false;
