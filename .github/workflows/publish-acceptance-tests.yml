@@ -69,22 +69,22 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+
       - name: Run TestDriver
         id: testdriver
-        uses: testdriverai/action@main
-        with:
-          version: "canary"
-          os: ${{ contains(matrix.os, 'windows') && 'windows' || 'linux' }}
-          prerun: |
-            exit
-          key: ${{ secrets.TESTDRIVER_API_KEY }}
-          prompt: |
-            1. /run testdriver/${{ matrix.test }}
+        run: node index.js run testdriver/${{ matrix.test }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
+          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
           TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
-          TD_RESOLUTION: "1920x1080"
 
       - name: Write MDX snippets separately
         run: |
