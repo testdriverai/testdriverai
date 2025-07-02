@@ -40,30 +40,35 @@ if (process.argv[2] === "--renderer") {
   })();
 } else {
   (async () => {
-    if (!config.TD_OVERLAY) {
+    // If TD_VM is true, we always need the overlay to display the sandbox,
+    // regardless of TD_OVERLAY setting
+    if (!config.TD_OVERLAY && !config.TD_VM) {
       let agent = require("./agent.js");
       await agent.start();
     } else {
       // Intercept all stdout and stderr calls (works with console as well)
-      const originalStdoutWrite = process.stdout.write.bind(process.stdout);
-      process.stdout.write = (...args) => {
-        const [data, encoding] = args;
-        emitter.emit(
-          events.terminal.stdout,
-          data.toString(typeof encoding === "string" ? encoding : undefined),
-        );
-        originalStdoutWrite(...args);
-      };
+      // but only if TD_OVERLAY is true
+      if (config.TD_OVERLAY) {
+        const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+        process.stdout.write = (...args) => {
+          const [data, encoding] = args;
+          emitter.emit(
+            events.terminal.stdout,
+            data.toString(typeof encoding === "string" ? encoding : undefined),
+          );
+          originalStdoutWrite(...args);
+        };
 
-      const originalStderrWrite = process.stderr.write.bind(process.stderr);
-      process.stderr.write = (...args) => {
-        const [data, encoding] = args;
-        emitter.emit(
-          events.terminal.stderr,
-          data.toString(typeof encoding === "string" ? encoding : undefined),
-        );
-        originalStderrWrite(...args);
-      };
+        const originalStderrWrite = process.stderr.write.bind(process.stderr);
+        process.stderr.write = (...args) => {
+          const [data, encoding] = args;
+          emitter.emit(
+            events.terminal.stderr,
+            data.toString(typeof encoding === "string" ? encoding : undefined),
+          );
+          originalStderrWrite(...args);
+        };
+      }
 
       const {
         connectToOverlay,
