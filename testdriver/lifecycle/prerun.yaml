@@ -1,33 +1,6 @@
 version: 5.1.1
 session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: Validate env vars inside TestDriver
-    commands:
-      - command: exec
-        lang: pwsh
-        linux: |
-          echo "::group::Inside TestDriver Runtime"
-
-          if [ "$TD_SINGLE_LINE_SECRET" != "my-super-secret" ]; then
-            echo "TD_SINGLE_LINE_SECRET incorrect: $TD_SINGLE_LINE_SECRET"
-            exit 1
-          fi
-
-          if [ -z "$TD_MULTILINE_SECRET" ]; then
-            echo "TD_MULTILINE_SECRET not set"
-            exit 1
-          fi
-
-          echo "$TD_MULTILINE_SECRET" > /tmp/testdriver_multiline
-          lines=$(wc -l < /tmp/testdriver_multiline)
-          if [ "$lines" -lt 3 ]; then
-            echo "TD_MULTILINE_SECRET is not multiline inside TestDriver"
-            exit 1
-          fi
-
-          echo "TD_* env vars validated inside TestDriver"
-          echo "::endgroup::"
-  # Normal test behavior now...
   - prompt: launch chrome
     commands:
       - command: exec
@@ -36,9 +9,3 @@ steps:
       - command: exec
         lang: pwsh
         code: dashcam start
-      - command: exec
-        lang: pwsh
-        code: Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest", "${TD_WEBSITE}"
-      - command: wait-for-text
-        text: ${TD_WEBSITE}
-        timeout: 30000
