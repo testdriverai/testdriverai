@@ -1352,9 +1352,33 @@ const makeSandbox = async () => {
       });
       logger.info(theme.gray(`- configuring...`));
       server.broadcast("status", `Configuring...`);
+      
+      // Collect relevant TD_ environment variables to pass to the VM
+      const vmEnvVars = {};
+      
+      // Always ensure TD_OVERLAY is set to true for sandbox display
+      vmEnvVars.TD_OVERLAY = true;
+      
+      // Pass through other relevant TD_ variables from config
+      const envVarsToPass = [
+        'TD_SPEAK',
+        'TD_ANALYTICS', 
+        'TD_NOTIFY',
+        'TD_MINIMIZE',
+        'TD_TYPE',
+        'TD_WEBSITE'
+      ];
+      
+      envVarsToPass.forEach(key => {
+        if (config[key] !== undefined && config[key] !== null) {
+          vmEnvVars[key] = config[key];
+        }
+      });
+      
       await sandbox.send({
         type: "create",
         resolution: config.TD_VM_RESOLUTION,
+        env: vmEnvVars,
       });
       logger.info(theme.gray(`- starting stream...`));
       server.broadcast("status", `Starting stream...`);
