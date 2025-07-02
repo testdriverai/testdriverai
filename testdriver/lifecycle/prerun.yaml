@@ -4,7 +4,7 @@ steps:
   - prompt: Validate env vars inside TestDriver
     commands:
       - command: exec
-        lang: shell
+        lang: pwsh
         linux: |
           echo "::group::Inside TestDriver Runtime"
 
