@@ -45,7 +45,7 @@ jobs:
 
       - name: Install dependencies
         run: NODE_ENV=production npm ci
-      - name: Run hover-text-with-description test in headless mode
+      - name: Run test in headless mode
         run: node index.js run testdriver/${{ matrix.test }}
         env:
           FORCE_COLOR: 3
