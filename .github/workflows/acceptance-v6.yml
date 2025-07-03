@@ -3,7 +3,6 @@ name: Test v6 Spawner
 
 on:
   workflow_dispatch:
-  pull_request:
   push:
 
 jobs:
