@@ -1348,6 +1348,16 @@ const buildEnv = async (headless = false) => {
       logger.info(theme.dim(`- using recent sandbox: ${recentId}`));
       sandboxId = recentId;
     }
+  } else {
+    if (newSandbox) {
+      logger.info(
+        theme.dim(`- creating new sandbox (due to --new-sandbox flag)...`),
+      );
+    } else {
+      logger.info(
+        theme.dim(`- creating new sandbox (no recent sandbox created)...`),
+      );
+    }
   }
 
   if (sandboxId) {
@@ -1452,7 +1462,7 @@ const renderSandbox = async (instance, headless = false) => {
       url: instance.vncUrl + "/vnc_lite.html",
     });
     logger.info(theme.green(``));
-    logger.info(theme.green(`connected to sandbox ${sandboxId}!`));
+    logger.info(theme.green(`connected to sandbox!`));
     logger.info(theme.green(``));
   } catch (e) {
     logger.error(e);
@@ -1468,8 +1478,8 @@ const renderSandbox = async (instance, headless = false) => {
 };
 
 const connectToSandboxService = async () => {
-  logger.info(theme.gray(`- connecting to sandbox...`));
-  server.broadcast("status", `Connecting to sandbox...`);
+  logger.info(theme.gray(`- establishing connection...`));
+  server.broadcast("status", `Establishing connection...`);
   await sandbox.boot(config.TD_API_ROOT);
   logger.info(theme.gray(`- authenticating...`));
   server.broadcast("status", `Authenticating...`);
@@ -1484,8 +1494,7 @@ const connectToSandboxDirect = async (sandboxId) => {
 };
 
 const createNewSandbox = async () => {
-  logger.info(theme.gray(`- creating new sandbox...`));
-  server.broadcast("status", `Configuring...`);
+  server.broadcast("status", `Creating new sandbox...`);
   let instance = await sandbox.send({
     type: "create",
     resolution: config.TD_RESOLUTION,
