@@ -536,17 +536,11 @@
                   },
                   "then": {
                     "properties": {
-                        "lang": {
+                      "lang": {
                         "type": "string",
-                        "enum": ["js", "shell"]
-                        },
-                      "mac": {
-                        "type": "string"
+                        "enum": ["js", "pwsh"]
                       },
-                      "windows": {
-                        "type": "string"
-                      },
-                      "linux": {
+                      "code": {
                         "type": "string"
                       },
                       "silent": {
@@ -556,22 +550,8 @@
                         "type": "string"
                       }
                     },
-                    "anyOf": [
-                      {
-                        "required": [
-                          "mac"
-                        ]
-                      },
-                      {
-                        "required": [
-                          "windows"
-                        ]
-                      },
-                      {
-                        "required": [
-                          "linux"
-                        ]
-                      }
+                    "required": [
+                      "lang", "code"
                     ]
                   }
                 }

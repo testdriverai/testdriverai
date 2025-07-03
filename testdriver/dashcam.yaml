@@ -1,0 +1,9 @@
+version: 6.0.0
+session: 685b38f0eb7de6d6447396cf
+steps:
+  - prompt: fetch user data from API
+    commands:
+      - command: hover-text
+        text: Sign In
+        description: black button below the password field
+        action: click

@@ -6,24 +6,24 @@ icon: "code"
 mode: "wide"
 ---
 
-import Replay from '/snippets/tests/exec-shell-replay.mdx'
-import Example from '/snippets/tests/exec-shell-yaml.mdx'
+import Replay from "/snippets/tests/exec-shell-replay.mdx";
+import Example from "/snippets/tests/exec-shell-yaml.mdx";
 
 <Replay />
 <Example />
 
 ## Description
-The `exec` command allows you to execute custom Node.js scripts within your TestDriver tests. This is useful for tasks like generating dynamic data, interacting with APIs, or performing custom logic during a test. The output of the script can be stored in a variable for use in subsequent steps. It's important to note that the output from `exec` must be a `string`. 
+
+The `exec` command allows you to execute custom Node.js scripts within your TestDriver tests. This is useful for tasks like generating dynamic data, interacting with APIs, or performing custom logic during a test. The output of the script can be stored in a variable for use in subsequent steps. It's important to note that the output from `exec` must be a `string`.
 
 ## Arguments
-| Argument   | Type      | Description                                                                 |
-|------------|-----------|-----------------------------------------------------------------------------|
-| `lang`     | `string`  | The language of the script to execute. Supported values are `shell` and `js`. |
-| `output`   | `string`  | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps. |
-| `silent`   | `string`  | Defaults to `true`. This is useful for suppressing unnecessary or private output in the test logs. If set to `false`, the command will print the output of the script. This is useful for debugging. |
-| `linux`    | `string`  | The script to execute on Linux systems. For `js`, the script must define the output as `result`. |
-| `windows`  | `string`  | The script to execute on Windows systems. For `js`, the script must define the output as `result`. |
-| `mac`      | `string`  | The script to execute on macOS systems. For `js`, the script must define the output as `result`. |
+
+| Argument | Type     | Description                                                                                                                                                                        |
+| -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lang`   | `string` | The language of the script to execute. Supported values are `shell` and `js`.                                                                                                      |
+| `output` | `string` | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps.                                                           |
+| `silent` | `string` | Defaults to `false`. The command will print the output of the script. This is useful for suppressing unnecessary or private output in the test logs. This is useful for debugging. |
+| `code`   | `string` | The script to execute on Windows systems. For `js`, the script must define the output as `result`.                                                                                 |
 
 ## Example usage
 
@@ -33,20 +33,20 @@ This example demonstrates how to use the `exec` command to generate a TOTP (Time
 version: 5.3.8
 steps:
   - commands:
-    - command: exec
-      lang: shell
-      linux: |
-        npm install totp-generator
-    - command: exec
-      lang: js
-      output: totp
-      linux: |
-        const { TOTP } = require("totp-generator");
-        let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
-        console.log(otp);
-        result = otp;
-    - command: type
-      text: ${OUTPUT.totp}
+      - command: exec
+        lang: pwsh
+        linux: |
+          npm install totp-generator
+      - command: exec
+        lang: js
+        output: totp
+        linux: |
+          const { TOTP } = require("totp-generator");
+          let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
+          console.log(otp);
+          result = otp;
+      - command: type
+        text: ${OUTPUT.totp}
 ```
 
 ## Additional details
@@ -54,7 +54,7 @@ steps:
 - The `exec` command now takes a `lang` argument and supports different operating systems (`linux`, `mac`, and `windows`).
 - Supported `lang` values are `js` or `shell`:
   - `js` code is executed in a Node.js VM on the host machine (for example the machine where your CI/CD runs, or your computer if using the local agent).
-  - `shell` code is executed in the shell on target runner (which can be the cloud runner, local sandbox, or local machine, depending on where you run your tests). 
+  - `shell` code is executed in the shell on target runner (which can be the cloud runner, local sandbox, or local machine, depending on where you run your tests).
     - Note: You can also use `shell` in [`prerun`](/guide/lifecycle-prerun) scripts to install npm packages if you need them.
     - Otherwise, the `shell` code can be used within test steps to launch applications or perform simple commands (like writing text to a file on the machine to perform a simple file upload).
 - Code specified in `linux`, `mac`, and `windows` is executed based on the platform of the runner machine.
@@ -65,35 +65,36 @@ steps:
 - The `result` variable is already available in your script, overwrite it to store the output as shown in the examples.
 - Node.js code executes in the same context as the calling process on the host machine, using the [VM](https://nodejs.org/api/vm.html) module internally.
 - Do any handling of arrays or nested objects within your `js` script:
-    - ✅ `result = users[1].profile.firstName`
-    - ✅ `result = data.length > 0 ? data[0].userEmail : 'no user found'` if no data is found the value of output will be `null`
-    - ✅ `result = someTestUserEmail`
-    - ✅ `result = someTextToAssert`
-    - ✅ `result = someDescriptionOfAnImageToScrollTo`
+  - ✅ `result = users[1].profile.firstName`
+  - ✅ `result = data.length > 0 ? data[0].userEmail : 'no user found'` if no data is found the value of output will be `null`
+  - ✅ `result = someTestUserEmail`
+  - ✅ `result = someTextToAssert`
+  - ✅ `result = someDescriptionOfAnImageToScrollTo`
 - Don't try to pass any non-string values to `output`:
-    - ❌ `result = [...users, ...values]`
-    - ❌ `result = {name: "Dale Earnhardt", starts: 676, wins: 76}`
-    - ❌ `result = [{user1: ...}, {user2: ...}]`
+  - ❌ `result = [...users, ...values]`
+  - ❌ `result = {name: "Dale Earnhardt", starts: 676, wins: 76}`
+  - ❌ `result = [{user1: ...}, {user2: ...}]`
 
 ---
 
 ## Ways to use `exec`
 
 Here is an example using both `shell` and `js` contexts within a [`prerun.yaml`](guide/lifecycle-prerun) script:
+
 ```yaml ./lifecycle/prerun.yaml [expandable]
 version: 5.3.8
 steps:
   - commands:
       - command: exec
-        lang: shell
+        lang: pwsh
         silent: false
-        mac: |
+        code: |
           npm install @sendgrid/mail
       - command: exec
         lang: js
         output: accountData
         silent: false
-        mac: |
+        code: |
           const Mailjs = require("@cemalgnlts/mailjs");
           const mailjs = new Mailjs();
           let account = await mailjs.createOneAccount()
@@ -103,7 +104,7 @@ steps:
         lang: js
         output: emailAddress
         silent: false
-        mac: |
+        code: |
           const accountData = ${OUTPUT.accountData};
           result = accountData.username
   - prompt: Enter the generated email into the email field
@@ -119,7 +120,7 @@ steps:
       - command: exec
         lang: js
         silent: false
-        mac: |
+        code: |
           const Mailjs = require("@cemalgnlts/mailjs");
           const { JSDOM } = require('jsdom'); // To parse HTML and extract links
 
@@ -176,21 +177,15 @@ steps:
 ### Using `exec` shell commands in a test file
 
 In a test file, you can use the `shell` context directly:
+
 ```yaml testfile.yaml [expandable]
 version: 5.5.5
 steps:
   - prompt: launch a calculator
     commands:
       - command: exec
-        lang: shell
-        linux: |
-          linux: |
-            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
-            exit
-        mac: |
-          open "/Applications/Calculator.app"
-          wait
-        windows: start /B calc.exe
+        lang: pwsh
+        code: start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "calculator"
@@ -214,6 +209,7 @@ steps:
 ```
 
 ### One more option
+
 You can also save reusable snippets (like launching the calculator) to be inserted into a script later with the [`run`](/commands/run) command. That version would look something like this:
 
 ```yaml launchcalculator.yaml [expandable]
@@ -222,15 +218,8 @@ steps:
   - prompt: launch a calculator
     commands:
       - command: exec
-        lang: shell
-        linux: |
-          linux: |
-            jumpapp /usr/bin/galculator > /dev/null 2>&1 &
-            exit
-        mac: |
-          open "/Applications/Calculator.app"
-          wait
-        windows: start /B calc.exe
+        lang: pwsh
+        code: start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "calculator"
@@ -238,6 +227,7 @@ steps:
 ```
 
 Then in the test:
+
 ```yaml {5-6} testfile.yaml [expandable]
 version: 5.5.5
 steps:
@@ -264,25 +254,22 @@ steps:
 ```
 
 ### Don't try to run `js` within a test field
+
 This example will fail at runtime, so don't try to execute `js` context directly in a test file. Remember - use this in `prerun` to setup your test!
 
 ```yaml badtestfile.yaml [expandable]
 version: 5.5.5
 commands:
       - command: exec
-        lang: shell
-        linux: |
-          npm install -g axios json2csv
-        mac: |
-          npm install -g axios json2csv
-        windows: |
+        lang: pwsh
+        code: |
           npm install -g axios json2csv
   - prompt: fetch user data from API
     commands:
       - command: exec
         output: user
         lang: js
-        mac: |
+        code: |
           const axios = require('axios');
           const { Parser } = require('json2csv');
           const fs = require('fs');
@@ -296,4 +283,5 @@ commands:
           console.log('username', user);
     ...
 ```
+
 This example will produce errors in the TestDriver output or CLI since the runner won't have access to the Node.js VM context.
