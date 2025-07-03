@@ -26,6 +26,7 @@ const readline = require("readline");
 const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
+const testBuilder = require("junit-report-builder");
 const { Command } = require("commander");
 
 // local modules
@@ -281,6 +282,8 @@ if (!commandHistory.length) {
 
 const exit = async (failed = true, shouldSave = false) => {
   let a = parseArgs();
+
+  testBuilder.writeTo("test-report.xml");
 
   if (shouldSave) {
     await save();
@@ -1152,9 +1155,20 @@ let run = async (
     await exit(true);
   }
 
+  let suite = testBuilder
+    .testSuite()
+    .name(file)
+    .file(file)
+    .property("yml version", ymlObj.version)
+    .property("testdriverai version", package.version)
+    .timestamp(new Date().toISOString());
+
   for (const step of ymlObj.steps) {
     logger.info(``, null);
     logger.info(theme.yellow(`> ${step.prompt || "no prompt"}`), null);
+
+    let startTime = new Date().getTime();
+    const testCase = suite.testCase().name(`> ${step.prompt || "no prompt"}`);
 
     if (pushToHistory) {
       executionHistory.push({
@@ -1178,7 +1192,16 @@ ${yaml.dump(step)}
       logger.debug("load calling actOnMarkdown");
 
       lastPrompt = step.prompt;
-      await actOnMarkdown(markdown, 0, true, false, shouldSave);
+
+      try {
+        await actOnMarkdown(markdown, 0, true, false, shouldSave);
+        testCase.success();
+        let endTime = new Date().getTime();
+        let duration = (endTime - startTime) / 1000; // in seconds
+        testCase.time(duration);
+      } catch (error) {
+        testCase.error(error);
+      }
     }
 
     if (shouldSave) {
