@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 const config = require("./lib/config.js");
 
 // We need to initialize the IPC server quickly

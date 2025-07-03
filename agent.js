@@ -62,7 +62,7 @@ let checkLimit = 7;
 let lastScreenshot = null;
 let rl;
 let resultFile = null;
-
+let newSandbox = false;
 // list of prompts that the user has given us
 let tasks = [];
 
@@ -116,6 +116,9 @@ const parseArgs = () => {
     if (options.sandbox) {
       sandboxId = options.sandbox;
     }
+    if (options.newSandbox) {
+      newSandbox = true;
+    }
   };
 
   program
@@ -135,6 +138,10 @@ const parseArgs = () => {
     .option("--headless", "Run in headless mode (no GUI)")
     .option("--sandbox <id>", "Connect to existing sandbox with ID")
     .option("--summary <file>", "Specify output file for summarize results")
+    .option(
+      "--new-sandbox",
+      "Do not reuse the last sandbox, always create a new one",
+    )
     .action((file, options) => {
       handleGlobalOptions(options);
       cliArgs = {
@@ -145,6 +152,7 @@ const parseArgs = () => {
         exit: options.exit,
         headless: options.headless,
         summary: options.summary,
+        newSandbox: options.newSandbox,
       };
     });
 
@@ -155,6 +163,10 @@ const parseArgs = () => {
     .option("--heal", "Enable automatic error recovery mode")
     .option("--sandbox <id>", "Connect to existing sandbox with ID")
     .option("--summary <file>", "Specify output file for summarize results")
+    .option(
+      "--new-sandbox",
+      "Do not reuse the last sandbox, always create a new one",
+    )
     .action((file, options) => {
       handleGlobalOptions(options);
       cliArgs = {
@@ -162,6 +174,7 @@ const parseArgs = () => {
         file: normalizeFilePath(file),
         sandboxId: sandboxId,
         summary: options.summary,
+        newSandbox: options.newSandbox,
       };
     });
 
@@ -1294,15 +1307,56 @@ const createSandbox = async () => {
   console.table([instance.sandbox]);
 };
 
+// Returns sandboxId to use (either from file if recent, or null)
+const getRecentSandboxId = () => {
+  const lastSandboxFile = path.join(os.homedir(), ".testdriverai-last-sandbox");
+  if (fs.existsSync(lastSandboxFile)) {
+    try {
+      const stats = fs.statSync(lastSandboxFile);
+      const mtime = new Date(stats.mtime);
+      const now = new Date();
+      const diffMinutes = (now - mtime) / (1000 * 60);
+      if (diffMinutes < 30) {
+        const lastSandboxId = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+        if (lastSandboxId) {
+          return lastSandboxId;
+        }
+      }
+    } catch {
+      // ignore errors
+    }
+  }
+  return null;
+};
+
+const saveLastSandboxId = (instanceId) => {
+  const lastSandboxFile = path.join(os.homedir(), ".testdriverai-last-sandbox");
+  try {
+    fs.writeFileSync(lastSandboxFile, instanceId, { encoding: "utf-8" });
+  } catch {
+    // ignore errors
+  }
+};
+
 const buildEnv = async (headless = false) => {
   // order is important!
   await connectToSandboxService();
+
+  if (!sandboxId && !newSandbox) {
+    const recentId = getRecentSandboxId();
+    if (recentId) {
+      logger.info(theme.dim(`- using recent sandbox: ${recentId}`));
+      sandboxId = recentId;
+    }
+  }
+
   if (sandboxId) {
     let instance = await connectToSandboxDirect(sandboxId);
     await renderSandbox(instance, headless);
     await newSession();
   } else {
     let newSandbox = await createNewSandbox();
+    saveLastSandboxId(newSandbox.sandbox.instanceId);
     let instance = await connectToSandboxDirect(newSandbox.sandbox.instanceId);
     await renderSandbox(instance, headless);
     await newSession();

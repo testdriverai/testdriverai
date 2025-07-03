@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "testdriverai": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/Users/ianjennings/.mcp/testdriver/src/index.js"]
+    }
+  }
+}
