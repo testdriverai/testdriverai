@@ -3,6 +3,8 @@ session: 67f00511acbd9ccac373edf7
 steps:
   - prompt: launch chrome
     commands:
+      - command: wait
+        timeout: 10000
       - command: exec
         lang: pwsh
         code: dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
