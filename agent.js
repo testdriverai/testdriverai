@@ -1500,9 +1500,6 @@ const createNewSandbox = async () => {
     type: "create",
     resolution: config.TD_RESOLUTION,
   });
-  logger.info(theme.green(``));
-  logger.info(theme.green(`sandbox runner ready!`));
-  logger.info(theme.green(``));
   return instance;
 };
 
