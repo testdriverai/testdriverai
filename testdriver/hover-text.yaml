@@ -6,7 +6,7 @@ steps:
       - command: focus-application
         name: Google Chrome
       - command: hover-text
-        text: error
+        text: Submit
         description: black button below the password field
         action: click
       - command: assert
