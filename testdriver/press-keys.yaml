@@ -17,7 +17,7 @@ steps:
         text: "Learn more"
       - command: press-keys
         keys:
-          - control
+          - ctrl
           - shift
           - i
       - command: wait-for-text

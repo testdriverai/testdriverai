@@ -1347,13 +1347,14 @@ const buildEnv = async (headless = false) => {
     if (recentId) {
       logger.info(theme.dim(`- using recent sandbox: ${recentId}`));
       sandboxId = recentId;
+    } else {
+      logger.info(theme.dim(`- creating new sandbox...`));
     }
   } else {
     if (newSandbox) {
-      logger.info(
-        theme.dim(`- creating new sandbox (due to --new-sandbox flag)...`),
-      );
+      logger.info(theme.dim(`- creating new sandbox (--new-sandbox)...`));
     } else {
+      // I think this is a bad state
       logger.info(
         theme.dim(`- creating new sandbox (no recent sandbox created)...`),
       );
