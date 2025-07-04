@@ -24,7 +24,7 @@ steps:
         text: "Elements"
       - command: press-keys
         keys:
-          - command
+          - ctrl
           - t
       - command: type
         text: google.com

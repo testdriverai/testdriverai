@@ -26,17 +26,3 @@ steps:
         name: Google Chrome
       - command: assert
         expect: TestDriver Hat is in the cart
-  - prompt: log in
-    commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: hover-text
-        text: Username
-        description: label for the username input
-        action: click
-      - command: type
-        text: standard_user
-      - command: hover-text
-        text: Password
-        description: label for the password input
-        action: click

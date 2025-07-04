@@ -11,7 +11,7 @@ steps:
         action: click
       - command: press-keys
         keys:
-          - command
+          - ctrl
           - a
       - command: type
         text: https://developer.mozilla.org/en-US/docs/Web/HTML
