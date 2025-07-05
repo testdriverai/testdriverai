@@ -10,13 +10,12 @@
     <title>TestDriver</title>
     <style>
       body {
-        background-color: black;
+        background-color: #111;
       }
 
       * {
         margin: 0;
         padding: 0;
-        overflow: hidden;
         box-sizing: border-box;
         font-family: "IBM Plex Mono", monospace;
         font-weight: 400;
@@ -24,6 +23,17 @@
         font-size: 14px;
         scrollbar-width: none; /* Hide scrollbars for Firefox */
         pointer-events: none;
+      }
+
+      #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: top left;
+      }
+
+      body {
+        overflow: hidden;
       }
 
       *::-webkit-scrollbar {
@@ -50,9 +60,7 @@
         }
       }
 
-      body {
-        width: 100vw;
-        height: 100vh;
+      .overlay {
         position: relative;
       }
 
@@ -157,14 +165,14 @@
       }
 
       #vm-iframe {
-        position: absolute;
         display: none;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
         border: none;
         pointer-events: auto;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        height: 100%;
       }
 
       /* Loading screen styles */
@@ -293,14 +301,42 @@
       }
 
       const iframe = document.querySelector("#vm-iframe");
-      iframe.style.display = "block";
-      iframe.src = parsedData.url;
 
       // set overlay width and height to match the given resolution
-      document.getElementById("overlay").style.width =
-        parsedData.resolution[0] + "px";
-      document.getElementById("overlay").style.height =
-        parsedData.resolution[1] + "px";
+      const overlayWidth = parsedData.resolution[0];
+      const overlayHeight = parsedData.resolution[1];
+
+      iframe.style.display = "block";
+      iframe.src = parsedData.url;
+      iframe.style.width = overlayWidth + "px";
+      iframe.style.height = overlayHeight + "px";
+
+      // Calculate scale factor to fit within window if needed
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const padding = 20; // Add some padding to prevent cropping
+      const scaleX = (windowWidth - padding * 2) / overlayWidth;
+      const scaleY = (windowHeight - padding * 2) / overlayHeight;
+      const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+
+      console.log("window:", {
+        width: windowWidth,
+        height: windowHeight,
+      });
+      console.log("overlay:", {
+        width: overlayWidth,
+        height: overlayHeight,
+      });
+
+      const overlay = document.getElementById("overlay");
+      overlay.style.width = overlayWidth + "px";
+      overlay.style.height = overlayHeight + "px";
+
+      console.log("scale", scale);
+      // Apply scaling if needed
+      if (scale < 1) {
+        overlay.style.transform = `scale(${scale})`;
+      }
 
       // WebSocket connection
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -463,14 +499,94 @@
         return size;
       };
 
-      // Handle window focus/blur for better visibility
-      window.addEventListener("focus", () => {
-        document.body.style.background = "rgba(0, 0, 0, 0.05)";
-      });
+      // Throttle function to limit how often a function can run
+      function throttle(fn, wait) {
+        let lastTime = 0;
+        return function (...args) {
+          const now = Date.now();
+          if (now - lastTime >= wait) {
+            lastTime = now;
+            fn.apply(this, args);
+          }
+        };
+      }
 
-      window.addEventListener("blur", () => {
-        document.body.style.background = "transparent";
-      });
+      const resizeOverlay = () => {
+        if (parsedData && parsedData.resolution) {
+          const overlayWidth = parsedData.resolution[0];
+          const overlayHeight = parsedData.resolution[1];
+          const windowWidth = window.innerWidth;
+          const windowHeight = window.innerHeight;
+          const scaleX = windowWidth / overlayWidth;
+          const scaleY = windowHeight / overlayHeight;
+          const scale = Math.min(scaleX, scaleY);
+
+          console.log("scale", scale);
+
+          console.log(
+            "resolution:",
+            JSON.stringify({
+              width: overlayWidth,
+              height: overlayHeight,
+            }),
+          );
+
+          console.log(
+            "window:",
+            JSON.stringify({
+              width: windowWidth,
+              height: windowHeight,
+            }),
+          );
+          const overlay = document.getElementById("overlay");
+          if (scale < 1) {
+            overlay.style.transform = `scale(${scale})`;
+          } else {
+            overlay.style.transform = "none";
+          }
+
+          // get the new width and height after scaling
+          const scaledWidth = overlayWidth * scale;
+          const scaledHeight = overlayHeight * scale;
+
+          console.log("scaledWidth", JSON.stringify(scaledWidth));
+          console.log("scaledHeight", JSON.stringify(scaledHeight));
+
+          // use the scaled width and height to center the overlay
+          overlay.style.position = "absolute";
+          if (scale < 1) {
+            // When scaling down, use the original dimensions and let CSS transform handle the scaling
+            overlay.style.width = `${overlayWidth}px`;
+            overlay.style.height = `${overlayHeight}px`;
+            overlay.style.left = `${(windowWidth - scaledWidth) / 2}px`;
+            overlay.style.top = `${(windowHeight - scaledHeight) / 2}px`;
+          } else {
+            // When no scaling is needed, just center the overlay at its original size
+            overlay.style.width = `${overlayWidth}px`;
+            overlay.style.height = `${overlayHeight}px`;
+            overlay.style.left = `${(windowWidth - overlayWidth) / 2}px`;
+            overlay.style.top = `${(windowHeight - overlayHeight) / 2}px`;
+          }
+
+          console.log(
+            "left,top",
+            JSON.stringify({
+              left:
+                scale < 1
+                  ? (windowWidth - scaledWidth) / 2
+                  : (windowWidth - overlayWidth) / 2,
+              top:
+                scale < 1
+                  ? (windowHeight - scaledHeight) / 2
+                  : (windowHeight - overlayHeight) / 2,
+            }),
+          );
+        }
+      };
+      resizeOverlay();
+
+      // Handle window resize to recalculate scale (throttled)
+      window.addEventListener("resize", throttle(resizeOverlay, 100));
     </script>
   </body>
 </html>
