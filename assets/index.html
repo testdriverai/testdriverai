@@ -1,0 +1,476 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <title>TestDriver</title>
+    <style>
+      body {
+        background-color: black;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        box-sizing: border-box;
+        font-family: "IBM Plex Mono", monospace;
+        font-weight: 400;
+        font-style: normal;
+        font-size: 14px;
+        scrollbar-width: none; /* Hide scrollbars for Firefox */
+        pointer-events: none;
+      }
+
+      *::-webkit-scrollbar {
+        display: none; /* Hide scrollbars for WebKit browsers */
+      }
+
+      @keyframes animate-glow {
+        0% {
+          opacity: 0;
+          filter: brightness(3) saturate(3);
+          transform: scale(0.8, 0.8);
+        }
+
+        30% {
+          opacity: 1;
+          filter: brightness(1) saturate(1);
+          transform: scale(1, 1);
+        }
+
+        100% {
+          /* opacity: 0; */
+          opacity: 1;
+          transform: scale(1, 1);
+        }
+      }
+
+      body {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
+
+      .screenshot {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        opacity: 0;
+      }
+
+      .box {
+        border: 1px solid #b0cf34;
+        position: absolute;
+        border-radius: 5px;
+        animation-duration: 5s;
+        animation-delay: 0s;
+        animation-timing-function: cubic-bezier(0.26, 0.53, 0.74, 1.48);
+        animation-fill-mode: backwards;
+        animation-name: animate-glow;
+        animation-timing-function: ease;
+        animation-fill-mode: forwards;
+        border-radius: 5px;
+      }
+
+      .container {
+        inset: 0;
+        position: absolute;
+      }
+
+      #mouse {
+        margin-left: -100px;
+        margin-top: -100px;
+        width: 50px;
+        height: 50px;
+        opacity: 0;
+        position: absolute;
+        transform: translate(-50%, -50%);
+        border-radius: 70%;
+        background: #b0cf34;
+      }
+
+      #mouse #dot {
+        width: 7px;
+        height: 7px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background-color: black;
+      }
+
+      .single-click {
+        animation: singleClick 0.7s ease-in-out forwards;
+      }
+
+      .double-click {
+        animation: doubleClick 0.7s ease-in-out forwards;
+      }
+
+      @keyframes singleClick {
+        0% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(2);
+        }
+      }
+
+      @keyframes doubleClick {
+        0% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+
+        45% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        55% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+
+        100% {
+          opacity: 0;
+          transform: scale(2);
+        }
+      }
+
+      #boxes {
+        position: absolute;
+        top: 25px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+      }
+
+      #vm-iframe {
+        position: absolute;
+        display: none;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        pointer-events: auto;
+      }
+
+      /* Loading screen styles */
+      .loading-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        transition: opacity 0.5s ease-out;
+      }
+
+      .loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .loading-text {
+        color: #b0cf34;
+        font-size: 18px;
+        font-weight: 500;
+        margin-top: 10px;
+        animation: fadeInOut 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          box-shadow: 0 8px 32px rgba(176, 207, 52, 0.3);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 12px 48px rgba(176, 207, 52, 0.5);
+        }
+        100% {
+          transform: scale(1);
+          box-shadow: 0 8px 32px rgba(176, 207, 52, 0.3);
+        }
+      }
+
+      @keyframes fadeInOut {
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      .status {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #b0cf34;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 11;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+
+      .status.visible {
+        opacity: 1;
+      }
+
+      .bounding-box {
+        position: absolute;
+        border: 2px solid #b0cf34;
+        background: rgba(176, 207, 52, 0.1);
+        pointer-events: none;
+        z-index: 9;
+        border-radius: 3px;
+        animation: animate-glow 0.6s ease-out;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading screen -->
+    <div class="loading-screen" id="loading-screen">
+      <div class="testdriver-logo">
+        <img
+          src="https://framerusercontent.com/images/eMQDjLmOzfeu91XBo1VPlIc1WmY.png"
+          height="120"
+          alt="TestDriver Logo"
+        />
+      </div>
+      <div class="loading-text">Loading...</div>
+    </div>
+
+    <div class="overlay" id="overlay">
+      <div class="container" id="container">
+        <div class="mouse" id="mouse"></div>
+        <div class="screenshot" id="screenshot"></div>
+        <div class="status" id="status"></div>
+        <iframe id="vm-iframe" src=""></iframe>
+      </div>
+    </div>
+
+    <script>
+      // get data from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const data = urlParams.get("data");
+      let parsedData;
+      if (data) {
+        try {
+          parsedData = JSON.parse(decodeURIComponent(data));
+          console.log("Data from URL:", parsedData);
+          // You can use parsedData here if needed
+        } catch (error) {
+          console.error("Error parsing data from URL:", error);
+        }
+      } else {
+        alert(
+          "Improperly formatted URL. Please ensure the data parameter is present.",
+        );
+      }
+
+      const iframe = document.querySelector("#vm-iframe");
+      iframe.style.display = "block";
+      iframe.src = parsedData.url;
+
+      // set overlay width and height to match the given resolution
+      document.getElementById("overlay").style.width =
+        parsedData.resolution[0] + "px";
+      document.getElementById("overlay").style.height =
+        parsedData.resolution[1] + "px";
+
+      // WebSocket connection
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+      // WebSocket event handlers
+      const eventHandlers = new Map();
+
+      const addEventHandler = (event, callback) => {
+        if (!eventHandlers.has(event)) {
+          eventHandlers.set(event, []);
+        }
+        eventHandlers.get(event).push(callback);
+      };
+
+      ws.addEventListener("message", (message) => {
+        try {
+          const data = JSON.parse(message.data);
+          console.log("WebSocket message received:", data);
+          const handlers = eventHandlers.get(data.event);
+          if (handlers) {
+            handlers.forEach((callback) => callback(null, data.data));
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      });
+
+      ws.addEventListener("open", () => {
+        console.log("WebSocket connected to TestDriver.ai overlay");
+
+        // Hide loading screen
+        const loadingScreen = document.getElementById("loading-screen");
+        loadingScreen.classList.add("hidden");
+
+        // Show connection status briefly
+        document.getElementById("status").textContent = "Connected";
+        document.getElementById("status").classList.add("visible");
+        setTimeout(() => {
+          document.getElementById("status").classList.remove("visible");
+        }, 2000);
+      });
+
+      ws.addEventListener("error", (error) => {
+        console.error("WebSocket error:", error);
+        document.getElementById("status").textContent = "Connection Error";
+        document.getElementById("status").classList.add("visible");
+      });
+
+      ws.addEventListener("close", () => {
+        console.log("WebSocket disconnected");
+        document.getElementById("status").textContent = "Disconnected";
+        document.getElementById("status").classList.add("visible");
+      });
+
+      // Event handling (same as original)
+      const events = {
+        mouseClick: "mouse-click",
+        mouseMove: "mouse-move",
+        screenCapture: {
+          start: "screen-capture:start",
+          end: "screen-capture:end",
+          error: "screen-capture:error",
+        },
+        interactive: "interactive",
+        terminal: {
+          stdout: "terminal:stdout",
+          stderr: "terminal:stderr",
+        },
+        matches: {
+          show: "matches:show",
+        },
+        vm: {
+          show: "vm:show",
+        },
+      };
+
+      const container = document.getElementById("container");
+      const mouse = document.getElementById("mouse");
+      const screenshotElement = document.getElementById("screenshot");
+
+      let boundingBoxesTimeout;
+
+      const drawBoxes = (boxes) => {
+        // Remove existing boxes
+        document.querySelectorAll(".bounding-box").forEach((box) => {
+          box.remove();
+        });
+
+        // Add new boxes
+        boxes.forEach((box) => {
+          const boxElement = document.createElement("div");
+          boxElement.className = "bounding-box";
+          boxElement.style.left = toCss(box.x);
+          boxElement.style.top = toCss(box.y);
+          boxElement.style.width = toCss(box.width);
+          boxElement.style.height = toCss(box.height);
+          container.appendChild(boxElement);
+        });
+      };
+      // Screen capture event handlers
+      addEventHandler(events.screenCapture.start, (event, data) => {
+        if (data?.silent) return;
+        screenshotElement.style.opacity = 0;
+      });
+
+      addEventHandler(events.screenCapture.error, (event, data) => {
+        if (data?.silent) return;
+        screenshotElement.style.opacity = 1;
+      });
+
+      addEventHandler(events.screenCapture.end, (event, data) => {
+        if (data?.silent) return;
+        screenshotElement.classList.remove("screenshot");
+        // Force reflow
+        void screenshotElement.offsetWidth;
+        screenshotElement.classList.add("screenshot");
+      });
+
+      // Mouse event handlers
+      addEventHandler(events.mouseMove, (event, { x, y } = {}) => {
+        mouse.style.marginLeft = toCss(x);
+        mouse.style.marginTop = toCss(y);
+      });
+
+      addEventHandler(
+        events.mouseClick,
+        (event, { x, y, click = "single" } = {}) => {
+          mouse.style.marginLeft = toCss(x);
+          mouse.style.marginTop = toCss(y);
+          // Reset class so animation can restart
+          mouse.setAttribute("class", "mouse");
+          // Force reflow
+          void mouse.offsetWidth;
+          mouse.classList.add(`${click}-click`);
+        },
+      );
+
+      // Matches and VM event handlers
+      addEventHandler(events.matches.show, (event, closeMatches = []) => {
+        if (boundingBoxesTimeout) clearTimeout(boundingBoxesTimeout);
+        drawBoxes(closeMatches);
+        boundingBoxesTimeout = setTimeout(() => drawBoxes([]), 10000);
+      });
+
+      addEventHandler(events.terminal.stdout, (event, data) => {
+        console.log("Terminal stdout:", data);
+        // Could be used to display terminal output in UI
+      });
+
+      addEventHandler(events.terminal.stderr, (event, data) => {
+        console.log("Terminal stderr:", data);
+        // Could be used to display terminal errors in UI
+      });
+
+      const toCss = (size) => {
+        if (typeof size === "number") {
+          return `${size}px`;
+        }
+        return size;
+      };
+
+      // Handle window focus/blur for better visibility
+      window.addEventListener("focus", () => {
+        document.body.style.background = "rgba(0, 0, 0, 0.05)";
+      });
+
+      window.addEventListener("blur", () => {
+        document.body.style.background = "transparent";
+      });
+    </script>
+  </body>
+</html>

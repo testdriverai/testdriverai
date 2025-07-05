@@ -48,6 +48,7 @@ const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
 const notify = require("./lib/notify.js");
 const { emitter, events } = require("./lib/events.js");
+const { createDebuggerProcess } = require("./lib/debugger.js");
 
 const logger = log.logger;
 
@@ -65,15 +66,6 @@ let resultFile = null;
 let newSandbox = false;
 // list of prompts that the user has given us
 let tasks = [];
-
-let isInteractive = true;
-emitter.on(events.interactive, (data) => {
-  isInteractive = data;
-  server.broadcast(events.interactive, data);
-});
-emitter.on(events.vm.show, ({ url }) => {
-  server.broadcast(events.vm.show, url);
-});
 
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
@@ -281,14 +273,18 @@ if (!commandHistory.length) {
   ];
 }
 
-const exit = async (failed = true, shouldSave = false, isRun = false) => {
+const exit = async (
+  failed = true,
+  shouldSave = false,
+  shouldRunLifecycle = false,
+) => {
   logger.info(theme.dim("exiting..."), true);
 
-  console.log("calling exit", failed, shouldSave, isRun);
+  console.log("calling exit", failed, shouldSave, shouldRunLifecycle);
 
   let a = parseArgs();
 
-  isRun = isRun || a.command == "run";
+  shouldRunLifecycle = shouldRunLifecycle || a.command == "run";
 
   if (shouldSave) {
     await save();
@@ -296,7 +292,7 @@ const exit = async (failed = true, shouldSave = false, isRun = false) => {
 
   analytics.track("exit", { failed });
 
-  if (isRun) {
+  if (shouldRunLifecycle) {
     await runLifecycle("postrun");
   }
 
@@ -883,7 +879,6 @@ const firstPrompt = async () => {
   // this is how we parse user input
   // notice that the AI is only called if the input is not a command
   const handleInput = async (input) => {
-    if (!isInteractive) return;
     if (!input.trim().length) return promptUser();
 
     emitter.emit(events.interactive, false);
@@ -1356,6 +1351,7 @@ const buildEnv = async (headless = false) => {
       sandboxId = recentId;
     } else {
       logger.info(theme.dim(`- creating new sandbox...`));
+      logger.info(theme.dim(`  (this can take between 10 - 240 seconds)`));
     }
   } else {
     if (newSandbox) {
@@ -1430,6 +1426,9 @@ const start = async () => {
     await sdk.auth();
   }
 
+  // Start the debugger server
+  await createDebuggerProcess();
+
   if (thisCommand !== "run") {
     speak("Howdy! I am TestDriver version " + package.version);
   }
@@ -1462,26 +1461,13 @@ const start = async () => {
 };
 
 const renderSandbox = async (instance, headless = false) => {
-  try {
-    console.log("render sandbox");
-    console.log(instance);
-
-    emitter.emit(events.vm.show, {
-      url: instance.vncUrl + "/vnc_lite.html",
-    });
-    logger.info(theme.green(``));
-    logger.info(theme.green(`connected to sandbox!`));
-    logger.info(theme.green(``));
-  } catch (e) {
-    logger.error(e);
-    logger.error(theme.red(`sandbox connection failed`));
-    process.exit(1);
-  }
-
   emitter.emit(events.interactive, false);
 
   if (!headless) {
-    emitter.emit(events.showWindow);
+    emitter.emit(events.showWindow, {
+      url: instance.vncUrl + "/vnc_lite.html",
+      resolution: config.TD_RESOLUTION,
+    });
   }
 };
 

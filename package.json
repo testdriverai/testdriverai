@@ -42,6 +42,7 @@
     "node-notifier": "^10.0.1",
     "node-screenshots": "0.2.1",
     "odiff-bin": "^3.1.2",
+    "open": "^10.1.2",
     "openai": "^5.8.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
@@ -74,7 +75,6 @@
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5",
-    "electron": "^33.0.2",
     "get-windows": "^9.2.0",
     "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3",
     "screenshot-desktop": "^1.15.0"
