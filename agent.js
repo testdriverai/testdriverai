@@ -110,6 +110,8 @@ const parseArgs = () => {
 
   // Helper to handle global options
   const handleGlobalOptions = (options) => {
+    console.log("invoked with options", options);
+
     if (options.heal) {
       healMode = true;
     }
@@ -279,8 +281,14 @@ if (!commandHistory.length) {
   ];
 }
 
-const exit = async (failed = true, shouldSave = false) => {
+const exit = async (failed = true, shouldSave = false, isRun = false) => {
+  logger.info(theme.dim("exiting..."), true);
+
+  console.log("calling exit", failed, shouldSave, isRun);
+
   let a = parseArgs();
+
+  isRun = isRun || a.command == "run";
 
   if (shouldSave) {
     await save();
@@ -288,7 +296,7 @@ const exit = async (failed = true, shouldSave = false) => {
 
   analytics.track("exit", { failed });
 
-  if (a.command == "run") {
+  if (isRun) {
     await runLifecycle("postrun");
   }
 
@@ -940,7 +948,6 @@ const firstPrompt = async () => {
       if (flags.includes("--heal")) {
         healMode = true;
       }
-
       await runLifecycle("prerun");
       await run(file, shouldSave, shouldExit);
     } else if (input.indexOf("/generate") == 0) {
@@ -1149,7 +1156,7 @@ let run = async (
 
   if (!ymlObj.steps || !ymlObj.steps.length) {
     logger.info(theme.red("No steps found in the YAML file"));
-    await exit(true);
+    await exit(true, shouldSave, true);
   }
 
   for (const step of ymlObj.steps) {
@@ -1165,7 +1172,7 @@ let run = async (
 
     if (!step.commands && !step.prompt) {
       logger.info(theme.red("No commands or prompt found"));
-      await exit(true);
+      await exit(true, shouldSave, true);
     } else if (!step.commands) {
       logger.info(theme.yellow("No commands found, running exploratory"));
       await exploratoryLoop(step.prompt, false, true, false);
@@ -1192,7 +1199,7 @@ ${yaml.dump(step)}
 
   if (shouldExit) {
     await summarize();
-    await exit(false);
+    await exit(false, shouldSave, true);
   }
 };
 

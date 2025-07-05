@@ -14,6 +14,7 @@
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "docs-lint": "cd docs && vale **/*.mdx",
+    "docs-upload": "node upload-docs-to-openai.js",
     "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'"
   },
   "author": "",
@@ -41,6 +42,7 @@
     "node-notifier": "^10.0.1",
     "node-screenshots": "0.2.1",
     "odiff-bin": "^3.1.2",
+    "openai": "^5.8.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",

@@ -52,8 +52,7 @@ app.whenReady().then(() => {
     width: config.TD_RESOLUTION[0],
     height: config.TD_RESOLUTION[1],
     closable: true,
-    resizable: false,
-    // alwaysOnTop: true,
+    resizable: true,
     show: false,
     webPreferences: {
       nodeIntegration: true,
@@ -77,7 +76,7 @@ app.whenReady().then(() => {
   });
 
   // open developer tools
-  window.webContents.openDevTools();
+  // window.webContents.openDevTools();
 
   ipc.serve(() => {
     for (const event of eventsArray) {
