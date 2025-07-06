@@ -33,6 +33,7 @@
     "dotenv": "^16.4.5",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
+    "listr2": "^8.3.3",
     "mac-screen-capture-permissions": "^2.1.0",
     "markdown-parser": "0.0.8",
     "marked": "^12.0.1",
@@ -59,8 +60,7 @@
   },
   "overrides": {
     "glob": "^11.0.1",
-    "rimraf": "^5.0.10",
-    "robotjs": "npm:@hurdlegroup/robotjs@^0.12.3"
+    "rimraf": "^5.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
