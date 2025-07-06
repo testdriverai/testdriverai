@@ -38,7 +38,6 @@ const system = require("./lib/system.js");
 const generator = require("./lib/generator.js");
 const sdk = require("./lib/sdk.js");
 const commands = require("./lib/commands.js");
-const init = require("./lib/init.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
 const theme = require("./lib/theme.js");
@@ -52,30 +51,31 @@ const { createDebuggerProcess } = require("./lib/debugger.js");
 
 const logger = log.logger;
 
-let thisFile;
-let lastPrompt = "";
-let commandHistory = [];
-let executionHistory = [];
-let errorCounts = {};
-let errorLimit = 3;
-let checkCount = 0;
-let checkLimit = 7;
-let lastScreenshot = null;
-let rl;
-let resultFile = null;
-let newSandbox = false;
-// list of prompts that the user has given us
-let tasks = [];
+// these are "in-memory" globals
+// they represent the current state of the agent
+let thisFile; // the file being run
+let lastPrompt = ""; // the last prompt to be input
+let commandHistory = []; // a history of commands run in interactive mode
+let executionHistory = []; // a history of commands run in the current session
+let errorCounts = {}; // counts of different errors encountered in this session
+let errorLimit = 3; // the max number of times an error can be encountered before exiting
+let checkCount = 0; // the number of times the AI has checked the task
+let checkLimit = 7; // the max number of times the AI can check the task before exiting
+let lastScreenshot = null; // the last screenshot taken by the agent
+let rl; // the readline interface for interactive mode
+let resultFile = null; // the file to save results to, if specified
+let newSandbox = false; // whether to create a new sandbox instance instead of reusing the last one
+let tasks = []; // list of prompts that the user has given us
+let healMode = false; // whether to enable automatic error recovery mode
+let sandboxId = null; // the ID of the sandbox to connect to, if specified
 
+// temporary file for command history
 const commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
 let workingDir = process.cwd();
-
-let healMode = false;
-let sandboxId = null;
-
 let cliArgs = {};
 
+// parses the command line arguments using `commander`
 const parseArgs = () => {
   const program = new Command();
 
@@ -112,13 +112,6 @@ const parseArgs = () => {
       newSandbox = true;
     }
   };
-
-  program
-    .command("init")
-    .description("Initialize a new test project")
-    .action(() => {
-      cliArgs = { command: "init", file: null, sandboxId: null };
-    });
 
   program
     .command("run")
@@ -202,6 +195,7 @@ const parseArgs = () => {
   return cliArgs;
 };
 
+// this function is used to complete file paths in the /run command in interactive mode
 function fileCompleter(line) {
   line = line.slice(5); // remove /run
   const lastSepIndex = line.lastIndexOf(path.sep);
@@ -232,6 +226,7 @@ function fileCompleter(line) {
   }
 }
 
+// this function is used to complete commands in interactive mode
 function completer(line) {
   let completions =
     "/summarize /save /run /quit /assert /undo /manual /yml /js /exec".split(
@@ -250,6 +245,7 @@ function completer(line) {
   }
 }
 
+// this function initializes the command history from the file
 if (!fs.existsSync(commandHistoryFile)) {
   // make the file
   fs.writeFileSync(commandHistoryFile, "");
@@ -263,6 +259,7 @@ if (!fs.existsSync(commandHistoryFile)) {
     .reverse();
 }
 
+// populate command history with some default commands
 if (!commandHistory.length) {
   commandHistory = [
     "open google chrome",
@@ -271,14 +268,14 @@ if (!commandHistory.length) {
   ];
 }
 
+// single function to handle all program exits
+// allows us to save the current state, run lifecycle hooks, and track analytics
 const exit = async (
   failed = true,
   shouldSave = false,
   shouldRunLifecycle = false,
 ) => {
   logger.info(theme.dim("exiting..."), true);
-
-  console.log("calling exit", failed, shouldSave, shouldRunLifecycle);
 
   let a = parseArgs();
 
@@ -302,6 +299,8 @@ const exit = async (
   });
 };
 
+// fatal errors always exit the program
+// this ensure we log the error, summarize it, and exit cleanly
 const dieOnFatal = async (error) => {
   logger.error(theme.red("Fatal Error") + `\n${error.message}`);
   await summarize(error.message);
@@ -318,6 +317,8 @@ const haveAIResolveError = async (
   undo = true,
   shouldSave,
 ) => {
+  // healMode must be required to attempt to recover from errors
+  // otherwise we go directly to fatal
   if (!healMode) {
     logger.error(
       theme.red("Error detected, but recovery mode is not enabled."),
@@ -332,6 +333,7 @@ const haveAIResolveError = async (
 
   let eMessage = error.message ? error.message : error;
 
+  // we sanitize the error message to use it as a key in the errorCounts object
   let safeKey = JSON.stringify(eMessage);
   errorCounts[safeKey] = errorCounts[safeKey] ? errorCounts[safeKey] + 1 : 1;
 
@@ -353,10 +355,12 @@ const haveAIResolveError = async (
     return await exit(true);
   }
 
+  // remove this step from the execution history
   if (undo) {
     await popFromHistory();
   }
 
+  // ask the AI what to do
   let image;
   if (error.attachScreenshot) {
     image = await system.captureScreenBase64();
@@ -387,6 +391,8 @@ const haveAIResolveError = async (
   );
   mdStream.end();
 
+  // if the response worked, we try to execute the codeblocks in the response,
+  // which begins the recursive process of executing codeblocks
   if (response?.data) {
     return await actOnMarkdown(response.data, depth, true, false, shouldSave);
   }
@@ -409,6 +415,7 @@ const check = async () => {
   server.broadcast("status", `checking...`);
   logger.info("");
 
+  // check asks the ai if the task is complete
   let thisScreenshot = await system.captureScreenBase64(1, false, true);
   let images = [lastScreenshot, thisScreenshot];
   let mousePosition = await system.getMousePosition();
@@ -447,6 +454,8 @@ const runCommand = async (command, depth, shouldSave, pushToHistory) => {
   try {
     let response;
 
+    // "run" and "if" commands are special meta commands
+    // that change the flow of execution
     if (command.command == "run") {
       response = await embed(command.file, depth, pushToHistory);
     } else if (command.command == "if") {
@@ -460,6 +469,7 @@ const runCommand = async (command, depth, shouldSave, pushToHistory) => {
       response = await commander.run(command, depth);
     }
 
+    // if the result of a command contains more commands, we perform the process again
     if (response && typeof response === "string") {
       return await actOnMarkdown(response, depth, false, false, false);
     }
@@ -506,8 +516,9 @@ const executeCommands = async (
   }
 };
 
-// note that commands are run in a recursive loop, so that the AI can respond to the output of the commands
-// like `click-image` and `click-text` for example
+// codeblocks are ```yml ... ``` blocks found in ai responses
+// this is similar to "function calling" in other ai frameworks
+// here we parse the codeblocks and execute the commands within them
 const executeCodeBlocks = async (
   codeblocks,
   depth,
@@ -557,6 +568,9 @@ const aiExecute = async (
   // kick everything off
   await actOnMarkdown(message, 0, true, dry, shouldSave);
 
+  // this calls the "check" function to validate the task is complete"
+  // the ai determines if it's complete or not
+  // if it is incomplete, the ai will likely return more codeblocks to execute
   if (validateAndLoop) {
     logger.debug("exploratory loop resolved, check your work");
 
@@ -589,6 +603,7 @@ const aiExecute = async (
   }
 };
 
+// reads a yaml file and interprets the variables found within it
 const loadYML = async (file) => {
   let yml;
 
@@ -634,6 +649,9 @@ const loadYML = async (file) => {
   return ymlObj;
 };
 
+// this is a rarely used command that likely doesn't need to exist
+// it's used to call /assert in interactive mode
+// @todo remove assert() command from agent.js
 const assert = async (expect) => {
   analytics.track("assert");
 
@@ -713,6 +731,10 @@ const exploratoryLoop = async (
   return;
 };
 
+// generate asks the AI to come up with ideas for test files
+// based on the current state of the system (primarily the current screenshot)
+// it will generate files that contain only "prompts"
+// @todo revit the generate command
 const generate = async (type, count, baseYaml, skipYaml = false) => {
   logger.debug("generate called, %s", type);
 
@@ -785,6 +807,7 @@ const generate = async (type, count, baseYaml, skipYaml = false) => {
   exit(false);
 };
 
+// this is the functinoality for "undo"
 const popFromHistory = async (fullStep) => {
   logger.info(theme.dim("undoing..."), true);
 
@@ -807,6 +830,8 @@ const undo = async () => {
   await save();
 };
 
+// this allows the user to input "flattened yaml"
+// like "command='focus-application' name='Google Chrome'"
 const manualInput = async (commandString) => {
   analytics.track("manual input");
 
@@ -1399,7 +1424,7 @@ const start = async () => {
   }
 
   // if the directory for thisFile doesn't exist, create it
-  if (thisCommand !== "init" && thisCommand !== "sandbox") {
+  if (thisCommand !== "sandbox") {
     const dir = path.dirname(thisFile);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -1425,7 +1450,7 @@ const start = async () => {
     speak("Howdy! I am TestDriver version " + package.version);
   }
 
-  if (thisCommand !== "init" && thisCommand !== "sandbox") {
+  if (thisCommand !== "sandbox") {
     logger.info(theme.dim(`Working on ${thisFile}`));
     console.log("");
 
@@ -1443,9 +1468,6 @@ const start = async () => {
 
     await runLifecycle("prerun");
     run(thisFile, cliArgs.write, true, true);
-  } else if (thisCommand == "init") {
-    await init();
-    process.exit(0);
   } else if (thisCommand == "sandbox") {
     await handleSandboxCommand(cliArgs);
     process.exit(0);
