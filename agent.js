@@ -116,7 +116,7 @@ class TestDriverAgent extends EventEmitter {
     }
   }
 
-  // parses the command line arguments using `commander`
+  // parses the command line arguments using `commander` with unified command system
   parseArgs() {
     const program = new Command();
 
@@ -127,99 +127,43 @@ class TestDriverAgent extends EventEmitter {
       )
       .version(packageJson.version);
 
-    // Helper to normalize file path
-    const normalizeFilePath = (file) => {
-      if (!file) {
-        file = "testdriver/testdriver.yaml";
-      }
+    const commands = this.getCommandDefinitions();
 
-      file = path.join(this.workingDir, file);
-      if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
-        file += ".yaml";
-      }
+    // Only add CLI-relevant commands (run, edit, sandbox)
+    const cliCommands = ["run", "edit", "sandbox"];
 
-      return file;
-    };
+    cliCommands.forEach((commandName) => {
+      const commandDef = commands[commandName];
+      const cmd = program
+        .command(commandName)
+        .description(commandDef.description);
 
-    // Helper to handle global options
-    const handleGlobalOptions = (options) => {
-      if (options.heal) {
-        this.healMode = true;
-      }
-      if (options.sandbox) {
-        this.sandboxId = options.sandbox;
-      }
-      if (options.newSandbox) {
-        this.newSandbox = true;
-      }
-    };
-
-    program
-      .command("run")
-      .description("Run a test file")
-      .argument("[file]", "Test file to run", "testdriver/testdriver.yaml")
-      .option("--heal", "Enable automatic error recovery mode")
-      .option("--write", "Save AI modifiications to the test file")
-      .option("--exit", "Exit after completion")
-      .option("--headless", "Run in headless mode (no GUI)")
-      .option("--sandbox <id>", "Connect to existing sandbox with ID")
-      .option("--summary <file>", "Specify output file for summarize results")
-      .option(
-        "--new-sandbox",
-        "Do not reuse the last sandbox, always create a new one",
-      )
-      .action((file, options) => {
-        handleGlobalOptions(options);
-        this.cliArgs = {
-          command: "run",
-          file: normalizeFilePath(file),
-          sandboxId: this.sandboxId,
-          write: options.write,
-          exit: options.exit,
-          headless: options.headless,
-          summary: options.summary,
-          newSandbox: options.newSandbox,
-        };
+      // Add arguments
+      commandDef.arguments?.forEach((arg) => {
+        const argStr = arg.optional ? `[${arg.name}]` : `<${arg.name}>`;
+        cmd.argument(argStr, arg.description, arg.default);
       });
 
-    program
-      .command("edit")
-      .description("Edit a test file interactively")
-      .argument("[file]", "Test file to edit", "testdriver/testdriver.yaml")
-      .option("--heal", "Enable automatic error recovery mode")
-      .option("--sandbox <id>", "Connect to existing sandbox with ID")
-      .option("--summary <file>", "Specify output file for summarize results")
-      .option(
-        "--new-sandbox",
-        "Do not reuse the last sandbox, always create a new one",
-      )
-      .action((file, options) => {
-        handleGlobalOptions(options);
-        this.cliArgs = {
-          command: "edit",
-          file: normalizeFilePath(file),
-          sandboxId: this.sandboxId,
-          summary: options.summary,
-          newSandbox: options.newSandbox,
-        };
+      // Add options
+      commandDef.options?.forEach((opt) => {
+        const optStr =
+          opt.type === "string" ? `--${opt.name} <value>` : `--${opt.name}`;
+        cmd.option(optStr, opt.description);
       });
 
-    program
-      .command("sandbox")
-      .description("Manage sandbox instances")
-      .option("--list", "List all sandbox instances")
-      .option("--destroy <id>", "Destroy a sandbox instance by ID")
-      .option("--create", "Create a new sandbox instance")
-      .action((options) => {
+      // Set action to use unified command system
+      cmd.action(async (...args) => {
+        const options = args.pop(); // Last argument is always options
+        const argValues = args; // Remaining are argument values
+
+        // Store command for later execution
         this.cliArgs = {
-          command: "sandbox",
-          file: null,
-          sandboxId: null,
-          list: options.list,
-          destroy: options.destroy,
-          create: options.create,
+          command: commandName,
+          args: argValues,
+          options: options,
         };
       });
+    });
 
     // Just parse normally - let commander handle help, version, etc.
     program.parse();
@@ -228,8 +172,8 @@ class TestDriverAgent extends EventEmitter {
     if (!this.cliArgs.command) {
       this.cliArgs = {
         command: "edit",
-        file: normalizeFilePath(null),
-        sandboxId: null,
+        args: [],
+        options: {},
       };
     }
 
@@ -269,14 +213,13 @@ class TestDriverAgent extends EventEmitter {
 
   // this function is used to complete commands in interactive mode
   completer(line) {
-    let completions =
-      "/summarize /save /run /quit /assert /undo /manual /yml /js /exec".split(
-        " ",
-      );
+    const commands = this.getCommandDefinitions();
+    let completions = Object.keys(commands).map((cmd) => `/${cmd}`);
+
     if (line.startsWith("/run ")) {
       return this.fileCompleter(line);
     } else {
-      completions.concat(this.tasks);
+      completions = completions.concat(this.tasks);
 
       var hits = completions.filter(function (c) {
         return c.indexOf(line) == 0;
@@ -943,8 +886,7 @@ ${yml}
       await this.exit(false);
     });
 
-    // this is how we parse user input
-    // notice that the AI is only called if the input is not a command
+    // this is how we parse user input using the unified command system
     const handleInput = async (input) => {
       if (!input.trim().length) return this.promptUser();
 
@@ -976,66 +918,45 @@ ${yml}
       // Inject any vars from the TD_INTERPOLATION_VARS variable (typically from the action)
       input = parser.interpolate(input, interpolationVars);
 
-      let commands = input
-        .split(" ")
-        .map((l) => l.trim())
-        .filter((l) => l.length);
+      try {
+        // Parse interactive commands (starting with /)
+        if (input.startsWith("/")) {
+          const parts = input.slice(1).split(" ");
+          const commandName = parts[0];
+          const args = parts.slice(1);
 
-      // if last character is a question mark, we assume the user is asking a question
-      if (input.indexOf("/summarize") == 0) {
-        // Check if an output file is specified
-        if (commands[1]) {
-          const originalResultFile = this.resultFile;
-          this.resultFile = path.resolve(commands[1]);
-          await this.summarize();
-          this.resultFile = originalResultFile; // Restore original for subsequent operations
+          // Parse options (flags starting with --)
+          const options = {};
+          const cleanArgs = [];
+
+          for (let i = 0; i < args.length; i++) {
+            const arg = args[i];
+            if (arg.startsWith("--")) {
+              const optName = arg.slice(2);
+              if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
+                options[optName] = args[i + 1];
+                i++; // skip the next argument as it's the value
+              } else {
+                options[optName] = true;
+              }
+            } else {
+              cleanArgs.push(arg);
+            }
+          }
+
+          // Use unified command system
+          await this.executeUnifiedCommand(commandName, cleanArgs, options);
         } else {
-          await this.summarize();
+          // Handle regular exploratory input
+          await this.exploratoryLoop(
+            input.replace(/^\/explore\s+/, ""),
+            false,
+            true,
+            true,
+          );
         }
-      } else if (input.indexOf("/quit") == 0) {
-        await this.exit(false, true);
-      } else if (input.indexOf("/save") == 0) {
-        await this.save({ filepath: commands[1] });
-      } else if (input.indexOf("/undo") == 0) {
-        await this.undo();
-      } else if (input.indexOf("/assert") == 0) {
-        await this.assert(commands.slice(1).join(" "));
-      } else if (input.indexOf("/manual") == 0) {
-        await this.manualInput(commands.slice(1).join(" "));
-      } else if (input.indexOf("/run") == 0) {
-        const file = commands[1];
-        const flags = commands.slice(2);
-        let shouldSave = flags.includes("--write") ? true : false;
-        let shouldExit = flags.includes("--exit") ? true : false;
-        if (flags.includes("--heal")) {
-          this.healMode = true;
-        }
-        await this.runLifecycle("prerun");
-        await this.run(file, shouldSave, shouldExit);
-      } else if (input.indexOf("/generate") == 0) {
-        const skipYaml = commands[4] === "--skip-yaml";
-        await this.generate(commands[1], commands[2], commands[3], skipYaml);
-      } else if (input.indexOf("/dry") == 0) {
-        await this.exploratoryLoop(input.replace("/dry", ""), true, false);
-      } else if (input.indexOf("/yaml") == 0) {
-        await this.runRawYML(commands[1]);
-      } else if (input.indexOf("/exec") == 0) {
-        let result = await commander.run({
-          command: "exec",
-          cli: commands.slice(1).join(" "),
-        });
-        if (result.out) {
-          logger.info(result.out.stdout);
-        } else if (result.error) {
-          logger.error(result.error.result.stdout);
-        }
-      } else {
-        await this.exploratoryLoop(
-          input.replace(/^\/explore\s+/, ""),
-          false,
-          true,
-          true,
-        );
+      } catch (error) {
+        logger.error("Command error:", error.message);
       }
 
       this.promptUser();
@@ -1454,13 +1375,25 @@ ${yaml.dump(step)}
   async start() {
     let a = this.parseArgs();
 
-    this.thisFile = a.file;
-    const thisCommand = a.command;
-    this.sandboxId = a.sandboxId;
+    const thisCommand = a.command || "edit";
+
+    // Extract file from args or use default
+    const normalizeFilePath = (file) => {
+      if (!file) {
+        file = "testdriver/testdriver.yaml";
+      }
+      file = path.join(this.workingDir, file);
+      if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
+        file += ".yaml";
+      }
+      return file;
+    };
+
+    this.thisFile = normalizeFilePath(a.args?.[0]);
 
     // Set output file for summarize results if specified
-    if (a.summary) {
-      this.resultFile = path.resolve(a.summary);
+    if (a.options?.summary) {
+      this.resultFile = path.resolve(a.options.summary);
     }
 
     logger.info(theme.green(`Howdy! I'm TestDriver v${packageJson.version}`));
@@ -1517,18 +1450,16 @@ ${yaml.dump(step)}
 
     analytics.track("command", { command: thisCommand, file: this.thisFile });
 
-    if (thisCommand == "edit") {
+    // Handle different commands
+    if (thisCommand === "edit") {
       await this.buildEnv();
       this.firstPrompt();
-    } else if (thisCommand == "run") {
-      await this.buildEnv(a.headless);
+    } else if (thisCommand === "run") {
+      await this.buildEnv(a.options?.headless);
       this.errorLimit = 100;
-
-      await this.runLifecycle("prerun");
-      this.run(this.thisFile, this.cliArgs.write, true, true);
-    } else if (thisCommand == "sandbox") {
-      await this.handleSandboxCommand(this.cliArgs);
-      process.exit(0);
+      await this.executeUnifiedCommand(thisCommand, a.args, a.options);
+    } else if (thisCommand === "sandbox") {
+      await this.executeUnifiedCommand(thisCommand, a.args, a.options);
     }
   }
 
@@ -1595,6 +1526,310 @@ ${yaml.dump(step)}
     if (fs.existsSync(lifecycleFile)) {
       await this.run(lifecycleFile, false, false, false);
     }
+  }
+
+  // Unified command definitions that work for both CLI and interactive modes
+  getCommandDefinitions() {
+    const normalizeFilePath = (file) => {
+      if (!file) {
+        file = "testdriver/testdriver.yaml";
+      }
+
+      file = path.join(this.workingDir, file);
+      if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
+        file += ".yaml";
+      }
+
+      return file;
+    };
+
+    return {
+      run: {
+        description: "Run a test file",
+        arguments: [
+          {
+            name: "file",
+            description: "Test file to run",
+            optional: true,
+            default: "testdriver/testdriver.yaml",
+          },
+        ],
+        options: [
+          {
+            name: "heal",
+            description: "Enable automatic error recovery mode",
+            type: "boolean",
+          },
+          {
+            name: "write",
+            description: "Save AI modifications to the test file",
+            type: "boolean",
+          },
+          {
+            name: "exit",
+            description: "Exit after completion",
+            type: "boolean",
+          },
+          {
+            name: "headless",
+            description: "Run in headless mode (no GUI)",
+            type: "boolean",
+          },
+          {
+            name: "sandbox",
+            description: "Connect to existing sandbox with ID",
+            type: "string",
+          },
+          {
+            name: "summary",
+            description: "Specify output file for summarize results",
+            type: "string",
+          },
+          {
+            name: "new-sandbox",
+            description:
+              "Do not reuse the last sandbox, always create a new one",
+            type: "boolean",
+          },
+        ],
+        handler: async (args, options) => {
+          if (options.heal) this.healMode = true;
+          if (options.sandbox) this.sandboxId = options.sandbox;
+          if (options["new-sandbox"]) this.newSandbox = true;
+
+          const file = normalizeFilePath(args.file);
+          await this.runLifecycle("prerun");
+          await this.run(file, options.write, options.exit !== false, true);
+        },
+      },
+
+      edit: {
+        description: "Edit a test file interactively",
+        arguments: [
+          {
+            name: "file",
+            description: "Test file to edit",
+            optional: true,
+            default: "testdriver/testdriver.yaml",
+          },
+        ],
+        options: [
+          {
+            name: "heal",
+            description: "Enable automatic error recovery mode",
+            type: "boolean",
+          },
+          {
+            name: "sandbox",
+            description: "Connect to existing sandbox with ID",
+            type: "string",
+          },
+          {
+            name: "summary",
+            description: "Specify output file for summarize results",
+            type: "string",
+          },
+          {
+            name: "new-sandbox",
+            description:
+              "Do not reuse the last sandbox, always create a new one",
+            type: "boolean",
+          },
+        ],
+        handler: async (args, options) => {
+          if (options.heal) this.healMode = true;
+          if (options.sandbox) this.sandboxId = options.sandbox;
+          if (options["new-sandbox"]) this.newSandbox = true;
+
+          const file = normalizeFilePath(args.file);
+          // Set the file but don't run it - edit mode starts interactive session
+          this.thisFile = file;
+          if (options.summary) this.resultFile = path.resolve(options.summary);
+        },
+      },
+
+      sandbox: {
+        description: "Manage sandbox instances",
+        options: [
+          {
+            name: "list",
+            description: "List all sandbox instances",
+            type: "boolean",
+          },
+          {
+            name: "destroy",
+            description: "Destroy a sandbox instance by ID",
+            type: "string",
+          },
+          {
+            name: "create",
+            description: "Create a new sandbox instance",
+            type: "boolean",
+          },
+        ],
+        handler: async (args, options) => {
+          await this.handleSandboxCommand(options);
+          process.exit(0);
+        },
+      },
+
+      summarize: {
+        description: "Summarize the current test session",
+        arguments: [
+          {
+            name: "file",
+            description: "Output file for summary",
+            optional: true,
+          },
+        ],
+        handler: async (args) => {
+          if (args.file) {
+            const originalResultFile = this.resultFile;
+            this.resultFile = path.resolve(args.file);
+            await this.summarize();
+            this.resultFile = originalResultFile;
+          } else {
+            await this.summarize();
+          }
+        },
+      },
+
+      save: {
+        description: "Save the current test session",
+        arguments: [
+          { name: "file", description: "File to save to", optional: true },
+        ],
+        handler: async (args) => {
+          await this.save({ filepath: args.file });
+        },
+      },
+
+      quit: {
+        description: "Quit the application",
+        handler: async () => {
+          await this.exit(false, true);
+        },
+      },
+
+      undo: {
+        description: "Undo the last command",
+        handler: async () => {
+          await this.undo();
+        },
+      },
+
+      assert: {
+        description: "Assert a condition",
+        arguments: [
+          {
+            name: "condition",
+            description: "Condition to assert",
+            variadic: true,
+          },
+        ],
+        handler: async (args) => {
+          await this.assert(args.condition.join(" "));
+        },
+      },
+
+      manual: {
+        description: "Input manual command",
+        arguments: [
+          {
+            name: "command",
+            description: "Manual command to input",
+            variadic: true,
+          },
+        ],
+        handler: async (args) => {
+          await this.manualInput(args.command.join(" "));
+        },
+      },
+
+      generate: {
+        description: "Generate test files",
+        arguments: [
+          { name: "type", description: "Type of test to generate" },
+          { name: "count", description: "Number of tests to generate" },
+          { name: "baseYaml", description: "Base YAML file", optional: true },
+          { name: "skipYaml", description: "Skip YAML flag", optional: true },
+        ],
+        handler: async (args) => {
+          const skipYaml = args.skipYaml === "--skip-yaml";
+          await this.generate(args.type, args.count, args.baseYaml, skipYaml);
+        },
+      },
+
+      dry: {
+        description: "Run in dry mode",
+        arguments: [
+          {
+            name: "prompt",
+            description: "Prompt to run in dry mode",
+            variadic: true,
+          },
+        ],
+        handler: async (args) => {
+          await this.exploratoryLoop(args.prompt.join(" "), true, false);
+        },
+      },
+
+      yaml: {
+        description: "Run raw YAML",
+        arguments: [{ name: "yaml", description: "YAML content to run" }],
+        handler: async (args) => {
+          await this.runRawYML(args.yaml);
+        },
+      },
+
+      exec: {
+        description: "Execute a command",
+        arguments: [
+          {
+            name: "command",
+            description: "Command to execute",
+            variadic: true,
+          },
+        ],
+        handler: async (args) => {
+          let result = await commander.run({
+            command: "exec",
+            cli: args.command.join(" "),
+          });
+          if (result.out) {
+            logger.info(result.out.stdout);
+          } else if (result.error) {
+            logger.error(result.error.result.stdout);
+          }
+        },
+      },
+    };
+  }
+
+  // Execute a unified command
+  async executeUnifiedCommand(commandName, args = {}, options = {}) {
+    const commands = this.getCommandDefinitions();
+    const command = commands[commandName];
+
+    if (!command) {
+      throw new Error(`Unknown command: ${commandName}`);
+    }
+
+    // Convert args array to object if needed
+    const argsObj = {};
+    if (Array.isArray(args)) {
+      command.arguments?.forEach((argDef, index) => {
+        if (argDef.variadic) {
+          argsObj[argDef.name] = args.slice(index);
+        } else {
+          argsObj[argDef.name] = args[index] || argDef.default;
+        }
+      });
+    } else {
+      Object.assign(argsObj, args);
+    }
+
+    await command.handler(argsObj, options);
   }
 }
 
