@@ -70,10 +70,6 @@ function createCommandDefinitions(agent) {
         },
       ],
       handler: async (args, options) => {
-        if (options.heal) agent.healMode = true;
-        if (options.sandbox) agent.sandboxId = options.sandbox;
-        if (options["new-sandbox"]) agent.newSandbox = true;
-
         const file = normalizeFilePath(args.file);
         await agent.runLifecycle("prerun");
         await agent.run(file, options.write, options.exit !== false, true);
@@ -113,10 +109,6 @@ function createCommandDefinitions(agent) {
         },
       ],
       handler: async (args, options) => {
-        if (options.heal) agent.healMode = true;
-        if (options.sandbox) agent.sandboxId = options.sandbox;
-        if (options["new-sandbox"]) agent.newSandbox = true;
-
         const file = normalizeFilePath(args.file);
         // Set the file but don't run it - edit mode starts interactive session
         agent.thisFile = file;
