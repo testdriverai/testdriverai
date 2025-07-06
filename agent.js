@@ -1,33 +1,22 @@
 #!/usr/bin/env node
 
-const os = require("os");
-const EventEmitter = require("events");
-
-// Get the current process ID
-const pid = process.pid;
-
-try {
-  // Set the priority to the highest value
-  os.setPriority(pid, -20);
-  // eslint-disable-next-line no-unused-vars
-} catch (error) {
-  // console.error('Failed to set process priority:', error);
-}
-
 // disable depreciation warnings
 process.removeAllListeners("warning");
 
 // package.json is included to get the version number
 const packageJson = require("./package.json");
 
+// nodejs modules
 const fs = require("fs");
 const readline = require("readline");
+const os = require("os");
 
 // third party modules
 const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
 const { Command } = require("commander");
+const { EventEmitter } = require("events");
 
 // local modules
 const server = require("./lib/ipc.js");
@@ -73,8 +62,8 @@ class TestDriverAgent extends EventEmitter {
     this.tasks = []; // list of prompts that the user has given us
     this.healMode = false; // whether to enable automatic error recovery mode
     this.sandboxId = null; // the ID of the sandbox to connect to, if specified
-    this.workingDir = process.cwd();
-    this.cliArgs = {};
+    this.workingDir = process.cwd(); // working directory where this agent is running
+    this.cliArgs = {}; // the cli args passed to the agent
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
 
@@ -82,6 +71,24 @@ class TestDriverAgent extends EventEmitter {
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
     this.initializeCommandHistory();
+    this.setupProcessHandlers();
+  }
+
+  setupProcessHandlers() {
+    // Process error handlers
+    process.on("uncaughtException", async (err) => {
+      analytics.track("uncaughtException", { err });
+      logger.error("Uncaught Exception: %s", err);
+      // You might want to exit the process after handling the error
+      await this.exit(true);
+    });
+
+    process.on("unhandledRejection", async (reason, promise) => {
+      analytics.track("unhandledRejection", { reason, promise });
+      logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
+      // Optionally, you might want to exit the process
+      await this.exit(true);
+    });
   }
 
   initializeCommandHistory() {
@@ -1591,25 +1598,4 @@ ${yaml.dump(step)}
   }
 }
 
-// Create an instance of the agent
-const agent = new TestDriverAgent();
-
-// Process error handlers
-process.on("uncaughtException", async (err) => {
-  analytics.track("uncaughtException", { err });
-  logger.error("Uncaught Exception: %s", err);
-  // You might want to exit the process after handling the error
-  await agent.exit(true);
-});
-
-process.on("unhandledRejection", async (reason, promise) => {
-  analytics.track("unhandledRejection", { reason, promise });
-  logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
-  // Optionally, you might want to exit the process
-  await agent.exit(true);
-});
-
-module.exports = {
-  TestDriverAgent,
-  start: () => agent.start(),
-};
+module.exports = TestDriverAgent;
