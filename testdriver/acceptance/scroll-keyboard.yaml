@@ -1,0 +1,34 @@
+version: 5.7.62
+session: 685accd3d043aff871e84071
+steps:
+  - prompt: Navigate to https://developer.mozilla.org/en-US/docs/Web/HTML
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: testdriver-sandbox.vercel.app/login
+        description: the URL in the omnibox showing the current page
+        action: click
+      - command: press-keys
+        keys:
+          - ctrl
+          - a
+      - command: type
+        text: https://www.webhamster.com/
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: scroll down with the mouse 1000 pixels
+    commands:
+      - command: hover-text
+        text: The Hamster Dance
+        description: large heading at top of page
+        action: click
+      - command: scroll
+        direction: down
+        method: keyboard
+        amount: 1000
+  - prompt: assert the "The Hamster Dance" heading does not show on the webpage
+    commands:
+      - command: assert
+        expect: the page is scrolled down

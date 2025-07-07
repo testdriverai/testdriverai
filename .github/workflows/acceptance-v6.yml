@@ -1,0 +1,54 @@
+# Test the hover-text-with-description workflow in headless mode
+name: Test v6 Spawner
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  gather-test-files:
+    name: Gather Test Files
+    runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/acceptance/*.yaml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+  test-workflow:
+    needs:
+      - gather-test-files
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+      - name: Run test in headless mode
+        run: node index.js run testdriver/acceptance/${{ matrix.test }}
+        env:
+          FORCE_COLOR: 3
+          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app
+          TD_THIS_FILE: ${{ matrix.test }}

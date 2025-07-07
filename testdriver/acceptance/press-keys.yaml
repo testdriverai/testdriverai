@@ -1,0 +1,35 @@
+version: 5.7.62
+session: 685af99e5652a7099e99e171
+steps:
+  - prompt: create a new tab
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Sign In
+        description: black button below the password field
+        action: click
+      - command: press-keys
+        keys:
+          - ctrl
+          - t
+      - command: wait-for-text
+        text: "Learn more"
+      - command: press-keys
+        keys:
+          - ctrl
+          - shift
+          - i
+      - command: wait-for-text
+        text: "Elements"
+      - command: press-keys
+        keys:
+          - ctrl
+          - t
+      - command: type
+        text: google.com
+      - command: press-keys
+        keys:
+          - enter
+      - command: assert
+        expect: google appears

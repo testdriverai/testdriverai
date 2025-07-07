@@ -1,0 +1,16 @@
+version: 6.0.0
+session: 6866d2b90e5814d31e590fce
+steps:
+  - prompt: click on the microsoft edge icon
+    commands:
+      - command: press-keys
+        keys:
+          - winleft
+          - d
+      - command: hover-image
+        description: a blue and green swirl icon on the taskbar representing Microsoft Edge
+        action: click
+  - prompt: focus google chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome

@@ -1,0 +1,8 @@
+version: 6.0.0
+session: 6869c3e61445b2acbbdc0018
+steps:
+  - prompt: enter a valid username, password, and sign in
+  - prompt: assert
+    commands:
+      - command: assert
+        expect: the testdriver sandbox is visible
