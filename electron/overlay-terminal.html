@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <title>TestDriver</title>
+    <style>
+      /* ...existing styles for terminal only... */
+      #terminal-wrapper {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        min-height: 0;
+        background: #0d0e14;
+      }
+      #terminal {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      #terminal-input {
+        width: 100%;
+        background: #222;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 14px;
+        outline: none;
+      }
+      * {
+        margin: 0px;
+        padding: 0px;
+        background: #0d0e14;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 14px;
+      }
+      * {
+        outline: none !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      body {
+        overflow: hidden;
+      }
+    </style>
+    <link rel="stylesheet" href="terminal/xterm.css" />
+    <script src="terminal/xterm.js" type="text/javascript"></script>
+    <script src="terminal/xterm-fit.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <div style="display: flex; flex-direction: column; height: 100vh">
+      <div
+        id="terminal-wrapper"
+        style="
+          flex: 1 1 auto;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          min-height: 0;
+          background: #0d0e14;
+          padding: 10px;
+        "
+      >
+        <div id="terminal" style="flex: 1 1 auto; min-height: 0"></div>
+      </div>
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        "
+      >
+        <img
+          src="icon.png"
+          alt="TestDriver Icon"
+          style="height: 24px; margin: 10px; display: block"
+        />
+        <input
+          id="terminal-input"
+          type="text"
+          autocomplete="off"
+          placeholder="Type a command and press Enter..."
+          style="
+            background: transparent;
+            color: #fff;
+            border: none;
+            font-family:
+              IBM Plex Mono,
+              monospace;
+            font-size: 14px;
+            outline: none;
+            border-radius: 4px;
+            flex: 1 1 auto;
+            margin: 10px;
+            padding: 8px 12px;
+            padding-left: 0;
+          "
+        />
+      </div>
+    </div>
+    <script>
+      const { ipcRenderer, remote } = require("electron");
+      const { events } = require("../lib/events.js");
+      const terminalElement = document.querySelector("#terminal");
+      const inputElement = document.getElementById("terminal-input");
+      const testdriverTheme = {
+        background: "#0d0e14",
+        foreground: "#f8f8f2",
+        cursor: "#b0cf34",
+        selection: "#1e2a5a",
+        black: "#0d0e14",
+        red: "#ff5555",
+        green: "#b0cf34",
+        yellow: "#ffd700",
+        blue: "#4f8cff",
+        magenta: "#c792ea",
+        cyan: "#80cbc4",
+        white: "#f8f8f2",
+        brightBlack: "#282a36",
+        brightRed: "#ff6e6e",
+        brightGreen: "#d6ff57",
+        brightYellow: "#fff59d",
+        brightBlue: "#82aaff",
+        brightMagenta: "#e1acff",
+        brightCyan: "#a7ffeb",
+        brightWhite: "#ffffff",
+      };
+      const terminal = new Terminal({
+        convertEol: true,
+        cursorInactiveStyle: "none",
+        scrollback: 9999999,
+        allowProposedApi: true,
+        fontSize: 13,
+        theme: testdriverTheme,
+        fontFamily: '"IBM Plex Mono", monospace',
+        lineHeight: 1.1,
+        letterSpacing: 0,
+        disableStdin: true, // Disable xterm input
+      });
+      const fitAddon = new FitAddon.FitAddon();
+      terminal.loadAddon(fitAddon);
+      terminal.open(terminalElement);
+      fitAddon.fit();
+      window.addEventListener("resize", () => {
+        fitAddon.fit();
+      });
+      ipcRenderer.on(events.terminal.stdout, (event, data) => {
+        console.log("stdout:", data);
+        console.log(data.trim(), ">", data.trim() == ">");
+        if (data.trim() == ">") {
+          // Enable and focus input
+          inputElement.disabled = false;
+          inputElement.focus();
+          return;
+        }
+        terminal.write(data);
+      });
+      ipcRenderer.on(events.terminal.stderr, (event, data) =>
+        terminal.write(data),
+      );
+      // Send input from HTML input to backend as stdin
+      inputElement.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const value = inputElement.value;
+          if (value) {
+            ipcRenderer.send(events.terminal.stdin, value + "\n");
+            inputElement.value = "";
+            inputElement.disabled = true;
+          }
+          e.preventDefault();
+        }
+      });
+      // Optional: focus input on page load
+      inputElement.focus();
+    </script>
+  </body>
+</html>
