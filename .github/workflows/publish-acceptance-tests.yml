@@ -86,61 +86,61 @@ jobs:
           TD_WEBSITE: "https://testdriver-sandbox.vercel.app"
           TD_VM_RESOLUTION: "1920x1080"
 
-      - name: Write MDX snippets separately
-        run: |
-          mkdir -p snippets
-          FILE_NAME=$(basename "${{ matrix.test }}" .yaml)
-          TEST_FILE="testdriver/${FILE_NAME}.yaml"
+#     - name: Write MDX snippets separately
+#       run: |
+#         mkdir -p snippets
+#         FILE_NAME=$(basename "${{ matrix.test }}" .yaml)
+#         TEST_FILE="testdriver/${FILE_NAME}.yaml"
 
-          EMBED_URL="${{ steps.testdriver.outputs.link }}"
-          PARAMS="embed=true&timestamp=90000&playbackRate=5"
+#         EMBED_URL="${{ steps.testdriver.outputs.link }}"
+#         PARAMS="embed=true&timestamp=90000&playbackRate=5"
 
-          if [[ "$EMBED_URL" == *\?* ]]; then
-            EMBED_URL="${EMBED_URL}&${PARAMS}"
-          else
-            EMBED_URL="${EMBED_URL}?${PARAMS}"
-          fi
+#         if [[ "$EMBED_URL" == *\?* ]]; then
+#           EMBED_URL="${EMBED_URL}&${PARAMS}"
+#         else
+#           EMBED_URL="${EMBED_URL}?${PARAMS}"
+#         fi
 
-          # Write iframe MDX
-          echo "<iframe src=\"$EMBED_URL\" width=\"100%\" height=\"300\" />" > "snippets/${FILE_NAME}-replay.mdx"
+#         # Write iframe MDX
+#         echo "<iframe src=\"$EMBED_URL\" width=\"100%\" height=\"300\" />" > "snippets/${FILE_NAME}-replay.mdx"
 
-          # Write YAML MDX
-          echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
-          cat "$TEST_FILE" >> "snippets/${FILE_NAME}-yaml.mdx"
-          echo '```' >> "snippets/${FILE_NAME}-yaml.mdx"
+#         # Write YAML MDX
+#         echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
+#         cat "$TEST_FILE" >> "snippets/${FILE_NAME}-yaml.mdx"
+#         echo '```' >> "snippets/${FILE_NAME}-yaml.mdx"
 
-      - name: Upload snippets artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: snippets-${{ matrix.os }}-${{ matrix.test }}
-          path: snippets/
-          retention-days: 1
+#     - name: Upload snippets artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: snippets-${{ matrix.os }}-${{ matrix.test }}
+#         path: snippets/
+#         retention-days: 1
 
-  create-snippets-commit:
-    name: Commit Snippets
-    needs: run-tests
-    runs-on: ubuntu-latest
-    env:
-      BASE_BRANCH: ${{ github.ref_name }}
-    steps:
-      - name: Check out current branch
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          ref: ${{ github.head_ref }}
-      - name: Download all snippets artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: docs/snippets/tests
-          pattern: snippets-*
-          merge-multiple: true
+# create-snippets-commit:
+#   name: Commit Snippets
+#   needs: run-tests
+#   runs-on: ubuntu-latest
+#   env:
+#     BASE_BRANCH: ${{ github.ref_name }}
+#   steps:
+#     - name: Check out current branch
+#       uses: actions/checkout@v3
+#       with:
+#         token: ${{ secrets.GH_TOKEN }}
+#         ref: ${{ github.head_ref }}
+#     - name: Download all snippets artifacts
+#       uses: actions/download-artifact@v4
+#       with:
+#         path: docs/snippets/tests
+#         pattern: snippets-*
+#         merge-multiple: true
 
-      - name: Commit updated snippets
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: github-actions[bot]
-          author_email: github-actions[bot]@users.noreply.github.com
-          message: "Update test snippets [skip ci]"
-          add: "docs/snippets/tests"
-          new_branch: ${{ github.head_ref }}
-          tag_push: "--force-with-lease"
+#     - name: Commit updated snippets
+#       uses: EndBug/add-and-commit@v9
+#       with:
+#         author_name: github-actions[bot]
+#         author_email: github-actions[bot]@users.noreply.github.com
+#         message: "Update test snippets [skip ci]"
+#         add: "docs/snippets/tests"
+#         new_branch: ${{ github.head_ref }}
+#         tag_push: "--force-with-lease"
