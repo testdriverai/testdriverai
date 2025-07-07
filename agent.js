@@ -1108,6 +1108,14 @@ ${regression}
     }
   }
   async buildEnv(options = {}) {
+    // If instance already exists, do not build environment again
+    if (this.instance) {
+      logger.info(
+        theme.dim("Sandbox instance already exists, skipping buildEnv."),
+      );
+      return;
+    }
+
     const { headless = false, sandbox, heal } = options;
     const newSandbox = options["new-sandbox"] || options.newSandbox;
 
@@ -1141,6 +1149,7 @@ ${regression}
 
     if (this.sandboxId) {
       let instance = await this.connectToSandboxDirect(this.sandboxId);
+      this.instance = instance;
       await this.renderSandbox(instance, headless);
       await this.newSession();
     } else {
@@ -1149,6 +1158,7 @@ ${regression}
       let instance = await this.connectToSandboxDirect(
         newSandbox.sandbox.instanceId,
       );
+      this.instance = instance;
       await this.renderSandbox(instance, headless);
       await this.newSession();
       await this.runLifecycle("provision");
