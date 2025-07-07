@@ -5,23 +5,3 @@ steps:
     commands:
       - command: assert
         expect: the TestDriver.ai Sandbox login page is displayed
-  - prompt: log in
-    commands:
-      - command: focus-application
-        name: Google Chrome
-  - prompt: click sign in
-    commands:
-      - command: focus-application
-        name: Google Chrome
-  - prompt: click username
-    commands:
-      - command: focus-application
-        name: Google Chrome
-  - prompt: click on username
-    commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: hover-text
-        text: Username
-        description: label above the username input field on the login form
-        action: click

@@ -946,9 +946,6 @@ ${regression}
         logger.info(theme.yellow("No commands found, running exploratory"));
         await this.exploratoryLoop(step.prompt, false, true, shouldSave);
       } else {
-        console.log("!!!!!!!!!!!!");
-        console.log(step);
-
         await this.executeCommands(step.commands, 0, true, false, shouldSave);
       }
 
@@ -1236,16 +1233,18 @@ ${regression}
 
     analytics.track("command", { command: thisCommand, file: this.thisFile });
 
-    // Handle different commands
-    if (thisCommand === "edit") {
-      await this.buildEnv(a.options._optionValues);
-      await this.startInteractiveMode();
-    } else if (thisCommand === "run") {
-      await this.buildEnv(a.options._optionValues);
-      this.errorLimit = 100;
-      await this.executeUnifiedCommand(thisCommand, a.args, a.options);
-    } else if (thisCommand === "sandbox") {
-      await this.executeUnifiedCommand(thisCommand, a.args, a.options);
+    // Dynamically handle all available commands
+    const availableCommands = Object.keys(this.getCommandDefinitions());
+    if (availableCommands.includes(thisCommand)) {
+      await this.executeUnifiedCommand(
+        thisCommand,
+        a.args,
+        a.options,
+        a.options._optionValues,
+      );
+    } else {
+      logger.error(`Unknown command: ${thisCommand}`);
+      process.exit(1);
     }
   }
 
@@ -1342,7 +1341,18 @@ ${regression}
       Object.assign(argsObj, args);
     }
 
-    await command.handler(argsObj, options);
+    // Move environment setup and special handling here
+    if (["edit", "run"].includes(commandName)) {
+      await this.buildEnv(arguments[3] || options._optionValues);
+    }
+    if (commandName === "edit") {
+      await this.startInteractiveMode();
+    } else {
+      if (commandName === "run") {
+        this.errorLimit = 100;
+      }
+      await command.handler(argsObj, options);
+    }
   }
 }
 
