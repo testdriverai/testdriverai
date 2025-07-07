@@ -33,6 +33,7 @@
     "dotenv": "^16.4.5",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
+    "junit-report-builder": "^5.1.1",
     "listr2": "^8.3.3",
     "mac-screen-capture-permissions": "^2.1.0",
     "markdown-parser": "0.0.8",
