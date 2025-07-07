@@ -1,12 +1,11 @@
 name: Publish to NPM
 
 on:
-    # Instead of a Merge Queue, we'll just run this on main.
+  # Instead of a Merge Queue, we'll just run this on main.
   push:
     branches: [main]
   # Through the GitHub UI
   workflow_dispatch:
-  # Run every day at midnight to ensure CLI -> API works
 
 jobs:
   tag:
