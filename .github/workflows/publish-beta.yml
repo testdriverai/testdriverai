@@ -1,10 +1,12 @@
 name: Publish to NPM
 
 on:
-  workflow_run:
-    workflows: ["Acceptance Tests"]
+    # Instead of a Merge Queue, we'll just run this on main.
+  push:
     branches: [main]
-    types: [completed]
+  # Through the GitHub UI
+  workflow_dispatch:
+  # Run every day at midnight to ensure CLI -> API works
 
 jobs:
   tag:
