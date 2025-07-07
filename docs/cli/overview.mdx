@@ -1,5 +1,5 @@
 ---
-title: Overview of the TestDriver CLI
+title: "Overview of the TestDriver CLI"
 sidebarTitle: "CLI Overview"
 description: "Learn about the TestDriver CLI, its commands, and how to use it effectively."
 icon: "terminal"
@@ -8,64 +8,87 @@ icon: "terminal"
 The `testdriverai` CLI is the primary interface for running, managing, and debugging TestDriver scripts. It provides commands to execute tests, validate configurations, and interact with the TestDriver framework.
 
 ## Usage
+
 ```bash
-testdriverai <command> [options]
+npx testdriverai@latest <command> [options]
 ```
 
 ## Available commands
-| Command       | Description                                                                 |
-|---------------|-----------------------------------------------------------------------------|
-| `run`         | Executes a TestDriver script.                                           |
-| `validate`    | Validates the syntax and structure of a TestDriver script.              |
-| `init`        | Initializes a new TestDriver project in the current directory.          |
-| `version`     | Displays the current version of the TestDriver CLI.                     |
-| `help`        | Displays help information for the CLI or a specific command.               |
+
+| Command    | Description                                                    |
+| ---------- | -------------------------------------------------------------- |
+| `run`      | Executes a TestDriver script.                                  |
+| `validate` | Validates the syntax and structure of a TestDriver script.     |
+| `init`     | Initializes a new TestDriver project in the current directory. |
+| `version`  | Displays the current version of the TestDriver CLI.            |
+| `help`     | Displays help information for the CLI or a specific command.   |
+
+## Available Flags
+
+| Command         | Description                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `--heal`        | Launch exploratory mode and attemp to recover if an error or failing state is encountered. |
+| `--skip-prerun` | Do not automatically run `lifecycle/prerun.yaml`                                           |
 
 ## Example usage
 
 ### Running a test script
+
 ```bash
-testdriverai run path/to/testdriver.yaml
+npx testdriverai@latest run path/to/testdriver.yaml
 ```
+
 This command runs the specified TestDriver script, executing all steps defined in the file.
 
 ### Validating a script
+
 ```bash
-testdriverai validate path/to/testdriver.yaml
+npx testdriverai@latest validate path/to/testdriver.yaml
 ```
+
 This command checks the syntax and structure of the script to ensure it's valid before execution.
 
 ### Initializing a new project
+
 ```bash
-testdriverai init
+npx testdriverai@latest init
 ```
+
 This command sets up a new TestDriver project in the current directory, creating the necessary folder structure and configuration files.
 
 ### Checking the version
+
 ```bash
-testdriverai version
+npx testdriverai@latest version
 ```
+
 This command displays the installed version of the TestDriver CLI.
 
 ### Getting help
+
 ```bash
-testdriverai help
+npx testdriverai@latest help
 ```
+
 This command displays general help information. To get help for a specific command, use:
+
 ```bash
-testdriverai help <command>
+npx testdriverai@latest help <command>
 ```
 
 ## Protips
-- Use `testdriverai validate` before running a script to catch errors early.
-- Combine `testdriverai run` with CI/CD pipelines to automate test execution.
+
+- Use `validate` before running a script to catch errors early.
+- Combine `run` with CI/CD pipelines to automate test execution.
 - Use the `--debug` flag with `run` to enable detailed logging for troubleshooting.
 
 <Info>
-Running `testdriverai init` will create a blank `testdriver.yaml` file in the current directory. You can then edit this file to define your test steps. 
+  Running `init` will create a blank `testdriver.yaml` file in the current
+  directory. You can then edit this file to define your test steps.
 </Info>
 
 ## Notes
+
 - The `testdriverai` CLI is cross-platform and works on macOS, Windows, and Linux.
 - Ensure you have the required dependencies installed and configured before running scripts.
 - For more advanced usage, refer to the official TestDriver documentation.

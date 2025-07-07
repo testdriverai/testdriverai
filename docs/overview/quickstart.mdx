@@ -5,42 +5,38 @@ description: "Get started with TestDriver in minutes."
 icon: "gauge-high"
 ---
 
+import Comments from "/snippets/comments.mdx";
+
 TestDriver isn't just a computer-use agent, it's an entire AI-native workflow for creating end-to-end tests. Follow these steps to set up your environment and get started with TestDriver.
 
-
 <Steps>
-<Step title="Set Up TestDriver">
+  <Step title="Create a TestDriver Account">
+    Because TestDriver is powered by agentic users, a **free** account is required to access:
 
-  <AccordionGroup>
+    - Dedicated Virtual Machines (VMs) for running agents
+    - TestDriver AI \+ Vision models
+    - Community support
 
-  
-  <Accordion title="Install the CLI">
+    <Card title="Sign Up Now" icon="arrow-turn-down-right" iconType="duotone" horizontal href="https://app.testdriver.ai">
+      No Credit-Card Required
+    </Card>
 
-    Ensure you have Node.js (v16 or higher) installed. Then, install the TestDriver CLI globally using `npm`:
+  </Step>
+  <Step title="Set Up TestDriver">
+    In your project directory, run the interactive setup process:
 
-    ```bash
-    npm install -g testdriverai@beta
+    ```sh
+    npx testdriverai@latest init
     ```
-  </Accordion>
-  <Accordion title="Initialize your project">
 
-    Run `testdriverai init` in your project directory. This will launch an interactive setup process.
-
-    ```bash
-    testdriverai init
-    ```
-  </Accordion>
-  <Accordion title="Configure test runner">
-
-    Running `testdriverai init` will prompt you to set up your test runner; a target computer to run tests on. You can use either a hosted sandbox or your own computer.
+    This will prompt you to set up your test runner: a target computer to run tests on. You can use either a hosted sandbox or your own computer.
 
     - **Hosted Runners** - Run tests in a ephemeral linux virtual machine. Recommended for ease of use, added privacy, and parallelization. Requires a TestDriver API key.
     - **Local Runner** - Run tests on your own computer. Recommended for working with existing user sessions, files, and applications. Requires additional setup.
 
     <Tabs>
       <Tab title="Hosted Runners (Recommended)">
-
-        Run `testdriverai init` in your project directory and choose "yes" for the sandbox option. This will prompt you for your API key.
+        During `init`, choose "yes" for the sandbox option. This will prompt you for your API key:
 
         ```
         Beginning setup...
@@ -48,11 +44,9 @@ TestDriver isn't just a computer-use agent, it's an entire AI-native workflow fo
         ? API KEY (from https://app.testdriver.ai/team) › ********
         ```
 
-        This will write the `TD_VM=true` and `TD_API_KEY` values to `.env` file in your project directory. 
-
+        This will write the `TD_VM=true` and `TD_API_KEY` values to `.env` file in your project directory.
       </Tab>
-      <Tab title="Windows">
-
+      <Tab title="Local Runner (Windows)">
         Using your own computer as a test runner requires additional prerequisites. Follow the AccordionGroup below to set up your local environment.
 
         #### Install Python & Visual Studio Build Tools
@@ -71,103 +65,92 @@ TestDriver isn't just a computer-use agent, it's an entire AI-native workflow fo
 
         #### Set Execution Policy
 
-        Open a new terminal with admin privileges and execute the following command : 
+        Open a new terminal with admin privileges and execute the following command :
+
         ```powershell
         Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
         ```
-      
-        This gives TestDriver the right to execute it's scripts and is only valid for the current user. 
-      </Tab>
-      <Tab title="Mac">
 
+        This gives TestDriver the right to execute it's scripts and is only valid for the current user.
+      </Tab>
+      <Tab title="Local Runner (Mac)">
         Using your own computer as a test runner requires additional permissions. Follow the steps below to set up your local environment.
 
         #### Enable Screen Recording Permissions
-        
+
         TestDriver requires screen recording permissions to capture your screen during test execution.
 
-        - Open **System Preferences > Security & Privacy > Privacy > Screen Recording**.
+        - Open **System Preferences \> Security & Privacy \> Privacy \> Screen Recording**.
         - Check the box next to your terminal application (e.g., Terminal, iTerm2) to allow screen recording.
-        
+
         This is required for TestDriver to capture your screen during test execution.
-        
+
         #### Enable Accessibility Permissions
-        
-        - Open **System Preferences > Security & Privacy > Privacy > Accessibility**.
+
+        - Open **System Preferences \> Security & Privacy \> Privacy \> Accessibility**.
         - Check the box next to your terminal application (e.g., Terminal, iTerm2) to allow accessibility features.
 
         This is required for TestDriver to interact with your applications during test execution.
-
       </Tab>
     </Tabs>
-  </Accordion>
-</AccordionGroup>
 
-</Step>
+  </Step>
+  <Step title="Create your first test">
+    Use the `/explore` command to supply test steps to the TestDriver agent. TestDriver will look at the screen and generate a test steps based on your input.
 
-<Step title="Create your first test">
+    ```
+    > Open Google Chrome and search for "testdriverai"
+    ```
 
-Use the `/explore` command to supply test steps to the TestDriver agent. TestDriver will look at the screen and generate a test steps based on your input.  
+    TestDriver will generate and run test steps. See the [YAML Reference](/commands/assert).
 
-```
-> Open Google Chrome and search for "testdriverai"
-```
+    ```yaml
+    - command: focus-application
+      name: Google Chrome
+    - command: hover-text
+      text: Search Google or type a URL
+      description: main search bar
+      action: click
+    - command: type
+      text: testdriverai
+    - command: press-keys
+      keys: [enter]
+    ```
 
-TestDriver will generate and run test steps. See the [YAML Reference](/commands/assert). 
+    Test steps are saved in the current working YAML file.
 
-```yaml
-- command: focus-application
-  name: Google Chrome
-- command: hover-text
-  text: Search Google or type a URL
-  description: main search bar
-  action: click
-- command: type
-  text: testdriverai
-- command: press-keys
-  keys: [enter]
-```
+    <Tip>
+      Use Control \+ C in the CLI or the square "stop" button in the extension to
+      stop test execution.
+    </Tip>
 
-Test steps are saved in the current working YAML file. 
+  </Step>
+  <Step title="Running tests">
+    Once saved, you can run your test file anytime. Click the "Run" button in the extension or use the CLI command:
 
-<Tip>Use Control + C in the CLI or the square "stop" button in the extension to stop test execution.</Tip>
+    ```bash
+    npx testdriverai@latest run testdriver/your_test.yml
+    ```
 
-</Step>
+    Running tests is about twice as fast as creating them, as the AI doesn't need to interpret your input.
 
-<Step title="Running tests">
+  </Step>
+  <Step title="Generate self-driving tests">
+    TestDriver can also generate tests without any input\! Instead, it will suggest test steps based on what it sees on the screen.
 
-Once saved, you can run your test file anytime. Click the "Run" button in the extension or use the CLI command:
+    <Card title="Self-Driving Test Guide" icon="link" href="/getting-started/generating">
+      Unleash TestDriver's full potential by letting it create tests for you.
+    </Card>
 
-```bash
-testdriverai run testdriver/your_test.yml
-```
+  </Step>
+  <Step title="Deploy to CI/CD">
+    The `testdriverai init` command automatically sets up a GitHub Action workflow for you. Any test files found in the `testdriver` directory will run on every push to the main branch.
 
-Running tests is about twice as fast as creating them, as the AI doesn't need to interpret your input.
+    <Card title="GitHub Actions" icon="link" href="/action/setup">
+      Learn how to set up GitHub Actions for TestDriver.
+    </Card>
 
-</Step>
-
-<Step title="Generate self-driving tests">
-TestDriver can also generate tests without any input! Instead, it will suggest test steps based on what it sees on the screen.
-<Card 
-  title="Self-Driving Test Guide"
-  icon="link"
-  href="/getting-started/generating">
-  Unleash TestDriver's full potential by letting it create tests for you.
-</Card>
-
-</Step>
-
-<Step title="Deploy to CI/CD">
-
-  The `testdriverai init` command automatically sets up a GitHub Action workflow for you. Any test files found in the `testdriver` directory will run on every push to the main branch. 
-
-  <Card
-    title="GitHub Actions"
-    icon="link"
-    href="/action/setup">
-    Learn how to set up GitHub Actions for TestDriver.
-  </Card>
-
-</Step>
-
+  </Step>
 </Steps>
+
+<Comments />

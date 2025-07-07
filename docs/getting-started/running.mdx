@@ -12,7 +12,7 @@ You can run a test script by specifying the file path in the terminal or interac
 ### Example in terminal
 
 ```bash
-testdriverai run path/to/test.yaml
+npx testdriverai@latest run path/to/test.yaml
 ```
 
 This will execute the test script located at `path/to/test.yaml`. If the test passes, the command will exit with a status code of `0`. If it fails, the command will exit with a status code of `1`.
@@ -22,23 +22,22 @@ This will execute the test script located at `path/to/test.yaml`. If the test pa
 To run a test interactively:
 
 1. Launch the TestDriver CLI:
-  ```bash
-  testdriverai
-  ```
+
+```bash
+npx testdriverai@latest
+```
+
 2. At the `>` prompt, type:
-  ```bash
-  /run path/to/test.yaml
-  ```
+
+```bash
+/run path/to/test.yaml
+```
 
 ## Notes
 
 - Ensure the YAML file is valid and follows the TestDriver specification.
 - The default file path is `testdriver/testdriver.yaml` if no file is specified.
 
-<Card
-  title="Running Tests in CI"
-  icon="link"
-  href="/getting-started/ci"
->
+<Card title="Running Tests in CI" icon="link" href="/getting-started/ci">
   Run tests with Hosted Runnings in GitHub Actions
 </Card>

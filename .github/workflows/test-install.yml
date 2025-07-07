@@ -1,15 +1,11 @@
+# Ensure that the published `testdriverai` package is installable on multiple version of Node.js across multiple operating systems.
 name: Test TestDriverAI Installation
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour
+    - cron: "0 * * * *" # Runs every hour
   workflow_dispatch:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  merge_group:
 
 jobs:
   install-testdriverai:
@@ -18,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         runner: [macos-latest, windows-latest]
-        node-version: ['18', '20', '22']
+        node-version: ["18", "20", "22"]
 
     steps:
       - name: Checkout repository
@@ -29,8 +25,5 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install TestDriverAI globally
-        run: npm install -g testdriverai
-
-      - name: Verify Installation
-        run: testdriverai --help || echo "TestDriverAI not found"
+      - name: Verify `testdriverai` is executable
+        run: npx testdriverai@latest -y --help

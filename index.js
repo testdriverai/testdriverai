@@ -12,7 +12,6 @@ if (process.argv[2] === "--help" || process.argv[2] === "-h") {
 }
 
 if (process.argv[2] === "--renderer") {
-
   const {
     // connectToOverlay,
     createOverlayProcess,
@@ -41,7 +40,6 @@ if (process.argv[2] === "--renderer") {
   })();
 } else {
   (async () => {
-
     if (!config.TD_OVERLAY) {
       let agent = require("./agent.js");
       await agent.start();
