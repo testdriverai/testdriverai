@@ -75,7 +75,7 @@
   "oclif": {
     "bin": "testdriverai",
     "dirname": "testdriverai",
-    "commands": "./interfaces/commands",
+    "commands": "./interfaces/cli/commands",
     "plugins": [
       "@oclif/plugin-help"
     ],

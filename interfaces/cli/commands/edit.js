@@ -1,6 +1,6 @@
 const { Args, Flags } = require("@oclif/core");
-const BaseCommand = require("../base-command.js");
-const ReadlineInterface = require("../readline.js");
+const BaseCommand = require("../lib/base.js");
+const ReadlineInterface = require("../../readline.js");
 
 class EditCommand extends BaseCommand {
   static description = "Edit a test file interactively";

@@ -1,6 +1,6 @@
 const { Command } = require("@oclif/core");
-const { emitter, events } = require("../agent/events.js");
-const { createCommandDefinitions } = require("../agent/interface.js");
+const { emitter, events } = require("../../../agent/events.js");
+const { createCommandDefinitions } = require("../../../agent/interface.js");
 
 class BaseCommand extends Command {
   constructor(argv, config) {
@@ -13,7 +13,7 @@ class BaseCommand extends Command {
     // The logger is automatically required and sets up event listeners
     // Only load when we actually have an agent (not for help commands)
     if (this.agent) {
-      require("./logger.js");
+      require("../../logger.js");
     }
   }
 
@@ -66,7 +66,7 @@ class BaseCommand extends Command {
 
     // Create the agent only when actually needed
     if (!this.agent) {
-      const TestDriverAgent = require("../agent/index.js");
+      const TestDriverAgent = require("../../../agent/index.js");
       this.agent = new TestDriverAgent();
       this.setupEventListeners();
       this.setupProcessHandlers();

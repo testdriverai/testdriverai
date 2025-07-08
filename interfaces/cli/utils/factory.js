@@ -1,5 +1,5 @@
-const BaseCommand = require("./base-command.js");
-const { createCommandDefinitions } = require("../agent/interface.js");
+const BaseCommand = require("../lib/base.js");
+const { createCommandDefinitions } = require("../../../agent/interface.js");
 
 /**
  * Creates an oclif command class from a unified command definition
@@ -36,7 +36,7 @@ function createOclifCommand(commandName) {
         await this.agent.buildEnv(flags);
 
         // Start interactive mode
-        const ReadlineInterface = require("./readline.js");
+        const ReadlineInterface = require("../../readline.js");
         const readlineInterface = new ReadlineInterface(this.agent);
         this.agent.readlineInterface = readlineInterface;
         await readlineInterface.start();

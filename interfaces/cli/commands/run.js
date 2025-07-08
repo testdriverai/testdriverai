@@ -1,5 +1,5 @@
 const { Args, Flags } = require("@oclif/core");
-const BaseCommand = require("../base-command.js");
+const BaseCommand = require("../lib/base.js");
 
 class RunCommand extends BaseCommand {
   static description = "Run a test file";

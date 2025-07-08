@@ -1,5 +1,5 @@
 const { Args, Flags } = require("@oclif/core");
-const BaseCommand = require("../base-command.js");
+const BaseCommand = require("../lib/base.js");
 
 class SandboxCommand extends BaseCommand {
   static description = "Manage sandbox instances";
