@@ -76,32 +76,7 @@ class TestDriverAgent extends EventEmitter {
 
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
-
-    this.setupProcessHandlers();
   }
-
-  setupProcessHandlers() {
-    // Process error handlers
-    process.on("uncaughtException", async (err) => {
-      analytics.track("uncaughtException", { err });
-      this.emitter.emit(events.log.error, "Uncaught Exception: %s", err);
-      // You might want to exit the process after handling the error
-      await this.exit(true);
-    });
-
-    process.on("unhandledRejection", async (reason, promise) => {
-      analytics.track("unhandledRejection", { reason, promise });
-      this.emitter.emit(
-        events.log.error,
-        "Unhandled Rejection at: %s, reason: %s",
-        promise,
-        reason,
-      );
-      // Optionally, you might want to exit the process
-      await this.exit(true);
-    });
-  }
-
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunLifecycle = false) {
