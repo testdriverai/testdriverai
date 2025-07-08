@@ -43,9 +43,8 @@ class BaseCommand extends Command {
       console.debug(`- ${message}`);
     });
     this.agent.emitter.on(events.showWindow, async (data) => {
-      const { default: open } = await import("open");
       const encodedData = encodeURIComponent(JSON.stringify(data));
-      await open(`${data.url}?data=${encodedData}`);
+      await openBrowser(`${data.url}?data=${encodedData}`);
     });
 
     // // loop through all events and set up listeners
