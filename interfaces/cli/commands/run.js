@@ -50,6 +50,9 @@ class RunCommand extends BaseCommand {
   async run() {
     const { args, flags } = await this.parse(RunCommand);
 
+    console.log('DEBUG: args.file =', args.file);
+    console.log('DEBUG: process.argv =', process.argv);
+
     await this.setupAgent(args.file, flags);
 
     // Set error limit higher for run command
@@ -60,6 +63,8 @@ class RunCommand extends BaseCommand {
 
     // Execute the run command directly
     const file = this.normalizeFilePath(args.file);
+    console.log('DEBUG: normalized file =', file);
+    console.log('DEBUG: agent.thisFile =', this.agent.thisFile);
     await this.agent.runLifecycle("prerun");
     await this.agent.run(file, flags.write, flags.exit !== false, true);
   }
