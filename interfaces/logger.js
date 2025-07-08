@@ -1,11 +1,9 @@
 // central logger for the bot
 const winston = require("winston");
-const os = require("os");
 const chalk = require("chalk");
-const theme = require("./theme");
+const theme = require("../agent/lib/theme");
 const Transport = require("winston-transport");
-const server = require("./ipc");
-
+const { emitter, events } = require("../agent/events");
 class CustomTransport extends Transport {
   constructor(opts) {
     super(opts);
@@ -16,15 +14,11 @@ class CustomTransport extends Transport {
   }
 
   log(info, callback) {
-    setImmediate(() => {
-      this.emit("logged", info);
-    });
-
     try {
       const { message } = info;
 
       if (!this.sandbox) {
-        this.sandbox = require("./sandbox");
+        this.sandbox = require("../agent/lib/sandbox");
       }
 
       if (this.sandbox && this.sandbox.instanceSocketConnected) {
@@ -46,10 +40,6 @@ class CustomTransport extends Transport {
     callback();
   }
 }
-
-// simple match for aws instance i-*
-const shouldLog =
-  os.hostname().indexOf("i-") == 0 || process.env["TD_DEV"] == "true";
 
 // responsible for rendering ai markdown output
 const { marked } = require("marked");
@@ -81,7 +71,6 @@ const censorSensitiveData = (message) => {
 };
 
 const logger = winston.createLogger({
-  level: shouldLog ? "debug" : "info",
   format: winston.format.combine(
     winston.format.splat(),
     winston.format((info) => {
@@ -340,47 +329,68 @@ const markedParsePartial = (markdown, start = 0, end = 0) => {
   return marked.parse(result).replace(/^/gm, spaceChar).trimEnd();
 };
 
-const createMarkdownStreamLogger = () => {
-  let buffer = "";
+// Event-based markdown streaming with buffering
+const activeStreams = new Map();
 
-  return {
-    log: (chunk) => {
-      if (typeof chunk !== "string") {
-        return;
-      }
+// Handle streaming markdown events with proper buffering
+emitter.on(events.log.markdown.start, (streamId) => {
+  activeStreams.set(streamId, {
+    buffer: "",
+    lastOutput: "",
+  });
+});
 
-      server.broadcast("output", chunk);
+emitter.on(events.log.markdown.chunk, (streamId, chunk) => {
+  if (!activeStreams.has(streamId)) {
+    return;
+  }
 
-      const previousConsoleOutput = markedParsePartial(buffer, 0, -1);
+  const stream = activeStreams.get(streamId);
 
-      buffer += chunk;
+  if (typeof chunk !== "string") {
+    return;
+  }
 
-      const consoleOutput = markedParsePartial(buffer, 0, -1);
+  console.log(chunk);
 
-      let diff = consoleOutput.replace(previousConsoleOutput, "");
-      if (diff) {
-        diff = censorSensitiveData(diff);
-        process.stdout.write(diff);
-      }
-    },
-    end() {
-      const previousConsoleOutput = markedParsePartial(buffer, 0, -1);
-      const consoleOutput = markedParsePartial(buffer, 0, Infinity);
-      let diff = consoleOutput.replace(previousConsoleOutput, "");
+  const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
 
-      if (diff) {
-        diff = censorSensitiveData(diff);
-        process.stdout.write(diff);
-      }
-      process.stdout.write("\n\n");
-      buffer = "";
-    },
-  };
-};
+  stream.buffer += chunk;
 
-const prettyMarkdown = (markdown) => {
+  const consoleOutput = markedParsePartial(stream.buffer, 0, -1);
+
+  let diff = consoleOutput.replace(previousConsoleOutput, "");
+  if (diff) {
+    diff = censorSensitiveData(diff);
+    process.stdout.write(diff);
+  }
+});
+
+emitter.on(events.log.markdown.end, (streamId) => {
+  if (!activeStreams.has(streamId)) {
+    return;
+  }
+
+  const stream = activeStreams.get(streamId);
+
+  const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
+  const consoleOutput = markedParsePartial(stream.buffer, 0, Infinity);
+  let diff = consoleOutput.replace(previousConsoleOutput, "");
+
+  if (diff) {
+    diff = censorSensitiveData(diff);
+    process.stdout.write(diff);
+  }
+  process.stdout.write("\n\n");
+
+  // Clean up the stream
+  activeStreams.delete(streamId);
+});
+
+// Handle static markdown logging (complete markdown blocks)
+emitter.on(events.log.markdown.static, (markdown) => {
   if (typeof markdown !== "string") {
-    logger.error("prettyMarkdown requires a string");
+    logger.error("Static markdown requires a string");
     logger.error(markdown);
     return;
   }
@@ -388,14 +398,12 @@ const prettyMarkdown = (markdown) => {
   let consoleOutput = marked.parse(markdown);
 
   // strip newlines at end of consoleOutput
-  // consoleOutput = consoleOutput.replace(/\n$/, "");
-  // consoleOutput = consoleOutput.replace(/^/gm, spaceChar);
+  consoleOutput = consoleOutput.replace(/\n$/, "");
+  consoleOutput = consoleOutput.replace(/^/gm, spaceChar);
 
   logger.info(consoleOutput);
-};
+});
 
 module.exports = {
   logger,
-  prettyMarkdown,
-  createMarkdownStreamLogger,
 };

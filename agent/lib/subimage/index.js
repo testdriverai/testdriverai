@@ -2,7 +2,7 @@
 const Jimp = require("jimp");
 const path = require("path");
 const cv = require("./opencv.js");
-const { logger } = require("../logger");
+const { logger } = require("../../../interfaces/logger.js");
 
 async function findTemplateImage(haystack, needle, threshold) {
   try {

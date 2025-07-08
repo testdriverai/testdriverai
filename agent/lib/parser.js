@@ -89,7 +89,7 @@ const parseYAML = async function (inputYaml) {
 };
 
 // validate yaml using schema.json in root
-let schema = require("../schema.json");
+let schema = require("../../schema.json");
 const validateYAML = async function (yaml) {
   let ajv = new Ajv({ allowUnionTypes: true });
   let validate = ajv.compile(schema);

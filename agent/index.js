@@ -4,7 +4,7 @@
 process.removeAllListeners("warning");
 
 // package.json is included to get the version number
-const packageJson = require("./package.json");
+const packageJson = require("../package.json");
 
 // nodejs modules
 const fs = require("fs");
@@ -14,13 +14,10 @@ const os = require("os");
 const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
-const { Command } = require("commander");
 const { EventEmitter } = require("events");
-const { emitter } = require("./lib/events.js");
+const { emitter } = require("./events.js");
 
 // local modules
-const server = require("./lib/ipc.js");
-const speak = require("./lib/speak.js");
 const analytics = require("./lib/analytics.js");
 const parser = require("./lib/parser.js");
 const commander = require("./lib/commander.js");
@@ -31,17 +28,12 @@ const commands = require("./lib/commands.js");
 const config = require("./lib/config.js");
 const sandbox = require("./lib/sandbox.js");
 const theme = require("./lib/theme.js");
-const log = require("./lib/logger.js");
 const { createCommandDefinitions } = require("./interface.js");
-const ReadlineInterface = require("./interfaces/readline.js");
 
 const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
-const notify = require("./lib/notify.js");
-const { events } = require("./lib/events.js");
+const { events } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
-
-const logger = log.logger;
 
 class TestDriverAgent extends EventEmitter {
   constructor() {
@@ -78,91 +70,30 @@ class TestDriverAgent extends EventEmitter {
     // Process error handlers
     process.on("uncaughtException", async (err) => {
       analytics.track("uncaughtException", { err });
-      logger.error("Uncaught Exception: %s", err);
+      emitter.emit(events.log.error, "Uncaught Exception: %s", err);
       // You might want to exit the process after handling the error
       await this.exit(true);
     });
 
     process.on("unhandledRejection", async (reason, promise) => {
       analytics.track("unhandledRejection", { reason, promise });
-      logger.error("Unhandled Rejection at: %s, reason: %s", promise, reason);
+      emitter.emit(
+        events.log.error,
+        "Unhandled Rejection at: %s, reason: %s",
+        promise,
+        reason,
+      );
       // Optionally, you might want to exit the process
       await this.exit(true);
     });
   }
 
-  // parses the command line arguments using `commander` with unified command system
-  parseArgs() {
-    const program = new Command();
-
-    program
-      .name("testdriverai")
-      .description(
-        "Next generation autonomous AI agent for end-to-end testing of web & desktop",
-      )
-      .version(packageJson.version);
-
-    const commands = this.getCommandDefinitions();
-
-    // Only add CLI-relevant commands (run, edit, sandbox)
-    const cliCommands = ["run", "edit", "sandbox"];
-
-    cliCommands.forEach((commandName) => {
-      const commandDef = commands[commandName];
-      const cmd = program
-        .command(commandName)
-        .description(commandDef.description);
-
-      // Add arguments
-      commandDef.arguments?.forEach((arg) => {
-        const argStr = arg.optional ? `[${arg.name}]` : `<${arg.name}>`;
-        cmd.argument(argStr, arg.description, arg.default);
-      });
-
-      // Add options
-      commandDef.options?.forEach((opt) => {
-        const optStr =
-          opt.type === "string" ? `--${opt.name} <value>` : `--${opt.name}`;
-        cmd.option(optStr, opt.description);
-      });
-
-      // Set action to use unified command system
-      cmd.action(async (...args) => {
-        const options = args.pop(); // Last argument is always options
-        const argValues = args; // Remaining are argument values
-
-        // Store command for later execution
-        this.cliArgs = {
-          command: commandName,
-          args: argValues,
-          options: options,
-        };
-      });
-    });
-
-    // Just parse normally - let commander handle help, version, etc.
-    program.parse();
-
-    // If no command was run (no action triggered), default to edit
-    if (!this.cliArgs.command) {
-      this.cliArgs = {
-        command: "edit",
-        args: [],
-        options: {},
-      };
-    }
-
-    return this.cliArgs;
-  }
-
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunLifecycle = false) {
-    logger.info(theme.dim("exiting..."), true);
+    emitter.emit(events.log.info, theme.dim("exiting..."), true);
 
-    let a = this.parseArgs();
-
-    shouldRunLifecycle = shouldRunLifecycle || a.command == "run";
+    shouldRunLifecycle = shouldRunLifecycle || this.cliArgs?.command == "run";
 
     if (shouldSave) {
       await this.save();
@@ -184,7 +115,10 @@ class TestDriverAgent extends EventEmitter {
   // fatal errors always exit the program
   // this ensure we log the error, summarize it, and exit cleanly
   async dieOnFatal(error) {
-    logger.error(theme.red("Fatal Error") + `\n${error.message}`);
+    emitter.emit(
+      events.log.error,
+      theme.red("Fatal Error") + `\n${error.message}`,
+    );
     await this.summarize(error.message);
     return await this.exit(true);
   }
@@ -202,10 +136,12 @@ class TestDriverAgent extends EventEmitter {
     // healMode must be required to attempt to recover from errors
     // otherwise we go directly to fatal
     if (!this.healMode) {
-      logger.error(
+      emitter.emit(
+        events.log.error,
         theme.red("Error detected, but recovery mode is not enabled."),
       );
-      logger.info(
+      emitter.emit(
+        events.log.info,
         "To attempt automatic recovery, re-run with the --heal flag.",
       );
       return await this.dieOnFatal(error);
@@ -223,20 +159,19 @@ class TestDriverAgent extends EventEmitter {
       ? this.errorCounts[safeKey] + 1
       : 1;
 
-    logger.info("");
-    logger.error(
+    emitter.emit(
+      events.log.error,
       theme.red("Error detected. Attempting to recover (via --heal)..."),
     );
 
-    log.prettyMarkdown(eMessage);
-
-    logger.debug("%j", error);
-    logger.debug("%s", error.stack);
+    emitter.emit(events.log.markdown.static, eMessage);
+    emitter.emit(events.log.debug, "%j", error);
+    emitter.emit(events.log.debug, "%s", error.stack);
 
     // if we get the same error 3 times in `run` mode, we exit
     if (this.errorCounts[safeKey] > this.errorLimit - 1) {
-      logger.info(theme.red("Error loop detected. Exiting."));
-      logger.info("%s", eMessage);
+      emitter.emit(events.log.info, theme.red("Error loop detected. Exiting."));
+      emitter.emit(events.log.info, "%s", eMessage);
       await this.summarize(eMessage);
       return await this.exit(true);
     }
@@ -254,13 +189,11 @@ class TestDriverAgent extends EventEmitter {
       image = null;
     }
 
-    speak("thinking...");
-    notify("thinking...");
-    server.broadcast("status", `thinking...`);
-    logger.info(theme.dim("thinking..."), true);
-    logger.info("");
+    this.emit("status", `thinking...`);
+    emitter.emit(events.log.info, theme.dim("thinking..."), true);
 
-    const mdStream = log.createMarkdownStreamLogger();
+    const streamId = `error-${Date.now()}`;
+    emitter.emit(events.log.markdown.start, streamId);
 
     let response = await sdk.req(
       "error",
@@ -271,11 +204,12 @@ class TestDriverAgent extends EventEmitter {
       },
       (chunk) => {
         if (chunk.type === "data") {
-          mdStream.log(chunk.data);
+          emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
         }
       },
     );
-    mdStream.end();
+
+    emitter.emit(events.log.markdown.end, streamId);
 
     // if the response worked, we try to execute the codeblocks in the response,
     // which begins the recursive process of executing codeblocks
@@ -297,15 +231,16 @@ class TestDriverAgent extends EventEmitter {
     this.checkCount++;
 
     if (this.checkCount >= this.checkLimit) {
-      logger.info(theme.red("Exploratory loop detected. Exiting."));
+      emitter.emit(
+        events.log.info,
+        theme.red("Exploratory loop detected. Exiting."),
+      );
       await this.summarize("Check loop detected.");
       return await this.exit(true);
     }
 
-    logger.info("");
-    logger.info(theme.dim("checking..."), "testdriver");
-    server.broadcast("status", `checking...`);
-    logger.info("");
+    emitter.emit(events.log.info, theme.dim("checking..."));
+    this.emit("status", `checking...`);
 
     // check asks the ai if the task is complete
     let thisScreenshot = await system.captureScreenBase64(1, false, true);
@@ -313,7 +248,9 @@ class TestDriverAgent extends EventEmitter {
     let mousePosition = await system.getMousePosition();
     let activeWindow = await system.activeWin();
 
-    const mdStream = log.createMarkdownStreamLogger();
+    const streamId = `check-${Date.now()}`;
+    emitter.emit(events.log.markdown.start, streamId);
+
     let response = await sdk.req(
       "check",
       {
@@ -324,11 +261,12 @@ class TestDriverAgent extends EventEmitter {
       },
       (chunk) => {
         if (chunk.type === "data") {
-          mdStream.log(chunk.data);
+          emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
         }
       },
     );
-    mdStream.end();
+
+    emitter.emit(events.log.markdown.end, streamId);
 
     this.lastScreenshot = thisScreenshot;
 
@@ -341,7 +279,7 @@ class TestDriverAgent extends EventEmitter {
   async runCommand(command, depth, shouldSave, pushToHistory) {
     let yml = await yaml.dump(command);
 
-    logger.debug(`running command: \n\n${yml}`);
+    emitter.emit(events.log.debug, `running command: \n\n${yml}`);
 
     try {
       let response;
@@ -399,7 +337,7 @@ class TestDriverAgent extends EventEmitter {
           await this.runCommand(command, depth, shouldSave);
         }
         let timeToComplete = (new Date().getTime() - this.lastCommand) / 1000;
-        // logger.info(timeToComplete, 'seconds')
+        // emitter.emit(events.log.info, timeToComplete, 'seconds')
 
         this.csv.push([command.command, timeToComplete]);
         this.lastCommand = new Date().getTime();
@@ -419,7 +357,10 @@ class TestDriverAgent extends EventEmitter {
   ) {
     depth = depth + 1;
 
-    logger.debug("%j", { message: "execute code blocks", depth });
+    emitter.emit(events.log.debug, "%j", {
+      message: "execute code blocks",
+      depth,
+    });
 
     for (const codeblock of codeblocks) {
       let commands;
@@ -460,7 +401,7 @@ class TestDriverAgent extends EventEmitter {
       await this.save({ silent: true });
     }
 
-    logger.debug("kicking off exploratory loop");
+    emitter.emit(events.log.debug, "kicking off exploratory loop");
 
     // kick everything off
     await this.actOnMarkdown(message, 0, true, dry, shouldSave);
@@ -469,7 +410,10 @@ class TestDriverAgent extends EventEmitter {
     // the ai determines if it's complete or not
     // if it is incomplete, the ai will likely return more codeblocks to execute
     if (validateAndLoop) {
-      logger.debug("exploratory loop resolved, check your work");
+      emitter.emit(
+        events.log.debug,
+        "exploratory loop resolved, check your work",
+      );
 
       let response = await this.check();
 
@@ -480,20 +424,21 @@ class TestDriverAgent extends EventEmitter {
         return await this.haveAIResolveError(error, response, 0, true, true);
       }
 
-      logger.debug(`found ${checkCodeblocks.length} codeblocks`);
+      emitter.emit(
+        events.log.debug,
+        `found ${checkCodeblocks.length} codeblocks`,
+      );
 
       if (checkCodeblocks.length > 0) {
-        logger.debug("check thinks more needs to be done");
+        emitter.emit(events.log.debug, "check thinks more needs to be done");
 
-        logger.info(theme.dim("not done yet!"), "testdriver");
-        logger.info("");
+        emitter.emit(events.log.info, theme.dim("not done yet!"));
 
         return await this.aiExecute(response, validateAndLoop);
       } else {
-        logger.debug("seems complete, returning");
+        emitter.emit(events.log.debug, "seems complete, returning");
 
-        logger.info(theme.green("success!"), "testdriver");
-        logger.info("");
+        emitter.emit(events.log.info, theme.green("success!"));
 
         return response;
       }
@@ -508,9 +453,9 @@ class TestDriverAgent extends EventEmitter {
     try {
       yml = fs.readFileSync(file, "utf-8");
     } catch (e) {
-      logger.error(e);
-      logger.error(`File not found: ${file}`);
-      logger.error(`Current directory: ${this.workingDir}`);
+      emitter.emit(events.log.error, e);
+      emitter.emit(events.log.error, `File not found: ${file}`);
+      emitter.emit(events.log.error, `Current directory: ${this.workingDir}`);
 
       await this.summarize("File not found");
       await this.exit(true);
@@ -528,8 +473,8 @@ class TestDriverAgent extends EventEmitter {
     try {
       ymlObj = await yaml.load(yml);
     } catch (e) {
-      logger.error("%s", e);
-      logger.error(`Invalid YAML: ${file}`);
+      emitter.emit(events.log.error, "%s", e);
+      emitter.emit(events.log.error, `Invalid YAML: ${file}`);
 
       await this.summarize("Invalid YAML");
       await this.exit(true);
@@ -555,11 +500,8 @@ class TestDriverAgent extends EventEmitter {
       }
     }
 
-    speak("thinking...");
-    notify("thinking...");
-    server.broadcast("status", `thinking...`);
-    logger.info(theme.dim("thinking..."), true);
-    logger.info("");
+    this.emit("status", `thinking...`);
+    emitter.emit(events.log.info, theme.dim("thinking..."), true);
 
     let response = `\`\`\`yaml
 commands:
@@ -583,19 +525,18 @@ commands:
     this.lastPrompt = currentTask;
     this.checkCount = 0;
 
-    logger.debug("exploratoryLoop called");
+    emitter.emit(events.log.debug, "exploratoryLoop called");
 
     this.tasks.push(currentTask);
 
-    speak("thinking...");
-    notify("thinking...");
-    server.broadcast("status", `thinking...`);
-    logger.info(theme.dim("thinking..."), true);
-    logger.info("");
+    this.emit("status", `thinking...`);
+    emitter.emit(events.log.info, theme.dim("thinking..."), true);
 
     this.lastScreenshot = await system.captureScreenBase64();
 
-    const mdStream = log.createMarkdownStreamLogger();
+    const streamId = `input-${Date.now()}`;
+    emitter.emit(events.log.markdown.start, streamId);
+
     let message = await sdk.req(
       "input",
       {
@@ -606,15 +547,19 @@ commands:
       },
       (chunk) => {
         if (chunk.type === "data") {
-          mdStream.log(chunk.data);
+          emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
         }
       },
     );
-    mdStream.end();
+
+    emitter.emit(events.log.markdown.end, streamId);
 
     if (message) {
       await this.aiExecute(message.data, validateAndLoop, dry, shouldSave);
-      logger.debug("showing prompt from exploratoryLoop response check");
+      emitter.emit(
+        events.log.debug,
+        "showing prompt from exploratoryLoop response check",
+      );
     }
 
     return;
@@ -625,13 +570,10 @@ commands:
   // it will generate files that contain only "prompts"
   // @todo revit the generate command
   async generate(type, count, baseYaml, skipYaml = false) {
-    logger.debug("generate called, %s", type);
+    emitter.emit(events.log.debug, "generate called, %s", type);
 
-    speak("thinking...");
-    notify("thinking...");
-    server.broadcast("status", `thinking...`);
-    logger.info(theme.dim("thinking..."), true);
-    logger.info("");
+    this.emit("status", `thinking...`);
+    emitter.emit(events.log.info, theme.dim("thinking..."), true);
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
@@ -639,7 +581,10 @@ commands:
     }
 
     let image = await system.captureScreenBase64();
-    const mdStream = log.createMarkdownStreamLogger();
+
+    const streamId = `generate-${Date.now()}`;
+    emitter.emit(events.log.markdown.start, streamId);
+
     let message = await sdk.req(
       "generate",
       {
@@ -651,11 +596,12 @@ commands:
       },
       (chunk) => {
         if (chunk.type === "data") {
-          mdStream.log(chunk.data);
+          emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
         }
       },
     );
-    mdStream.end();
+
+    emitter.emit(events.log.markdown.end, streamId);
 
     let testPrompts = await parser.findGenerativePrompts(message.data);
 
@@ -677,10 +623,8 @@ commands:
       );
 
       // create generate directory if it doesn't exist
-      if (
-        !fs.existsSync(path.join(this.workingDir, "testdriver", "generate"))
-      ) {
-        fs.mkdirSync(path.join(this.workingDir, "testdriver", "generate"));
+      if (!fs.existsSync(path.join(this.workingDir, "generate"))) {
+        fs.mkdirSync(path.join(this.workingDir, "generate"));
       }
 
       let list = testPrompt.steps;
@@ -705,7 +649,7 @@ commands:
 
   // this is the functinoality for "undo"
   async popFromHistory(fullStep) {
-    logger.info(theme.dim("undoing..."), true);
+    emitter.emit(events.log.info, theme.dim("undoing..."), true);
 
     if (this.executionHistory.length) {
       if (fullStep) {
@@ -752,7 +696,7 @@ ${yml}
     dry = false,
     shouldSave = false,
   ) {
-    logger.debug("%j", {
+    emitter.emit(events.log.debug, "%j", {
       message: "actOnMarkdown called",
       depth,
     });
@@ -785,27 +729,21 @@ ${yml}
     }
   }
 
-  // simple function to start the interactive readline interface
-  async startInteractiveMode() {
-    this.readlineInterface = new ReadlineInterface(this);
-    await this.readlineInterface.start();
-  }
-
   // this function is responsible for summarizing the test script that has already executed
   // it is what is saved to the `/tmp/testdriver-summary.md` file and output to the action as a summary
   async summarize(error = null) {
     analytics.track("summarize");
 
-    logger.info("");
-
-    logger.info(theme.dim("reviewing test..."), true);
+    emitter.emit(events.log.info, theme.dim("reviewing test..."), true);
 
     // let text = prompts.summarize(tasks, error);
     let image = await system.captureScreenBase64();
 
-    logger.info(theme.dim("summarizing..."), true);
+    emitter.emit(events.log.info, theme.dim("summarizing..."), true);
 
-    const mdStream = log.createMarkdownStreamLogger();
+    const streamId = `summarize-${Date.now()}`;
+    emitter.emit(events.log.markdown.start, streamId);
+
     let reply = await sdk.req(
       "summarize",
       {
@@ -815,11 +753,12 @@ ${yml}
       },
       (chunk) => {
         if (chunk.type === "data") {
-          mdStream.log(chunk.data);
+          emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
         }
       },
     );
-    mdStream.end();
+
+    emitter.emit(events.log.markdown.end, streamId);
 
     // Only write summary to file if --summary option was provided
     if (this.resultFile) {
@@ -830,11 +769,17 @@ ${yml}
       }
 
       fs.writeFileSync(this.resultFile, reply.data);
-      logger.info(theme.dim(`Summary written to: ${this.resultFile}`));
+      emitter.emit(
+        events.log.info,
+        theme.dim(`Summary written to: ${this.resultFile}`),
+      );
     } else {
       const tmpFile = path.join(os.tmpdir(), "testdriver-summary.md");
       fs.writeFileSync(tmpFile, reply.data);
-      logger.info(theme.dim(`Summary written to: ${tmpFile}`));
+      emitter.emit(
+        events.log.info,
+        theme.dim(`Summary written to: ${tmpFile}`),
+      );
     }
   }
 
@@ -852,19 +797,22 @@ ${yml}
       fs.writeFileSync(filepath, regression);
     } catch (e) {
       console.log(e);
-      logger.error(e.message);
-      logger.error("%s", e);
+      emitter.emit(events.log.error, e.message);
+      emitter.emit(events.log.error, "%s", e);
     }
 
     if (!silent) {
-      log.prettyMarkdown(`Current test script:
+      emitter.emit(
+        events.log.markdown.static,
+        `Current test script:
 
 \`\`\`yaml
 ${regression}
-\`\`\``);
+\`\`\``,
+      );
 
       if (!silent) {
-        logger.info(theme.dim(`saved as ${filepath}`));
+        emitter.emit(events.log.info, theme.dim(`saved as ${filepath}`));
       }
     }
 
@@ -882,7 +830,7 @@ ${regression}
     try {
       ymlObj = await yaml.load(decoded);
     } catch (e) {
-      logger.error("%s", e);
+      emitter.emit(events.log.error, "%s", e);
     }
 
     // add the root key steps: with array of commands:
@@ -906,21 +854,23 @@ ${regression}
   // it parses the markdown file and executes the codeblocks exactly as if they were
   // generated by the AI in a single prompt
   async run(file = this.thisFile, shouldSave = false, shouldExit = true) {
-    emitter.emit(events.interactive, false);
-
-    logger.info(theme.cyan(`running ${file}...`));
+    emitter.emit(events.log.info, theme.cyan(`running ${file}...`));
 
     let ymlObj = await this.loadYML(file);
 
     if (ymlObj.version) {
       let valid = isValidVersion(ymlObj.version);
       if (!valid) {
-        console.log("");
-        logger.warn(theme.yellow(`Version mismatch detected!`));
-        logger.warn(
+        emitter.emit(
+          events.log.warn,
+          theme.yellow(`Version mismatch detected!`),
+        );
+        emitter.emit(
+          events.log.warn,
           theme.yellow(`Running a test created with v${ymlObj.version}.`),
         );
-        logger.warn(
+        emitter.emit(
+          "log:warn",
           theme.yellow(
             `The local testdriverai version is v${packageJson.version}.`,
           ),
@@ -931,19 +881,29 @@ ${regression}
     this.executionHistory = [];
 
     if (!ymlObj.steps || !ymlObj.steps.length) {
-      logger.info(theme.red("No steps found in the YAML file"));
+      emitter.emit(
+        events.log.info,
+        theme.red("No steps found in the YAML file"),
+      );
       await this.exit(true, shouldSave, true);
     }
 
     for (const step of ymlObj.steps) {
-      logger.info(``, null);
-      logger.info(theme.yellow(`> ${step.prompt || "no prompt"}`), null);
+      emitter.emit(events.log.info, ``, null);
+      emitter.emit(
+        "log:info",
+        theme.yellow(`> ${step.prompt || "no prompt"}`),
+        null,
+      );
 
       if (!step.commands && !step.prompt) {
-        logger.info(theme.red("No commands or prompt found"));
+        emitter.emit(events.log.info, theme.red("No commands or prompt found"));
         await this.exit(true, shouldSave, true);
       } else if (!step.commands) {
-        logger.info(theme.yellow("No commands found, running exploratory"));
+        emitter.emit(
+          "log:info",
+          theme.yellow("No commands found, running exploratory"),
+        );
         await this.exploratoryLoop(step.prompt, false, true, shouldSave);
       } else {
         await this.executeCommands(step.commands, 0, true, false, shouldSave);
@@ -967,7 +927,10 @@ ${regression}
   async iffy(condition, then, otherwise, depth) {
     analytics.track("if", { condition });
 
-    logger.info(generator.jsonToManual({ command: "if", condition }));
+    emitter.emit(
+      "log:info",
+      generator.jsonToManual({ command: "if", condition }),
+    );
 
     let response = await commands.assert(condition, false);
 
@@ -983,11 +946,14 @@ ${regression}
   async embed(file, depth, pushToHistory) {
     analytics.track("embed", { file });
 
-    logger.info(generator.jsonToManual({ command: "run", file }));
+    emitter.emit(
+      events.log.info,
+      generator.jsonToManual({ command: "run", file }),
+    );
 
     depth = depth + 1;
 
-    logger.info(`${file} (start)`);
+    emitter.emit(events.log.info, `${file} (start)`);
 
     // get the current wowrking directory where this file is being executed
     let cwd = this.workingDir;
@@ -1006,17 +972,20 @@ ${regression}
 
     for (const step of ymlObj.steps) {
       if (!step.commands && !step.prompt) {
-        logger.info(theme.red("No commands or prompt found"));
+        emitter.emit(events.log.info, theme.red("No commands or prompt found"));
         await this.exit(true);
       } else if (!step.commands) {
-        logger.info(theme.yellow("No commands found, running exploratory"));
+        emitter.emit(
+          "log:info",
+          theme.yellow("No commands found, running exploratory"),
+        );
         await this.exploratoryLoop(step.prompt, false, true, false);
       } else {
         await this.executeCommands(step.commands, depth, pushToHistory);
       }
     }
 
-    logger.info(`${file} (end)`);
+    emitter.emit(events.log.info, `${file} (end)`);
   }
 
   async handleSandboxCommand(cliArgs) {
@@ -1027,7 +996,8 @@ ${regression}
     } else if (cliArgs.create) {
       await this.createSandbox();
     } else {
-      logger.error(
+      emitter.emit(
+        "log:error",
         "Please specify a sandbox action: --list, --destroy <id>, or --create",
       );
       process.exit(1);
@@ -1037,8 +1007,7 @@ ${regression}
   async listSandboxes() {
     await this.connectToSandboxService();
 
-    logger.info("");
-    logger.info("Listing sandboxes...");
+    emitter.emit(events.log.info, "Listing sandboxes...");
 
     let reply = await sandbox.send({
       type: "list",
@@ -1061,8 +1030,7 @@ ${regression}
   async createSandbox() {
     await this.connectToSandboxService();
 
-    logger.info("");
-    logger.info("Creating new sandbox...");
+    emitter.emit(events.log.info, "Creating new sandbox...");
 
     let instance = await this.createNewSandbox();
 
@@ -1110,7 +1078,8 @@ ${regression}
   async buildEnv(options = {}) {
     // If instance already exists, do not build environment again
     if (this.instance) {
-      logger.info(
+      emitter.emit(
+        "log:info",
         theme.dim("Sandbox instance already exists, skipping buildEnv."),
       );
       return;
@@ -1130,18 +1099,28 @@ ${regression}
     if (!this.sandboxId && !this.newSandbox) {
       const recentId = this.getRecentSandboxId();
       if (recentId) {
-        logger.info(theme.dim(`- using recent sandbox: ${recentId}`));
+        emitter.emit(
+          "log:info",
+          theme.dim(`- using recent sandbox: ${recentId}`),
+        );
         this.sandboxId = recentId;
       } else {
-        logger.info(theme.dim(`- creating new sandbox...`));
-        logger.info(theme.dim(`  (this can take between 10 - 240 seconds)`));
+        emitter.emit(events.log.info, theme.dim(`- creating new sandbox...`));
+        emitter.emit(
+          "log:info",
+          theme.dim(`  (this can take between 10 - 240 seconds)`),
+        );
       }
     } else {
       if (this.newSandbox) {
-        logger.info(theme.dim(`- creating new sandbox (--new-sandbox)...`));
+        emitter.emit(
+          "log:info",
+          theme.dim(`- creating new sandbox (--new-sandbox)...`),
+        );
       } else {
         // I think this is a bad state
-        logger.info(
+        emitter.emit(
+          "log:info",
           theme.dim(`- creating new sandbox (no recent sandbox created)...`),
         );
       }
@@ -1169,43 +1148,23 @@ ${regression}
     // Start the debugger server as early as possible to ensure event listeners are attached
     await createDebuggerProcess();
 
-    let a = this.parseArgs();
+    const thisCommand = this.cliArgs?.command || "edit";
 
-    const thisCommand = a.command || "edit";
-
-    // Extract file from args or use default
-    const normalizeFilePath = (file) => {
-      if (!file) {
-        file = "testdriver/testdriver.yaml";
-      }
-      file = path.join(this.workingDir, file);
-      if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
-        file += ".yaml";
-      }
-      return file;
-    };
-
-    this.thisFile = normalizeFilePath(a.args?.[0]);
-
-    // Set output file for summarize results if specified
-    if (a.options?.summary && typeof a.options.summary === "string") {
-      this.resultFile = path.resolve(a.options.summary);
-    }
-
-    logger.info(theme.green(`Howdy! I'm TestDriver v${packageJson.version}`));
-    logger.info(`This is beta software!`);
-    logger.info("");
-    logger.info(theme.yellow(`Join our Forums for help`));
-    logger.info(`https://forums.testdriver.ai`);
-    logger.info("");
+    emitter.emit(
+      "log:info",
+      theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
+    );
+    emitter.emit(events.log.info, `This is beta software!`);
+    emitter.emit(events.log.info, theme.yellow(`Join our Forums for help`));
+    emitter.emit(events.log.info, `https://forums.testdriver.ai`);
 
     // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(this.workingDir, "testdriver");
+    let testdriverFolder = path.join(this.workingDir);
     if (!fs.existsSync(testdriverFolder)) {
       fs.mkdirSync(testdriverFolder);
       // log
-      logger.info(theme.dim(`Created testdriver directory`));
-      console.log(
+      emitter.emit(
+        "log:info",
         theme.dim(`Created testdriver directory: ${testdriverFolder}`),
       );
     }
@@ -1215,14 +1174,14 @@ ${regression}
       const dir = path.dirname(this.thisFile);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
-        logger.info(theme.dim(`Created directory ${dir}`));
+        emitter.emit(events.log.info, theme.dim(`Created directory ${dir}`));
       }
 
       // if thisFile doesn't exist, create it
       // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
       if (!fs.existsSync(this.thisFile)) {
         fs.writeFileSync(this.thisFile, "");
-        logger.info(theme.dim(`Created ${this.thisFile}`));
+        emitter.emit(events.log.info, theme.dim(`Created ${this.thisFile}`));
       }
     }
 
@@ -1230,37 +1189,30 @@ ${regression}
       await sdk.auth();
     }
 
-    if (thisCommand !== "run") {
-      speak("Howdy! I am TestDriver version " + packageJson.version);
-    }
-
     if (thisCommand !== "sandbox") {
-      logger.info(theme.dim(`Working on ${this.thisFile}`));
-      console.log("");
+      emitter.emit(events.log.info, theme.dim(`Working on ${this.thisFile}`));
 
       this.loadYML(this.thisFile);
     }
 
     analytics.track("command", { command: thisCommand, file: this.thisFile });
 
-    // Dynamically handle all available commands
+    // Dynamically handle all available commands (except edit which is handled by CLI)
     const availableCommands = Object.keys(this.getCommandDefinitions());
-    if (availableCommands.includes(thisCommand)) {
+    if (availableCommands.includes(thisCommand) && thisCommand !== "edit") {
       await this.executeUnifiedCommand(
         thisCommand,
-        a.args,
-        a.options,
-        a.options._optionValues,
+        this.cliArgs.args,
+        this.cliArgs.options,
+        this.cliArgs.options._optionValues,
       );
-    } else {
-      logger.error(`Unknown command: ${thisCommand}`);
+    } else if (thisCommand !== "edit") {
+      emitter.emit(events.log.error, `Unknown command: ${thisCommand}`);
       process.exit(1);
     }
   }
 
   async renderSandbox(instance, headless = false) {
-    emitter.emit(events.interactive, false);
-
     if (!headless) {
       emitter.emit(events.showWindow, {
         url: instance.vncUrl + "/vnc_lite.html",
@@ -1270,23 +1222,23 @@ ${regression}
   }
 
   async connectToSandboxService() {
-    logger.info(theme.gray(`- establishing connection...`));
-    server.broadcast("status", `Establishing connection...`);
+    emitter.emit(events.log.info, theme.gray(`- establishing connection...`));
+    this.emit("status", `Establishing connection...`);
     await sandbox.boot(config.TD_API_ROOT);
-    logger.info(theme.gray(`- authenticating...`));
-    server.broadcast("status", `Authenticating...`);
+    emitter.emit(events.log.info, theme.gray(`- authenticating...`));
+    this.emit("status", `Authenticating...`);
     await sandbox.auth(config.TD_API_KEY);
   }
 
   async connectToSandboxDirect(sandboxId) {
-    logger.info(theme.gray(`- connecting...`));
-    server.broadcast("status", `Connecting...`);
+    emitter.emit(events.log.info, theme.gray(`- connecting...`));
+    this.emit("status", `Connecting...`);
     let instance = await sandbox.connect(sandboxId);
     return instance;
   }
 
   async createNewSandbox() {
-    server.broadcast("status", `Creating new sandbox...`);
+    this.emit("status", `Creating new sandbox...`);
     let instance = await sandbox.send({
       type: "create",
       resolution: config.TD_RESOLUTION,
@@ -1355,14 +1307,11 @@ ${regression}
     if (["edit", "run"].includes(commandName)) {
       await this.buildEnv(arguments[3] || options._optionValues);
     }
-    if (commandName === "edit") {
-      await this.startInteractiveMode();
-    } else {
-      if (commandName === "run") {
-        this.errorLimit = 100;
-      }
-      await command.handler(argsObj, options);
+
+    if (commandName === "run") {
+      this.errorLimit = 100;
     }
+    await command.handler(argsObj, options);
   }
 }
 

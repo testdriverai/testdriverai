@@ -3,7 +3,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const Jimp = require("jimp");
-const { emitter, events } = require("./events.js");
+const { emitter, events } = require("../events.js");
 const sandbox = require("./sandbox.js");
 const config = require("./config.js");
 

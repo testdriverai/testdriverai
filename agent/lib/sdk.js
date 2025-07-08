@@ -2,12 +2,12 @@ const config = require("./config");
 const session = require("./session");
 
 // get the version from package.json
-const { version } = require("../package.json");
+const { version } = require("../../package.json");
 const root = config["TD_API_ROOT"];
 const axios = require("axios");
 const theme = require("./theme");
 
-const { logger } = require("./logger");
+const { logger } = require("../../interfaces/logger");
 
 let token = null;
 

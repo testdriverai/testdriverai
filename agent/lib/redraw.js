@@ -2,7 +2,7 @@ const { captureScreenPNG } = require("./system");
 const os = require("os");
 const path = require("path");
 const { compare } = require("odiff-bin");
-const logger = require("./logger").logger;
+const logger = require("../../interfaces/logger").logger;
 const theme = require("./theme");
 const sandbox = require("./sandbox");
 

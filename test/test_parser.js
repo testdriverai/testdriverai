@@ -1,48 +1,47 @@
-const chai = require('chai');
+const chai = require("chai");
 const expect = chai.expect;
-const { interpolate } = require('../lib/parser');
+const { interpolate } = require("../lib/parser");
 
-describe('interpolate', function() {
-  it('should replace variables in the string with values from the dictionary', function() {
-    const template = 'Hello, ${name}!';
-    const vars = { name: 'World' };
+describe("interpolate", function () {
+  it("should replace variables in the string with values from the dictionary", function () {
+    const template = "Hello, ${name}!";
+    const vars = { name: "World" };
     const result = interpolate(template, vars);
-    expect(result).to.equal('Hello, World!');
+    expect(result).to.equal("Hello, World!");
   });
 
-  it('should replace multiple variables in the string', function() {
-    const template = 'Hi, ${firstName} ${lastName}!';
-    const vars = { firstName: 'Marcy', lastName: 'the Dog' };
+  it("should replace multiple variables in the string", function () {
+    const template = "Hi, ${firstName} ${lastName}!";
+    const vars = { firstName: "Marcy", lastName: "the Dog" };
     const result = interpolate(template, vars);
-    expect(result).to.equal('Hi, Marcy the Dog!');
+    expect(result).to.equal("Hi, Marcy the Dog!");
   });
 
-  it('should leave variables unchanged if they are not in the dictionary', function() {
-    const template = 'Hi, ${name} ${surname}!';
-    const vars = { name: 'John' };
+  it("should leave variables unchanged if they are not in the dictionary", function () {
+    const template = "Hi, ${name} ${surname}!";
+    const vars = { name: "John" };
     const result = interpolate(template, vars);
-    expect(result).to.equal('Hi, John ${surname}!');
+    expect(result).to.equal("Hi, John ${surname}!");
   });
 
-  it('should return the original string if no variables are present', function() {
-    const template = 'Hello, World!';
-    const vars = { name: 'John' };
+  it("should return the original string if no variables are present", function () {
+    const template = "Hello, World!";
+    const vars = { name: "John" };
     const result = interpolate(template, vars);
-    expect(result).to.equal('Hello, World!');
+    expect(result).to.equal("Hello, World!");
   });
 
-  it('should handle an empty dictionary gracefully', function() {
-    const template = 'Hi, ${name}!';
+  it("should handle an empty dictionary gracefully", function () {
+    const template = "Hi, ${name}!";
     const vars = {};
     const result = interpolate(template, vars);
-    expect(result).to.equal('Hi, ${name}!');
+    expect(result).to.equal("Hi, ${name}!");
   });
 
-  it('should not replace escaped variables', function() {
-    const template = 'Hello, \\${name}!';
-    const vars = { name: 'World' };
+  it("should not replace escaped variables", function () {
+    const template = "Hello, \\${name}!";
+    const vars = { name: "World" };
     const result = interpolate(template, vars);
-    expect(result).to.equal('Hello, ${name}!');
+    expect(result).to.equal("Hello, ${name}!");
   });
 });
-

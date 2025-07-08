@@ -9,16 +9,13 @@ import GitignoreWarning from "/snippets/gitignore-warning.mdx";
 
 The supported environment variables in TestDriver are:
 
-|    Variable     |   Type    | Description                                                                                                                                                        |
-| :-------------: | :-------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|   `TD_SPEAK`    | `boolean` | Use text to speech to hear TestDriver speak as commands are run. Helpful when you don't use `TD_OVERLAY` and just plain fun.                                       |
-| `TD_ANALYTICS`  | `boolean` | Send analytics to TestDriver servers. This helps provide feedback to inform our roadmap.                                                                           |
-|   `TD_NOTIFY`   | `boolean` | Send desktop notifications when commands are run.                                                                                                                  |
-|  `TD_MINIMIZE`  | `boolean` | When not using VMs, minimize the terminal window / calling app when running commands. Useful if you only have one monitor, you don't want the terminal to show up. |
-|  `TD_API_ROOT`  | `string`  | Developer only. Set API root to another URL. For on-prem.                                                                                                          |
-|  `TD_API_KEY`   | `string`  | Set this to spawn VMs with TestDriver Pro.                                                                                                                         |
-| `TD_RESOLUTION` | `string`  | Change resolution when TD_VM is true. Format like `1280x1024`.                                                                                                     |
-|    `TD_TYPE`    | `string`  | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required.                                                                               |
+|    Variable     |   Type    | Description                                                                              |
+| :-------------: | :-------: | :--------------------------------------------------------------------------------------- |
+| `TD_ANALYTICS`  | `boolean` | Send analytics to TestDriver servers. This helps provide feedback to inform our roadmap. |
+|  `TD_API_ROOT`  | `string`  | Developer only. Set API root to another URL. For on-prem.                                |
+|  `TD_API_KEY`   | `string`  | Set this to spawn VMs with TestDriver Pro.                                               |
+| `TD_RESOLUTION` | `string`  | Change resolution when TD_VM is true. Format like `1280x1024`.                           |
+|    `TD_TYPE`    | `string`  | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required.     |
 
 <GitignoreWarning />
 
@@ -29,7 +26,6 @@ The supported environment variables in TestDriver are:
 ```
 TD_API_KEY=your_api_key
 TD_RESOLUTION=1024x768
-TD_MINIMIZE=true
 TD_TYPE=website
 TD_WEBSITE=www.jeep.com
 TD_ANALYTICS=true

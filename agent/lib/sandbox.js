@@ -1,4 +1,5 @@
 const WebSocket = require("ws");
+const { emitter, events } = require("../events");
 class Sandbox {
   constructor() {
     this.socket = null;
@@ -21,6 +22,7 @@ class Sandbox {
 
       let p = new Promise((resolve) => {
         this.socket.send(JSON.stringify(message));
+        emitter.emit(events.sandbox.sent, message);
         resolvePromise = resolve;
       });
 
@@ -76,11 +78,13 @@ class Sandbox {
         console.log("Socket Error");
         err && console.log(err);
         clearInterval(this.heartbeat);
+        emitter.emit(events.sandbox.errored, err);
         this.apiSocketConnected = false;
         throw err;
       });
 
       this.socket.on("open", async () => {
+        emitter.emit(events.sandbox.connected);
         this.heartbeat = setInterval(() => {
           this.send({ type: "ping" });
         }, 5000);
@@ -93,12 +97,12 @@ class Sandbox {
         let message = JSON.parse(raw);
 
         if (message.error) {
-          console.log("");
-          console.error(message.errorMessage);
-          console.error(JSON.stringify(message, null, 2));
+          emitter.emit(events.sandbox.error, message.errorMessage);
+
           throw new Error(message);
         } else {
           if (this.ps[message.requestId]) {
+            emitter.emit(events.sandbox.received, message);
             this.ps[message.requestId].resolve(message);
             delete this.ps[message.requestId];
           } else {

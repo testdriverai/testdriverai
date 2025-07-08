@@ -1,5 +1,5 @@
-const { logger } = require("./logger.js");
-const { emitter, eventsArray } = require("./events.js");
+const { logger } = require("../../interfaces/logger.js");
+const { emitter, eventsArray } = require("../events.js");
 const { startDebugger, broadcastEvent } = require("./debugger-server.js");
 
 module.exports.createDebuggerProcess = () => {

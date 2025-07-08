@@ -2,7 +2,7 @@ const WebSocket = require("ws");
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
-const { eventsArray } = require("./events.js");
+const { eventsArray } = require("../events.js");
 
 let server = null;
 let wss = null;
@@ -20,16 +20,16 @@ function createDebuggerServer() {
       const urlObj = new URL(url, `http://${req.headers.host}`);
       const pathname = urlObj.pathname;
 
-      // Serve static files from assets directory
+      // Serve static files from debugger directory
       let filePath;
       if (pathname === "/" || pathname === "/index.html") {
-        filePath = path.join(__dirname, "..", "assets", "index.html");
+        filePath = path.join(__dirname, "..", "debugger", "index.html");
       } else {
-        // Remove leading slash and serve from assets directory
+        // Remove leading slash and serve from debugger directory
         const cleanUrl = pathname.startsWith("/")
           ? pathname.substring(1)
           : pathname;
-        filePath = path.join(__dirname, "..", "assets", cleanUrl);
+        filePath = path.join(__dirname, "..", "debugger", cleanUrl);
       }
 
       // Check if file exists
@@ -127,7 +127,7 @@ async function startDebugger() {
     const url = `http://localhost:${port}`;
 
     // Set up event listeners for all events
-    const { emitter } = require("./events.js");
+    const { emitter } = require("../events.js");
 
     for (const event of eventsArray) {
       emitter.on(event, async (data) => {

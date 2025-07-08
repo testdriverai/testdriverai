@@ -1,6 +1,6 @@
 // parses markdown content to find code blocks, and then extracts yaml from those code blocks
 const yaml = require("js-yaml");
-const package = require("../package.json");
+const package = require("../../package.json");
 const session = require("./session");
 const theme = require("./theme");
 // do the actual parsing

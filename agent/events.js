@@ -11,7 +11,6 @@ const events = {
     end: "screen-capture:end",
     error: "screen-capture:error",
   },
-  interactive: "interactive",
   terminal: {
     stdout: "terminal:stdout",
     stderr: "terminal:stderr",
@@ -21,6 +20,26 @@ const events = {
   },
   vm: {
     show: "vm:show",
+  },
+  status: "status",
+  log: {
+    markdown: {
+      static: "log:markdown:static",
+      start: "log:markdown:start",
+      chunk: "log:markdown:chunk",
+      end: "log:markdown:end",
+    },
+    info: "log:info",
+    warn: "log:warn",
+    error: "log:error",
+    debug: "log:debug",
+  },
+  sandbox: {
+    connected: "sandbox:connected",
+    errored: "sandbox:error",
+    disconnect: "sandbox:disconnected",
+    sensitiveHeaders: "sandbox:sent",
+    received: "sandbox:received",
   },
 };
 

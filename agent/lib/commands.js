@@ -1,14 +1,13 @@
 // the actual commands to interact with the system
-const sdk = require("./sdk");
+const sdk = require("./sdk.js");
 const vm = require("vm");
-const theme = require("./theme");
-const server = require("./ipc");
+const theme = require("./theme.js");
 const {
   captureScreenBase64,
   captureScreenPNG,
   platform,
   activeWin,
-} = require("./system");
+} = require("./system.js");
 
 const fs = require("fs").promises; // Using the promises version for async operations
 const { findTemplateImage } = require("./subimage/index");
@@ -17,11 +16,11 @@ const path = require("path");
 const Jimp = require("jimp");
 const os = require("os");
 const cliProgress = require("cli-progress");
-const redraw = require("./redraw");
+const redraw = require("./redraw.js");
 const sandbox = require("./sandbox.js");
 
-const { logger, prettyMarkdown } = require("./logger");
-const { emitter, events } = require("./events.js");
+const { logger } = require("../../interfaces/logger.js");
+const { emitter, events } = require("../events.js");
 
 const niceSeconds = (ms) => {
   return Math.round(ms / 1000);
@@ -133,7 +132,7 @@ const assert = async (assertion, shouldThrow = false, async = false) => {
   }
 
   const handleAssertResponse = (response) => {
-    prettyMarkdown(response);
+    emitter.emit(events.log.markdown.static, response);
 
     if (response.indexOf("The task passed") > -1) {
       return true;
@@ -146,11 +145,7 @@ const assert = async (assertion, shouldThrow = false, async = false) => {
     }
   };
 
-  // take a screenshot
-  logger.info("");
-  logger.info(theme.dim("thinking..."), true);
-  server.broadcast("status", `thinking...`);
-  logger.info("");
+  emitter.emit(events.status, `thinking...`);
 
   if (async) {
     await sdk
@@ -213,7 +208,8 @@ const scroll = async (direction = "down", amount = 300, method = "mouse") => {
   const after = await captureScreenBase64();
 
   if (before === after) {
-    logger.warn(
+    emitter.emit(
+      "log:warn",
       "Attempted to scroll, but the screen did not change.  You may need to click a non-interactive element to focus the scrollable area first.",
     );
   }
@@ -222,8 +218,6 @@ const scroll = async (direction = "down", amount = 300, method = "mouse") => {
 // perform a mouse click
 // click, right-click, double-click, hover
 const click = async (x, y, action = "click") => {
-  emitter.emit(events.interactive, true);
-
   await redraw.start();
 
   let button = "left";
@@ -236,7 +230,8 @@ const click = async (x, y, action = "click") => {
     double = true;
   }
 
-  logger.debug(
+  emitter.emit(
+    "log:debug",
     theme.dim(`${action} ${button} clicking at ${x}, ${y}...`),
     true,
   );
@@ -269,8 +264,6 @@ const click = async (x, y, action = "click") => {
   }
 
   await redraw.wait(5000);
-
-  emitter.emit(events.interactive, false);
 
   return;
 };
@@ -309,11 +302,8 @@ let commands = {
 
     description = description ? description.toString() : null;
 
-    logger.info("");
-    logger.info(theme.dim("thinking..."), true);
-    logger.info("");
+    emitter.emit(events.log.info, theme.dim("thinking..."), true);
 
-    // const mdStream = createMarkdownStreamLogger();
     let response = await sdk.req(
       "hover/text",
       {
@@ -325,14 +315,11 @@ let commands = {
         displayMultiple: 1,
       },
       (chunk) => {
-        if (chunk.type === "data" && chunk.data) {
-          // mdStream.log(chunk.data);
-        } else if (chunk.type === "closeMatches") {
+        if (chunk.type === "closeMatches") {
           emitter.emit(events.matches.show, chunk.data);
         }
       },
     );
-    // mdStream.end();
 
     if (!response.data) {
       throw new AiError("No text on screen matches description");
@@ -343,11 +330,8 @@ let commands = {
   // uses our api to find all images on screen
   "hover-image": async (description, action = "click") => {
     // take a screenshot
-    logger.info("");
-    logger.info(theme.dim("thinking..."), true);
-    logger.info("");
+    emitter.emit(events.log.info, theme.dim("thinking..."), true);
 
-    // const mdStream = createMarkdownStreamLogger();
     let response = await sdk.req(
       "hover/image",
       {
@@ -357,14 +341,11 @@ let commands = {
         displayMultiple: 1,
       },
       (chunk) => {
-        if (chunk.type === "data") {
-          // mdStream.log(chunk.data);
-        } else if (chunk.type === "closeMatches") {
+        if (chunk.type === "closeMatches") {
           emitter.emit(events.matches.show, chunk.data);
         }
       },
     );
-    // mdStream.end();
 
     if (!response?.data) {
       throw new AiError("No image or icon on screen matches description");
@@ -416,8 +397,8 @@ let commands = {
     return await delay(timeout);
   },
   "wait-for-image": async (description, timeout = 10000) => {
-    logger.info("");
-    logger.info(
+    emitter.emit(
+      events.log.info,
       theme.dim(
         `waiting for an image matching description "${description}"...`,
       ),
@@ -437,7 +418,8 @@ let commands = {
 
       durationPassed = new Date().getTime() - startTime;
       if (!passed) {
-        logger.info(
+        emitter.emit(
+          events.log.info,
           theme.dim(
             `${niceSeconds(durationPassed)} seconds have passed without finding an image matching the description "${description}"`,
           ),
@@ -448,7 +430,8 @@ let commands = {
     }
 
     if (passed) {
-      logger.info(
+      emitter.emit(
+        events.log.info,
         theme.dim(`An image matching the description "${description}" found!`),
         true,
       );
@@ -465,7 +448,11 @@ let commands = {
 
     await redraw.start();
 
-    logger.info(theme.dim(`waiting for text: "${text}"...`), true);
+    emitter.emit(
+      events.log.info,
+      theme.dim(`waiting for text: "${text}"...`),
+      true,
+    );
 
     let startTime = new Date().getTime();
     let durationPassed = 0;
@@ -490,7 +477,8 @@ let commands = {
       passed = response.data;
       durationPassed = new Date().getTime() - startTime;
       if (!passed) {
-        logger.info(
+        emitter.emit(
+          events.log.info,
           theme.dim(
             `${niceSeconds(durationPassed)} seconds have passed without finding "${text}"`,
           ),
@@ -501,7 +489,7 @@ let commands = {
     }
 
     if (passed) {
-      logger.info(theme.dim(`"${text}" found!`), true);
+      emitter.emit(events.log.info, theme.dim(`"${text}" found!`), true);
       return;
     } else {
       throw new AiError(
@@ -519,7 +507,11 @@ let commands = {
   ) => {
     await redraw.start();
 
-    logger.info(theme.dim(`scrolling for text: "${text}"...`), true);
+    emitter.emit(
+      events.log.info,
+      theme.dim(`scrolling for text: "${text}"...`),
+      true,
+    );
 
     if (method === "keyboard") {
       try {
@@ -561,7 +553,8 @@ let commands = {
 
       passed = response.data;
       if (!passed) {
-        logger.info(
+        emitter.emit(
+          events.log.info,
           theme.dim(
             `scrolling ${direction} ${incrementDistance}px. ${scrollDistance + incrementDistance}/${maxDistance}px scrolled...`,
           ),
@@ -573,7 +566,7 @@ let commands = {
     }
 
     if (passed) {
-      logger.info(theme.dim(`"${text}" found!`), true);
+      emitter.emit(events.log.info, theme.dim(`"${text}" found!`), true);
       return;
     } else {
       throw new AiError(
@@ -599,7 +592,8 @@ let commands = {
       throw new AiError("Only one of description or path can be provided");
     }
 
-    logger.info(
+    emitter.emit(
+      events.log.info,
       theme.dim(`scrolling for an image matching "${needle}"...`),
       true,
     );
@@ -623,7 +617,8 @@ let commands = {
       }
 
       if (!passed) {
-        logger.info(
+        emitter.emit(
+          events.log.info,
           theme.dim(`scrolling ${direction} ${incrementDistance} pixels...`),
           true,
         );
@@ -633,7 +628,7 @@ let commands = {
     }
 
     if (passed) {
-      logger.info(theme.dim(`"${needle}" found!`), true);
+      emitter.emit(events.log.info, theme.dim(`"${needle}" found!`), true);
       return;
     } else {
       throw new AiError(
@@ -664,7 +659,7 @@ let commands = {
     return await assert(assertion, true, async);
   },
   exec: async (language, code, silent = false) => {
-    logger.info(theme.dim(`calling exec...`), true);
+    emitter.emit(events.log.info, theme.dim(`calling exec...`), true);
 
     console.log(code);
 
@@ -685,21 +680,22 @@ let commands = {
         );
       } else {
         if (!silent) {
-          logger.info(theme.dim(`Command stdout:`), true);
-          logger.info(`${result.out.stdout}`, true);
+          emitter.emit(events.log.info, theme.dim(`Command stdout:`), true);
+          emitter.emit(events.log.info, `${result.out.stdout}`, true);
 
           if (result.out.stderr) {
-            logger.info(theme.dim(`Command stderr:`), true);
-            logger.info(`${result.out.stderr}`, true);
+            emitter.emit(events.log.info, theme.dim(`Command stderr:`), true);
+            emitter.emit(events.log.info, `${result.out.stderr}`, true);
           }
         }
 
         return result.stdout?.trim();
       }
     } else if (language == "js") {
-      logger.info(theme.dim(`running js...`), true);
+      emitter.emit(events.log.info, theme.dim(`running js...`), true);
 
-      logger.info(
+      emitter.emit(
+        events.log.info,
         theme.dim(`running value of \`${plat}\` in local JS vm...`),
         true,
       );
@@ -740,11 +736,11 @@ let commands = {
       console.log("");
 
       if (!stepResult) {
-        logger.info(`No result returned from script`, true);
+        emitter.emit(events.log.info, `No result returned from script`, true);
       } else {
         if (!silent) {
-          logger.info(theme.dim(`Result:`), true);
-          logger.info(stepResult, true);
+          emitter.emit(events.log.info, theme.dim(`Result:`), true);
+          emitter.emit(events.log.info, stepResult, true);
         }
       }
 

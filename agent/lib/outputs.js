@@ -1,5 +1,5 @@
 let outputs = {};
-const { logger } = require("./logger");
+const { logger } = require("../../interfaces/logger");
 
 module.exports = {
   getAll: () => {

@@ -1,5 +1,5 @@
 // this stores the history of the bot's interactions in memory
-const { logger } = require("./logger.js");
+const { logger } = require("../../interfaces/logger.js");
 
 // the memory store
 let store = [];

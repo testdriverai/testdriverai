@@ -6,7 +6,6 @@
 
 // Load the env vars from .env
 require("dotenv").config();
-const { logger } = require("./logger");
 
 // Parse out true and false string values
 function parseValue(value) {
@@ -21,12 +20,9 @@ function parseValue(value) {
 }
 
 const config = {
-  TD_SPEAK: false,
   TD_ANALYTICS: true,
-  TD_NOTIFY: false,
   TD_API_ROOT: "https://testdriverai-v6-c96fc597be11.herokuapp.com",
   TD_API_KEY: null,
-  TD_DEV: parseValue(process.env["DEV"]),
   TD_PROFILE: false,
   TD_RESOLUTION: [1366, 768],
 };
@@ -41,10 +37,6 @@ for (let key in process.env) {
   if (key.startsWith("TD_")) {
     config[key] = parseValue(process.env[key]);
   }
-}
-
-if (config.TD_DEV) {
-  logger.info("Testdriverai config: %j", config);
 }
 
 module.exports = config;
