@@ -51,7 +51,11 @@ class TestDriverAgent extends EventEmitter {
     this.system = createSystem(this.sandbox);
 
     // Create commands instance with this agent's emitter and system
-    const commandsResult = createCommands(this.emitter, this.system);
+    const commandsResult = createCommands(
+      this.emitter,
+      this.system,
+      this.sandbox,
+    );
     this.commands = commandsResult.commands;
     this.assert = commandsResult.assert;
 
@@ -111,7 +115,7 @@ class TestDriverAgent extends EventEmitter {
   async dieOnFatal(error) {
     this.emitter.emit(
       events.log.error,
-      theme.red("Fatal Error") + `\n${error.message}`,
+      theme.red("Fatal Error") + `\n${error}`,
     );
     await this.summarize(error.message);
     return await this.exit(true);

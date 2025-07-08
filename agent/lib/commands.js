@@ -10,13 +10,14 @@ const path = require("path");
 const Jimp = require("jimp");
 const os = require("os");
 const cliProgress = require("cli-progress");
-const redraw = require("./redraw.js");
-const sandbox = require("./sandbox.js");
+const { createRedraw } = require("./redraw.js");
 
 const { events } = require("../events.js");
 
 // Factory function that creates commands with the provided emitter
-const createCommands = (emitter, system) => {
+const createCommands = (emitter, system, sandbox) => {
+  // Create redraw instance with the system
+  const redraw = createRedraw(emitter, system, sandbox);
   const niceSeconds = (ms) => {
     return Math.round(ms / 1000);
   };

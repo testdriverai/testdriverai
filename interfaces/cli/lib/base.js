@@ -49,13 +49,13 @@ class BaseCommand extends Command {
     });
 
     // // loop through all events and set up listeners
-    for (const eventName of Object.values(eventsArray)) {
-      if (!eventName.startsWith("log:")) {
-        this.agent.emitter.on(eventName, (data) => {
-          console.log(`Event ${eventName} received:`, data);
-        });
-      }
-    }
+    // for (const eventName of Object.values(eventsArray)) {
+    //   if (!eventName.startsWith("log:")) {
+    //     this.agent.emitter.on(eventName, (data) => {
+    //       console.log(`Event ${eventName} received:`, data);
+    //     });
+    //   }
+    // }
   }
 
   setupProcessHandlers() {

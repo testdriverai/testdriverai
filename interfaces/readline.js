@@ -147,6 +147,8 @@ class ReadlineInterface {
         );
       }
     } catch (error) {
+      console.log(error);
+
       this.agent.emitter.emit(
         events.log.error,
         "Command error:",
