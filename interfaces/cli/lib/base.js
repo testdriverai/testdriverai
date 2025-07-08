@@ -14,11 +14,8 @@ class BaseCommand extends Command {
     this.agent.emitter.on(events.status, (message) => {
       console.log(`- ${message}`);
     });
-    this.agent.emitter.on(events.log.info, (message) => {
-      console.log(`info - ${message}`);
-    });
     this.agent.emitter.on(events.log.log, (message) => {
-      console.log(` - ${message}`);
+      console.log(message);
     });
     this.agent.emitter.on(events.log.warn, (message) => {
       console.warn(`- ${message}`);

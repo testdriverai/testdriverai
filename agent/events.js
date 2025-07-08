@@ -6,7 +6,6 @@ let currentEmitter = null;
 // Factory function to create a new emitter instance
 const createEmitter = () => {
   const emitter = new EventEmitter();
-  console.log("making a new emitter");
   return emitter;
 };
 

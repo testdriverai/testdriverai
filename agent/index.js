@@ -19,25 +19,30 @@ const { EventEmitter } = require("events");
 // local modules
 const analytics = require("./lib/analytics.js");
 const parser = require("./lib/parser.js");
-const { createCommander } = require("./lib/commander.js");
 const system = require("./lib/system.js");
 const generator = require("./lib/generator.js");
 const sdk = require("./lib/sdk.js");
-const { createCommands } = require("./lib/commands.js");
 const config = require("./lib/config.js");
-const { createSandbox } = require("./lib/sandbox.js");
 const theme = require("./lib/theme.js");
+
+// agent modules
+const { createCommander } = require("./lib/commander.js");
+const { createCommands } = require("./lib/commands.js");
+const { createSandbox } = require("./lib/sandbox.js");
 const { createCommandDefinitions } = require("./interface.js");
 
 const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
-const { events, createEmitter } = require("./events.js");
+const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 
 class TestDriverAgent extends EventEmitter {
   constructor() {
     super(); // Create the agent's own emitter for internal events
     this.emitter = createEmitter();
+
+    // Set this emitter as the global current emitter for other modules to use
+    setEmitter(this.emitter);
 
     // Create commands instance with this agent's emitter
     this.commands = createCommands(this.emitter);
@@ -1175,7 +1180,6 @@ ${regression}
     // Start the debugger server as early as possible to ensure event listeners are attached
     await createDebuggerProcess();
 
-    console.log("emit howdy");
     this.emitter.emit(
       "log:info",
       theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
