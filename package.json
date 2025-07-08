@@ -29,7 +29,7 @@
     "commander": "^14.0.0",
     "datadog-winston": "^1.6.0",
     "dotenv": "^16.4.5",
-    "jimp": "^0.22.12",
+    "jimp": "^1.6.0",
     "js-yaml": "^4.1.0",
     "markdown-parser": "0.0.8",
     "marked": "^12.0.1",
