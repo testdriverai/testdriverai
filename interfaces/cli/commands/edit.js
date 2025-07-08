@@ -37,15 +37,38 @@ class EditCommand extends BaseCommand {
   async run() {
     const { args, flags } = await this.parse(EditCommand);
 
-    await this.setupAgent(args.file, flags);
+    try {
+      await this.setupAgent(args.file, flags);
 
-    // Build environment for edit mode
-    await this.agent.buildEnv(flags);
+      console.log("Starting environment setup...");
 
-    // Start interactive mode
-    const readlineInterface = new ReadlineInterface(this.agent);
-    this.agent.readlineInterface = readlineInterface;
-    await readlineInterface.start();
+      // Build environment for edit mode with timeout
+      const buildEnvPromise = this.agent.buildEnv(flags);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(
+          () =>
+            reject(new Error("Environment setup timed out after 5 minutes")),
+          300000,
+        );
+      });
+
+      await Promise.race([buildEnvPromise, timeoutPromise]);
+      console.log("Environment setup completed successfully.");
+
+      // Start interactive mode
+      const readlineInterface = new ReadlineInterface(this.agent);
+      this.agent.readlineInterface = readlineInterface;
+      await readlineInterface.start();
+    } catch (error) {
+      console.error("Error in edit command:", error.message);
+      console.error("Full error:", error);
+
+      if (this.agent) {
+        await this.agent.exit(true);
+      } else {
+        process.exit(1);
+      }
+    }
   }
 }
 

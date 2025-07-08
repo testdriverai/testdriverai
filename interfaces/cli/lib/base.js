@@ -9,12 +9,41 @@ class BaseCommand extends Command {
   }
 
   setupEventListeners() {
-    // Set up logger to listen to events and output them
-    // The logger is automatically required and sets up event listeners
-    // Only load when we actually have an agent (not for help commands)
-    if (this.agent) {
-      require("../../logger.js");
+    const { eventsArray } = require("../../../agent/events.js");
+
+    // Set up listeners for all events
+    for (const eventName of eventsArray) {
+      emitter.on(eventName, (...args) => {
+        const timestamp = new Date().toISOString();
+        const formattedArgs = args
+          .map((arg) =>
+            typeof arg === "object"
+              ? JSON.stringify(arg, null, 2)
+              : String(arg),
+          )
+          .join(" ");
+
+        // Use different prefixes for different event types
+        let prefix = "[EVENT]";
+        if (eventName.includes("error")) {
+          prefix = "[ERROR]";
+        } else if (eventName.includes("warn")) {
+          prefix = "[WARN]";
+        } else if (eventName.includes("info")) {
+          prefix = "[INFO]";
+        } else if (eventName.includes("debug")) {
+          prefix = "[DEBUG]";
+        } else if (eventName.includes("sandbox")) {
+          prefix = "[SANDBOX]";
+        } else if (eventName.includes("log")) {
+          prefix = "[LOG]";
+        }
+
+        console.log(`${prefix} [${timestamp}] ${eventName}: ${formattedArgs}`);
+      });
     }
+
+    console.log(`Set up listeners for ${eventsArray.length} events`);
   }
 
   setupProcessHandlers() {

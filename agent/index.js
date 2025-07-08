@@ -1148,8 +1148,6 @@ ${regression}
     // Start the debugger server as early as possible to ensure event listeners are attached
     await createDebuggerProcess();
 
-    const thisCommand = this.cliArgs?.command || "edit";
-
     emitter.emit(
       "log:info",
       theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
@@ -1170,7 +1168,7 @@ ${regression}
     }
 
     // if the directory for thisFile doesn't exist, create it
-    if (thisCommand !== "sandbox") {
+    if (this.cliArgs.command !== "sandbox") {
       const dir = path.dirname(this.thisFile);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -1189,25 +1187,34 @@ ${regression}
       await sdk.auth();
     }
 
-    if (thisCommand !== "sandbox") {
+    if (this.cliArgs.command !== "sandbox") {
       emitter.emit(events.log.info, theme.dim(`Working on ${this.thisFile}`));
 
       this.loadYML(this.thisFile);
     }
 
-    analytics.track("command", { command: thisCommand, file: this.thisFile });
+    analytics.track("command", {
+      command: this.cliArgs.command,
+      file: this.thisFile,
+    });
 
     // Dynamically handle all available commands (except edit which is handled by CLI)
     const availableCommands = Object.keys(this.getCommandDefinitions());
-    if (availableCommands.includes(thisCommand) && thisCommand !== "edit") {
+    if (
+      availableCommands.includes(this.cliArgs.command) &&
+      this.cliArgs.command !== "edit"
+    ) {
       await this.executeUnifiedCommand(
-        thisCommand,
+        this.cliArgs.command,
         this.cliArgs.args,
         this.cliArgs.options,
         this.cliArgs.options._optionValues,
       );
-    } else if (thisCommand !== "edit") {
-      emitter.emit(events.log.error, `Unknown command: ${thisCommand}`);
+    } else if (this.cliArgs.command !== "edit") {
+      emitter.emit(
+        events.log.error,
+        `Unknown command: ${this.cliArgs.command}`,
+      );
       process.exit(1);
     }
   }

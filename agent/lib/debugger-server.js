@@ -23,13 +23,13 @@ function createDebuggerServer() {
       // Serve static files from debugger directory
       let filePath;
       if (pathname === "/" || pathname === "/index.html") {
-        filePath = path.join(__dirname, "..", "debugger", "index.html");
+        filePath = path.join(__dirname, "..", "..", "debugger", "index.html");
       } else {
         // Remove leading slash and serve from debugger directory
         const cleanUrl = pathname.startsWith("/")
           ? pathname.substring(1)
           : pathname;
-        filePath = path.join(__dirname, "..", "debugger", cleanUrl);
+        filePath = path.join(__dirname, "..", "..", "debugger", cleanUrl);
       }
 
       // Check if file exists
