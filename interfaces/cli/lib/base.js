@@ -1,5 +1,5 @@
 const { Command } = require("@oclif/core");
-const { emitter, events } = require("../../../agent/events.js");
+const { events } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
 
 class BaseCommand extends Command {
@@ -9,47 +9,32 @@ class BaseCommand extends Command {
   }
 
   setupEventListeners() {
-    const { eventsArray } = require("../../../agent/events.js");
+    const { events } = require("../../../agent/events.js");
 
-    // Set up listeners for all events
-    for (const eventName of eventsArray) {
-      emitter.on(eventName, (...args) => {
-        const timestamp = new Date().toISOString();
-        const formattedArgs = args
-          .map((arg) =>
-            typeof arg === "object"
-              ? JSON.stringify(arg, null, 2)
-              : String(arg),
-          )
-          .join(" ");
-
-        // Use different prefixes for different event types
-        let prefix = "[EVENT]";
-        if (eventName.includes("error")) {
-          prefix = "[ERROR]";
-        } else if (eventName.includes("warn")) {
-          prefix = "[WARN]";
-        } else if (eventName.includes("info")) {
-          prefix = "[INFO]";
-        } else if (eventName.includes("debug")) {
-          prefix = "[DEBUG]";
-        } else if (eventName.includes("sandbox")) {
-          prefix = "[SANDBOX]";
-        } else if (eventName.includes("log")) {
-          prefix = "[LOG]";
-        }
-
-        console.log(`${prefix} [${timestamp}] ${eventName}: ${formattedArgs}`);
-      });
-    }
-
-    console.log(`Set up listeners for ${eventsArray.length} events`);
+    this.agent.emitter.on(events.status, (message) => {
+      console.log(`- ${message}`);
+    });
+    this.agent.emitter.on(events.log.info, (message) => {
+      console.log(`info - ${message}`);
+    });
+    this.agent.emitter.on(events.log.log, (message) => {
+      console.log(` - ${message}`);
+    });
+    this.agent.emitter.on(events.log.warn, (message) => {
+      console.warn(`- ${message}`);
+    });
+    this.agent.emitter.on(events.log.error, (message) => {
+      console.error(`- ${message}`);
+    });
+    this.agent.emitter.on(events.log.debug, (message) => {
+      console.debug(`- ${message}`);
+    });
   }
 
   setupProcessHandlers() {
     // Process error handlers
     process.on("uncaughtException", async (err) => {
-      emitter.emit(events.log.error, "Uncaught Exception: %s", err);
+      this.agent.emitter.emit(events.log.error, "Uncaught Exception: %s", err);
       if (this.agent) {
         await this.agent.exit(true);
       } else {
@@ -58,7 +43,7 @@ class BaseCommand extends Command {
     });
 
     process.on("unhandledRejection", async (reason, promise) => {
-      emitter.emit(
+      this.agent.emitter.emit(
         events.log.error,
         "Unhandled Rejection at: %s, reason: %s",
         promise,

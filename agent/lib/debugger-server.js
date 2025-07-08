@@ -2,7 +2,7 @@ const WebSocket = require("ws");
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
-const { eventsArray } = require("../events.js");
+const { eventsArray, getEmitter } = require("../events.js");
 
 let server = null;
 let wss = null;
@@ -127,7 +127,7 @@ async function startDebugger() {
     const url = `http://localhost:${port}`;
 
     // Set up event listeners for all events
-    const { emitter } = require("../events.js");
+    const emitter = getEmitter();
 
     for (const event of eventsArray) {
       emitter.on(event, async (data) => {

@@ -5,32 +5,17 @@ const session = require("./session");
 const { version } = require("../../package.json");
 const root = config["TD_API_ROOT"];
 const axios = require("axios");
-const theme = require("./theme");
 
-const { logger } = require("../../interfaces/logger");
+const { events, emitter } = require("../events");
 
 let token = null;
 
 const outputError = (error) => {
-  logger.error(
-    "API Error: %s (%s)",
-    theme.red(
-      // HTTP status code from Axios
-      error.status ||
-        // ...or an explicit error `reason` set by Sails
-        error.reason ||
-        // ...or default to the error message
-        error.message,
-    ),
-    theme.red(
-      // e.g. "teamNotExist" from Sails' exits
-      error.response?.data?.raw ||
-        // ...or the status text
-        error.statusText ||
-        // ...or the HTTP status code
-        error.code,
-    ),
-  );
+  emitter.emit(events.sdk.error, {
+    message: error.status || error.reason || error.message,
+    code: error.response?.data?.raw || error.statusText || error.code,
+    fullError: error,
+  });
 };
 
 const parseBody = async (response, body) => {
@@ -74,7 +59,10 @@ const parseBody = async (response, body) => {
     }
     return body;
   } catch (err) {
-    logger.error(theme.red("Parsing Error", err));
+    emitter.emit(events.sdk.parseError, {
+      error: err,
+      message: "Parsing Error",
+    });
     throw err;
   }
 };

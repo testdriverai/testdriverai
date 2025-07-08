@@ -351,8 +351,6 @@ emitter.on(events.log.markdown.chunk, (streamId, chunk) => {
     return;
   }
 
-  console.log(chunk);
-
   const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
 
   stream.buffer += chunk;

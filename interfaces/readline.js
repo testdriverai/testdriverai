@@ -71,7 +71,7 @@ class ReadlineInterface {
 
       return [matches.length ? matches : files, partial];
     } catch (e) {
-      emitter.emit(events.log.info, "%s", e);
+      emitter.emit(events.log.log, "%s", e);
       return [[], partial];
     }
   }
@@ -105,7 +105,7 @@ class ReadlineInterface {
 
     analytics.track("input", { input });
 
-    emitter.emit(events.log.info, ""); // adds a nice break between submissions
+    emitter.emit(events.log.log, ""); // adds a nice break between submissions
 
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
@@ -193,11 +193,11 @@ class ReadlineInterface {
 ${yml}\`\`\``;
 
         emitter.emit(
-          events.log.info,
+          events.log.log,
           `Loaded test script ${this.agent.thisFile}\n`,
         );
         emitter.emit(events.log.markdown.static, markdown);
-        emitter.emit(events.log.info, "New commands will be appended.");
+        emitter.emit(events.log.log, "New commands will be appended.");
       }
     }
 

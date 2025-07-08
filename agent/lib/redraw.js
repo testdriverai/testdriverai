@@ -2,7 +2,7 @@ const { captureScreenPNG } = require("./system");
 const os = require("os");
 const path = require("path");
 const { compare } = require("odiff-bin");
-const logger = require("../../interfaces/logger").logger;
+const { events, emitter } = require("../events");
 const theme = require("./theme");
 const sandbox = require("./sandbox");
 
@@ -133,18 +133,34 @@ async function checkCondition(resolve, startTime, timeoutMs) {
     ? theme.green(`y`)
     : theme.dim(`${Math.floor(timeElapsed / 1000)}/${timeoutMs / 1000}s`);
 
-  logger.debug(
-    `   ` +
-      theme.dim("redraw=") +
-      redrawText +
-      theme.dim(" network=") +
-      networkText +
-      theme.dim(" timeout=") +
-      timeoutText,
-  );
+  emitter.emit(events.redraw.status, {
+    redraw: {
+      hasRedrawn: screenHasRedrawn,
+      diffPercent,
+      threshold: redrawThresholdPercent,
+      text: redrawText,
+    },
+    network: {
+      settled: networkSettled,
+      rxBytes: diffRxBytes,
+      txBytes: diffTxBytes,
+      text: networkText,
+    },
+    timeout: {
+      isTimeout,
+      elapsed: timeElapsed,
+      max: timeoutMs,
+      text: timeoutText,
+    },
+  });
 
   if ((screenHasRedrawn && networkSettled) || isTimeout) {
-    logger.debug(`   `);
+    emitter.emit(events.redraw.complete, {
+      screenHasRedrawn,
+      networkSettled,
+      isTimeout,
+      timeElapsed,
+    });
     resolve("true");
   } else {
     setTimeout(() => {
@@ -154,7 +170,6 @@ async function checkCondition(resolve, startTime, timeoutMs) {
 }
 
 function wait(timeoutMs) {
-  logger.debug(`   `);
   return new Promise((resolve) => {
     const startTime = Date.now();
     checkCondition(resolve, startTime, timeoutMs);

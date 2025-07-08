@@ -2,7 +2,7 @@
 const Jimp = require("jimp");
 const path = require("path");
 const cv = require("./opencv.js");
-const { logger } = require("../../../interfaces/logger.js");
+const { events, emitter } = require("../../events");
 
 async function findTemplateImage(haystack, needle, threshold) {
   try {
@@ -55,8 +55,13 @@ async function findTemplateImage(haystack, needle, threshold) {
 
     return positions;
   } catch (err) {
-    logger.error(err);
-    logger.error("OpenCV threw an error");
+    emitter.emit(events.subimage.error, {
+      error: err,
+      message: "OpenCV threw an error",
+      haystack,
+      needle,
+      threshold,
+    });
   }
 }
 

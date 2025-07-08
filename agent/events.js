@@ -1,6 +1,27 @@
 const { EventEmitter } = require("events");
 
-const emitter = new EventEmitter();
+// Global reference to the current agent's emitter
+let currentEmitter = null;
+
+// Factory function to create a new emitter instance
+const createEmitter = () => {
+  const emitter = new EventEmitter();
+  console.log("making a new emitter");
+  return emitter;
+};
+
+// Function to set the current emitter for all modules to use
+const setEmitter = (emitter) => {
+  currentEmitter = emitter;
+};
+
+// Function to get the current emitter
+const getEmitter = () => {
+  if (!currentEmitter) {
+    throw new Error("Emitter not initialized. Call setEmitter() first.");
+  }
+  return currentEmitter;
+};
 
 const events = {
   showWindow: "show-window",
@@ -29,7 +50,7 @@ const events = {
       chunk: "log:markdown:chunk",
       end: "log:markdown:end",
     },
-    info: "log:info",
+    log: "log:log",
     warn: "log:warn",
     error: "log:error",
     debug: "log:debug",
@@ -40,6 +61,25 @@ const events = {
     disconnect: "sandbox:disconnected",
     sensitiveHeaders: "sandbox:sent",
     received: "sandbox:received",
+  },
+  outputs: {
+    set: "outputs:set",
+  },
+  history: {
+    add: "history:add",
+    clear: "history:clear",
+    set: "history:set",
+  },
+  redraw: {
+    status: "redraw:status",
+    complete: "redraw:complete",
+  },
+  sdk: {
+    error: "sdk:error",
+    parseError: "sdk:parseError",
+  },
+  subimage: {
+    error: "subimage:error",
   },
 };
 
@@ -59,4 +99,4 @@ const getValues = (obj) => {
 
 const eventsArray = getValues(events);
 
-module.exports = { events, emitter, eventsArray };
+module.exports = { events, createEmitter, setEmitter, getEmitter, eventsArray };

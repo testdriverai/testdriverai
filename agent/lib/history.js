@@ -1,14 +1,12 @@
-// this stores the history of the bot's interactions in memory
-const { logger } = require("../../interfaces/logger.js");
-
 // the memory store
 let store = [];
+const { events, emitter } = require("../events");
 
 module.exports = {
   // delete the memory store
   clear: () => {
-    logger.debug(`clearing history`);
     store.length = 0;
+    emitter.emit(events.history.clear);
   },
   add: (entry) => {
     // make a copy of entry so it is immutable
@@ -19,18 +17,16 @@ module.exports = {
       return item.type !== "image_url";
     });
 
-    logger.debug(`adding to history: ${JSON.stringify(entry.content)}`);
-
     store.push(entry);
+    emitter.emit(events.history.add, { entry, count: store.length });
   },
   get: () => {
     // make a copy of store so we don't modify the original
     return JSON.parse(JSON.stringify(store));
   },
   set: (l) => {
-    // overwrites history
-    logger.debug(`set history`);
     store = l;
+    emitter.emit(events.history.set, { count: store.length });
   },
   last: () => {
     return this.get().pop();

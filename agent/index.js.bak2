@@ -19,7 +19,7 @@ const { EventEmitter } = require("events");
 // local modules
 const analytics = require("./lib/analytics.js");
 const parser = require("./lib/parser.js");
-const { createCommander } = require("./lib/commander.js");
+const commander = require("./lib/commander.js");
 const system = require("./lib/system.js");
 const generator = require("./lib/generator.js");
 const sdk = require("./lib/sdk.js");
@@ -36,17 +36,14 @@ const { createDebuggerProcess } = require("./lib/debugger.js");
 
 class TestDriverAgent extends EventEmitter {
   constructor() {
-    super(); // Create the agent's own emitter for internal events
+    super();    // Create the agent's own emitter for internal events
     this.emitter = createEmitter();
-
+    
     // Create commands instance with this agent's emitter
     this.commands = createCommands(this.emitter);
-
+    
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
-
-    // Create commander instance with this agent's emitter and commands
-    this.commander = createCommander(this.emitter, this.commands);
 
     // these are "in-memory" globals
     // they represent the current state of the agent
@@ -308,7 +305,7 @@ class TestDriverAgent extends EventEmitter {
           depth,
         );
       } else {
-        response = await this.commander.run(command, depth);
+        response = await commander.run(command, depth);
       }
 
       // if the result of a command contains more commands, we perform the process again
@@ -1033,7 +1030,7 @@ ${regression}
 
     this.emitter.emit(events.log.log, "Listing sandboxes...");
 
-    let reply = await this.sandbox.send({
+    let reply = await sandbox.send({
       type: "list",
     });
 
@@ -1043,7 +1040,7 @@ ${regression}
   async destroySandbox(sandboxId) {
     await this.connectToSandboxService();
 
-    let reply = await this.sandbox.send({
+    let reply = await sandbox.send({
       type: "destroy",
       id: sandboxId,
     });
@@ -1271,22 +1268,22 @@ ${regression}
       theme.gray(`- establishing connection...`),
     );
     this.emit("status", `Establishing connection...`);
-    await this.sandbox.boot(config.TD_API_ROOT);
+    await sandbox.boot(config.TD_API_ROOT);
     this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
     this.emit("status", `Authenticating...`);
-    await this.sandbox.auth(config.TD_API_KEY);
+    await sandbox.auth(config.TD_API_KEY);
   }
 
   async connectToSandboxDirect(sandboxId) {
     this.emitter.emit(events.log.log, theme.gray(`- connecting...`));
     this.emit("status", `Connecting...`);
-    let instance = await this.sandbox.connect(sandboxId);
+    let instance = await sandbox.connect(sandboxId);
     return instance;
   }
 
   async createNewSandbox() {
     this.emit("status", `Creating new sandbox...`);
-    let instance = await this.sandbox.send({
+    let instance = await sandbox.send({
       type: "create",
       resolution: config.TD_RESOLUTION,
     });
