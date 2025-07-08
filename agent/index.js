@@ -19,7 +19,7 @@ const { EventEmitter } = require("events");
 // local modules
 const analytics = require("./lib/analytics.js");
 const parser = require("./lib/parser.js");
-const system = require("./lib/system.js");
+const { createSystem } = require("./lib/system.js");
 const generator = require("./lib/generator.js");
 const sdk = require("./lib/sdk.js");
 const config = require("./lib/config.js");
@@ -44,11 +44,16 @@ class TestDriverAgent extends EventEmitter {
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
 
-    // Create commands instance with this agent's emitter
-    this.commands = createCommands(this.emitter);
-
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
+
+    // Create system instance with sandbox
+    this.system = createSystem(this.sandbox);
+
+    // Create commands instance with this agent's emitter and system
+    const commandsResult = createCommands(this.emitter, this.system);
+    this.commands = commandsResult.commands;
+    this.assert = commandsResult.assert;
 
     // Create commander instance with this agent's emitter and commands
     this.commander = createCommander(this.emitter, this.commands);
@@ -176,7 +181,7 @@ class TestDriverAgent extends EventEmitter {
     // ask the AI what to do
     let image;
     if (error.attachScreenshot) {
-      image = await system.captureScreenBase64();
+      image = await this.system.captureScreenBase64();
     } else {
       image = null;
     }
@@ -235,10 +240,10 @@ class TestDriverAgent extends EventEmitter {
     this.emit("status", `checking...`);
 
     // check asks the ai if the task is complete
-    let thisScreenshot = await system.captureScreenBase64(1, false, true);
+    let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
     let images = [this.lastScreenshot, thisScreenshot];
-    let mousePosition = await system.getMousePosition();
-    let activeWindow = await system.activeWin();
+    let mousePosition = await this.system.getMousePosition();
+    let activeWindow = await this.system.activeWin();
 
     const streamId = `check-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -530,7 +535,7 @@ commands:
     this.emit("status", `thinking...`);
     this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
 
-    this.lastScreenshot = await system.captureScreenBase64();
+    this.lastScreenshot = await this.system.captureScreenBase64();
 
     const streamId = `input-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -539,8 +544,8 @@ commands:
       "input",
       {
         input: currentTask,
-        mousePosition: await system.getMousePosition(),
-        activeWindow: await system.activeWin(),
+        mousePosition: await this.system.getMousePosition(),
+        activeWindow: await this.system.activeWin(),
         image: this.lastScreenshot,
       },
       (chunk) => {
@@ -578,7 +583,7 @@ commands:
       await this.run(baseYaml, false, false, false);
     }
 
-    let image = await system.captureScreenBase64();
+    let image = await this.system.captureScreenBase64();
 
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -588,8 +593,8 @@ commands:
       {
         type,
         image,
-        mousePosition: await system.getMousePosition(),
-        activeWindow: await system.activeWin(),
+        mousePosition: await this.system.getMousePosition(),
+        activeWindow: await this.system.activeWin(),
         count,
       },
       (chunk) => {
@@ -735,7 +740,7 @@ ${yml}
     this.emitter.emit(events.log.log, theme.dim("reviewing test..."), true);
 
     // let text = prompts.summarize(tasks, error);
-    let image = await system.captureScreenBase64();
+    let image = await this.system.captureScreenBase64();
 
     this.emitter.emit(events.log.log, theme.dim("summarizing..."), true);
 
@@ -1275,9 +1280,9 @@ ${regression}
   async newSession() {
     // should be start of new session
     const sessionRes = await sdk.req("session/start", {
-      systemInformationOsInfo: await system.getSystemInformationOsInfo(),
-      mousePosition: await system.getMousePosition(),
-      activeWindow: await system.activeWin(),
+      systemInformationOsInfo: await this.system.getSystemInformationOsInfo(),
+      mousePosition: await this.system.getMousePosition(),
+      activeWindow: await this.system.activeWin(),
     });
 
     if (!sessionRes) {

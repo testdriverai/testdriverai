@@ -2,12 +2,6 @@
 const sdk = require("./sdk.js");
 const vm = require("vm");
 const theme = require("./theme.js");
-const {
-  captureScreenBase64,
-  captureScreenPNG,
-  platform,
-  activeWin,
-} = require("./system.js");
 
 const fs = require("fs").promises; // Using the promises version for async operations
 const { findTemplateImage } = require("./subimage/index");
@@ -22,7 +16,7 @@ const sandbox = require("./sandbox.js");
 const { events } = require("../events.js");
 
 // Factory function that creates commands with the provided emitter
-const createCommands = (emitter) => {
+const createCommands = (emitter, system) => {
   const niceSeconds = (ms) => {
     return Math.round(ms / 1000);
   };
@@ -41,7 +35,12 @@ const createCommands = (emitter) => {
     restrictToWindow,
   ) => {
     // move the file from filePath to `testdriver/screenshots`
-    let rootpath = path.join(cwd(), `testdriver`, `screenshots`, platform());
+    let rootpath = path.join(
+      cwd(),
+      `testdriver`,
+      `screenshots`,
+      system.system.platform(),
+    );
     // add .png to relative path if not already there
     if (!relativePath.endsWith(".png")) {
       relativePath = relativePath + ".png";
@@ -103,7 +102,7 @@ const createCommands = (emitter) => {
           );
 
           // throw away any results that are not within the active window
-          let activeWindow = await activeWin();
+          let activeWindow = await system.activeWin();
 
           // filter out text that is not in the active window
           if (restrictToWindow) {
@@ -159,7 +158,7 @@ const createCommands = (emitter) => {
       await sdk
         .req("assert", {
           expect: assertion,
-          image: await captureScreenBase64(),
+          image: await system.captureScreenBase64(),
         })
         .then((response) => {
           return handleAssertResponse(response.data);
@@ -169,7 +168,7 @@ const createCommands = (emitter) => {
     } else {
       let response = await sdk.req("assert", {
         expect: assertion,
-        image: await captureScreenBase64(),
+        image: await system.captureScreenBase64(),
       });
       return handleAssertResponse(response.data);
     }
@@ -186,7 +185,7 @@ const createCommands = (emitter) => {
       amount = Math.abs(amount);
     }
 
-    const before = await captureScreenBase64();
+    const before = await system.captureScreenBase64();
     switch (direction) {
       case "up":
         if (method === "mouse") {
@@ -213,7 +212,7 @@ const createCommands = (emitter) => {
       default:
         throw new AiError("Direction not found");
     }
-    const after = await captureScreenBase64();
+    const after = await system.captureScreenBase64();
 
     if (before === after) {
       emitter.emit(
@@ -231,7 +230,7 @@ const createCommands = (emitter) => {
     let button = "left";
     let double = false;
 
-    if (action === "right-click" && platform !== "darwin") {
+    if (action === "right-click" && system.platform() !== "darwin") {
       button = "right";
     }
     if (action === "double-click") {
@@ -317,7 +316,7 @@ const createCommands = (emitter) => {
         {
           needle: text,
           method,
-          image: await captureScreenBase64(),
+          image: await system.captureScreenBase64(),
           intent: action,
           description,
           displayMultiple: 1,
@@ -344,7 +343,7 @@ const createCommands = (emitter) => {
         "hover/image",
         {
           needle: description,
-          image: await captureScreenBase64(),
+          image: await system.captureScreenBase64(),
           intent: action,
           displayMultiple: 1,
         },
@@ -362,7 +361,7 @@ const createCommands = (emitter) => {
       }
     },
     "match-image": async (relativePath, action = "click") => {
-      let image = await captureScreenPNG();
+      let image = await system.captureScreenPNG();
 
       let result = await findImageOnScreen(relativePath, image);
 
@@ -475,7 +474,7 @@ const createCommands = (emitter) => {
           {
             needle: text,
             method: method,
-            image: await captureScreenBase64(),
+            image: await system.captureScreenBase64(),
           },
           (chunk) => {
             if (chunk.type === "closeMatches") {
@@ -530,7 +529,7 @@ const createCommands = (emitter) => {
           await sandbox.send({ type: "write", text });
           await redraw.wait(5000);
           await sandbox.send({ type: "press", keys: ["escape"] });
-        } catch (e) {
+        } catch {
           throw new AiError(
             "Could not find element using browser text search",
             true,
@@ -551,7 +550,7 @@ const createCommands = (emitter) => {
           {
             needle: text,
             method: textMatchMethod,
-            image: await captureScreenBase64(),
+            image: await system.captureScreenBase64(),
           },
           (chunk) => {
             if (chunk.type === "closeMatches") {
@@ -661,7 +660,7 @@ const createCommands = (emitter) => {
     },
     remember: async (description) => {
       let result = await sdk.req("remember", {
-        image: await captureScreenBase64(),
+        image: await system.captureScreenBase64(),
         description,
       });
       return result.data;
@@ -674,7 +673,7 @@ const createCommands = (emitter) => {
 
       console.log(code);
 
-      let plat = platform();
+      let plat = system.platform();
 
       if (language == "pwsh") {
         let result = null;

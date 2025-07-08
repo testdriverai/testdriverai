@@ -7,7 +7,6 @@ const os = require("os");
 const analytics = require("../agent/lib/analytics.js");
 const parser = require("../agent/lib/parser.js");
 const generator = require("../agent/lib/generator.js");
-const emitter = require("../agent/events.js").emitter;
 const { events } = require("../agent/events.js");
 
 class ReadlineInterface {
@@ -71,7 +70,7 @@ class ReadlineInterface {
 
       return [matches.length ? matches : files, partial];
     } catch (e) {
-      emitter.emit(events.log.log, "%s", e);
+      this.agent.emitter.emit(events.log.log, "%s", e);
       return [[], partial];
     }
   }
@@ -105,7 +104,7 @@ class ReadlineInterface {
 
     analytics.track("input", { input });
 
-    emitter.emit(events.log.log, ""); // adds a nice break between submissions
+    this.agent.emitter.emit(events.log.log, ""); // adds a nice break between submissions
 
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
@@ -148,7 +147,11 @@ class ReadlineInterface {
         );
       }
     } catch (error) {
-      emitter.emit(events.log.error, "Command error:", error.message);
+      this.agent.emitter.emit(
+        events.log.error,
+        "Command error:",
+        error.message,
+      );
     }
 
     this.promptUser();
@@ -192,12 +195,15 @@ class ReadlineInterface {
         let markdown = `\`\`\`yaml
 ${yml}\`\`\``;
 
-        emitter.emit(
+        this.agent.emitter.emit(
           events.log.log,
           `Loaded test script ${this.agent.thisFile}\n`,
         );
-        emitter.emit(events.log.markdown.static, markdown);
-        emitter.emit(events.log.log, "New commands will be appended.");
+        this.agent.emitter.emit(events.log.markdown.static, markdown);
+        this.agent.emitter.emit(
+          events.log.log,
+          "New commands will be appended.",
+        );
       }
     }
 
