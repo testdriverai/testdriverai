@@ -3,7 +3,7 @@ const winston = require("winston");
 const chalk = require("chalk");
 const theme = require("../agent/lib/theme");
 const Transport = require("winston-transport");
-const { emitter, events } = require("../agent/events");
+const { events } = require("../agent/events");
 class CustomTransport extends Transport {
   constructor(opts) {
     super(opts);
@@ -317,91 +317,94 @@ marked.use(
   ),
 );
 
-const spaceChar = "    ";
+const createMarkdownLogger = (emitter) => {
+  const markedParsePartial = (markdown, start = 0, end = 0) => {
+    let result = markdown.trimEnd().split("\n").slice(start, end);
+    if (end <= 0) {
+      end = result.length + end;
+    }
+    result = result.join("\n");
 
-const markedParsePartial = (markdown, start = 0, end = 0) => {
-  let result = markdown.trimEnd().split("\n").slice(start, end);
-  if (end <= 0) {
-    end = result.length + end;
-  }
-  result = result.join("\n");
+    return marked.parse(result).replace(/^/gm, spaceChar).trimEnd();
+  };
 
-  return marked.parse(result).replace(/^/gm, spaceChar).trimEnd();
+  // Event-based markdown streaming with buffering
+  const activeStreams = new Map();
+
+  // Handle streaming markdown events with proper buffering
+  emitter.on(events.log.markdown.start, (streamId) => {
+    activeStreams.set(streamId, {
+      buffer: "",
+      lastOutput: "",
+    });
+  });
+
+  emitter.on(events.log.markdown.chunk, (streamId, chunk) => {
+    if (!activeStreams.has(streamId)) {
+      return;
+    }
+
+    const stream = activeStreams.get(streamId);
+
+    if (typeof chunk !== "string") {
+      return;
+    }
+
+    const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
+
+    stream.buffer += chunk;
+
+    const consoleOutput = markedParsePartial(stream.buffer, 0, -1);
+
+    let diff = consoleOutput.replace(previousConsoleOutput, "");
+    if (diff) {
+      diff = censorSensitiveData(diff);
+      process.stdout.write(diff);
+    }
+  });
+
+  emitter.on(events.log.markdown.end, (streamId) => {
+    if (!activeStreams.has(streamId)) {
+      return;
+    }
+
+    const stream = activeStreams.get(streamId);
+
+    const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
+    const consoleOutput = markedParsePartial(stream.buffer, 0, Infinity);
+    let diff = consoleOutput.replace(previousConsoleOutput, "");
+
+    if (diff) {
+      diff = censorSensitiveData(diff);
+      process.stdout.write(diff);
+    }
+    process.stdout.write("\n\n");
+
+    // Clean up the stream
+    activeStreams.delete(streamId);
+  });
+
+  // Handle static markdown logging (complete markdown blocks)
+  emitter.on(events.log.markdown.static, (markdown) => {
+    if (typeof markdown !== "string") {
+      logger.error("Static markdown requires a string");
+      logger.error(markdown);
+      return;
+    }
+
+    let consoleOutput = marked.parse(markdown);
+
+    // strip newlines at end of consoleOutput
+    consoleOutput = consoleOutput.replace(/\n$/, "");
+    consoleOutput = consoleOutput.replace(/^/gm, spaceChar);
+
+    logger.info(consoleOutput);
+  });
 };
 
-// Event-based markdown streaming with buffering
-const activeStreams = new Map();
-
-// Handle streaming markdown events with proper buffering
-emitter.on(events.log.markdown.start, (streamId) => {
-  activeStreams.set(streamId, {
-    buffer: "",
-    lastOutput: "",
-  });
-});
-
-emitter.on(events.log.markdown.chunk, (streamId, chunk) => {
-  if (!activeStreams.has(streamId)) {
-    return;
-  }
-
-  const stream = activeStreams.get(streamId);
-
-  if (typeof chunk !== "string") {
-    return;
-  }
-
-  const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
-
-  stream.buffer += chunk;
-
-  const consoleOutput = markedParsePartial(stream.buffer, 0, -1);
-
-  let diff = consoleOutput.replace(previousConsoleOutput, "");
-  if (diff) {
-    diff = censorSensitiveData(diff);
-    process.stdout.write(diff);
-  }
-});
-
-emitter.on(events.log.markdown.end, (streamId) => {
-  if (!activeStreams.has(streamId)) {
-    return;
-  }
-
-  const stream = activeStreams.get(streamId);
-
-  const previousConsoleOutput = markedParsePartial(stream.buffer, 0, -1);
-  const consoleOutput = markedParsePartial(stream.buffer, 0, Infinity);
-  let diff = consoleOutput.replace(previousConsoleOutput, "");
-
-  if (diff) {
-    diff = censorSensitiveData(diff);
-    process.stdout.write(diff);
-  }
-  process.stdout.write("\n\n");
-
-  // Clean up the stream
-  activeStreams.delete(streamId);
-});
-
-// Handle static markdown logging (complete markdown blocks)
-emitter.on(events.log.markdown.static, (markdown) => {
-  if (typeof markdown !== "string") {
-    logger.error("Static markdown requires a string");
-    logger.error(markdown);
-    return;
-  }
-
-  let consoleOutput = marked.parse(markdown);
-
-  // strip newlines at end of consoleOutput
-  consoleOutput = consoleOutput.replace(/\n$/, "");
-  consoleOutput = consoleOutput.replace(/^/gm, spaceChar);
-
-  logger.info(consoleOutput);
-});
+const spaceChar = "    ";
 
 module.exports = {
   logger,
+  createMarkdownLogger,
 };

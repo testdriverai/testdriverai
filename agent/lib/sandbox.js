@@ -106,7 +106,7 @@ const createSandbox = (emitter) => {
             throw new Error(JSON.stringify(message));
           } else {
             if (this.ps[message.requestId]) {
-              emitter.emit(events.sandbox.received, message);
+              emitter.emit(events.sandbox.received);
               this.ps[message.requestId].resolve(message);
               delete this.ps[message.requestId];
             } else {

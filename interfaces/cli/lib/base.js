@@ -4,6 +4,8 @@ const { createCommandDefinitions } = require("../../../agent/interface.js");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const logger = require("../../logger.js");
+
 async function openBrowser(url) {
   try {
     // Use dynamic import for the 'open' package (ES module)
@@ -26,6 +28,20 @@ class BaseCommand extends Command {
     this.agent = null; // Initialize as null, create only when needed
   }
 
+  openLogFileInVSCode() {
+    try {
+      const { spawn } = require("child_process");
+      // Use 'code' command to open the file in VS Code
+      spawn("code", [this.logFilePath], {
+        detached: true,
+        stdio: "ignore",
+      });
+    } catch {
+      // Silently fail if VS Code is not available or command fails
+      // We don't want to interrupt the main process for this convenience feature
+    }
+  }
+
   sendToSandbox(message) {
     this.agent.sandbox.send({
       type: "output",
@@ -42,6 +58,9 @@ class BaseCommand extends Command {
         os.tmpdir(),
         `testdriverai-cli-${process.pid}.log`,
       );
+
+      // Open the log file in VS Code
+      this.openLogFileInVSCode();
     }
 
     // Helper to append log messages to the temp file
@@ -52,12 +71,12 @@ class BaseCommand extends Command {
         `[${timestamp}] [${level}] ${message}\n`,
       );
     };
+    this.agent.emitter.on(events.status, (message) => {
+      console.log(`- ${message}`);
+      this.sendToSandbox(`- ${message}`);
+    });
 
     this.agent.emitter.on("sandbox:connected", () => {
-      this.agent.emitter.on(events.status, (message) => {
-        console.log(`- ${message}`);
-        this.sendToSandbox(`- ${message}`);
-      });
       this.agent.emitter.on(events.log.log, (message) => {
         console.log(message);
         this.sendToSandbox(message);
@@ -70,15 +89,24 @@ class BaseCommand extends Command {
         console.log(message);
         this.sendToSandbox(message);
       });
+      this.agent.emitter.on(events.log.markdown.static, (message) => {
+        // logger.createMarkdownLogger will handle this
+        this.sendToSandbox(message);
+      });
+      this.agent.emitter.on(events.log.markdown.chunk, (message) => {
+        // logger.createMarkdownLogger will handle this
+        this.sendToSandbox(message);
+      });
     });
 
     // loop through all events and set up listeners
     for (const eventName of Object.values(eventsArray)) {
       this.agent.emitter.on(eventName, (data) => {
-        appendLog(eventName, data);
+        appendLog(eventName, JSON.stringify(data));
       });
     }
 
+    logger.createMarkdownLogger(this.agent.emitter);
     // Handle exit events by exiting the process with the appropriate code
     this.agent.emitter.on(events.exit, (exitCode) => {
       process.exit(exitCode);
@@ -96,30 +124,29 @@ class BaseCommand extends Command {
 
   setupProcessHandlers() {
     // Process error handlers
-    process.on("uncaughtException", async (err) => {
-      console.error("Uncaught Exception:", err);
-      this.agent.emitter.emit(events.log.error, "Uncaught Exception: %s", err);
-      if (this.agent) {
-        await this.agent.exit(true);
-      } else {
-        process.exit(1);
-      }
-    });
-
-    process.on("unhandledRejection", async (reason, promise) => {
-      console.error("Unhandled Rejection at:", promise, "reason:", reason);
-      this.agent.emitter.emit(
-        events.log.error,
-        "Unhandled Rejection at: %s, reason: %s",
-        promise,
-        reason,
-      );
-      if (this.agent) {
-        await this.agent.exit(true);
-      } else {
-        process.exit(1);
-      }
-    });
+    // process.on("uncaughtException", async (err) => {
+    //   console.error("Uncaught Exception:", err);
+    //   this.agent.emitter.emit(events.log.error, "Uncaught Exception: %s", err);
+    //   if (this.agent) {
+    //     await this.agent.exit(true);
+    //   } else {
+    //     process.exit(1);
+    //   }
+    // });
+    // process.on("unhandledRejection", async (reason, promise) => {
+    //   console.error("Unhandled Rejection at:", promise, "reason:", reason);
+    //   this.agent.emitter.emit(
+    //     events.log.error,
+    //     "Unhandled Rejection at: %s, reason: %s",
+    //     promise,
+    //     reason,
+    //   );
+    //   if (this.agent) {
+    //     await this.agent.exit(true);
+    //   } else {
+    //     process.exit(1);
+    //   }
+    // });
   }
 
   async init() {
