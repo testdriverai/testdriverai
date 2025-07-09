@@ -104,7 +104,8 @@ function createCommandDefinitions(agent) {
         }),
       },
       handler: async () => {
-        // Note: Edit mode is handled by the CLI interface, not the unified command system
+        // Edit mode is handled by the CLI interface via factory.js
+        // This handler should not be called directly
         throw new Error("Edit mode should be handled by CLI interface");
       },
     },
