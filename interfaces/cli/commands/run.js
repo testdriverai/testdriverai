@@ -50,24 +50,10 @@ class RunCommand extends BaseCommand {
   async run() {
     const { args, flags } = await this.parse(RunCommand);
 
-    console.log('DEBUG: args.file =', args.file);
-    console.log('DEBUG: process.argv =', process.argv);
-
     await this.setupAgent(args.file, flags);
 
-    // Set error limit higher for run command
-    this.agent.errorLimit = 100;
-
-    // Build environment for run mode
-    await this.agent.buildEnv(flags);
-
-    // Execute the run command directly
-    const file = this.normalizeFilePath(args.file);
-    console.log('DEBUG: normalized file =', file);
-    console.log('DEBUG: agent.thisFile =', this.agent.thisFile);
-    await this.agent.runLifecycle("prerun");
-    console.log('DEBUG: calling agent.run with file =', file);
-    await this.agent.run(file, flags.write, flags.exit !== false, true);
+    // The run command is executed through the unified command system in setupAgent()
+    // No need to call agent.run() again here as it's handled by executeUnifiedCommand()
   }
 }
 

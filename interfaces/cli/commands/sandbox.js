@@ -38,10 +38,31 @@ class SandboxCommand extends BaseCommand {
   async run() {
     const { args, flags } = await this.parse(SandboxCommand);
 
-    await this.setupAgent(null, flags);
+    // Use a custom setup for sandbox since it doesn't use a file parameter
+    await this.setupSandboxAgent(args.action, flags);
+  }
 
-    // Execute the sandbox command through the unified command system
-    await this.agent.executeUnifiedCommand("sandbox", [args.action], flags);
+  async setupSandboxAgent(action, flags) {
+    // Create the agent only when actually needed
+    if (!this.agent) {
+      this.setupProcessHandlers();
+    }
+    const TestDriverAgent = require("../../../agent/index.js");
+    this.agent = new TestDriverAgent();
+    this.setupEventListeners();
+
+    // Set up agent properties from CLI args - sandbox uses action instead of file
+    this.agent.cliArgs = {
+      command: this.id,
+      args: [action],
+      options: flags,
+    };
+
+    // Sandbox doesn't use thisFile, but set it to null
+    this.agent.thisFile = null;
+
+    // Start the agent's initialization
+    await this.agent.start();
   }
 }
 

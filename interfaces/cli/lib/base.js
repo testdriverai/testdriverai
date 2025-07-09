@@ -27,6 +27,7 @@ class BaseCommand extends Command {
   setupEventListeners() {
     const { events } = require("../../../agent/events.js");
 
+    // local logging
     this.agent.emitter.on(events.status, (message) => {
       console.log(`- ${message}`);
     });
