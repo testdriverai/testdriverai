@@ -1386,7 +1386,7 @@ ${regression}
 
     // Move environment setup and special handling here
     if (["edit", "run"].includes(commandName)) {
-      await this.buildEnv(arguments[3] || options._optionValues);
+      await this.buildEnv(options);
     }
 
     if (commandName === "run") {

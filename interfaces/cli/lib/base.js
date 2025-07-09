@@ -26,24 +26,38 @@ class BaseCommand extends Command {
     this.agent = null; // Initialize as null, create only when needed
   }
 
+  sendToSandbox(message) {
+    console.log(`Sending to sandbox: ${message}`);
+    this.agent.sandbox.send({
+      type: "output",
+      output: Buffer.from(message).toString("base64"),
+    });
+  }
+
   setupEventListeners() {
     const { events } = require("../../../agent/events.js");
 
-    // local logging
-    this.agent.emitter.on(events.status, (message) => {
-      console.log(`- ${message}`);
-    });
-    this.agent.emitter.on(events.log.log, (message) => {
-      console.log(message);
-    });
-    this.agent.emitter.on(events.log.warn, (message) => {
-      console.warn(`- ${message}`);
-    });
-    this.agent.emitter.on(events.log.error, (message) => {
-      console.error(`- ${message}`);
-    });
-    this.agent.emitter.on(events.log.debug, (message) => {
-      console.debug(`- ${message}`);
+    this.agent.emitter.on("sandbox:connected", () => {
+      this.agent.emitter.on(events.status, (message) => {
+        console.log(`- ${message}`);
+        this.sendToSandbox(`- ${message}`);
+      });
+      this.agent.emitter.on(events.log.log, (message) => {
+        console.log(message);
+        this.sendToSandbox(message);
+      });
+      this.agent.emitter.on(events.log.warn, (message) => {
+        console.warn(message);
+        this.sendToSandbox(message);
+      });
+      this.agent.emitter.on(events.log.error, (message) => {
+        console.error(message);
+        this.sendToSandbox(message);
+      });
+      this.agent.emitter.on(events.log.debug, (message) => {
+        console.debug(message);
+        this.sendToSandbox(message);
+      });
     });
 
     // Handle exit events by exiting the process with the appropriate code
@@ -133,15 +147,27 @@ class BaseCommand extends Command {
       args: [file],
       options: flags,
     };
-    this.agent.thisFile = this.normalizeFilePath(file);
+    // Use --path flag if provided, otherwise use the file argument
+    const filePath = this.id === "run" && flags.path ? flags.path : file;
+    this.agent.thisFile = this.normalizeFilePath(filePath);
 
     // Set output file for summarize results if specified
     if (flags.summary && typeof flags.summary === "string") {
       this.agent.resultFile = path.resolve(flags.summary);
     }
 
-    // Start the agent's initialization
-    await this.agent.start();
+    try {
+      // Start the agent's initialization
+      await this.agent.start();
+    } catch (e) {
+      console.error("Failed to start agent:", e);
+      this.agent.emitter.emit(events.log.error, "Failed to start agent: %s", e);
+      if (this.agent) {
+        await this.agent.exit(true);
+      } else {
+        process.exit(1);
+      }
+    }
   }
 
   // Get unified command definition for this command

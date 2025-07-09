@@ -48,8 +48,6 @@ function createOclifCommand(commandName) {
         if (commandName === "run") {
           // Set error limit higher for run command
           this.agent.errorLimit = 100;
-          // Build environment for run mode
-          await this.agent.buildEnv(flags);
         }
 
         // Execute through unified command system

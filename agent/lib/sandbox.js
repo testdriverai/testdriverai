@@ -46,6 +46,7 @@ const createSandbox = (emitter) => {
 
       if (reply.success) {
         this.authenticated = true;
+        emitter.emit(events.sandbox.authenticated);
         return true;
       }
     }
@@ -58,6 +59,7 @@ const createSandbox = (emitter) => {
 
       if (reply.success) {
         this.instanceSocketConnected = true;
+        emitter.emit(events.sandbox.connected);
       }
 
       return reply.sandbox;
@@ -86,7 +88,6 @@ const createSandbox = (emitter) => {
         });
 
         this.socket.on("open", async () => {
-          emitter.emit(events.sandbox.connected);
           this.heartbeat = setInterval(() => {
             this.send({ type: "ping" });
           }, 5000);
@@ -101,6 +102,7 @@ const createSandbox = (emitter) => {
           if (message.error) {
             emitter.emit(events.sandbox.error, message.errorMessage);
 
+            console.error("Sandbox Error:", message.errorMessage);
             throw new Error(JSON.stringify(message));
           } else {
             if (this.ps[message.requestId]) {

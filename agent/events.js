@@ -62,9 +62,10 @@ const events = {
   },
   sandbox: {
     connected: "sandbox:connected",
+    authenticated: "sandbox:authenticated",
     errored: "sandbox:error",
     disconnect: "sandbox:disconnected",
-    sensitiveHeaders: "sandbox:sent",
+    sent: "sandbox:sent",
     received: "sandbox:received",
   },
   redraw: {

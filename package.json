@@ -15,7 +15,8 @@
     "test": "mocha test/*",
     "docs-lint": "cd docs && vale **/*.mdx",
     "docs-upload": "node upload-docs-to-openai.js",
-    "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'"
+    "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'",
+    "test-assert": "node index.js run --path=testdriver/acceptance/assert.yaml"
   },
   "author": "",
   "license": "ISC",

@@ -65,7 +65,8 @@ function createCommandDefinitions(agent) {
         }),
       },
       handler: async (args, flags) => {
-        const file = normalizeFilePath(args.file);
+        // Use --path flag if provided, otherwise fall back to args.file
+        const file = normalizeFilePath(flags.path || args.file);
         await agent.runLifecycle("prerun");
         // When run() is called through run.js CLI command, shouldExit should be true
         const shouldExit =
