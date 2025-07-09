@@ -23,8 +23,6 @@ steps:
         text: ${OUTPUT.user}
   - prompt: assert that the username field shows a valid email address
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: assert
         expect: >-
           the username field contains "Sincere@april.biz" which is a valid email
