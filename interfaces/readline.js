@@ -149,7 +149,7 @@ class ReadlineInterface {
       console.log(error);
 
       this.agent.emitter.emit(
-        events.log.error,
+        events.error.general,
         "Command error:",
         error.message,
       );

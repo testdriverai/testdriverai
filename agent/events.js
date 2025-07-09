@@ -51,8 +51,12 @@ const events = {
     },
     log: "log:log",
     warn: "log:warn",
-    error: "log:error",
     debug: "log:debug",
+  },
+  error: {
+    general: "error:general",
+    sdk: "error:sdk",
+    sandbox: "error:sandbox",
   },
   sdk: {
     error: "sdk:error",

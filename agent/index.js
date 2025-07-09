@@ -127,7 +127,7 @@ class TestDriverAgent extends EventEmitter {
   // this ensure we log the error, summarize it, and exit cleanly
   async dieOnFatal(error) {
     this.emitter.emit(
-      events.log.error,
+      events.error.general,
       theme.red("Fatal Error") + `\n${error}`,
     );
     await this.summarize(error.message);
@@ -148,7 +148,7 @@ class TestDriverAgent extends EventEmitter {
     // otherwise we go directly to fatal
     if (!this.healMode) {
       this.emitter.emit(
-        events.log.error,
+        events.error.general,
         theme.red("Error detected, but recovery mode is not enabled."),
       );
       this.emitter.emit(
@@ -171,7 +171,7 @@ class TestDriverAgent extends EventEmitter {
       : 1;
 
     this.emitter.emit(
-      events.log.error,
+      events.error.general,
       theme.red("Error detected. Attempting to recover (via --heal)..."),
     );
 
@@ -468,10 +468,10 @@ class TestDriverAgent extends EventEmitter {
     try {
       yml = fs.readFileSync(file, "utf-8");
     } catch (e) {
-      this.emitter.emit(events.log.error, e);
-      this.emitter.emit(events.log.error, `File not found: ${file}`);
+      this.emitter.emit(events.error.general, e);
+      this.emitter.emit(events.error.general, `File not found: ${file}`);
       this.emitter.emit(
-        events.log.error,
+        events.error.general,
         `Current directory: ${this.workingDir}`,
       );
 
@@ -491,8 +491,8 @@ class TestDriverAgent extends EventEmitter {
     try {
       ymlObj = await yaml.load(yml);
     } catch (e) {
-      this.emitter.emit(events.log.error, "%s", e);
-      this.emitter.emit(events.log.error, `Invalid YAML: ${file}`);
+      this.emitter.emit(events.error.general, "%s", e);
+      this.emitter.emit(events.error.general, `Invalid YAML: ${file}`);
 
       await this.summarize("Invalid YAML");
       await this.exit(true);
@@ -812,8 +812,8 @@ ${yml}
       fs.writeFileSync(filepath, regression);
     } catch (e) {
       console.log(e);
-      this.emitter.emit(events.log.error, e.message);
-      this.emitter.emit(events.log.error, "%s", e);
+      this.emitter.emit(events.error.general, e.message);
+      this.emitter.emit(events.error.general, "%s", e);
     }
 
     if (!silent) {
@@ -845,7 +845,7 @@ ${regression}
     try {
       ymlObj = await yaml.load(decoded);
     } catch (e) {
-      this.emitter.emit(events.log.error, "%s", e);
+      this.emitter.emit(events.error.general, "%s", e);
     }
 
     // add the root key steps: with array of commands:
@@ -1020,7 +1020,7 @@ ${regression}
       await this.createSandbox();
     } else {
       this.emitter.emit(
-        "log:error",
+        "error.general",
         "Please specify a sandbox action: --list, --destroy <id>, or --create",
       );
       await this.exit(true);
@@ -1258,7 +1258,7 @@ ${regression}
       );
     } else if (this.cliArgs.command !== "edit") {
       this.emitter.emit(
-        events.log.error,
+        events.error.general,
         `Unknown command: ${this.cliArgs.command}`,
       );
       await this.exit(true);

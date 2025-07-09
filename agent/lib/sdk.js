@@ -12,7 +12,7 @@ const createSDK = (emitter) => {
   let token = null;
 
   const outputError = (error) => {
-    emitter.emit(events.sdk.error, {
+    emitter.emit(events.error.sdk, {
       message: error.status || error.reason || error.message,
       code: error.response?.data?.raw || error.statusText || error.code,
       fullError: error,
@@ -60,7 +60,7 @@ const createSDK = (emitter) => {
       }
       return body;
     } catch (err) {
-      emitter.emit(events.sdk.error, {
+      emitter.emit(events.error.sdk, {
         error: err,
         message: "Parsing Error",
       });

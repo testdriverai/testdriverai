@@ -85,7 +85,7 @@ class BaseCommand extends Command {
         console.log(message);
         this.sendToSandbox(message);
       });
-      this.agent.emitter.on(events.log.error, (message) => {
+      this.agent.emitter.on(events.error.general, (message) => {
         console.log(message);
         this.sendToSandbox(message);
       });
@@ -98,6 +98,16 @@ class BaseCommand extends Command {
         this.sendToSandbox(message);
       });
     });
+
+    // loop through all events and set up listeners
+    for (const eventName of Object.values(eventsArray)) {
+      if (eventName.split(":")[0] === "error") {
+        this.agent.emitter.on(eventName, (data) => {
+          console.error(eventName);
+          console.error(data);
+        });
+      }
+    }
 
     // loop through all events and set up listeners
     for (const eventName of Object.values(eventsArray)) {
@@ -126,7 +136,7 @@ class BaseCommand extends Command {
     // Process error handlers
     // process.on("uncaughtException", async (err) => {
     //   console.error("Uncaught Exception:", err);
-    //   this.agent.emitter.emit(events.log.error, "Uncaught Exception: %s", err);
+    //   this.agent.emitter.emit(events.error.general, "Uncaught Exception: %s", err);
     //   if (this.agent) {
     //     await this.agent.exit(true);
     //   } else {
@@ -136,7 +146,7 @@ class BaseCommand extends Command {
     // process.on("unhandledRejection", async (reason, promise) => {
     //   console.error("Unhandled Rejection at:", promise, "reason:", reason);
     //   this.agent.emitter.emit(
-    //     events.log.error,
+    //     events.error.general,
     //     "Unhandled Rejection at: %s, reason: %s",
     //     promise,
     //     reason,
@@ -197,7 +207,11 @@ class BaseCommand extends Command {
       await this.agent.start();
     } catch (e) {
       console.error("Failed to start agent:", e);
-      this.agent.emitter.emit(events.log.error, "Failed to start agent: %s", e);
+      this.agent.emitter.emit(
+        events.error.general,
+        "Failed to start agent: %s",
+        e,
+      );
       if (this.agent) {
         await this.agent.exit(true);
       } else {

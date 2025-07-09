@@ -82,7 +82,7 @@ const createSandbox = (emitter) => {
           console.log("Socket Error");
           err && console.log(err);
           clearInterval(this.heartbeat);
-          emitter.emit(events.sandbox.errored, err);
+          emitter.emit(events.error.sandboxed, err);
           this.apiSocketConnected = false;
           throw err;
         });
@@ -100,7 +100,7 @@ const createSandbox = (emitter) => {
           let message = JSON.parse(raw);
 
           if (message.error) {
-            emitter.emit(events.sandbox.error, message.errorMessage);
+            emitter.emit(events.error.sandbox, message.errorMessage);
 
             console.error("Sandbox Error:", message.errorMessage);
             throw new Error(JSON.stringify(message));
