@@ -4,7 +4,6 @@ const path = require("path");
 const os = require("os");
 
 // local modules
-const analytics = require("../agent/lib/analytics.js");
 const parser = require("../agent/lib/parser.js");
 const generator = require("../agent/lib/generator.js");
 const { events } = require("../agent/events.js");
@@ -102,7 +101,7 @@ class ReadlineInterface {
     // append this to commandHistoryFile
     fs.appendFileSync(this.commandHistoryFile, input + "\n");
 
-    analytics.track("input", { input });
+    this.agent.analytics.track("input", { input });
 
     this.agent.emitter.emit(events.log.log, ""); // adds a nice break between submissions
 
@@ -171,7 +170,7 @@ class ReadlineInterface {
     });
 
     this.rl.on("SIGINT", async () => {
-      analytics.track("sigint");
+      this.agent.analytics.track("sigint");
       await this.agent.exit(false);
     });
 
@@ -179,7 +178,7 @@ class ReadlineInterface {
 
     // if file exists, load it
     if (fs.existsSync(this.agent.thisFile)) {
-      analytics.track("load");
+      this.agent.analytics.track("load");
 
       // this will overwrite the session if we find one in the YML
       let object = await generator.hydrateFromYML(

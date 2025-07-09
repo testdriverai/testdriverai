@@ -1,5 +1,5 @@
 // the actual commands to interact with the system
-const sdk = require("./sdk.js");
+const { createSDK } = require("./sdk.js");
 const vm = require("vm");
 const theme = require("./theme.js");
 
@@ -16,6 +16,8 @@ const { events } = require("../events.js");
 
 // Factory function that creates commands with the provided emitter
 const createCommands = (emitter, system, sandbox) => {
+  // Create SDK instance with emitter
+  const sdk = createSDK(emitter);
   // Create redraw instance with the system
   const redraw = createRedraw(emitter, system, sandbox);
   const niceSeconds = (ms) => {

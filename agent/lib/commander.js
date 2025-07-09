@@ -1,13 +1,14 @@
 // translates the yml into commands that can be executed by the system.
 const generator = require("./generator");
 const yaml = require("js-yaml");
-const analytics = require("./analytics");
 const marky = require("marky");
-const sdk = require("./sdk");
+const { createSDK } = require("./sdk");
 const outputs = require("./outputs");
 const { events } = require("../events");
 
-const createCommander = (emitter, commands) => {
+const createCommander = (emitter, commands, analytics) => {
+  // Create SDK instance with emitter
+  const sdk = createSDK(emitter);
   // replace all occurances of ${OUTPUT.ls} with outputs.get("ls") in every possible property of the `object`
   // this is a recursive function that will go through all the properties of the object
   const replaceOutputs = (obj) => {

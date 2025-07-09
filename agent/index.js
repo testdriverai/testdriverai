@@ -17,10 +17,10 @@ const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter } = require("events");
 
 // global utilities
-const analytics = require("./lib/analytics.js");
+const { createAnalytics } = require("./lib/analytics.js");
 const parser = require("./lib/parser.js");
 const generator = require("./lib/generator.js");
-const sdk = require("./lib/sdk.js");
+const { createSDK } = require("./lib/sdk.js");
 const config = require("./lib/config.js");
 const theme = require("./lib/theme.js");
 
@@ -44,6 +44,12 @@ class TestDriverAgent extends EventEmitter {
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
 
+    // Create SDK instance with this agent's emitter
+    this.sdk = createSDK(this.emitter);
+
+    // Create analytics instance with this agent's emitter
+    this.analytics = createAnalytics(this.emitter);
+
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
 
@@ -60,7 +66,11 @@ class TestDriverAgent extends EventEmitter {
     this.assert = commandsResult.assert;
 
     // Create commander instance with this agent's emitter and commands
-    this.commander = createCommander(this.emitter, this.commands);
+    this.commander = createCommander(
+      this.emitter,
+      this.commands,
+      this.analytics,
+    );
 
     // these are "in-memory" globals
     // they represent the current state of the agent
@@ -97,7 +107,7 @@ class TestDriverAgent extends EventEmitter {
       await this.save();
     }
 
-    analytics.track("exit", { failed });
+    this.analytics.track("exit", { failed });
 
     if (shouldRunLifecycle) {
       await this.runLifecycle("postrun");
@@ -195,7 +205,7 @@ class TestDriverAgent extends EventEmitter {
     const streamId = `error-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let response = await sdk.req(
+    let response = await this.sdk.req(
       "error",
       {
         description: eMessage,
@@ -250,7 +260,7 @@ class TestDriverAgent extends EventEmitter {
     const streamId = `check-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let response = await sdk.req(
+    let response = await this.sdk.req(
       "check",
       {
         tasks: this.tasks,
@@ -492,7 +502,7 @@ class TestDriverAgent extends EventEmitter {
   // it's used to call /assert in interactive mode
   // @todo remove assert() command from agent.js
   async assert(expect) {
-    analytics.track("assert");
+    this.analytics.track("assert");
 
     let task = expect;
     if (!task) {
@@ -540,7 +550,7 @@ commands:
     const streamId = `input-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let message = await sdk.req(
+    let message = await this.sdk.req(
       "input",
       {
         input: currentTask,
@@ -587,7 +597,7 @@ commands:
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let message = await sdk.req(
+    let message = await this.sdk.req(
       "generate",
       {
         type,
@@ -668,7 +678,7 @@ commands:
   }
 
   async undo() {
-    analytics.track("undo");
+    this.analytics.track("undo");
 
     this.popFromHistory();
     await this.save();
@@ -677,7 +687,7 @@ commands:
   // this allows the user to input "flattened yaml"
   // like "command='focus-application' name='Google Chrome'"
   async manualInput(commandString) {
-    analytics.track("manual input");
+    this.analytics.track("manual input");
 
     let yml = await generator.manualToYml(commandString);
 
@@ -734,7 +744,7 @@ ${yml}
   // this function is responsible for summarizing the test script that has already executed
   // it is what is saved to the `/tmp/testdriver-summary.md` file and output to the action as a summary
   async summarize(error = null) {
-    analytics.track("summarize");
+    this.analytics.track("summarize");
 
     this.emitter.emit(events.log.log, theme.dim("reviewing test..."), true);
 
@@ -746,7 +756,7 @@ ${yml}
     const streamId = `summarize-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let reply = await sdk.req(
+    let reply = await this.sdk.req(
       "summarize",
       {
         image,
@@ -787,7 +797,7 @@ ${yml}
 
   // this function is responsible for saving the regression test script to a file
   async save({ filepath = this.thisFile, silent = false } = {}) {
-    analytics.track("save", { silent });
+    this.analytics.track("save", { silent });
 
     if (!this.executionHistory.length) {
       return;
@@ -932,7 +942,7 @@ ${regression}
   }
 
   async iffy(condition, then, otherwise, depth) {
-    analytics.track("if", { condition });
+    this.analytics.track("if", { condition });
 
     this.emitter.emit(
       "log:info",
@@ -951,7 +961,7 @@ ${regression}
   }
 
   async embed(file, depth, pushToHistory) {
-    analytics.track("embed", { file });
+    this.analytics.track("embed", { file });
 
     this.emitter.emit(
       events.log.log,
@@ -1203,7 +1213,7 @@ ${regression}
     }
 
     if (config.TD_API_KEY) {
-      await sdk.auth();
+      await this.sdk.auth();
     }
 
     if (this.cliArgs.command !== "sandbox") {
@@ -1215,7 +1225,7 @@ ${regression}
       this.loadYML(this.thisFile);
     }
 
-    analytics.track("command", {
+    this.analytics.track("command", {
       command: this.cliArgs.command,
       file: this.thisFile,
     });
@@ -1276,7 +1286,7 @@ ${regression}
 
   async newSession() {
     // should be start of new session
-    const sessionRes = await sdk.req("session/start", {
+    const sessionRes = await this.sdk.req("session/start", {
       systemInformationOsInfo: await this.system.getSystemInformationOsInfo(),
       mousePosition: await this.system.getMousePosition(),
       activeWindow: await this.system.activeWin(),
