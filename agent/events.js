@@ -61,6 +61,10 @@ const events = {
     sensitiveHeaders: "sandbox:sent",
     received: "sandbox:received",
   },
+  redraw: {
+    status: "redraw:status",
+    complete: "redraw:complete",
+  },
 };
 
 const getValues = (obj) => {
