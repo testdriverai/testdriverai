@@ -40,7 +40,7 @@ const createCommands = (emitter, system, sandbox) => {
       cwd(),
       `testdriver`,
       `screenshots`,
-      system.system.platform(),
+      system.platform(),
     );
     // add .png to relative path if not already there
     if (!relativePath.endsWith(".png")) {
@@ -231,7 +231,7 @@ const createCommands = (emitter, system, sandbox) => {
     let button = "left";
     let double = false;
 
-    if (action === "right-click" && system.platform() !== "darwin") {
+    if (action === "right-click") {
       button = "right";
     }
     if (action === "double-click") {
