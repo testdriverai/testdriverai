@@ -21,12 +21,18 @@
   "license": "ISC",
   "dependencies": {
     "@electerm/strip-ansi": "^1.0.0",
+    "@oclif/core": "^4.5.0",
+    "@oclif/plugin-autocomplete": "^3.2.32",
+    "@oclif/plugin-commands": "^4.1.28",
+    "@oclif/plugin-help": "^6.2.30",
+    "@oclif/plugin-not-found": "^3.2.59",
+    "@oclif/plugin-plugins": "^5.4.44",
+    "@oclif/plugin-warn-if-update-available": "^3.1.43",
     "ajv": "^8.17.1",
     "arktype": "^2.1.19",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",
     "cli-progress": "^3.12.0",
-    "commander": "^14.0.0",
     "datadog-winston": "^1.6.0",
     "dotenv": "^16.4.5",
     "jimp": "^0.22.12",
@@ -36,13 +42,11 @@
     "marked-terminal": "^7.0.0",
     "marky": "^1.2.5",
     "node-ipc": "^12.0.0",
-    "node-notifier": "^10.0.1",
     "odiff-bin": "^3.1.2",
     "open": "^10.1.2",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",
-    "say": "^0.16.0",
     "semver": "^7.6.2",
     "tmp": "^0.2.3",
     "uuid": "^10.0.0",
@@ -67,5 +71,15 @@
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5"
+  },
+  "oclif": {
+    "bin": "testdriverai",
+    "dirname": "testdriverai",
+    "commands": "./interfaces/cli/commands",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topicSeparator": " ",
+    "default": "edit"
   }
 }
