@@ -1,13 +1,13 @@
 const { Command } = require("@oclif/core");
 const { events, eventsArray } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
-
+const path = require("path");
+const fs = require("fs");
+const os = require("os");
 async function openBrowser(url) {
   try {
     // Use dynamic import for the 'open' package (ES module)
     const { default: open } = await import("open");
-
-    console.log(`base Opening browser at: ${url}`);
 
     // Open the browser
     await open(url, {
@@ -27,7 +27,6 @@ class BaseCommand extends Command {
   }
 
   sendToSandbox(message) {
-    console.log(`Sending to sandbox: ${message}`);
     this.agent.sandbox.send({
       type: "output",
       output: Buffer.from(message).toString("base64"),
@@ -36,6 +35,23 @@ class BaseCommand extends Command {
 
   setupEventListeners() {
     const { events } = require("../../../agent/events.js");
+
+    if (!this.logFilePath) {
+      // Create a temp log file for this session
+      this.logFilePath = path.join(
+        os.tmpdir(),
+        `testdriverai-cli-${process.pid}.log`,
+      );
+    }
+
+    // Helper to append log messages to the temp file
+    const appendLog = (level, message) => {
+      const timestamp = new Date().toISOString();
+      fs.appendFileSync(
+        this.logFilePath,
+        `[${timestamp}] [${level}] ${message}\n`,
+      );
+    };
 
     this.agent.emitter.on("sandbox:connected", () => {
       this.agent.emitter.on(events.status, (message) => {
@@ -47,18 +63,21 @@ class BaseCommand extends Command {
         this.sendToSandbox(message);
       });
       this.agent.emitter.on(events.log.warn, (message) => {
-        console.warn(message);
+        console.log(message);
         this.sendToSandbox(message);
       });
       this.agent.emitter.on(events.log.error, (message) => {
-        console.error(message);
-        this.sendToSandbox(message);
-      });
-      this.agent.emitter.on(events.log.debug, (message) => {
-        console.debug(message);
+        console.log(message);
         this.sendToSandbox(message);
       });
     });
+
+    // loop through all events and set up listeners
+    for (const eventName of Object.values(eventsArray)) {
+      this.agent.emitter.on(eventName, (data) => {
+        appendLog(eventName, data);
+      });
+    }
 
     // Handle exit events by exiting the process with the appropriate code
     this.agent.emitter.on(events.exit, (exitCode) => {
@@ -73,15 +92,6 @@ class BaseCommand extends Command {
         : `${data.url}?data=${encodedData}`;
       await openBrowser(urlToOpen);
     });
-
-    // loop through all events and set up listeners
-    for (const eventName of Object.values(eventsArray)) {
-      if (!eventName.startsWith("log:")) {
-        this.agent.emitter.on(eventName, (data) => {
-          console.log(`Event ${eventName} received:`, data);
-        });
-      }
-    }
   }
 
   setupProcessHandlers() {
@@ -131,13 +141,12 @@ class BaseCommand extends Command {
   }
 
   async setupAgent(file, flags) {
-    const path = require("path");
-
     // Create the agent only when actually needed
     if (!this.agent) {
       this.setupProcessHandlers();
     }
     const TestDriverAgent = require("../../../agent/index.js");
+
     this.agent = new TestDriverAgent();
     this.setupEventListeners();
 

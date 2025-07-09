@@ -69,8 +69,6 @@ const createSDK = (emitter) => {
   };
 
   const auth = async () => {
-    console.log(config);
-
     if (config["TD_API_KEY"]) {
       const url = [root, "auth/exchange-api-key"].join("/");
       const c = {

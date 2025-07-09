@@ -456,8 +456,6 @@ const createCommands = (emitter, system, sandbox) => {
       }
     },
     "wait-for-text": async (text, timeout = 5000, method = "turbo") => {
-      console.log(text);
-
       await redraw.start();
 
       emitter.emit(
