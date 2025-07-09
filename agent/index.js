@@ -63,7 +63,6 @@ class TestDriverAgent extends EventEmitter {
       this.sandbox,
     );
     this.commands = commandsResult.commands;
-    this.assert = commandsResult.assert;
 
     // Create commander instance with this agent's emitter and commands
     this.commander = createCommander(

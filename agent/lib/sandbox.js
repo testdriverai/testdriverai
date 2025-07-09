@@ -101,7 +101,7 @@ const createSandbox = (emitter) => {
           if (message.error) {
             emitter.emit(events.sandbox.error, message.errorMessage);
 
-            throw new Error(message);
+            throw new Error(JSON.stringify(message));
           } else {
             if (this.ps[message.requestId]) {
               emitter.emit(events.sandbox.received, message);
