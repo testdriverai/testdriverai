@@ -1,0 +1,10 @@
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: execute powershell multiline
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "${TD_WEBSITE}"
+          exit

@@ -1,0 +1,8 @@
+version: 6.0.0
+steps:
+  - commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          npm init
+          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${TD_WEBSITE}"
