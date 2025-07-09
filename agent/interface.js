@@ -1,5 +1,5 @@
 const path = require("path");
-const { Args, Flags } = require('@oclif/core');
+const { Args, Flags } = require("@oclif/core");
 
 /**
  * Creates command definitions using oclif format as the single source of truth
@@ -25,49 +25,52 @@ function createCommandDefinitions(agent) {
       description: "Run a test file",
       args: {
         file: Args.string({
-          description: 'Test file to run',
-          default: 'testdriver/testdriver.yaml',
+          description: "Test file to run",
+          default: "testdriver/testdriver.yaml",
           required: false,
         }),
       },
       flags: {
         heal: Flags.boolean({
-          description: 'Enable automatic error recovery mode',
+          description: "Enable automatic error recovery mode",
           default: false,
         }),
         write: Flags.boolean({
-          description: 'Save AI modifications to the test file',
+          description: "Save AI modifications to the test file",
           default: false,
         }),
         exit: Flags.boolean({
-          description: 'Exit after completion',
+          description: "Exit after completion",
           default: false,
         }),
         headless: Flags.boolean({
-          description: 'Run in headless mode (no GUI)',
+          description: "Run in headless mode (no GUI)",
           default: false,
         }),
-        'new-sandbox': Flags.boolean({
-          description: 'Do not reuse the last sandbox, always create a new one',
+        "new-sandbox": Flags.boolean({
+          description: "Do not reuse the last sandbox, always create a new one",
           default: false,
         }),
         sandbox: Flags.string({
-          description: 'Connect to existing sandbox with ID',
+          description: "Connect to existing sandbox with ID",
         }),
         summary: Flags.string({
-          description: 'Specify output file for summarize results',
+          description: "Specify output file for summarize results",
         }),
         config: Flags.string({
-          description: 'Configuration file path',
+          description: "Configuration file path",
         }),
         path: Flags.string({
-          description: 'Path pattern for test files',
+          description: "Path pattern for test files",
         }),
       },
       handler: async (args, flags) => {
         const file = normalizeFilePath(args.file);
         await agent.runLifecycle("prerun");
-        await agent.run(file, flags.write, flags.exit !== false, true);
+        // When run() is called through run.js CLI command, shouldExit should be true
+        const shouldExit =
+          agent.cliArgs?.command === "run" ? true : flags.exit !== false;
+        await agent.run(file, flags.write, shouldExit, true);
       },
     },
 
@@ -75,29 +78,29 @@ function createCommandDefinitions(agent) {
       description: "Edit a test file interactively",
       args: {
         file: Args.string({
-          description: 'Test file to edit',
-          default: 'testdriver/testdriver.yaml',
+          description: "Test file to edit",
+          default: "testdriver/testdriver.yaml",
           required: false,
         }),
       },
       flags: {
         heal: Flags.boolean({
-          description: 'Enable automatic error recovery mode',
+          description: "Enable automatic error recovery mode",
           default: false,
         }),
         headless: Flags.boolean({
-          description: 'Run in headless mode',
+          description: "Run in headless mode",
           default: false,
         }),
-        'new-sandbox': Flags.boolean({
-          description: 'Create a new sandbox instance',
+        "new-sandbox": Flags.boolean({
+          description: "Create a new sandbox instance",
           default: false,
         }),
         sandbox: Flags.string({
-          description: 'Connect to existing sandbox with ID',
+          description: "Connect to existing sandbox with ID",
         }),
         summary: Flags.string({
-          description: 'Specify output file for summarize results',
+          description: "Specify output file for summarize results",
         }),
       },
       handler: async () => {
@@ -110,31 +113,31 @@ function createCommandDefinitions(agent) {
       description: "Manage sandbox instances",
       args: {
         action: Args.string({
-          description: 'Action to perform (create, connect, list, destroy)',
+          description: "Action to perform (create, connect, list, destroy)",
           required: false,
         }),
       },
       flags: {
         id: Flags.string({
-          description: 'Sandbox ID for connect/destroy operations',
+          description: "Sandbox ID for connect/destroy operations",
         }),
         headless: Flags.boolean({
-          description: 'Run in headless mode',
+          description: "Run in headless mode",
           default: false,
         }),
         list: Flags.boolean({
-          description: 'List available sandbox instances',
+          description: "List available sandbox instances",
           default: false,
         }),
         create: Flags.boolean({
-          description: 'Create a new sandbox instance',
+          description: "Create a new sandbox instance",
           default: false,
         }),
         destroy: Flags.string({
-          description: 'Destroy sandbox by ID',
+          description: "Destroy sandbox by ID",
         }),
         connect: Flags.string({
-          description: 'Connect to sandbox by ID',
+          description: "Connect to sandbox by ID",
         }),
       },
       handler: async (args, flags) => {
@@ -147,7 +150,7 @@ function createCommandDefinitions(agent) {
       description: "Explore and interact with the current environment",
       args: {
         prompt: Args.string({
-          description: 'What you want to explore or do',
+          description: "What you want to explore or do",
           required: false,
         }),
       },
@@ -161,7 +164,7 @@ function createCommandDefinitions(agent) {
       description: "Save the current test script",
       args: {
         filename: Args.string({
-          description: 'Optional filename to save to',
+          description: "Optional filename to save to",
           required: false,
         }),
       },

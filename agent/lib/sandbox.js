@@ -73,7 +73,7 @@ const createSandbox = (emitter) => {
           clearInterval(this.heartbeat);
           reject();
           this.apiSocketConnected = false;
-          process.exit(1);
+          emitter.emit(events.exit, 1);
         });
 
         this.socket.on("error", (err) => {

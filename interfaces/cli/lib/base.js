@@ -7,6 +7,8 @@ async function openBrowser(url) {
     // Use dynamic import for the 'open' package (ES module)
     const { default: open } = await import("open");
 
+    console.log(`base Opening browser at: ${url}`);
+
     // Open the browser
     await open(url, {
       // Wait for the app to open
@@ -43,19 +45,29 @@ class BaseCommand extends Command {
     this.agent.emitter.on(events.log.debug, (message) => {
       console.debug(`- ${message}`);
     });
-    this.agent.emitter.on(events.showWindow, async (data) => {
-      const encodedData = encodeURIComponent(JSON.stringify(data));
-      await openBrowser(`${data.url}?data=${encodedData}`);
+
+    // Handle exit events by exiting the process with the appropriate code
+    this.agent.emitter.on(events.exit, (exitCode) => {
+      process.exit(exitCode);
     });
 
-    // // loop through all events and set up listeners
-    // for (const eventName of Object.values(eventsArray)) {
-    //   if (!eventName.startsWith("log:")) {
-    //     this.agent.emitter.on(eventName, (data) => {
-    //       console.log(`Event ${eventName} received:`, data);
-    //     });
-    //   }
-    // }
+    this.agent.emitter.on(events.showWindow, async (data) => {
+      const encodedData = encodeURIComponent(JSON.stringify(data));
+      // Use the debugger URL instead of the VNC URL
+      const urlToOpen = this.agent.debuggerUrl
+        ? `${this.agent.debuggerUrl}?data=${encodedData}`
+        : `${data.url}?data=${encodedData}`;
+      await openBrowser(urlToOpen);
+    });
+
+    // loop through all events and set up listeners
+    for (const eventName of Object.values(eventsArray)) {
+      if (!eventName.startsWith("log:")) {
+        this.agent.emitter.on(eventName, (data) => {
+          console.log(`Event ${eventName} received:`, data);
+        });
+      }
+    }
   }
 
   setupProcessHandlers() {

@@ -8,6 +8,7 @@ module.exports.createDebuggerProcess = () => {
       // Return a mock process object to maintain compatibility
       return {
         pid: process.pid,
+        url: url, // Include the debugger URL
         kill: () => {
           const { stopDebugger } = require("./debugger-server.js");
           stopDebugger();

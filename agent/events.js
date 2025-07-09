@@ -54,6 +54,12 @@ const events = {
     error: "log:error",
     debug: "log:debug",
   },
+  sdk: {
+    error: "sdk:error",
+    request: "sdk:request",
+    response: "sdk:response",
+    progress: "sdk:progress",
+  },
   sandbox: {
     connected: "sandbox:connected",
     errored: "sandbox:error",
@@ -65,6 +71,7 @@ const events = {
     status: "redraw:status",
     complete: "redraw:complete",
   },
+  exit: "exit",
 };
 
 const getValues = (obj) => {

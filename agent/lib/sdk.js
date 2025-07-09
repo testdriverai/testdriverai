@@ -60,7 +60,7 @@ const createSDK = (emitter) => {
       }
       return body;
     } catch (err) {
-      emitter.emit(events.sdk.parseError, {
+      emitter.emit(events.sdk.error, {
         error: err,
         message: "Parsing Error",
       });
@@ -89,7 +89,8 @@ const createSDK = (emitter) => {
         return token;
       } catch (error) {
         outputError(error);
-        process.exit(1);
+        emitter.emit(events.exit, 1);
+        return;
       }
     }
   };
@@ -101,6 +102,10 @@ const createSDK = (emitter) => {
         delete data[key];
       }
     }
+
+    emitter.emit(events.sdk.request, {
+      path,
+    });
 
     const url = path.startsWith("/api")
       ? [root, path].join("")
@@ -124,6 +129,10 @@ const createSDK = (emitter) => {
       let response;
 
       response = await axios(url, c);
+
+      emitter.emit(events.sdk.response, {
+        path,
+      });
 
       const contentType = response.headers["content-type"]?.toLowerCase();
       const isJsonl = contentType === "application/jsonl";

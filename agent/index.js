@@ -91,6 +91,7 @@ class TestDriverAgent extends EventEmitter {
     this.cliArgs = {}; // the cli args passed to the agent
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
+    this.debuggerUrl = null; // the debugger server URL
 
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
@@ -112,10 +113,13 @@ class TestDriverAgent extends EventEmitter {
       await this.runLifecycle("postrun");
     }
 
+    // Emit exit event with exit code and close readline interface
+    this.readlineInterface?.close();
+    this.emitter.emit(events.exit, failed ? 1 : 0);
+
     // we purposly never resolve this promise so the process will hang
     return new Promise(() => {
-      this.readlineInterface?.close();
-      process.exit(failed ? 1 : 0);
+      // The process exit should be handled by the base/entry point listening to the exit event
     });
   }
 
@@ -1019,7 +1023,7 @@ ${regression}
         "log:error",
         "Please specify a sandbox action: --list, --destroy <id>, or --create",
       );
-      process.exit(1);
+      await this.exit(true);
     }
   }
 
@@ -1178,7 +1182,8 @@ ${regression}
 
   async start() {
     // Start the debugger server as early as possible to ensure event listeners are attached
-    await createDebuggerProcess();
+    const debuggerProcess = await createDebuggerProcess();
+    this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
 
     this.emitter.emit(
       "log:info",
@@ -1256,7 +1261,7 @@ ${regression}
         events.log.error,
         `Unknown command: ${this.cliArgs.command}`,
       );
-      process.exit(1);
+      await this.exit(true);
     }
   }
 

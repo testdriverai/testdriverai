@@ -105,22 +105,6 @@ function broadcastEvent(event, data) {
   });
 }
 
-async function openBrowser(url) {
-  try {
-    // Use dynamic import for the 'open' package (ES module)
-    const { default: open } = await import("open");
-
-    // Open the browser
-    await open(url, {
-      // Wait for the app to open
-      wait: false,
-    });
-  } catch (error) {
-    console.error("Failed to open browser automatically:", error);
-    console.log(`Please manually open: ${url}`);
-  }
-}
-
 async function startDebugger() {
   try {
     const { port } = await createDebuggerServer();
@@ -131,12 +115,6 @@ async function startDebugger() {
 
     for (const event of eventsArray) {
       emitter.on(event, async (data) => {
-        if (event === "show-window") {
-          // Open browser window
-          const encodedData = encodeURIComponent(JSON.stringify(data));
-          await openBrowser(`${url}?data=${encodedData}`);
-          return;
-        }
         broadcastEvent(event, data);
       });
     }
