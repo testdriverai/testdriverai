@@ -1108,7 +1108,17 @@ ${regression}
     const newSandbox = options["new-sandbox"] || options.newSandbox;
 
     // Set agent properties from unified command options
-    if (sandbox) this.sandboxId = sandbox;
+    if (sandbox && !newSandbox) {
+      this.sandboxId = sandbox;
+    } else if (sandbox && newSandbox) {
+      // If both are specified, --new-sandbox takes precedence
+      this.emitter.emit(
+        "log:info",
+        theme.yellow(
+          "Warning: Both --sandbox and --new-sandbox specified. Creating new sandbox instead of using specified sandbox ID.",
+        ),
+      );
+    }
     if (newSandbox) this.newSandbox = newSandbox;
     if (heal) this.healMode = heal;
 
@@ -1148,7 +1158,7 @@ ${regression}
       }
     }
 
-    if (this.sandboxId) {
+    if (this.sandboxId && !this.newSandbox) {
       let instance = await this.connectToSandboxDirect(this.sandboxId);
       this.instance = instance;
       await this.renderSandbox(instance, headless);
