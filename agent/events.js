@@ -61,25 +61,6 @@ const events = {
     sensitiveHeaders: "sandbox:sent",
     received: "sandbox:received",
   },
-  outputs: {
-    set: "outputs:set",
-  },
-  history: {
-    add: "history:add",
-    clear: "history:clear",
-    set: "history:set",
-  },
-  redraw: {
-    status: "redraw:status",
-    complete: "redraw:complete",
-  },
-  sdk: {
-    error: "sdk:error",
-    parseError: "sdk:parseError",
-  },
-  subimage: {
-    error: "subimage:error",
-  },
 };
 
 const getValues = (obj) => {

@@ -190,7 +190,6 @@ class TestDriverAgent extends EventEmitter {
       image = null;
     }
 
-    this.emit("status", `thinking...`);
     this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
 
     const streamId = `error-${Date.now()}`;
@@ -241,7 +240,6 @@ class TestDriverAgent extends EventEmitter {
     }
 
     this.emitter.emit(events.log.log, theme.dim("checking..."));
-    this.emit("status", `checking...`);
 
     // check asks the ai if the task is complete
     let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
@@ -507,7 +505,6 @@ class TestDriverAgent extends EventEmitter {
       }
     }
 
-    this.emit("status", `thinking...`);
     this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
 
     let response = `\`\`\`yaml
@@ -536,7 +533,6 @@ commands:
 
     this.tasks.push(currentTask);
 
-    this.emit("status", `thinking...`);
     this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
 
     this.lastScreenshot = await this.system.captureScreenBase64();
@@ -579,7 +575,6 @@ commands:
   async generate(type, count, baseYaml, skipYaml = false) {
     this.emitter.emit(events.log.debug, "generate called, %s", type);
 
-    this.emit("status", `thinking...`);
     this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
 
     if (baseYaml && !skipYaml) {
@@ -1260,22 +1255,18 @@ ${regression}
       events.log.log,
       theme.gray(`- establishing connection...`),
     );
-    this.emit("status", `Establishing connection...`);
     await this.sandbox.boot(config.TD_API_ROOT);
     this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
-    this.emit("status", `Authenticating...`);
     await this.sandbox.auth(config.TD_API_KEY);
   }
 
   async connectToSandboxDirect(sandboxId) {
     this.emitter.emit(events.log.log, theme.gray(`- connecting...`));
-    this.emit("status", `Connecting...`);
     let instance = await this.sandbox.connect(sandboxId);
     return instance;
   }
 
   async createNewSandbox() {
-    this.emit("status", `Creating new sandbox...`);
     let instance = await this.sandbox.send({
       type: "create",
       resolution: config.TD_RESOLUTION,

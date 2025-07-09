@@ -6,8 +6,6 @@ const { version } = require("../../package.json");
 const root = config["TD_API_ROOT"];
 const axios = require("axios");
 
-const { events, emitter } = require("../events");
-
 let token = null;
 
 const outputError = (error) => {

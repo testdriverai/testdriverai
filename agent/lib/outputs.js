@@ -1,5 +1,4 @@
 let outputs = {};
-const { events, emitter } = require("../events");
 
 module.exports = {
   getAll: () => {
@@ -11,7 +10,6 @@ module.exports = {
   set: (key, value) => {
     if (key && value) {
       outputs[key] = value;
-      emitter.emit(events.outputs.set, { key, value });
     }
   },
 };

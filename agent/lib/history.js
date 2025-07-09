@@ -1,12 +1,10 @@
 // the memory store
 let store = [];
-const { events, emitter } = require("../events");
 
 module.exports = {
   // delete the memory store
   clear: () => {
     store.length = 0;
-    emitter.emit(events.history.clear);
   },
   add: (entry) => {
     // make a copy of entry so it is immutable
@@ -18,7 +16,6 @@ module.exports = {
     });
 
     store.push(entry);
-    emitter.emit(events.history.add, { entry, count: store.length });
   },
   get: () => {
     // make a copy of store so we don't modify the original
@@ -26,7 +23,6 @@ module.exports = {
   },
   set: (l) => {
     store = l;
-    emitter.emit(events.history.set, { count: store.length });
   },
   last: () => {
     return this.get().pop();
