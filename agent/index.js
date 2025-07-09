@@ -1329,11 +1329,40 @@ ${regression}
     // Convert args array to object if needed
     const argsObj = {};
     if (Array.isArray(args)) {
-      command.arguments?.forEach((argDef, index) => {
-        if (argDef.variadic) {
-          argsObj[argDef.name] = args.slice(index);
+      // Get argument definitions from the command
+      const argDefs = command.args ? Object.values(command.args) : [];
+      const argNames = command.args ? Object.keys(command.args) : [];
+      
+      // Handle both positional args (/run myfile) and named args (/run file=myfile)
+      args.forEach((arg, index) => {
+        if (typeof arg === 'string' && arg.includes('=')) {
+          // Named argument: file=myfile or path=myfile
+          const [key, value] = arg.split('=', 2);
+          // Support both 'file' and 'path' for the run command
+          if (commandName === 'run' && key === 'path') {
+            argsObj['file'] = value;
+          } else {
+            argsObj[key] = value;
+          }
         } else {
-          argsObj[argDef.name] = args[index] || argDef.default;
+          // Positional argument: myfile
+          const argName = argNames[index];
+          if (argName) {
+            const argDef = argDefs[index];
+            if (argDef && argDef.variadic) {
+              argsObj[argName] = args.slice(index);
+            } else {
+              argsObj[argName] = arg;
+            }
+          }
+        }
+      });
+      
+      // Apply defaults for any missing arguments
+      argNames.forEach((argName, index) => {
+        const argDef = argDefs[index];
+        if (argsObj[argName] === undefined && argDef && argDef.default) {
+          argsObj[argName] = argDef.default;
         }
       });
     } else {
