@@ -1,0 +1,36 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: download arc browser
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          # Variables
+          $chocoDoomUrl = "https://www.chocolate-doom.org/downloads/3.0.1/chocolate-doom-3.0.1-win32.zip"
+          $doomWadUrl = "https://archive.org/download/doom1-shareware/doom1-shareware.zip"
+          $workingDir = "$env:TEMP\choco-doom"
+          $chocoZip = "$workingDir\chocolate-doom.zip"
+          $wadZip = "$workingDir\doom1-shareware.zip"
+          $chocoExtracted = "$workingDir\chocolate-doom"
+          $wadExtracted = "$workingDir\doom1-shareware"
+
+          # Create working directory
+          New-Item -ItemType Directory -Path $workingDir -Force | Out-Null
+
+          # Download Chocolate DOOM
+          Invoke-WebRequest -Uri $chocoDoomUrl -OutFile $chocoZip
+
+          # Download DOOM1.WAD shareware
+          Invoke-WebRequest -Uri $doomWadUrl -OutFile $wadZip
+
+          # Extract both ZIPs
+          Expand-Archive -LiteralPath $chocoZip -DestinationPath $chocoExtracted -Force
+          Expand-Archive -LiteralPath $wadZip -DestinationPath $wadExtracted -Force
+
+          # Copy WAD file into Chocolate DOOM folder
+          $wadPath = Get-ChildItem -Path $wadExtracted -Filter "doom1.wad" -Recurse | Select-Object -First 1
+          Copy-Item -Path $wadPath.FullName -Destination $chocoExtracted
+
+          # Run Chocolate DOOM
+          Start-Process -FilePath "$chocoExtracted\chocolate-doom.exe"
