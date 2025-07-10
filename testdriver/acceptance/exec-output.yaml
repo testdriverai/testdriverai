@@ -5,7 +5,7 @@ steps:
     commands:
       - command: exec
         lang: pwsh
-        result: queryString
+        output: queryString
         code: |
           $date = (Get-Date).AddMonths(1)
           Write-Output $date.ToString("yyyy-MM-dd")
@@ -15,7 +15,7 @@ steps:
     commands:
       - command: exec
         lang: pwsh
-        result: expectedDate
+        output: expectedDate
         code: |
           $date = (Get-Date).AddMonths(1)
           Write-Output $date.ToString("ddd MMM d yyyy")
