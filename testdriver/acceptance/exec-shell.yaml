@@ -36,5 +36,5 @@ steps:
     commands:
       - command: assert
         expect: >-
-          the username field contains ${OUTPUT.user}" which is a valid email
+          the username field contains ${OUTPUT.user} which is a valid email
           address
