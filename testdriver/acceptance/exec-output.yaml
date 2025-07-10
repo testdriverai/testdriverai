@@ -23,8 +23,8 @@ steps:
         expect: ${OUTPUT.expectedDate} is not null or empty
   # Go to a public calendar that accepts query strings to set the date
   - prompt: >-
-      now press ctrl + l, then the right arrow, then type
-      https://teamup.com/ks48cf2135e7e080bc?view=d&date=${OUTPUT.queryString}
+      now press ctrl + l, then type
+      https://teamup.com/ks48cf2135e7e080bc?view=d&date=${OUTPUT.queryString} and press enter
     commands:
       - command: focus-application
         name: Google Chrome
