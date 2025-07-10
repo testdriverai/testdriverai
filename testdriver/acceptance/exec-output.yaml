@@ -32,9 +32,6 @@ steps:
         keys:
           - ctrl
           - l
-      - command: press-keys
-        keys:
-          - right
       - command: type
         text: https://teamup.com/ks48cf2135e7e080bc?view=d&date=${OUTPUT.queryString}
       - command: press-keys
