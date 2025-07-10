@@ -1,6 +1,6 @@
 const chai = require("chai");
 const expect = chai.expect;
-const { interpolate } = require("../lib/parser");
+const { interpolate } = require("../agent/lib/parser");
 
 describe("interpolate", function () {
   it("should replace variables in the string with values from the dictionary", function () {

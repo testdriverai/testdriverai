@@ -485,7 +485,19 @@ class TestDriverAgent extends EventEmitter {
     yml = await parser.validateYAML(yml);
 
     // Inject environment variables into any ${VAR} strings
-    yml = parser.interpolate(yml, process.env);
+    yml = parser.interpolate(yml, {
+      TD_THIS_FILE: file,
+      ...process.env
+    });
+
+    // Show Unreplaced Variables
+    let unreplacedVars = parser.collectUnreplacedVariables(yml);
+
+    if (unreplacedVars.length > 0) {
+      this.emitter.emit(events.error.general, `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`);
+      await this.summarize("Unreplaced variables in YAML: ${unreplacedVars.join(", ")}");
+      await this.exit(true);
+    }
 
     let ymlObj = null;
     try {

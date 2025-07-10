@@ -143,7 +143,7 @@ function createCommandDefinitions(agent) {
         }),
       },
       handler: async (args, flags) => {
-        await agent.sandboxCommand(args.action, flags);
+        await agent.handleSandboxCommand(flags);
       },
     },
 

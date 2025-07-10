@@ -76,17 +76,27 @@ class BaseCommand extends Command {
       this.sendToSandbox(`- ${message}`);
     });
 
+    // Console logging
+    this.agent.emitter.on(events.log.log, (message) => {
+      console.log(message);
+    });
+
+    this.agent.emitter.on(events.log.warn, (message) => {
+      console.log(message);
+    });
+
+    this.agent.emitter.on(events.error.general, (message) => {
+      console.log(message);
+    });
+
     this.agent.emitter.on("sandbox:connected", () => {
       this.agent.emitter.on(events.log.log, (message) => {
-        console.log(message);
         this.sendToSandbox(message);
       });
       this.agent.emitter.on(events.log.warn, (message) => {
-        console.log(message);
         this.sendToSandbox(message);
       });
       this.agent.emitter.on(events.error.general, (message) => {
-        console.log(message);
         this.sendToSandbox(message);
       });
       this.agent.emitter.on(events.log.markdown.static, (message) => {

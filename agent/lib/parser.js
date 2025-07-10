@@ -120,11 +120,30 @@ function interpolate(yaml, vars) {
   return newyaml;
 }
 
+// Function to gather all variables in the YAMl that have not been replaced
+function collectUnreplacedVariables(yaml) {
+  let unreplaced = [];
+
+  // Use a regex to find all ${VAR} patterns
+  const regex = /\$\{([^}]+)\}/g;
+  let match;
+  while ((match = regex.exec(yaml)) !== null) {
+    const variable = match[1];
+    // Check if the variable is already in the unreplaced array
+    if (!unreplaced.includes(variable)) {
+      unreplaced.push(variable);
+    }
+  }
+
+  return unreplaced;
+}
+
 module.exports = {
   findCodeBlocks,
   findGenerativePrompts,
   getYAMLFromCodeBlock,
   interpolate,
+  collectUnreplacedVariables,
   validateYAML,
   getCommands: async function (codeBlock) {
     const yml = getYAMLFromCodeBlock(codeBlock);

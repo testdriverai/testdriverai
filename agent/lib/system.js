@@ -85,6 +85,7 @@ const createSystem = (sandbox) => {
         silent,
         display: primaryDisplay,
       });
+      throw error;
     }
   };
 
