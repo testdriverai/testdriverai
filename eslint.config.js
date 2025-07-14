@@ -4,13 +4,34 @@ const pluginJs = require("@eslint/js");
 module.exports = [
   pluginJs.configs.recommended,
   {
+    // Base config for all JavaScript files - provides Node.js globals
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    // Specific config for interface and agent files - adds browser globals
     files: ["./interfaces/**/*.js", "./agent/**/*.js"],
     languageOptions: {
       sourceType: "commonjs",
       globals: {
         ...globals.browser,
         ...globals.node,
+      },
+    },
+  },
+  {
+    // Specific config for test files - adds Jest and Mocha globals
+    files: ["test/**/*.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
         ...globals.jest,
+        ...globals.mocha,
       },
     },
   },
