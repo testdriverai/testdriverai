@@ -41,6 +41,7 @@ const events = {
   vm: {
     show: "vm:show",
   },
+  narration: "narration",
   status: "status",
   log: {
     markdown: {

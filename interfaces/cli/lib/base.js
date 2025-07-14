@@ -60,7 +60,7 @@ class BaseCommand extends Command {
       );
 
       // Open the log file in VS Code
-      // this.openLogFileInVSCode();
+      this.openLogFileInVSCode();
     }
 
     // Helper to append log messages to the temp file

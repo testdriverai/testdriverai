@@ -29,14 +29,13 @@ class MatchError extends Error {
 /**
  * Error when something is wrong with th command
  **/
-class CommandError extends Error  {
+class CommandError extends Error {
   constructor(message) {
     super(message);
     this.fatal = true;
     this.attachScreenshot = false;
   }
 }
-
 
 // Factory function that creates commands with the provided emitter
 const createCommands = (emitter, system, sandbox) => {
@@ -172,7 +171,7 @@ const createCommands = (emitter, system, sandbox) => {
       }
     };
 
-    emitter.emit(events.status, `thinking...`);
+    emitter.emit(events.log.log, `thinking...`);
 
     if (async) {
       await sdk
@@ -236,7 +235,7 @@ const createCommands = (emitter, system, sandbox) => {
 
     if (before === after) {
       emitter.emit(
-        "log:warn",
+        events.log.warn,
         "Attempted to scroll, but the screen did not change.  You may need to click a non-interactive element to focus the scrollable area first.",
       );
     }
@@ -547,7 +546,7 @@ const createCommands = (emitter, system, sandbox) => {
           await sandbox.send({ type: "press", keys: ["escape"] });
         } catch {
           throw new MatchError(
-            "Could not find element using browser text search"
+            "Could not find element using browser text search",
           );
         }
       }
@@ -593,7 +592,7 @@ const createCommands = (emitter, system, sandbox) => {
         return;
       } else {
         throw new MatchError(
-          `Scrolled ${scrollDistance} pixels without finding "${text}"`
+          `Scrolled ${scrollDistance} pixels without finding "${text}"`,
         );
       }
     },
@@ -611,7 +610,9 @@ const createCommands = (emitter, system, sandbox) => {
       }
 
       if (description && path) {
-        throw new CommandError("Only one of description or path can be provided");
+        throw new CommandError(
+          "Only one of description or path can be provided",
+        );
       }
 
       emitter.emit(
@@ -656,7 +657,7 @@ const createCommands = (emitter, system, sandbox) => {
         return;
       } else {
         throw new CommandError(
-          `Scrolled ${scrollDistance} pixels without finding an image matching "${needle}"`
+          `Scrolled ${scrollDistance} pixels without finding an image matching "${needle}"`,
         );
       }
     },
@@ -684,7 +685,7 @@ const createCommands = (emitter, system, sandbox) => {
     exec: async (language, code, silent = false) => {
       emitter.emit(events.log.log, theme.dim(`calling exec...`), true);
 
-      console.log(code);
+      emitter.emit(events.log.log, code);
 
       let plat = system.platform();
 
@@ -698,7 +699,7 @@ const createCommands = (emitter, system, sandbox) => {
 
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(
-            `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`
+            `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
         } else {
           if (!silent) {
@@ -722,8 +723,8 @@ const createCommands = (emitter, system, sandbox) => {
           true,
         );
 
-        console.log("");
-        console.log("------");
+        emitter.emit(events.log.log, "");
+        emitter.emit(events.log.log, "------");
 
         const context = vm.createContext({
           require,
@@ -754,8 +755,8 @@ const createCommands = (emitter, system, sandbox) => {
           stepResult = stepResult.toString();
         }
 
-        console.log("------");
-        console.log("");
+        emitter.emit(events.log.log, "------");
+        emitter.emit(events.log.log, "");
 
         if (!stepResult) {
           emitter.emit(events.log.log, `No result returned from script`, true);
