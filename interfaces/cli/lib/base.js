@@ -28,20 +28,6 @@ class BaseCommand extends Command {
     this.agent = null; // Initialize as null, create only when needed
   }
 
-  openLogFileInVSCode() {
-    try {
-      const { spawn } = require("child_process");
-      // Use 'code' command to open the file in VS Code
-      spawn("code", [this.logFilePath], {
-        detached: true,
-        stdio: "ignore",
-      });
-    } catch {
-      // Silently fail if VS Code is not available or command fails
-      // We don't want to interrupt the main process for this convenience feature
-    }
-  }
-
   sendToSandbox(message) {
     this.agent.sandbox.send({
       type: "output",
@@ -59,8 +45,8 @@ class BaseCommand extends Command {
         `testdriverai-cli-${process.pid}.log`,
       );
 
-      // Open the log file in VS Code
-      this.openLogFileInVSCode();
+      console.log(`Log file created at: ${this.logFilePath}`);
+      fs.writeFileSync(this.logFilePath, ""); // Initialize the log file
     }
 
     // Helper to append log messages to the temp file
@@ -113,8 +99,10 @@ class BaseCommand extends Command {
     for (const eventName of Object.values(eventsArray)) {
       if (eventName.split(":")[0] === "error") {
         this.agent.emitter.on(eventName, (data) => {
-          console.error(eventName);
-          console.error(data);
+          console.error(eventName, ":", data);
+          if (eventName == events.error.sandbox) {
+            console.error("Use --new-sandbox to create a new sandbox.");
+          }
         });
       }
     }
@@ -142,33 +130,6 @@ class BaseCommand extends Command {
     });
   }
 
-  setupProcessHandlers() {
-    // Process error handlers
-    // process.on("uncaughtException", async (err) => {
-    //   console.error("Uncaught Exception:", err);
-    //   this.agent.emitter.emit(events.error.general, "Uncaught Exception: %s", err);
-    //   if (this.agent) {
-    //     await this.agent.exit(true);
-    //   } else {
-    //     process.exit(1);
-    //   }
-    // });
-    // process.on("unhandledRejection", async (reason, promise) => {
-    //   console.error("Unhandled Rejection at:", promise, "reason:", reason);
-    //   this.agent.emitter.emit(
-    //     events.error.general,
-    //     "Unhandled Rejection at: %s, reason: %s",
-    //     promise,
-    //     reason,
-    //   );
-    //   if (this.agent) {
-    //     await this.agent.exit(true);
-    //   } else {
-    //     process.exit(1);
-    //   }
-    // });
-  }
-
   async init() {
     // Only start debugger for commands that actually need it
     // Help commands and other static commands don't need the debugger
@@ -189,9 +150,6 @@ class BaseCommand extends Command {
 
   async setupAgent(file, flags) {
     // Create the agent only when actually needed
-    if (!this.agent) {
-      this.setupProcessHandlers();
-    }
     const TestDriverAgent = require("../../../agent/index.js");
 
     this.agent = new TestDriverAgent();

@@ -27,7 +27,6 @@
     "@oclif/plugin-commands": "^4.1.28",
     "@oclif/plugin-help": "^6.2.30",
     "@oclif/plugin-not-found": "^3.2.59",
-    "@oclif/plugin-plugins": "^5.4.44",
     "@oclif/plugin-warn-if-update-available": "^3.1.43",
     "ajv": "^8.17.1",
     "arktype": "^2.1.19",
@@ -78,7 +77,7 @@
     "dirname": "testdriverai",
     "commands": "./interfaces/cli/commands",
     "plugins": [
-      "@oclif/plugin-help"
+      "@oclif/plugin-*"
     ],
     "topicSeparator": " ",
     "default": "edit"
