@@ -1,8 +1,49 @@
-version: 5.1.1
+version: 6.0.0
 session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: launch chrome
+  - prompt: download doom
     commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          # === Setup ===
+          $chocoUrl = "https://www.chocolate-doom.org/downloads/3.0.1/chocolate-doom-3.0.1-win32.zip"
+          $wadUrl = "https://archive.org/download/DOOMIWADFILE/DOOM.WAD"
+          $basePath = "$env:USERPROFILE\choco-doom"
+          $extractDir = "$basePath\choco-extracted"
+          $wadFile = "$basePath\DOOM.WAD"
+          $chocoExe = "$extractDir\chocolate-doom.exe"
+          $zipPath = "$basePath\choco.zip"
+
+          # === Ensure clean folders ===
+          New-Item -ItemType Directory -Force -Path $basePath | Out-Null
+          New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+
+          # === Download Chocolate DOOM if missing ===
+          if (-not (Test-Path $zipPath)) {
+              Write-Host "Downloading Chocolate DOOM..."
+              Invoke-WebRequest -Uri $chocoUrl -OutFile $zipPath
+          }
+
+          # === Extract if not already extracted ===
+          if (-not (Test-Path $chocoExe)) {
+              Write-Host "Extracting Chocolate DOOM..."
+              Expand-Archive -LiteralPath $zipPath -DestinationPath $extractDir -Force
+          }
+
+          # === Download DOOM.WAD if missing ===
+          if (-not (Test-Path $wadFile)) {
+              Write-Host "Downloading DOOM.WAD..."
+              Invoke-WebRequest -Uri $wadUrl -OutFile $wadFile
+          }
+
+          # === Set SDL variables for software rendering ===
+          $env:SDL_VIDEODRIVER = "windows"
+          $env:SDL_RENDER_DRIVER = "software"
+
+          # === Launch DOOM ===
+          Write-Host "Launching Chocolate DOOM with software rendering..."
+          Start-Process -FilePath $chocoExe -ArgumentList "-iwad `"$wadFile`""
       - command: exec
         lang: pwsh
         code: dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
