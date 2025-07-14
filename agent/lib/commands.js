@@ -14,6 +14,30 @@ const { createRedraw } = require("./redraw.js");
 
 const { events } = require("../events.js");
 
+/**
+ * Error When a match is not found
+ * these should be recoverable by --heal
+ **/
+class MatchError extends Error {
+  constructor(message, fatal = false) {
+    super(message);
+    this.fatal = fatal;
+    this.attachScreenshot = true;
+  }
+}
+
+/**
+ * Error when something is wrong with th command
+ **/
+class CommandError extends Error  {
+  constructor(message) {
+    super(message);
+    this.fatal = true;
+    this.attachScreenshot = false;
+  }
+}
+
+
 // Factory function that creates commands with the provided emitter
 const createCommands = (emitter, system, sandbox) => {
   // Create SDK instance with emitter
@@ -24,14 +48,6 @@ const createCommands = (emitter, system, sandbox) => {
     return Math.round(ms / 1000);
   };
   const delay = (t) => new Promise((resolve) => setTimeout(resolve, t));
-  class AiError extends Error {
-    constructor(message, fatal = false, attatchScreenshot = true) {
-      super(message);
-      this.fatal = fatal;
-      this.attachScreenshot = attatchScreenshot;
-    }
-  }
-
   const findImageOnScreen = async (
     relativePath,
     haystack,
@@ -52,8 +68,8 @@ const createCommands = (emitter, system, sandbox) => {
     let needle = path.join(rootpath, relativePath);
 
     // check if the file exists
-    if (await !fs.access(needle)) {
-      throw new AiError(
+    if (!fs.access(needle)) {
+      throw new CommandError(
         `Image does not exist or do not have access: ${needle}`,
       );
     }
@@ -148,7 +164,8 @@ const createCommands = (emitter, system, sandbox) => {
         return true;
       } else {
         if (shouldThrow) {
-          throw new AiError(`AI Assertion failed`, true);
+          // Is fatal, othewise it just changes the assertion to be true
+          throw new MatchError(`AI Assertion failed`, true);
         } else {
           return false;
         }
@@ -213,7 +230,7 @@ const createCommands = (emitter, system, sandbox) => {
         console.error("Not Supported");
         break;
       default:
-        throw new AiError("Direction not found");
+        throw new CommandError("Direction not found");
     }
     const after = await system.captureScreenBase64();
 
@@ -332,7 +349,7 @@ const createCommands = (emitter, system, sandbox) => {
       );
 
       if (!response.data) {
-        throw new AiError("No text on screen matches description");
+        throw new MatchError("No text on screen matches description");
       } else {
         return response.data;
       }
@@ -358,7 +375,7 @@ const createCommands = (emitter, system, sandbox) => {
       );
 
       if (!response?.data) {
-        throw new AiError("No image or icon on screen matches description");
+        throw new MatchError("No image or icon on screen matches description");
       } else {
         return response.data;
       }
@@ -369,7 +386,7 @@ const createCommands = (emitter, system, sandbox) => {
       let result = await findImageOnScreen(relativePath, image);
 
       if (!result) {
-        throw new AiError(`Image not found: ${relativePath}`, true);
+        throw new CommandError(`Image not found: ${relativePath}`);
       } else {
         if (action === "click") {
           await click(result.centerX, result.centerY, action);
@@ -449,9 +466,8 @@ const createCommands = (emitter, system, sandbox) => {
         );
         return;
       } else {
-        throw new AiError(
+        throw new MatchError(
           `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description "${description}"`,
-          true,
         );
       }
     },
@@ -502,9 +518,8 @@ const createCommands = (emitter, system, sandbox) => {
         emitter.emit(events.log.log, theme.dim(`"${text}" found!`), true);
         return;
       } else {
-        throw new AiError(
+        throw new MatchError(
           `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}:.}`,
-          true,
         );
       }
     },
@@ -531,9 +546,8 @@ const createCommands = (emitter, system, sandbox) => {
           await redraw.wait(5000);
           await sandbox.send({ type: "press", keys: ["escape"] });
         } catch {
-          throw new AiError(
-            "Could not find element using browser text search",
-            true,
+          throw new MatchError(
+            "Could not find element using browser text search"
           );
         }
       }
@@ -578,9 +592,8 @@ const createCommands = (emitter, system, sandbox) => {
         emitter.emit(events.log.log, theme.dim(`"${text}" found!`), true);
         return;
       } else {
-        throw new AiError(
-          `Scrolled ${scrollDistance} pixels without finding "${text}"`,
-          true,
+        throw new MatchError(
+          `Scrolled ${scrollDistance} pixels without finding "${text}"`
         );
       }
     },
@@ -594,11 +607,11 @@ const createCommands = (emitter, system, sandbox) => {
       const needle = description || path;
 
       if (!needle) {
-        throw new AiError("No description or path provided");
+        throw new CommandError("No description or path provided");
       }
 
       if (description && path) {
-        throw new AiError("Only one of description or path can be provided");
+        throw new CommandError("Only one of description or path can be provided");
       }
 
       emitter.emit(
@@ -642,9 +655,8 @@ const createCommands = (emitter, system, sandbox) => {
         emitter.emit(events.log.log, theme.dim(`"${needle}" found!`), true);
         return;
       } else {
-        throw new AiError(
-          `Scrolled ${scrollDistance} pixels without finding an image matching "${needle}"`,
-          true,
+        throw new CommandError(
+          `Scrolled ${scrollDistance} pixels without finding an image matching "${needle}"`
         );
       }
     },
@@ -685,9 +697,8 @@ const createCommands = (emitter, system, sandbox) => {
         });
 
         if (result.out && result.out.returncode !== 0) {
-          throw new AiError(
-            `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
-            true,
+          throw new MatchError(
+            `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`
           );
         } else {
           if (!silent) {
@@ -730,7 +741,7 @@ const createCommands = (emitter, system, sandbox) => {
           await script.runInNewContext(context);
         } catch (e) {
           console.error(e);
-          throw new AiError(`Error running script: ${e.message}`, true);
+          throw new CommandError(`Error running script: ${e.message}`);
         }
 
         // wait for context.result to resolve
@@ -758,7 +769,7 @@ const createCommands = (emitter, system, sandbox) => {
         return stepResult;
         // }
       } else {
-        throw new AiError(`Language not supported: ${language}`);
+        throw new CommandError(`Language not supported: ${language}`);
       }
     },
   };

@@ -493,10 +493,11 @@ class TestDriverAgent extends EventEmitter {
     // Show Unreplaced Variables
     let unreplacedVars = parser.collectUnreplacedVariables(yml);
 
+    // Remove all variables that start with OUTPUT- these are special
+    unreplacedVars = unreplacedVars.filter((v) => !v.startsWith("OUTPUT."));
+
     if (unreplacedVars.length > 0) {
       this.emitter.emit(events.error.general, `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`);
-      await this.summarize("Unreplaced variables in YAML: ${unreplacedVars.join(", ")}");
-      await this.exit(true);
     }
 
     let ymlObj = null;
