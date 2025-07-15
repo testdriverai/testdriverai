@@ -156,7 +156,7 @@ class ReadlineInterface {
         );
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       this.agent.emitter.emit(
         events.error.general,

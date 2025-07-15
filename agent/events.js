@@ -89,6 +89,7 @@ const events = {
     status: "file:status",
   },
   error: {
+    fatal: "error:fatal",
     general: "error:general",
     sdk: "error:sdk",
     sandbox: "error:sandbox",

@@ -164,9 +164,8 @@ class BaseCommand extends Command {
     } catch (e) {
       console.error("Failed to start agent:", e);
       this.agent.emitter.emit(
-        events.error.general,
-        "Failed to start agent: %s",
-        e,
+        events.error.fatal,
+        "Failed to start agent: " + JSON.stringify(e),
       );
       if (this.agent) {
         await this.agent.exit(true);

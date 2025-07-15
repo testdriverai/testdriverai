@@ -142,10 +142,10 @@ class TestDriverAgent extends EventEmitter2 {
     // Show error with source context if available
     const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
     if (errorContext) {
-      this.emitter.emit(events.error.general, errorContext);
+      this.emitter.emit(events.error.fatal, errorContext);
     } else {
       this.emitter.emit(
-        events.error.general,
+        events.error.fatal,
         theme.red("Fatal Error") + `\n${error}`,
       );
     }
@@ -199,7 +199,7 @@ class TestDriverAgent extends EventEmitter2 {
     // Show error with source context if available
     const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
     if (errorContext) {
-      this.emitter.emit(events.error.general, errorContext);
+      this.emitter.emit(events.log.warn, errorContext);
     } else {
       this.emitter.emit(events.log.markdown.static, eMessage);
     }
@@ -576,7 +576,7 @@ class TestDriverAgent extends EventEmitter2 {
         timestamp: Date.now(),
       });
 
-      this.emitter.emit(events.error.general, `File not found: ${file}`);
+      this.emitter.emit(events.error.fatal, `File not found: ${file}`);
 
       await this.summarize("File not found");
       await this.exit(true);
@@ -637,7 +637,7 @@ class TestDriverAgent extends EventEmitter2 {
         timestamp: endTime,
       });
 
-      this.emitter.emit(events.error.general, e.message);
+      this.emitter.emit(events.error.fatal, e.message);
 
       await this.summarize("Invalid YAML");
       await this.exit(true);
@@ -998,7 +998,7 @@ ${yml}
         timestamp: endTime,
       });
 
-      this.emitter.emit(events.error.general, e.message);
+      this.emitter.emit(events.error.fatal, e.message);
     }
 
     if (!silent) {
@@ -1030,7 +1030,7 @@ ${regression}
     try {
       ymlObj = await yaml.load(decoded);
     } catch (e) {
-      this.emitter.emit(events.error.general, "%s", e);
+      this.emitter.emit(events.error.fatal, e);
     }
 
     // add the root key steps: with array of commands:
@@ -1275,22 +1275,6 @@ ${regression}
     this.emitter.emit(events.log.log, `${file} (end)`);
   }
 
-  async handleSandboxCommand(cliArgs) {
-    if (cliArgs.list) {
-      await this.listSandboxes();
-    } else if (cliArgs.destroy) {
-      await this.destroySandbox(cliArgs.destroy);
-    } else if (cliArgs.create) {
-      await this.createSandbox();
-    } else {
-      this.emitter.emit(
-        "error.general",
-        "Please specify a sandbox action: --list, --destroy <id>, or --create",
-      );
-      await this.exit(true);
-    }
-  }
-
   async listSandboxes() {
     await this.connectToSandboxService();
 
@@ -1522,7 +1506,7 @@ ${regression}
       );
     } else if (this.cliArgs.command !== "edit") {
       this.emitter.emit(
-        events.error.general,
+        events.error.fatal,
         `Unknown command: ${this.cliArgs.command}`,
       );
       await this.exit(true);
