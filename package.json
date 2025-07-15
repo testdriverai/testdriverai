@@ -39,6 +39,7 @@
     "eventemitter2": "^6.4.9",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
+    "listr2": "^9.0.1",
     "markdown-parser": "0.0.8",
     "marked": "^12.0.1",
     "marked-terminal": "^7.0.0",
