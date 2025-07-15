@@ -4,13 +4,9 @@ const path = require("path");
 const os = require("os");
 
 // local modules
-const analytics = require("../lib/analytics.js");
-const parser = require("../lib/parser.js");
-const generator = require("../lib/generator.js");
-const logger = require("../lib/logger.js").logger;
-const log = require("../lib/logger.js");
-const server = require("../lib/ipc.js");
-const { events } = require("../lib/events.js");
+const parser = require("../agent/lib/parser.js");
+const generator = require("../agent/lib/generator.js");
+const { events } = require("../agent/events.js");
 
 class ReadlineInterface {
   constructor(agent) {
@@ -73,7 +69,7 @@ class ReadlineInterface {
 
       return [matches.length ? matches : files, partial];
     } catch (e) {
-      logger.info("%s", e);
+      this.agent.emitter.emit(events.log.log, "%s", e);
       return [[], partial];
     }
   }
@@ -100,15 +96,14 @@ class ReadlineInterface {
   async handleInput(input) {
     if (!input.trim().length) return this.promptUser();
 
-    this.agent.emit(events.interactive, false);
     this.agent.errorCounts = {};
 
     // append this to commandHistoryFile
     fs.appendFileSync(this.commandHistoryFile, input + "\n");
 
-    analytics.track("input", { input });
+    this.agent.analytics.track("input", { input });
 
-    logger.info(""); // adds a nice break between submissions
+    this.agent.emitter.emit(events.log.log, ""); // adds a nice break between submissions
 
     // Inject environment variables into any ${VAR} strings
     input = parser.interpolate(input, process.env);
@@ -127,12 +122,22 @@ class ReadlineInterface {
         for (let i = 0; i < args.length; i++) {
           const arg = args[i];
           if (arg.startsWith("--")) {
-            const optName = arg.slice(2);
-            if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
-              options[optName] = args[i + 1];
-              i++; // skip the next argument as it's the value
+            // Handle both --flag=value and --flag value formats
+            if (arg.includes("=")) {
+              // --flag=value format
+              const [fullFlag, ...valueParts] = arg.split("=");
+              const optName = fullFlag.slice(2);
+              const value = valueParts.join("="); // rejoin in case value contains =
+              options[optName] = value;
             } else {
-              options[optName] = true;
+              // --flag value format
+              const optName = arg.slice(2);
+              if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
+                options[optName] = args[i + 1];
+                i++; // skip the next argument as it's the value
+              } else {
+                options[optName] = true;
+              }
             }
           } else {
             cleanArgs.push(arg);
@@ -151,7 +156,13 @@ class ReadlineInterface {
         );
       }
     } catch (error) {
-      logger.error("Command error:", error.message);
+      console.error(error);
+
+      this.agent.emitter.emit(
+        events.error.general,
+        "Command error:",
+        error.message,
+      );
     }
 
     this.promptUser();
@@ -169,16 +180,15 @@ class ReadlineInterface {
     });
 
     this.rl.on("SIGINT", async () => {
-      analytics.track("sigint");
+      this.agent.analytics.track("sigint");
       await this.agent.exit(false);
     });
 
     this.rl.on("line", this.handleInput.bind(this));
-    server.on("input", this.handleInput.bind(this));
 
     // if file exists, load it
     if (fs.existsSync(this.agent.thisFile)) {
-      analytics.track("load");
+      this.agent.analytics.track("load");
 
       // this will overwrite the session if we find one in the YML
       let object = await generator.hydrateFromYML(
@@ -196,10 +206,15 @@ class ReadlineInterface {
         let markdown = `\`\`\`yaml
 ${yml}\`\`\``;
 
-        logger.info(`Loaded test script ${this.agent.thisFile}\n`);
-        log.prettyMarkdown(markdown);
-        logger.info("New commands will be appended.");
-        console.log("");
+        this.agent.emitter.emit(
+          events.log.log,
+          `Loaded test script ${this.agent.thisFile}\n`,
+        );
+        this.agent.emitter.emit(events.log.markdown.static, markdown);
+        this.agent.emitter.emit(
+          events.log.log,
+          "New commands will be appended.",
+        );
       }
     }
 
@@ -207,7 +222,6 @@ ${yml}\`\`\``;
   }
 
   promptUser() {
-    this.agent.emit(events.interactive, true);
     process.nextTick(() => this.rl.prompt());
   }
 

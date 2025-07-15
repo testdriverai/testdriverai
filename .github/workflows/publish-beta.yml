@@ -1,11 +1,10 @@
 name: Publish to NPM
 
 on:
-  # Instead of a Merge Queue, we'll just run this on main.
-  push:
+  workflow_run:
+    workflows: ["Acceptance Tests"]
     branches: [main]
-  # Through the GitHub UI
-  workflow_dispatch:
+    types: [completed]
 
 jobs:
   tag:
