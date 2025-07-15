@@ -5,15 +5,16 @@ description: "A comprehensive guide to integrating TestDriver with Playwright fo
 icon: "masks-theater"
 ---
 
-This guide explains how to use **TestDriver** to generate Playwright test scripts and integrate them into your repository using a GitHub Actions workflow. The workflow automates the process of generating Playwright tests, creating a pull request with the generated test, and ensuring all dependencies are installed.
+This guide explains how to use **TestDriver CLI** to generate Playwright test scripts and integrate them into your repository using a GitHub Actions workflow. The workflow automates the process of generating Playwright tests using TestDriver's execution capabilities and can create pull requests with the generated tests.
 
 ---
 
 ## Workflow overview
 
-1. **Install Playwright**: The workflow installs Playwright and its dependencies.
-2. **Generate Playwright Test**: TestDriver generates a Playwright test script using the `playwright codegen` tool.
-3. **Create Pull Request**: The generated test is committed to a new branch, and a pull request is created for review.
+1. **Run TestDriver CLI**: Execute a TestDriver test file.
+2. **Lifecycle Prerun**: Automatically install Playwright and generate test scripts via `lifecycle/prerun.yaml`.
+3. **Execute Test**: Run the main test logic to verify or use the generated Playwright tests.
+4. **Create Pull Request**: Optional additional steps can commit changes and create a pull request for review.
 
 ---
 
@@ -21,7 +22,8 @@ This guide explains how to use **TestDriver** to generate Playwright test script
 
 1. **GitHub Repository**: Ensure your project is hosted on GitHub.
 2. **TestDriver API Key**: Store your API key as a GitHub secret (for example, `TD_API_KEY`).
-3. **Node.js Installed**: Playwright requires Node.js to run.
+3. **Lifecycle Files**: Create `lifecycle/prerun.yaml` for Playwright installation and generation.
+4. **TestDriver Test File**: Create a test file (`testdriver/test.yaml`) for your main test logic.
 
 ---
 
@@ -48,42 +50,18 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.ref }}
 
-      - uses: testdriverai/action@main
-        with:
-          key: ${{ secrets.TD_API_KEY }}
-
-          create-pr: true
-          pr-base: main
-          pr-title: "TestDriver / Generate Playwright Test"
-          pr-branch: generate-playwright
-          pr-test-filename: generate-playwright.yaml
-
-          prompt: 1. /run testdriver/test.yaml
-          prerun: |
-            echo "Step 1: Installing Playwright globally"
-            npm install playwright -g
-
-            echo "Step 2: Installing Playwright dependencies"
-            playwright install --with-deps chromium
-
-            echo "Step 3: Generating Playwright script"
-            npx playwright codegen --target playwright-test -o testdriver/pw-test.spec.js https://airbnb.com
-
-            echo "Step 4: Completed Playwright test generation"
-            exit
-
+      - name: Run TestDriver
+        run: npx testdriverai@latest run testdriver/test.yaml --headless
         env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
-
-
 ```
 
 ---
@@ -91,40 +69,91 @@ jobs:
 ## Workflow steps explained
 
 ### 1. **Check out repository**
+
 The workflow checks out the repository to ensure the latest code is available for the test generation process.
+
 ```yaml
 - name: Check out repository
-  uses: actions/checkout@v2
+  uses: actions/checkout@v4
   with:
-    ref: $\{\{ github.event.ref }}
+    ref: ${{ github.event.ref }}
 ```
 
 ---
 
-### 2. **Install Playwright**
-The `prerun` script installs Playwright globally and sets up its dependencies (for example, Chromium browser).
-```bash
-npm install playwright -g
-playwright install --with-deps chromium
+### 2. **Run TestDriver**
 
-```
----
+TestDriver CLI executes the test file in headless mode. The test file should contain commands to install Playwright and generate the test scripts.
 
-### 3. **Generate Playwright test**
-The `playwright codegen` command generates a Playwright test script (`pw-test.spec.js`) for the specified URL (`https://airbnb.com`).
-```bash
-npx playwright codegen --target playwright-test -o testdriver/pw-test.spec.js https://airbnb.com
-```
----
-
-### 4. **Create pull request**
-The workflow commits the generated test script to a new branch (`generate-playwright`) and creates a pull request with the title `TestDriver / Generate Playwright Test`.
 ```yaml
-create-pr: true
-pr-base: main
-pr-title: "TestDriver / Generate Playwright Test"
-pr-branch: generate-playwright
-pr-test-filename: generate-playwright.yaml
+- name: Run TestDriver
+  run: npx testdriverai@latest run testdriver/test.yaml --headless
+  env:
+    TD_API_KEY: ${{ secrets.TD_API_KEY }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    FORCE_COLOR: "3"
+```
+
+---
+
+### 3. **Lifecycle configuration**
+
+Use `lifecycle/prerun.yaml` to install and launch Playwright before your test runs. This keeps the setup separate from your actual test logic:
+
+```yaml
+# lifecycle/prerun.yaml
+version: 5.1.1
+steps:
+  - prompt: install and launch playwright
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          npm install playwright -g
+          playwright install --with-deps chromium
+          npx playwright codegen --target playwright-test -o testdriver/pw-test.spec.js https://airbnb.com
+```
+
+Your main `testdriver/test.yaml` file can then focus on the actual test logic:
+
+```yaml
+# testdriver/test.yaml
+version: 5.1.1
+steps:
+  - prompt: verify playwright test was generated
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          if (Test-Path "testdriver/pw-test.spec.js") {
+            Write-Host "Playwright test generated successfully"
+          } else {
+            throw "Playwright test generation failed"
+          }
+```
+
+---
+
+### 4. **Commit and create pull request**
+
+After TestDriver generates the Playwright test files, you can use additional GitHub Actions steps to commit the changes and create a pull request:
+
+```yaml
+- name: Commit changes
+  run: |
+    git config --local user.email "action@github.com"
+    git config --local user.name "GitHub Action"
+    git add testdriver/pw-test.spec.js
+    git commit -m "Generate Playwright test" || exit 0
+
+- name: Create Pull Request
+  uses: peter-evans/create-pull-request@v5
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    commit-message: "Generate Playwright test"
+    title: "TestDriver / Generate Playwright Test"
+    branch: generate-playwright
+    base: main
 ```
 
 ---
@@ -159,8 +188,10 @@ pr-test-filename: generate-playwright.yaml
 
 1. **Secure API Key**: Store the TestDriver API key as a GitHub secret to avoid exposing sensitive information.
 2. **Review Generated Tests**: Always review the generated Playwright test scripts to ensure they meet your requirements.
-3. **Customize Test Generation**: Modify the `playwright codegen` command to target specific URLs or workflows.
+3. **Use Lifecycle Files**: Use `lifecycle/prerun.yaml` for Playwright installation and setup to separate concerns from your main test logic.
+4. **Error Handling**: Include error handling in both lifecycle and test files to manage installation and generation failures gracefully.
+5. **File Organization**: Keep generated Playwright tests in a dedicated directory for better organization.
 
 ---
 
-By following this guide, you can seamlessly integrate TestDriver with Playwright to generate and manage end-to-end tests in your GitHub repository.
+By following this guide, you can use TestDriver CLI to generate and manage Playwright tests in your GitHub repository through automated workflows.

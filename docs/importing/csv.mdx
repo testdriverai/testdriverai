@@ -13,7 +13,7 @@ This guide demonstrates how to convert user stories from **CSV files** into indi
 
 1. **Export User Stories**: Extract user stories from TestRail, CSV, or Jira.
 2. **Convert to Test Files**: Use a Node.js script to generate individual YAML test files for each user story.
-3. **Run Tests**: Use a GitHub Actions workflow to execute the tests in parallel.
+3. **Run Tests**: Use a CI/CD workflow to execute the tests in parallel with the TestDriver CLI.
 
 ---
 
@@ -24,7 +24,7 @@ Export user stories from your source (TestRail, CSV, or Jira) and save them in a
 ### Example CSV file (`user_stories.csv`):
 
 | User Story ID | User Story Title          | Description                          |
-|---------------|---------------------------|--------------------------------------|
+| ------------- | ------------------------- | ------------------------------------ |
 | 1             | Log in to the application | User logs in with valid credentials. |
 | 2             | Search for a product      | User searches for a product by name. |
 | 3             | Add product to cart       | User adds a product to the cart.     |
@@ -45,14 +45,14 @@ npm install yaml fs csv-parser
 ### Node.js script (`generate-tests.js`)
 
 ```javascript
-const fs = require('fs');
-const path = require('path');
-const yaml = require('yaml');
-const csv = require('csv-parser');
+const fs = require("fs");
+const path = require("path");
+const yaml = require("yaml");
+const csv = require("csv-parser");
 
 // Input and output directories
-const inputFile = './user_stories.csv';
-const outputDir = './testdriver';
+const inputFile = "./user_stories.csv";
+const outputDir = "./testdriver";
 
 // Ensure the output directory exists
 if (!fs.existsSync(outputDir)) {
@@ -61,13 +61,17 @@ if (!fs.existsSync(outputDir)) {
 
 // Function to generate a YAML test file for each user story
 function generateTestFile(userStory) {
-  const { 'User Story ID': id, 'User Story Title': title, Description } = userStory;
+  const {
+    "User Story ID": id,
+    "User Story Title": title,
+    Description,
+  } = userStory;
 
   const testContent = {
-    version: '4.2.18',
+    version: "4.2.18",
     steps: [
       {
-        prompt: title
+        prompt: title,
       },
     ],
   };
@@ -76,20 +80,19 @@ function generateTestFile(userStory) {
   const fileName = `test_${id}.yaml`;
   const filePath = path.join(outputDir, fileName);
 
-  fs.writeFileSync(filePath, yamlContent, 'utf8');
+  fs.writeFileSync(filePath, yamlContent, "utf8");
   console.log(`Generated test file: ${filePath}`);
 }
 
 // Read the CSV file and generate test files
 fs.createReadStream(inputFile)
   .pipe(csv())
-  .on('data', (row) => {
+  .on("data", (row) => {
     generateTestFile(row);
   })
-  .on('end', () => {
-    console.log('All test files generated successfully!');
+  .on("end", () => {
+    console.log("All test files generated successfully!");
   });
-
 ```
 
 ### Run the script
@@ -102,12 +105,11 @@ This script will generate individual YAML test files (for example, `test_1.yaml`
 
 ---
 
-## Step 3: GitHub Actions workflow to run tests
+## Step 3: CI/CD workflow to run tests in parallel
 
-Create a GitHub Actions workflow to execute the generated test files in parallel.
+Create a CI/CD workflow to execute the generated test files in parallel using the TestDriver CLI. Below is a generalized example for any CI/CD system (adapt for your platform):
 
-### GitHub Actions workflow (`.github/workflows/run-tests.yaml`)
-```yaml [expandable]
+```yaml
 name: Run TestDriver Tests
 
 on:
@@ -125,14 +127,14 @@ jobs:
       test_files: ${{ steps.test_list.outputs.files }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Find all test files
         id: test_list
         run: |
           FILES=$(ls ./testdriver/*.yaml)
           FILES_JSON=$(echo "$FILES" | jq -R -s -c 'split("\n")[:-1]')
-          echo "::set-output name=files::$FILES_JSON"
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
 
   run-tests:
     name: Run Tests in Parallel
@@ -144,18 +146,13 @@ jobs:
       fail-fast: false
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Run TestDriver
-        uses: testdriverai/action@main
-        with:
-          key: ${{ secrets.TD_API_KEY }}
-          prompt: |
-            1. /run ${{ matrix.test_file }}
+      - name: Run TestDriver CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
           FORCE_COLOR: "3"
-
+        run: npx testdriverai@latest run ${{ matrix.test_file }} --headless
 ```
 
 ---
@@ -176,6 +173,7 @@ Store your TestDriver API key as a GitHub secret (for example, `TD_API_KEY`) to 
 ## Step 6: Run the workflow
 
 The GitHub Actions workflow will automatically:
+
 1. Gather all test files in the `testdriver/` directory.
 2. Execute each test file in parallel using the matrix strategy.
 
@@ -184,6 +182,7 @@ The GitHub Actions workflow will automatically:
 ## Example output
 
 - **Generated Test Files**:
+
   - `testdriver/test_1.yaml`
   - `testdriver/test_2.yaml`
   - `testdriver/test_3.yaml`
@@ -195,4 +194,4 @@ The GitHub Actions workflow will automatically:
 
 ## Conclusion
 
-This setup automates the process of converting user stories into individual test files and running them in parallel using GitHub Actions. It ensures comprehensive test coverage while optimizing execution time.
+This setup automates the process of converting user stories into individual test files and running them in parallel using the TestDriver CLI in your CI/CD pipeline. It ensures comprehensive test coverage while optimizing execution time.

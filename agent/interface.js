@@ -39,10 +39,6 @@ function createCommandDefinitions(agent) {
           description: "Save AI modifications to the test file",
           default: false,
         }),
-        exit: Flags.boolean({
-          description: "Exit after completion",
-          default: false,
-        }),
         headless: Flags.boolean({
           description: "Run in headless mode (no GUI)",
           default: false,
@@ -54,9 +50,6 @@ function createCommandDefinitions(agent) {
         summary: Flags.string({
           description: "Specify output file for summarize results",
         }),
-        config: Flags.string({
-          description: "Configuration file path",
-        }),
       },
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file
@@ -64,8 +57,7 @@ function createCommandDefinitions(agent) {
 
         await agent.runLifecycle("prerun");
         // When run() is called through run.js CLI command, shouldExit should be true
-        const shouldExit =
-          agent.cliArgs?.command === "run" ? true : flags.exit !== false;
+        const shouldExit = agent.cliArgs?.command === "run";
         await agent.run(file, flags.write, shouldExit, true);
       },
     },
