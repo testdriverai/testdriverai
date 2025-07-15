@@ -518,7 +518,7 @@ const createCommands = (emitter, system, sandbox) => {
         return;
       } else {
         throw new MatchError(
-          `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}:.}`,
+          `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`,
         );
       }
     },

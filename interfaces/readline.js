@@ -122,12 +122,22 @@ class ReadlineInterface {
         for (let i = 0; i < args.length; i++) {
           const arg = args[i];
           if (arg.startsWith("--")) {
-            const optName = arg.slice(2);
-            if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
-              options[optName] = args[i + 1];
-              i++; // skip the next argument as it's the value
+            // Handle both --flag=value and --flag value formats
+            if (arg.includes("=")) {
+              // --flag=value format
+              const [fullFlag, ...valueParts] = arg.split("=");
+              const optName = fullFlag.slice(2);
+              const value = valueParts.join("="); // rejoin in case value contains =
+              options[optName] = value;
             } else {
-              options[optName] = true;
+              // --flag value format
+              const optName = arg.slice(2);
+              if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
+                options[optName] = args[i + 1];
+                i++; // skip the next argument as it's the value
+              } else {
+                options[optName] = true;
+              }
             }
           } else {
             cleanArgs.push(arg);

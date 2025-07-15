@@ -192,7 +192,7 @@ class TestDriverAgent extends EventEmitter2 {
       : 1;
 
     this.emitter.emit(
-      events.error.general,
+      events.log.warn,
       theme.red("Error detected. Attempting to recover (via --heal)..."),
     );
 
@@ -577,10 +577,6 @@ class TestDriverAgent extends EventEmitter2 {
       });
 
       this.emitter.emit(events.error.general, `File not found: ${file}`);
-      this.emitter.emit(
-        events.error.general,
-        `Current directory: ${this.workingDir}`,
-      );
 
       await this.summarize("File not found");
       await this.exit(true);
@@ -642,8 +638,6 @@ class TestDriverAgent extends EventEmitter2 {
       });
 
       this.emitter.emit(events.error.general, e.message);
-
-      this.emitter.emit(events.error.general, `Invalid YAML: ${file}`);
 
       await this.summarize("Invalid YAML");
       await this.exit(true);
@@ -1004,9 +998,7 @@ ${yml}
         timestamp: endTime,
       });
 
-      console.log(e);
       this.emitter.emit(events.error.general, e.message);
-      this.emitter.emit(events.error.general, "%s", e);
     }
 
     if (!silent) {

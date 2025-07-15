@@ -5,41 +5,12 @@ const { createCommandDefinitions } = require("../../../agent/interface.js");
  * Creates an oclif command class from a unified command definition
  */
 function createOclifCommand(commandName) {
-  return class extends BaseCommand {
-    static get description() {
-      try {
-        // Create a temporary agent to get the definition
-        const tempAgent = { workingDir: process.cwd() };
-        const definitions = createCommandDefinitions(tempAgent);
-        return definitions[commandName]?.description || "";
-      } catch (error) {
-        console.error(`Error getting description for ${commandName}:`, error);
-        return "";
-      }
-    }
+  // Get the command definition once during class creation
+  const tempAgent = { workingDir: process.cwd() };
+  const definitions = createCommandDefinitions(tempAgent);
+  const commandDef = definitions[commandName];
 
-    static get args() {
-      try {
-        const tempAgent = { workingDir: process.cwd() };
-        const definitions = createCommandDefinitions(tempAgent);
-        return definitions[commandName]?.args || {};
-      } catch (error) {
-        console.error(`Error getting args for ${commandName}:`, error);
-        return {};
-      }
-    }
-
-    static get flags() {
-      try {
-        const tempAgent = { workingDir: process.cwd() };
-        const definitions = createCommandDefinitions(tempAgent);
-        return definitions[commandName]?.flags || {};
-      } catch (error) {
-        console.error(`Error getting flags for ${commandName}:`, error);
-        return {};
-      }
-    }
-
+  const DynamicCommand = class extends BaseCommand {
     async run() {
       try {
         const { args, flags } = await this.parse(this.constructor);
@@ -75,6 +46,13 @@ function createOclifCommand(commandName) {
       }
     }
   };
+
+  // Set static properties directly on the class
+  DynamicCommand.description = commandDef?.description || "";
+  DynamicCommand.args = commandDef?.args || {};
+  DynamicCommand.flags = commandDef?.flags || {};
+
+  return DynamicCommand;
 }
 
 module.exports = { createOclifCommand };

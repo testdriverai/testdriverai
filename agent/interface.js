@@ -57,13 +57,11 @@ function createCommandDefinitions(agent) {
         config: Flags.string({
           description: "Configuration file path",
         }),
-        path: Flags.string({
-          description: "Path pattern for test files",
-        }),
       },
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file
-        const file = normalizeFilePath(flags.path || args.file);
+        const file = normalizeFilePath(args.file);
+
         await agent.runLifecycle("prerun");
         // When run() is called through run.js CLI command, shouldExit should be true
         const shouldExit =
