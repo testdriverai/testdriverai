@@ -5,10 +5,36 @@ steps:
     commands:
       - command: exec
         lang: pwsh
+        output: user
         code: |
-          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--disable-fre", "--no-default-browser-check", "--no-first-run", "--guest", "${TD_WEBSITE}"
-      - command: wait-for-text
-        text: ${TD_WEBSITE}
-        timeout: 30000
+          # Random email generator in PowerShell
+
+          # Arrays of possible names and domains
+          $firstNames = @("john", "jane", "alex", "chris", "sara", "mike", "lisa", "david", "emma", "ryan")
+          $lastNames = @("smith", "johnson", "williams", "brown", "jones", "garcia", "miller", "davis", "martin", "lee")
+          $domains = @("example.com", "testmail.com", "mailinator.com", "demo.org", "company.net")
+
+          # Random selection
+          $first = Get-Random -InputObject $firstNames
+          $last = Get-Random -InputObject $lastNames
+          $domain = Get-Random -InputObject $domains
+          $number = Get-Random -Minimum 1 -Maximum 1000
+
+          # Generate the email
+          $email = "$first.$last$number@$domain".ToLower()
+
+          # Output
+          Write-Output "$email"
+
+      - command: hover-text
+        text: Username
+        description: input field for username
+        action: click
+      - command: type
+        text: ${OUTPUT.user}
+  - prompt: assert that the username field shows a valid email address
+    commands:
       - command: assert
-        expect: Google Chrome is running
+        expect: >-
+          the username field contains ${OUTPUT.user} which is a valid email
+          address
