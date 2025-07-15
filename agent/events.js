@@ -1,11 +1,19 @@
-const { EventEmitter } = require("events");
+const { EventEmitter2 } = require("eventemitter2");
 
 // Global reference to the current agent's emitter
 let currentEmitter = null;
 
 // Factory function to create a new emitter instance
 const createEmitter = () => {
-  const emitter = new EventEmitter();
+  const emitter = new EventEmitter2({
+    wildcard: true,
+    delimiter: ":",
+    newListener: false,
+    removeListener: false,
+    maxListeners: 20,
+    verboseMemoryLeak: false,
+    ignoreErrors: false,
+  });
   return emitter;
 };
 
@@ -53,6 +61,32 @@ const events = {
     log: "log:log",
     warn: "log:warn",
     debug: "log:debug",
+  },
+  command: {
+    start: "command:start",
+    stop: "command:stop",
+    success: "command:success",
+    error: "command:error",
+    status: "command:status",
+    progress: "command:progress",
+    location: "command:location",
+  },
+  step: {
+    start: "step:start",
+    stop: "step:stop",
+    success: "step:success",
+    error: "step:error",
+    status: "step:status",
+    progress: "step:progress",
+  },
+  file: {
+    start: "file:start",
+    stop: "file:stop",
+    load: "file:load",
+    save: "file:save",
+    modification: "file:modification",
+    error: "file:error",
+    status: "file:status",
   },
   error: {
     general: "error:general",

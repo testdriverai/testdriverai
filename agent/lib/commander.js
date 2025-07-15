@@ -31,7 +31,8 @@ const createCommander = (emitter, commands, analytics) => {
     let response = null;
 
     if (!object?.command) {
-      throw `YML is formatted improperly. 
+      // Enhanced error with potential location info
+      const error = new Error(`YML is formatted improperly. 
   
 The input YML is:
 ${yaml.dump(object)}
@@ -47,13 +48,25 @@ Here is a simple example:
 commands:
   - command: press-keys
     keys: [command, space]
-\`\`\``;
+\`\`\``);
+
+      error.yamlObject = object;
+      throw error;
     } else {
       replaceOutputs(object);
 
       let copy = JSON.parse(JSON.stringify(object));
 
       marky.mark(object.command);
+
+      // Emit command status event
+      emitter.emit(events.command.status, {
+        command: object.command,
+        status: "executing",
+        data: object,
+        depth,
+        timestamp: Date.now(),
+      });
 
       // we speak, log, and take images here because we want to be careful not to render a notification containing the text we're looking for
       // or to cover the screen of some item we might want
@@ -199,12 +212,25 @@ commands:
           outputs.set(object.output, response);
 
           break;
-        default:
-          throw new Error(`Command not found: ${object.command}`);
+        default: {
+          const error = new Error(`Command not found: ${object.command}`);
+          error.yamlObject = object;
+          throw error;
+        }
       }
     }
 
     let timing = marky.stop(object.command);
+
+    // Emit command progress event
+    emitter.emit(events.command.progress, {
+      command: object.command,
+      status: "completed",
+      timing: timing.duration,
+      data: object,
+      depth,
+      timestamp: Date.now(),
+    });
 
     await Promise.all([
       sdk.req("ran", { command: object.command, data: object }),

@@ -1,5 +1,5 @@
 const { Command } = require("@oclif/core");
-const { events, eventsArray } = require("../../../agent/events.js");
+const { events } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
 const path = require("path");
 const fs = require("fs");
@@ -29,6 +29,10 @@ class BaseCommand extends Command {
   }
 
   sendToSandbox(message) {
+    // ensure message is a string
+    if (typeof message !== "string") {
+      message = JSON.stringify(message);
+    }
     this.agent.sandbox.send({
       type: "output",
       output: Buffer.from(message).toString("base64"),
@@ -36,8 +40,6 @@ class BaseCommand extends Command {
   }
 
   setupEventListeners() {
-    const { events } = require("../../../agent/events.js");
-
     if (!this.logFilePath) {
       // Create a temp log file for this session
       this.logFilePath = path.join(
@@ -57,70 +59,91 @@ class BaseCommand extends Command {
         `[${timestamp}] [${level}] ${message}\n`,
       );
     };
-    this.agent.emitter.on(events.status, (message) => {
+    // Use pattern matching for log events, but skip log:Debug
+    this.agent.emitter.on("log:*", (message) => {
+      const event = this.agent.emitter.event;
+      if (event === events.log.debug) return;
+      console.log(message);
+      appendLog(event, JSON.stringify(message));
+    });
+
+    // Use pattern matching for error events
+    this.agent.emitter.on("error:*", (data) => {
+      const event = this.agent.emitter.event;
+      console.error(event, ":", data);
+      appendLog(event, JSON.stringify(data));
+
+      if (event === "error:sandbox") {
+        console.error("Use --new-sandbox to create a new sandbox.");
+      }
+    });
+
+    // Enhanced command error handling
+    this.agent.emitter.on("command:error", (data) => {
+      console.error("Command Error:", data.command);
+
+      // If the error already includes location context, show it as-is
+      if (
+        typeof data.error === "string" &&
+        data.error.includes("Command location:")
+      ) {
+        console.error(data.error);
+      } else {
+        console.error("Error:", data.error);
+
+        // Show location info if available
+        if (data.location) {
+          console.error(
+            `Location: ${data.location.file}:${data.location.start.line}:${data.location.start.column}`,
+          );
+        }
+      }
+
+      appendLog("command:error", JSON.stringify(data));
+    });
+
+    // Handle status events
+    this.agent.emitter.on("status", (message) => {
       console.log(`- ${message}`);
       this.sendToSandbox(`- ${message}`);
+      appendLog("status", JSON.stringify(message));
     });
 
-    // Console logging
-    this.agent.emitter.on(events.log.log, (message) => {
-      console.log(message);
-    });
-
-    this.agent.emitter.on(events.log.warn, (message) => {
-      console.log(message);
-    });
-
-    this.agent.emitter.on(events.error.general, (message) => {
-      console.log(message);
-    });
-
+    // Handle sandbox connection with pattern matching for subsequent events
     this.agent.emitter.on("sandbox:connected", () => {
-      this.agent.emitter.on(events.log.log, (message) => {
+      // Once sandbox is connected, send all log and error events to sandbox
+      this.agent.emitter.on("log:*", (message) => {
         this.sendToSandbox(message);
       });
-      this.agent.emitter.on(events.log.warn, (message) => {
-        this.sendToSandbox(message);
-      });
-      this.agent.emitter.on(events.error.general, (message) => {
-        this.sendToSandbox(message);
-      });
-      this.agent.emitter.on(events.log.markdown.static, (message) => {
-        // logger.createMarkdownLogger will handle this
-        this.sendToSandbox(message);
-      });
-      this.agent.emitter.on(events.log.markdown.chunk, (message) => {
-        // logger.createMarkdownLogger will handle this
+
+      this.agent.emitter.on("error:*", (message) => {
         this.sendToSandbox(message);
       });
     });
 
-    // loop through all events and set up listeners
-    for (const eventName of Object.values(eventsArray)) {
-      if (eventName.split(":")[0] === "error") {
-        this.agent.emitter.on(eventName, (data) => {
-          console.error(eventName, ":", data);
-          if (eventName == events.error.sandbox) {
-            console.error("Use --new-sandbox to create a new sandbox.");
-          }
-        });
+    // Handle all other events with wildcard pattern
+    this.agent.emitter.on("**", (data) => {
+      const event = this.agent.emitter.event;
+      // Skip events we've already handled specifically
+      if (
+        !event.startsWith("log:") &&
+        !event.startsWith("error:") &&
+        event !== "status" &&
+        event !== "sandbox:connected"
+      ) {
+        appendLog(event, JSON.stringify(data));
       }
-    }
-
-    // loop through all events and set up listeners
-    for (const eventName of Object.values(eventsArray)) {
-      this.agent.emitter.on(eventName, (data) => {
-        appendLog(eventName, JSON.stringify(data));
-      });
-    }
+    });
 
     logger.createMarkdownLogger(this.agent.emitter);
-    // Handle exit events by exiting the process with the appropriate code
-    this.agent.emitter.on(events.exit, (exitCode) => {
+
+    // Handle exit events
+    this.agent.emitter.on("exit", (exitCode) => {
       process.exit(exitCode);
     });
 
-    this.agent.emitter.on(events.showWindow, async (data) => {
+    // Handle show window events
+    this.agent.emitter.on("show-window", async (data) => {
       const encodedData = encodeURIComponent(JSON.stringify(data));
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = this.agent.debuggerUrl

@@ -14,7 +14,7 @@ const os = require("os");
 const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
-const { EventEmitter } = require("events");
+const { EventEmitter2 } = require("eventemitter2");
 
 // global utilities
 const { createAnalytics } = require("./lib/analytics.js");
@@ -36,9 +36,17 @@ const session = require("./lib/session.js");
 const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 
-class TestDriverAgent extends EventEmitter {
+class TestDriverAgent extends EventEmitter2 {
   constructor() {
-    super(); // Create the agent's own emitter for internal events
+    super({
+      wildcard: true,
+      delimiter: ":",
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
+    }); // Create the agent's own emitter for internal events
     this.emitter = createEmitter();
 
     // Set this emitter as the global current emitter for other modules to use
@@ -89,6 +97,7 @@ class TestDriverAgent extends EventEmitter {
     this.sandboxId = null; // the ID of the sandbox to connect to, if specified
     this.workingDir = process.cwd(); // working directory where this agent is running
     this.cliArgs = {}; // the cli args passed to the agent
+
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
     this.debuggerUrl = null; // the debugger server URL
@@ -162,10 +171,11 @@ class TestDriverAgent extends EventEmitter {
       return await this.dieOnFatal(error);
     }
 
+    // Get error message
     let eMessage = error.message ? error.message : error;
 
     // we sanitize the error message to use it as a key in the errorCounts object
-    let safeKey = JSON.stringify(eMessage);
+    let safeKey = JSON.stringify(error.message ? error.message : error);
     this.errorCounts[safeKey] = this.errorCounts[safeKey]
       ? this.errorCounts[safeKey] + 1
       : 1;
@@ -176,8 +186,8 @@ class TestDriverAgent extends EventEmitter {
     );
 
     this.emitter.emit(events.log.markdown.static, eMessage);
-    this.emitter.emit(events.log.debug, "%j", error);
-    this.emitter.emit(events.log.debug, "%s", error.stack);
+    this.emitter.emit(events.log.debug, error);
+    this.emitter.emit(events.log.debug, error.stack);
 
     // if we get the same error 3 times in `run` mode, we exit
     if (this.errorCounts[safeKey] > this.errorLimit - 1) {
@@ -290,6 +300,16 @@ class TestDriverAgent extends EventEmitter {
   // parameters can be mapped to actual functions
   async runCommand(command, depth, shouldSave, pushToHistory) {
     let yml = await yaml.dump(command);
+    const commandName = command.command;
+    const startTime = Date.now();
+
+    // Emit command start event
+    this.emitter.emit(events.command.start, {
+      command: commandName,
+      depth,
+      data: command,
+      timestamp: startTime,
+    });
 
     this.emitter.emit(events.log.debug, `running command: \n\n${yml}`);
 
@@ -311,11 +331,37 @@ class TestDriverAgent extends EventEmitter {
         response = await this.commander.run(command, depth);
       }
 
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Emit command success event
+      this.emitter.emit(events.command.success, {
+        command: commandName,
+        depth,
+        data: command,
+        duration,
+        response,
+        timestamp: endTime,
+      });
+
       // if the result of a command contains more commands, we perform the process again
       if (response && typeof response === "string") {
         return await this.actOnMarkdown(response, depth, false, false, false);
       }
     } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // Emit command error event
+      this.emitter.emit(events.command.error, {
+        command: commandName,
+        depth,
+        data: command,
+        error: error.message,
+        duration,
+        timestamp: endTime,
+      });
+
       return await this.haveAIResolveError(
         error,
         yaml.dump({ commands: [yml] }),
@@ -369,17 +415,13 @@ class TestDriverAgent extends EventEmitter {
   ) {
     depth = depth + 1;
 
-    this.emitter.emit(events.log.debug, "%j", {
-      message: "execute code blocks",
-      depth,
-    });
-
     for (const codeblock of codeblocks) {
       let commands;
 
       try {
         commands = await parser.getCommands(codeblock);
       } catch (e) {
+        // For parser errors
         return await this.haveAIResolveError(
           e,
           yaml.dump(parser.getYAMLFromCodeBlock(codeblock)),
@@ -462,13 +504,36 @@ class TestDriverAgent extends EventEmitter {
 
   // reads a yaml file and interprets the variables found within it
   async loadYML(file) {
+    const startTime = Date.now();
+
+    // Emit file load start event
+    this.emitter.emit(events.file.start, {
+      operation: "load",
+      filePath: file,
+      timestamp: startTime,
+    });
+
     let yml;
 
     //wrap this in try/catch so if the file doesn't exist output an error message to the user
     try {
       yml = fs.readFileSync(file, "utf-8");
+
+      // Emit file load success event
+      this.emitter.emit(events.file.load, {
+        filePath: file,
+        size: yml.length,
+        timestamp: Date.now(),
+      });
     } catch (e) {
-      this.emitter.emit(events.error.general, e);
+      // Emit file error event
+      this.emitter.emit(events.file.error, {
+        operation: "load",
+        filePath: file,
+        error: e.message,
+        timestamp: Date.now(),
+      });
+
       this.emitter.emit(events.error.general, `File not found: ${file}`);
       this.emitter.emit(
         events.error.general,
@@ -505,9 +570,33 @@ class TestDriverAgent extends EventEmitter {
 
     let ymlObj = null;
     try {
+      // Parse YAML
       ymlObj = await yaml.load(yml);
+
+      const endTime = Date.now();
+
+      // Emit file load completion event
+      this.emitter.emit(events.file.stop, {
+        operation: "load",
+        filePath: file,
+        duration: endTime - startTime,
+        success: true,
+        timestamp: endTime,
+      });
     } catch (e) {
-      this.emitter.emit(events.error.general, "%s", e);
+      const endTime = Date.now();
+
+      // Emit file error event
+      this.emitter.emit(events.file.error, {
+        operation: "parse",
+        filePath: file,
+        error: e.message,
+        duration: endTime - startTime,
+        timestamp: endTime,
+      });
+
+      this.emitter.emit(events.error.general, e.message);
+
       this.emitter.emit(events.error.general, `Invalid YAML: ${file}`);
 
       await this.summarize("Invalid YAML");
@@ -727,11 +816,6 @@ ${yml}
     dry = false,
     shouldSave = false,
   ) {
-    this.emitter.emit(events.log.debug, "%j", {
-      message: "actOnMarkdown called",
-      depth,
-    });
-
     let codeblocks = [];
     try {
       codeblocks = await parser.findCodeBlocks(content);
@@ -816,9 +900,27 @@ ${yml}
 
   // this function is responsible for saving the regression test script to a file
   async save({ filepath = this.thisFile, silent = false } = {}) {
+    const startTime = Date.now();
+
+    // Emit file save start event
+    this.emitter.emit(events.file.start, {
+      operation: "save",
+      filePath: filepath,
+      timestamp: startTime,
+    });
+
     this.analytics.track("save", { silent });
 
     if (!this.executionHistory.length) {
+      // Emit file save completion event for empty history
+      this.emitter.emit(events.file.stop, {
+        operation: "save",
+        filePath: filepath,
+        duration: Date.now() - startTime,
+        success: true,
+        reason: "empty_history",
+        timestamp: Date.now(),
+      });
       return;
     }
 
@@ -826,7 +928,36 @@ ${yml}
     let regression = await generator.dumpToYML(this.executionHistory);
     try {
       fs.writeFileSync(filepath, regression);
+
+      const endTime = Date.now();
+
+      // Emit file save success event
+      this.emitter.emit(events.file.save, {
+        filePath: filepath,
+        size: regression.length,
+        timestamp: endTime,
+      });
+
+      // Emit file save completion event
+      this.emitter.emit(events.file.stop, {
+        operation: "save",
+        filePath: filepath,
+        duration: endTime - startTime,
+        success: true,
+        timestamp: endTime,
+      });
     } catch (e) {
+      const endTime = Date.now();
+
+      // Emit file save error event
+      this.emitter.emit(events.file.error, {
+        operation: "save",
+        filePath: filepath,
+        error: e.message,
+        duration: endTime - startTime,
+        timestamp: endTime,
+      });
+
       console.log(e);
       this.emitter.emit(events.error.general, e.message);
       this.emitter.emit(events.error.general, "%s", e);
@@ -920,6 +1051,17 @@ ${regression}
     }
 
     for (const step of ymlObj.steps) {
+      const stepIndex = ymlObj.steps.indexOf(step);
+      const stepStartTime = Date.now();
+
+      // Emit step start event
+      this.emitter.emit(events.step.start, {
+        stepIndex,
+        prompt: step.prompt,
+        commandCount: step.commands ? step.commands.length : 0,
+        timestamp: stepStartTime,
+      });
+
       this.emitter.emit(events.log.log, ``, null);
       this.emitter.emit(
         events.log.log,
@@ -927,24 +1069,60 @@ ${regression}
         null,
       );
 
-      if (!step.commands && !step.prompt) {
-        this.emitter.emit(
-          events.log.log,
-          theme.red("No commands or prompt found"),
-        );
-        await this.exit(true, shouldSave, true);
-      } else if (!step.commands) {
-        this.emitter.emit(
-          events.log.log,
-          theme.yellow("No commands found, running exploratory"),
-        );
-        await this.exploratoryLoop(step.prompt, false, true, shouldSave);
-      } else {
-        await this.executeCommands(step.commands, 0, true, false, shouldSave);
-      }
+      try {
+        if (!step.commands && !step.prompt) {
+          this.emitter.emit(
+            events.log.log,
+            theme.red("No commands or prompt found"),
+          );
 
-      if (shouldSave) {
-        await this.save({ silent: true });
+          this.emitter.emit(events.step.error, {
+            stepIndex,
+            prompt: step.prompt,
+            error: "No commands or prompt found",
+            timestamp: Date.now(),
+          });
+
+          await this.exit(true, shouldSave, true);
+        } else if (!step.commands) {
+          this.emitter.emit(
+            events.log.log,
+            theme.yellow("No commands found, running exploratory"),
+          );
+          await this.exploratoryLoop(step.prompt, false, true, shouldSave);
+        } else {
+          await this.executeCommands(step.commands, 0, true, false, shouldSave);
+        }
+
+        const stepEndTime = Date.now();
+        const stepDuration = stepEndTime - stepStartTime;
+
+        // Emit step success event
+        this.emitter.emit(events.step.success, {
+          stepIndex,
+          prompt: step.prompt,
+          commandCount: step.commands ? step.commands.length : 0,
+          duration: stepDuration,
+          timestamp: stepEndTime,
+        });
+
+        if (shouldSave) {
+          await this.save({ silent: true });
+        }
+      } catch (error) {
+        const stepEndTime = Date.now();
+        const stepDuration = stepEndTime - stepStartTime;
+
+        // Emit step error event
+        this.emitter.emit(events.step.error, {
+          stepIndex,
+          prompt: step.prompt,
+          error: error.message,
+          duration: stepDuration,
+          timestamp: stepEndTime,
+        });
+
+        throw error; // Re-throw to maintain existing error handling
       }
     }
 
