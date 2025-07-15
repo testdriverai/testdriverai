@@ -23,6 +23,7 @@ const generator = require("./lib/generator.js");
 const { createSDK } = require("./lib/sdk.js");
 const config = require("./lib/config.js");
 const theme = require("./lib/theme.js");
+const SourceMapper = require("./lib/source-mapper.js");
 
 // agent modules
 const { createSystem } = require("./lib/system.js");
@@ -102,6 +103,9 @@ class TestDriverAgent extends EventEmitter2 {
     this.csv = [["command,time"]];
     this.debuggerUrl = null; // the debugger server URL
 
+    // Source mapping for YAML files
+    this.sourceMapper = new SourceMapper();
+
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
   }
@@ -135,10 +139,17 @@ class TestDriverAgent extends EventEmitter2 {
   // fatal errors always exit the program
   // this ensure we log the error, summarize it, and exit cleanly
   async dieOnFatal(error) {
-    this.emitter.emit(
-      events.error.general,
-      theme.red("Fatal Error") + `\n${error}`,
-    );
+    // Show error with source context if available
+    const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
+    if (errorContext) {
+      this.emitter.emit(events.error.general, errorContext);
+    } else {
+      this.emitter.emit(
+        events.error.general,
+        theme.red("Fatal Error") + `\n${error}`,
+      );
+    }
+
     await this.summarize(error.message);
     return await this.exit(true);
   }
@@ -185,7 +196,14 @@ class TestDriverAgent extends EventEmitter2 {
       theme.red("Error detected. Attempting to recover (via --heal)..."),
     );
 
-    this.emitter.emit(events.log.markdown.static, eMessage);
+    // Show error with source context if available
+    const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
+    if (errorContext) {
+      this.emitter.emit(events.error.general, errorContext);
+    } else {
+      this.emitter.emit(events.log.markdown.static, eMessage);
+    }
+
     this.emitter.emit(events.log.debug, error);
     this.emitter.emit(events.log.debug, error.stack);
 
@@ -195,7 +213,7 @@ class TestDriverAgent extends EventEmitter2 {
         events.log.log,
         theme.red("Error loop detected. Exiting."),
       );
-      this.emitter.emit(events.log.log, "%s", eMessage);
+      this.emitter.emit(events.log.log, this.getErrorWithPosition(error));
       await this.summarize(eMessage);
       return await this.exit(true);
     }
@@ -303,15 +321,27 @@ class TestDriverAgent extends EventEmitter2 {
     const commandName = command.command;
     const startTime = Date.now();
 
-    // Emit command start event
+    // Get current source position
+    const sourcePosition = this.sourceMapper.getCurrentSourcePosition();
+
+    // Emit command start event with source mapping
     this.emitter.emit(events.command.start, {
       command: commandName,
       depth,
       data: command,
       timestamp: startTime,
+      sourcePosition: sourcePosition,
     });
 
     this.emitter.emit(events.log.debug, `running command: \n\n${yml}`);
+
+    // Log current execution position for debugging
+    if (this.sourceMapper.currentFileSourceMap) {
+      this.emitter.emit(
+        events.log.debug,
+        `executing at: ${this.sourceMapper.getCurrentPositionDescription()}`,
+      );
+    }
 
     try {
       let response;
@@ -334,7 +364,7 @@ class TestDriverAgent extends EventEmitter2 {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      // Emit command success event
+      // Emit command success event with source mapping
       this.emitter.emit(events.command.success, {
         command: commandName,
         depth,
@@ -342,6 +372,7 @@ class TestDriverAgent extends EventEmitter2 {
         duration,
         response,
         timestamp: endTime,
+        sourcePosition: sourcePosition,
       });
 
       // if the result of a command contains more commands, we perform the process again
@@ -352,7 +383,7 @@ class TestDriverAgent extends EventEmitter2 {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      // Emit command error event
+      // Emit command error event with source mapping
       this.emitter.emit(events.command.error, {
         command: commandName,
         depth,
@@ -360,7 +391,14 @@ class TestDriverAgent extends EventEmitter2 {
         error: error.message,
         duration,
         timestamp: endTime,
+        sourcePosition: sourcePosition,
       });
+
+      // Show error with source context if available
+      const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
+      if (errorContext) {
+        this.emitter.emit(events.error.general, errorContext);
+      }
 
       return await this.haveAIResolveError(
         error,
@@ -381,6 +419,10 @@ class TestDriverAgent extends EventEmitter2 {
   ) {
     if (commands?.length) {
       for (const command of commands) {
+        // Update current command tracking
+        const commandIndex = commands.indexOf(command);
+        this.sourceMapper.setCurrentCommand(commandIndex);
+
         if (pushToHistory) {
           this.executionHistory[
             this.executionHistory.length - 1
@@ -569,18 +611,22 @@ class TestDriverAgent extends EventEmitter2 {
     }
 
     let ymlObj = null;
+    let sourceMap = null;
     try {
-      // Parse YAML
-      ymlObj = await yaml.load(yml);
+      // Parse YAML with source mapping
+      const parseResult = this.sourceMapper.parseYamlWithSourceMap(yml, file);
+      ymlObj = parseResult.yamlObj;
+      sourceMap = parseResult.sourceMap;
 
       const endTime = Date.now();
 
-      // Emit file load completion event
+      // Emit file load completion event with source mapping
       this.emitter.emit(events.file.stop, {
         operation: "load",
         filePath: file,
         duration: endTime - startTime,
         success: true,
+        sourceMap: sourceMap,
         timestamp: endTime,
       });
     } catch (e) {
@@ -1020,6 +1066,13 @@ ${regression}
 
     let ymlObj = await this.loadYML(file);
 
+    // Store source mapping for current file
+    const parseResult = this.sourceMapper.parseYamlWithSourceMap(
+      fs.readFileSync(file, "utf-8"),
+      file,
+    );
+    this.sourceMapper.setCurrentContext(file, parseResult.sourceMap, -1, -1);
+
     if (ymlObj.version) {
       let valid = isValidVersion(ymlObj.version);
       if (!valid) {
@@ -1054,12 +1107,19 @@ ${regression}
       const stepIndex = ymlObj.steps.indexOf(step);
       const stepStartTime = Date.now();
 
-      // Emit step start event
+      // Update current step tracking
+      this.sourceMapper.setCurrentStep(stepIndex);
+
+      // Get source position for current step
+      const sourcePosition = this.sourceMapper.getCurrentSourcePosition();
+
+      // Emit step start event with source mapping
       this.emitter.emit(events.step.start, {
         stepIndex,
         prompt: step.prompt,
         commandCount: step.commands ? step.commands.length : 0,
         timestamp: stepStartTime,
+        sourcePosition: sourcePosition,
       });
 
       this.emitter.emit(events.log.log, ``, null);
@@ -1097,13 +1157,14 @@ ${regression}
         const stepEndTime = Date.now();
         const stepDuration = stepEndTime - stepStartTime;
 
-        // Emit step success event
+        // Emit step success event with source mapping
         this.emitter.emit(events.step.success, {
           stepIndex,
           prompt: step.prompt,
           commandCount: step.commands ? step.commands.length : 0,
           duration: stepDuration,
           timestamp: stepEndTime,
+          sourcePosition: sourcePosition,
         });
 
         if (shouldSave) {
@@ -1113,13 +1174,14 @@ ${regression}
         const stepEndTime = Date.now();
         const stepDuration = stepEndTime - stepStartTime;
 
-        // Emit step error event
+        // Emit step error event with source mapping
         this.emitter.emit(events.step.error, {
           stepIndex,
           prompt: step.prompt,
           error: error.message,
           duration: stepDuration,
           timestamp: stepEndTime,
+          sourcePosition: sourcePosition,
         });
 
         throw error; // Re-throw to maintain existing error handling
@@ -1182,22 +1244,40 @@ ${regression}
 
     let ymlObj = await this.loadYML(file);
 
-    for (const step of ymlObj.steps) {
-      if (!step.commands && !step.prompt) {
-        this.emitter.emit(
-          events.log.log,
-          theme.red("No commands or prompt found"),
-        );
-        await this.exit(true);
-      } else if (!step.commands) {
-        this.emitter.emit(
-          events.log.log,
-          theme.yellow("No commands found, running exploratory"),
-        );
-        await this.exploratoryLoop(step.prompt, false, true, false);
-      } else {
-        await this.executeCommands(step.commands, depth, pushToHistory);
+    // Store current source mapping state
+    const previousContext = this.sourceMapper.saveContext();
+
+    // Set up source mapping for embedded file
+    const parseResult = this.sourceMapper.parseYamlWithSourceMap(
+      fs.readFileSync(file, "utf-8"),
+      file,
+    );
+    this.sourceMapper.setCurrentContext(file, parseResult.sourceMap, -1, -1);
+
+    try {
+      for (const step of ymlObj.steps) {
+        const stepIndex = ymlObj.steps.indexOf(step);
+        this.sourceMapper.setCurrentStep(stepIndex);
+
+        if (!step.commands && !step.prompt) {
+          this.emitter.emit(
+            events.log.log,
+            theme.red("No commands or prompt found"),
+          );
+          await this.exit(true);
+        } else if (!step.commands) {
+          this.emitter.emit(
+            events.log.log,
+            theme.yellow("No commands found, running exploratory"),
+          );
+          await this.exploratoryLoop(step.prompt, false, true, false);
+        } else {
+          await this.executeCommands(step.commands, depth, pushToHistory);
+        }
       }
+    } finally {
+      // Restore previous source mapping state
+      this.sourceMapper.restoreContext(previousContext);
     }
 
     this.emitter.emit(events.log.log, `${file} (end)`);

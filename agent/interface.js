@@ -51,9 +51,6 @@ function createCommandDefinitions(agent) {
           description: "Do not reuse the last sandbox, always create a new one",
           default: false,
         }),
-        sandbox: Flags.string({
-          description: "Connect to existing sandbox with ID",
-        }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
         }),
@@ -97,9 +94,6 @@ function createCommandDefinitions(agent) {
           description: "Create a new sandbox instance",
           default: false,
         }),
-        sandbox: Flags.string({
-          description: "Connect to existing sandbox with ID",
-        }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
         }),
@@ -108,42 +102,6 @@ function createCommandDefinitions(agent) {
         // Edit mode is handled by the CLI interface via factory.js
         // This handler should not be called directly
         throw new Error("Edit mode should be handled by CLI interface");
-      },
-    },
-
-    sandbox: {
-      description: "Manage sandbox instances",
-      args: {
-        action: Args.string({
-          description: "Action to perform (create, connect, list, destroy)",
-          required: false,
-        }),
-      },
-      flags: {
-        id: Flags.string({
-          description: "Sandbox ID for connect/destroy operations",
-        }),
-        headless: Flags.boolean({
-          description: "Run in headless mode",
-          default: false,
-        }),
-        list: Flags.boolean({
-          description: "List available sandbox instances",
-          default: false,
-        }),
-        create: Flags.boolean({
-          description: "Create a new sandbox instance",
-          default: false,
-        }),
-        destroy: Flags.string({
-          description: "Destroy sandbox by ID",
-        }),
-        connect: Flags.string({
-          description: "Connect to sandbox by ID",
-        }),
-      },
-      handler: async (args, flags) => {
-        await agent.handleSandboxCommand(flags);
       },
     },
 
@@ -191,51 +149,6 @@ function createCommandDefinitions(agent) {
       flags: {},
       handler: async () => {
         agent.showHelp();
-      },
-    },
-
-    clear: {
-      description: "Clear the terminal screen",
-      args: {},
-      flags: {},
-      handler: async () => {
-        process.stdout.write("\x1b[2J\x1b[0f");
-      },
-    },
-
-    screenshot: {
-      description: "Take a screenshot of the current screen",
-      args: {},
-      flags: {},
-      handler: async () => {
-        await agent.takeScreenshot();
-      },
-    },
-
-    summarize: {
-      description: "Summarize the current test script",
-      args: {},
-      flags: {},
-      handler: async () => {
-        await agent.summarize();
-      },
-    },
-
-    history: {
-      description: "Show command history",
-      args: {},
-      flags: {},
-      handler: async () => {
-        agent.showHistory();
-      },
-    },
-
-    tasks: {
-      description: "Show current tasks",
-      args: {},
-      flags: {},
-      handler: async () => {
-        agent.showTasks();
       },
     },
 

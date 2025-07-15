@@ -64,14 +64,12 @@ class BaseCommand extends Command {
       const event = this.agent.emitter.event;
       if (event === events.log.debug) return;
       console.log(message);
-      appendLog(event, JSON.stringify(message));
     });
 
     // Use pattern matching for error events
     this.agent.emitter.on("error:*", (data) => {
       const event = this.agent.emitter.event;
       console.error(event, ":", data);
-      appendLog(event, JSON.stringify(data));
 
       if (event === "error:sandbox") {
         console.error("Use --new-sandbox to create a new sandbox.");
@@ -98,15 +96,12 @@ class BaseCommand extends Command {
           );
         }
       }
-
-      appendLog("command:error", JSON.stringify(data));
     });
 
     // Handle status events
     this.agent.emitter.on("status", (message) => {
       console.log(`- ${message}`);
       this.sendToSandbox(`- ${message}`);
-      appendLog("status", JSON.stringify(message));
     });
 
     // Handle sandbox connection with pattern matching for subsequent events
@@ -124,15 +119,7 @@ class BaseCommand extends Command {
     // Handle all other events with wildcard pattern
     this.agent.emitter.on("**", (data) => {
       const event = this.agent.emitter.event;
-      // Skip events we've already handled specifically
-      if (
-        !event.startsWith("log:") &&
-        !event.startsWith("error:") &&
-        event !== "status" &&
-        event !== "sandbox:connected"
-      ) {
-        appendLog(event, JSON.stringify(data));
-      }
+      appendLog(event, JSON.stringify(data));
     });
 
     logger.createMarkdownLogger(this.agent.emitter);
