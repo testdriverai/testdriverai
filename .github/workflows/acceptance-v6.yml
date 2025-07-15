@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: NODE_ENV=production npm ci
       - name: Run test in headless mode
-        run: node index.js run --path=testdriver/acceptance/${{ matrix.test }}
+        run: node index.js run testdriver/acceptance/${{ matrix.test }}
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
