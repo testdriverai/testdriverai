@@ -76,28 +76,6 @@ class BaseCommand extends Command {
       }
     });
 
-    // Enhanced command error handling
-    this.agent.emitter.on("command:error", (data) => {
-      console.error("Command Error:", data.command);
-
-      // If the error already includes location context, show it as-is
-      if (
-        typeof data.error === "string" &&
-        data.error.includes("Command location:")
-      ) {
-        console.error(data.error);
-      } else {
-        console.error("Error:", data.error);
-
-        // Show location info if available
-        if (data.location) {
-          console.error(
-            `Location: ${data.location.file}:${data.location.start.line}:${data.location.start.column}`,
-          );
-        }
-      }
-    });
-
     // Handle status events
     this.agent.emitter.on("status", (message) => {
       console.log(`- ${message}`);
