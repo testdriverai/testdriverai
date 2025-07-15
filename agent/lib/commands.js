@@ -712,7 +712,7 @@ const createCommands = (emitter, system, sandbox) => {
             }
           }
 
-          return result.stdout?.trim();
+          return result.out?.stdout?.trim();
         }
       } else if (language == "js") {
         emitter.emit(events.log.log, theme.dim(`running js...`), true);
