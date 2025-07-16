@@ -63,8 +63,9 @@ class BaseCommand extends Command {
     // Use pattern matching for log events, but skip log:Debug
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
-      console.log(event, ":", message);
+
       if (event === events.log.debug) return;
+      console.log(message);
     });
 
     // Use pattern matching for error events
