@@ -89,7 +89,6 @@ const createSDK = (emitter) => {
         return token;
       } catch (error) {
         outputError(error);
-        emitter.emit(events.exit, 1);
         return;
       }
     }

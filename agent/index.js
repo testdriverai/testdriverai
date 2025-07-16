@@ -1275,39 +1275,6 @@ ${regression}
     this.emitter.emit(events.log.log, `${file} (end)`);
   }
 
-  async listSandboxes() {
-    await this.connectToSandboxService();
-
-    this.emitter.emit(events.log.log, "Listing sandboxes...");
-
-    let reply = await this.sandbox.send({
-      type: "list",
-    });
-
-    console.table(reply.sandboxes);
-  }
-
-  async destroySandbox(sandboxId) {
-    await this.connectToSandboxService();
-
-    let reply = await this.sandbox.send({
-      type: "destroy",
-      id: sandboxId,
-    });
-
-    console.table(reply.sandboxes);
-  }
-
-  async createSandbox() {
-    await this.connectToSandboxService();
-
-    this.emitter.emit(events.log.log, "Creating new sandbox...");
-
-    let instance = await this.createNewSandbox();
-
-    console.table([instance.sandbox]);
-  }
-
   // Returns sandboxId to use (either from file if recent, or null)
   getRecentSandboxId() {
     const lastSandboxFile = path.join(

@@ -71,18 +71,21 @@ const createSandbox = (emitter) => {
 
         // handle errors
         this.socket.on("close", () => {
-          console.log("Socket Closed. Check your API KEY (TD_API_KEY)");
           clearInterval(this.heartbeat);
+          // Emit a clear error event for API key issues
+          emitter.emit(events.error.fatal, {
+            message: "Socket closed. Check your API KEY (TD_API_KEY)",
+            code: "API_KEY_MISSING_OR_INVALID",
+          });
           reject();
           this.apiSocketConnected = false;
-          emitter.emit(events.exit, 1);
         });
 
         this.socket.on("error", (err) => {
           console.log("Socket Error");
           err && console.log(err);
           clearInterval(this.heartbeat);
-          emitter.emit(events.error.sandboxed, err);
+          emitter.emit(events.error.sandbox, err);
           this.apiSocketConnected = false;
           throw err;
         });

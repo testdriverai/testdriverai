@@ -63,7 +63,7 @@ class BaseCommand extends Command {
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
       if (event === events.log.debug) return;
-      console.log(message);
+      console.log("log", JSON.stringify(message));
     });
 
     // Use pattern matching for error events
