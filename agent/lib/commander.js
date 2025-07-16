@@ -205,7 +205,17 @@ commands:
           break;
         case "exec":
           emitter.emit(events.narration, `exec`);
-          emitter.emit(events.log.log, generator.jsonToManual(object));
+          emitter.emit(
+            events.log.log,
+            generator.jsonToManual({
+              command: object.command,
+              code:
+                object.code.length > 100
+                  ? object.code.slice(0, 100) + "..."
+                  : object.code,
+              lang: object.lang,
+            }),
+          );
 
           response = await commands.exec(object.lang, object.code);
 
