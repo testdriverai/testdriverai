@@ -1,4 +1,5 @@
 const chalk = require("chalk");
+chalk.level = 3; // Force color outputs when using chalk, was added for VS Code support
 
 module.exports = {
   green: chalk.hex("#b3d334"),

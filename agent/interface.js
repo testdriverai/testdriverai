@@ -47,8 +47,13 @@ function createCommandDefinitions(agent) {
           description: "Run in headless mode (no GUI)",
           default: false,
         }),
-        "new-sandbox": Flags.boolean({
-          description: "Do not reuse the last sandbox, always create a new one",
+        persist: Flags.boolean({
+          description: "Prevent sandbox from being deleted after use",
+          default: false,
+        }),
+        reconnect: Flags.boolean({
+          description:
+            "Connect to the last sandbox instance (must have been created with --persist)",
           default: false,
         }),
         summary: Flags.string({
@@ -88,8 +93,13 @@ function createCommandDefinitions(agent) {
           description: "Run in headless mode",
           default: false,
         }),
-        "new-sandbox": Flags.boolean({
-          description: "Create a new sandbox instance",
+        persist: Flags.boolean({
+          description: "Prevent sandbox from being deleted after use",
+          default: false,
+        }),
+        reconnect: Flags.boolean({
+          description:
+            "Connect to the last sandbox instance (must have been created with --persist)",
           default: false,
         }),
         summary: Flags.string({
