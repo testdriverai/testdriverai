@@ -5,6 +5,7 @@ const os = require("os");
 try {
   const pid = process.pid;
   os.setPriority(pid, -20);
+  // eslint-disable-next-line no-empty, no-unused-vars
 } catch (error) {
   // Ignore if not permitted
 }
