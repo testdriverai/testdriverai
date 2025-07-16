@@ -1323,29 +1323,16 @@ ${regression}
       return;
     }
 
-    const { headless = false, sandbox, heal } = options;
-    const newSandbox = options["new-sandbox"] || options.newSandbox;
+    const { headless = false, heal, reconnect } = options;
 
-    // Set agent properties from unified command options
-    if (sandbox && !newSandbox) {
-      this.sandboxId = sandbox;
-    } else if (sandbox && newSandbox) {
-      // If both are specified, --new-sandbox takes precedence
-      this.emitter.emit(
-        events.log.log,
-        theme.yellow(
-          "Warning: Both --sandbox and --new-sandbox specified. Creating new sandbox instead of using specified sandbox ID.",
-        ),
-      );
-    }
-    if (newSandbox) this.newSandbox = newSandbox;
     if (heal) this.healMode = heal;
 
     // order is important!
     await this.connectToSandboxService();
 
-    if (!this.sandboxId && !this.newSandbox) {
-      const recentId = this.getRecentSandboxId();
+    const recentId = this.getRecentSandboxId();
+
+    if (reconnect) {
       if (recentId) {
         this.emitter.emit(
           events.log.log,
@@ -1354,31 +1341,25 @@ ${regression}
         this.sandboxId = recentId;
       } else {
         this.emitter.emit(
-          events.log.log,
-          theme.dim(`- creating new sandbox...`),
-        );
-        this.emitter.emit(
-          events.log.log,
-          theme.dim(`  (this can take between 10 - 240 seconds)`),
-        );
-      }
-    } else {
-      if (this.newSandbox) {
-        this.emitter.emit(
-          events.log.log,
-          theme.dim(`- creating new sandbox (--new-sandbox)...`),
-        );
-      } else {
-        // I think this is a bad state
-        this.emitter.emit(
-          events.log.log,
-          theme.dim(`- creating new sandbox (no recent sandbox created)...`),
+          events.log.warn,
+          theme.yellow(`No recent sandbox found, creating a new one.`),
         );
       }
     }
 
-    if (this.sandboxId && !this.newSandbox) {
-      let instance = await this.connectToSandboxDirect(this.sandboxId);
+    if (!this.sandboxId) {
+      this.emitter.emit(events.log.log, theme.dim(`- creating new sandbox...`));
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`  (this can take between 10 - 240 seconds)`),
+      );
+    }
+
+    if (this.sandboxId) {
+      let instance = await this.connectToSandboxDirect(
+        this.sandboxId,
+        options.persist,
+      );
       this.instance = instance;
       await this.renderSandbox(instance, headless);
       await this.newSession();
@@ -1387,6 +1368,7 @@ ${regression}
       this.saveLastSandboxId(newSandbox.sandbox.instanceId);
       let instance = await this.connectToSandboxDirect(
         newSandbox.sandbox.instanceId,
+        options.persist,
       );
       this.instance = instance;
       await this.renderSandbox(instance, headless);
@@ -1502,16 +1484,15 @@ ${regression}
     await this.sandbox.auth(config.TD_API_KEY);
   }
 
-  async connectToSandboxDirect(sandboxId) {
+  async connectToSandboxDirect(sandboxId, persist = false) {
     this.emitter.emit(events.log.log, theme.gray(`- connecting...`));
-    let instance = await this.sandbox.connect(sandboxId);
+    let instance = await this.sandbox.connect(sandboxId, persist);
     return instance;
   }
 
   async createNewSandbox() {
     let instance = await this.sandbox.send({
       type: "create",
-      persist: true,
       resolution: config.TD_RESOLUTION,
     });
     return instance;

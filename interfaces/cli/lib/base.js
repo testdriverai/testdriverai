@@ -71,10 +71,6 @@ class BaseCommand extends Command {
     this.agent.emitter.on("error:*", (data) => {
       const event = this.agent.emitter.event;
       console.error(event, ":", data);
-
-      if (event === "error:sandbox") {
-        console.error("Use --new-sandbox to create a new sandbox.");
-      }
     });
 
     // Handle status events

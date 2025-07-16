@@ -51,10 +51,11 @@ const createSandbox = (emitter) => {
       }
     }
 
-    async connect(sandboxId) {
+    async connect(sandboxId, persist = false) {
       let reply = await this.send({
         type: "connect",
-        sandboxId: sandboxId,
+        persist,
+        sandboxId,
       });
 
       if (reply.success) {
