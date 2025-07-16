@@ -1,10 +1,10 @@
 {
   "name": "testdriverai",
-  "version": "6.0.2",
+  "version": "6.0.4",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
-    "testdriverai": "./bin/testdriverai.js"
+    "testdriverai": "bin/testdriverai.js"
   },
   "scripts": {
     "start": "node index.js",

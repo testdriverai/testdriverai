@@ -1463,8 +1463,6 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
-    console.log("renderSandbox called with headless:", instance);
-
     if (!headless) {
       this.emitter.emit(events.showWindow, {
         url:
