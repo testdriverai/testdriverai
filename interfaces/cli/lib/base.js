@@ -59,11 +59,12 @@ class BaseCommand extends Command {
         `[${timestamp}] [${level}] ${message}\n`,
       );
     };
+
     // Use pattern matching for log events, but skip log:Debug
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
+      console.log(event, ":", message);
       if (event === events.log.debug) return;
-      console.log("log", JSON.stringify(message));
     });
 
     // Use pattern matching for error events

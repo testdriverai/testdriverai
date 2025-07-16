@@ -1481,9 +1481,12 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
+    console.log("renderSandbox called with headless:", instance);
+
     if (!headless) {
       this.emitter.emit(events.showWindow, {
-        url: instance.vncUrl + "/vnc_lite.html",
+        url:
+          "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html",
         resolution: config.TD_RESOLUTION,
       });
     }
@@ -1508,6 +1511,7 @@ ${regression}
   async createNewSandbox() {
     let instance = await this.sandbox.send({
       type: "create",
+      persist: true,
       resolution: config.TD_RESOLUTION,
     });
     return instance;
