@@ -36,7 +36,7 @@
     "datadog-winston": "^1.6.0",
     "dotenv": "^16.4.5",
     "eventemitter2": "^6.4.9",
-    "jimp": "^0.22.12",
+    "jimp": "^1.6.0",
     "js-yaml": "^4.1.0",
     "listr2": "^9.0.1",
     "markdown-parser": "0.0.8",
