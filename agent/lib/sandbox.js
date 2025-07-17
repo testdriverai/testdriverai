@@ -94,7 +94,7 @@ const createSandbox = (emitter) => {
         this.socket.on("open", async () => {
           this.heartbeat = setInterval(() => {
             this.send({ type: "ping" });
-          }, 5000);
+          }, 15000);
 
           this.apiSocketConnected = true;
           resolve(this);

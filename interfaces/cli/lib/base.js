@@ -52,12 +52,13 @@ class BaseCommand extends Command {
     }
 
     // Helper to append log messages to the temp file
-    const appendLog = (level, message) => {
+    const appendLog = (event, message) => {
       const timestamp = new Date().toISOString();
-      fs.appendFileSync(
-        this.logFilePath,
-        `[${timestamp}] [${level}] ${message}\n`,
-      );
+      if (event !== events.sandbox.received)
+        fs.appendFileSync(
+          this.logFilePath,
+          `[${timestamp}] [${event}] ${message}\n`,
+        );
     };
 
     // Use pattern matching for log events, but skip log:Debug
