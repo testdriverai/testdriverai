@@ -1,10 +1,5 @@
 name: Publish to NPM
 
-on:
-  # Instead of a Merge Queue, we'll just run this on main.
-  push:
-    branches: [main]
-
 jobs:
   tag:
     # Beta until we're stable for @latest
@@ -21,7 +16,7 @@ jobs:
       - name: Version
         # Unique prerelease version specific to this commit
         # v5.7.40-canary.09e0e4c.0
-        run: npm version --no-git-tag-version prerelease --preid=canary-$(git rev-parse --short HEAD)
+        run: npm version --no-git-tag-version prerelease --preid=canary.$(git rev-parse --short HEAD)
       - uses: JS-DevTools/npm-publish@v3
         with:
           tag: "beta"
