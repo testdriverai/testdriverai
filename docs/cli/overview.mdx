@@ -15,20 +15,21 @@ npx testdriverai@latest <command> [options]
 
 ## Available commands
 
-| Command    | Description                                                    |
-| ---------- | -------------------------------------------------------------- |
-| `run`      | Executes a TestDriver script.                                  |
-| `validate` | Validates the syntax and structure of a TestDriver script.     |
-| `init`     | Initializes a new TestDriver project in the current directory. |
-| `version`  | Displays the current version of the TestDriver CLI.            |
-| `help`     | Displays help information for the CLI or a specific command.   |
+| Command | Description                                                  |
+| ------- | ------------------------------------------------------------ |
+| `run`   | Executes a TestDriver test.                                  |
+| `edit`  | Launch interactive mode.                                     |
+| `help`  | Displays help information for the CLI or a specific command. |
 
 ## Available Flags
 
-| Command         | Description                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| `--heal`        | Launch exploratory mode and attemp to recover if an error or failing state is encountered. |
-| `--skip-prerun` | Do not automatically run `lifecycle/prerun.yaml`                                           |
+| Flag                | Description                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `--heal`            | Launch exploratory mode and attemp to recover if an error or failing state is encountered. |
+| `--write`           | Ovewrite test file with new commands resulting from agentic testing                        |
+| `--headless`        | Run test without opening a browser window (useful for CI/CD environments)                  |
+| `--new-sandbox`     | Create a new sandbox environment for the test run.                                         |
+| `--summary=<value>` | Output file where AI summary should be saved.                                              |
 
 ## Example usage
 
@@ -40,14 +41,6 @@ npx testdriverai@latest run path/to/testdriver.yaml
 
 This command runs the specified TestDriver script, executing all steps defined in the file.
 
-### Validating a script
-
-```bash
-npx testdriverai@latest validate path/to/testdriver.yaml
-```
-
-This command checks the syntax and structure of the script to ensure it's valid before execution.
-
 ### Initializing a new project
 
 ```bash
@@ -55,14 +48,6 @@ npx testdriverai@latest init
 ```
 
 This command sets up a new TestDriver project in the current directory, creating the necessary folder structure and configuration files.
-
-### Checking the version
-
-```bash
-npx testdriverai@latest version
-```
-
-This command displays the installed version of the TestDriver CLI.
 
 ### Getting help
 
@@ -78,17 +63,4 @@ npx testdriverai@latest help <command>
 
 ## Protips
 
-- Use `validate` before running a script to catch errors early.
-- Combine `run` with CI/CD pipelines to automate test execution.
-- Use the `--debug` flag with `run` to enable detailed logging for troubleshooting.
-
-<Info>
-  Running `init` will create a blank `testdriver.yaml` file in the current
-  directory. You can then edit this file to define your test steps.
-</Info>
-
-## Notes
-
-- The `testdriverai` CLI is cross-platform and works on macOS, Windows, and Linux.
-- Ensure you have the required dependencies installed and configured before running scripts.
-- For more advanced usage, refer to the official TestDriver documentation.
+- Combine `run` and `--headless` with CI/CD pipelines to automate test execution.

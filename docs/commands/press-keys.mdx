@@ -6,47 +6,32 @@ icon: "keyboard"
 ---
 
 ## Description
+
 The `press-keys` command is used to simulate typing a keyboard combination. This is useful for triggering shortcuts or interacting with applications via keyboard input.
 
 ## Arguments
-| Argument | Type                | Description                                                                 |
-|----------|---------------------|-----------------------------------------------------------------------------|
-| `keys`   | YAML sequence of strings | A list of keys to press together. Keys are automatically remapped for different operating systems. |
 
-<Warning>There is a breaking change in v5 that updates the syntax of `press-keys`. See Example usage below and if you aren't sure which version you are running, see [Checking the version](/cli/overview#checking-the-version)</Warning>
+| Argument | Type                     | Description                       |
+| -------- | ------------------------ | --------------------------------- |
+| `keys`   | YAML sequence of strings | A list of keys to press together. |
 
 ---
 
 ## Example usage
-<AccordionGroup>
-<Accordion title="V5 Usage">
+
 ```yaml
 command: press-keys
 keys:
-    - command
-    - space
+  - ctrl
+  - space
 ```
-</Accordion>
-<Accordion title="V4 Usage">
-```yaml
-command: press-keys
-keys:
-    - command
-    - space
-```
-</Accordion>
-</AccordionGroup>
 
 ## Protips
+
 - Use this command to trigger system-wide or application-specific shortcuts, such as opening Spotlight on macOS or the Start menu on Windows.
 - Ensure the keys specified are valid and supported by the operating system or application.
-
-## Gotchas
-- The syntax of the `press-keys` command differs from `v4` to `v5`. Make note of which version you are using and write commands accordingly.
-- Key mappings may differ between operating systems. For example, `command` on macOS is remapped to `ctrl` on Windows.
 - Ensure the application or system is in focus when using this command to avoid unexpected behavior.
 
 ## Notes
-- The `press-keys` command is ideal for automating workflows that rely on keyboard shortcuts.
 
-<Check>This command supports cross-platform key remapping to ensure compatibility across macOS, Windows, and Linux.</Check>
+- The `press-keys` command is ideal for automating workflows that rely on keyboard shortcuts.

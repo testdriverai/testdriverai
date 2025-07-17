@@ -67,10 +67,10 @@ steps:
 
 Now it's time to generate the regression test.
 
-Run the tests with the `run` command and use the `--save` parameter:
+Run the tests with the `run` command and use the `--write` parameter:
 
 ```bash
-npx testdriverai@latest run testdriver/generate/test-error-user-login.yaml --save
+npx testdriverai@latest run testdriver/generate/test-error-user-login.yaml --write
 ```
 
 When a test has no `commands`, TestDriver falls back to the `prompt`.
@@ -80,7 +80,7 @@ When a test has no `commands`, TestDriver falls back to the `prompt`.
 No commands found, running exploratory
 ```
 
-When using the `--save` command, TestDriver appends any generated commands to the test file.
+When using the `--write` command, TestDriver appends any generated commands to the test file.
 
 So as your test run, TestDriver will append successful commands to the YAML file and save it.
 
