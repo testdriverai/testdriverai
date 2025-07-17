@@ -22,7 +22,6 @@ steps:
             action: click
           - command: type
             text: testuser
-            field: Username
         else:
           - command: focus-application
             name: Google Chrome
