@@ -4,4 +4,4 @@ steps:
   - prompt: close chrome
     commands:
       - command: assert
-        expect: ${OUTPUT.test} appears on screen
+        expect: ${TD_WEBSITE} appears on screen

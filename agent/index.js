@@ -17,20 +17,20 @@ const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter2 } = require("eventemitter2");
 
 // global utilities
-const { createAnalytics } = require("./lib/analytics.js");
-const parser = require("./lib/parser.js");
 const generator = require("./lib/generator.js");
-const { createSDK } = require("./lib/sdk.js");
-const { createConfig } = require("./lib/config.js");
 const theme = require("./lib/theme.js");
 const SourceMapper = require("./lib/source-mapper.js");
 
 // agent modules
+const { createParser } = require("./lib/parser.js");
 const { createSystem } = require("./lib/system.js");
 const { createCommander } = require("./lib/commander.js");
 const { createCommands } = require("./lib/commands.js");
 const { createSandbox } = require("./lib/sandbox.js");
 const { createCommandDefinitions } = require("./interface.js");
+const { createSDK } = require("./lib/sdk.js");
+const { createConfig } = require("./lib/config.js");
+const { createAnalytics } = require("./lib/analytics.js");
 
 const isValidVersion = require("./lib/valid-version.js");
 const session = require("./lib/session.js");
@@ -68,6 +68,9 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
+
+    // Create parser instance with this agent's emitter
+    this.parser = createParser(this.emitter);
 
     // Create SDK instance with this agent's emitter and config
     this.sdk = createSDK(this.emitter, this.config);
@@ -476,12 +479,12 @@ class TestDriverAgent extends EventEmitter2 {
       let commands;
 
       try {
-        commands = await parser.getCommands(codeblock);
+        commands = await this.parser.getCommands(codeblock);
       } catch (e) {
         // For parser errors
         return await this.haveAIResolveError(
           e,
-          yaml.dump(parser.getYAMLFromCodeBlock(codeblock)),
+          yaml.dump(this.parser.getYAMLFromCodeBlock(codeblock)),
           depth,
           shouldSave,
         );
@@ -530,7 +533,7 @@ class TestDriverAgent extends EventEmitter2 {
 
       let checkCodeblocks = [];
       try {
-        checkCodeblocks = await parser.findCodeBlocks(response);
+        checkCodeblocks = await this.parser.findCodeBlocks(response);
       } catch (error) {
         return await this.haveAIResolveError(error, response, 0, true, true);
       }
@@ -600,16 +603,16 @@ class TestDriverAgent extends EventEmitter2 {
       return {};
     }
 
-    yml = await parser.validateYAML(yml);
+    yml = await this.parser.validateYAML(yml);
 
     // Inject environment variables into any ${VAR} strings
-    yml = parser.interpolate(yml, {
+    yml = this.parser.interpolate(yml, {
       TD_THIS_FILE: file,
       ...this.config._environment,
     });
 
     // Show Unreplaced Variables
-    let unreplacedVars = parser.collectUnreplacedVariables(yml);
+    let unreplacedVars = this.parser.collectUnreplacedVariables(yml);
 
     // Remove all variables that start with OUTPUT- these are special
     unreplacedVars = unreplacedVars.filter((v) => !v.startsWith("OUTPUT."));
@@ -778,7 +781,7 @@ commands:
 
     this.emitter.emit(events.log.markdown.end, streamId);
 
-    let testPrompts = await parser.findGenerativePrompts(message.data);
+    let testPrompts = await this.parser.findGenerativePrompts(message.data);
 
     // for each testPrompt
     for (const testPrompt of testPrompts) {
@@ -873,7 +876,7 @@ ${yml}
   ) {
     let codeblocks = [];
     try {
-      codeblocks = await parser.findCodeBlocks(content);
+      codeblocks = await this.parser.findCodeBlocks(content);
     } catch (error) {
       pushToHistory = false;
       return await this.haveAIResolveError(
