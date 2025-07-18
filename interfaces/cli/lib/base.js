@@ -141,24 +141,25 @@ class BaseCommand extends Command {
     // Create the agent only when actually needed
     const TestDriverAgent = require("../../../agent/index.js");
 
-    // Create agent with explicit process.env (no implicit defaults)
-    this.agent = new TestDriverAgent(process.env);
-    this.setupEventListeners();
-
-    // Set up agent properties from CLI args
-    this.agent.cliArgs = {
-      command: this.id,
-      args: [file],
-      options: flags,
-    };
     // Use --path flag if provided, otherwise use the file argument
     const filePath = this.id === "run" && flags.path ? flags.path : file;
-    this.agent.thisFile = this.normalizeFilePath(filePath);
 
-    // Set output file for summarize results if specified
-    if (flags.summary && typeof flags.summary === "string") {
-      this.agent.resultFile = path.resolve(flags.summary);
-    }
+    // Prepare CLI args for the agent with all derived options
+    const cliArgs = {
+      command: this.id,
+      args: [filePath], // Pass the resolved file path as the first argument
+      options: {
+        ...flags,
+        resultFile:
+          flags.summary && typeof flags.summary === "string"
+            ? path.resolve(flags.summary)
+            : null,
+      },
+    };
+
+    // Create agent with explicit process.env and consolidated CLI args
+    this.agent = new TestDriverAgent(process.env, cliArgs);
+    this.setupEventListeners();
 
     try {
       // Start the agent's initialization

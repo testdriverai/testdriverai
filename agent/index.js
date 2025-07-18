@@ -38,7 +38,7 @@ const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 
 class TestDriverAgent extends EventEmitter2 {
-  constructor(environment = {}) {
+  constructor(environment = {}, cliArgs = {}) {
     super({
       wildcard: true,
       delimiter: ":",
@@ -52,6 +52,19 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Create config instance for this agent using provided environment
     this.config = createConfig(environment);
+
+    // Store CLI arguments passed to this agent
+    this.cliArgs = cliArgs;
+
+    // Derive properties from cliArgs
+    const flags = cliArgs.options || {};
+    const firstArg = cliArgs.args && cliArgs.args[0];
+    this.thisFile = firstArg || null;
+    this.resultFile = flags.resultFile || null;
+    this.newSandbox = flags.newSandbox || false;
+    this.healMode = flags.healMode || flags.heal || false;
+    this.sandboxId = flags.sandboxId || null;
+    this.workingDir = flags.workingDir || process.cwd();
 
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
@@ -87,7 +100,6 @@ class TestDriverAgent extends EventEmitter2 {
 
     // these are "in-memory" globals
     // they represent the current state of the agent
-    this.thisFile = null; // the file being run
     this.lastPrompt = ""; // the last prompt to be input
     this.executionHistory = []; // a history of commands run in the current session
     this.errorCounts = {}; // counts of different errors encountered in this session
@@ -96,13 +108,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.checkLimit = 7; // the max number of times the AI can check the task before exiting
     this.lastScreenshot = null; // the last screenshot taken by the agent
     this.readlineInterface = null; // the readline interface for interactive mode
-    this.resultFile = null; // the file to save results to, if specified
-    this.newSandbox = false; // whether to create a new sandbox instance instead of reusing the last one
     this.tasks = []; // list of prompts that the user has given us
-    this.healMode = false; // whether to enable automatic error recovery mode
-    this.sandboxId = null; // the ID of the sandbox to connect to, if specified
-    this.workingDir = process.cwd(); // working directory where this agent is running
-    this.cliArgs = {}; // the cli args passed to the agent
 
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
