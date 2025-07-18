@@ -38,9 +38,9 @@ class CommandError extends Error {
 }
 
 // Factory function that creates commands with the provided emitter
-const createCommands = (emitter, system, sandbox) => {
-  // Create SDK instance with emitter
-  const sdk = createSDK(emitter);
+const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
+  // Create SDK instance with emitter, config, and session
+  const sdk = createSDK(emitter, config, sessionInstance);
   // Create redraw instance with the system
   const redraw = createRedraw(emitter, system, sandbox);
   const niceSeconds = (ms) => {

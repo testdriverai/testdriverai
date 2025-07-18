@@ -1,9 +1,8 @@
 const { createSDK } = require("./sdk");
-const config = require("./config");
 
-// Factory function that creates analytics with the provided emitter
-const createAnalytics = (emitter) => {
-  const sdk = createSDK(emitter);
+// Factory function that creates analytics with the provided emitter, config, and session
+const createAnalytics = (emitter, config, sessionInstance) => {
+  const sdk = createSDK(emitter, config, sessionInstance);
 
   return {
     track: async (event, data) => {

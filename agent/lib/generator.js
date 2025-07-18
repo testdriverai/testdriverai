@@ -53,18 +53,18 @@ const jsonToManual = function (json, colors = true) {
   return params;
 };
 
-const dumpToYML = async function (inputArray) {
+const dumpToYML = async function (inputArray, sessionInstance = null) {
   // use yml dump to convert json to yml
   let yml = await yaml.dump({
     version: package.version,
-    session: session.get(),
+    session: sessionInstance ? sessionInstance.get() : session.get(),
     steps: inputArray,
   });
 
   return yml;
 };
 
-const hydrateFromYML = async function (yml) {
+const hydrateFromYML = async function (yml, sessionInstance = null) {
   // use yml load to convert yml to json
   let json = await yaml.load(yml);
 
@@ -72,11 +72,13 @@ const hydrateFromYML = async function (yml) {
     json = {};
   }
 
+  const sessionToUse = sessionInstance || session;
+
   if (!json?.session) {
-    json.session = session.get();
+    json.session = sessionToUse.get();
   }
 
-  session.set(json.session);
+  sessionToUse.set(json.session);
 
   return json;
 };

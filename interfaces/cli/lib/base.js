@@ -101,18 +101,18 @@ class BaseCommand extends Command {
     logger.createMarkdownLogger(this.agent.emitter);
 
     // Handle exit events
+    this.agent.emitter.on("error:fatal", (error) => {
+      console.error("Fatal error:", error);
+      process.exit(1);
+    });
+
     this.agent.emitter.on("exit", (exitCode) => {
       process.exit(exitCode);
     });
 
     // Handle show window events
-    this.agent.emitter.on("show-window", async (data) => {
-      const encodedData = encodeURIComponent(JSON.stringify(data));
-      // Use the debugger URL instead of the VNC URL
-      const urlToOpen = this.agent.debuggerUrl
-        ? `${this.agent.debuggerUrl}?data=${encodedData}`
-        : `${data.url}?data=${encodedData}`;
-      await openBrowser(urlToOpen);
+    this.agent.emitter.on("show-window", async (url) => {
+      await openBrowser(url);
     });
   }
 
@@ -135,26 +135,31 @@ class BaseCommand extends Command {
   }
 
   async setupAgent(file, flags) {
+    // Load .env file into process.env for CLI usage
+    require("dotenv").config();
+
     // Create the agent only when actually needed
     const TestDriverAgent = require("../../../agent/index.js");
 
-    this.agent = new TestDriverAgent();
-    this.setupEventListeners();
-
-    // Set up agent properties from CLI args
-    this.agent.cliArgs = {
-      command: this.id,
-      args: [file],
-      options: flags,
-    };
     // Use --path flag if provided, otherwise use the file argument
     const filePath = this.id === "run" && flags.path ? flags.path : file;
-    this.agent.thisFile = this.normalizeFilePath(filePath);
 
-    // Set output file for summarize results if specified
-    if (flags.summary && typeof flags.summary === "string") {
-      this.agent.resultFile = path.resolve(flags.summary);
-    }
+    // Prepare CLI args for the agent with all derived options
+    const cliArgs = {
+      command: this.id,
+      args: [filePath], // Pass the resolved file path as the first argument
+      options: {
+        ...flags,
+        resultFile:
+          flags.summary && typeof flags.summary === "string"
+            ? path.resolve(flags.summary)
+            : null,
+      },
+    };
+
+    // Create agent with explicit process.env and consolidated CLI args
+    this.agent = new TestDriverAgent(process.env, cliArgs);
+    this.setupEventListeners();
 
     try {
       // Start the agent's initialization
@@ -177,7 +182,7 @@ class BaseCommand extends Command {
   getUnifiedDefinition() {
     const commandName = this.id;
     if (!this.agent) {
-      // Create a temporary agent for definition purposes
+      // Create a temporary agent for definition purposes with empty environment
       const tempAgent = { workingDir: process.cwd() };
       return createCommandDefinitions(tempAgent)[commandName];
     }

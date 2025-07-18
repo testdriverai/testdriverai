@@ -106,7 +106,7 @@ class ReadlineInterface {
     this.agent.emitter.emit(events.log.log, ""); // adds a nice break between submissions
 
     // Inject environment variables into any ${VAR} strings
-    input = parser.interpolate(input, process.env);
+    input = parser.interpolate(input, this.agent.config._environment);
 
     try {
       // Parse interactive commands (starting with /)

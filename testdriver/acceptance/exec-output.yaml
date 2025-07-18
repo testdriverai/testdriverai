@@ -42,4 +42,4 @@ steps:
       - command: focus-application
         name: Google Chrome
       - command: assert
-        expect: the text ${OUPUT.expectedDate} is visible on screen
+        expect: the text ${OUTPUT.expectedDate} is visible on screen

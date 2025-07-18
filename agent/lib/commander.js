@@ -3,12 +3,18 @@ const generator = require("./generator");
 const yaml = require("js-yaml");
 const marky = require("marky");
 const { createSDK } = require("./sdk");
-const outputs = require("./outputs");
 const { events } = require("../events");
 
-const createCommander = (emitter, commands, analytics) => {
-  // Create SDK instance with emitter
-  const sdk = createSDK(emitter);
+const createCommander = (
+  emitter,
+  commands,
+  analytics,
+  config,
+  outputsInstance,
+  sessionInstance,
+) => {
+  // Create SDK instance with emitter, config, and session
+  const sdk = createSDK(emitter, config, sessionInstance);
   // replace all occurances of ${OUTPUT.ls} with outputs.get("ls") in every possible property of the `object`
   // this is a recursive function that will go through all the properties of the object
   const replaceOutputs = (obj) => {
@@ -17,7 +23,7 @@ const createCommander = (emitter, commands, analytics) => {
         replaceOutputs(obj[key]);
       } else if (typeof obj[key] === "string") {
         obj[key] = obj[key].replace(/\${OUTPUT\.(.*?)}/g, (_, match) =>
-          outputs.get(match),
+          outputsInstance.get(match),
         );
       }
     }
@@ -195,7 +201,7 @@ commands:
           emitter.emit(events.log.log, generator.jsonToManual(object));
           let value = await commands["remember"](object.description);
           emitter.emit(events.log.log, value);
-          outputs.set(object.output, value);
+          outputsInstance.set(object.output, value);
           break;
         }
         case "assert":
@@ -219,7 +225,7 @@ commands:
 
           response = await commands.exec(object.lang, object.code);
 
-          outputs.set(object.output, response);
+          outputsInstance.set(object.output, response);
 
           break;
         default: {

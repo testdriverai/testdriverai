@@ -1,9 +1,9 @@
 const { eventsArray, getEmitter } = require("../events.js");
 const { startDebugger, broadcastEvent } = require("./debugger-server.js");
 
-module.exports.createDebuggerProcess = () => {
+module.exports.createDebuggerProcess = (config = {}) => {
   // Start the web server-based debugger instead of Electron
-  return startDebugger()
+  return startDebugger(config)
     .then(({ url }) => {
       // Return a mock process object to maintain compatibility
       return {
