@@ -3,12 +3,13 @@ const Parser = require("markdown-parser");
 const yaml = require("js-yaml");
 const Ajv = require("ajv");
 const theme = require("./theme");
+const { getEmitter, events } = require("../events.js");
 
 let parser = new Parser();
 
 function formatAjvError(error) {
   return [
-    theme.yellow("❌ Validation Warning (beta)"),
+    theme.red("Validation Failure"),
     `${theme.yellow("Path:")}      ${theme.white(error.instancePath)}`,
     `${theme.yellow("Schema:")}    ${theme.cyan(error.schemaPath)}`,
     `${theme.yellow("Keyword:")}   ${theme.magenta(error.keyword)}`,
@@ -96,7 +97,11 @@ const validateYAML = async function (yaml) {
   let valid = validate(await parseYAML(yaml));
 
   if (!valid) {
-    validate.errors.forEach((err) => console.log(formatAjvError(err)));
+    const emitter = getEmitter();
+    validate.errors.forEach((err) => {
+      const formattedError = formatAjvError(err);
+      emitter.emit(events.error.fatal, formattedError);
+    });
     // throw new Error("Invalid YAML");
   }
 

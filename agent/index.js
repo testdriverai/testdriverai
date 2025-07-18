@@ -119,6 +119,12 @@ class TestDriverAgent extends EventEmitter2 {
 
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
+
+    this.emitter.emit(events.log.log, JSON.stringify(environment));
+    this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
+
+    console.log(cliArgs);
+    console.log(environment);
   }
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
@@ -344,13 +350,11 @@ class TestDriverAgent extends EventEmitter2 {
       sourcePosition: sourcePosition,
     });
 
-    this.emitter.emit(events.log.debug, `running command: \n\n${yml}`);
-
     // Log current execution position for debugging
     if (this.sourceMapper.currentFileSourceMap) {
       this.emitter.emit(
-        events.log.debug,
-        `executing at: ${this.sourceMapper.getCurrentPositionDescription()}`,
+        events.log.log,
+        theme.dim(`${this.sourceMapper.getCurrentPositionDescription()}`),
       );
     }
 
@@ -612,7 +616,7 @@ class TestDriverAgent extends EventEmitter2 {
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
-        events.error.general,
+        events.error.fatal,
         `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
       );
     }
@@ -1475,11 +1479,20 @@ ${regression}
 
   async renderSandbox(instance, headless = false) {
     if (!headless) {
-      this.emitter.emit(events.showWindow, {
-        url:
-          "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html",
+      let url =
+        "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html";
+
+      let data = {
         resolution: this.config.TD_RESOLUTION,
-      });
+        url: url,
+      };
+
+      const encodedData = encodeURIComponent(JSON.stringify(data));
+
+      // Use the debugger URL instead of the VNC URL
+      const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
+
+      this.emitter.emit(events.showWindow, urlToOpen);
     }
   }
 

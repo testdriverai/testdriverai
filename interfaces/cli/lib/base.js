@@ -101,18 +101,18 @@ class BaseCommand extends Command {
     logger.createMarkdownLogger(this.agent.emitter);
 
     // Handle exit events
+    this.agent.emitter.on("error:fatal", (error) => {
+      console.error("Fatal error:", error);
+      process.exit(1);
+    });
+
     this.agent.emitter.on("exit", (exitCode) => {
       process.exit(exitCode);
     });
 
     // Handle show window events
-    this.agent.emitter.on("show-window", async (data) => {
-      const encodedData = encodeURIComponent(JSON.stringify(data));
-      // Use the debugger URL instead of the VNC URL
-      const urlToOpen = this.agent.debuggerUrl
-        ? `${this.agent.debuggerUrl}?data=${encodedData}`
-        : `${data.url}?data=${encodedData}`;
-      await openBrowser(urlToOpen);
+    this.agent.emitter.on("show-window", async (url) => {
+      await openBrowser(url);
     });
   }
 
