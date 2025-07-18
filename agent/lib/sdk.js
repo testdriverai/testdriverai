@@ -1,15 +1,18 @@
-const config = require("./config");
 const session = require("./session");
 const { events } = require("../events");
 
 // get the version from package.json
 const { version } = require("../../package.json");
-const root = config["TD_API_ROOT"];
 const axios = require("axios");
 
-// Factory function that creates SDK with the provided emitter
-const createSDK = (emitter) => {
+// Factory function that creates SDK with the provided emitter and config
+const createSDK = (emitter, config) => {
   let token = null;
+
+  // Config is required - no fallback to avoid process.env usage
+  if (!config) {
+    throw new Error("Config must be provided to createSDK");
+  }
 
   const outputError = (error) => {
     emitter.emit(events.error.sdk, {
@@ -70,7 +73,7 @@ const createSDK = (emitter) => {
 
   const auth = async () => {
     if (config["TD_API_KEY"]) {
-      const url = [root, "auth/exchange-api-key"].join("/");
+      const url = [config["TD_API_ROOT"], "auth/exchange-api-key"].join("/");
       const c = {
         method: "post",
         headers: {
@@ -107,8 +110,8 @@ const createSDK = (emitter) => {
     });
 
     const url = path.startsWith("/api")
-      ? [root, path].join("")
-      : [root, "api", version, "testdriver", path].join("/");
+      ? [config["TD_API_ROOT"], path].join("")
+      : [config["TD_API_ROOT"], "api", version, "testdriver", path].join("/");
 
     const c = {
       method: "post",

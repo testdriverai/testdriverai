@@ -135,10 +135,14 @@ class BaseCommand extends Command {
   }
 
   async setupAgent(file, flags) {
+    // Load .env file into process.env for CLI usage
+    require("dotenv").config();
+
     // Create the agent only when actually needed
     const TestDriverAgent = require("../../../agent/index.js");
 
-    this.agent = new TestDriverAgent();
+    // Create agent with explicit process.env (no implicit defaults)
+    this.agent = new TestDriverAgent(process.env);
     this.setupEventListeners();
 
     // Set up agent properties from CLI args
@@ -177,7 +181,7 @@ class BaseCommand extends Command {
   getUnifiedDefinition() {
     const commandName = this.id;
     if (!this.agent) {
-      // Create a temporary agent for definition purposes
+      // Create a temporary agent for definition purposes with empty environment
       const tempAgent = { workingDir: process.cwd() };
       return createCommandDefinitions(tempAgent)[commandName];
     }

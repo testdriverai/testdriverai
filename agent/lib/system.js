@@ -4,9 +4,8 @@ const os = require("os");
 const path = require("path");
 const Jimp = require("jimp");
 const { getEmitter, events } = require("../events.js");
-const config = require("./config.js");
 
-const createSystem = (sandbox) => {
+const createSystem = (sandbox, config) => {
   const screenshot = async (options) => {
     let { base64 } = await sandbox.send({ type: "system.screenshot" });
 

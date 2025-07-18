@@ -21,7 +21,7 @@ const { createAnalytics } = require("./lib/analytics.js");
 const parser = require("./lib/parser.js");
 const generator = require("./lib/generator.js");
 const { createSDK } = require("./lib/sdk.js");
-const config = require("./lib/config.js");
+const { createConfig } = require("./lib/config.js");
 const theme = require("./lib/theme.js");
 const SourceMapper = require("./lib/source-mapper.js");
 
@@ -38,7 +38,7 @@ const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 
 class TestDriverAgent extends EventEmitter2 {
-  constructor() {
+  constructor(environment = {}) {
     super({
       wildcard: true,
       delimiter: ":",
@@ -50,26 +50,30 @@ class TestDriverAgent extends EventEmitter2 {
     }); // Create the agent's own emitter for internal events
     this.emitter = createEmitter();
 
+    // Create config instance for this agent using provided environment
+    this.config = createConfig(environment);
+
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
 
-    // Create SDK instance with this agent's emitter
-    this.sdk = createSDK(this.emitter);
+    // Create SDK instance with this agent's emitter and config
+    this.sdk = createSDK(this.emitter, this.config);
 
-    // Create analytics instance with this agent's emitter
-    this.analytics = createAnalytics(this.emitter);
+    // Create analytics instance with this agent's emitter and config
+    this.analytics = createAnalytics(this.emitter, this.config);
 
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
 
-    // Create system instance with sandbox
-    this.system = createSystem(this.sandbox);
+    // Create system instance with sandbox and config
+    this.system = createSystem(this.sandbox, this.config);
 
     // Create commands instance with this agent's emitter and system
     const commandsResult = createCommands(
       this.emitter,
       this.system,
       this.sandbox,
+      this.config,
     );
     this.commands = commandsResult.commands;
 
@@ -78,6 +82,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.emitter,
       this.commands,
       this.analytics,
+      this.config,
     );
 
     // these are "in-memory" globals
@@ -590,7 +595,7 @@ class TestDriverAgent extends EventEmitter2 {
     // Inject environment variables into any ${VAR} strings
     yml = parser.interpolate(yml, {
       TD_THIS_FILE: file,
-      ...process.env,
+      ...this.config._environment,
     });
 
     // Show Unreplaced Variables
@@ -1379,7 +1384,7 @@ ${regression}
 
   async start() {
     // Start the debugger server as early as possible to ensure event listeners are attached
-    const debuggerProcess = await createDebuggerProcess();
+    const debuggerProcess = await createDebuggerProcess(this.config);
     this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
 
     this.emitter.emit(
@@ -1423,7 +1428,7 @@ ${regression}
       }
     }
 
-    if (config.TD_API_KEY) {
+    if (this.config.TD_API_KEY) {
       await this.sdk.auth();
     }
 
@@ -1467,7 +1472,7 @@ ${regression}
       this.emitter.emit(events.showWindow, {
         url:
           "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html",
-        resolution: config.TD_RESOLUTION,
+        resolution: this.config.TD_RESOLUTION,
       });
     }
   }
@@ -1477,9 +1482,9 @@ ${regression}
       events.log.log,
       theme.gray(`- establishing connection...`),
     );
-    await this.sandbox.boot(config.TD_API_ROOT);
+    await this.sandbox.boot(this.config.TD_API_ROOT);
     this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
-    await this.sandbox.auth(config.TD_API_KEY);
+    await this.sandbox.auth(this.config.TD_API_KEY);
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
@@ -1491,7 +1496,7 @@ ${regression}
   async createNewSandbox() {
     let instance = await this.sandbox.send({
       type: "create",
-      resolution: config.TD_RESOLUTION,
+      resolution: this.config.TD_RESOLUTION,
     });
     return instance;
   }

@@ -6,9 +6,9 @@ const { createSDK } = require("./sdk");
 const outputs = require("./outputs");
 const { events } = require("../events");
 
-const createCommander = (emitter, commands, analytics) => {
-  // Create SDK instance with emitter
-  const sdk = createSDK(emitter);
+const createCommander = (emitter, commands, analytics, config) => {
+  // Create SDK instance with emitter and config
+  const sdk = createSDK(emitter, config);
   // replace all occurances of ${OUTPUT.ls} with outputs.get("ls") in every possible property of the `object`
   // this is a recursive function that will go through all the properties of the object
   const replaceOutputs = (obj) => {
