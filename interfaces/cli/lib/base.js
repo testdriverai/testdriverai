@@ -33,10 +33,10 @@ class BaseCommand extends Command {
     if (typeof message !== "string") {
       message = JSON.stringify(message);
     }
-    this.agent.sandbox.send({
-      type: "output",
-      output: Buffer.from(message).toString("base64"),
-    });
+    // this.agent.sandbox.send({
+    //   type: "output",
+    //   output: Buffer.from(message).toString("base64"),
+    // });
   }
 
   setupEventListeners() {
