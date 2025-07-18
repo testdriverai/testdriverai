@@ -54,6 +54,9 @@ class BaseCommand extends Command {
     // Helper to append log messages to the temp file
     const appendLog = (event, message) => {
       const timestamp = new Date().toISOString();
+
+      console.log(`[${timestamp}] [${event}] ${message}\n`);
+
       if (event !== events.sandbox.received)
         fs.appendFileSync(
           this.logFilePath,
