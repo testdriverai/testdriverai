@@ -4,4 +4,4 @@ steps:
   - prompt: close chrome
     commands:
       - command: assert
-        expect: ${TD_WEBSITE} appears on screen
+        expect: a pink elephant appears on screen

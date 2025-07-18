@@ -1,17 +1,21 @@
-const session = require("./session");
 const { events } = require("../events");
 
 // get the version from package.json
 const { version } = require("../../package.json");
 const axios = require("axios");
 
-// Factory function that creates SDK with the provided emitter and config
-const createSDK = (emitter, config) => {
+// Factory function that creates SDK with the provided emitter, config, and session
+const createSDK = (emitter, config, sessionInstance) => {
   let token = null;
 
   // Config is required - no fallback to avoid process.env usage
   if (!config) {
     throw new Error("Config must be provided to createSDK");
+  }
+
+  // Session is required
+  if (!sessionInstance) {
+    throw new Error("Session instance must be provided to createSDK");
   }
 
   const outputError = (error) => {
@@ -122,7 +126,7 @@ const createSDK = (emitter, config) => {
       responseType: typeof onChunk === "function" ? "stream" : "json",
       data: {
         ...data,
-        session: session.get(),
+        session: sessionInstance.get(),
         stream: typeof onChunk === "function",
       },
     };

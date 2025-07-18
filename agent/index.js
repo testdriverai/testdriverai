@@ -31,9 +31,10 @@ const { createCommandDefinitions } = require("./interface.js");
 const { createSDK } = require("./lib/sdk.js");
 const { createConfig } = require("./lib/config.js");
 const { createAnalytics } = require("./lib/analytics.js");
+const { createSession } = require("./lib/session.js");
+const { createOutputs } = require("./lib/outputs.js");
 
 const isValidVersion = require("./lib/valid-version.js");
-const session = require("./lib/session.js");
 const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 
@@ -72,11 +73,17 @@ class TestDriverAgent extends EventEmitter2 {
     // Create parser instance with this agent's emitter
     this.parser = createParser(this.emitter);
 
-    // Create SDK instance with this agent's emitter and config
-    this.sdk = createSDK(this.emitter, this.config);
+    // Create session instance for this agent
+    this.session = createSession();
 
-    // Create analytics instance with this agent's emitter and config
-    this.analytics = createAnalytics(this.emitter, this.config);
+    // Create outputs instance for this agent
+    this.outputs = createOutputs();
+
+    // Create SDK instance with this agent's emitter, config, and session
+    this.sdk = createSDK(this.emitter, this.config, this.session);
+
+    // Create analytics instance with this agent's emitter, config, and session
+    this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
@@ -90,6 +97,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.system,
       this.sandbox,
       this.config,
+      this.session,
     );
     this.commands = commandsResult.commands;
 
@@ -99,6 +107,8 @@ class TestDriverAgent extends EventEmitter2 {
       this.commands,
       this.analytics,
       this.config,
+      this.outputs,
+      this.session,
     );
 
     // these are "in-memory" globals
@@ -615,7 +625,9 @@ class TestDriverAgent extends EventEmitter2 {
     let unreplacedVars = this.parser.collectUnreplacedVariables(yml);
 
     // Remove all variables that start with OUTPUT- these are special
-    unreplacedVars = unreplacedVars.filter((v) => !v.startsWith("OUTPUT."));
+    unreplacedVars = unreplacedVars.filter((v) => {
+      return !v.startsWith("OUTPUT.");
+    });
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
@@ -983,7 +995,10 @@ ${yml}
     }
 
     // write reply to /tmp/testdriver-summary.md
-    let regression = await generator.dumpToYML(this.executionHistory);
+    let regression = await generator.dumpToYML(
+      this.executionHistory,
+      this.session,
+    );
     try {
       fs.writeFileSync(filepath, regression);
 
@@ -1537,7 +1552,7 @@ ${regression}
       );
     }
 
-    session.set(sessionRes.data.id);
+    this.session.set(sessionRes.data.id);
   }
 
   async runLifecycle(lifecycleName) {
