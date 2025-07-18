@@ -1,0 +1,92 @@
+version: 6.0.1-canary.4f31816.0
+session: 68767e31eb9cc3d8f639b8e0
+steps:
+  - prompt: close chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: press-keys
+        keys:
+          - alt
+          - f4
+  - prompt: open notepad
+    commands:
+      - command: press-keys
+        keys:
+          - win
+      - command: wait
+        timeout: 500
+      - command: type
+        text: Notepad
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: >-
+      type the first paragraph of the Iliad, save the file as recycle.txt to the
+      desktop
+    commands:
+      - command: focus-application
+        name: Notepad
+      - command: type
+        text: >-
+          Sing, O goddess, the anger of Achilles son of Peleus, that brought
+          innumerable woes upon the Achaeans. Many a valiant soul did it send
+          hurrying down to Hades, and many a hero did it yield a prey to dogs
+          and vultures, for so were the counsels of Jove fulfilled.
+      - command: press-keys
+        keys:
+          - ctrl
+          - s
+      - command: wait-for-text
+        text: "File name:"
+      - command: hover-text
+        text: "File name:"
+        description: file name label in Save As dialog
+        action: click
+      - command: press-keys
+        keys:
+          - ctrl
+          - a
+      - command: type
+        text: recycle.txt
+      - command: hover-text
+        text: Desktop
+        description: Desktop shortcut in the left pane of Save As dialog
+        action: click
+      - command: hover-text
+        text: Save
+        description: Save button in Save As dialog
+        action: click
+  - prompt: close notepad
+    commands:
+      - command: focus-application
+        name: Notepad
+      - command: hover-image
+        description: >-
+          small white square with a black X in the top right corner of the
+          Notepad title bar
+        action: click
+  - prompt: close notepad
+    commands:
+      - command: focus-application
+        name: Notepad
+      - command: press-keys
+        keys:
+          - alt
+          - f4
+  - prompt: >-
+      using the mouse, drag the recycle document from the desktop onto the
+      recycle bin to delete it
+    commands:
+      - command: hover-text
+        text: recycle
+        description: file icon labeled recycle near the bottom left of the desktop
+        action: drag-start
+      - command: hover-text
+        text: Recycle Bin
+        description: >-
+          grey trash can icon with the text Recycle Bin at the top left of the
+          desktop
+        action: drag-end
+      - command: assert
+        expect: the file is removed from the desktop
