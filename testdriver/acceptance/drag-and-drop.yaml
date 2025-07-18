@@ -1,92 +1,49 @@
-version: 6.0.1-canary.4f31816.0
-session: 68767e31eb9cc3d8f639b8e0
+# yaml-language-server: $schema=https://raw.githubusercontent.com/testdriverai/cli/refs/heads/main/schema.json
+
+version: 6.0.5
+session: 687aa621328371880ec75e89
 steps:
-  - prompt: close chrome
-    commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: press-keys
-        keys:
-          - alt
-          - f4
-  - prompt: open notepad
+  - prompt: Show the desktop
     commands:
       - command: press-keys
         keys:
           - win
-      - command: wait
-        timeout: 500
-      - command: type
-        text: Notepad
+          - d
+  - prompt: Open the context menu
+    commands:
       - command: press-keys
         keys:
-          - enter
-  - prompt: >-
-      type the first paragraph of the Iliad, save the file as recycle.txt to the
-      desktop
+          - shift
+          - f10
+  - prompt: Hover over "New" in the context menu
     commands:
-      - command: focus-application
-        name: Notepad
-      - command: type
-        text: >-
-          Sing, O goddess, the anger of Achilles son of Peleus, that brought
-          innumerable woes upon the Achaeans. Many a valiant soul did it send
-          hurrying down to Hades, and many a hero did it yield a prey to dogs
-          and vultures, for so were the counsels of Jove fulfilled.
+      - command: hover-text
+        text: New
+        description: new option in the open context menu on the desktop
+        action: hover
+  - prompt: Click "Text Document" in the context menu
+    commands:
+      - command: hover-text
+        text: Text Document
+        description: text document option in the new submenu of the desktop context menu
+        action: click
+  - prompt: Unfocus the "Text Document" text field
+    commands:
       - command: press-keys
         keys:
-          - ctrl
-          - s
-      - command: wait-for-text
-        text: "File name:"
-      - command: hover-text
-        text: "File name:"
-        description: file name label in Save As dialog
-        action: click
-      - command: press-keys
-        keys:
-          - ctrl
-          - a
-      - command: type
-        text: recycle.txt
-      - command: hover-text
-        text: Desktop
-        description: Desktop shortcut in the left pane of Save As dialog
-        action: click
-      - command: hover-text
-        text: Save
-        description: Save button in Save As dialog
-        action: click
-  - prompt: close notepad
-    commands:
-      - command: focus-application
-        name: Notepad
-      - command: hover-image
-        description: >-
-          small white square with a black X in the top right corner of the
-          Notepad title bar
-        action: click
-  - prompt: close notepad
-    commands:
-      - command: focus-application
-        name: Notepad
-      - command: press-keys
-        keys:
-          - alt
-          - f4
-  - prompt: >-
-      using the mouse, drag the recycle document from the desktop onto the
-      recycle bin to delete it
+          - esc
+  - prompt: Drag the "New Text Document" icon to the "Recycle Bin"
     commands:
       - command: hover-text
-        text: recycle
-        description: file icon labeled recycle near the bottom left of the desktop
+        text: New Text Document
+        description: new text document icon in the center of the desktop
         action: drag-start
       - command: hover-text
         text: Recycle Bin
-        description: >-
-          grey trash can icon with the text Recycle Bin at the top left of the
-          desktop
+        description: recycle bin icon in the top left corner of the desktop
         action: drag-end
+
+  - prompt: '"New Text Document" icon is not on the Desktop'
+    commands:
       - command: assert
-        expect: the file is removed from the desktop
+        expect: the "New Text Document" icon is not visible on the Desktop
