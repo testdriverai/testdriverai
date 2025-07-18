@@ -40,7 +40,7 @@
     "js-yaml": "^4.1.0",
     "listr2": "^9.0.1",
     "markdown-parser": "0.0.8",
-    "marked": "^12.0.1",
+    "marked": "^16.0.0",
     "marked-terminal": "^7.0.0",
     "marky": "^1.2.5",
     "node-ipc": "^12.0.0",
