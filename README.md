@@ -143,3 +143,46 @@ gh pr create --web
 ```
 
 Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/action/setup).
+
+## Using as a Module
+
+TestDriver can also be used programmatically as a Node.js module. This is useful when you want to integrate TestDriver into your own applications or customize the test file paths.
+
+### Custom Test File Paths
+
+By default, TestDriver looks for test files at `testdriver/testdriver.yaml` relative to the current working directory. You can customize this:
+
+```javascript
+const TestDriverAgent = require("testdriverai");
+
+// Option 1: Set default via environment variable
+const agent1 = new TestDriverAgent({
+  TD_DEFAULT_TEST_FILE: "my-tests/integration.yaml",
+});
+
+// Option 2: Explicitly specify test file
+const agent2 = new TestDriverAgent(
+  {},
+  {
+    args: ["path/to/specific/test.yaml"],
+  },
+);
+
+// Option 3: Custom working directory + relative path
+const agent3 = new TestDriverAgent(
+  { TD_DEFAULT_TEST_FILE: "tests/smoke.yaml" },
+  { options: { workingDir: "/path/to/your/project" } },
+);
+
+// Run the test
+await agent1.run();
+```
+
+### Environment Variables
+
+You can also set the default test file path using environment variables:
+
+```bash
+export TD_DEFAULT_TEST_FILE="custom/path/test.yaml"
+node your-script.js
+```

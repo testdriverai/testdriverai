@@ -9,7 +9,7 @@ const { Args, Flags } = require("@oclif/core");
 function createCommandDefinitions(agent) {
   const normalizeFilePath = (file) => {
     if (!file) {
-      file = "testdriver/testdriver.yaml";
+      file = agent.config.TD_DEFAULT_TEST_FILE;
     }
 
     file = path.join(agent.workingDir, file);
@@ -26,7 +26,7 @@ function createCommandDefinitions(agent) {
       args: {
         file: Args.string({
           description: "Test file to run",
-          default: "testdriver/testdriver.yaml",
+          default: agent.config.TD_DEFAULT_TEST_FILE,
           required: false,
         }),
       },
@@ -80,7 +80,7 @@ function createCommandDefinitions(agent) {
       args: {
         file: Args.string({
           description: "Test file to edit",
-          default: "testdriver/testdriver.yaml",
+          default: agent.config.TD_DEFAULT_TEST_FILE,
           required: false,
         }),
       },

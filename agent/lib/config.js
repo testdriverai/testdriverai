@@ -25,6 +25,7 @@ const createConfig = (environment = {}) => {
     TD_API_KEY: null,
     TD_PROFILE: false,
     TD_RESOLUTION: [1366, 768],
+    TD_DEFAULT_TEST_FILE: "testdriver/testdriver.yaml",
   };
 
   // Store the full environment for interpolation purposes
