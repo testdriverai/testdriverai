@@ -126,9 +126,7 @@ class BaseCommand extends Command {
     const path = require("path");
     if (!file) {
       // Use config default if agent is available, otherwise fall back to hardcoded default
-      file =
-        this.agent?.config?.TD_DEFAULT_TEST_FILE ||
-        "testdriver/testdriver.yaml";
+      file = "testdriver/testdriver.yaml";
     }
     file = path.join(this.agent.workingDir, file);
     if (!file.endsWith(".yaml") && !file.endsWith(".yml")) {
