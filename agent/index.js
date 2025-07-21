@@ -37,6 +37,8 @@ const { createOutputs } = require("./lib/outputs.js");
 const isValidVersion = require("./lib/valid-version.js");
 const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
+let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
+let debuggerStarted = false;
 
 class TestDriverAgent extends EventEmitter2 {
   constructor(environment = {}, cliArgs = {}) {
@@ -60,12 +62,20 @@ class TestDriverAgent extends EventEmitter2 {
     // Derive properties from cliArgs
     const flags = cliArgs.options || {};
     const firstArg = cliArgs.args && cliArgs.args[0];
-    this.thisFile = firstArg || null;
+    this.thisFile = firstArg || this.config.TD_DEFAULT_TEST_FILE;
     this.resultFile = flags.resultFile || null;
     this.newSandbox = flags.newSandbox || false;
     this.healMode = flags.healMode || flags.heal || false;
     this.sandboxId = flags.sandboxId || null;
     this.workingDir = flags.workingDir || process.cwd();
+
+    // Resolve thisFile to absolute path with proper extension
+    if (this.thisFile) {
+      this.thisFile = path.join(this.workingDir, this.thisFile);
+      if (!this.thisFile.endsWith(".yaml") && !this.thisFile.endsWith(".yml")) {
+        this.thisFile += ".yaml";
+      }
+    }
 
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
@@ -1232,14 +1242,12 @@ ${regression}
       generator.jsonToManual({ command: "if", condition }),
     );
 
-    let response = await this.commands.assert(condition, false);
-
-    depth = depth + 1;
-
-    if (response) {
-      return await this.executeCommands(then, depth);
-    } else {
-      return await this.executeCommands(otherwise, depth);
+    try {
+      await this.commands.assert(condition, false);
+      return await this.executeCommands(then, ++depth);
+      // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      return await this.executeCommands(otherwise, ++depth);
     }
   }
 
@@ -1412,86 +1420,103 @@ ${regression}
   }
 
   async start() {
-    // Start the debugger server as early as possible to ensure event listeners are attached
-    const debuggerProcess = await createDebuggerProcess(this.config);
-    this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
-
-    this.emitter.emit(
-      events.log.log,
-      theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
-    );
-    this.emitter.emit(events.log.log, `This is beta software!`);
-    this.emitter.emit(events.log.log, theme.yellow(`Join our Forums for help`));
-    this.emitter.emit(events.log.log, `https://forums.testdriver.ai`);
-
-    // make testdriver directory if it doesn't exist
-    let testdriverFolder = path.join(this.workingDir);
-    if (!fs.existsSync(testdriverFolder)) {
-      fs.mkdirSync(testdriverFolder);
-      // log
+    try {
       this.emitter.emit(
         events.log.log,
-        theme.dim(`Created testdriver directory: ${testdriverFolder}`),
+        theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
       );
-    }
-
-    // if the directory for thisFile doesn't exist, create it
-    if (this.cliArgs.command !== "sandbox") {
-      const dir = path.dirname(this.thisFile);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      // Start the debugger server as early as possible to ensure event listeners are attached
+      if (!debuggerStarted) {
+        debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
         this.emitter.emit(
           events.log.log,
-          theme.dim(`Created directory ${dir}`),
+          theme.green(`Starting debugger server...`),
+        );
+        debuggerProcess = await createDebuggerProcess(
+          this.config,
+          this.emitter,
+        );
+      }
+      this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
+      this.emitter.emit(events.log.log, `This is beta software!`);
+      this.emitter.emit(
+        events.log.log,
+        theme.yellow(`Join our Forums for help`),
+      );
+      this.emitter.emit(events.log.log, `https://forums.testdriver.ai`);
+
+      // make testdriver directory if it doesn't exist
+      let testdriverFolder = path.join(this.workingDir);
+      if (!fs.existsSync(testdriverFolder)) {
+        fs.mkdirSync(testdriverFolder);
+        // log
+        this.emitter.emit(
+          events.log.log,
+          theme.dim(`Created testdriver directory: ${testdriverFolder}`),
         );
       }
 
-      // if thisFile doesn't exist, create it
-      // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
-      if (!fs.existsSync(this.thisFile)) {
-        fs.writeFileSync(this.thisFile, "");
+      // if the directory for thisFile doesn't exist, create it
+      if (this.cliArgs.command !== "sandbox") {
+        const dir = path.dirname(this.thisFile);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+          this.emitter.emit(
+            events.log.log,
+            theme.dim(`Created directory ${dir}`),
+          );
+        }
+
+        // if thisFile doesn't exist, create it
+        // thisFile def to testdriver/testdriver.yaml, during init, it just creates an empty file
+        if (!fs.existsSync(this.thisFile)) {
+          fs.writeFileSync(this.thisFile, "");
+          this.emitter.emit(
+            events.log.log,
+            theme.dim(`Created ${this.thisFile}`),
+          );
+        }
+      }
+
+      if (this.config.TD_API_KEY) {
+        await this.sdk.auth();
+      }
+
+      if (this.cliArgs.command !== "sandbox") {
         this.emitter.emit(
           events.log.log,
-          theme.dim(`Created ${this.thisFile}`),
+          theme.dim(`Working on ${this.thisFile}`),
         );
+
+        this.loadYML(this.thisFile);
       }
-    }
 
-    if (this.config.TD_API_KEY) {
-      await this.sdk.auth();
-    }
+      this.analytics.track("command", {
+        command: this.cliArgs.command,
+        file: this.thisFile,
+      });
 
-    if (this.cliArgs.command !== "sandbox") {
-      this.emitter.emit(
-        events.log.log,
-        theme.dim(`Working on ${this.thisFile}`),
-      );
-
-      this.loadYML(this.thisFile);
-    }
-
-    this.analytics.track("command", {
-      command: this.cliArgs.command,
-      file: this.thisFile,
-    });
-
-    // Dynamically handle all available commands (except edit which is handled by CLI)
-    const availableCommands = Object.keys(this.getCommandDefinitions());
-    if (
-      availableCommands.includes(this.cliArgs.command) &&
-      this.cliArgs.command !== "edit"
-    ) {
-      await this.executeUnifiedCommand(
-        this.cliArgs.command,
-        this.cliArgs.args,
-        this.cliArgs.options,
-        this.cliArgs.options._optionValues,
-      );
-    } else if (this.cliArgs.command !== "edit") {
-      this.emitter.emit(
-        events.error.fatal,
-        `Unknown command: ${this.cliArgs.command}`,
-      );
+      // Dynamically handle all available commands (except edit which is handled by CLI)
+      const availableCommands = Object.keys(this.getCommandDefinitions());
+      if (
+        availableCommands.includes(this.cliArgs.command) &&
+        this.cliArgs.command !== "edit"
+      ) {
+        await this.executeUnifiedCommand(
+          this.cliArgs.command,
+          this.cliArgs.args,
+          this.cliArgs.options,
+          this.cliArgs.options._optionValues,
+        );
+      } else if (this.cliArgs.command !== "edit") {
+        this.emitter.emit(
+          events.error.fatal,
+          `Unknown command: ${this.cliArgs.command}`,
+        );
+        await this.exit(true);
+      }
+    } catch (error) {
+      this.emitter.emit(events.error.fatal, error.message || error);
       await this.exit(true);
     }
   }

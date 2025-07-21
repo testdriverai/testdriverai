@@ -125,6 +125,7 @@ class BaseCommand extends Command {
   normalizeFilePath(file) {
     const path = require("path");
     if (!file) {
+      // Use config default if agent is available, otherwise fall back to hardcoded default
       file = "testdriver/testdriver.yaml";
     }
     file = path.join(this.agent.workingDir, file);
