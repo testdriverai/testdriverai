@@ -1238,14 +1238,12 @@ ${regression}
       generator.jsonToManual({ command: "if", condition }),
     );
 
-    let response = await this.commands.assert(condition, false);
-
-    depth = depth + 1;
-
-    if (response) {
-      return await this.executeCommands(then, depth);
-    } else {
-      return await this.executeCommands(otherwise, depth);
+    try {
+      await this.commands.assert(condition, false);
+      return await this.executeCommands(then, ++depth);
+      // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      return await this.executeCommands(otherwise, ++depth);
     }
   }
 
