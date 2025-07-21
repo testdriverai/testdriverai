@@ -59,9 +59,11 @@ class BaseCommand extends Command {
         `[${timestamp}] [${level}] ${message}\n`,
       );
     };
+
     // Use pattern matching for log events, but skip log:Debug
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
+
       if (event === events.log.debug) return;
       console.log(message);
     });
@@ -70,10 +72,6 @@ class BaseCommand extends Command {
     this.agent.emitter.on("error:*", (data) => {
       const event = this.agent.emitter.event;
       console.error(event, ":", data);
-
-      if (event === "error:sandbox") {
-        console.error("Use --new-sandbox to create a new sandbox.");
-      }
     });
 
     // Handle status events

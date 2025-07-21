@@ -1,15 +1,15 @@
 {
   "name": "testdriverai",
-  "version": "6.0.0",
+  "version": "6.0.5",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
-    "testdriverai": "./index.js"
+    "testdriverai": "bin/testdriverai.js"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "DEV=true node index.js",
-    "debug": "DEV=true VERBOSE=true node index.js",
+    "start": "node bin/testdriverai.js",
+    "dev": "DEV=true node bin/testdriverai.js",
+    "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
     "docs": "cd docs && npx mint dev",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
@@ -21,7 +21,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@electerm/strip-ansi": "^1.0.0",
     "@oclif/core": "^4.5.0",
     "@oclif/plugin-autocomplete": "^3.2.32",
     "@oclif/plugin-commands": "^4.1.28",
