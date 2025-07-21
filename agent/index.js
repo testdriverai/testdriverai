@@ -1241,7 +1241,7 @@ ${regression}
     try {
       await this.commands.assert(condition, false);
       return await this.executeCommands(then, ++depth);
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (error) {
       return await this.executeCommands(otherwise, ++depth);
     }
