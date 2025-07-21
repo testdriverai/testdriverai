@@ -679,8 +679,8 @@ const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
       });
       return result.data;
     },
-    assert: async (assertion, async = false, shouldThrow = true) => {
-      return await assert(assertion, shouldThrow, async);
+    assert: async (assertion, async = false) => {
+      return await assert(assertion, true, async);
     },
     exec: async (language, code, silent = false) => {
       emitter.emit(events.log.log, theme.dim(`calling exec...`), true);
