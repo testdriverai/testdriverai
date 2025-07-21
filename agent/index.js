@@ -1238,7 +1238,7 @@ ${regression}
       generator.jsonToManual({ command: "if", condition }),
     );
 
-    let response = await this.commands.assert(condition, false, true);
+    let response = await this.commands.assert(condition, false, false);
 
     depth = depth + 1;
     if (response) {

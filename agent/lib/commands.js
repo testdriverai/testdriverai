@@ -151,7 +151,7 @@ const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false, async = false, ifCommand = false) => {
+  const assert = async (assertion, shouldThrow = false, async = false) => {
     if (async) {
       shouldThrow = true;
     }
@@ -162,9 +162,6 @@ const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
       if (response.indexOf("The task passed") > -1) {
         return true;
       } else {
-        if(ifCommand) {
-          return false;
-        }
         if (shouldThrow) {
           // Is fatal, othewise it just changes the assertion to be true
           throw new MatchError(`AI Assertion failed`, true);
@@ -682,8 +679,8 @@ const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
       });
       return result.data;
     },
-    assert: async (assertion, async = false, ifCommand = false) => {
-      return await assert(assertion, true, async, ifCommand);
+    assert: async (assertion, async = false, shouldThrow = true) => {
+      return await assert(assertion, shouldThrow, async);
     },
     exec: async (language, code, silent = false) => {
       emitter.emit(events.log.log, theme.dim(`calling exec...`), true);
