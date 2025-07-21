@@ -23,7 +23,7 @@
 
 ```mermaid
 graph TD
-    A[CLI Entry: npx testdriverai run test.yaml --heal --save] --> B[index.js]
+    A[CLI Entry: npx testdriverai run test.yaml --heal --write] --> B[index.js]
     B --> C{Check Args}
     C -->|--renderer| D[Overlay Mode]
     C -->|Other| E[agent.js]
