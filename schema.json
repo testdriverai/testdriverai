@@ -749,6 +749,35 @@
                       "code"
                     ]
                   }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "command": {
+                        "const": "if"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "condition": {
+                        "type": "object",
+                        "description": "The condition command to evaluate"
+                      },
+                      "then": {
+                        "type": "object",
+                        "description": "The command to execute if condition is true"
+                      },
+                      "else": {
+                        "type": "object",
+                        "description": "The command to execute if condition is false (optional)"
+                      }
+                    },
+                    "required": [
+                      "condition",
+                      "then"
+                    ]
+                  }
                 }
               ]
             }
