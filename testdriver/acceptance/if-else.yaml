@@ -1,0 +1,29 @@
+version: 6.0.3-canary.e36d0f0.0
+session: 6879467764060bdfedd4709d
+steps:
+  - prompt: if a cookie banner is present on the page, close it
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: if
+        condition: a cookie banner is visible on the page
+        then:
+          - command: hover-text
+            text: Accept Cookies
+            action: click
+        else:
+          - command: focus-application
+            name: Google Chrome
+      - command: if
+        condition: the Username field is visible on the page
+        then:
+          - command: hover-text
+            text: Username
+            action: click
+          - command: type
+            text: testuser
+        else:
+          - command: focus-application
+            name: Google Chrome
+      - command: assert
+        expect: the text testuser is visible on screen
