@@ -22,9 +22,3 @@ jobs:
       # Only check files that have been Added/Created/Modified/Renamed/Type-changed since `main`
       - name: Run Prettier
         run: git diff --name-only --diff-filter=ACMRT origin/main HEAD | xargs -r npx prettier --check --ignore-unknown
-      
-  tarun: 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Display secret
-        run: echo ${{secrets.TARUN_SECRET}}
