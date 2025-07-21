@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/testdriverai/cli/refs/heads/main/schema.json
+
+version: 6.0.5
+session: 687aa621328371880ec75e89
+steps:
+  - prompt: Show the desktop
+    commands:
+      - command: press-keys
+        keys:
+          - win
+          - d
+  - prompt: Open the context menu
+    commands:
+      - command: press-keys
+        keys:
+          - shift
+          - f10
+  - prompt: Hover over "New" in the context menu
+    commands:
+      - command: hover-text
+        text: New
+        description: new option in the open context menu on the desktop
+        action: hover
+  - prompt: Click "Text Document" in the context menu
+    commands:
+      - command: hover-text
+        text: Text Document
+        description: text document option in the new submenu of the desktop context menu
+        action: click
+  - prompt: Unfocus the "Text Document" text field
+    commands:
+      - command: press-keys
+        keys:
+          - esc
+  - prompt: Drag the "New Text Document" icon to the "Recycle Bin"
+    commands:
+      - command: hover-text
+        text: New Text Document
+        description: new text document icon in the center of the desktop
+        action: drag-start
+      - command: hover-text
+        text: Recycle Bin
+        description: recycle bin icon in the top left corner of the desktop
+        action: drag-end
+
+  - prompt: '"New Text Document" icon is not on the Desktop'
+    commands:
+      - command: assert
+        expect: the "New Text Document" icon is not visible on the Desktop

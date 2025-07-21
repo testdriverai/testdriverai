@@ -167,3 +167,8 @@ DEV=true VERBOSE=true npx testdriverai
 ```sh
 npx --node-options=--inspect testdriverai init
 ```
+
+## Event Principles
+
+- Events represent changes to the state of the system
+- Execution is functional and should not be mutated by events

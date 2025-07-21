@@ -49,7 +49,7 @@ jobs:
       - name: Find all test files
         id: test_list
         run: |
-          FILES=$(ls ./testdriver/*.yaml)
+          FILES=$(ls ./testdriver/acceptance/*.yaml)
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$FILES_JSON" >> $GITHUB_OUTPUT

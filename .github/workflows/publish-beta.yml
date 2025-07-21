@@ -1,12 +1,5 @@
 name: Publish to NPM
 
-on:
-  # Instead of a Merge Queue, we'll just run this on main.
-  push:
-    branches: [main]
-  # Through the GitHub UI
-  workflow_dispatch:
-
 jobs:
   tag:
     # Beta until we're stable for @latest

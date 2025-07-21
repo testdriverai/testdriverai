@@ -1,0 +1,45 @@
+version: 6.0.1-canary.dd4927e.0
+session: 686f219f56143a3ffe789d1e
+steps:
+  - prompt: set the date for our test
+    commands:
+      - command: exec
+        lang: pwsh
+        output: queryString
+        code: |
+          $date = (Get-Date).AddMonths(1)
+          Write-Output $date.ToString("yyyy-MM-dd")
+      - command: assert
+        expect: ${OUTPUT.queryString} is a valid date
+  - prompt: set the date for our assertion
+    commands:
+      - command: exec
+        lang: pwsh
+        output: expectedDate
+        code: |
+          $date = (Get-Date).AddMonths(1)
+          Write-Output $date.ToString("ddd MMM d yyyy")
+      - command: assert
+        expect: ${OUTPUT.expectedDate} is not null or empty
+  # Go to a public calendar that accepts query strings to set the date
+  - prompt: >-
+      now press ctrl + l, then type
+      https://teamup.com/ks48cf2135e7e080bc?view=d&date=${OUTPUT.queryString} and press enter
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: press-keys
+        keys:
+          - ctrl
+          - l
+      - command: type
+        text: https://teamup.com/ks48cf2135e7e080bc?view=d&date=${OUTPUT.queryString}
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: assert that the date ${OUTPUT.expectedDate} shows
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: assert
+        expect: the text ${OUTPUT.expectedDate} is visible on screen

@@ -6,31 +6,41 @@ steps:
       - command: exec
         lang: pwsh
         code: |
-          # Variables
-          $chocoDoomUrl = "https://www.chocolate-doom.org/downloads/3.0.1/chocolate-doom-3.0.1-win32.zip"
-          $doomWadUrl = "https://archive.org/download/doom1-shareware/doom1-shareware.zip"
-          $workingDir = "$env:TEMP\choco-doom"
-          $chocoZip = "$workingDir\chocolate-doom.zip"
-          $wadZip = "$workingDir\doom1-shareware.zip"
-          $chocoExtracted = "$workingDir\chocolate-doom"
-          $wadExtracted = "$workingDir\doom1-shareware"
+          # === Setup ===
+          $chocoUrl = "https://www.chocolate-doom.org/downloads/3.0.1/chocolate-doom-3.0.1-win32.zip"
+          $wadUrl = "https://archive.org/download/DOOMIWADFILE/DOOM.WAD"
+          $basePath = "$env:USERPROFILE\choco-doom"
+          $extractDir = "$basePath\choco-extracted"
+          $wadFile = "$basePath\DOOM.WAD"
+          $chocoExe = "$extractDir\chocolate-doom.exe"
+          $zipPath = "$basePath\choco.zip"
 
-          # Create working directory
-          New-Item -ItemType Directory -Path $workingDir -Force | Out-Null
+          # === Ensure clean folders ===
+          New-Item -ItemType Directory -Force -Path $basePath | Out-Null
+          New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
 
-          # Download Chocolate DOOM
-          Invoke-WebRequest -Uri $chocoDoomUrl -OutFile $chocoZip
+          # === Download Chocolate DOOM if missing ===
+          if (-not (Test-Path $zipPath)) {
+              Write-Host "Downloading Chocolate DOOM..."
+              Invoke-WebRequest -Uri $chocoUrl -OutFile $zipPath
+          }
 
-          # Download DOOM1.WAD shareware
-          Invoke-WebRequest -Uri $doomWadUrl -OutFile $wadZip
+          # === Extract if not already extracted ===
+          if (-not (Test-Path $chocoExe)) {
+              Write-Host "Extracting Chocolate DOOM..."
+              Expand-Archive -LiteralPath $zipPath -DestinationPath $extractDir -Force
+          }
 
-          # Extract both ZIPs
-          Expand-Archive -LiteralPath $chocoZip -DestinationPath $chocoExtracted -Force
-          Expand-Archive -LiteralPath $wadZip -DestinationPath $wadExtracted -Force
+          # === Download DOOM.WAD if missing ===
+          if (-not (Test-Path $wadFile)) {
+              Write-Host "Downloading DOOM.WAD..."
+              Invoke-WebRequest -Uri $wadUrl -OutFile $wadFile
+          }
 
-          # Copy WAD file into Chocolate DOOM folder
-          $wadPath = Get-ChildItem -Path $wadExtracted -Filter "doom1.wad" -Recurse | Select-Object -First 1
-          Copy-Item -Path $wadPath.FullName -Destination $chocoExtracted
+          # === Set SDL variables for software rendering ===
+          $env:SDL_VIDEODRIVER = "windows"
+          $env:SDL_RENDER_DRIVER = "software"
 
-          # Run Chocolate DOOM
-          Start-Process -FilePath "$chocoExtracted\chocolate-doom.exe"
+          # === Launch DOOM ===
+          Write-Host "Launching Chocolate DOOM with software rendering..."
+          Start-Process -FilePath $chocoExe -ArgumentList "-iwad `"$wadFile`""
