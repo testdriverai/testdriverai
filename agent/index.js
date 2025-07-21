@@ -17,28 +17,29 @@ const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter2 } = require("eventemitter2");
 
 // global utilities
-const { createAnalytics } = require("./lib/analytics.js");
-const parser = require("./lib/parser.js");
 const generator = require("./lib/generator.js");
-const { createSDK } = require("./lib/sdk.js");
-const config = require("./lib/config.js");
 const theme = require("./lib/theme.js");
 const SourceMapper = require("./lib/source-mapper.js");
 
 // agent modules
+const { createParser } = require("./lib/parser.js");
 const { createSystem } = require("./lib/system.js");
 const { createCommander } = require("./lib/commander.js");
 const { createCommands } = require("./lib/commands.js");
 const { createSandbox } = require("./lib/sandbox.js");
 const { createCommandDefinitions } = require("./interface.js");
+const { createSDK } = require("./lib/sdk.js");
+const { createConfig } = require("./lib/config.js");
+const { createAnalytics } = require("./lib/analytics.js");
+const { createSession } = require("./lib/session.js");
+const { createOutputs } = require("./lib/outputs.js");
 
 const isValidVersion = require("./lib/valid-version.js");
-const session = require("./lib/session.js");
 const { events, createEmitter, setEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 
 class TestDriverAgent extends EventEmitter2 {
-  constructor() {
+  constructor(environment = {}, cliArgs = {}) {
     super({
       wildcard: true,
       delimiter: ":",
@@ -50,26 +51,53 @@ class TestDriverAgent extends EventEmitter2 {
     }); // Create the agent's own emitter for internal events
     this.emitter = createEmitter();
 
+    // Create config instance for this agent using provided environment
+    this.config = createConfig(environment);
+
+    // Store CLI arguments passed to this agent
+    this.cliArgs = cliArgs;
+
+    // Derive properties from cliArgs
+    const flags = cliArgs.options || {};
+    const firstArg = cliArgs.args && cliArgs.args[0];
+    this.thisFile = firstArg || null;
+    this.resultFile = flags.resultFile || null;
+    this.newSandbox = flags.newSandbox || false;
+    this.healMode = flags.healMode || flags.heal || false;
+    this.sandboxId = flags.sandboxId || null;
+    this.workingDir = flags.workingDir || process.cwd();
+
     // Set this emitter as the global current emitter for other modules to use
     setEmitter(this.emitter);
 
-    // Create SDK instance with this agent's emitter
-    this.sdk = createSDK(this.emitter);
+    // Create parser instance with this agent's emitter
+    this.parser = createParser(this.emitter);
 
-    // Create analytics instance with this agent's emitter
-    this.analytics = createAnalytics(this.emitter);
+    // Create session instance for this agent
+    this.session = createSession();
+
+    // Create outputs instance for this agent
+    this.outputs = createOutputs();
+
+    // Create SDK instance with this agent's emitter, config, and session
+    this.sdk = createSDK(this.emitter, this.config, this.session);
+
+    // Create analytics instance with this agent's emitter, config, and session
+    this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
 
-    // Create system instance with sandbox
-    this.system = createSystem(this.sandbox);
+    // Create system instance with sandbox and config
+    this.system = createSystem(this.sandbox, this.config);
 
     // Create commands instance with this agent's emitter and system
     const commandsResult = createCommands(
       this.emitter,
       this.system,
       this.sandbox,
+      this.config,
+      this.session,
     );
     this.commands = commandsResult.commands;
 
@@ -78,11 +106,13 @@ class TestDriverAgent extends EventEmitter2 {
       this.emitter,
       this.commands,
       this.analytics,
+      this.config,
+      this.outputs,
+      this.session,
     );
 
     // these are "in-memory" globals
     // they represent the current state of the agent
-    this.thisFile = null; // the file being run
     this.lastPrompt = ""; // the last prompt to be input
     this.executionHistory = []; // a history of commands run in the current session
     this.errorCounts = {}; // counts of different errors encountered in this session
@@ -91,13 +121,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.checkLimit = 7; // the max number of times the AI can check the task before exiting
     this.lastScreenshot = null; // the last screenshot taken by the agent
     this.readlineInterface = null; // the readline interface for interactive mode
-    this.resultFile = null; // the file to save results to, if specified
-    this.newSandbox = false; // whether to create a new sandbox instance instead of reusing the last one
     this.tasks = []; // list of prompts that the user has given us
-    this.healMode = false; // whether to enable automatic error recovery mode
-    this.sandboxId = null; // the ID of the sandbox to connect to, if specified
-    this.workingDir = process.cwd(); // working directory where this agent is running
-    this.cliArgs = {}; // the cli args passed to the agent
 
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
@@ -108,6 +132,12 @@ class TestDriverAgent extends EventEmitter2 {
 
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
+
+    this.emitter.emit(events.log.log, JSON.stringify(environment));
+    this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
+
+    console.log(cliArgs);
+    console.log(environment);
   }
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
@@ -333,13 +363,11 @@ class TestDriverAgent extends EventEmitter2 {
       sourcePosition: sourcePosition,
     });
 
-    this.emitter.emit(events.log.debug, `running command: \n\n${yml}`);
-
     // Log current execution position for debugging
     if (this.sourceMapper.currentFileSourceMap) {
       this.emitter.emit(
-        events.log.debug,
-        `executing at: ${this.sourceMapper.getCurrentPositionDescription()}`,
+        events.log.log,
+        theme.dim(`${this.sourceMapper.getCurrentPositionDescription()}`),
       );
     }
 
@@ -461,12 +489,12 @@ class TestDriverAgent extends EventEmitter2 {
       let commands;
 
       try {
-        commands = await parser.getCommands(codeblock);
+        commands = await this.parser.getCommands(codeblock);
       } catch (e) {
         // For parser errors
         return await this.haveAIResolveError(
           e,
-          yaml.dump(parser.getYAMLFromCodeBlock(codeblock)),
+          yaml.dump(this.parser.getYAMLFromCodeBlock(codeblock)),
           depth,
           shouldSave,
         );
@@ -515,7 +543,7 @@ class TestDriverAgent extends EventEmitter2 {
 
       let checkCodeblocks = [];
       try {
-        checkCodeblocks = await parser.findCodeBlocks(response);
+        checkCodeblocks = await this.parser.findCodeBlocks(response);
       } catch (error) {
         return await this.haveAIResolveError(error, response, 0, true, true);
       }
@@ -585,23 +613,25 @@ class TestDriverAgent extends EventEmitter2 {
       return {};
     }
 
-    yml = await parser.validateYAML(yml);
+    yml = await this.parser.validateYAML(yml);
 
     // Inject environment variables into any ${VAR} strings
-    yml = parser.interpolate(yml, {
+    yml = this.parser.interpolate(yml, {
       TD_THIS_FILE: file,
-      ...process.env,
+      ...this.config._environment,
     });
 
     // Show Unreplaced Variables
-    let unreplacedVars = parser.collectUnreplacedVariables(yml);
+    let unreplacedVars = this.parser.collectUnreplacedVariables(yml);
 
     // Remove all variables that start with OUTPUT- these are special
-    unreplacedVars = unreplacedVars.filter((v) => !v.startsWith("OUTPUT."));
+    unreplacedVars = unreplacedVars.filter((v) => {
+      return !v.startsWith("OUTPUT.");
+    });
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
-        events.error.general,
+        events.error.fatal,
         `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
       );
     }
@@ -763,7 +793,7 @@ commands:
 
     this.emitter.emit(events.log.markdown.end, streamId);
 
-    let testPrompts = await parser.findGenerativePrompts(message.data);
+    let testPrompts = await this.parser.findGenerativePrompts(message.data);
 
     // for each testPrompt
     for (const testPrompt of testPrompts) {
@@ -858,7 +888,7 @@ ${yml}
   ) {
     let codeblocks = [];
     try {
-      codeblocks = await parser.findCodeBlocks(content);
+      codeblocks = await this.parser.findCodeBlocks(content);
     } catch (error) {
       pushToHistory = false;
       return await this.haveAIResolveError(
@@ -965,7 +995,10 @@ ${yml}
     }
 
     // write reply to /tmp/testdriver-summary.md
-    let regression = await generator.dumpToYML(this.executionHistory);
+    let regression = await generator.dumpToYML(
+      this.executionHistory,
+      this.session,
+    );
     try {
       fs.writeFileSync(filepath, regression);
 
@@ -1379,7 +1412,7 @@ ${regression}
 
   async start() {
     // Start the debugger server as early as possible to ensure event listeners are attached
-    const debuggerProcess = await createDebuggerProcess();
+    const debuggerProcess = await createDebuggerProcess(this.config);
     this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
 
     this.emitter.emit(
@@ -1423,7 +1456,7 @@ ${regression}
       }
     }
 
-    if (config.TD_API_KEY) {
+    if (this.config.TD_API_KEY) {
       await this.sdk.auth();
     }
 
@@ -1464,11 +1497,20 @@ ${regression}
 
   async renderSandbox(instance, headless = false) {
     if (!headless) {
-      this.emitter.emit(events.showWindow, {
-        url:
-          "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html",
-        resolution: config.TD_RESOLUTION,
-      });
+      let url =
+        "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html";
+
+      let data = {
+        resolution: this.config.TD_RESOLUTION,
+        url: url,
+      };
+
+      const encodedData = encodeURIComponent(JSON.stringify(data));
+
+      // Use the debugger URL instead of the VNC URL
+      const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
+
+      this.emitter.emit(events.showWindow, urlToOpen);
     }
   }
 
@@ -1477,9 +1519,9 @@ ${regression}
       events.log.log,
       theme.gray(`- establishing connection...`),
     );
-    await this.sandbox.boot(config.TD_API_ROOT);
+    await this.sandbox.boot(this.config.TD_API_ROOT);
     this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
-    await this.sandbox.auth(config.TD_API_KEY);
+    await this.sandbox.auth(this.config.TD_API_KEY);
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
@@ -1491,7 +1533,7 @@ ${regression}
   async createNewSandbox() {
     let instance = await this.sandbox.send({
       type: "create",
-      resolution: config.TD_RESOLUTION,
+      resolution: this.config.TD_RESOLUTION,
     });
     return instance;
   }
@@ -1510,7 +1552,7 @@ ${regression}
       );
     }
 
-    session.set(sessionRes.data.id);
+    this.session.set(sessionRes.data.id);
   }
 
   async runLifecycle(lifecycleName) {

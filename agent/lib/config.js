@@ -1,11 +1,8 @@
 /**
- * This file contains application config.
- * It is responsible for loading the config from env,
+ * This file contains application config factory.
+ * It is responsible for creating config instances from environment variables,
  * supplying defaults, and formatting values
  */
-
-// Load the env vars from .env
-require("dotenv").config();
 
 // Parse out true and false string values
 function parseValue(value) {
@@ -19,24 +16,38 @@ function parseValue(value) {
   return value;
 }
 
-const config = {
-  TD_ANALYTICS: true,
-  TD_API_ROOT: "https://testdriverai-v6-c96fc597be11.herokuapp.com",
-  TD_API_KEY: null,
-  TD_PROFILE: false,
-  TD_RESOLUTION: [1366, 768],
+// Factory function that creates a config instance
+const createConfig = (environment = {}) => {
+  // Start with defaults
+  const config = {
+    TD_ANALYTICS: true,
+    TD_API_ROOT: "https://testdriverai-v6-c96fc597be11.herokuapp.com",
+    TD_API_KEY: null,
+    TD_PROFILE: false,
+    TD_RESOLUTION: [1366, 768],
+  };
+
+  // Store the full environment for interpolation purposes
+  config._environment = environment;
+
+  // Find all env vars starting with TD_
+  for (let key in environment) {
+    if (key == "TD_RESOLUTION") {
+      config[key] = environment[key].split("x").map((x) => parseInt(x.trim()));
+      continue;
+    }
+
+    if (key.startsWith("TD_")) {
+      config[key] = parseValue(environment[key]);
+    }
+  }
+
+  return config;
 };
 
-// Find all env vars starting with TD_
-for (let key in process.env) {
-  if (key == "TD_RESOLUTION") {
-    config[key] = process.env[key].split("x").map((x) => parseInt(x.trim()));
-    continue;
-  }
+// Create a default config instance for backward compatibility
+const defaultConfig = createConfig(process.env);
 
-  if (key.startsWith("TD_")) {
-    config[key] = parseValue(process.env[key]);
-  }
-}
-
-module.exports = config;
+// Export both the factory function and the default instance
+module.exports = defaultConfig;
+module.exports.createConfig = createConfig;

@@ -8,9 +8,9 @@ let server = null;
 let wss = null;
 let clients = new Set();
 
-const port = process.env.TD_DEBUGGER_PORT || 0; // 0 means find available port
+function createDebuggerServer(config = {}) {
+  const port = config.TD_DEBUGGER_PORT || 0; // 0 means find available port
 
-function createDebuggerServer() {
   return new Promise((resolve, reject) => {
     // Create HTTP server
     server = http.createServer((req, res) => {
@@ -105,9 +105,9 @@ function broadcastEvent(event, data) {
   });
 }
 
-async function startDebugger() {
+async function startDebugger(config = {}) {
   try {
-    const { port } = await createDebuggerServer();
+    const { port } = await createDebuggerServer(config);
     const url = `http://localhost:${port}`;
 
     // Set up event listeners for all events
