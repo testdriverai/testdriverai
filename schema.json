@@ -737,6 +737,9 @@
                       "code": {
                         "type": "string"
                       },
+                      "timeout": {
+                        "type": "number"
+                      },
                       "silent": {
                         "type": "boolean"
                       },

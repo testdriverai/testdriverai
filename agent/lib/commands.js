@@ -685,7 +685,7 @@ const createCommands = (
     assert: async (assertion, async = false) => {
       return await assert(assertion, true, async);
     },
-    exec: async (language, code, silent = false) => {
+    exec: async (language, code, timeout, silent = false) => {
       emitter.emit(events.log.log, theme.dim(`calling exec...`), true);
 
       emitter.emit(events.log.log, code);
@@ -698,6 +698,7 @@ const createCommands = (
         result = await sandbox.send({
           type: "commands.run",
           command: code,
+          timeout,
         });
 
         if (result.out && result.out.returncode !== 0) {

@@ -223,7 +223,11 @@ commands:
             }),
           );
 
-          response = await commands.exec(object.lang, object.code);
+          response = await commands.exec(
+            object.lang,
+            object.code,
+            object.timeout || 60 * 3 * 1000,
+          );
 
           outputsInstance.set(object.output, response);
 
