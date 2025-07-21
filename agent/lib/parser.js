@@ -3,12 +3,13 @@ const Parser = require("markdown-parser");
 const yaml = require("js-yaml");
 const Ajv = require("ajv");
 const theme = require("./theme");
+const { events } = require("../events.js");
 
 let parser = new Parser();
 
 function formatAjvError(error) {
   return [
-    theme.yellow("❌ Validation Warning (beta)"),
+    theme.red("Validation Failure"),
     `${theme.yellow("Path:")}      ${theme.white(error.instancePath)}`,
     `${theme.yellow("Schema:")}    ${theme.cyan(error.schemaPath)}`,
     `${theme.yellow("Keyword:")}   ${theme.magenta(error.keyword)}`,
@@ -88,21 +89,6 @@ const parseYAML = async function (inputYaml) {
   return doc;
 };
 
-// validate yaml using schema.json in root
-let schema = require("../../schema.json");
-const validateYAML = async function (yaml) {
-  let ajv = new Ajv({ allowUnionTypes: true });
-  let validate = ajv.compile(schema);
-  let valid = validate(await parseYAML(yaml));
-
-  if (!valid) {
-    validate.errors.forEach((err) => console.log(formatAjvError(err)));
-    // throw new Error("Invalid YAML");
-  }
-
-  return yaml;
-};
-
 // Replace ${VAR} with the value from the vars object
 // Will skip variables that are not in the vars object
 // Will skip escaped variables like \${VAR}
@@ -138,49 +124,81 @@ function collectUnreplacedVariables(yaml) {
   return unreplaced;
 }
 
+// Factory function to create parser with emitter
+function createParser(emitter) {
+  // validate yaml using schema.json in root
+  let schema = require("../../schema.json");
+  const validateYAML = async function (yaml) {
+    let ajv = new Ajv({ allowUnionTypes: true });
+    let validate = ajv.compile(schema);
+    let valid = validate(await parseYAML(yaml));
+
+    if (!valid) {
+      validate.errors.forEach((err) => {
+        const formattedError = formatAjvError(err);
+        emitter.emit(events.error.fatal, formattedError);
+      });
+      // throw new Error("Invalid YAML");
+    }
+
+    return yaml;
+  };
+
+  return {
+    findCodeBlocks,
+    findGenerativePrompts,
+    getYAMLFromCodeBlock,
+    interpolate,
+    collectUnreplacedVariables,
+    validateYAML,
+    getCommands: async function (codeBlock) {
+      const yml = getYAMLFromCodeBlock(codeBlock);
+      let yamlArray = await parseYAML(yml);
+
+      let steps = yamlArray?.steps;
+
+      if (steps) {
+        let commands = [];
+
+        // combine them all as if they were a single step
+        steps.forEach((s) => {
+          commands = commands.concat(s.commands);
+        });
+
+        // filter undefined values
+        commands = commands.filter((r) => {
+          return r;
+        });
+
+        if (!commands.length) {
+          throw new Error(
+            "No actions found in yaml. Individual commands must be under the `commands` key.",
+          );
+        }
+
+        return commands;
+      } else {
+        let commands = yamlArray?.commands;
+
+        if (!commands?.length) {
+          throw new Error(
+            "No actions found in yaml. Individual commands must be under the `commands` key.",
+          );
+        }
+
+        return commands;
+      }
+    },
+  };
+}
+
+// Export both the factory function and the static functions for backward compatibility
 module.exports = {
+  createParser,
+  // Static exports for backward compatibility
   findCodeBlocks,
   findGenerativePrompts,
   getYAMLFromCodeBlock,
   interpolate,
   collectUnreplacedVariables,
-  validateYAML,
-  getCommands: async function (codeBlock) {
-    const yml = getYAMLFromCodeBlock(codeBlock);
-    let yamlArray = await parseYAML(yml);
-
-    let steps = yamlArray?.steps;
-
-    if (steps) {
-      let commands = [];
-
-      // combine them all as if they were a single step
-      steps.forEach((s) => {
-        commands = commands.concat(s.commands);
-      });
-
-      // filter undefined values
-      commands = commands.filter((r) => {
-        return r;
-      });
-
-      if (!commands.length) {
-        throw new Error(
-          "No actions found in yaml. Individual commands must be under the `commands` key.",
-        );
-      }
-
-      return commands;
-    } else {
-      let commands = yamlArray?.commands;
-
-      if (!commands?.length) {
-        throw new Error(
-          "No actions found in yaml. Individual commands must be under the `commands` key.",
-        );
-      }
-
-      return commands;
-    }
-  },
 };

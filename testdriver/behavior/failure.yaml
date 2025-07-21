@@ -1,0 +1,7 @@
+version: 6.0.1-canary.4f31816.0
+session: 68767e31eb9cc3d8f639b8e0
+steps:
+  - prompt: close chrome
+    commands:
+      - command: assert
+        expect: a pink elephant appears on screen
