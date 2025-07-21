@@ -1,4 +1,5 @@
-version: 4.0.31
+version: 6.0.6
+session: 687eb092664035296ec57e6a
 steps:
   - prompt: click the right arrow in arc browser
     commands:
@@ -35,4 +36,11 @@ steps:
       - command: hover-text
         text: Sign In
         description: sign-in button to log in
+        action: click
+  - prompt: click the rigth arrow in arc browser
+    commands:
+      - command: hover-image
+        description: >-
+          white button with a right arrow in the center of the screen below the
+          text "Meet the internet, again."
         action: click
