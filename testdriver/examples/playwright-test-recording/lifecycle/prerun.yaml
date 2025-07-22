@@ -1,0 +1,28 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch playwright test recorder
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          powershell -c "irm https://community.chocolatey.org/install.ps1|iex"
+
+          # Download and install Node.js:
+          choco install nodejs --version="22.17.1"
+
+          # Verify the Node.js version:
+          node -v # Should print "v22.17.1".
+
+          # Verify npm version:
+          npm -v # Should print "10.9.2".
+
+          echo "Step 3: Installing Playwright dependencies"
+          npx playwright install --with-deps chromium
+
+          echo "Step 4: Generating Playwright script"
+          $process = Start-Process -FilePath "npx" -ArgumentList "playwright codegen --target playwright-test https://airbnb.com" -PassThru
+          Write-Output "Started Playwright with PID: $($process.Id)"
+
+          echo "Step 5: Completed"
+          exit

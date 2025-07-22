@@ -5,22 +5,27 @@ description: "Learn how to securely handle authentication workflows in TestDrive
 icon: "fingerprint"
 ---
 
-import GitignoreWarning from '/snippets/gitignore-warning.mdx';
+import GitignoreWarning from "/snippets/gitignore-warning.mdx";
 
 This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (for example, usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as GitHub secrets.
 
-<GitignoreWarning/>
+<GitignoreWarning />
 
 ---
 
 ## How authentication works in TestDriver
 
 1. **Store Credentials Securely**:
-  - Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
+
+- Use GitHub Secrets to store sensitive information like usernames, passwords, or API keys.
+
 2. **Pass Credentials to the Workflow**:
-  - Supply credentials as environment variables or directly in the workflow.
+
+- Supply credentials as environment variables or directly in the workflow.
+
 3. **Use Credentials in Tests**:
-  - Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
+
+- Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
 
 store credentials in GitHub secrets
 
@@ -33,11 +38,12 @@ store credentials in GitHub secrets
 
 ## Step 2: Pass credentials to the workflow
 
-Secrets are passed to the GitHub Action using the `secrets` context. They can be supplied as:
+Secrets are passed to the workflow using the `secrets` context. They can be supplied as:
+
 - **Environment Variables**: Passed via the `env` block.
 - **Inline in the `prerun` Script**: Used directly in the script.
 
-### Example workflow
+### Example GitHub Actions workflow (adapt for your CI/CD platform)
 
 ```yaml
 name: TestDriver / Authentication
@@ -52,30 +58,17 @@ on:
 jobs:
   test-authentication:
     name: Test Authentication
-    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Run Authentication Test
-        uses: testdriverai/action@main
-        with:
-          key: ${{ secrets.TD_API_KEY }}
-          prompt: |
-            1. Open the login page
-            2. Enter the username: ${{ secrets.TD_USERNAME }}
-            3. Enter the password: ${{ secrets.TD_PASSWORD }}
-            4. Click the "Log In" button
-            5. Verify the dashboard is displayed
-          prerun: |
-            cd $env:TEMP
-            npm init -y
-            npm install dashcam-chrome
-            Start-Process "msedge" -ArgumentList "--start-maximized", "--load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${{ secrets.TD_WEBSITE }}"
-            exit
+        run: npx testdriverai@latest run testdriver/authentication.yaml --headless
         env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_USERNAME: ${{ secrets.TD_USERNAME }}
           TD_PASSWORD: ${{ secrets.TD_PASSWORD }}
+          TD_WEBSITE: ${{ secrets.TD_WEBSITE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_COLOR: "3"
 ```
@@ -114,25 +107,31 @@ steps:
 ## How it works together
 
 1. **Secrets in the Workflow**:
-  - Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver action.
+
+- Secrets like `TD_USERNAME` and `TD_PASSWORD` are passed as environment variables to the TestDriver action.
 
 2. **Secrets in the `prerun` Script**:
-  - The `TD_WEBSITE` secret is used to launch the browser with the correct URL.
+
+- The `TD_WEBSITE` secret is used to launch the browser with the correct URL.
 
 3. **Secrets in the Test File**:
-  - The test file dynamically references the secrets to fill in login credentials during the test.
+
+- The test file dynamically references the secrets to fill in login credentials during the test.
 
 ## Benefits of using authentication in TestDriver
 
 1. **Secure Handling of Credentials**:
-  - Secrets are encrypted and not exposed in logs.
-  - Even if printed, they appear as `***`.
+
+- Secrets are encrypted and not exposed in logs.
+- Even if printed, they appear as `***`.
 
 2. **Dynamic Testing**:
-  - Easily switch between different environments (for example, staging, production) by updating the secrets.
+
+- Easily switch between different environments (for example, staging, production) by updating the secrets.
 
 3. **Reusability**:
-  - Use the same workflow and test files across multiple repositories or environments.
+
+- Use the same workflow and test files across multiple repositories or environments.
 
 ---
 

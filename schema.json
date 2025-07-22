@@ -758,7 +758,6 @@
     }
   },
   "required": [
-    "version",
     "steps"
   ]
 }

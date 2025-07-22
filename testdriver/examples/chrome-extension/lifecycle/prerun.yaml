@@ -1,0 +1,66 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: Setup environment and variables
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          # Enable strict mode and verbose output
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = "Stop"
+
+          # Set Chrome and extension info
+          $chromeInstallerUrl = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
+          $chromeInstallPath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+          $extensionId = "aapbdbdomjkkjkaonfhkkikfgjllcleb"  # Google Translate
+
+          Write-Host "Chrome installer URL: $chromeInstallerUrl"
+          Write-Host "Chrome install path: $chromeInstallPath"
+          Write-Host "Extension ID: $extensionId"
+
+  - prompt: Check and install Chrome if needed
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          $chromeInstallerUrl = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
+          $chromeInstallPath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+
+          # Download Chrome if not installed
+          if (!(Test-Path $chromeInstallPath)) {
+              Write-Host "Chrome not found at $chromeInstallPath. Downloading..."
+              $chromeInstaller = "$env:TEMP\chrome_installer.exe"
+              try {
+                  Write-Host "Downloading Chrome installer..."
+                  Invoke-WebRequest -Uri $chromeInstallerUrl -OutFile $chromeInstaller
+                  Write-Host "Installing Chrome..."
+                  Start-Process -FilePath $chromeInstaller -Wait
+                  Write-Host "Chrome installation completed."
+              } catch {
+                  Write-Error "Failed to install Chrome: $_"
+                  exit 1
+              }
+          } else {
+              Write-Host "Chrome is already installed at: $chromeInstallPath"
+          }
+
+  - prompt: Launch Chrome and install extension from Chrome Web Store
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          $chromeInstallPath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+          $extensionId = "aapbdbdomjkkjkaonfhkkikfgjllcleb"  # Google Translate
+          $webStoreUrl = "https://chrome.google.com/webstore/detail/$extensionId"
+
+          # Launch Chrome with the Web Store page for the extension
+          try {
+              Write-Host "Launching Chrome and opening Chrome Web Store for extension..."
+              Start-Process -FilePath $chromeInstallPath -ArgumentList "--start-maximized", "--new-window", "$webStoreUrl"
+              Write-Host "Chrome launched successfully. Extension page should be open."
+              Write-Host "You can now use TestDriver to automate clicking 'Add to Chrome' button."
+          } catch {
+              Write-Error "Failed to launch Chrome: $_"
+              exit 1
+          }

@@ -1,0 +1,73 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: download and run docker vs code
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          $vsCodeUrl = "https://update.code.visualstudio.com/latest/win32-x64-user/stable"
+          $installerPath = "$env:TEMP\VSCodeSetup.exe"
+
+          Write-Host "Downloading Visual Studio Code installer..."
+          Invoke-WebRequest -Uri $vsCodeUrl -OutFile $installerPath -UseBasicParsing
+
+          Write-Host "Downloaded to $installerPath"
+      - command: exec
+        lang: pwsh
+        code: |
+          $installerPath = "$env:TEMP\VSCodeSetup.exe"
+
+          if (-Not (Test-Path $installerPath)) {
+              Write-Error "VS Code installer not found at $installerPath"
+              exit 1
+          }
+
+          Write-Host "Installing VS Code silently..."
+          $process = Start-Process -FilePath $installerPath -ArgumentList "/silent" -Wait -PassThru
+
+          if ($process.ExitCode -eq 0) {
+              Write-Host "VS Code installed successfully."
+              Remove-Item $installerPath -Force
+              exit 0
+          } else {
+              Write-Error "Installation failed with exit code $($process.ExitCode)"
+              exit $process.ExitCode
+          }
+      - command: exec
+        lang: pwsh
+        code: |
+          # patch-path.ps1
+
+          $codePath = "$env:LOCALAPPDATA\Programs\Microsoft VS Code\bin"
+
+          if (-not ($env:PATH -like "*$codePath*")) {
+              Write-Host "Temporarily appending VS Code bin to PATH for current session."
+              $env:PATH += ";$codePath"
+          } else {
+              Write-Host "VS Code path already in PATH."
+          }
+      - command: exec
+        lang: pwsh
+        code: |
+          # install-docker-extension.ps1
+
+          $extensionId = "ms-azuretools.vscode-docker"
+
+          Write-Host "Installing Docker extension for VS Code..."
+          $process = Start-Process "code" -ArgumentList "--install-extension $extensionId --force" -Wait -PassThru
+
+          if ($process.ExitCode -eq 0) {
+              Write-Host "Extension installed successfully."
+              exit 0
+          } else {
+              Write-Error "Extension installation failed with exit code $($process.ExitCode)"
+              exit $process.ExitCode
+          }
+      - command: exec
+        lang: pwsh
+        code: |
+          # launch-vscode.ps1
+
+          Write-Host "Launching Visual Studio Code..."
+          Start-Process "code"

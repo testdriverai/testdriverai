@@ -5,7 +5,6 @@ const theme = require("./theme.js");
 
 const fs = require("fs").promises; // Using the promises version for async operations
 const { findTemplateImage } = require("./subimage/index");
-const { cwd } = require("node:process");
 const path = require("path");
 const Jimp = require("jimp");
 const os = require("os");
@@ -38,7 +37,14 @@ class CommandError extends Error {
 }
 
 // Factory function that creates commands with the provided emitter
-const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
+const createCommands = (
+  emitter,
+  system,
+  sandbox,
+  config,
+  sessionInstance,
+  findTestDriverDirectory = null,
+) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
   // Create redraw instance with the system
@@ -53,12 +59,9 @@ const createCommands = (emitter, system, sandbox, config, sessionInstance) => {
     restrictToWindow,
   ) => {
     // move the file from filePath to `testdriver/screenshots`
-    let rootpath = path.join(
-      cwd(),
-      `testdriver`,
-      `screenshots`,
-      system.platform(),
-    );
+    // Use the provided helper to find testdriver directory relative to current execution context
+    const testdriverDir = findTestDriverDirectory();
+    let rootpath = path.join(testdriverDir, "screenshots");
     // add .png to relative path if not already there
     if (!relativePath.endsWith(".png")) {
       relativePath = relativePath + ".png";

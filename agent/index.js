@@ -108,6 +108,10 @@ class TestDriverAgent extends EventEmitter2 {
       this.sandbox,
       this.config,
       this.session,
+      () =>
+        this.findTestDriverDirectory(
+          this.sourceMapper.currentFilePath || this.thisFile,
+        ),
     );
     this.commands = commandsResult.commands;
 
@@ -428,12 +432,6 @@ class TestDriverAgent extends EventEmitter2 {
         timestamp: endTime,
         sourcePosition: sourcePosition,
       });
-
-      // Show error with source context if available
-      const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
-      if (errorContext) {
-        this.emitter.emit(events.error.general, errorContext);
-      }
 
       return await this.haveAIResolveError(
         error,
@@ -1259,12 +1257,12 @@ ${regression}
 
     this.emitter.emit(events.log.log, `${file} (start)`);
 
-    // get the current wowrking directory where this file is being executed
-    let cwd = this.workingDir;
+    // Use the new helper method to resolve file paths relative to testdriver directory
+    const currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
 
-    // if the file is not an absolute path, we will try to resolve it
+    // if the file is not an absolute path, resolve it using the new helper
     if (!path.isAbsolute(file)) {
-      file = path.resolve(cwd, file);
+      file = this.resolveTestDriverRelativePath(currentFilePath, file);
     }
 
     // check if the file exists
@@ -1577,19 +1575,115 @@ ${regression}
     this.session.set(sessionRes.data.id);
   }
 
-  async runLifecycle(lifecycleName) {
-    const lifecycleFile = path.join(
-      this.workingDir,
-      "testdriver",
-      "lifecycle",
-      `${lifecycleName}.yaml`,
-    );
-    if (fs.existsSync(lifecycleFile)) {
-      await this.run(lifecycleFile, false, false, false);
+  // Helper method to find testdriver directory by traversing up from a file path
+  findTestDriverDirectory(filePath) {
+    // Start from the directory containing the file, or use workingDir as fallback
+    let currentDir = filePath
+      ? path.dirname(path.resolve(filePath))
+      : this.workingDir;
+
+    while (currentDir !== path.dirname(currentDir)) {
+      // Continue until we reach the root
+      const testdriverPath = path.join(currentDir, "testdriver");
+      if (
+        fs.existsSync(testdriverPath) &&
+        fs.statSync(testdriverPath).isDirectory()
+      ) {
+        return testdriverPath;
+      }
+      currentDir = path.dirname(currentDir);
     }
+
+    // Fallback to workingDir/testdriver if not found
+    return path.join(this.workingDir, "testdriver");
   }
 
-  // Unified command definitions that work for both CLI and interactive modes
+  // Helper method to resolve file paths relative to the testdriver directory
+  // This handles both snippets and other relative files that should be resolved
+  // relative to the nearest testdriver directory
+  resolveTestDriverRelativePath(filePath, relativePath) {
+    // If it's already an absolute path, return as-is
+    if (path.isAbsolute(relativePath)) {
+      return relativePath;
+    }
+
+    // Check if this looks like a snippet or lifecycle reference
+    if (
+      relativePath.startsWith("snippets/") ||
+      relativePath.startsWith("lifecycle/")
+    ) {
+      // First, check if there's a local directory in the same directory as the current file
+      if (filePath) {
+        const currentFileDir = path.dirname(path.resolve(filePath));
+        const localPath = path.join(currentFileDir, relativePath);
+
+        if (fs.existsSync(localPath)) {
+          return localPath;
+        }
+      }
+
+      // If no local file found, fall back to the testdriver directory
+      const testdriverDir = this.findTestDriverDirectory(filePath);
+      return path.join(testdriverDir, relativePath);
+    }
+
+    // For other relative paths, resolve relative to the current file's directory
+    if (filePath) {
+      return path.resolve(path.dirname(filePath), relativePath);
+    }
+
+    // Fallback to workingDir
+    return path.resolve(this.workingDir, relativePath);
+  }
+
+  async runLifecycle(lifecycleName) {
+    // Use the current file path from sourceMapper to find the lifecycle directory
+    // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
+    let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
+
+    // Ensure we have an absolute path
+    if (currentFilePath && !path.isAbsolute(currentFilePath)) {
+      currentFilePath = path.resolve(this.workingDir, currentFilePath);
+    }
+
+    let lifecycleFile = null;
+
+    // First, check if there's a local lifecycle directory in the same directory as the current file
+    if (currentFilePath) {
+      const currentFileDir = path.dirname(currentFilePath);
+      const localLifecycleDir = path.join(currentFileDir, "lifecycle");
+      const localLifecycleFile = path.join(
+        localLifecycleDir,
+        `${lifecycleName}.yaml`,
+      );
+
+      // If there's a local lifecycle directory, only look there (don't fall back to global)
+      if (
+        fs.existsSync(localLifecycleDir) &&
+        fs.statSync(localLifecycleDir).isDirectory()
+      ) {
+        if (fs.existsSync(localLifecycleFile)) {
+          lifecycleFile = localLifecycleFile;
+        }
+        // Stop here - don't fall back to global if local lifecycle directory exists
+      } else {
+        // Only fall back to global if there's no local lifecycle directory
+        const testdriverDir = this.findTestDriverDirectory(currentFilePath);
+        const globalLifecycleFile = path.join(
+          testdriverDir,
+          "lifecycle",
+          `${lifecycleName}.yaml`,
+        );
+        if (fs.existsSync(globalLifecycleFile)) {
+          lifecycleFile = globalLifecycleFile;
+        }
+      }
+    }
+
+    if (lifecycleFile) {
+      await this.run(lifecycleFile, false, false, false);
+    }
+  } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {
     return createCommandDefinitions(this);
   }
