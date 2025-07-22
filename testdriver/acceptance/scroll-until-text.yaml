@@ -3,7 +3,7 @@ session: 682f62a1811bd5a322c0e70b
 steps:
   - commands:
       - command: run
-        file: testdriver/snippets/login.yaml
+        file: snippets/login.yaml
   - prompt: scroll until text testdriver socks
     commands:
       - command: focus-application

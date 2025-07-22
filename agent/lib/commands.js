@@ -61,7 +61,7 @@ const createCommands = (
     // move the file from filePath to `testdriver/screenshots`
     // Use the provided helper to find testdriver directory relative to current execution context
     const testdriverDir = findTestDriverDirectory();
-    let rootpath = path.join(testdriverDir, "screenshots", system.platform());
+    let rootpath = path.join(testdriverDir, "screenshots");
     // add .png to relative path if not already there
     if (!relativePath.endsWith(".png")) {
       relativePath = relativePath + ".png";

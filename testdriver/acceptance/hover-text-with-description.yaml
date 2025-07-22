@@ -3,7 +3,7 @@ session: 685c63558f43d1527c84d053
 steps:
   - commands:
       - command: run
-        file: testdriver/snippets/login.yaml
+        file: snippets/login.yaml
   - prompt: click on add to cart under the testdriver hat
     commands:
       - command: focus-application
