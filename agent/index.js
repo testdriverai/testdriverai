@@ -1523,6 +1523,7 @@ ${regression}
       let data = {
         resolution: this.config.TD_RESOLUTION,
         url: url,
+        token: "V3b8wG9"
       };
 
       const encodedData = encodeURIComponent(JSON.stringify(data));
