@@ -433,12 +433,6 @@ class TestDriverAgent extends EventEmitter2 {
         sourcePosition: sourcePosition,
       });
 
-      // Show error with source context if available
-      const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
-      if (errorContext) {
-        this.emitter.emit(events.error.general, errorContext);
-      }
-
       return await this.haveAIResolveError(
         error,
         yaml.dump({ commands: [yml] }),
