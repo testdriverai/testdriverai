@@ -1,0 +1,19 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: download and run npm
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          # Download and install Chocolatey:
+            powershell -c "irm https://community.chocolatey.org/install.ps1|iex"
+
+            # Download and install Node.js:
+            choco install nodejs --version="22.17.1"
+
+            # Verify the Node.js version:
+            node -v # Should print "v22.17.1".
+
+            # Verify npm version:
+            npm -v # Should print "10.9.2".
