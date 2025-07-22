@@ -19,7 +19,7 @@ on:
 
 jobs:
   publish-canary:
-    name: Publish testdriverai@canary
+    name: Publish testdriverai@beta
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         run: npm version --no-git-tag-version prerelease --preid=canary.$(git rev-parse --short HEAD)
       - uses: JS-DevTools/npm-publish@v3
         with:
-          tag: "canary"
+          tag: canary, beta
           token: ${{ secrets.NPM_AUTH_TOKEN }}
 
   gather-test-files:
