@@ -39,7 +39,7 @@ jobs:
       - name: Add beta tag
         run: |
           npm dist-tag add testdriverai@$(npm view testdriverai@canary version) beta
-        env: 
+        env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   gather-test-files:
