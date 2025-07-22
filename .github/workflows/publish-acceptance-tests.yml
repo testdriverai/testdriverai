@@ -38,8 +38,9 @@ jobs:
           token: ${{ secrets.NPM_AUTH_TOKEN }}
       - name: Add beta tag
         run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_AUTH_TOKEN }}" > ~/.npmrc
           npm dist-tag add testdriverai@$(npm view testdriverai@canary version) beta
+        env: 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   gather-test-files:
     name: Gather Test Files
