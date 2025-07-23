@@ -105,16 +105,12 @@ const createSandbox = (emitter) => {
 
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
-            throw new Error(JSON.stringify(message));
+            this.ps[message.requestId].reject(JSON.stringify(message));
           } else {
-            if (this.ps[message.requestId]) {
-              emitter.emit(events.sandbox.received);
-              this.ps[message.requestId].resolve(message);
-              delete this.ps[message.requestId];
-            } else {
-              console.log("unhandled message", message);
-            }
+            emitter.emit(events.sandbox.received);
+            this.ps[message.requestId].resolve(message);
           }
+          delete this.ps[message.requestId];
         });
       });
     }
