@@ -1,9 +1,11 @@
-# Test the hover-text-with-description workflow in headless mode
 name: v6 Acceptance
 
 on:
   workflow_dispatch:
   push:
+
+  schedule:
+    - cron: "0 0 * * *"
 
 jobs:
   gather-test-files:
