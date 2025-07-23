@@ -108,10 +108,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.sandbox,
       this.config,
       this.session,
-      () =>
-        this.findTestDriverDirectory(
-          this.sourceMapper.currentFilePath || this.thisFile,
-        ),
+      () => this.sourceMapper.currentFilePath || this.thisFile,
     );
     this.commands = commandsResult.commands;
 

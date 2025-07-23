@@ -43,12 +43,32 @@ const createCommands = (
   sandbox,
   config,
   sessionInstance,
-  findTestDriverDirectory = null,
+  getCurrentFilePath,
 ) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
   // Create redraw instance with the system
   const redraw = createRedraw(emitter, system, sandbox);
+
+  // Helper method to resolve file paths relative to the current file
+  const resolveRelativePath = (relativePath) => {
+    // If it's already an absolute path, return as-is
+    if (path.isAbsolute(relativePath)) {
+      return relativePath;
+    }
+
+    // Get the current file path dynamically
+    const currentFilePath = getCurrentFilePath();
+
+    // For relative paths, resolve relative to the current file's directory
+    if (currentFilePath) {
+      return path.resolve(path.dirname(currentFilePath), relativePath);
+    }
+
+    // Fallback to workingDir
+    return path.resolve(config.TD_WORKING_DIR || process.cwd(), relativePath);
+  };
+
   const niceSeconds = (ms) => {
     return Math.round(ms / 1000);
   };
@@ -58,16 +78,12 @@ const createCommands = (
     haystack,
     restrictToWindow,
   ) => {
-    // move the file from filePath to `testdriver/screenshots`
-    // Use the provided helper to find testdriver directory relative to current execution context
-    const testdriverDir = findTestDriverDirectory();
-    let rootpath = path.join(testdriverDir, "screenshots");
     // add .png to relative path if not already there
     if (!relativePath.endsWith(".png")) {
       relativePath = relativePath + ".png";
     }
 
-    let needle = path.join(rootpath, relativePath);
+    let needle = relativePath;
 
     // check if the file exists
     if (!fs.access(needle)) {
@@ -383,12 +399,15 @@ const createCommands = (
       }
     },
     "match-image": async (relativePath, action = "click") => {
+      // Resolve the image path relative to the current file
+      const resolvedPath = resolveRelativePath(relativePath);
+
       let image = await system.captureScreenPNG();
 
-      let result = await findImageOnScreen(relativePath, image);
+      let result = await findImageOnScreen(resolvedPath, image);
 
       if (!result) {
-        throw new CommandError(`Image not found: ${relativePath}`);
+        throw new CommandError(`Image not found: ${resolvedPath}`);
       } else {
         if (action === "click") {
           await click(result.centerX, result.centerY, action);
