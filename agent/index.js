@@ -108,10 +108,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.sandbox,
       this.config,
       this.session,
-      () =>
-        this.findTestDriverDirectory(
-          this.sourceMapper.currentFilePath || this.thisFile,
-        ),
+      () => this.sourceMapper.currentFilePath || this.thisFile,
     );
     this.commands = commandsResult.commands;
 
@@ -1414,7 +1411,17 @@ ${regression}
       events.log.log,
       theme.dim(`  (this can take between 10 - 240 seconds)`),
     );
-    let newSandbox = await this.createNewSandbox();
+    // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
+    // to see if that fixes the issue.
+    let newSandbox = await this.createNewSandbox().catch(() => {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`  (double-checking sandbox availability)`),
+      );
+
+      return this.createNewSandbox();
+    });
+
     this.saveLastSandboxId(newSandbox.sandbox.instanceId);
     let instance = await this.connectToSandboxDirect(
       newSandbox.sandbox.instanceId,
@@ -1536,6 +1543,7 @@ ${regression}
       let data = {
         resolution: this.config.TD_RESOLUTION,
         url: url,
+        token: "V3b8wG9",
       };
 
       const encodedData = encodeURIComponent(JSON.stringify(data));

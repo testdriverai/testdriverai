@@ -1,0 +1,8 @@
+version: 5.7.7
+session: 682f6071811bd5a322c0e6dd
+steps:
+  - prompt: assert the testdriver login page shows
+    commands:
+      - command: match-image
+        path: ../screenshots/cart.png
+        action: click
