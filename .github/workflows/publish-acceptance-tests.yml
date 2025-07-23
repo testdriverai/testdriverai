@@ -34,8 +34,13 @@ jobs:
         run: npm version --no-git-tag-version prerelease --preid=canary.$(git rev-parse --short HEAD)
       - uses: JS-DevTools/npm-publish@v3
         with:
-          tag: canary, beta
+          tag: canary
           token: ${{ secrets.NPM_AUTH_TOKEN }}
+      - name: Add beta tag
+        run: |
+          npm dist-tag add testdriverai@$(npm view testdriverai@canary version) beta
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   gather-test-files:
     name: Gather Test Files
