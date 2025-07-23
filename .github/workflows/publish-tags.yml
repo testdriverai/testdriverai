@@ -34,6 +34,7 @@ jobs:
       - name: Publish to canary and beta tags
         run: |
           npm publish --tag canary
+          sleep 5
           npm dist-tag add testdriverai@$(npm view testdriverai@canary version) beta
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
