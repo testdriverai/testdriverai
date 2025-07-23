@@ -1383,34 +1383,47 @@ ${regression}
       }
     }
 
-    if (!this.sandboxId) {
-      this.emitter.emit(events.log.log, theme.dim(`- creating new sandbox...`));
+    if (this.sandboxId) {
+      // Attempt to connect to known instance
       this.emitter.emit(
         events.log.log,
-        theme.dim(`  (this can take between 10 - 240 seconds)`),
+        theme.dim(`- connecting to sandbox ${this.sandboxId}...`),
       );
+
+      try {
+        let instance = await this.connectToSandboxDirect(
+          this.sandboxId,
+          options.persist,
+        );
+
+        this.instance = instance;
+
+        await this.renderSandbox(instance, headless);
+        await this.newSession();
+        return;
+      } catch (error) {
+        // But if it fails because the machine 404s, fall-through to `createNewSandbox()`
+        if (error?.name !== "InvalidInstanceID.NotFound") {
+          throw error;
+        }
+      }
     }
 
-    if (this.sandboxId) {
-      let instance = await this.connectToSandboxDirect(
-        this.sandboxId,
-        options.persist,
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
-      await this.newSession();
-    } else {
-      let newSandbox = await this.createNewSandbox();
-      this.saveLastSandboxId(newSandbox.sandbox.instanceId);
-      let instance = await this.connectToSandboxDirect(
-        newSandbox.sandbox.instanceId,
-        options.persist,
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
-      await this.newSession();
-      await this.runLifecycle("provision");
-    }
+    this.emitter.emit(events.log.log, theme.dim(`- creating new sandbox...`));
+    this.emitter.emit(
+      events.log.log,
+      theme.dim(`  (this can take between 10 - 240 seconds)`),
+    );
+    let newSandbox = await this.createNewSandbox();
+    this.saveLastSandboxId(newSandbox.sandbox.instanceId);
+    let instance = await this.connectToSandboxDirect(
+      newSandbox.sandbox.instanceId,
+      options.persist,
+    );
+    this.instance = instance;
+    await this.renderSandbox(instance, headless);
+    await this.newSession();
+    await this.runLifecycle("provision");
   }
 
   async start() {
