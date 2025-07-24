@@ -1399,16 +1399,14 @@ ${regression}
 
     const recentId = createNew ? null : this.getRecentSandboxId();
 
-    // Set up sandbox ID logic
-    if (createNew) {
-      // Skip any existing sandbox logic and go directly to new sandbox creation
-    } else if (recentId) {
+    // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
+    if (!createNew && recentId) {
       this.emitter.emit(
         events.log.log,
         theme.dim(`- using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
-    } else {
+    } else if (!createNew) {
       this.emitter.emit(
         events.log.log,
         theme.dim(`No recent sandbox found, creating a new one.`),
