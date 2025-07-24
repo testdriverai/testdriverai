@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "version": {
       "type": "string",
@@ -15,6 +16,7 @@
       "description": "An array of test steps.",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "prompt": {
             "type": "string",
@@ -25,6 +27,7 @@
             "description": "An array of commands to execute in this step.",
             "items": {
               "type": "object",
+              "additionalProperties": false,
               "properties": {
                 "command": {
                   "type": "string",
@@ -37,6 +40,7 @@
               "allOf": [
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "type"
@@ -44,6 +48,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "text": {
                         "type": [
@@ -62,6 +67,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "press-keys"
@@ -69,6 +75,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "keys": {
                         "type": "array",
@@ -280,6 +287,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "scroll"
@@ -287,6 +295,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "direction": {
                         "type": "string",
@@ -315,6 +324,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "wait"
@@ -322,6 +332,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "timeout": {
                         "type": "integer"
@@ -334,6 +345,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "click"
@@ -341,6 +353,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "x": {
                         "type": "integer"
@@ -369,6 +382,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "hover"
@@ -376,6 +390,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "x": {
                         "type": "integer"
@@ -392,6 +407,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "drag"
@@ -399,6 +415,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "x": {
                         "type": "integer"
@@ -415,6 +432,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "hover-text"
@@ -422,6 +440,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "text": {
                         "type": "string"
@@ -457,6 +476,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "hover-image"
@@ -464,6 +484,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "description": {
                         "type": "string"
@@ -488,6 +509,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "match-image"
@@ -495,6 +517,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "path": {
                         "type": "string"
@@ -519,6 +542,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "wait-for-image"
@@ -526,6 +550,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "description": {
                         "type": "string"
@@ -541,6 +566,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "wait-for-text"
@@ -548,6 +574,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "text": {
                         "type": "string"
@@ -570,6 +597,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "scroll-until-text"
@@ -577,6 +605,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "text": {
                         "type": "string"
@@ -609,6 +638,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "scroll-until-image"
@@ -616,6 +646,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "description": {
                         "type": "string"
@@ -655,6 +686,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "focus-application"
@@ -662,6 +694,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "name": {
                         "type": "string"
@@ -674,6 +707,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "remember"
@@ -681,6 +715,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "description": {
                         "type": "string"
@@ -697,6 +732,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "assert"
@@ -704,6 +740,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "expect": {
                         "type": "string"
@@ -719,6 +756,7 @@
                 },
                 {
                   "if": {
+                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "exec"
@@ -726,6 +764,7 @@
                     }
                   },
                   "then": {
+                    "additionalProperties": false,
                     "properties": {
                       "lang": {
                         "type": "string",
