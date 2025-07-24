@@ -769,7 +769,8 @@ commands:
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
-      await this.run(baseYaml, false, false, false);
+      await this.run(baseYaml, false, false);
+      await this.runLifecycle("postrun");
     }
 
     let image = await this.system.captureScreenBase64();
@@ -1083,6 +1084,7 @@ ${regression}
 
     await this.runLifecycle("prerun");
     await this.run(tmpobj.name, false, false);
+    await this.runLifecycle("postrun");
   }
 
   // this will load a regression test from a file location
@@ -1702,7 +1704,7 @@ ${regression}
     }
 
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false, false);
+      await this.run(lifecycleFile, false, false);
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {
