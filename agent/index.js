@@ -1666,21 +1666,13 @@ ${regression}
   }
 
   async runLifecycle(lifecycleName) {
-    console.log("i am inside runLifecycle for ", lifecycleName);
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
-    console.log(
-      "this.sourceMapper.currentFilePath: ",
-      this.sourceMapper.currentFilePath,
-    );
-    console.log("this.thisFile: ", this.thisFile);
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
-    console.log("currentFilePath: ", currentFilePath);
     // Ensure we have an absolute path
     if (currentFilePath && !path.isAbsolute(currentFilePath)) {
       currentFilePath = path.resolve(this.workingDir, currentFilePath);
     }
-    console.log("currentFilePath: ", currentFilePath);
     let lifecycleFile = null;
 
     // First, check if there's a local lifecycle directory in the same directory as the current file
@@ -1691,7 +1683,6 @@ ${regression}
         localLifecycleDir,
         `${lifecycleName}.yaml`,
       );
-      console.log("localLifecycleFile: ", localLifecycleFile);
       // If there's a local lifecycle directory, only look there (don't fall back to global)
       if (
         fs.existsSync(localLifecycleDir) &&
@@ -1714,7 +1705,6 @@ ${regression}
         }
       }
     }
-    console.log("lifecycleFile: ", lifecycleFile);
     if (lifecycleFile) {
       await this.run(lifecycleFile, false, false);
     }
