@@ -71,9 +71,16 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Resolve thisFile to absolute path with proper extension
     if (this.thisFile) {
-      this.thisFile = path.join(this.workingDir, this.thisFile);
-      if (!this.thisFile.endsWith(".yaml") && !this.thisFile.endsWith(".yml")) {
-        this.thisFile += ".yaml";
+      if (this.thisFile === ".") {
+        this.thisFile = path.join(this.workingDir, "testdriver.yaml");
+      } else {
+        this.thisFile = path.join(this.workingDir, this.thisFile);
+        if (
+          !this.thisFile.endsWith(".yaml") &&
+          !this.thisFile.endsWith(".yml")
+        ) {
+          this.thisFile += ".yaml";
+        }
       }
     }
 
@@ -769,7 +776,8 @@ commands:
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
-      await this.run(baseYaml, false, false, false);
+      await this.run(baseYaml, false, false);
+      await this.runLifecycle("postrun");
     }
 
     let image = await this.system.captureScreenBase64();
@@ -1083,6 +1091,7 @@ ${regression}
 
     await this.runLifecycle("prerun");
     await this.run(tmpobj.name, false, false);
+    await this.runLifecycle("postrun");
   }
 
   // this will load a regression test from a file location
@@ -1218,7 +1227,6 @@ ${regression}
     if (shouldSave) {
       await this.save({ filepath: file, silent: false });
     }
-
     if (shouldExit) {
       await this.summarize();
       await this.exit(false, shouldSave, true);
@@ -1696,12 +1704,10 @@ ${regression}
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
-
     // Ensure we have an absolute path
     if (currentFilePath && !path.isAbsolute(currentFilePath)) {
       currentFilePath = path.resolve(this.workingDir, currentFilePath);
     }
-
     let lifecycleFile = null;
 
     // First, check if there's a local lifecycle directory in the same directory as the current file
@@ -1712,7 +1718,6 @@ ${regression}
         localLifecycleDir,
         `${lifecycleName}.yaml`,
       );
-
       // If there's a local lifecycle directory, only look there (don't fall back to global)
       if (
         fs.existsSync(localLifecycleDir) &&
@@ -1735,9 +1740,8 @@ ${regression}
         }
       }
     }
-
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false, false);
+      await this.run(lifecycleFile, false, false);
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {
