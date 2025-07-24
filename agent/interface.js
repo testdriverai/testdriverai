@@ -64,8 +64,6 @@ function createCommandDefinitions(agent) {
         // When run() is called through run.js CLI command, shouldExit should be true
         const shouldExit = agent.cliArgs?.command === "run";
         await agent.run(file, flags.write, shouldExit);
-        // postrun needs to be executed to stop dashcam
-        await agent.runLifecycle("postrun");
       },
     },
 

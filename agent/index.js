@@ -1227,7 +1227,6 @@ ${regression}
     if (shouldSave) {
       await this.save({ filepath: file, silent: false });
     }
-    console.log("shouldExit: ", shouldExit);
     if (shouldExit) {
       await this.summarize();
       await this.exit(false, shouldSave, true);
