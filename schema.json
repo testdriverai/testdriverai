@@ -46,7 +46,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
                       "command": {
                         "type": "string"
@@ -75,7 +75,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -298,7 +298,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -338,7 +338,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
                       "timeout": {
                         "type": "integer"
@@ -358,7 +358,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -398,7 +398,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -426,7 +426,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -454,7 +454,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -501,7 +501,7 @@
                     }
                   },
                   "then": {
-  "additionalProperties": false,
+  "addition": false,
                     "properties": {
                       "command": {
                         "type": "string"
@@ -536,7 +536,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -572,7 +572,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -599,7 +599,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -633,7 +633,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -677,7 +677,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -728,7 +728,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
                       "name": {
                         "type": "string"
@@ -748,7 +748,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -776,7 +776,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
@@ -803,7 +803,7 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+                    "addition": false,
                     "properties": {
 
                       "command": {
