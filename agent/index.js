@@ -1354,41 +1354,75 @@ ${regression}
       // ignore errors
     }
   }
+
+  clearRecentSandboxId() {
+    const lastSandboxFile = path.join(
+      os.homedir(),
+      ".testdriverai-last-sandbox",
+    );
+    try {
+      if (fs.existsSync(lastSandboxFile)) {
+        fs.unlinkSync(lastSandboxFile);
+      }
+    } catch {
+      // ignore errors
+    }
+  }
   async buildEnv(options = {}) {
     // If instance already exists, do not build environment again
     if (this.instance) {
       this.emitter.emit(
         events.log.log,
-        theme.dim("Sandbox instance already exists, skipping buildEnv."),
+        theme.dim("- sandbox instance already exists, skipping launch."),
       );
       return;
     }
 
-    const { headless = false, heal, reconnect } = options;
+    let { headless = false, heal, new: createNew = false } = options;
+
+    // If CI environment variable is true, always create a new sandbox
+    if (this.config.CI) {
+      createNew = true;
+      this.emitter.emit(
+        events.log.log,
+        theme.dim("CI environment detected, will create a new sandbox"),
+      );
+    }
 
     if (heal) this.healMode = heal;
 
-    // order is important!
-    await this.connectToSandboxService();
-
-    const recentId = this.getRecentSandboxId();
-
-    if (reconnect) {
-      if (recentId) {
+    // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
+    if (createNew) {
+      this.clearRecentSandboxId();
+      if (!this.config.CI) {
         this.emitter.emit(
           events.log.log,
-          theme.dim(`- using recent sandbox: ${recentId}`),
-        );
-        this.sandboxId = recentId;
-      } else {
-        this.emitter.emit(
-          events.log.warn,
-          theme.yellow(`No recent sandbox found, creating a new one.`),
+          theme.dim("-- `new` flag detected, will create a new sandbox"),
         );
       }
     }
 
-    if (this.sandboxId) {
+    // order is important!
+    await this.connectToSandboxService();
+
+    const recentId = createNew ? null : this.getRecentSandboxId();
+
+    // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
+    if (!createNew && recentId) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`- using recent sandbox: ${recentId}`),
+      );
+      this.sandboxId = recentId;
+    } else if (!createNew) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`- no recent sandbox found, creating a new one.`),
+      );
+    }
+
+    // Only attempt to connect to existing sandbox if not in CI mode and not creating new
+    if (this.sandboxId && !this.config.CI && !createNew) {
       // Attempt to connect to known instance
       this.emitter.emit(
         events.log.log,
@@ -1398,7 +1432,7 @@ ${regression}
       try {
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
-          options.persist,
+          true, // always persist by default
         );
 
         this.instance = instance;
@@ -1433,7 +1467,7 @@ ${regression}
     this.saveLastSandboxId(newSandbox.sandbox.instanceId);
     let instance = await this.connectToSandboxDirect(
       newSandbox.sandbox.instanceId,
-      options.persist,
+      true, // always persist by default
     );
     this.instance = instance;
     await this.renderSandbox(instance, headless);
@@ -1583,6 +1617,7 @@ ${regression}
     let instance = await this.sandbox.send({
       type: "create",
       resolution: this.config.TD_RESOLUTION,
+      ci: this.config.CI,
     });
     return instance;
   }
