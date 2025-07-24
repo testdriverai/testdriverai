@@ -777,21 +777,8 @@ commands:
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
-      try {
-        await this.run(baseYaml, false, false);
-      } finally {
-        // Always run postrun lifecycle script, regardless of test success or failure
-        try {
-          await this.runLifecycle("postrun");
-        } catch (postrunError) {
-          this.emitter.emit(
-            events.log.warn,
-            theme.yellow(
-              `Warning: postrun lifecycle script failed: ${postrunError.message}`,
-            ),
-          );
-        }
-      }
+      await this.run(baseYaml, false, false);
+      await this.runLifecycle("postrun");
     }
 
     let image = await this.system.captureScreenBase64();
@@ -1104,21 +1091,8 @@ ${regression}
     // and run it with run()
 
     await this.runLifecycle("prerun");
-    try {
-      await this.run(tmpobj.name, false, false);
-    } finally {
-      // Always run postrun lifecycle script, regardless of test success or failure
-      try {
-        await this.runLifecycle("postrun");
-      } catch (postrunError) {
-        this.emitter.emit(
-          events.log.warn,
-          theme.yellow(
-            `Warning: postrun lifecycle script failed: ${postrunError.message}`,
-          ),
-        );
-      }
-    }
+    await this.run(tmpobj.name, false, false);
+    await this.runLifecycle("postrun");
   }
 
   // this will load a regression test from a file location
@@ -1166,132 +1140,97 @@ ${regression}
       await this.exit(true, shouldSave, true);
     }
 
-    let testFailed = false;
-    let testError = null;
+    for (const step of ymlObj.steps) {
+      const stepIndex = ymlObj.steps.indexOf(step);
+      const stepStartTime = Date.now();
 
-    try {
-      for (const step of ymlObj.steps) {
-        const stepIndex = ymlObj.steps.indexOf(step);
-        const stepStartTime = Date.now();
+      // Update current step tracking
+      this.sourceMapper.setCurrentStep(stepIndex);
 
-        // Update current step tracking
-        this.sourceMapper.setCurrentStep(stepIndex);
+      // Get source position for current step
+      const sourcePosition = this.sourceMapper.getCurrentSourcePosition();
 
-        // Get source position for current step
-        const sourcePosition = this.sourceMapper.getCurrentSourcePosition();
+      // Emit step start event with source mapping
+      this.emitter.emit(events.step.start, {
+        stepIndex,
+        prompt: step.prompt,
+        commandCount: step.commands ? step.commands.length : 0,
+        timestamp: stepStartTime,
+        sourcePosition: sourcePosition,
+      });
 
-        // Emit step start event with source mapping
-        this.emitter.emit(events.step.start, {
-          stepIndex,
-          prompt: step.prompt,
-          commandCount: step.commands ? step.commands.length : 0,
-          timestamp: stepStartTime,
-          sourcePosition: sourcePosition,
-        });
+      this.emitter.emit(events.log.log, ``, null);
+      this.emitter.emit(
+        events.log.log,
+        theme.yellow(`> ${step.prompt || "no prompt"}`),
+        null,
+      );
 
-        this.emitter.emit(events.log.log, ``, null);
-        this.emitter.emit(
-          events.log.log,
-          theme.yellow(`> ${step.prompt || "no prompt"}`),
-          null,
-        );
+      try {
+        if (!step.commands && !step.prompt) {
+          this.emitter.emit(
+            events.log.log,
+            theme.red("No commands or prompt found"),
+          );
 
-        try {
-          if (!step.commands && !step.prompt) {
-            this.emitter.emit(
-              events.log.log,
-              theme.red("No commands or prompt found"),
-            );
-
-            this.emitter.emit(events.step.error, {
-              stepIndex,
-              prompt: step.prompt,
-              error: "No commands or prompt found",
-              timestamp: Date.now(),
-            });
-
-            await this.exit(true, shouldSave, true);
-          } else if (!step.commands) {
-            this.emitter.emit(
-              events.log.log,
-              theme.yellow("No commands found, running exploratory"),
-            );
-            await this.exploratoryLoop(step.prompt, false, true, shouldSave);
-          } else {
-            await this.executeCommands(
-              step.commands,
-              0,
-              true,
-              false,
-              shouldSave,
-            );
-          }
-
-          const stepEndTime = Date.now();
-          const stepDuration = stepEndTime - stepStartTime;
-
-          // Emit step success event with source mapping
-          this.emitter.emit(events.step.success, {
-            stepIndex,
-            prompt: step.prompt,
-            commandCount: step.commands ? step.commands.length : 0,
-            duration: stepDuration,
-            timestamp: stepEndTime,
-            sourcePosition: sourcePosition,
-          });
-
-          if (shouldSave) {
-            await this.save({ silent: true });
-          }
-        } catch (error) {
-          const stepEndTime = Date.now();
-          const stepDuration = stepEndTime - stepStartTime;
-
-          // Emit step error event with source mapping
           this.emitter.emit(events.step.error, {
             stepIndex,
             prompt: step.prompt,
-            error: error.message,
-            duration: stepDuration,
-            timestamp: stepEndTime,
-            sourcePosition: sourcePosition,
+            error: "No commands or prompt found",
+            timestamp: Date.now(),
           });
 
-          testFailed = true;
-          testError = error;
-          throw error; // Re-throw to maintain existing error handling
-        }
-      }
-
-      if (shouldSave) {
-        await this.save({ filepath: file, silent: false });
-      }
-    } catch (error) {
-      testFailed = true;
-      testError = error;
-      throw error; // Re-throw to maintain existing error handling
-    } finally {
-      // Always run postrun lifecycle script, regardless of test success or failure
-      if (shouldExit) {
-        try {
-          await this.runLifecycle("postrun");
-        } catch (postrunError) {
+          await this.exit(true, shouldSave, true);
+        } else if (!step.commands) {
           this.emitter.emit(
-            events.log.warn,
-            theme.yellow(
-              `Warning: postrun lifecycle script failed: ${postrunError.message}`,
-            ),
+            events.log.log,
+            theme.yellow("No commands found, running exploratory"),
           );
+          await this.exploratoryLoop(step.prompt, false, true, shouldSave);
+        } else {
+          await this.executeCommands(step.commands, 0, true, false, shouldSave);
         }
 
-        if (testFailed) {
-          await this.summarize(testError?.message);
-          await this.exit(true, shouldSave, false); // Don't run postrun again since we already did
-        } else {
-          await this.summarize();
-          await this.exit(false, shouldSave, false); // Don't run postrun again since we already did
+        const stepEndTime = Date.now();
+        const stepDuration = stepEndTime - stepStartTime;
+
+        // Emit step success event with source mapping
+        this.emitter.emit(events.step.success, {
+          stepIndex,
+          prompt: step.prompt,
+          commandCount: step.commands ? step.commands.length : 0,
+          duration: stepDuration,
+          timestamp: stepEndTime,
+          sourcePosition: sourcePosition,
+        });
+
+        if (shouldSave) {
+          await this.save({ silent: true });
         }
+      } catch (error) {
+        const stepEndTime = Date.now();
+        const stepDuration = stepEndTime - stepStartTime;
+
+        // Emit step error event with source mapping
+        this.emitter.emit(events.step.error, {
+          stepIndex,
+          prompt: step.prompt,
+          error: error.message,
+          duration: stepDuration,
+          timestamp: stepEndTime,
+          sourcePosition: sourcePosition,
+        });
+
+        throw error; // Re-throw to maintain existing error handling
       }
+    }
+
+    if (shouldSave) {
+      await this.save({ filepath: file, silent: false });
+    }
+    if (shouldExit) {
+      await this.summarize();
+      await this.exit(false, shouldSave, true);
     }
   }
 
@@ -1635,7 +1574,7 @@ ${regression}
       }
     } catch (error) {
       this.emitter.emit(events.error.fatal, error.message || error);
-      await this.exit(true, false, true);
+      await this.exit(true);
     }
   }
 

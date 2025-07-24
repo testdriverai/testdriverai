@@ -1,7 +1,5 @@
 const path = require("path");
 const { Args, Flags } = require("@oclif/core");
-const { events } = require("./events.js");
-const theme = require("./lib/theme.js");
 
 /**
  * Creates command definitions using oclif format as the single source of truth
@@ -61,22 +59,7 @@ function createCommandDefinitions(agent) {
         await agent.runLifecycle("prerun");
         // When run() is called through run.js CLI command, shouldExit should be true
         const shouldExit = agent.cliArgs?.command === "run";
-        try {
-          await agent.run(file, flags.write, shouldExit);
-        } catch (error) {
-          // If run() throws an error, we still need to run postrun
-          try {
-            await agent.runLifecycle("postrun");
-          } catch (postrunError) {
-            agent.emitter.emit(
-              events.log.warn,
-              theme.yellow(
-                `Warning: postrun lifecycle script failed: ${postrunError.message}`,
-              ),
-            );
-          }
-          throw error; // Re-throw the original error
-        }
+        await agent.run(file, flags.write, shouldExit);
       },
     },
 
