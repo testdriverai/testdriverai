@@ -17,20 +17,23 @@ const createSandbox = (emitter) => {
 
     send(message) {
       let resolvePromise;
+      let rejectPromise;
 
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
 
-        let p = new Promise((resolve) => {
+        let p = new Promise((resolve, reject) => {
           this.socket.send(JSON.stringify(message));
           emitter.emit(events.sandbox.sent, message);
           resolvePromise = resolve;
+          rejectPromise = reject;
         });
 
         this.ps[message.requestId] = {
           promise: p,
           resolve: resolvePromise,
+          reject: rejectPromise,
           message,
         };
 

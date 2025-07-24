@@ -71,9 +71,16 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Resolve thisFile to absolute path with proper extension
     if (this.thisFile) {
-      this.thisFile = path.join(this.workingDir, this.thisFile);
-      if (!this.thisFile.endsWith(".yaml") && !this.thisFile.endsWith(".yml")) {
-        this.thisFile += ".yaml";
+      if (this.thisFile === ".") {
+        this.thisFile = path.join(this.workingDir, "testdriver.yaml");
+      } else {
+        this.thisFile = path.join(this.workingDir, this.thisFile);
+        if (
+          !this.thisFile.endsWith(".yaml") &&
+          !this.thisFile.endsWith(".yml")
+        ) {
+          this.thisFile += ".yaml";
+        }
       }
     }
 
@@ -769,7 +776,8 @@ commands:
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
-      await this.run(baseYaml, false, false, false);
+      await this.run(baseYaml, false, false);
+      await this.runLifecycle("postrun");
     }
 
     let image = await this.system.captureScreenBase64();
@@ -1083,6 +1091,7 @@ ${regression}
 
     await this.runLifecycle("prerun");
     await this.run(tmpobj.name, false, false);
+    await this.runLifecycle("postrun");
   }
 
   // this will load a regression test from a file location
@@ -1218,7 +1227,6 @@ ${regression}
     if (shouldSave) {
       await this.save({ filepath: file, silent: false });
     }
-
     if (shouldExit) {
       await this.summarize();
       await this.exit(false, shouldSave, true);
@@ -1346,41 +1354,75 @@ ${regression}
       // ignore errors
     }
   }
+
+  clearRecentSandboxId() {
+    const lastSandboxFile = path.join(
+      os.homedir(),
+      ".testdriverai-last-sandbox",
+    );
+    try {
+      if (fs.existsSync(lastSandboxFile)) {
+        fs.unlinkSync(lastSandboxFile);
+      }
+    } catch {
+      // ignore errors
+    }
+  }
   async buildEnv(options = {}) {
     // If instance already exists, do not build environment again
     if (this.instance) {
       this.emitter.emit(
         events.log.log,
-        theme.dim("Sandbox instance already exists, skipping buildEnv."),
+        theme.dim("- sandbox instance already exists, skipping launch."),
       );
       return;
     }
 
-    const { headless = false, heal, reconnect } = options;
+    let { headless = false, heal, new: createNew = false } = options;
+
+    // If CI environment variable is true, always create a new sandbox
+    if (this.config.CI) {
+      createNew = true;
+      this.emitter.emit(
+        events.log.log,
+        theme.dim("CI environment detected, will create a new sandbox"),
+      );
+    }
 
     if (heal) this.healMode = heal;
 
-    // order is important!
-    await this.connectToSandboxService();
-
-    const recentId = this.getRecentSandboxId();
-
-    if (reconnect) {
-      if (recentId) {
+    // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
+    if (createNew) {
+      this.clearRecentSandboxId();
+      if (!this.config.CI) {
         this.emitter.emit(
           events.log.log,
-          theme.dim(`- using recent sandbox: ${recentId}`),
-        );
-        this.sandboxId = recentId;
-      } else {
-        this.emitter.emit(
-          events.log.warn,
-          theme.yellow(`No recent sandbox found, creating a new one.`),
+          theme.dim("-- `new` flag detected, will create a new sandbox"),
         );
       }
     }
 
-    if (this.sandboxId) {
+    // order is important!
+    await this.connectToSandboxService();
+
+    const recentId = createNew ? null : this.getRecentSandboxId();
+
+    // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
+    if (!createNew && recentId) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`- using recent sandbox: ${recentId}`),
+      );
+      this.sandboxId = recentId;
+    } else if (!createNew) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`- no recent sandbox found, creating a new one.`),
+      );
+    }
+
+    // Only attempt to connect to existing sandbox if not in CI mode and not creating new
+    if (this.sandboxId && !this.config.CI && !createNew) {
       // Attempt to connect to known instance
       this.emitter.emit(
         events.log.log,
@@ -1390,7 +1432,7 @@ ${regression}
       try {
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
-          options.persist,
+          true, // always persist by default
         );
 
         this.instance = instance;
@@ -1425,7 +1467,7 @@ ${regression}
     this.saveLastSandboxId(newSandbox.sandbox.instanceId);
     let instance = await this.connectToSandboxDirect(
       newSandbox.sandbox.instanceId,
-      options.persist,
+      true, // always persist by default
     );
     this.instance = instance;
     await this.renderSandbox(instance, headless);
@@ -1575,6 +1617,7 @@ ${regression}
     let instance = await this.sandbox.send({
       type: "create",
       resolution: this.config.TD_RESOLUTION,
+      ci: this.config.CI,
     });
     return instance;
   }
@@ -1661,12 +1704,10 @@ ${regression}
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
-
     // Ensure we have an absolute path
     if (currentFilePath && !path.isAbsolute(currentFilePath)) {
       currentFilePath = path.resolve(this.workingDir, currentFilePath);
     }
-
     let lifecycleFile = null;
 
     // First, check if there's a local lifecycle directory in the same directory as the current file
@@ -1677,7 +1718,6 @@ ${regression}
         localLifecycleDir,
         `${lifecycleName}.yaml`,
       );
-
       // If there's a local lifecycle directory, only look there (don't fall back to global)
       if (
         fs.existsSync(localLifecycleDir) &&
@@ -1700,9 +1740,8 @@ ${regression}
         }
       }
     }
-
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false, false);
+      await this.run(lifecycleFile, false, false);
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {
