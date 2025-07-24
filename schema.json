@@ -27,7 +27,6 @@
             "description": "An array of commands to execute in this step.",
             "items": {
               "type": "object",
-              "additionalProperties": false,
               "properties": {
                 "command": {
                   "type": "string",
@@ -40,7 +39,6 @@
               "allOf": [
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "type"
@@ -50,6 +48,9 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+                      "command": {
+                        "type": "string"
+                      },
                       "text": {
                         "type": [
                           "string",
@@ -67,7 +68,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "press-keys"
@@ -77,6 +77,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "keys": {
                         "type": "array",
                         "contains": {
@@ -287,7 +291,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "scroll"
@@ -297,6 +300,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "direction": {
                         "type": "string",
                         "enum": [
@@ -324,7 +331,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "wait"
@@ -345,7 +351,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "click"
@@ -355,6 +360,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "x": {
                         "type": "integer"
                       },
@@ -382,7 +391,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "hover"
@@ -392,6 +400,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "x": {
                         "type": "integer"
                       },
@@ -407,7 +419,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "drag"
@@ -417,6 +428,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "x": {
                         "type": "integer"
                       },
@@ -432,7 +447,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "hover-text"
@@ -442,6 +456,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "text": {
                         "type": "string"
                       },
@@ -476,7 +494,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "hover-image"
@@ -484,8 +501,11 @@
                     }
                   },
                   "then": {
-                    "additionalProperties": false,
+  "additionalProperties": false,
                     "properties": {
+                      "command": {
+                        "type": "string"
+                      },
                       "description": {
                         "type": "string"
                       },
@@ -509,7 +529,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "match-image"
@@ -519,6 +538,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "path": {
                         "type": "string"
                       },
@@ -542,7 +565,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "wait-for-image"
@@ -552,6 +574,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "description": {
                         "type": "string"
                       },
@@ -566,7 +592,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "wait-for-text"
@@ -576,6 +601,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "text": {
                         "type": "string"
                       },
@@ -597,7 +626,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "scroll-until-text"
@@ -607,6 +635,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "text": {
                         "type": "string"
                       },
@@ -638,7 +670,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "scroll-until-image"
@@ -648,6 +679,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "description": {
                         "type": "string"
                       },
@@ -686,7 +721,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "focus-application"
@@ -707,7 +741,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "remember"
@@ -717,6 +750,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "description": {
                         "type": "string"
                       },
@@ -732,7 +769,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "assert"
@@ -742,6 +778,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "expect": {
                         "type": "string"
                       },
@@ -756,7 +796,6 @@
                 },
                 {
                   "if": {
-                    "additionalProperties": false,
                     "properties": {
                       "command": {
                         "const": "exec"
@@ -766,6 +805,10 @@
                   "then": {
                     "additionalProperties": false,
                     "properties": {
+
+                      "command": {
+                        "type": "string"
+                      },
                       "lang": {
                         "type": "string",
                         "enum": [
