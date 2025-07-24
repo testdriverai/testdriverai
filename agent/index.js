@@ -1365,7 +1365,7 @@ ${regression}
     if (this.instance) {
       this.emitter.emit(
         events.log.log,
-        theme.dim("Sandbox instance already exists, skipping buildEnv."),
+        theme.dim("- sandbox instance already exists, skipping launch."),
       );
       return;
     }
@@ -1389,7 +1389,7 @@ ${regression}
       if (!this.config.CI) {
         this.emitter.emit(
           events.log.log,
-          theme.dim("--new flag detected, will create a new sandbox"),
+          theme.dim("-- `new` flag detected, will create a new sandbox"),
         );
       }
     }
@@ -1409,7 +1409,7 @@ ${regression}
     } else if (!createNew) {
       this.emitter.emit(
         events.log.log,
-        theme.dim(`No recent sandbox found, creating a new one.`),
+        theme.dim(`- no recent sandbox found, creating a new one.`),
       );
     }
 
@@ -1609,6 +1609,7 @@ ${regression}
     let instance = await this.sandbox.send({
       type: "create",
       resolution: this.config.TD_RESOLUTION,
+      ci: this.config.CI,
     });
     return instance;
   }
