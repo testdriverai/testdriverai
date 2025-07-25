@@ -13,6 +13,7 @@ const os = require("os");
 // third party modules
 const path = require("path");
 const yaml = require("js-yaml");
+const marky = require("marky");
 const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter2 } = require("eventemitter2");
 
@@ -102,8 +103,8 @@ class TestDriverAgent extends EventEmitter2 {
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
-    // Create sandbox instance with this agent's emitter
-    this.sandbox = createSandbox(this.emitter);
+    // Create sandbox instance with this agent's emitter and analytics
+    this.sandbox = createSandbox(this.emitter, this.analytics);
 
     // Create system instance with sandbox and config
     this.system = createSystem(this.sandbox, this.config);
@@ -1599,6 +1600,8 @@ ${regression}
   }
 
   async connectToSandboxService() {
+    marky.mark("connectToSandboxService");
+    
     this.emitter.emit(
       events.log.log,
       theme.gray(`- establishing connection...`),
@@ -1606,20 +1609,56 @@ ${regression}
     await this.sandbox.boot(this.config.TD_API_ROOT);
     this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
     await this.sandbox.auth(this.config.TD_API_KEY);
+    
+    let timing = marky.stop("connectToSandboxService");
+    
+    // Emit timing event for sandbox service connection
+    this.emitter.emit(events.sandbox.timing, {
+      operation: "connectToSandboxService",
+      timing: timing.duration,
+      timestamp: Date.now(),
+    });
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
+    marky.mark("connectToSandboxDirect");
+    
     this.emitter.emit(events.log.log, theme.gray(`- connecting...`));
     let instance = await this.sandbox.connect(sandboxId, persist);
+    
+    let timing = marky.stop("connectToSandboxDirect");
+    
+    // Emit timing event for direct sandbox connection
+    this.emitter.emit(events.sandbox.timing, {
+      operation: "connectToSandboxDirect",
+      timing: timing.duration,
+      sandboxId,
+      timestamp: Date.now(),
+    });
+    
     return instance;
   }
 
   async createNewSandbox() {
+    marky.mark("createNewSandbox");
+    
     let instance = await this.sandbox.send({
       type: "create",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
     });
+    
+    let timing = marky.stop("createNewSandbox");
+    
+    // Emit timing event for sandbox creation
+    this.emitter.emit(events.sandbox.timing, {
+      operation: "createNewSandbox",
+      timing: timing.duration,
+      resolution: this.config.TD_RESOLUTION,
+      ci: this.config.CI,
+      timestamp: Date.now(),
+    });
+    
     return instance;
   }
 
