@@ -3,19 +3,64 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const Jimp = require("jimp");
-const { getEmitter, events } = require("../events.js");
+const { events } = require("../events.js");
 
-const createSystem = (sandbox, config) => {
+const createSystem = (sandbox, config, emitter) => {
   const screenshot = async (options) => {
-    let { base64 } = await sandbox.send({ type: "system.screenshot" });
+    const maxRetries = 3;
+    let lastError = null;
 
-    if (!base64) {
-      console.error("Failed to take screenshot");
-    } else {
-      let image = Buffer.from(base64, "base64");
-      fs.writeFileSync(options.filename, image);
-      return { filename: options.filename };
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        let { base64 } = await sandbox.send({ type: "system.screenshot" });
+
+        if (!base64) {
+          const error = new Error(`Failed to take screenshot - no base64 data received (attempt ${attempt}/${maxRetries})`);
+          lastError = error;
+          
+          emitter.emit(events.screenshot.error, {
+            error,
+            attempt,
+            maxRetries,
+            options
+          });
+
+          if (attempt === maxRetries) {
+            throw error;
+          }
+          continue;
+        }
+
+        let image = Buffer.from(base64, "base64");
+        fs.writeFileSync(options.filename, image);
+        
+        if (attempt > 1) {
+          emitter.emit(events.screenshot.success, {
+            attempt,
+            maxRetries,
+            options,
+            filename: options.filename
+          });
+        }
+        
+        return { filename: options.filename };
+      } catch (error) {
+        lastError = error;
+        
+        emitter.emit(events.screenshot.error, {
+          error,
+          attempt,
+          maxRetries,
+          options
+        });
+
+        if (attempt === maxRetries) {
+          throw error;
+        }
+      }
     }
+
+    throw lastError;
   };
 
   let primaryDisplay = null;
@@ -35,7 +80,7 @@ const createSystem = (sandbox, config) => {
   const captureAndResize = async (scale = 1, silent = false, mouse = false) => {
     try {
       if (!silent) {
-        getEmitter().emit(events.screenCapture.start, {
+        emitter.emit(events.screenCapture.start, {
           scale,
           silent,
           display: primaryDisplay,
@@ -70,7 +115,7 @@ const createSystem = (sandbox, config) => {
 
       await image.writeAsync(step2);
 
-      getEmitter().emit(events.screenCapture.end, {
+      emitter.emit(events.screenCapture.end, {
         scale,
         silent,
         display: primaryDisplay,
@@ -78,7 +123,7 @@ const createSystem = (sandbox, config) => {
 
       return step2;
     } catch (error) {
-      getEmitter().emit(events.screenCapture.error, {
+      emitter.emit(events.screenCapture.error, {
         error,
         scale,
         silent,

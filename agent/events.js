@@ -39,6 +39,10 @@ const events = {
     end: "screen-capture:end",
     error: "screen-capture:error",
   },
+  screenshot: {
+    error: "screenshot:error",
+    success: "screenshot:success",
+  },
   terminal: {
     stdout: "terminal:stdout",
     stderr: "terminal:stderr",
