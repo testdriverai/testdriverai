@@ -3,18 +3,68 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const Jimp = require("jimp");
-const { getEmitter, events } = require("../events.js");
+const { events } = require("../events.js");
 
-const createSystem = (sandbox, config) => {
+const createSystem = (sandbox, config, emitter) => {
   const screenshot = async (options) => {
-    let { base64 } = await sandbox.send({ type: "system.screenshot" });
+    try {
+      emitter.emit(events.log.debug, {
+        message: `Taking screenshot to ${options.filename}`,
+        data: { filename: options.filename },
+      });
 
-    if (!base64) {
-      console.error("Failed to take screenshot");
-    } else {
-      let image = Buffer.from(base64, "base64");
-      fs.writeFileSync(options.filename, image);
-      return { filename: options.filename };
+      emitter.emit(events.sandbox.sent, {
+        message: "Sending screenshot request to sandbox",
+        data: { type: "system.screenshot", filename: options.filename },
+      });
+
+      let { base64 } = await sandbox.send({ type: "system.screenshot" });
+
+      emitter.emit(events.sandbox.received, {
+        message: "Received screenshot response from sandbox",
+        data: {
+          type: "system.screenshot",
+          filename: options.filename,
+          hasBase64: !!base64,
+          base64Length: base64 ? base64.length : 0,
+        },
+      });
+
+      if (!base64) {
+        const errorMsg =
+          "Failed to take screenshot - no base64 data received from sandbox";
+        emitter.emit(events.error.general, {
+          message: errorMsg,
+          data: { filename: options.filename, type: "screenshot" },
+        });
+        emitter.emit(events.log.warn, {
+          message: errorMsg,
+          data: { filename: options.filename },
+        });
+        throw new Error(errorMsg);
+      } else {
+        let image = Buffer.from(base64, "base64");
+        fs.writeFileSync(options.filename, image);
+
+        emitter.emit(events.log.debug, {
+          message: `Screenshot saved successfully to ${options.filename}`,
+          data: { filename: options.filename, size: image.length },
+        });
+
+        return { filename: options.filename };
+      }
+    } catch (error) {
+      const errorMsg = `Screenshot operation failed: ${error.message}`;
+      emitter.emit(events.error.general, {
+        message: errorMsg,
+        error: error,
+        data: { filename: options?.filename, type: "screenshot" },
+      });
+      emitter.emit(events.log.warn, {
+        message: errorMsg,
+        data: { filename: options?.filename, error: error.message },
+      });
+      throw error;
     }
   };
 
@@ -35,7 +85,7 @@ const createSystem = (sandbox, config) => {
   const captureAndResize = async (scale = 1, silent = false, mouse = false) => {
     try {
       if (!silent) {
-        getEmitter().emit(events.screenCapture.start, {
+        emitter.emit(events.screenCapture.start, {
           scale,
           silent,
           display: primaryDisplay,
@@ -70,7 +120,7 @@ const createSystem = (sandbox, config) => {
 
       await image.writeAsync(step2);
 
-      getEmitter().emit(events.screenCapture.end, {
+      emitter.emit(events.screenCapture.end, {
         scale,
         silent,
         display: primaryDisplay,
@@ -78,7 +128,7 @@ const createSystem = (sandbox, config) => {
 
       return step2;
     } catch (error) {
-      getEmitter().emit(events.screenCapture.error, {
+      emitter.emit(events.screenCapture.error, {
         error,
         scale,
         silent,
