@@ -74,6 +74,11 @@ class BaseCommand extends Command {
       console.error(event, ":", data);
     });
 
+    // Use pattern matching for error events
+    this.agent.emitter.on("screenshot:error", (data) => {
+      console.log("Screenshot error:", data.error);
+    });
+
     // Handle status events
     this.agent.emitter.on("status", (message) => {
       console.log(`- ${message}`);
