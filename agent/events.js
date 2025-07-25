@@ -107,7 +107,6 @@ const events = {
     disconnect: "sandbox:disconnected",
     sent: "sandbox:sent",
     received: "sandbox:received",
-    timing: "sandbox:timing",
   },
   redraw: {
     status: "redraw:status",
