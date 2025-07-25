@@ -68,6 +68,8 @@ class TestDriverAgent extends EventEmitter2 {
     this.healMode = flags.healMode || flags.heal || false;
     this.sandboxId = flags.sandboxId || null;
     this.workingDir = flags.workingDir || process.cwd();
+    this.postrun = flags.postrun || null;
+    this.provision = flags.provision || null;
 
     // Resolve thisFile to absolute path with proper extension
     if (this.thisFile) {
@@ -167,8 +169,8 @@ class TestDriverAgent extends EventEmitter2 {
 
     this.analytics.track("exit", { failed });
 
-    if (shouldRunLifecycle) {
-      await this.runLifecycle("postrun");
+    if (shouldRunLifecycle && this.postrun) {
+      await this.runLifecycle(this.postrun);
     }
 
     // Emit exit event with exit code and close readline interface
@@ -1473,7 +1475,10 @@ ${regression}
     this.instance = instance;
     await this.renderSandbox(instance, headless);
     await this.newSession();
-    await this.runLifecycle("provision");
+
+    if (this.provision) {
+      await this.runLifecycle(this.provision);
+    }
   }
 
   async start() {
@@ -1741,6 +1746,12 @@ ${regression}
         }
       }
     }
+
+    // If lifecycleName is a filepath
+    if (fs.existsSync(path.resolve(lifecycleName))) {
+      lifecycleFile = path.resolve(lifecycleName);
+    }
+
     if (lifecycleFile) {
       await this.run(lifecycleFile, false, false);
     }
