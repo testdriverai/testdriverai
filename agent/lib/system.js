@@ -15,14 +15,16 @@ const createSystem = (sandbox, config, emitter) => {
         let { base64 } = await sandbox.send({ type: "system.screenshot" });
 
         if (!base64) {
-          const error = new Error(`Failed to take screenshot - no base64 data received (attempt ${attempt}/${maxRetries})`);
+          const error = new Error(
+            `Failed to take screenshot - no base64 data received (attempt ${attempt}/${maxRetries})`,
+          );
           lastError = error;
-          
+
           emitter.emit(events.screenshot.error, {
             error,
             attempt,
             maxRetries,
-            options
+            options,
           });
 
           if (attempt === maxRetries) {
@@ -33,25 +35,25 @@ const createSystem = (sandbox, config, emitter) => {
 
         let image = Buffer.from(base64, "base64");
         fs.writeFileSync(options.filename, image);
-        
+
         if (attempt > 1) {
           emitter.emit(events.screenshot.success, {
             attempt,
             maxRetries,
             options,
-            filename: options.filename
+            filename: options.filename,
           });
         }
-        
+
         return { filename: options.filename };
       } catch (error) {
         lastError = error;
-        
+
         emitter.emit(events.screenshot.error, {
           error,
           attempt,
           maxRetries,
-          options
+          options,
         });
 
         if (attempt === maxRetries) {
