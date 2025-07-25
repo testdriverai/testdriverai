@@ -1,8 +1,5 @@
 const { EventEmitter2 } = require("eventemitter2");
 
-// Global reference to the current agent's emitter
-let currentEmitter = null;
-
 // Factory function to create a new emitter instance
 const createEmitter = () => {
   const emitter = new EventEmitter2({
@@ -15,19 +12,6 @@ const createEmitter = () => {
     ignoreErrors: false,
   });
   return emitter;
-};
-
-// Function to set the current emitter for all modules to use
-const setEmitter = (emitter) => {
-  currentEmitter = emitter;
-};
-
-// Function to get the current emitter
-const getEmitter = () => {
-  if (!currentEmitter) {
-    throw new Error("Emitter not initialized. Call setEmitter() first.");
-  }
-  return currentEmitter;
 };
 
 const events = {
@@ -131,4 +115,4 @@ const getValues = (obj) => {
 
 const eventsArray = getValues(events);
 
-module.exports = { events, createEmitter, setEmitter, getEmitter, eventsArray };
+module.exports = { events, createEmitter, eventsArray };
