@@ -119,9 +119,9 @@ class BaseCommand extends Command {
     this.agent.emitter.on("show-window", async (url) => {
       console.log(`Live test execution: `);
       if (this.agent.config.CI) {
-        console.log(
-          `${JSON.parse(decodeURIComponent(new URL(url)).split("=")[1]).url}?view_only=true`,
-        );
+        let u = new URL(url);
+        u = JSON.parse(u.searchParams.get("data"));
+        console.log(`${u.url}?view_only=true`);
       } else {
         console.log(url);
         await openBrowser(url);
