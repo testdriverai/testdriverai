@@ -113,6 +113,14 @@ const createSandbox = (emitter, analytics) => {
         this.socket.on("message", async (raw) => {
           let message = JSON.parse(raw);
 
+          if (!this.ps[message.requestId]) {
+            console.warn(
+              "No pending promise found for requestId:",
+              message.requestId,
+            );
+            return;
+          }
+
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
             this.ps[message.requestId].reject(JSON.stringify(message));
@@ -137,7 +145,7 @@ const createSandbox = (emitter, analytics) => {
               });
             }
 
-            this.ps[message.requestId].resolve(message);
+            this.ps[message.requestId]?.resolve(message);
           }
           delete this.ps[message.requestId];
         });
