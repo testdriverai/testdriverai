@@ -101,9 +101,14 @@ class BaseCommand extends Command {
     logger.createMarkdownLogger(this.agent.emitter);
 
     // Handle exit events
-    this.agent.emitter.on("error:fatal", (error) => {
+    this.agent.emitter.on("error:fatal", async (error) => {
       console.error("Fatal error:", error);
-      process.exit(1);
+      // Call the agent's exit method to ensure postrun lifecycle script is executed
+      if (this.agent) {
+        await this.agent.exit(true, false, true);
+      } else {
+        process.exit(1);
+      }
     });
 
     this.agent.emitter.on("exit", (exitCode) => {
@@ -113,8 +118,14 @@ class BaseCommand extends Command {
     // Handle show window events
     this.agent.emitter.on("show-window", async (url) => {
       console.log(`Live test execution: `);
-      console.log(url);
-      await openBrowser(url);
+      if (this.agent.config.CI) {
+        let u = new URL(url);
+        u = JSON.parse(u.searchParams.get("data"));
+        console.log(`${u.url}?view_only=true`);
+      } else {
+        console.log(url);
+        await openBrowser(url);
+      }
     });
   }
 

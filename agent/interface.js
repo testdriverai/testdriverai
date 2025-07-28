@@ -48,6 +48,12 @@ function createCommandDefinitions(agent) {
             "Create a new sandbox instead of reconnecting to an existing one",
           default: false,
         }),
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
+        }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
         }),
@@ -59,7 +65,7 @@ function createCommandDefinitions(agent) {
         await agent.runLifecycle("prerun");
         // When run() is called through run.js CLI command, shouldExit should be true
         const shouldExit = agent.cliArgs?.command === "run";
-        await agent.run(file, flags.write, shouldExit, true);
+        await agent.run(file, flags.write, shouldExit);
       },
     },
 
@@ -85,6 +91,12 @@ function createCommandDefinitions(agent) {
           description:
             "Create a new sandbox instead of reconnecting to an existing one",
           default: false,
+        }),
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
