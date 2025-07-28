@@ -35,7 +35,7 @@ const { createSession } = require("./lib/session.js");
 const { createOutputs } = require("./lib/outputs.js");
 
 const isValidVersion = require("./lib/valid-version.js");
-const { events, createEmitter, setEmitter } = require("./events.js");
+const { events, createEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
 let debuggerStarted = false;
@@ -84,9 +84,6 @@ class TestDriverAgent extends EventEmitter2 {
       }
     }
 
-    // Set this emitter as the global current emitter for other modules to use
-    setEmitter(this.emitter);
-
     // Create parser instance with this agent's emitter
     this.parser = createParser(this.emitter);
 
@@ -105,8 +102,8 @@ class TestDriverAgent extends EventEmitter2 {
     // Create sandbox instance with this agent's emitter
     this.sandbox = createSandbox(this.emitter);
 
-    // Create system instance with sandbox and config
-    this.system = createSystem(this.sandbox, this.config);
+    // Create system instance with emitter, sandbox and config
+    this.system = createSystem(this.emitter, this.sandbox, this.config);
 
     // Create commands instance with this agent's emitter and system
     const commandsResult = createCommands(
