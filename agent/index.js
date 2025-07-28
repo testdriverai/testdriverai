@@ -1610,7 +1610,11 @@ ${regression}
   async renderSandbox(instance, headless = false) {
     if (!headless) {
       let url =
-        "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html";
+        "http://" +
+        instance.ip +
+        ":" +
+        instance.vncPort +
+        "/vnc_lite.html?token=V3b8wG9";
 
       let data = {
         resolution: this.config.TD_RESOLUTION,
