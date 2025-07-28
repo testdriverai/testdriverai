@@ -17,20 +17,23 @@ const createSandbox = (emitter) => {
 
     send(message) {
       let resolvePromise;
+      let rejectPromise;
 
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
 
-        let p = new Promise((resolve) => {
+        let p = new Promise((resolve, reject) => {
           this.socket.send(JSON.stringify(message));
           emitter.emit(events.sandbox.sent, message);
           resolvePromise = resolve;
+          rejectPromise = reject;
         });
 
         this.ps[message.requestId] = {
           promise: p,
           resolve: resolvePromise,
+          reject: rejectPromise,
           message,
         };
 
@@ -105,16 +108,12 @@ const createSandbox = (emitter) => {
 
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
-            throw new Error(JSON.stringify(message));
+            this.ps[message.requestId].reject(JSON.stringify(message));
           } else {
-            if (this.ps[message.requestId]) {
-              emitter.emit(events.sandbox.received);
-              this.ps[message.requestId].resolve(message);
-              delete this.ps[message.requestId];
-            } else {
-              console.log("unhandled message", message);
-            }
+            emitter.emit(events.sandbox.received);
+            this.ps[message.requestId].resolve(message);
           }
+          delete this.ps[message.requestId];
         });
       });
     }

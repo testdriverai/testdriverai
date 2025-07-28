@@ -3,6 +3,11 @@ name: v6 Acceptance
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
   schedule:
     - cron: "0 0 * * *"

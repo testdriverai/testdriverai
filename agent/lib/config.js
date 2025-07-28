@@ -42,6 +42,11 @@ const createConfig = (environment = {}) => {
     }
   }
 
+  // Add support for CI environment variable
+  if (environment.CI) {
+    config.CI = parseValue(environment.CI);
+  }
+
   return config;
 };
 
