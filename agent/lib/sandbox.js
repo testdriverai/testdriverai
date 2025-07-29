@@ -103,6 +103,13 @@ const createSandbox = (emitter, analytics) => {
 
         this.socket.on("open", async () => {
           this.apiSocketConnected = true;
+
+          setInterval(() => {
+            if (this.socket.readyState === WebSocket.OPEN) {
+              this.socket.ping();
+            }
+          }, 5000);
+
           resolve(this);
         });
 
