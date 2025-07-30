@@ -1,7 +1,100 @@
-version: 6.0.6
-session: 68802585674639688175d870
+version: 6.0.11-canary.9e8884e.0
+session: 6888ea9277d5662e62e0ea4b
 steps:
   - prompt: log in
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Username
+        description: label for the username input above the first input field
+        action: click
+      - command: type
+        text: standard_user
+      - command: press-keys
+        keys:
+          - tab
+      - command: type
+        text: secret_password
+      - command: hover-text
+        text: Sign in
+        description: black button below the password input
+        action: click
   - prompt: add an item to the cart
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Add to Cart
+        description: black button below the price for TestDriver Sticker Pack
+        action: click
   - prompt: click on the cart icon
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Cart
+        description: >-
+          cart button with a red badge showing 1 in the top right of the page
+          header
+        action: click
+  - prompt: click on the cart icon
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Cart
+        description: >-
+          cart button with a red badge showing 1 in the top right of the page
+          header
+        action: click
+  - prompt: click on the cart icon
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Cart
+        description: >-
+          cart button with a red badge showing 3 in the top right of the page
+          header
+        action: click
+  - prompt: click on the cart icon
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: No thanks
+        description: light blue button in the password manager popup in the upper right
+        action: click
+      - command: hover-text
+        text: Cart
+        description: >-
+          cart button with a red badge showing 4 in the top right of the page
+          header
+        action: click
   - prompt: complete checkout
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Full Name
+        description: Full Name input label above the first input field in the order summary
+        action: click
+      - command: type
+        text: Test User
+      - command: hover-text
+        text: Zip Code
+        description: Zip Code input label above the second input field in the order summary
+        action: click
+      - command: type
+        text: '12345'
+      - command: hover-text
+        text: Proceed to Checkout
+        description: black button at the bottom of the order summary section
+        action: click
+  - prompt: complete checkout
+    commands:
+      - command: hover-text
+        text: Confirm Order
+        description: large black button below the order summary on the checkout page
+        action: click

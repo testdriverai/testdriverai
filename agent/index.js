@@ -726,8 +726,6 @@ commands:
     this.lastPrompt = currentTask;
     this.checkCount = 0;
 
-    this.emitter.emit(events.log.debug, "exploratoryLoop called");
-
     this.tasks.push(currentTask);
 
     this.emitter.emit(events.log.log, theme.dim("thinking..."), true);

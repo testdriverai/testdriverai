@@ -1,0 +1,100 @@
+version: 6.0.10
+session: 688953d5030000ceb311955a
+steps:
+  - prompt: double click onteh docker icon on the desktop
+    commands:
+      - command: hover-image
+        description: >-
+          blue whale with white containers icon labeled Docker Desktop on the
+          desktop
+        action: click
+      - command: press-keys
+        keys:
+          - enter
+      - command: wait-for-text
+        timeout: 600000
+        text: Accept
+        description: >-
+          blue Accept button at the bottom right of the Docker Subscription
+          Service Agreement window
+        action: click
+  - prompt: click on accept
+    commands:
+      - command: hover-text
+        text: Accept
+        description: >-
+          blue Accept button at the bottom right of the Docker Subscription
+          Service Agreement window
+        action: click
+  - prompt: click on skip
+    commands:
+      - command: hover-text
+        text: Skip
+        description: Skip link at the top right of the Welcome to Docker dialog
+        action: click
+  - prompt: wait for docker desktop to start
+    commands:
+      - command: wait-for-text
+        text: Containers
+        timeout: 240000
+  - prompt: click on docker hub
+    commands:
+      - command: hover-text
+        text: Docker Hub
+        description: option in the sidebar of Docker Desktop
+        action: click
+  - prompt: search docker hub for python
+    commands:
+      - command: hover-text
+        text: Search resources like
+        description: search bar in Docker Desktop
+        action: click
+      - command: type
+        text: python
+      - command: press-keys
+        keys:
+          - enter
+  - prompt: click on the first result for python
+    commands:
+      - command: hover-text
+        text: python
+        description: first search result for python in Docker Hub
+        action: click
+  - prompt: click on run ot run the docker hub image
+    commands:
+      - command: hover-text
+        text: Run
+        description: run button next to the pull button in Docker Desktop
+        action: click
+  - prompt: wait for run to appear again
+    commands:
+      - command: wait-for-text
+        timeout: 600000
+        text: Run
+  - prompt: make up a name for the python container and click run
+    commands:
+      - command: hover-text
+        text: Container name
+        description: input field for container name
+        action: click
+      - command: type
+        text: my_python_container
+      - command: hover-text
+        text: Run
+        description: run button next to the container name input
+        action: click
+  - prompt: click on the play button icon
+    commands:
+      - command: hover-image
+        description: blue play button icon next to the container status
+        action: click
+  - prompt: click on env
+    commands:
+      - command: hover-text
+        text: Env
+        description: env tab in Docker Desktop
+        action: click
+  - prompt: assert the python version is 3
+    commands:
+      - command: assert
+        expect: PYTHON_VERSION starts with 3
