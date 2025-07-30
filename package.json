@@ -49,7 +49,6 @@
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",
     "semver": "^7.6.2",
-    "testdriverai": "^6.0.11-canary.a423fc6.0",
     "tmp": "^0.2.3",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
