@@ -30,6 +30,7 @@ steps:
         name: Google Chrome
       - command: hover-text
         text: "1"
+        method: "levenshtein"
         description: >-
           the first "1" in the opened Date Picker calendar
         action: click
