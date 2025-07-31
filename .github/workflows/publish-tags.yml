@@ -38,7 +38,15 @@ jobs:
           npm dist-tag add testdriverai@$(npm view testdriverai@canary version) beta
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-
+  trigger-vscode-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger VSCode Build + Publish
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          repository: testdriverai/vscode
+          event-type: cli-publish
+          token: ${{ secrets.GH_TOKEN }}
   # gather-test-files:
   #   name: Gather Test Files
   #   runs-on: ubuntu-latest
