@@ -1,0 +1,45 @@
+version: 5.7.32
+session: 683f3175c2acc16422163909
+steps:
+  - prompt: type the text
+    commands:
+      - command: type
+        text: asdb
+        dfnjk: sfdad
+
+# Scenario - 2
+# version: 5.7.32
+# session: 683f3175c2acc16422163909
+# steps:
+#   - prompt: type the text
+#     commands:
+#       - command: if
+          # condition: something 
+          # then:
+          #   - command: hover-text
+          #     text: Accept Cookies
+          #     description: cookie banner button
+          #     action: click
+          # else:
+          #   - command: hover-text
+          #     text: Sign Up
+          #     description: link in the header
+          #     action: click
+
+#Scenario 3
+# version: 5.7.32
+# session: 683f3175c2acc16422163909
+# steps:
+#   - prompt: type the text
+#     commands:
+#       - command: text // text is not a command
+
+#Scenario 4
+# version: 5.7.32
+# session: 683f3175c2acc16422163909
+# steps:
+#   - prompt: type the text
+      # - command: type    // no commands, tho the error is weird for this, its a mapping error. hoping the user can make it out 🤞
+      #   text: asdb
+      #   dfnjk: sfdad
+#       - 
