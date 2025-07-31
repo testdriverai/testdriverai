@@ -1793,7 +1793,19 @@ ${regression}
       }
     }
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false);
+      try {
+        await this.run(lifecycleFile, false, false);
+      } catch (error) {
+        // Log lifecycle errors but don't propagate them to prevent infinite loops
+        // especially during postrun lifecycle execution from exit/dieOnFatal
+        this.emitter.emit(
+          events.log.warn,
+          theme.yellow(
+            `Warning: ${lifecycleName} lifecycle failed: ${error.message || error}`,
+          ),
+        );
+        this.emitter.emit(events.log.warn, error);
+      }
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {
