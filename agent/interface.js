@@ -57,6 +57,10 @@ function createCommandDefinitions(agent) {
         summary: Flags.string({
           description: "Specify output file for summarize results",
         }),
+        junit: Flags.string({
+          description: "Generate JUnit XML test report to specified file",
+          default: false,
+        }),
       },
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file

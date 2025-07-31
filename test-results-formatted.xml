@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="0" errors="0" skipped="0">
+  <testsuite name="formatting-example" tests="1" failures="0" errors="0" skipped="0">
+    <testcase classname="Default Step" name="Default Step > assert" time="0">
+      <system-out><![CDATA[Command started: assert
+[info] Checking if page is loaded...
+Command succeeded: {<br/>  &quot;command&quot;: &quot;assert&quot;,<br/>  &quot;result&quot;: true,<br/>  &quot;timing&quot;: {<br/>    &quot;start&quot;: 1000,<br/>    &quot;end&quot;: 1200,<br/>    &quot;duration&quot;: 200<br/>  }<br/>}]]></system-out>
+    </testcase>
+  </testsuite>
+</testsuites>

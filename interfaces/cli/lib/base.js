@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const logger = require("../../logger.js");
+const { createJUnitReporter } = require("../../junit.js");
 
 async function openBrowser(url) {
   try {
@@ -26,6 +27,7 @@ class BaseCommand extends Command {
   constructor(argv, config) {
     super(argv, config);
     this.agent = null; // Initialize as null, create only when needed
+    this.junitReporter = null; // JUnit reporter instance
   }
 
   sendToSandbox(message) {
@@ -99,6 +101,18 @@ class BaseCommand extends Command {
     });
 
     logger.createMarkdownLogger(this.agent.emitter);
+
+    // Initialize JUnit reporter if junit flag is provided
+    if (this.agent.cliArgs?.options?.junit) {
+      const junitOptions = {
+        outputPath: this.agent.cliArgs.options.junit,
+        suiteName: "TestDriver",
+      };
+      this.junitReporter = createJUnitReporter(
+        this.agent.emitter,
+        junitOptions,
+      );
+    }
 
     // Handle exit events
     this.agent.emitter.on("error:fatal", async (error) => {
