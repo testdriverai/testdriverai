@@ -1,0 +1,18 @@
+# Ensure that the published `testdriverai` package is installable on multiple version of Node.js across multiple operating systems.
+name: VSCode Publish
+
+on:
+  schedule:
+    - cron: "0 * * * *" # Runs every hour
+  workflow_dispatch:
+  merge_group:
+  pull_request:
+  push:
+
+jobs:
+  trigger-vscode-build:
+    - name: Trigger VSCode Build + Publish
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        repository: testdriverai/vscode
+        event-type: cli-publish
