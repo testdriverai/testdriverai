@@ -8,11 +8,15 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   trigger-vscode-build:
-    - name: Trigger VSCode Build + Publish
-      uses: peter-evans/repository-dispatch@v3
-      with:
-        repository: testdriverai/vscode
-        event-type: cli-publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger VSCode Build + Publish
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          repository: testdriverai/vscode
+          event-type: cli-publish
+          token: ${{ secrets.GITHUB_TOKEN }}
