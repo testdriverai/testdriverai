@@ -1,7 +1,7 @@
 // parses markdown content to find code blocks, and then extracts yaml from those code blocks
 const Parser = require("markdown-parser");
 const yaml = require("js-yaml");
-const Ajv = require("ajv/dist/2020");
+const Ajv = require("ajv");
 const theme = require("./theme");
 const { events } = require("../events.js");
 
@@ -129,7 +129,7 @@ function createParser(emitter) {
   // validate yaml using schema.json in root
   let schema = require("../../schema.json");
   const validateYAML = async function (yaml) {
-    let ajv = new Ajv({ allowUnionTypes: true, strict: false });
+    let ajv = new Ajv({ allowUnionTypes: true });
     let validate = ajv.compile(schema);
     let valid = validate(await parseYAML(yaml));
 
