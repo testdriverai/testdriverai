@@ -121,7 +121,7 @@ class BaseCommand extends Command {
       if (this.agent.config.CI) {
         let u = new URL(url);
         u = JSON.parse(u.searchParams.get("data"));
-        console.log(`${u.url}?view_only=true`);
+        console.log(`${u.url}&view_only=true`);
       } else {
         console.log(url);
         await openBrowser(url);
