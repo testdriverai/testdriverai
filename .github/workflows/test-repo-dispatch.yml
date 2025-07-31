@@ -1,6 +1,12 @@
 # Ensure that the published `testdriverai` package is installable on multiple version of Node.js across multiple operating systems.
 name: VSCode Publish
 
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  statuses: write
+
 on:
   push:
     branches:
