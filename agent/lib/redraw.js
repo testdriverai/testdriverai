@@ -19,7 +19,7 @@ const createRedraw = (emitter, system, sandbox) => {
   let networkSettled = true;
   let screenHasRedrawn = null;
 
-  const resetState = async () => {
+  const resetState = () => {
     lastTxBytes = null;
     lastRxBytes = null;
     measurements = [];
@@ -64,7 +64,8 @@ const createRedraw = (emitter, system, sandbox) => {
     }
   };
 
-  const updateNetwork = async () => {
+  async function updateNetwork() {
+    console.debug("Updating network stats...");
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
         type: "system.network",
@@ -74,9 +75,9 @@ const createRedraw = (emitter, system, sandbox) => {
         network.out.totalBytesSent,
       );
     }
-  };
+  }
 
-  const imageDiffPercent = async (image1Url, image2Url) => {
+  async function imageDiffPercent(image1Url, image2Url) {
     // generate a temporary file path
     const tmpImage = path.join(os.tmpdir(), `tmp-${Date.now()}.png`);
 
@@ -99,17 +100,17 @@ const createRedraw = (emitter, system, sandbox) => {
         return false;
       }
     }
-  };
+  }
 
   let startImage = null;
 
-  const start = async () => {
+  async function start() {
     resetState();
     startImage = await system.captureScreenPNG(0.25, true);
     return startImage;
-  };
+  }
 
-  const checkCondition = async (resolve, startTime, timeoutMs) => {
+  async function checkCondition(resolve, startTime, timeoutMs) {
     let nowImage = await system.captureScreenPNG(0.25, true);
     let timeElapsed = Date.now() - startTime;
     let diffPercent = 0;
@@ -167,18 +168,22 @@ const createRedraw = (emitter, system, sandbox) => {
         checkCondition(resolve, startTime, timeoutMs);
       }, 500);
     }
-  };
+  }
 
-  const wait = (timeoutMs) => {
+  function wait(timeoutMs) {
     return new Promise((resolve) => {
       const startTime = Date.now();
       checkCondition(resolve, startTime, timeoutMs);
     });
-  };
+  }
 
-  setInterval(updateNetwork, networkUpdateInterval);
+  const networkInterval = setInterval(updateNetwork, networkUpdateInterval);
 
-  return { start, wait };
+  function cleanup() {
+    clearInterval(networkInterval);
+  }
+
+  return { start, wait, cleanup };
 };
 
 module.exports = { createRedraw };
