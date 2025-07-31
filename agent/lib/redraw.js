@@ -19,13 +19,13 @@ const createRedraw = (emitter, system, sandbox) => {
   let networkSettled = true;
   let screenHasRedrawn = null;
 
-  async function resetState() {
+  const resetState = () => {
     lastTxBytes = null;
     lastRxBytes = null;
     measurements = [];
     networkSettled = true;
     screenHasRedrawn = false;
-  }
+  };
 
   const parseNetworkStats = (thisRxBytes, thisTxBytes) => {
     diffRxBytes = lastRxBytes !== null ? thisRxBytes - lastRxBytes : 0;
@@ -65,6 +65,7 @@ const createRedraw = (emitter, system, sandbox) => {
   };
 
   async function updateNetwork() {
+    console.debug("Updating network stats...");
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
         type: "system.network",
@@ -176,9 +177,13 @@ const createRedraw = (emitter, system, sandbox) => {
     });
   }
 
-  setInterval(updateNetwork, networkUpdateInterval);
+  const networkInterval = setInterval(updateNetwork, networkUpdateInterval);
 
-  return { start, wait };
+  function cleanup() {
+    clearInterval(networkInterval);
+  }
+
+  return { start, wait, cleanup };
 };
 
 module.exports = { createRedraw };
