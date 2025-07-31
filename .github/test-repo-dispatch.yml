@@ -2,12 +2,12 @@
 name: VSCode Publish
 
 on:
-  schedule:
-    - cron: "0 * * * *" # Runs every hour
-  workflow_dispatch:
-  merge_group:
-  pull_request:
   push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   trigger-vscode-build:
