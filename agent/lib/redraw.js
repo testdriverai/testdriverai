@@ -19,13 +19,13 @@ const createRedraw = (emitter, system, sandbox) => {
   let networkSettled = true;
   let screenHasRedrawn = null;
 
-  async function resetState() {
+  const resetState = async () => {
     lastTxBytes = null;
     lastRxBytes = null;
     measurements = [];
     networkSettled = true;
     screenHasRedrawn = false;
-  }
+  };
 
   const parseNetworkStats = (thisRxBytes, thisTxBytes) => {
     diffRxBytes = lastRxBytes !== null ? thisRxBytes - lastRxBytes : 0;
@@ -64,7 +64,7 @@ const createRedraw = (emitter, system, sandbox) => {
     }
   };
 
-  async function updateNetwork() {
+  const updateNetwork = async () => {
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
         type: "system.network",
@@ -74,9 +74,9 @@ const createRedraw = (emitter, system, sandbox) => {
         network.out.totalBytesSent,
       );
     }
-  }
+  };
 
-  async function imageDiffPercent(image1Url, image2Url) {
+  const imageDiffPercent = async (image1Url, image2Url) => {
     // generate a temporary file path
     const tmpImage = path.join(os.tmpdir(), `tmp-${Date.now()}.png`);
 
@@ -99,17 +99,17 @@ const createRedraw = (emitter, system, sandbox) => {
         return false;
       }
     }
-  }
+  };
 
   let startImage = null;
 
-  async function start() {
+  const start = async () => {
     resetState();
     startImage = await system.captureScreenPNG(0.25, true);
     return startImage;
-  }
+  };
 
-  async function checkCondition(resolve, startTime, timeoutMs) {
+  const checkCondition = async (resolve, startTime, timeoutMs) => {
     let nowImage = await system.captureScreenPNG(0.25, true);
     let timeElapsed = Date.now() - startTime;
     let diffPercent = 0;
@@ -167,14 +167,14 @@ const createRedraw = (emitter, system, sandbox) => {
         checkCondition(resolve, startTime, timeoutMs);
       }, 500);
     }
-  }
+  };
 
-  function wait(timeoutMs) {
+  const wait = (timeoutMs) => {
     return new Promise((resolve) => {
       const startTime = Date.now();
       checkCondition(resolve, startTime, timeoutMs);
     });
-  }
+  };
 
   setInterval(updateNetwork, networkUpdateInterval);
 
