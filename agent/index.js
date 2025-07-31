@@ -646,8 +646,10 @@ class TestDriverAgent extends EventEmitter2 {
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
-        events.error.fatal,
-        `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        events.log.warn,
+        theme.yellow(
+          `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        ),
       );
     }
 

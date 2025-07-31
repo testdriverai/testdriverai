@@ -199,7 +199,7 @@ const createRedraw = (emitter, system, sandbox) => {
   }
 
   function cleanup() {
-    stopNetworkMonitoring();
+    stopNetworkMonitoring(networkInterval);
   }
 
   return { start, wait, cleanup };
