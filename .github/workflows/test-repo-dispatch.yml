@@ -25,4 +25,4 @@ jobs:
         with:
           repository: testdriverai/vscode
           event-type: cli-publish
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
