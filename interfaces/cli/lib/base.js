@@ -1,11 +1,11 @@
 const { Command } = require("@oclif/core");
 const { events } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
+const { createJUnitReporter } = require("../../junit-reporter.js");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const logger = require("../../logger.js");
-const { createJUnitReporter } = require("../../junit.js");
 
 async function openBrowser(url) {
   try {
@@ -27,7 +27,6 @@ class BaseCommand extends Command {
   constructor(argv, config) {
     super(argv, config);
     this.agent = null; // Initialize as null, create only when needed
-    this.junitReporter = null; // JUnit reporter instance
   }
 
   sendToSandbox(message) {
@@ -104,14 +103,14 @@ class BaseCommand extends Command {
 
     // Initialize JUnit reporter if junit flag is provided
     if (this.agent.cliArgs?.options?.junit) {
-      const junitOptions = {
-        outputPath: this.agent.cliArgs.options.junit,
-        suiteName: "TestDriver",
-      };
+      const junitOutputPath = this.agent.cliArgs.options.junit;
+      const mainTestFile = this.agent.thisFile; // Get the main test file from the agent
       this.junitReporter = createJUnitReporter(
         this.agent.emitter,
-        junitOptions,
+        junitOutputPath,
+        mainTestFile,
       );
+      console.log(`JUnit reporting enabled: ${junitOutputPath}`);
     }
 
     // Handle exit events

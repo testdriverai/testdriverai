@@ -1,5 +1,6 @@
 const path = require("path");
 const { Args, Flags } = require("@oclif/core");
+const { events } = require("./events.js");
 
 /**
  * Creates command definitions using oclif format as the single source of truth
@@ -65,11 +66,43 @@ function createCommandDefinitions(agent) {
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file
         const file = normalizeFilePath(args.file);
+        const testStartTime = Date.now();
 
-        await agent.runLifecycle("prerun");
-        // When run() is called through run.js CLI command, shouldExit should be true
-        const shouldExit = agent.cliArgs?.command === "run";
-        await agent.run(file, flags.write, shouldExit);
+        // Emit test start event for the entire test execution
+        agent.emitter.emit(events.test.start, {
+          filePath: file,
+          timestamp: testStartTime,
+        });
+
+        try {
+          await agent.runLifecycle("prerun");
+          // When run() is called through run.js CLI command, shouldExit should be true
+          const shouldExit = agent.cliArgs?.command === "run";
+          await agent.run(file, flags.write, shouldExit);
+
+          const testEndTime = Date.now();
+          const testDuration = testEndTime - testStartTime;
+
+          // Emit test success event for the entire test execution
+          agent.emitter.emit(events.test.success, {
+            filePath: file,
+            duration: testDuration,
+            timestamp: testEndTime,
+          });
+        } catch (error) {
+          const testEndTime = Date.now();
+          const testDuration = testEndTime - testStartTime;
+
+          // Emit test error event for the entire test execution
+          agent.emitter.emit(events.test.error, {
+            filePath: file,
+            error: error.message,
+            duration: testDuration,
+            timestamp: testEndTime,
+          });
+
+          throw error; // Re-throw to maintain existing error handling
+        }
       },
     },
 
