@@ -798,8 +798,8 @@ const createCommands = (
     },
   };
 
-  // Return the commands and assert function
-  return { commands, assert };
+  // Return the commands, assert function, and redraw instance
+  return { commands, assert, redraw };
 };
 
 // Export the factory function

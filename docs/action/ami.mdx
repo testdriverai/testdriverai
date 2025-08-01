@@ -15,21 +15,22 @@ icon: "image"
   <Step title="Send Us Your AWS Account ID">
     To begin, send your **12-digit AWS account ID** to your **TestDriver account manager**. We'll share the AMI directly with your AWS account using [Amazon's explicit AMI sharing process](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html).
   </Step>
-
-<Step title="Wait for Confirmation">
-  Your account manager will notify you when the AMI has been shared with your
-  account. You will receive the **AMI ID** (e.g., `ami-0abcd1234efgh5678`).
-</Step>
-
+  <Step title="Wait for Confirmation">
+    Your account manager will notify you when the AMI has been shared with your
+    account. You will receive the **AMI ID** (e.g., `ami-0abcd1234efgh5678`) and your **RDP Username \+ Password**.
+  </Step>
   <Step title="Launch and Connect with RDP">
-    Once you have the AMI ID, launch an EC2 instance and connect via RDP:
+    Once you have the AMI ID & RDP credentials from the previous step, launch an EC2 instance and connect via RDP:
 
     1. Ensure your **security group allows RDP (TCP port 3389)**.
-    2. In the EC2 Console, select your instance → **Connect > RDP Client**.
-    3. Download the `.rdp` file or copy the public IP to open manually in your RDP client.
-    4. Retrieve the **Administrator password** via the EC2 console and your key pair.
+    2. In the EC2 Console, select your instance → **Connect \> RDP Client**.
+    3. Download the `.rdp` file and launch it with the [Windows App](https://adoption.microsoft.com/en-us/windows-app/)\
+       Alternatively, copy the public IP and paste it into your RDP client.
+    4. Login using your **RDP Username \+ Password** (e.g. `testdriver` \+ `•••••••••`) provided by your account manager.
 
-    <Note>You will access a full Windows desktop where TestDriver is pre-installed and ready for customization.</Note>
+    <Note>
+      You will access a full Windows desktop where TestDriver is pre-installed and ready for customization.
+    </Note>
 
   </Step>
 

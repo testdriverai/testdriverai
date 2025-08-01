@@ -117,6 +117,7 @@ class TestDriverAgent extends EventEmitter2 {
       () => this.sourceMapper.currentFilePath || this.thisFile,
     );
     this.commands = commandsResult.commands;
+    this.redraw = commandsResult.redraw;
 
     // Create commander instance with this agent's emitter and commands
     this.commander = createCommander(
@@ -157,6 +158,11 @@ class TestDriverAgent extends EventEmitter2 {
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunLifecycle = false) {
     this.emitter.emit(events.log.log, theme.dim("exiting..."), true);
+
+    // Clean up redraw interval
+    if (this.redraw && this.redraw.cleanup) {
+      this.redraw.cleanup();
+    }
 
     shouldRunLifecycle = shouldRunLifecycle || this.cliArgs?.command == "run";
 
@@ -640,8 +646,10 @@ class TestDriverAgent extends EventEmitter2 {
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
-        events.error.fatal,
-        `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        events.log.warn,
+        theme.yellow(
+          `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        ),
       );
     }
 
