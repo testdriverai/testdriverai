@@ -142,11 +142,11 @@
           },
           {
             "group": "Exporting",
-            "pages": ["/exporting/playwright"]
+            "pages": ["/exporting/playwright", "exporting/junit"]
           },
           {
-            "group": "Bug Reporting",
-            "pages": ["/bugs/jira"]
+            "group": "Test Reporting",
+            "pages": ["exporting/junit", "/bugs/jira"]
           }
         ]
       },

@@ -128,3 +128,8 @@ jobs:
         env:
           TESTMO_URL: ${{ secrets.TESTMO_URL }}
           TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+      - name: Test Summary
+        uses: test-summary/action@v2
+        with:
+          paths: "*.xml"
+        if: always()
