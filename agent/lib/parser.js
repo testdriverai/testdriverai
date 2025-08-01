@@ -15,7 +15,7 @@ function formatAjvError(error) {
     `${theme.yellow("Keyword:")}   ${theme.magenta(error.keyword)}`,
     error.params?.missingProperty
       ? `${theme.yellow("Missing:")}   ${theme.yellow(
-          error.params.missingProperty
+          error.params.missingProperty,
         )}`
       : "",
     `${theme.yellow("Message:")}   ${theme.white(error.message)}`,
@@ -99,7 +99,7 @@ function interpolate(yaml, vars) {
   Object.keys(vars).forEach((key) => {
     newyaml = newyaml.replace(
       new RegExp(`(?<!\\\\)\\$\\{${key}\\}`, "g"),
-      vars[key]
+      vars[key],
     );
   });
   // Replace \$ with $
@@ -177,7 +177,7 @@ function createParser(emitter) {
 
         if (!commands.length) {
           throw new Error(
-            "No actions found in yaml. Individual commands must be under the `commands` key."
+            "No actions found in yaml. Individual commands must be under the `commands` key.",
           );
         }
 
@@ -187,7 +187,7 @@ function createParser(emitter) {
 
         if (!commands?.length) {
           throw new Error(
-            "No actions found in yaml. Individual commands must be under the `commands` key."
+            "No actions found in yaml. Individual commands must be under the `commands` key.",
           );
         }
 
