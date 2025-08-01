@@ -39,6 +39,7 @@ class JUnitReporter {
     this.commandStartTime = null;
     this.currentStepErrors = [];
     this.currentCommandErrors = [];
+    this.currentStepCommands = []; // Track commands for step properties
     this.outputBuffer = [];
     this.testFile = null;
     this.currentFileName = null;
@@ -295,6 +296,16 @@ class JUnitReporter {
         : data?.command || JSON.stringify(data, null, 2);
 
     this.commandStartTime = Date.now();
+
+    // Track this command for step properties
+    const currentCommand = {
+      name: commandInfo,
+      status: "running",
+      startTime: this.commandStartTime,
+      data: data,
+    };
+    this.currentStepCommands.push(currentCommand);
+
     // Add command execution to the step's output (commands are method calls within the @Test)
     this.outputBuffer.push(`> ${commandInfo}`);
     console.log(`JUnit: Executing command (method call) - ${commandInfo}`);
@@ -327,6 +338,15 @@ class JUnitReporter {
       ? (Date.now() - this.commandStartTime) / 1000
       : 0;
     this.outputBuffer.push(`  Duration: ${duration.toFixed(3)}s`);
+
+    // Mark the current command as passed
+    if (this.currentStepCommands.length > 0) {
+      const lastCommand =
+        this.currentStepCommands[this.currentStepCommands.length - 1];
+      lastCommand.status = "passed";
+      lastCommand.duration = duration;
+      lastCommand.result = commandInfo;
+    }
   }
 
   /**
@@ -343,6 +363,15 @@ class JUnitReporter {
       ? (Date.now() - this.commandStartTime) / 1000
       : 0;
     this.outputBuffer.push(`  Duration: ${duration.toFixed(3)}s`);
+
+    // Mark the current command as failed
+    if (this.currentStepCommands.length > 0) {
+      const lastCommand =
+        this.currentStepCommands[this.currentStepCommands.length - 1];
+      lastCommand.status = "failure";
+      lastCommand.duration = duration;
+      lastCommand.error = errorInfo;
+    }
   }
 
   /**
@@ -389,6 +418,7 @@ class JUnitReporter {
     this.currentStep = stepName;
     this.outputBuffer = [`Test step started: ${stepName}`];
     this.currentCommandErrors = [];
+    this.currentStepCommands = []; // Reset commands for this step
 
     console.log(`JUnit: Starting step (test method) - ${stepName}`);
   }
@@ -402,6 +432,25 @@ class JUnitReporter {
         ? (Date.now() - this.stepStartTime) / 1000
         : 0;
       this.currentTest.time(duration);
+
+      // Add step properties for each command
+      this.currentStepCommands.forEach((command, index) => {
+        const stepNum = index + 1;
+        const commandName = command.name;
+        let stepMessage = `Step ${stepNum}: ${commandName}`;
+
+        if (command.status === "passed") {
+          stepMessage += ` (${command.duration?.toFixed(3)}s)`;
+          this.currentTest.property(`step[passed]`, stepMessage);
+        } else if (command.status === "failure") {
+          stepMessage += ` - FAILED: ${command.error}`;
+          this.currentTest.property(`step[failure]`, stepMessage);
+        } else {
+          // Command was started but never completed
+          stepMessage += ` - INCOMPLETE`;
+          this.currentTest.property(`step[error]`, stepMessage);
+        }
+      });
 
       // Add all accumulated output from this step
       if (this.outputBuffer.length > 0) {
@@ -434,10 +483,9 @@ class JUnitReporter {
 
       this.currentTest = null;
       this.currentCommandErrors = [];
+      this.currentStepCommands = [];
     }
-  }
-
-  /**
+  } /**
    * Handle step success - Mark the @Test method as completed successfully
    * @param {Object} data - Event data
    */
