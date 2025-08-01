@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="5" failures="1" errors="0" skipped="0">
+<testsuites tests="3" failures="1" errors="0" skipped="0">
   <testsuite name="prerun" tests="1" failures="0" errors="0" skipped="0">
-    <testcase classname="prerun" name="start dashcam" time="2.943">
+    <testcase classname="prerun" name="start dashcam" time="2.848">
       <properties>
-        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: start dashcam&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; start dashcam&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; Execute: code(&amp;quot;...&amp;quot;)&#xA;[info] prerun.yaml:4:6 (exec)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;exec&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>code&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;dashcam track --name=TestDriver --type=application --pattern=&amp;quot;C:\Users\testdriver\Documents\testdriv...&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>lang&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;pwsh&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] calling exec...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] dashcam track --name=TestDriver --type=application --pattern=&amp;quot;C:\Users\testdriver\Documents\testdriver.log&amp;quot;&#xA;[info] Command stdout:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>    &amp;quot;lang&amp;quot;: &amp;quot;pwsh&amp;quot;,&lt;br/>    &amp;quot;code&amp;quot;: &amp;quot;dashcam track --name=TestDriver --type=application --pattern=\&amp;quot;C:\\Users\\testdriver\\Documents\\testdriver.log\&amp;quot;&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 1602,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008441257,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 18,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 121,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 10,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 5,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 7,&lt;br/>      &amp;quot;endColumn&amp;quot;: 121,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 1.603s&#xA;&amp;gt; Execute: code(&amp;quot;...&amp;quot;)&#xA;[info] prerun.yaml:4:9 (exec)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;exec&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>code&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;dashcam start&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>lang&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;pwsh&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] calling exec...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] dashcam start&#xA;[info] Command stdout:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>    &amp;quot;lang&amp;quot;: &amp;quot;pwsh&amp;quot;,&lt;br/>    &amp;quot;code&amp;quot;: &amp;quot;dashcam start&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 1336,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008442595,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 18,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 121,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 10,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 8,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 10,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 1.336s&#xA;&amp;#x2713; Step completed successfully: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>  &amp;quot;prompt&amp;quot;: &amp;quot;start dashcam&amp;quot;,&lt;br/>  &amp;quot;commandCount&amp;quot;: 2,&lt;br/>  &amp;quot;duration&amp;quot;: 2943,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008442595,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 18,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 121,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 10,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;Test completed successfully: {&lt;br/>  &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 2979,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008442595&lt;br/>}&#xA;        &lt;/div>"/>
+        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: start dashcam&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; start dashcam&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; exec&#xA;[info] prerun.yaml:4:6 (exec)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;exec&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>code&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;dashcam track --name=TestDriver --type=application --pattern=&amp;quot;C:\Users\testdriver\Documents\testdriv...&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>lang&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;pwsh&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] calling exec...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] dashcam track --name=TestDriver --type=application --pattern=&amp;quot;C:\Users\testdriver\Documents\testdriver.log&amp;quot;&#xA;[info] Command stdout:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>    &amp;quot;lang&amp;quot;: &amp;quot;pwsh&amp;quot;,&lt;br/>    &amp;quot;code&amp;quot;: &amp;quot;dashcam track --name=TestDriver --type=application --pattern=\&amp;quot;C:\\Users\\testdriver\\Documents\\testdriver.log\&amp;quot;&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 1583,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009281223,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 18,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 121,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 10,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 5,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 7,&lt;br/>      &amp;quot;endColumn&amp;quot;: 121,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 1.584s&#xA;&amp;gt; exec&#xA;[info] prerun.yaml:4:9 (exec)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;exec&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>code&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;dashcam start&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>lang&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;pwsh&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] calling exec...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] dashcam start&#xA;[info] Command stdout:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>    &amp;quot;lang&amp;quot;: &amp;quot;pwsh&amp;quot;,&lt;br/>    &amp;quot;code&amp;quot;: &amp;quot;dashcam start&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 1259,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009282483,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 18,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 121,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 10,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 8,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 10,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 1.260s&#xA;&amp;#x2713; Step completed successfully: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>  &amp;quot;prompt&amp;quot;: &amp;quot;start dashcam&amp;quot;,&lt;br/>  &amp;quot;commandCount&amp;quot;: 2,&lt;br/>  &amp;quot;duration&amp;quot;: 2846,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009282484,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 18,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 121,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 10,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;Test completed successfully: {&lt;br/>  &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 2874,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009282486&lt;br/>}&#xA;        &lt;/div>"/>
       </properties>
       <system-out><![CDATA[Test step started: start dashcam
 [info] 
 [info] > start dashcam
-> Execute: code("...")
+> exec
 [info] prerun.yaml:4:6 (exec)
 [info] command='exec' code='dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriv...' lang='pwsh'
 [info] calling exec...
@@ -23,9 +23,9 @@
     "lang": "pwsh",
     "code": "dashcam track --name=TestDriver --type=application --pattern=\"C:\\Users\\testdriver\\Documents\\testdriver.log\""
   },
-  "duration": 1602,
+  "duration": 1583,
   "response": "",
-  "timestamp": 1754008441257,
+  "timestamp": 1754009281223,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml",
     "step": {
@@ -69,8 +69,8 @@
     }
   }
 }
-  Duration: 1.603s
-> Execute: code("...")
+  Duration: 1.584s
+> exec
 [info] prerun.yaml:4:9 (exec)
 [info] command='exec' code='dashcam start' lang='pwsh'
 [info] calling exec...
@@ -85,9 +85,9 @@
     "lang": "pwsh",
     "code": "dashcam start"
   },
-  "duration": 1336,
+  "duration": 1259,
   "response": "",
-  "timestamp": 1754008442595,
+  "timestamp": 1754009282483,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml",
     "step": {
@@ -131,13 +131,13 @@
     }
   }
 }
-  Duration: 1.336s
+  Duration: 1.260s
 ✓ Step completed successfully: {
   "stepIndex": 0,
   "prompt": "start dashcam",
   "commandCount": 2,
-  "duration": 2943,
-  "timestamp": 1754008442595,
+  "duration": 2846,
+  "timestamp": 1754009282484,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml",
     "step": {
@@ -176,50 +176,25 @@
 }
 Test completed successfully: {
   "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/prerun.yaml",
-  "duration": 2979,
-  "timestamp": 1754008442595
+  "duration": 2874,
+  "timestamp": 1754009282486
 }]]></system-out>
     </testcase>
   </testsuite>
-  <testsuite name="hover-image" tests="3" failures="1" errors="0" skipped="0">
-    <testcase classname="hover-image" name="{&#xA;  &quot;stepIndex&quot;: 0,&#xA;  &quot;commandCount&quot;: 1,&#xA;  &quot;timestamp&quot;: 1754008442629,&#xA;  &quot;sourcePosition&quot;: {&#xA;    &quot;filePath&quot;: &quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&quot;,&#xA;    &quot;step&quot;: {&#xA;      &quot;stepIndex&quot;: 0,&#xA;      &quot;startLine&quot;: 3,&#xA;      &quot;startColumn&quot;: 4,&#xA;      &quot;endLine&quot;: 6,&#xA;      &quot;endColumn&quot;: 2,&#xA;      &quot;prompt&quot;: null,&#xA;      &quot;commands&quot;: [&#xA;        {&#xA;          &quot;commandIndex&quot;: 0,&#xA;          &quot;startLine&quot;: 4,&#xA;          &quot;startColumn&quot;: 8,&#xA;          &quot;endLine&quot;: 5,&#xA;          &quot;endColumn&quot;: 33,&#xA;          &quot;command&quot;: &quot;run&quot;&#xA;        }&#xA;      ]&#xA;    },&#xA;    &quot;command&quot;: null&#xA;  }&#xA;}" time="63.567">
+  <testsuite name="hover-image" tests="1" failures="1" errors="0" skipped="0">
+    <testcase classname="hover-image" name="Setup step" time="15.785">
       <properties>
-        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>  &amp;quot;commandCount&amp;quot;: 1,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008442629,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 6,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: null,&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 4,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 5,&lt;br/>          &amp;quot;endColumn&amp;quot;: 33,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;run&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; no prompt&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; Method call: run(file)&#xA;[info] hover-image.yaml:4:5 (run)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;run&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>file&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;snippets/login.yaml&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] snippets/login.yaml (start)&#xA;&amp;gt; Setup: focusApplication(&amp;quot;application&amp;quot;)&#xA;[info] login.yaml:4:6 (focus-application)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;focus-application&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>name&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Google Chrome&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;,&lt;br/>    &amp;quot;name&amp;quot;: &amp;quot;Google Chrome&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 8816,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;The application was focused.&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008451464,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 7,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 24&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 6,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 5,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 6,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 8.816s&#xA;&amp;gt; UI interaction: hoverText(&amp;quot;text&amp;quot;)&#xA;[info] login.yaml:8:10 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;hover-text&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>text&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Username&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>description&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;username input field&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] waiting for text: &amp;quot;Username&amp;quot;...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &amp;quot;Username&amp;quot; found!&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] thinking...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;Username&amp;quot;,&lt;br/>    &amp;quot;description&amp;quot;: &amp;quot;username input field&amp;quot;,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 5237,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;```yaml\ncommands:\n  - command: click # Move and click the mouse and perform a click\n    x: 491\n    y: 249\n    action: click\n```&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008456702,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 7,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 15,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 7,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 7,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 9,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 13,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 14,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 9,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 12,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 5.237s&#xA;&amp;gt; UI interaction: click(0, 0)&#xA;[info] login.yaml:8:10 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>x&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>491&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>y&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>249&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 2,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>    &amp;quot;x&amp;quot;: 491,&lt;br/>    &amp;quot;y&amp;quot;: 249,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 10226,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008466930,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 7,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 15,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 7,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 7,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 9,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 13,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 14,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 9,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 12,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 10.226s&#xA;&amp;gt; UI interaction: type(&amp;quot;&amp;quot;)&#xA;[info] login.yaml:8:14 (type)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;type&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>text&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;standard_user&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;standard_user&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 7590,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008474521,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 7,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 15,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 7,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 7,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 9,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 13,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 14,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 13,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 14,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 7.590s&#xA;&amp;gt; UI interaction: hoverText(&amp;quot;text&amp;quot;)&#xA;[info] login.yaml:16:18 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;hover-text&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>text&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Password&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>description&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;password input field&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] waiting for text: &amp;quot;Password&amp;quot;...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &amp;quot;Password&amp;quot; found!&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] thinking...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;Password&amp;quot;,&lt;br/>    &amp;quot;description&amp;quot;: &amp;quot;password input field&amp;quot;,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 4595,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;```yaml\ncommands:\n  - command: click # Move and click the mouse and perform a click\n    x: 490\n    y: 349\n    action: click\n```&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008479117,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 2,&lt;br/>      &amp;quot;startLine&amp;quot;: 15,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 23,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 15,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 15,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 17,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 20,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 21,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 22,&lt;br/>          &amp;quot;endColumn&amp;quot;: 29,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 17,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 20,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 4.595s&#xA;&amp;gt; UI interaction: click(0, 0)&#xA;[info] login.yaml:16:18 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>x&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>490&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>y&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>349&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 2,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>    &amp;quot;x&amp;quot;: 490,&lt;br/>    &amp;quot;y&amp;quot;: 349,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 10345,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008489464,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 2,&lt;br/>      &amp;quot;startLine&amp;quot;: 15,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 23,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 15,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 15,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 17,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 20,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 21,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 22,&lt;br/>          &amp;quot;endColumn&amp;quot;: 29,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 17,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 20,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 10.345s&#xA;&amp;gt; UI interaction: type(&amp;quot;&amp;quot;)&#xA;[info] login.yaml:16:22 (type)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;type&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>text&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;secret_password&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;secret_password&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 7354,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008496820,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 2,&lt;br/>      &amp;quot;startLine&amp;quot;: 15,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 23,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 15,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 15,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 17,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 20,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 21,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 22,&lt;br/>          &amp;quot;endColumn&amp;quot;: 29,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 21,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 22,&lt;br/>      &amp;quot;endColumn&amp;quot;: 29,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 7.354s&#xA;&amp;gt; UI interaction: hoverText(&amp;quot;text&amp;quot;)&#xA;[info] login.yaml:24:26 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;hover-text&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>text&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Sign in&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>description&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;sign in button&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] waiting for text: &amp;quot;Sign in&amp;quot;...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &amp;quot;Sign in&amp;quot; found!&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] thinking...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;Sign in&amp;quot;,&lt;br/>    &amp;quot;description&amp;quot;: &amp;quot;sign in button&amp;quot;,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 4623,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;```yaml\ncommands:\n  - command: click # Move and click the mouse and perform a click\n    x: 682\n    y: 446\n    action: click\n```&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008501444,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 3,&lt;br/>      &amp;quot;startLine&amp;quot;: 23,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 29,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 23,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 23,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 25,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 28,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 25,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 28,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 4.623s&#xA;&amp;gt; UI interaction: click(0, 0)&#xA;[info] login.yaml:24:26 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>x&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>682&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>y&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>446&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 2,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>    &amp;quot;x&amp;quot;: 682,&lt;br/>    &amp;quot;y&amp;quot;: 446,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 4749,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008506195,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 3,&lt;br/>      &amp;quot;startLine&amp;quot;: 23,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 29,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 23,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 23,&lt;br/>        &amp;quot;endColumn&amp;quot;: 25&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 25,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 28,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 25,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 28,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 4.749s&#xA;[info] /Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml (end)&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;run&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;run&amp;quot;,&lt;br/>    &amp;quot;file&amp;quot;: &amp;quot;snippets/login.yaml&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 63567,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008506196,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 6,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: null,&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 4,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 5,&lt;br/>          &amp;quot;endColumn&amp;quot;: 33,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;run&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 4,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 5,&lt;br/>      &amp;quot;endColumn&amp;quot;: 33,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;run&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 4.750s&#xA;&amp;#x2713; Step completed successfully: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>  &amp;quot;commandCount&amp;quot;: 1,&lt;br/>  &amp;quot;duration&amp;quot;: 63567,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008506196,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 6,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: null,&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 4,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 5,&lt;br/>          &amp;quot;endColumn&amp;quot;: 33,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;run&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;        &lt;/div>"/>
+        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: Setup step&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; no prompt&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; run&#xA;[info] hover-image.yaml:4:5 (run)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;run&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>file&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;snippets/login.yaml&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] snippets/login.yaml (start)&#xA;&amp;gt; focus-application&#xA;[info] login.yaml:4:6 (focus-application)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;focus-application&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>name&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Google Chrome&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;,&lt;br/>    &amp;quot;name&amp;quot;: &amp;quot;Google Chrome&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 7356,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;The application was focused.&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009289898,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 7,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 24&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 6,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 5,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 6,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 7.356s&#xA;&amp;gt; hover-text&#xA;[info] login.yaml:8:10 (hover-text)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;hover-text&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>text&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Username&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>description&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;username input field&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] waiting for text: &amp;quot;Username&amp;quot;...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] 1 seconds have passed without finding &amp;quot;Username&amp;quot;&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] 5 seconds have passed without finding &amp;quot;Username&amp;quot;&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;&amp;#x2717; Command failed: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;Username&amp;quot;,&lt;br/>    &amp;quot;description&amp;quot;: &amp;quot;username input field&amp;quot;,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;error&amp;quot;: &amp;quot;Timed out (5 seconds) while searching for \&amp;quot;Username\&amp;quot;&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 8405,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009298304,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 7,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 15,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 7,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 7,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 9,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 13,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 14,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 9,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 12,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 8.406s&#xA;Error: &lt;span style=&quot;color:#d33434&quot;>Error detected, but recovery mode is not enabled.&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;[info] To attempt automatic recovery, re-run with the --heal flag.&#xA;&amp;#x2717; Fatal Error: &lt;span style=&quot;color:#d33434&quot;>Error in login.yaml:&lt;span style=&quot;color:#000000&quot;>&lt;br/>&lt;br/>   7&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             name: Google Chrome&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>   8&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>       - prompt: enter a username&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>   9&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>         commands:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  10&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;> &lt;span style=&quot;color:#d33434&quot;>&amp;gt;&amp;gt;&amp;gt;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#d33434&quot;>      - command: hover-text&lt;span style=&quot;color:#000000&quot;>&lt;br/>  11&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             text: Username&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  12&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             description: username input field&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  13&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             action: click&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>&lt;br/>&lt;span style=&quot;color:#ced334&quot;>Error: Timed out (5 seconds) while searching for &amp;quot;Username&amp;quot;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;        &lt;/div>"/>
       </properties>
-      <system-out><![CDATA[Test step started: {
-  "stepIndex": 0,
-  "commandCount": 1,
-  "timestamp": 1754008442629,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 0,
-      "startLine": 3,
-      "startColumn": 4,
-      "endLine": 6,
-      "endColumn": 2,
-      "prompt": null,
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 4,
-          "startColumn": 8,
-          "endLine": 5,
-          "endColumn": 33,
-          "command": "run"
-        }
-      ]
-    },
-    "command": null
-  }
-}
+      <failure message="&lt;pre>{&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;,&lt;br/>    &amp;quot;text&amp;quot;: &amp;quot;Username&amp;quot;,&lt;br/>    &amp;quot;description&amp;quot;: &amp;quot;username input field&amp;quot;,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;error&amp;quot;: &amp;quot;Timed out (5 seconds) while searching for \&amp;quot;Username\&amp;quot;&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 8405,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009298304,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 7,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 15,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 7,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 7,&lt;br/>        &amp;quot;endColumn&amp;quot;: 28&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 9,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 13,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 14,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;type&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 9,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 12,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-text&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&lt;/pre>&#xA;&lt;span style=&quot;color:#d33434&quot;>Error in login.yaml:&lt;span style=&quot;color:#000000&quot;>&lt;br/>&lt;br/>   7&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             name: Google Chrome&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>   8&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>       - prompt: enter a username&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>   9&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>         commands:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  10&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;> &lt;span style=&quot;color:#d33434&quot;>&amp;gt;&amp;gt;&amp;gt;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#d33434&quot;>      - command: hover-text&lt;span style=&quot;color:#000000&quot;>&lt;br/>  11&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             text: Username&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  12&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             description: username input field&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  13&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             action: click&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>&lt;br/>&lt;span style=&quot;color:#ced334&quot;>Error: Timed out (5 seconds) while searching for &amp;quot;Username&amp;quot;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>"/>
+      <system-out><![CDATA[Test step started: Setup step
 [info] 
 [info] > no prompt
-> Method call: run(file)
+> run
 [info] hover-image.yaml:4:5 (run)
 [info] command='run' file='snippets/login.yaml'
 [info] snippets/login.yaml (start)
-> Setup: focusApplication("application")
+> focus-application
 [info] login.yaml:4:6 (focus-application)
 [info] command='focus-application' name='Google Chrome'
 ✓ Command succeeded: {
@@ -229,9 +204,9 @@ Test completed successfully: {
     "command": "focus-application",
     "name": "Google Chrome"
   },
-  "duration": 8816,
+  "duration": 7356,
   "response": "The application was focused.",
-  "timestamp": 1754008451464,
+  "timestamp": 1754009289898,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
     "step": {
@@ -267,14 +242,14 @@ Test completed successfully: {
     }
   }
 }
-  Duration: 8.816s
-> UI interaction: hoverText("text")
+  Duration: 7.356s
+> hover-text
 [info] login.yaml:8:10 (hover-text)
 [info] command='hover-text' text='Username' description='username input field' action='click'
 [info] waiting for text: "Username"...
-[info] "Username" found!
-[info] thinking...
-✓ Command succeeded: {
+[info] 1 seconds have passed without finding "Username"
+[info] 5 seconds have passed without finding "Username"
+✗ Command failed: {
   "command": "hover-text",
   "depth": 1,
   "data": {
@@ -283,9 +258,9 @@ Test completed successfully: {
     "description": "username input field",
     "action": "click"
   },
-  "duration": 5237,
-  "response": "```yaml\ncommands:\n  - command: click # Move and click the mouse and perform a click\n    x: 491\n    y: 249\n    action: click\n```",
-  "timestamp": 1754008456702,
+  "error": "Timed out (5 seconds) while searching for \"Username\"",
+  "duration": 8405,
+  "timestamp": 1754009298304,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
     "step": {
@@ -329,782 +304,37 @@ Test completed successfully: {
     }
   }
 }
-  Duration: 5.237s
-> UI interaction: click(0, 0)
-[info] login.yaml:8:10 (hover-text)
-[info] command='click' x=491 y=249 action='click'
-✓ Command succeeded: {
-  "command": "click",
-  "depth": 2,
-  "data": {
-    "command": "click",
-    "x": 491,
-    "y": 249,
-    "action": "click"
-  },
-  "duration": 10226,
-  "timestamp": 1754008466930,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 1,
-      "startLine": 7,
-      "startColumn": 4,
-      "endLine": 15,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 7,
-        "startColumn": 4,
-        "endLine": 7,
-        "endColumn": 28
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 9,
-          "startColumn": 8,
-          "endLine": 12,
-          "endColumn": 21,
-          "command": "hover-text"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 13,
-          "startColumn": 8,
-          "endLine": 14,
-          "endColumn": 27,
-          "command": "type"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 9,
-      "startColumn": 8,
-      "endLine": 12,
-      "endColumn": 21,
-      "command": "hover-text"
-    }
-  }
-}
-  Duration: 10.226s
-> UI interaction: type("")
-[info] login.yaml:8:14 (type)
-[info] command='type' text='standard_user'
-✓ Command succeeded: {
-  "command": "type",
-  "depth": 1,
-  "data": {
-    "command": "type",
-    "text": "standard_user"
-  },
-  "duration": 7590,
-  "timestamp": 1754008474521,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 1,
-      "startLine": 7,
-      "startColumn": 4,
-      "endLine": 15,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 7,
-        "startColumn": 4,
-        "endLine": 7,
-        "endColumn": 28
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 9,
-          "startColumn": 8,
-          "endLine": 12,
-          "endColumn": 21,
-          "command": "hover-text"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 13,
-          "startColumn": 8,
-          "endLine": 14,
-          "endColumn": 27,
-          "command": "type"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 1,
-      "startLine": 13,
-      "startColumn": 8,
-      "endLine": 14,
-      "endColumn": 27,
-      "command": "type"
-    }
-  }
-}
-  Duration: 7.590s
-> UI interaction: hoverText("text")
-[info] login.yaml:16:18 (hover-text)
-[info] command='hover-text' text='Password' description='password input field' action='click'
-[info] waiting for text: "Password"...
-[info] "Password" found!
-[info] thinking...
-✓ Command succeeded: {
-  "command": "hover-text",
-  "depth": 1,
-  "data": {
-    "command": "hover-text",
-    "text": "Password",
-    "description": "password input field",
-    "action": "click"
-  },
-  "duration": 4595,
-  "response": "```yaml\ncommands:\n  - command: click # Move and click the mouse and perform a click\n    x: 490\n    y: 349\n    action: click\n```",
-  "timestamp": 1754008479117,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 2,
-      "startLine": 15,
-      "startColumn": 4,
-      "endLine": 23,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 15,
-        "startColumn": 4,
-        "endLine": 15,
-        "endColumn": 28
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 17,
-          "startColumn": 8,
-          "endLine": 20,
-          "endColumn": 21,
-          "command": "hover-text"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 21,
-          "startColumn": 8,
-          "endLine": 22,
-          "endColumn": 29,
-          "command": "type"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 17,
-      "startColumn": 8,
-      "endLine": 20,
-      "endColumn": 21,
-      "command": "hover-text"
-    }
-  }
-}
-  Duration: 4.595s
-> UI interaction: click(0, 0)
-[info] login.yaml:16:18 (hover-text)
-[info] command='click' x=490 y=349 action='click'
-✓ Command succeeded: {
-  "command": "click",
-  "depth": 2,
-  "data": {
-    "command": "click",
-    "x": 490,
-    "y": 349,
-    "action": "click"
-  },
-  "duration": 10345,
-  "timestamp": 1754008489464,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 2,
-      "startLine": 15,
-      "startColumn": 4,
-      "endLine": 23,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 15,
-        "startColumn": 4,
-        "endLine": 15,
-        "endColumn": 28
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 17,
-          "startColumn": 8,
-          "endLine": 20,
-          "endColumn": 21,
-          "command": "hover-text"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 21,
-          "startColumn": 8,
-          "endLine": 22,
-          "endColumn": 29,
-          "command": "type"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 17,
-      "startColumn": 8,
-      "endLine": 20,
-      "endColumn": 21,
-      "command": "hover-text"
-    }
-  }
-}
-  Duration: 10.345s
-> UI interaction: type("")
-[info] login.yaml:16:22 (type)
-[info] command='type' text='secret_password'
-✓ Command succeeded: {
-  "command": "type",
-  "depth": 1,
-  "data": {
-    "command": "type",
-    "text": "secret_password"
-  },
-  "duration": 7354,
-  "timestamp": 1754008496820,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 2,
-      "startLine": 15,
-      "startColumn": 4,
-      "endLine": 23,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 15,
-        "startColumn": 4,
-        "endLine": 15,
-        "endColumn": 28
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 17,
-          "startColumn": 8,
-          "endLine": 20,
-          "endColumn": 21,
-          "command": "hover-text"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 21,
-          "startColumn": 8,
-          "endLine": 22,
-          "endColumn": 29,
-          "command": "type"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 1,
-      "startLine": 21,
-      "startColumn": 8,
-      "endLine": 22,
-      "endColumn": 29,
-      "command": "type"
-    }
-  }
-}
-  Duration: 7.354s
-> UI interaction: hoverText("text")
-[info] login.yaml:24:26 (hover-text)
-[info] command='hover-text' text='Sign in' description='sign in button' action='click'
-[info] waiting for text: "Sign in"...
-[info] "Sign in" found!
-[info] thinking...
-✓ Command succeeded: {
-  "command": "hover-text",
-  "depth": 1,
-  "data": {
-    "command": "hover-text",
-    "text": "Sign in",
-    "description": "sign in button",
-    "action": "click"
-  },
-  "duration": 4623,
-  "response": "```yaml\ncommands:\n  - command: click # Move and click the mouse and perform a click\n    x: 682\n    y: 446\n    action: click\n```",
-  "timestamp": 1754008501444,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 3,
-      "startLine": 23,
-      "startColumn": 4,
-      "endLine": 29,
-      "endColumn": 0,
-      "prompt": {
-        "startLine": 23,
-        "startColumn": 4,
-        "endLine": 23,
-        "endColumn": 25
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 25,
-          "startColumn": 8,
-          "endLine": 28,
-          "endColumn": 21,
-          "command": "hover-text"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 25,
-      "startColumn": 8,
-      "endLine": 28,
-      "endColumn": 21,
-      "command": "hover-text"
-    }
-  }
-}
-  Duration: 4.623s
-> UI interaction: click(0, 0)
-[info] login.yaml:24:26 (hover-text)
-[info] command='click' x=682 y=446 action='click'
-✓ Command succeeded: {
-  "command": "click",
-  "depth": 2,
-  "data": {
-    "command": "click",
-    "x": 682,
-    "y": 446,
-    "action": "click"
-  },
-  "duration": 4749,
-  "timestamp": 1754008506195,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml",
-    "step": {
-      "stepIndex": 3,
-      "startLine": 23,
-      "startColumn": 4,
-      "endLine": 29,
-      "endColumn": 0,
-      "prompt": {
-        "startLine": 23,
-        "startColumn": 4,
-        "endLine": 23,
-        "endColumn": 25
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 25,
-          "startColumn": 8,
-          "endLine": 28,
-          "endColumn": 21,
-          "command": "hover-text"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 25,
-      "startColumn": 8,
-      "endLine": 28,
-      "endColumn": 21,
-      "command": "hover-text"
-    }
-  }
-}
-  Duration: 4.749s
-[info] /Users/ianjennings/Development/testdriverai/testdriver/acceptance/snippets/login.yaml (end)
-✓ Command succeeded: {
-  "command": "run",
-  "depth": 0,
-  "data": {
-    "command": "run",
-    "file": "snippets/login.yaml"
-  },
-  "duration": 63567,
-  "timestamp": 1754008506196,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 0,
-      "startLine": 3,
-      "startColumn": 4,
-      "endLine": 6,
-      "endColumn": 2,
-      "prompt": null,
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 4,
-          "startColumn": 8,
-          "endLine": 5,
-          "endColumn": 33,
-          "command": "run"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 4,
-      "startColumn": 8,
-      "endLine": 5,
-      "endColumn": 33,
-      "command": "run"
-    }
-  }
-}
-  Duration: 4.750s
-✓ Step completed successfully: {
-  "stepIndex": 0,
-  "commandCount": 1,
-  "duration": 63567,
-  "timestamp": 1754008506196,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 0,
-      "startLine": 3,
-      "startColumn": 4,
-      "endLine": 6,
-      "endColumn": 2,
-      "prompt": null,
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 4,
-          "startColumn": 8,
-          "endLine": 5,
-          "endColumn": 33,
-          "command": "run"
-        }
-      ]
-    },
-    "command": null
-  }
-}]]></system-out>
-    </testcase>
-    <testcase classname="hover-image" name="click on the image of a shopping cart" time="16.2">
-      <properties>
-        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: click on the image of a shopping cart&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; click on the image of a shopping cart&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; Setup: focusApplication(&amp;quot;application&amp;quot;)&#xA;[info] hover-image.yaml:7:9 (focus-application)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;focus-application&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>name&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Google Chrome&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;,&lt;br/>    &amp;quot;name&amp;quot;: &amp;quot;Google Chrome&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 3996,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;The application was focused.&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008510198,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 6,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 13,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 6,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 6,&lt;br/>        &amp;quot;endColumn&amp;quot;: 49&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 9,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 10,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 8,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 9,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 3.996s&#xA;&amp;gt; UI interaction: hoverImage(&amp;quot;element&amp;quot;)&#xA;[info] hover-image.yaml:7:11 (hover-image)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;hover-image&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>description&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;shopping cart icon next to the Cart text in the top right corner&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] thinking...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;,&lt;br/>    &amp;quot;description&amp;quot;: &amp;quot;shopping cart icon next to the Cart text in the top right corner&amp;quot;,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 5627,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;```yaml\ncommands:\n- command: click # Move and click the mouse and perform a click\n  x: 1212\n  y: 748\n  action: click \n```&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008515825,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 6,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 13,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 6,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 6,&lt;br/>        &amp;quot;endColumn&amp;quot;: 49&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 9,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 10,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 10,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 12,&lt;br/>      &amp;quot;endColumn&amp;quot;: 21,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 5.627s&#xA;&amp;gt; UI interaction: click(0, 0)&#xA;[info] hover-image.yaml:7:9 (focus-application)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>x&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>1212&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>y&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>748&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>action&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;click&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 1,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;click&amp;quot;,&lt;br/>    &amp;quot;x&amp;quot;: 1212,&lt;br/>    &amp;quot;y&amp;quot;: 748,&lt;br/>    &amp;quot;action&amp;quot;: &amp;quot;click&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 6573,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008522400,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 6,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 13,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 6,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 6,&lt;br/>        &amp;quot;endColumn&amp;quot;: 49&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 9,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 10,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 8,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 9,&lt;br/>      &amp;quot;endColumn&amp;quot;: 27,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 6.573s&#xA;&amp;#x2713; Step completed successfully: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>  &amp;quot;prompt&amp;quot;: &amp;quot;click on the image of a shopping cart&amp;quot;,&lt;br/>  &amp;quot;commandCount&amp;quot;: 2,&lt;br/>  &amp;quot;duration&amp;quot;: 16204,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008522400,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 1,&lt;br/>      &amp;quot;startLine&amp;quot;: 6,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 13,&lt;br/>      &amp;quot;endColumn&amp;quot;: 2,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 6,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 6,&lt;br/>        &amp;quot;endColumn&amp;quot;: 49&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 8,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 9,&lt;br/>          &amp;quot;endColumn&amp;quot;: 27,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;focus-application&amp;quot;&lt;br/>        },&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 1,&lt;br/>          &amp;quot;startLine&amp;quot;: 10,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 12,&lt;br/>          &amp;quot;endColumn&amp;quot;: 21,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;hover-image&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;        &lt;/div>"/>
-      </properties>
-      <system-out><![CDATA[Test step started: click on the image of a shopping cart
-[info] 
-[info] > click on the image of a shopping cart
-> Setup: focusApplication("application")
-[info] hover-image.yaml:7:9 (focus-application)
-[info] command='focus-application' name='Google Chrome'
-✓ Command succeeded: {
-  "command": "focus-application",
-  "depth": 0,
-  "data": {
-    "command": "focus-application",
-    "name": "Google Chrome"
-  },
-  "duration": 3996,
-  "response": "The application was focused.",
-  "timestamp": 1754008510198,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 1,
-      "startLine": 6,
-      "startColumn": 4,
-      "endLine": 13,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 6,
-        "startColumn": 4,
-        "endLine": 6,
-        "endColumn": 49
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 8,
-          "startColumn": 8,
-          "endLine": 9,
-          "endColumn": 27,
-          "command": "focus-application"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 10,
-          "startColumn": 8,
-          "endLine": 12,
-          "endColumn": 21,
-          "command": "hover-image"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 8,
-      "startColumn": 8,
-      "endLine": 9,
-      "endColumn": 27,
-      "command": "focus-application"
-    }
-  }
-}
-  Duration: 3.996s
-> UI interaction: hoverImage("element")
-[info] hover-image.yaml:7:11 (hover-image)
-[info] command='hover-image' description='shopping cart icon next to the Cart text in the top right corner' action='click'
-[info] thinking...
-✓ Command succeeded: {
-  "command": "hover-image",
-  "depth": 0,
-  "data": {
-    "command": "hover-image",
-    "description": "shopping cart icon next to the Cart text in the top right corner",
-    "action": "click"
-  },
-  "duration": 5627,
-  "response": "```yaml\ncommands:\n- command: click # Move and click the mouse and perform a click\n  x: 1212\n  y: 748\n  action: click \n```",
-  "timestamp": 1754008515825,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 1,
-      "startLine": 6,
-      "startColumn": 4,
-      "endLine": 13,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 6,
-        "startColumn": 4,
-        "endLine": 6,
-        "endColumn": 49
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 8,
-          "startColumn": 8,
-          "endLine": 9,
-          "endColumn": 27,
-          "command": "focus-application"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 10,
-          "startColumn": 8,
-          "endLine": 12,
-          "endColumn": 21,
-          "command": "hover-image"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 1,
-      "startLine": 10,
-      "startColumn": 8,
-      "endLine": 12,
-      "endColumn": 21,
-      "command": "hover-image"
-    }
-  }
-}
-  Duration: 5.627s
-> UI interaction: click(0, 0)
-[info] hover-image.yaml:7:9 (focus-application)
-[info] command='click' x=1212 y=748 action='click'
-✓ Command succeeded: {
-  "command": "click",
-  "depth": 1,
-  "data": {
-    "command": "click",
-    "x": 1212,
-    "y": 748,
-    "action": "click"
-  },
-  "duration": 6573,
-  "timestamp": 1754008522400,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 1,
-      "startLine": 6,
-      "startColumn": 4,
-      "endLine": 13,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 6,
-        "startColumn": 4,
-        "endLine": 6,
-        "endColumn": 49
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 8,
-          "startColumn": 8,
-          "endLine": 9,
-          "endColumn": 27,
-          "command": "focus-application"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 10,
-          "startColumn": 8,
-          "endLine": 12,
-          "endColumn": 21,
-          "command": "hover-image"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 8,
-      "startColumn": 8,
-      "endLine": 9,
-      "endColumn": 27,
-      "command": "focus-application"
-    }
-  }
-}
-  Duration: 6.573s
-✓ Step completed successfully: {
-  "stepIndex": 1,
-  "prompt": "click on the image of a shopping cart",
-  "commandCount": 2,
-  "duration": 16204,
-  "timestamp": 1754008522400,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 1,
-      "startLine": 6,
-      "startColumn": 4,
-      "endLine": 13,
-      "endColumn": 2,
-      "prompt": {
-        "startLine": 6,
-        "startColumn": 4,
-        "endLine": 6,
-        "endColumn": 49
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 8,
-          "startColumn": 8,
-          "endLine": 9,
-          "endColumn": 27,
-          "command": "focus-application"
-        },
-        {
-          "commandIndex": 1,
-          "startLine": 10,
-          "startColumn": 8,
-          "endLine": 12,
-          "endColumn": 21,
-          "command": "hover-image"
-        }
-      ]
-    },
-    "command": null
-  }
-}]]></system-out>
-    </testcase>
-    <testcase classname="hover-image" name="assert that you see an empty shopping cart" time="5.476">
-      <properties>
-        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: assert that you see an empty shopping cart&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; assert that you see an empty shopping cart&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; Assertion: expect(&amp;quot;condition&amp;quot;)&#xA;[info] hover-image.yaml:14:16 (assert)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;assert&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>expect&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;Your cart is empty&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] thinking...&#xA;&amp;#x2717; Command failed: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;,&lt;br/>    &amp;quot;expect&amp;quot;: &amp;quot;Your cart is empty&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;error&amp;quot;: &amp;quot;AI Assertion failed&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 5473,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008527876,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 2,&lt;br/>      &amp;quot;startLine&amp;quot;: 13,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 17,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 13,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 13,&lt;br/>        &amp;quot;endColumn&amp;quot;: 54&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 15,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 16,&lt;br/>          &amp;quot;endColumn&amp;quot;: 34,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 15,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 16,&lt;br/>      &amp;quot;endColumn&amp;quot;: 34,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 5.473s&#xA;Error: &lt;span style=&quot;color:#d33434&quot;>Error detected, but recovery mode is not enabled.&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;[info] To attempt automatic recovery, re-run with the --heal flag.&#xA;&amp;#x2717; Fatal Error: &lt;span style=&quot;color:#d33434&quot;>Error in hover-image.yaml:&lt;span style=&quot;color:#000000&quot;>&lt;br/>&lt;br/>  13&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             action: click&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  14&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>       - prompt: assert that you see an empty shopping cart&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  15&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>         commands:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  16&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;> &lt;span style=&quot;color:#d33434&quot;>&amp;gt;&amp;gt;&amp;gt;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#d33434&quot;>      - command: assert&lt;span style=&quot;color:#000000&quot;>&lt;br/>  17&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             expect: Your cart is empty&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  18&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>     &lt;br/>&lt;br/>&lt;span style=&quot;color:#ced334&quot;>Error: AI Assertion failed&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;        &lt;/div>"/>
-      </properties>
-      <failure message="&lt;pre>{&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;,&lt;br/>    &amp;quot;expect&amp;quot;: &amp;quot;Your cart is empty&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;error&amp;quot;: &amp;quot;AI Assertion failed&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 5473,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008527876,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 2,&lt;br/>      &amp;quot;startLine&amp;quot;: 13,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 17,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 13,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 13,&lt;br/>        &amp;quot;endColumn&amp;quot;: 54&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 15,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 16,&lt;br/>          &amp;quot;endColumn&amp;quot;: 34,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 15,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 16,&lt;br/>      &amp;quot;endColumn&amp;quot;: 34,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;assert&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&lt;/pre>&#xA;&lt;span style=&quot;color:#d33434&quot;>Error in hover-image.yaml:&lt;span style=&quot;color:#000000&quot;>&lt;br/>&lt;br/>  13&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             action: click&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  14&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>       - prompt: assert that you see an empty shopping cart&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  15&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>         commands:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  16&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;> &lt;span style=&quot;color:#d33434&quot;>&amp;gt;&amp;gt;&amp;gt;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#d33434&quot;>      - command: assert&lt;span style=&quot;color:#000000&quot;>&lt;br/>  17&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>             expect: Your cart is empty&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;br/>  18&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>     &lt;br/>&lt;br/>&lt;span style=&quot;color:#ced334&quot;>Error: AI Assertion failed&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>"/>
-      <system-out><![CDATA[Test step started: assert that you see an empty shopping cart
-[info] 
-[info] > assert that you see an empty shopping cart
-> Assertion: expect("condition")
-[info] hover-image.yaml:14:16 (assert)
-[info] command='assert' expect='Your cart is empty'
-[info] thinking...
-✗ Command failed: {
-  "command": "assert",
-  "depth": 0,
-  "data": {
-    "command": "assert",
-    "expect": "Your cart is empty"
-  },
-  "error": "AI Assertion failed",
-  "duration": 5473,
-  "timestamp": 1754008527876,
-  "sourcePosition": {
-    "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/acceptance/hover-image.yaml",
-    "step": {
-      "stepIndex": 2,
-      "startLine": 13,
-      "startColumn": 4,
-      "endLine": 17,
-      "endColumn": 0,
-      "prompt": {
-        "startLine": 13,
-        "startColumn": 4,
-        "endLine": 13,
-        "endColumn": 54
-      },
-      "commands": [
-        {
-          "commandIndex": 0,
-          "startLine": 15,
-          "startColumn": 8,
-          "endLine": 16,
-          "endColumn": 34,
-          "command": "assert"
-        }
-      ]
-    },
-    "command": {
-      "commandIndex": 0,
-      "startLine": 15,
-      "startColumn": 8,
-      "endLine": 16,
-      "endColumn": 34,
-      "command": "assert"
-    }
-  }
-}
-  Duration: 5.473s
+  Duration: 8.406s
 Error: Error detected, but recovery mode is not enabled.
 [info] To attempt automatic recovery, re-run with the --heal flag.
-✗ Fatal Error: Error in hover-image.yaml:
+✗ Fatal Error: Error in login.yaml:
 
+   7             name: Google Chrome
+   8       - prompt: enter a username
+   9         commands:
+  10 >>>       - command: hover-text
+  11             text: Username
+  12             description: username input field
   13             action: click
-  14       - prompt: assert that you see an empty shopping cart
-  15         commands:
-  16 >>>       - command: assert
-  17             expect: Your cart is empty
-  18     
 
-Error: AI Assertion failed]]></system-out>
+Error: Timed out (5 seconds) while searching for "Username"]]></system-out>
     </testcase>
   </testsuite>
   <testsuite name="postrun" tests="1" failures="0" errors="0" skipped="0">
-    <testcase classname="postrun" name="stop dashcam" time="8.336">
+    <testcase classname="postrun" name="stop dashcam" time="7.571">
       <properties>
-        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: stop dashcam&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; stop dashcam&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; Execute: code(&amp;quot;...&amp;quot;)&#xA;[info] postrun.yaml:4:6 (exec)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;exec&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>code&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;dashcam -t &amp;apos;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;apos; -p&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>lang&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;pwsh&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] calling exec...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] dashcam -t &amp;apos;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;apos; -p&#xA;[info] Command stdout:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] https://app.dashcam.io/replay/688c0bd7681d7a8dcab940ad?share=DfjTr6YhWYIpOvd1sUtElg&lt;br/>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>    &amp;quot;lang&amp;quot;: &amp;quot;pwsh&amp;quot;,&lt;br/>    &amp;quot;code&amp;quot;: &amp;quot;dashcam -t &amp;apos;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;apos; -p&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 8334,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;https://app.dashcam.io/replay/688c0bd7681d7a8dcab940ad?share=DfjTr6YhWYIpOvd1sUtElg&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008536254,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 8,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 24&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 45,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 5,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 7,&lt;br/>      &amp;quot;endColumn&amp;quot;: 45,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 8.334s&#xA;&amp;#x2713; Step completed successfully: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>  &amp;quot;prompt&amp;quot;: &amp;quot;stop dashcam&amp;quot;,&lt;br/>  &amp;quot;commandCount&amp;quot;: 1,&lt;br/>  &amp;quot;duration&amp;quot;: 8336,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008536255,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 8,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 24&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 45,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;Test completed successfully: {&lt;br/>  &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 8374,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754008536255&lt;br/>}&#xA;        &lt;/div>"/>
+        <property name="html:richtext" value="&#xA;        &lt;h3>Test Step Output&lt;/h3>&#xA;        &lt;div style=&quot;font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;&quot;>&#xA;          Test step started: stop dashcam&#xA;[info] &#xA;[info] &lt;span style=&quot;color:#ced334&quot;>&amp;gt; stop dashcam&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&#xA;&amp;gt; exec&#xA;[info] postrun.yaml:4:6 (exec)&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] &lt;span style=&quot;color:#34d3d3&quot;>command&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;exec&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>code&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;dashcam -t &amp;apos;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;apos; -p&amp;apos;&lt;span style=&quot;color:#000000&quot;> &lt;span style=&quot;color:#34d3d3&quot;>lang&lt;span style=&quot;color:#000000&quot;>=&lt;span style=&quot;color:#b3d334&quot;>&amp;apos;pwsh&amp;apos;&lt;span style=&quot;color:#000000&quot;>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&lt;/span>&#xA;[info] calling exec...&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] dashcam -t &amp;apos;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;apos; -p&#xA;[info] Command stdout:&lt;span style=&quot;font-weight:normal;text-decoration:none;font-style:normal&quot;>&lt;/span>&#xA;[info] https://app.dashcam.io/replay/688c0ed8ebb92e01b433201b?share=hq9lL9PL9JA2M1VcdOglQw&lt;br/>&#xA;&amp;#x2713; Command succeeded: {&lt;br/>  &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>  &amp;quot;depth&amp;quot;: 0,&lt;br/>  &amp;quot;data&amp;quot;: {&lt;br/>    &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;,&lt;br/>    &amp;quot;lang&amp;quot;: &amp;quot;pwsh&amp;quot;,&lt;br/>    &amp;quot;code&amp;quot;: &amp;quot;dashcam -t &amp;apos;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;apos; -p&amp;quot;&lt;br/>  },&lt;br/>  &amp;quot;duration&amp;quot;: 7569,&lt;br/>  &amp;quot;response&amp;quot;: &amp;quot;https://app.dashcam.io/replay/688c0ed8ebb92e01b433201b?share=hq9lL9PL9JA2M1VcdOglQw&amp;quot;,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009305914,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 8,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 24&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 45,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: {&lt;br/>      &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 5,&lt;br/>      &amp;quot;startColumn&amp;quot;: 8,&lt;br/>      &amp;quot;endLine&amp;quot;: 7,&lt;br/>      &amp;quot;endColumn&amp;quot;: 45,&lt;br/>      &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>    }&lt;br/>  }&lt;br/>}&#xA;  Duration: 7.569s&#xA;&amp;#x2713; Step completed successfully: {&lt;br/>  &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>  &amp;quot;prompt&amp;quot;: &amp;quot;stop dashcam&amp;quot;,&lt;br/>  &amp;quot;commandCount&amp;quot;: 1,&lt;br/>  &amp;quot;duration&amp;quot;: 7571,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009305915,&lt;br/>  &amp;quot;sourcePosition&amp;quot;: {&lt;br/>    &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;quot;,&lt;br/>    &amp;quot;step&amp;quot;: {&lt;br/>      &amp;quot;stepIndex&amp;quot;: 0,&lt;br/>      &amp;quot;startLine&amp;quot;: 3,&lt;br/>      &amp;quot;startColumn&amp;quot;: 4,&lt;br/>      &amp;quot;endLine&amp;quot;: 8,&lt;br/>      &amp;quot;endColumn&amp;quot;: 0,&lt;br/>      &amp;quot;prompt&amp;quot;: {&lt;br/>        &amp;quot;startLine&amp;quot;: 3,&lt;br/>        &amp;quot;startColumn&amp;quot;: 4,&lt;br/>        &amp;quot;endLine&amp;quot;: 3,&lt;br/>        &amp;quot;endColumn&amp;quot;: 24&lt;br/>      },&lt;br/>      &amp;quot;commands&amp;quot;: [&lt;br/>        {&lt;br/>          &amp;quot;commandIndex&amp;quot;: 0,&lt;br/>          &amp;quot;startLine&amp;quot;: 5,&lt;br/>          &amp;quot;startColumn&amp;quot;: 8,&lt;br/>          &amp;quot;endLine&amp;quot;: 7,&lt;br/>          &amp;quot;endColumn&amp;quot;: 45,&lt;br/>          &amp;quot;command&amp;quot;: &amp;quot;exec&amp;quot;&lt;br/>        }&lt;br/>      ]&lt;br/>    },&lt;br/>    &amp;quot;command&amp;quot;: null&lt;br/>  }&lt;br/>}&#xA;Test completed successfully: {&lt;br/>  &amp;quot;filePath&amp;quot;: &amp;quot;/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml&amp;quot;,&lt;br/>  &amp;quot;duration&amp;quot;: 7601,&lt;br/>  &amp;quot;timestamp&amp;quot;: 1754009305915&lt;br/>}&#xA;        &lt;/div>"/>
       </properties>
       <system-out><![CDATA[Test step started: stop dashcam
 [info] 
 [info] > stop dashcam
-> Execute: code("...")
+> exec
 [info] postrun.yaml:4:6 (exec)
 [info] command='exec' code='dashcam -t '/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml' -p' lang='pwsh'
 [info] calling exec...
 [info] dashcam -t '/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml' -p
 [info] Command stdout:
-[info] https://app.dashcam.io/replay/688c0bd7681d7a8dcab940ad?share=DfjTr6YhWYIpOvd1sUtElg
+[info] https://app.dashcam.io/replay/688c0ed8ebb92e01b433201b?share=hq9lL9PL9JA2M1VcdOglQw
 
 ✓ Command succeeded: {
   "command": "exec",
@@ -1114,9 +344,9 @@ Error: AI Assertion failed]]></system-out>
     "lang": "pwsh",
     "code": "dashcam -t '/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml' -p"
   },
-  "duration": 8334,
-  "response": "https://app.dashcam.io/replay/688c0bd7681d7a8dcab940ad?share=DfjTr6YhWYIpOvd1sUtElg",
-  "timestamp": 1754008536254,
+  "duration": 7569,
+  "response": "https://app.dashcam.io/replay/688c0ed8ebb92e01b433201b?share=hq9lL9PL9JA2M1VcdOglQw",
+  "timestamp": 1754009305914,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml",
     "step": {
@@ -1152,13 +382,13 @@ Error: AI Assertion failed]]></system-out>
     }
   }
 }
-  Duration: 8.334s
+  Duration: 7.569s
 ✓ Step completed successfully: {
   "stepIndex": 0,
   "prompt": "stop dashcam",
   "commandCount": 1,
-  "duration": 8336,
-  "timestamp": 1754008536255,
+  "duration": 7571,
+  "timestamp": 1754009305915,
   "sourcePosition": {
     "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml",
     "step": {
@@ -1189,8 +419,8 @@ Error: AI Assertion failed]]></system-out>
 }
 Test completed successfully: {
   "filePath": "/Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml",
-  "duration": 8374,
-  "timestamp": 1754008536255
+  "duration": 7601,
+  "timestamp": 1754009305915
 }]]></system-out>
     </testcase>
   </testsuite>

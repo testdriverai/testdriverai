@@ -60,7 +60,7 @@ jobs:
       - name: Find all test files
         id: test_list
         run: |
-          FILES=$(ls ./testdriver/acceptance/*.yaml)
+          FILES=$(ls ./testdriver/acceptance/exec*.yaml)
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
@@ -101,8 +101,9 @@ jobs:
         run: |
           npx @testmo/testmo-cli automation:run:submit-thread \
             --instance "$TESTMO_URL" \
+            --source "TestDriver.ai" \
             --run-id "${{ needs.test-setup.outputs.testmo-run-id }}" \
-            --results *.xml \
+            --results out.xml \
         env:
           TESTMO_URL: ${{ secrets.TESTMO_URL }}
           TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}

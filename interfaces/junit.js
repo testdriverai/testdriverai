@@ -311,7 +311,7 @@ class JUnitReporter {
     }
     // Remove ANSI escape sequences - using more comprehensive regex
     // eslint-disable-next-line no-control-regex
-    return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
   }
 
   /**
@@ -322,7 +322,7 @@ class JUnitReporter {
     const commandInfo =
       typeof data === "string" ? data : JSON.stringify(data, null, 2);
     this.outputBuffer.push(`✓ Command succeeded: ${commandInfo}`);
-    
+
     const duration = this.commandStartTime
       ? (Date.now() - this.commandStartTime) / 1000
       : 0;
@@ -338,7 +338,7 @@ class JUnitReporter {
     const errorInfo =
       typeof data === "string" ? data : JSON.stringify(data, null, 2);
     this.outputBuffer.push(`✗ Command failed: ${errorInfo}`);
-    
+
     const duration = this.commandStartTime
       ? (Date.now() - this.commandStartTime) / 1000
       : 0;
@@ -360,7 +360,7 @@ class JUnitReporter {
 
     // Create a clean, readable step name
     let stepName = "Untitled Step";
-    
+
     if (typeof data === "string") {
       stepName = data;
     } else if (data?.prompt) {
@@ -373,9 +373,9 @@ class JUnitReporter {
     }
 
     // Clean up the step name - remove excessive whitespace and limit length
-    stepName = stepName.replace(/\s+/g, ' ').trim();
+    stepName = stepName.replace(/\s+/g, " ").trim();
     if (stepName.length > 80) {
-      stepName = stepName.substring(0, 77) + '...';
+      stepName = stepName.substring(0, 77) + "...";
     }
 
     // Each step becomes a @Test method - following the mapping guide
@@ -420,7 +420,7 @@ class JUnitReporter {
         <div style="font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;">
           ${formattedOutput}
         </div>`;
-        
+
         this.currentTest.property("html:richtext", htmlContent);
       }
 
