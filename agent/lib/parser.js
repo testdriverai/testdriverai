@@ -14,7 +14,9 @@ function formatAjvError(error) {
     `${theme.yellow("Schema:")}    ${theme.cyan(error.schemaPath)}`,
     `${theme.yellow("Keyword:")}   ${theme.magenta(error.keyword)}`,
     error.params?.missingProperty
-      ? `${theme.yellow("Missing:")}   ${theme.yellow(error.params.missingProperty)}`
+      ? `${theme.yellow("Missing:")}   ${theme.yellow(
+          error.params.missingProperty
+        )}`
       : "",
     `${theme.yellow("Message:")}   ${theme.white(error.message)}`,
     `\n`,
@@ -97,7 +99,7 @@ function interpolate(yaml, vars) {
   Object.keys(vars).forEach((key) => {
     newyaml = newyaml.replace(
       new RegExp(`(?<!\\\\)\\$\\{${key}\\}`, "g"),
-      vars[key],
+      vars[key]
     );
   });
   // Replace \$ with $
@@ -131,7 +133,7 @@ function createParser(emitter) {
   const validateYAML = async function (yaml) {
     let ajv = new Ajv({
       allowUnionTypes: true,
-      strict: false
+      strict: false,
     });
     let validate = ajv.compile(schema);
     let valid = validate(await parseYAML(yaml));
@@ -175,7 +177,7 @@ function createParser(emitter) {
 
         if (!commands.length) {
           throw new Error(
-            "No actions found in yaml. Individual commands must be under the `commands` key.",
+            "No actions found in yaml. Individual commands must be under the `commands` key."
           );
         }
 
@@ -185,7 +187,7 @@ function createParser(emitter) {
 
         if (!commands?.length) {
           throw new Error(
-            "No actions found in yaml. Individual commands must be under the `commands` key.",
+            "No actions found in yaml. Individual commands must be under the `commands` key."
           );
         }
 
