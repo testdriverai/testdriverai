@@ -5,158 +5,120 @@ description: "Frequently Asked Questions about TestDriver"
 icon: "block-question"
 ---
 
-## What's TestDriver?
 
+## What's TestDriver?
 TestDriver is an AI-powered testing platform that simulates user interactions to automate end-to-end testing for web, desktop, and mobile applications.
 
 ## How does TestDriver work?
-
 It interprets high-level prompts, interacts with interfaces like a user would, and verifies expected outcomes using visual assertions.
 
 ## What platforms does TestDriver support?
-
 TestDriver supports Windows, Mac, Linux, desktop apps, chrome extensions, web browsers, and mobile interfaces (via emulator or device farm).
 
 ## Can it be used for exploratory testing?
-
 Yes. TestDriver can autonomously navigate the application to generate new test cases.
 
 ## Can it test desktop applications?
-
 Yes. It supports testing native desktop applications by simulating mouse and keyboard input and identifying UI elements.
 
 ## Can it test mobile apps?
-
 Yes, via mobile emulators or integration with device farms.
 
 ## Can TestDriver generate tests automatically?
-
 Yes, it explores the app and creates test cases based on UI flows and user interactions.
 
 ## Can I create tests from natural language prompts?
-
 Yes. You can write high-level instructions in plain language, and TestDriver will interpret and build tests from them.
 
 ## Can it generate tests from user stories or documentation?
-
-Yes. It can use minimal descriptions to produce complete test cases.
+Yes. It can use minimal descriptions to produce complete test cases. 
 
 ## Can it turn recorded user sessions into tests?
-
 No, an important part of AI-native testing is the intent behind the actions. TestDriver focuses on understanding user goals rather than just recording actions.
 
 ## What happens when the UI changes?
-
 TestDriver adapts using AI—if a button or label changes, it can often infer the correct action without breaking.
 
 ## Do I need to rewrite tests often?
-
 No. TestDriver reduces maintenance by handling common UI changes automatically.
 
 ## How does it handle flaky tests?
-
 TestDriver Enterprise Dashboards provide insights into test stability, helping you identify flaky tests and their causes.
 
 ## How are tests updated over time?
-
 TestDriver will open pull requests in your repository with updated tests when it detects changes in the UI or application behavior. You can also regenerate tests using the original prompts manually.
 
 ## How does TestDriver report test failures?
-
 It provides detailed logs, screenshots, console output, and visual diffs.
 
 ## What happens when a test fails?
-
 It stops execution, flags the failing step, and provides context for debugging.
 
 ## Can I view why a test failed?
-
 Yes. You can view step-by-step logs, network traffic, DOM state, and video playback of the test run.
 
 ## Can it automatically retry failed actions?
-
 Yes. You can configure retry behavior for individual steps or full tests.
 
 ## Can I run tests in parallel?
-
 Yes. TestDriver supports parallel execution using multiple VMs or containers.
 
 ## Can I track performance metrics during testing?
-
 Yes. It can log CPU, memory, load times, and frame rates to help catch performance regressions.
 
 ## Can it validate non-deterministic output?
-
 Yes. It uses AI assertions to verify outcomes even when outputs vary (for example, generated text or dynamic UIs).
 
 ## Can it test workflows with variable inputs?
-
 Yes. It supports data-driven tests using parameterized inputs.
 
 ## Can it test file uploads and downloads?
-
 Yes. TestDriver can interact with file pickers and validate uploaded/downloaded content.
 
 ## Can it generate tests for PDFs or document output?
-
 Yes. It can open and verify generated files for expected text or formatting.
 
 ## Can I trigger tests based on pull requests or merges?
-
 Yes. You can integrate TestDriver with your CI to trigger runs via GitHub Actions or other CI/CD tools.
 
 ## Does it integrate with CI/CD tools?
-
 Yes. TestDriver integrates with pipelines like GitHub Actions, GitLab CI, and CircleCI.
 
 ## Can I integrate TestDriver with Jira, Slack, etc.?
-
 Yes. You can receive alerts and sync test results with third-party tools via API/webhooks.
 
 ## Does it support cloud and local environments?
-
 Yes. You can run tests locally or in the cloud using ephemeral VMs for clean state testing.
 
 ## Does it work with existing test frameworks?
-
 It can complement or convert some existing test cases into its format, though full conversion depends on compatibility.
 
 ## How does TestDriver measure test coverage?
-
 It tracks UI paths, element interaction frequency, and application state changes to infer coverage.
 
 ## Can it suggest missing test scenarios?
-
 Yes. Based on interaction patterns and user behavior, it can propose additional test cases.
 
 ## Can it analyze test stability over time?
-
 Yes. You can view trends in pass/fail rates and test execution consistency.
 
 ## Is it safe to test sensitive data?
-
 Yes. TestDriver supports variable obfuscation, secure containers, and test data isolation.
 
 ## Can I avoid using production data in tests?
-
 Yes. You can configure mock data, sanitize logs, and use test-specific environments.
 
 ## How does the AI understand what to test?
-
 It uses language models to interpret your goals, element names, and interface cues to perform tasks.
 
 ## Can I adjust how the AI interprets my prompt?
-
 Yes. You can rewrite prompts, add constraints, or review and tweak auto-generated steps.
 
 ## Can I see what the AI is doing behind the scenes?
-
 Yes. You can inspect the resolved steps, see element matches, and adjust test flows before execution.
 
 ## Can I use TestDriver to test new features?
-
 Yes. It's great for validating changes, ensuring no regressions, and verifying rollout configurations.
 
 ## Can it test seasonal or time-based behaviors?
-
 Yes. You can schedule tests or run them under specific date/time settings to verify time-sensitive logic.

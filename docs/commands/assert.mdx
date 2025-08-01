@@ -6,22 +6,20 @@ icon: "check"
 mode: "wide"
 ---
 
-import Replay from "/snippets/tests/assert-replay.mdx";
-import Example from "/snippets/tests/assert-yaml.mdx";
+import Replay from '/snippets/tests/assert-replay.mdx'
+import Example from '/snippets/tests/assert-yaml.mdx'
 
 <Replay />
 <Example />
 
 ## Description
-
 The `assert` command validates that a specific condition is true. It ensures that a task completed successfully by checking the screen for the expected outcome. If the condition isn't met, the test will fail.
 
 ## Arguments
-
-| Argument | Type      | Description                                                                                                        |
-| -------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
-| `expect` | `string`  | The condition to check. This should describe what you expect to see on the screen.                                 |
-| `async`  | `boolean` | (Optional) If set to `true`, the test will continue without waiting for the assertion to pass. Default is `false`. |
+| Argument   | Type      | Description                                                                 |
+|------------|-----------|-----------------------------------------------------------------------------|
+| `expect`   | `string`  | The condition to check. This should describe what you expect to see on the screen. |
+| `async`    | `boolean` | (Optional) If set to `true`, the test will continue without waiting for the assertion to pass. Default is `false`. |
 
 ## Example usage
 
@@ -39,6 +37,5 @@ async: true
 ```
 
 ## Notes
-
 - Use `async: true` to speed up tests by allowing non-blocking assertions. However, the test will still fail if the condition isn't met.
 - Ensure the `expect` string clearly describes the condition to avoid ambiguity.

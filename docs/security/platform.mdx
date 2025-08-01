@@ -1,14 +1,13 @@
 ---
 title: "Security Features of the Dashboard"
-sidebarTitle: "TestDriver Platform"
+sidebarTitle: "TestDriver Platform" 
 description: "Learn about the security features of the TestDriver web dashboard, including SSL, OAuth, RBAC, and more."
 icon: layer-group
 ---
 
-import GitignoreWarning from "/snippets/gitignore-warning.mdx";
+import GitignoreWarning from '/snippets/gitignore-warning.mdx';
 
 ## Overview
-
 The TestDriver web dashboard provides a secure interface for managing and reviewing your tests. Tests executed via the GitHub Action are recorded and reported through Dashcam, another application developed by TestDriver. For more details, refer to the [Dashcam documentation](https://dashcam.docs.testdriver.ai).
 
 Dashcam and TestDriver share the same API and web application back end, which includes robust privacy and security features.
@@ -16,20 +15,16 @@ Dashcam and TestDriver share the same API and web application back end, which in
 ## Security features
 
 ### SSL
-
 - All data transmitted between your browser and the TestDriver web application is encrypted using HTTPS.
 
 ### Authentication
-
 - Users can only authenticate via OAuth, provided by Auth0, ensuring secure and reliable user authentication.
 
 ### Team management
-
 - Administrators can add or remove individual team members.
 - Only administrators have the ability to manage team settings.
 
 ### Role-based access control (RBAC)
-
 - The first user to create a team is designated as the administrator.
 - Administrators:
   - Are the only users who can view the API key.
@@ -38,19 +33,16 @@ Dashcam and TestDriver share the same API and web application back end, which in
 - All other users are normal members with limited access.
 
 ### API key rotation
-
 - Teams can rotate their API key for enhanced security.
 - It's recommended to rotate the API key every 90 days to minimize risk.
 
 <Check>
-  For more details on **Team Management** see the [Team
-  documentation](/account/team).
+    For more details on **Team Management** see the [Team documentation](/account/team).
 </Check>
 
-<GitignoreWarning />
+<GitignoreWarning/>
 
 ### Secret masking
-
 - Test replay logs and network requests are automatically scanned for sensitive information, such as:
   - Credit card numbers
   - Emails
@@ -59,17 +51,13 @@ Dashcam and TestDriver share the same API and web application back end, which in
 - Detected secrets are masked with asterisks (`****`) to prevent exposure.
 
 ### Encrypted at rest
-
 - Test replays and logs are securely stored on Amazon S3 and encrypted at rest.
 - Test results are only accessible via temporary signed URLs.
 - Signed URLs are generated exclusively for team users and expire after a set duration.
 
 ## Notes
-
 - The TestDriver web dashboard is designed with privacy and security as top priorities.
 - For additional security, ensure your team rotates API keys regularly and reviews team member access permissions.
 - If you have specific security concerns or questions, please contact TestDriver support.
 
-<Tip>
-  See complete docs about the dashboard features [here](/account/dashboard)
-</Tip>
+<Tip>See complete docs about the dashboard features [here](/account/dashboard)</Tip>

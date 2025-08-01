@@ -5,7 +5,7 @@ description: "Discover how to modularize your test workflows using reusable YAML
 icon: "repeat"
 ---
 
-import GitignoreWarning from "/snippets/gitignore-warning.mdx";
+import GitignoreWarning from '/snippets/gitignore-warning.mdx'
 
 Reusable snippets in TestDriver allow you to modularize your test steps by creating smaller, reusable YAML files that can be embedded into larger test workflows. This approach improves test maintainability, reduces duplication, and makes your test suite more organized and scalable.
 
@@ -27,7 +27,6 @@ Reusable snippets are YAML files containing a set of test steps that perform a s
 ---
 
 ## How to create and use reusable snippets
-
 <Steps>
 <Step title="Create a Snippet">
 
@@ -55,7 +54,6 @@ steps:
         description: log in button
         action: click
 ```
-
 </Step>
 
 <Step title="Reference the Snippet in a Test">
@@ -74,7 +72,6 @@ steps:
         description: dashboard link in the navigation bar
         action: click
 ```
-
 </Step>
 
 <Step title="Parameterize Inputs">
@@ -89,6 +86,7 @@ TD_PASSWORD=your_password
 <GitignoreWarning/>
 </Step>
 </Steps>
+
 
 ## Example: Combining multiple snippets
 
@@ -106,8 +104,7 @@ steps:
       - command: run
         file: snippets/add_to_cart.yaml
 ```
-
----
+--- 
 
 ## Best practices for reusable snippets
 
