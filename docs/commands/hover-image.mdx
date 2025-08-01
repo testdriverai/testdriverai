@@ -6,8 +6,8 @@ icon: "image"
 mode: "wide"
 ---
 
-import Replay from '/snippets/tests/hover-image-replay.mdx'
-import Example from '/snippets/tests/hover-image-yaml.mdx'
+import Replay from "/snippets/tests/hover-image-replay.mdx";
+import Example from "/snippets/tests/hover-image-yaml.mdx";
 
 <Replay />
 <Example />
@@ -17,14 +17,16 @@ import Example from '/snippets/tests/hover-image-yaml.mdx'
 The `hover-image` command is used to locate an image on the screen based on a description and perform an action on it. This can include hovering, clicking, right-clicking, or double-clicking the image.
 
 ## Arguments
-| Argument      | Type     | Description                                                                 |
-|---------------|----------|-----------------------------------------------------------------------------|
-| `description` | `string` | A description of the image and what it represents. Don't include the image itself here. |
+
+| Argument      | Type     | Description                                                                                                         |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `description` | `string` | A description of the image and what it represents. Don't include the image itself here.                             |
 | `action`      | `string` | The action to take when the image is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
 
 The `hover-image` command is useful for interacting with visual elements that can't be identified using text-based selectors.
 
 ## Example usage
+
 ```yaml
 command: hover-image
 description: search icon in the webpage content
@@ -32,11 +34,12 @@ action: click
 ```
 
 ## Protips
+
 - Use clear and concise descriptions for the image to improve detection accuracy.
 - Ensure the action specified matches the intended interaction with the image.
 - If the hover-image command fails to locate an image based on the provided description, consider using the match-image command instead. The match-image command is specifically designed for scenarios where precise image matching is required, such as when the visual element can't be reliably described with text. It works by directly comparing the image on the screen with a reference image file.
 
 ## Gotchas
+
 - If the image can't be located based on the description, the command will fail.
 - Ensure the screen resolution and scaling settings are consistent to avoid detection issues.
-

@@ -12,14 +12,17 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 ## KeypPrinciples for locating elements
 
 1. **Describe the Element Visually**:
+
    - Focus on the **appearance** of the element, not its behavior or function.
    - Mention unique visual traits such as **text**, **color**, **size**, **position**, or **icon**.
 
 2. **Avoid Behavioral Descriptions**:
+
    - don't describe what the element does (for example, "button that submits the form").
    - Instead, describe how it looks (for example, "blue button with the text 'Submit' in the bottom-right corner").
 
 3. **Use Unique Identifiers**:
+
    - If the element has visible text, include it in the description.
    - For icons or images, describe their shape, color, or associated label.
 
@@ -32,22 +35,27 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 ## Examples of effective descriptions
 
 ### 1. Buttons
+
 - **Good**: "Blue button with the text 'Sign In' in the top-right corner."
 - **Bad**: "Button that logs the user in."
 
 ### 2. Links
+
 - **Good**: "Hyperlink with the text 'Learn More' in the footer."
 - **Bad**: "Link that navigates to the About page."
 
 ### 3. Icons
+
 - **Good**: "Magnifying glass icon next to the search bar."
 - **Bad**: "Search icon that opens the search feature."
 
 ### 4. Input fields
+
 - **Good**: "White input box labeled 'Email Address' above the password field."
 - **Bad**: "Field where the user enters their email."
 
 ### 5. Images
+
 - **Good**: "Company logo in the top-left corner, a blue circle with white text."
 - **Bad**: "Logo that redirects to the homepage."
 
@@ -64,10 +72,7 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
   text: Sign In
   description: Blue button with the text 'Sign In' in the top-right corner
   action: click
-
-
 ```
-
 
 ---
 
@@ -92,20 +97,19 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
   text: Learn More
   description: Hyperlink with the text 'Learn More' in the footer
   action: click
-
-
 ```
-
 
 ---
 
 ## Debugging element detection
 
 1. **Run the Test**:
+
    - Execute the test using TestDriver.
    - TestDriver will draw **yellow boxes** around detected elements.
 
 2. **Verify the Correct Element**:
+
    - Ensure the yellow box highlights the intended element.
    - If the wrong element is highlighted, refine your description.
 
@@ -118,12 +122,15 @@ TestDriver uses **visual understanding** to locate elements on the screen. Unlik
 ## Best practices
 
 1. **Be Specific**:
+
    - Include as many unique visual traits as possible to differentiate the element from others.
 
 2. **Test Incrementally**:
+
    - Run tests after adding or modifying commands to verify element detection.
 
 3. **Use Visual Feedback**:
+
    - Leverage the yellow boxes drawn by TestDriver to confirm the correct element is being targeted.
 
 4. **Avoid Overloading Descriptions**:

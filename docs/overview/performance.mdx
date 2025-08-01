@@ -11,37 +11,37 @@ This guide outlines the typical performance characteristics of each TestDriver c
 
 These commands execute quickly and can be relied upon for high-frequency usage in complex test sequences.
 
-| Command | Avg Duration | Notes |
-|---------|--------------|-------|
-| `exec` | **0.28s** | Fastest command — used for running system-level operations or internal scripting logic. |
-| `wait-for-image` | 2.21s | Relatively fast if the image is readily present; can be slower if the UI takes time to render. |
-| `remember` | 2.80s | Internal memory operation — used for tracking previous outputs or locations. |
-| `hover-text` | 3.11s | Efficient for UI elements with immediate accessibility. |
-| `scroll` | 3.34s | Smooth and fast in most scrollable containers. |
-| `assert` | 3.47s | Used for validation — usually lightweight unless image or text detection is delayed. |
+| Command          | Avg Duration | Notes                                                                                          |
+| ---------------- | ------------ | ---------------------------------------------------------------------------------------------- |
+| `exec`           | **0.28s**    | Fastest command — used for running system-level operations or internal scripting logic.        |
+| `wait-for-image` | 2.21s        | Relatively fast if the image is readily present; can be slower if the UI takes time to render. |
+| `remember`       | 2.80s        | Internal memory operation — used for tracking previous outputs or locations.                   |
+| `hover-text`     | 3.11s        | Efficient for UI elements with immediate accessibility.                                        |
+| `scroll`         | 3.34s        | Smooth and fast in most scrollable containers.                                                 |
+| `assert`         | 3.47s        | Used for validation — usually lightweight unless image or text detection is delayed.           |
 
 ## Medium Performance Commands
 
 These are reliable but may involve minor delays due to image processing, UI rendering, or input simulation.
 
-| Command | Avg Duration | Notes |
-|---------|--------------|-------|
-| `focus-application` | 4.83s | Includes system-level context switching — may vary by OS and app state. |
-| `scroll-until-text` | 5.94s | Slightly slower due to iterative scroll and search logic. |
-| `click` | 6.15s | Includes visual target matching and precise cursor control. |
-| `press-keys` | 6.18s | Slightly slower if key sequences involve modifier keys or application delays. |
-| `type` | 7.32s | Simulates real typing — intentionally throttled for realism and stability. |
-| `wait` | 7.50s | Direct sleep used for explicit pauses. Use sparingly for faster tests. |
+| Command             | Avg Duration | Notes                                                                         |
+| ------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `focus-application` | 4.83s        | Includes system-level context switching — may vary by OS and app state.       |
+| `scroll-until-text` | 5.94s        | Slightly slower due to iterative scroll and search logic.                     |
+| `click`             | 6.15s        | Includes visual target matching and precise cursor control.                   |
+| `press-keys`        | 6.18s        | Slightly slower if key sequences involve modifier keys or application delays. |
+| `type`              | 7.32s        | Simulates real typing — intentionally throttled for realism and stability.    |
+| `wait`              | 7.50s        | Direct sleep used for explicit pauses. Use sparingly for faster tests.        |
 
 ## Slower Commands
 
 These commands tend to be slower due to intensive image comparison, polling loops, or delays in dynamic content rendering.
 
-| Command | Avg Duration | Notes |
-|---------|--------------|-------|
-| `hover-image` | 11.95s | Requires locating a target image — performance depends on image quality and rendering time. |
-| `wait-for-text` | 12.08s | Polls repeatedly for expected text — delay depends on application speed and visibility. |
-| `match-image` | **16.55s** | Most time-consuming operation — relies on pixel-level image detection which may be affected by resolution, anti-aliasing, and scaling. |
+| Command         | Avg Duration | Notes                                                                                                                                  |
+| --------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `hover-image`   | 11.95s       | Requires locating a target image — performance depends on image quality and rendering time.                                            |
+| `wait-for-text` | 12.08s       | Polls repeatedly for expected text — delay depends on application speed and visibility.                                                |
+| `match-image`   | **16.55s**   | Most time-consuming operation — relies on pixel-level image detection which may be affected by resolution, anti-aliasing, and scaling. |
 
 ---
 
