@@ -101,7 +101,6 @@ jobs:
         run: |
           npx @testmo/testmo-cli automation:run:submit-thread \
             --instance "$TESTMO_URL" \
-            --source "TestDriver.ai" \
             --run-id "${{ needs.test-setup.outputs.testmo-run-id }}" \
             --results out.xml \
         env:
