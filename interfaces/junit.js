@@ -294,48 +294,10 @@ class JUnitReporter {
         ? data
         : data?.command || JSON.stringify(data, null, 2);
 
-    // Following the mapping guide:
-    // - command: run with file → Method call or helper class invocation
-    // - command: focus-application → Setup step or precondition in test
-    // - command: hover-image → UI interaction via framework (e.g., Selenium)
-    // - command: assert → assertEquals, assertTrue, etc.
-    
-    let commandDescription = commandInfo;
-    if (typeof data === 'object' && data?.command) {
-      switch (data.command) {
-        case 'run':
-          commandDescription = `Method call: run(${data.file || 'file'})`;
-          break;
-        case 'focus-application':
-          commandDescription = `Setup: focusApplication("${data.name || 'application'}")`;
-          break;
-        case 'hover-image':
-          commandDescription = `UI interaction: hoverImage("${data.description || 'element'}")`;
-          break;
-        case 'hover-text':
-          commandDescription = `UI interaction: hoverText("${data.text || 'text'}")`;
-          break;
-        case 'click':
-          commandDescription = `UI interaction: click(${data.x || 0}, ${data.y || 0})`;
-          break;
-        case 'type':
-          commandDescription = `UI interaction: type("${data.text || ''}")`;
-          break;
-        case 'assert':
-          commandDescription = `Assertion: expect("${data.expect || 'condition'}")`;
-          break;
-        case 'exec':
-          commandDescription = `Execute: ${data.lang || 'code'}("${(data.code || '').substring(0, 50)}...")`;
-          break;
-        default:
-          commandDescription = `Command: ${data.command}`;
-      }
-    }
-
     this.commandStartTime = Date.now();
     // Add command execution to the step's output (commands are method calls within the @Test)
-    this.outputBuffer.push(`> ${commandDescription}`);
-    console.log(`JUnit: Executing command (method call) - ${commandDescription}`);
+    this.outputBuffer.push(`> ${commandInfo}`);
+    console.log(`JUnit: Executing command (method call) - ${commandInfo}`);
   }
 
   /**
@@ -396,24 +358,39 @@ class JUnitReporter {
       return;
     }
 
-    const stepInfo =
-      typeof data === "string"
-        ? data
-        : data?.prompt || data?.command || JSON.stringify(data, null, 2);
+    // Create a clean, readable step name
+    let stepName = "Untitled Step";
+    
+    if (typeof data === "string") {
+      stepName = data;
+    } else if (data?.prompt) {
+      stepName = data.prompt;
+    } else if (data?.sourcePosition?.step?.prompt) {
+      // Extract prompt from source position if available
+      stepName = `Step ${data.sourcePosition.step.stepIndex + 1}`;
+    } else if (data?.stepIndex !== undefined) {
+      stepName = `Step ${data.stepIndex + 1}`;
+    }
+
+    // Clean up the step name - remove excessive whitespace and limit length
+    stepName = stepName.replace(/\s+/g, ' ').trim();
+    if (stepName.length > 80) {
+      stepName = stepName.substring(0, 77) + '...';
+    }
 
     // Each step becomes a @Test method - following the mapping guide
     // prompt → Comment or log for test readability, so we use it as the test name
     this.currentTest = this.currentFileTestSuite
       .testCase()
       .className(this.currentFileName)
-      .name(stepInfo || "Step");
+      .name(stepName);
 
     this.stepStartTime = Date.now();
-    this.currentStep = stepInfo;
-    this.outputBuffer = [`Test step started: ${stepInfo}`];
+    this.currentStep = stepName;
+    this.outputBuffer = [`Test step started: ${stepName}`];
     this.currentCommandErrors = [];
 
-    console.log(`JUnit: Starting step (test method) - ${stepInfo}`);
+    console.log(`JUnit: Starting step (test method) - ${stepName}`);
   }
 
   /**
