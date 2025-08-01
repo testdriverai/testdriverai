@@ -10,6 +10,7 @@ import Replay from "/snippets/tests/hover-text-replay.mdx";
 import Example from "/snippets/tests/hover-text-yaml.mdx";
 
 <Replay />
+
 <Example />
 
 ## Description
@@ -38,8 +39,9 @@ action: click
 
 - Use unique and specific text to improve detection accuracy.
 - Choose the appropriate `method` for your use case:
-  - `turbo`: Faster and more efficient for most scenarios.
-  - `ai`: More robust for complex or ambiguous text matching.
+  - `ai`: More robust for complex or ambiguous text matching (default) using [Set-of-Mark](https://arxiv.org/abs/2310.11441).
+  - `levenshtein`: Compare string similarity using [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance).
+  - `turbo`: Ideal for simpler scenarios, combining `ai` & `levenshtein`
 - Ensure the action specified matches the intended interaction with the text.
 
 ## Gotchas
