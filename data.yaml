@@ -42,4 +42,13 @@ steps:
       # - command: type    // no commands, tho the error is weird for this, its a mapping error. hoping the user can make it out 🤞
       #   text: asdb
       #   dfnjk: sfdad
-#       - 
+
+
+# Scenario 5   // should pass
+# version: 5.7.32
+# session: 683f3175c2acc16422163909
+# steps:
+#   - prompt: Login
+#     commands:
+#       - command: run
+#         file: ../snippets/login.yml
