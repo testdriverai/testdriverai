@@ -96,7 +96,7 @@ jobs:
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
           TD_THIS_FILE: ${{ matrix.test }}
       - run: ls
-      - name: Upload JUnit report
+      - name: Upload JUnit report to Testmo
         if: always()
         run: |
           npx @testmo/testmo-cli automation:run:submit-thread \
@@ -106,6 +106,14 @@ jobs:
         env:
           TESTMO_URL: ${{ secrets.TESTMO_URL }}
           TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+
+      - name: Upload test results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test }}
+          path: out.xml
+          retention-days: 30
 
   test-complete:
     needs: [test-setup, test]
@@ -120,6 +128,14 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # Download all test result artifacts
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-results
+          merge-multiple: true
+
       # Mark test run completed
       - run: |
           npx @testmo/testmo-cli automation:run:complete \
@@ -131,5 +147,5 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@v2
         with:
-          paths: "*.xml"
+          paths: "test-results/*.xml"
         if: always()
