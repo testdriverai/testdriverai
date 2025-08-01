@@ -11,15 +11,13 @@ swap:
   addicts: people with a drug addiction|people recovering from a drug addiction
   adhd: disorganized|distracted|energetic|hyperactive|impetuous|impulsive|inattentive|restless|unfocused
   afflicted with MD: person who has muscular dystrophy
-  afflicted with a disability:
-    has a disability|person with a disability|people with
+  afflicted with a disability: has a disability|person with a disability|people with
     disabilities
   afflicted with a intellectual disability: person with an intellectual disability
   afflicted with a polio: polio|person who had polio
   afflicted with aids: person with AIDS
   afflicted with an injury: sustain an injury|receive an injury
-  afflicted with disabilities:
-    has a disability|person with a disability|people with
+  afflicted with disabilities: has a disability|person with a disability|people with
     disabilities
   afflicted with injuries: sustain injuries|receive injuries
   afflicted with intellectual disabilities: person with an intellectual disability
@@ -35,8 +33,7 @@ swap:
   anorexic: thin|slim
   asylum: psychiatric hospital|mental health hospital
   barren: empty|sterile|infertile
-  batshit:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
+  batshit: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
     mental illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   bedlam: chaos|hectic|pandemonium
@@ -54,8 +51,7 @@ swap:
   cleftlipped: person with a cleft-lip and palate
   confined to a wheelchair: uses a wheelchair
   contard: disagreeable|uneducated|ignorant|naive|inconsiderate
-  crazy:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  crazy: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   cretin: creep|fool
@@ -67,13 +63,11 @@ swap:
   deaf to: careless|heartless|indifferent|insensitive
   deafened by: careless|heartless|indifferent|insensitive
   deafmute: deaf
-  delirious:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
+  delirious: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
     mental illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   demented: person with dementia
-  depressed:
-    sad|blue|bummed out|person with seasonal affective disorder|person with
+  depressed: sad|blue|bummed out|person with seasonal affective disorder|person with
     psychotic depression|person with postpartum depression
   detox: treatment
   detox center: treatment center
@@ -106,13 +100,11 @@ swap:
   idiot: foolish|ludicrous|silly
   imbecile: foolish|ludicrous|silly
   infantile paralysis: polio|person who had polio
-  insane:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  insane: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   insanely: incredibly
-  insanity:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
+  insanity: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
     mental illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   insomnia: restlessness|sleeplessness
@@ -126,63 +118,51 @@ swap:
   lame: boring|dull
   learning disabled: person with learning disabilities
   libtard: disagreeable|uneducated|ignorant|naive|inconsiderate
-  loony:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  loony: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   loony bin: chaos|hectic|pandemonium
   low iq: foolish|ludicrous|unintelligent
-  lunacy:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  lunacy: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
-  lunatic:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
+  lunatic: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
     mental illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   madhouse: chaos|hectic|pandemonium
   maniac: fanatic|zealot|enthusiast
   manic: person with schizophrenia
-  mental:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  mental: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
-  mental case:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms
+  mental case: rude|malicious|mean|disgusting|incredible|vile|person with symptoms
     of mental illness|person with mental illness|person with symptoms of a mental
     disorder|person with a mental disorder
-  mental defective:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms
+  mental defective: rude|malicious|mean|disgusting|incredible|vile|person with symptoms
     of mental illness|person with mental illness|person with symptoms of a mental
     disorder|person with a mental disorder
-  mentally ill:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms
+  mentally ill: rude|malicious|mean|disgusting|incredible|vile|person with symptoms
     of mental illness|person with mental illness|person with symptoms of a mental
     disorder|person with a mental disorder
   midget: person with dwarfism|little person|little people|LP|person of short stature
   mongoloid: person with Down Syndrome
-  moron:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  moron: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
-  moronic:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
+  moronic: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of
     mental illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   multiple sclerosis victim: person who has multiple sclerosis
   neurotic: has an anxiety disorder|obsessive|pedantic|niggly|picky
-  nuts:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  nuts: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
   panic attack: fit of terror|scare
   paraplegic: person with paraplegia
-  psycho:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
+  psycho: rude|malicious|mean|disgusting|incredible|vile|person with symptoms of mental
     illness|person with mental illness|person with symptoms of a mental disorder|person
     with a mental disorder
-  psychopathology:
-    rude|malicious|mean|disgusting|incredible|vile|person with symptoms
+  psychopathology: rude|malicious|mean|disgusting|incredible|vile|person with symptoms
     of mental illness|person with mental illness|person with symptoms of a mental
     disorder|person with a mental disorder
   psychotic: person with a psychotic condition|person with psychosis
@@ -190,26 +170,21 @@ swap:
   rehab: treatment
   rehab center: treatment center
   restricted to a wheelchair: uses a wheelchair
-  retard:
-    silly|dullard|person with Down Syndrome|person with developmental disabilities|delay|hold
+  retard: silly|dullard|person with Down Syndrome|person with developmental disabilities|delay|hold
     back
-  retarded:
-    silly|dullard|person with Down Syndrome|person with developmental disabilities|delay|hold
+  retarded: silly|dullard|person with Down Syndrome|person with developmental disabilities|delay|hold
     back
-  retards:
-    "sillies|dullards|people with developmental disabilities|people with Down\u2019\
+  retards: "sillies|dullards|people with developmental disabilities|people with Down\u2019\
     s Syndrome|delays|holds back"
   sane: correct|adequate|sufficient|consistent|valid|coherent|sensible|reasonable
   sanity check: check|assertion|validation|smoke test
   schizo: person with schizophrenia
   schizophrenic: person with schizophrenia
   senile: person with dementia
-  short bus:
-    silly|dullard|person with Down Syndrome|person with developmental disabilities|delay|hold
+  short bus: silly|dullard|person with Down Syndrome|person with developmental disabilities|delay|hold
     back
   simpleton: foolish|ludicrous|unintelligent
-  small person:
-    person with dwarfism|little person|little people|LP|person of short
+  small person: person with dwarfism|little person|little people|LP|person of short
     stature
   sociopath: person with a personality disorder|person with psychopathic personality
   sociopaths: people with psychopathic personalities|people with a personality disorder
@@ -227,16 +202,14 @@ swap:
   suffer from aids: person with AIDS
   suffer from an injury: sustain an injury|receive an injury
   suffer from injuries: sustain injuries|receive injuries
-  suffering from a disability:
-    has a disability|person with a disability|people with
+  suffering from a disability: has a disability|person with a disability|people with
     disabilities
   suffering from a polio: polio|person who had polio
   suffering from a stroke: individual who has had a stroke
   suffering from aids: person with AIDS
   suffering from an injury: sustain an injury|receive an injury
   suffering from an intellectual disability: person with an intellectual disability
-  suffering from disabilities:
-    has a disability|person with a disability|people with
+  suffering from disabilities: has a disability|person with a disability|people with
     disabilities
   suffering from injuries: sustain injuries|receive injuries
   suffering from intellectual disabilities: person with an intellectual disability
@@ -247,8 +220,7 @@ swap:
   suffers from MD: person who has muscular dystrophy
   suffers from aids: person with AIDS
   suffers from an injury: sustain an injury|receive an injury
-  suffers from disabilities:
-    has a disability|person with a disability|people with
+  suffers from disabilities: has a disability|person with a disability|people with
     disabilities
   suffers from injuries: sustain injuries|receive injuries
   suffers from intellectual disabilities: person with an intellectual disability
@@ -259,8 +231,7 @@ swap:
   suffers from schizophrenia: person with schizophrenia
   tourettes disorder: Tourette syndrome
   tourettes syndrome: Tourette syndrome
-  vertically challenged:
-    person with dwarfism|little person|little people|LP|person
+  vertically challenged: person with dwarfism|little person|little people|LP|person
     of short stature
   victim of a stroke: individual who has had a stroke
   victim of aids: person with AIDS

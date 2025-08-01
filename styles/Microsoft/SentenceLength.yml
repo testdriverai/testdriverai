@@ -4,3 +4,4 @@ scope: sentence
 level: suggestion
 max: 30
 token: \b(\w+)\b
+
