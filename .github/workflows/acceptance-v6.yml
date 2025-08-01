@@ -136,6 +136,22 @@ jobs:
           path: test-results
           merge-multiple: true
 
+      # Debug: Check what files were downloaded
+      - name: Debug downloaded files
+        run: |
+          echo "=== Contents of test-results directory ==="
+          find test-results -type f -name "*.xml" -ls
+          echo "=== Directory structure ==="
+          ls -la test-results/
+          echo "=== XML file contents preview ==="
+          for file in test-results/*.xml; do
+            if [ -f "$file" ]; then
+              echo "--- Content of $file ---"
+              head -10 "$file"
+              echo ""
+            fi
+          done
+
       # Mark test run completed
       - run: |
           npx @testmo/testmo-cli automation:run:complete \
@@ -147,5 +163,5 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@v2
         with:
-          paths: "test-results/*.xml"
+          paths: "test-results/**/*.xml"
         if: always()
