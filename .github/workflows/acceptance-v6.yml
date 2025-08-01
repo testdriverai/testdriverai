@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+        test: ${{ fromJson(needs.gather.outputs.test_files) }}
       max-parallel: 8
       fail-fast: false
     steps:

@@ -35,6 +35,7 @@ class JUnitReporter {
     this.currentFileTestSuite = null;
     this.currentTest = null;
     this.testStartTime = null;
+    this.stepStartTime = null;
     this.commandStartTime = null;
     this.currentStepErrors = [];
     this.currentCommandErrors = [];
@@ -232,8 +233,8 @@ class JUnitReporter {
    * @param {Object} data - Event data containing success status, duration, etc.
    */
   handleTestEnd(data) {
-    // Complete any remaining command test case
-    this.completeCurrentCommand();
+    // Complete any remaining step test case
+    this.completeCurrentStep();
 
     const duration = data?.duration
       ? data.duration / 1000
@@ -460,29 +461,25 @@ class JUnitReporter {
   }
 
   /**
-   * Handle step success
+   * Handle step success - Mark the @Test method as completed successfully
    * @param {Object} data - Event data
    */
   handleStepSuccess(data) {
     const stepInfo =
       typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`Step succeeded: ${stepInfo}`);
+    this.outputBuffer.push(`✓ Step completed successfully: ${stepInfo}`);
   }
 
   /**
-   * Handle step error
+   * Handle step error - Mark the @Test method as failed
    * @param {Object} data - Event data
    */
   handleStepError(data) {
     this.currentStepErrors.push(data);
+    this.currentCommandErrors.push(data); // Also add to command errors for this step
     const errorInfo =
       typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`Step failed: ${errorInfo}`);
-
-    // If we have a current test, mark it as failed
-    if (this.currentTest) {
-      this.currentTest.failure(this.formatError(data));
-    }
+    this.outputBuffer.push(`✗ Step failed: ${errorInfo}`);
   }
 
   /**
@@ -497,19 +494,15 @@ class JUnitReporter {
   }
 
   /**
-   * Handle fatal errors
+   * Handle fatal errors - Mark current step as failed and complete the test
    * @param {Object} data - Event data
    */
   handleFatalError(data) {
     this.currentStepErrors.push(data);
+    this.currentCommandErrors.push(data);
     const errorInfo =
       typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`Fatal Error: ${errorInfo}`);
-
-    // If we have a current test, mark it as failed immediately
-    if (this.currentTest) {
-      this.currentTest.failure(this.formatError(data));
-    }
+    this.outputBuffer.push(`✗ Fatal Error: ${errorInfo}`);
 
     // Complete the test with failure
     this.handleTestEnd({
@@ -519,14 +512,14 @@ class JUnitReporter {
   }
 
   /**
-   * Handle log output
+   * Handle log output - Add to current step's output
    * @param {string} data - Log message
    * @param {string} level - Log level (optional)
    */
   handleLogOutput(data, level = "info") {
     if (typeof data === "string") {
       const logMessage = `[${level}] ${data}`;
-      // Always add to the output buffer - it will be included in the next command's output
+      // Add to the output buffer for the current step
       this.outputBuffer.push(logMessage);
     }
   }
@@ -536,8 +529,8 @@ class JUnitReporter {
    * @param {number} exitCode - Process exit code
    */
   handleExit(exitCode) {
-    // Complete any remaining command test case
-    this.completeCurrentCommand();
+    // Complete any remaining step test case
+    this.completeCurrentStep();
 
     // If exit code is non-zero and we still have active state, consider it a failure
     const testFailed = exitCode !== 0;
