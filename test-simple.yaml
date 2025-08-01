@@ -1,6 +1,0 @@
-version: 6.0.1
-steps:
-  - prompt: Simple test for JUnit reporting
-    commands:
-      - command: assert
-        expect: This is a test assertion that should pass
