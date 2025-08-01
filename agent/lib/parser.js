@@ -129,7 +129,11 @@ function createParser(emitter) {
   // validate yaml using schema.json in root
   let schema = require("../../schema.json");
   const validateYAML = async function (yaml) {
-    let ajv = new Ajv({ allowUnionTypes: true, strict: false });
+    let ajv = new Ajv({
+      allowUnionTypes: true,
+      strict: false,
+      unevaluatedProperties: false,
+    });
     let validate = ajv.compile(schema);
     let valid = validate(await parseYAML(yaml));
 
