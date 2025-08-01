@@ -41,6 +41,9 @@ class JUnitReporter {
     // Track timing
     this.testStartTime = null;
 
+    // Track final test result based on exit code
+    this.finalExitCode = null;
+
     // Create test suite based on main test file
     this.createTestSuite();
 
@@ -57,16 +60,6 @@ class JUnitReporter {
     console.log("[JUnit Reporter] Setting up event listeners...");
     // Test lifecycle events
     this.emitter.on(events.test.start, (data) => this.handleTestStart(data));
-    this.emitter.on(events.test.success, (data) =>
-      this.handleTestEnd(data, "passed"),
-    );
-    this.emitter.on(events.test.error, (data) =>
-      this.handleTestEnd(data, "failed"),
-    );
-    this.emitter.on(
-      events.test.stop,
-      (data) => this.handleTestEnd(data, "passed"), // Assume passed if just stopped
-    );
 
     // Step lifecycle events
     this.emitter.on(events.step.start, (data) => this.handleStepStart(data));
@@ -89,15 +82,11 @@ class JUnitReporter {
     );
 
     // Log and error events for system-out/system-err
-    this.emitter.on("log:*", (message) =>
-      this.handleLogMessage(message, "log"),
-    );
-    this.emitter.on("error:*", (error) =>
-      this.handleErrorMessage(error, "error"),
-    );
+    this.emitter.on("log:*", (message) => this.handleLogMessage(message));
+    this.emitter.on("error:*", (error) => this.handleErrorMessage(error));
 
     // Handle exit to finalize report
-    this.emitter.on(events.exit, () => this.finalizeReport());
+    this.emitter.on(events.exit, (exitCode) => this.finalizeReport(exitCode));
     console.log("[JUnit Reporter] Event listeners setup complete");
   }
 
@@ -120,113 +109,6 @@ class JUnitReporter {
       .className(this.getTestSuiteName(this.mainTestFile))
       .name(fileName);
     console.log("[JUnit Reporter] Created test case for:", fileName);
-  }
-
-  handleTestEnd(data, status) {
-    console.log(
-      "[JUnit Reporter] handleTestEnd called with status:",
-      status,
-      "data:",
-      data,
-    );
-    const duration = this.testStartTime
-      ? (data.timestamp - this.testStartTime) / 1000
-      : 0;
-
-    // Set test case duration
-    this.currentTestCase.time(duration);
-
-    // Add step results as properties
-    this.stepResults.forEach((step, index) => {
-      this.currentTestCase.property(
-        `step${index + 1}[${step.status}]`,
-        step.prompt,
-      );
-    });
-
-    // Add command results (including assertions) as properties
-    this.commandResults.forEach((command, index) => {
-      if (command.command === "assert") {
-        this.currentTestCase.property(
-          `assertion${index + 1}[${command.status}]`,
-          command.expect || "assertion",
-        );
-      } else {
-        this.currentTestCase.property(
-          `command${index + 1}[${command.status}]`,
-          `${command.command}: ${command.description || ""}`,
-        );
-      }
-    });
-
-    // Add system-out and system-err
-    if (this.systemOut.length > 0) {
-      this.currentTestCase.standardOutput(this.systemOut.join("\n"));
-    }
-    if (this.systemErr.length > 0) {
-      this.currentTestCase.standardError(this.systemErr.join("\n"));
-    }
-
-    console.log(
-      "[JUnit Reporter] Test completed - Steps:",
-      this.stepResults.length,
-      "Commands:",
-      this.commandResults.length,
-      "Logs:",
-      this.systemOut.length,
-      "Errors:",
-      this.systemErr.length,
-    );
-
-    // Mark test as failed if any step failed or if overall status is failed
-    const hasFailedSteps = this.stepResults.some(
-      (step) => step.status === "failed",
-    );
-    const hasFailedCommands = this.commandResults.some(
-      (command) => command.status === "failed",
-    );
-
-    if (status === "failed" || hasFailedSteps || hasFailedCommands) {
-      const failedSteps = this.stepResults.filter(
-        (step) => step.status === "failed",
-      );
-      const failedCommands = this.commandResults.filter(
-        (command) => command.status === "failed",
-      );
-
-      const failureMessages = [];
-      if (failedSteps.length > 0) {
-        failureMessages.push(
-          `Failed steps: ${failedSteps.map((s) => s.prompt).join(", ")}`,
-        );
-      }
-      if (failedCommands.length > 0) {
-        const failedAssertions = failedCommands.filter(
-          (c) => c.command === "assert",
-        );
-        const otherFailedCommands = failedCommands.filter(
-          (c) => c.command !== "assert",
-        );
-
-        if (failedAssertions.length > 0) {
-          failureMessages.push(
-            `Failed assertions: ${failedAssertions.map((c) => c.expect || "assertion").join(", ")}`,
-          );
-        }
-        if (otherFailedCommands.length > 0) {
-          failureMessages.push(
-            `Failed commands: ${otherFailedCommands.map((c) => c.command).join(", ")}`,
-          );
-        }
-      }
-
-      const failureMessage =
-        failureMessages.length > 0 ? failureMessages.join("; ") : "Test failed";
-      this.currentTestCase.failure(failureMessage);
-    }
-
-    this.currentTest = null;
-    this.currentTestCase = null;
   }
 
   handleStepStart() {
@@ -356,8 +238,14 @@ class JUnitReporter {
     return path.basename(filePath);
   }
 
-  finalizeReport() {
-    console.log("[JUnit Reporter] Finalizing JUnit report...");
+  finalizeReport(exitCode) {
+    console.log(
+      "[JUnit Reporter] Finalizing JUnit report with exit code:",
+      exitCode,
+    );
+
+    // Store the exit code for determining test status
+    this.finalExitCode = exitCode;
 
     // If we have a current test case that hasn't been finalized, finalize it now
     if (this.currentTest && this.currentTestCase) {
@@ -393,6 +281,59 @@ class JUnitReporter {
           "entries",
         );
         this.currentTestCase.standardError(this.systemErr.join("\n"));
+      }
+
+      // Determine test result based on exit code (0 = success, non-zero = failure)
+      if (exitCode !== 0) {
+        // Test failed - collect failure information from steps and commands for detailed message
+        const failedSteps = this.stepResults.filter(
+          (step) => step.status === "failed",
+        );
+        const failedCommands = this.commandResults.filter(
+          (command) => command.status === "failed",
+        );
+
+        const failureMessages = [];
+        if (failedSteps.length > 0) {
+          failureMessages.push(
+            `Failed steps: ${failedSteps.map((s) => s.prompt).join(", ")}`,
+          );
+        }
+        if (failedCommands.length > 0) {
+          const failedAssertions = failedCommands.filter(
+            (c) => c.command === "assert",
+          );
+          const otherFailedCommands = failedCommands.filter(
+            (c) => c.command !== "assert",
+          );
+
+          if (failedAssertions.length > 0) {
+            failureMessages.push(
+              `Failed assertions: ${failedAssertions.map((c) => c.expect || "assertion").join(", ")}`,
+            );
+          }
+          if (otherFailedCommands.length > 0) {
+            failureMessages.push(
+              `Failed commands: ${otherFailedCommands.map((c) => c.command).join(", ")}`,
+            );
+          }
+        }
+
+        const failureMessage =
+          failureMessages.length > 0
+            ? failureMessages.join("; ")
+            : `Test failed with exit code ${exitCode}`;
+        this.currentTestCase.failure(failureMessage);
+
+        console.log(
+          "[JUnit Reporter] Test marked as FAILED based on exit code:",
+          exitCode,
+        );
+      } else {
+        console.log(
+          "[JUnit Reporter] Test marked as PASSED based on exit code:",
+          exitCode,
+        );
       }
 
       console.log(
