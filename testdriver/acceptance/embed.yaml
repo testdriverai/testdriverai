@@ -4,6 +4,6 @@ steps:
   - prompt: run login test
     commands:
       - command: run
-        file: ../snippets/login.yml
+        file: ../snippets/login.yaml
       - command: assert
         expect: home page appears
