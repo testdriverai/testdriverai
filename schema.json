@@ -735,6 +735,22 @@
           }
         }
       },
+      "run": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "run"
+          },
+          "file": {
+            "type": "string"
+          }
+        }
+      },
       "anyCommand": {
         "type": "object",
         "required": [
@@ -762,7 +778,8 @@
               "remember",
               "assert",
               "exec",
-              "if"
+              "if",
+              "run"
             ]
           },
           "commands": {
@@ -1000,6 +1017,18 @@
             },
             "then": {
               "$ref": "#/$defs/commandsAvailable/if"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "run"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/run"
             }
           }
         ]
