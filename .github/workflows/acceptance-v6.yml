@@ -13,7 +13,42 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  gather-test-files:
+  # Job to gather all test files
+  test-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      testmo-run-id: ${{ steps.run-tests.outputs.testmo-run-id }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 19
+          cache: npm
+      - run: npm ci
+
+      # Optionally add a couple of fields such as the git hash and link to the build
+      - run: |
+          npx testmo automation:resources:add-field --name git --type string \
+            --value ${GITHUB_SHA:0:7} --resources resources.json
+          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          npx testmo automation:resources:add-link --name build \
+            --url $RUN_URL --resources resources.json
+
+      # Create test run
+      - run: |
+          npx testmo automation:run:create \
+            --instance "$TESTMO_URL" \
+            --project-id 1 \
+            --name "Parallel mocha test run" \
+            --resources resources.json \
+            --source "unit-tests" > testmo-run-id.txt
+          ID=$(cat testmo-run-id.txt)
+          echo "testmo-run-id=$ID" >> $GITHUB_OUTPUT
+        env:
+          TESTMO_URL: ${{ secrets.TESTMO_URL }}
+          TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+        id: run-tests
+  gather:
     name: Gather Test Files
     runs-on: ubuntu-latest
     outputs:
@@ -29,17 +64,16 @@ jobs:
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
-  test-workflow:
+  test:
     needs:
-      - gather-test-files
+      - gather
+      - test-setup
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
       max-parallel: 8
       fail-fast: false
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -61,3 +95,36 @@ jobs:
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
           TD_THIS_FILE: ${{ matrix.test }}
+      - name: Upload JUnit report
+        if: always()
+        run: |
+          npx testmo automation:run:submit-thread \
+            --instance "$TESTMO_URL" \
+            --run-id "${{ needs.test-setup.outputs.testmo-run-id }}" \
+            --results results/*.xml \
+            -- npm run mocha-junit-parallel # Note space after --
+        env:
+          TESTMO_URL: ${{ secrets.TESTMO_URL }}
+          TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+
+  test-complete:
+    needs: [test-setup, test]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 19
+          cache: npm
+      - run: npm ci
+
+      # Mark test run completed
+      - run: |
+          npx testmo automation:run:complete \
+            --instance "$TESTMO_URL" \
+            --run-id "${{ needs.test-setup.outputs.testmo-run-id }}"
+        env:
+          TESTMO_URL: ${{ secrets.TESTMO_URL }}
+          TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}

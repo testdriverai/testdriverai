@@ -312,8 +312,23 @@ class JUnitReporter {
       .name(testName);
 
     this.commandStartTime = Date.now();
-    this.outputBuffer = [`Command started: ${commandInfo}`]; // Reset output buffer for this command
+    // Start fresh output buffer for this command, but include any logs that happened before
+    this.outputBuffer = [`Command started: ${commandInfo}`];
     console.log(`JUnit: Starting command - ${commandInfo}`);
+  }
+
+  /**
+   * Strip ANSI escape codes from text for plain text output
+   * @param {string} text - Text with ANSI codes
+   * @returns {string} Plain text without ANSI codes
+   */
+  stripAnsi(text) {
+    if (!text || typeof text !== "string") {
+      return text;
+    }
+    // Remove ANSI escape sequences - using more comprehensive regex
+    // eslint-disable-next-line no-control-regex
+    return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
   }
 
   /**
@@ -328,10 +343,23 @@ class JUnitReporter {
 
       // Add all accumulated output to this command
       if (this.outputBuffer.length > 0) {
+        // For system-out: strip ANSI codes for plain text
+        const plainTextOutput = this.outputBuffer
+          .map((output) => this.stripAnsi(output))
+          .join("\n");
+        this.currentTest.standardOutput(plainTextOutput);
+
+        // For rich HTML property: format with ANSI-to-HTML conversion
         const formattedOutput = this.outputBuffer
           .map((output) => this.formatOutput(output))
           .join("\n");
-        this.currentTest.standardOutput(formattedOutput);
+        const htmlContent = `
+        <h3>Command Output</h3>
+        <div style="font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+          ${formattedOutput}
+        </div>`;
+        
+        this.currentTest.property("html:richtext", htmlContent);
       }
 
       // If there were any errors, mark as failed
@@ -460,10 +488,8 @@ class JUnitReporter {
   handleLogOutput(data, level = "info") {
     if (typeof data === "string") {
       const logMessage = `[${level}] ${data}`;
-      // Add to the current command's output buffer if we have an active command
-      if (this.currentTest) {
-        this.outputBuffer.push(logMessage);
-      }
+      // Always add to the output buffer - it will be included in the next command's output
+      this.outputBuffer.push(logMessage);
     }
   }
 
