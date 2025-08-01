@@ -57,7 +57,6 @@ class JUnitReporter {
   }
 
   setupEventListeners() {
-    console.log("[JUnit Reporter] Setting up event listeners...");
     // Test lifecycle events
     this.emitter.on(events.test.start, (data) => this.handleTestStart(data));
 
@@ -87,11 +86,9 @@ class JUnitReporter {
 
     // Handle exit to finalize report
     this.emitter.on(events.exit, (exitCode) => this.finalizeReport(exitCode));
-    console.log("[JUnit Reporter] Event listeners setup complete");
   }
 
   handleTestStart(data) {
-    console.log("[JUnit Reporter] handleTestStart called with:", data);
     const { filePath, timestamp } = data;
     this.currentTest = { filePath, timestamp };
     this.testStartTime = timestamp;
@@ -108,7 +105,6 @@ class JUnitReporter {
       .testCase()
       .className(this.getTestSuiteName(this.mainTestFile))
       .name(fileName);
-    console.log("[JUnit Reporter] Created test case for:", fileName);
   }
 
   handleStepStart() {
@@ -116,14 +112,6 @@ class JUnitReporter {
   }
 
   handleStepEnd(data, status) {
-    console.log(
-      "[JUnit Reporter] handleStepEnd called with status:",
-      status,
-      "data:",
-      data,
-      "currentTest:",
-      !!this.currentTest,
-    );
     // Only record steps if we have an active test
     if (!this.currentTest) return;
 
@@ -137,23 +125,13 @@ class JUnitReporter {
       status: status,
       timestamp: data.timestamp,
     });
-    console.log("[JUnit Reporter] Recorded step:", prompt, "status:", status);
   }
 
   handleCommandStart(data) {
-    console.log("[JUnit Reporter] handleCommandStart called with:", data);
     // Commands are tracked but we wait for completion to record results
   }
 
   handleCommandEnd(data, status) {
-    console.log(
-      "[JUnit Reporter] handleCommandEnd called with status:",
-      status,
-      "data:",
-      data,
-      "currentTest:",
-      !!this.currentTest,
-    );
     // Only record commands if we have an active test
     if (!this.currentTest) return;
 
@@ -169,41 +147,18 @@ class JUnitReporter {
       expect: commandData.expect,
       description: commandData.description || commandData.code || "",
     });
-
-    console.log(
-      "[JUnit Reporter] Recorded command:",
-      command,
-      "status:",
-      status,
-    );
   }
 
   handleLogMessage(message) {
-    console.log(
-      "[JUnit Reporter] handleLogMessage called with:",
-      message,
-      "currentTest:",
-      !!this.currentTest,
-    );
     // Only collect log messages if we have an active test running
     if (!this.currentTest) return;
 
     // Collect ALL log:* events for system-out, stripping ANSI codes
     const cleanMessage = stripAnsi(message);
     this.systemOut.push(`${cleanMessage}`);
-    console.log(
-      "[JUnit Reporter] Added log to systemOut, total logs:",
-      this.systemOut.length,
-    );
   }
 
   handleErrorMessage(error) {
-    console.log(
-      "[JUnit Reporter] handleErrorMessage called with:",
-      error,
-      "currentTest:",
-      !!this.currentTest,
-    );
     // Only collect error messages if we have an active test running
     if (!this.currentTest) return;
 
@@ -212,10 +167,6 @@ class JUnitReporter {
       typeof error === "string" ? error : JSON.stringify(error);
     const cleanErrorMessage = stripAnsi(errorMessage);
     this.systemErr.push(`${cleanErrorMessage}`);
-    console.log(
-      "[JUnit Reporter] Added error to systemErr, total errors:",
-      this.systemErr.length,
-    );
   }
 
   getTestSuiteName(filePath) {
@@ -239,17 +190,11 @@ class JUnitReporter {
   }
 
   finalizeReport(exitCode) {
-    console.log(
-      "[JUnit Reporter] Finalizing JUnit report with exit code:",
-      exitCode,
-    );
-
     // Store the exit code for determining test status
     this.finalExitCode = exitCode;
 
     // If we have a current test case that hasn't been finalized, finalize it now
     if (this.currentTest && this.currentTestCase) {
-      console.log("[JUnit Reporter] Finalizing pending test case...");
       const duration = this.testStartTime
         ? (Date.now() - this.testStartTime) / 1000
         : 0;
@@ -267,19 +212,9 @@ class JUnitReporter {
 
       // Add system-out and system-err
       if (this.systemOut.length > 0) {
-        console.log(
-          "[JUnit Reporter] Adding system-out with",
-          this.systemOut.length,
-          "entries",
-        );
         this.currentTestCase.standardOutput(this.systemOut.join("\n"));
       }
       if (this.systemErr.length > 0) {
-        console.log(
-          "[JUnit Reporter] Adding system-err with",
-          this.systemErr.length,
-          "entries",
-        );
         this.currentTestCase.standardError(this.systemErr.join("\n"));
       }
 
@@ -324,28 +259,7 @@ class JUnitReporter {
             ? failureMessages.join("; ")
             : `Test failed with exit code ${exitCode}`;
         this.currentTestCase.failure(failureMessage);
-
-        console.log(
-          "[JUnit Reporter] Test marked as FAILED based on exit code:",
-          exitCode,
-        );
-      } else {
-        console.log(
-          "[JUnit Reporter] Test marked as PASSED based on exit code:",
-          exitCode,
-        );
       }
-
-      console.log(
-        "[JUnit Reporter] Finalized pending test - Steps:",
-        this.stepResults.length,
-        "Commands:",
-        this.commandResults.length,
-        "Logs:",
-        this.systemOut.length,
-        "Errors:",
-        this.systemErr.length,
-      );
     }
 
     try {
@@ -360,10 +274,6 @@ class JUnitReporter {
 
       // Write to file
       fs.writeFileSync(this.outputFilePath, xmlContent);
-
-      console.log(
-        `[JUnit Reporter] JUnit report written to: ${this.outputFilePath}`,
-      );
     } catch (error) {
       console.error("[JUnit Reporter] Failed to write JUnit report:", error);
     }
