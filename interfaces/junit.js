@@ -58,7 +58,7 @@ class JUnitReporter {
   }
 
   /**
-   * Format output for HTML display by converting ANSI codes and formatting JSON
+   * Format output for HTML display by converting ANSI codes and formatting content for Testmo
    * @param {string} output - Raw output string
    * @returns {string} Formatted output
    */
@@ -67,58 +67,60 @@ class JUnitReporter {
       return output;
     }
 
-    // First, check if the entire output looks like JSON
-    if (output.trim().startsWith("{") && output.trim().endsWith("}")) {
-      try {
-        const parsed = JSON.parse(output.trim());
-        const formatted = JSON.stringify(parsed, null, 2);
-        return `<pre>${this.ansiConverter.toHtml(formatted)}</pre>`;
-      } catch {
-        // If it's not valid JSON, continue with normal processing
-      }
+    // Strip ANSI codes for cleaner display
+    let cleaned = this.stripAnsi(output);
+
+    // Filter out excessive technical details for better readability
+    if (
+      cleaned.includes("Command succeeded:") ||
+      cleaned.includes("Command failed:")
+    ) {
+      // Skip detailed JSON objects for command results - too verbose for Testmo
+      return "";
     }
 
-    // Convert ANSI codes to HTML
-    let formatted = this.ansiConverter.toHtml(output);
-
-    // Look for embedded JSON objects and format them
-    try {
-      formatted = formatted.replace(
-        /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g,
-        (match) => {
-          try {
-            // Decode HTML entities first
-            const decoded = match
-              .replace(/&quot;/g, '"')
-              .replace(/&lt;/g, "<")
-              .replace(/&gt;/g, ">")
-              .replace(/&amp;/g, "&");
-            const parsed = JSON.parse(decoded);
-            const prettyJson = JSON.stringify(parsed, null, 2);
-            return `<pre>${this.ansiConverter.toHtml(prettyJson)}</pre>`;
-          } catch {
-            return match;
-          }
-        },
-      );
-    } catch {
-      // If JSON parsing fails, just return the ANSI-converted version
+    // Keep only essential information
+    if (
+      cleaned.startsWith("[info]") &&
+      (cleaned.includes("sourcePosition") ||
+        cleaned.includes("commandIndex") ||
+        cleaned.includes("timestamp") ||
+        cleaned.includes("duration") ||
+        cleaned.includes("depth"))
+    ) {
+      // Skip verbose technical info
+      return "";
     }
 
-    return formatted;
+    return this.ansiConverter.toHtml(output);
   }
 
   /**
-   * Format error messages for better HTML display
+   * Format error messages for better display in Testmo
    * @param {any} error - Error object or string
-   * @returns {string} Formatted error message
+   * @returns {string} Clean, readable error message
    */
   formatError(error) {
     if (typeof error === "string") {
-      return this.formatOutput(error);
-    } else if (typeof error === "object") {
-      const formatted = JSON.stringify(error, null, 2);
-      return `<pre>${this.ansiConverter.toHtml(formatted)}</pre>`;
+      return error;
+    } else if (typeof error === "object" && error) {
+      // Extract the most important error information
+      if (error.error) {
+        return error.error;
+      }
+      if (error.message) {
+        return error.message;
+      }
+      // If it's a command error object, extract key details
+      if (error.command && error.data && error.error) {
+        const command = error.command;
+        const errorMsg = error.error;
+        const duration = error.duration
+          ? ` (${(error.duration / 1000).toFixed(1)}s)`
+          : "";
+        return `${command}${duration}: ${errorMsg}`;
+      }
+      return JSON.stringify(error, null, 2);
     }
     return String(error);
   }
@@ -330,14 +332,24 @@ class JUnitReporter {
    * @param {Object} data - Event data
    */
   handleCommandSuccess(data) {
-    const commandInfo =
-      typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`✓ Command succeeded: ${commandInfo}`);
-
     const duration = this.commandStartTime
       ? (Date.now() - this.commandStartTime) / 1000
       : 0;
-    this.outputBuffer.push(`  Duration: ${duration.toFixed(3)}s`);
+
+    // Add clean success message to output
+    const commandName = data?.command || "unknown command";
+    this.outputBuffer.push(
+      `✓ ${commandName} completed (${duration.toFixed(1)}s)`,
+    );
+
+    // Add response if present and useful
+    if (
+      data?.response &&
+      typeof data.response === "string" &&
+      data.response.trim()
+    ) {
+      this.outputBuffer.push(`  → ${data.response}`);
+    }
 
     // Mark the current command as passed
     if (this.currentStepCommands.length > 0) {
@@ -345,7 +357,7 @@ class JUnitReporter {
         this.currentStepCommands[this.currentStepCommands.length - 1];
       lastCommand.status = "passed";
       lastCommand.duration = duration;
-      lastCommand.result = commandInfo;
+      lastCommand.result = data;
     }
   }
 
@@ -355,14 +367,25 @@ class JUnitReporter {
    */
   handleCommandError(data) {
     this.currentCommandErrors.push(data);
-    const errorInfo =
-      typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`✗ Command failed: ${errorInfo}`);
 
     const duration = this.commandStartTime
       ? (Date.now() - this.commandStartTime) / 1000
       : 0;
-    this.outputBuffer.push(`  Duration: ${duration.toFixed(3)}s`);
+
+    // Extract clean error information
+    let errorMsg = "Unknown error";
+    let commandName = "unknown command";
+
+    if (typeof data === "string") {
+      errorMsg = data;
+    } else if (data) {
+      commandName = data.command || commandName;
+      errorMsg = data.error || data.message || JSON.stringify(data);
+    }
+
+    this.outputBuffer.push(
+      `✗ ${commandName} failed (${duration.toFixed(1)}s): ${errorMsg}`,
+    );
 
     // Mark the current command as failed
     if (this.currentStepCommands.length > 0) {
@@ -370,7 +393,7 @@ class JUnitReporter {
         this.currentStepCommands[this.currentStepCommands.length - 1];
       lastCommand.status = "failure";
       lastCommand.duration = duration;
-      lastCommand.error = errorInfo;
+      lastCommand.error = errorMsg;
     }
   }
 
@@ -440,7 +463,7 @@ class JUnitReporter {
         let stepMessage = `Step ${stepNum}: ${commandName}`;
 
         if (command.status === "passed") {
-          stepMessage += ` (${command.duration?.toFixed(3)}s)`;
+          stepMessage += ` (${command.duration?.toFixed(1)}s)`;
           this.currentTest.property(`step[passed]`, stepMessage);
         } else if (command.status === "failure") {
           stepMessage += ` - FAILED: ${command.error}`;
@@ -452,33 +475,57 @@ class JUnitReporter {
         }
       });
 
-      // Add all accumulated output from this step
-      if (this.outputBuffer.length > 0) {
-        // For system-out: strip ANSI codes for plain text
-        const plainTextOutput = this.outputBuffer
+      // Filter output to only include meaningful information
+      const filteredOutput = this.outputBuffer.filter((output) => {
+        const line = this.stripAnsi(output || "");
+
+        // Skip empty lines and verbose technical details
+        if (!line.trim()) return false;
+        if (
+          line.includes("Command succeeded:") ||
+          line.includes("Command failed:")
+        )
+          return false;
+        if (line.includes("sourcePosition") || line.includes("commandIndex"))
+          return false;
+        if (line.includes("timestamp") || line.includes('"depth"'))
+          return false;
+        if (line.startsWith("[info]") && line.includes('"')) return false; // Skip JSON-heavy log lines
+
+        return true;
+      });
+
+      // Add clean output
+      if (filteredOutput.length > 0) {
+        // For system-out: plain text
+        const plainTextOutput = filteredOutput
           .map((output) => this.stripAnsi(output))
           .join("\n");
         this.currentTest.standardOutput(plainTextOutput);
 
-        // For rich HTML property: format with ANSI-to-HTML conversion
-        const formattedOutput = this.outputBuffer
-          .map((output) => this.formatOutput(output))
-          .join("\n");
+        // For rich HTML: clean formatting without excessive detail
         const htmlContent = `
-        <h3>Test Step Output</h3>
-        <div style="font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;">
-          ${formattedOutput}
+        <div style="font-family: 'SF Mono', Monaco, monospace; background: #f8f9fa; padding: 16px; border-radius: 6px; border-left: 4px solid #0969da;">
+          <h4 style="margin: 0 0 12px 0; color: #24292f; font-size: 14px; font-weight: 600;">Test Execution Log</h4>
+          <div style="color: #656d76; font-size: 13px; line-height: 1.5;">
+            ${filteredOutput
+              .map((output) => this.formatOutput(output))
+              .filter(Boolean)
+              .join("<br/>")}
+          </div>
         </div>`;
 
         this.currentTest.property("html:richtext", htmlContent);
       }
 
-      // If there were any errors in this step, mark as failed
+      // If there were any errors in this step, mark as failed with clean error message
       if (this.currentCommandErrors.length > 0) {
-        const errorMessage = this.currentCommandErrors
+        const cleanErrors = this.currentCommandErrors
           .map((err) => this.formatError(err))
+          .filter(Boolean)
           .join("\n");
-        this.currentTest.failure(errorMessage);
+
+        this.currentTest.failure(cleanErrors);
       }
 
       this.currentTest = null;
@@ -537,14 +584,25 @@ class JUnitReporter {
   }
 
   /**
-   * Handle log output - Add to current step's output
+   * Handle log output - Add to current step's output, filtering excessive detail
    * @param {string} data - Log message
    * @param {string} level - Log level (optional)
    */
   handleLogOutput(data, level = "info") {
     if (typeof data === "string") {
-      const logMessage = `[${level}] ${data}`;
-      // Add to the output buffer for the current step
+      // Filter out overly verbose log messages
+      if (
+        data.includes("sourcePosition") ||
+        data.includes("commandIndex") ||
+        data.includes("timestamp") ||
+        data.includes('"depth"') ||
+        data.includes("startLine") ||
+        data.includes("endLine")
+      ) {
+        return; // Skip verbose technical details
+      }
+
+      const logMessage = level === "info" ? data : `[${level}] ${data}`;
       this.outputBuffer.push(logMessage);
     }
   }
