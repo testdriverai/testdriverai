@@ -28,15 +28,15 @@ jobs:
 
       # Optionally add a couple of fields such as the git hash and link to the build
       - run: |
-          npx testmo automation:resources:add-field --name git --type string \
+          npx @testmo/testmo-cli automation:resources:add-field --name git --type string \
             --value ${GITHUB_SHA:0:7} --resources resources.json
           RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          npx testmo automation:resources:add-link --name build \
+          npx @testmo/testmo-cli automation:resources:add-link --name build \
             --url $RUN_URL --resources resources.json
 
       # Create test run
       - run: |
-          npx testmo automation:run:create \
+          npx @testmo/testmo-cli automation:run:create \
             --instance "$TESTMO_URL" \
             --project-id 1 \
             --name "Parallel mocha test run" \
@@ -98,7 +98,7 @@ jobs:
       - name: Upload JUnit report
         if: always()
         run: |
-          npx testmo automation:run:submit-thread \
+          npx @testmo/testmo-cli automation:run:submit-thread \
             --instance "$TESTMO_URL" \
             --run-id "${{ needs.test-setup.outputs.testmo-run-id }}" \
             --results results/*.xml \
@@ -122,7 +122,7 @@ jobs:
 
       # Mark test run completed
       - run: |
-          npx testmo automation:run:complete \
+          npx @testmo/testmo-cli automation:run:complete \
             --instance "$TESTMO_URL" \
             --run-id "${{ needs.test-setup.outputs.testmo-run-id }}"
         env:

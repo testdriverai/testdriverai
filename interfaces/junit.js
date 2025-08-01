@@ -216,7 +216,7 @@ class JUnitReporter {
     // Store the current file name for use in test case names
     this.currentFileName = path.basename(fileName, path.extname(fileName));
 
-    // Create a separate test suite for this file
+    // Create a separate test suite for this file - following the guide where steps become a series of method calls inside a @Test
     this.currentFileTestSuite = builder.testSuite().name(this.currentFileName);
 
     this.testStartTime = data?.timestamp || Date.now();
@@ -284,37 +284,57 @@ class JUnitReporter {
   }
 
   /**
-   * Handle command start
+   * Handle command start - Commands become method calls within the @Test step
    * @param {Object} data - Event data
    */
   handleCommandStart(data) {
-    // Complete any previous command test case first
-    this.completeCurrentCommand();
-
-    if (!this.currentFileTestSuite) {
-      console.warn("JUnit: Command started without active test suite");
-      return;
-    }
-
     const commandInfo =
       typeof data === "string"
         ? data
         : data?.command || JSON.stringify(data, null, 2);
 
-    // Create hierarchical test name: Step > Command (file is already the test suite name)
-    const stepName = this.currentStep || "Default Step";
-    const testName = `${stepName} > ${commandInfo}`;
-
-    // Create a command-level test case under the file test suite
-    this.currentTest = this.currentFileTestSuite
-      .testCase()
-      .className(stepName)
-      .name(testName);
+    // Following the mapping guide:
+    // - command: run with file → Method call or helper class invocation
+    // - command: focus-application → Setup step or precondition in test
+    // - command: hover-image → UI interaction via framework (e.g., Selenium)
+    // - command: assert → assertEquals, assertTrue, etc.
+    
+    let commandDescription = commandInfo;
+    if (typeof data === 'object' && data?.command) {
+      switch (data.command) {
+        case 'run':
+          commandDescription = `Method call: run(${data.file || 'file'})`;
+          break;
+        case 'focus-application':
+          commandDescription = `Setup: focusApplication("${data.name || 'application'}")`;
+          break;
+        case 'hover-image':
+          commandDescription = `UI interaction: hoverImage("${data.description || 'element'}")`;
+          break;
+        case 'hover-text':
+          commandDescription = `UI interaction: hoverText("${data.text || 'text'}")`;
+          break;
+        case 'click':
+          commandDescription = `UI interaction: click(${data.x || 0}, ${data.y || 0})`;
+          break;
+        case 'type':
+          commandDescription = `UI interaction: type("${data.text || ''}")`;
+          break;
+        case 'assert':
+          commandDescription = `Assertion: expect("${data.expect || 'condition'}")`;
+          break;
+        case 'exec':
+          commandDescription = `Execute: ${data.lang || 'code'}("${(data.code || '').substring(0, 50)}...")`;
+          break;
+        default:
+          commandDescription = `Command: ${data.command}`;
+      }
+    }
 
     this.commandStartTime = Date.now();
-    // Start fresh output buffer for this command, but include any logs that happened before
-    this.outputBuffer = [`Command started: ${commandInfo}`];
-    console.log(`JUnit: Starting command - ${commandInfo}`);
+    // Add command execution to the step's output (commands are method calls within the @Test)
+    this.outputBuffer.push(`> ${commandDescription}`);
+    console.log(`JUnit: Executing command (method call) - ${commandDescription}`);
   }
 
   /**
@@ -332,16 +352,80 @@ class JUnitReporter {
   }
 
   /**
-   * Complete the current command test case
+   * Handle command success - Log the successful method call within the step
+   * @param {Object} data - Event data
    */
-  completeCurrentCommand() {
+  handleCommandSuccess(data) {
+    const commandInfo =
+      typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    this.outputBuffer.push(`✓ Command succeeded: ${commandInfo}`);
+    
+    const duration = this.commandStartTime
+      ? (Date.now() - this.commandStartTime) / 1000
+      : 0;
+    this.outputBuffer.push(`  Duration: ${duration.toFixed(3)}s`);
+  }
+
+  /**
+   * Handle command error - Log the failed method call within the step
+   * @param {Object} data - Event data
+   */
+  handleCommandError(data) {
+    this.currentCommandErrors.push(data);
+    const errorInfo =
+      typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    this.outputBuffer.push(`✗ Command failed: ${errorInfo}`);
+    
+    const duration = this.commandStartTime
+      ? (Date.now() - this.commandStartTime) / 1000
+      : 0;
+    this.outputBuffer.push(`  Duration: ${duration.toFixed(3)}s`);
+  }
+
+  /**
+   * Handle step start - Each step becomes a @Test method containing series of commands
+   * @param {Object} data - Event data
+   */
+  handleStepStart(data) {
+    // Complete any previous step test case first
+    this.completeCurrentStep();
+
+    if (!this.currentFileTestSuite) {
+      console.warn("JUnit: Step started without active test suite");
+      return;
+    }
+
+    const stepInfo =
+      typeof data === "string"
+        ? data
+        : data?.prompt || data?.command || JSON.stringify(data, null, 2);
+
+    // Each step becomes a @Test method - following the mapping guide
+    // prompt → Comment or log for test readability, so we use it as the test name
+    this.currentTest = this.currentFileTestSuite
+      .testCase()
+      .className(this.currentFileName)
+      .name(stepInfo || "Step");
+
+    this.stepStartTime = Date.now();
+    this.currentStep = stepInfo;
+    this.outputBuffer = [`Test step started: ${stepInfo}`];
+    this.currentCommandErrors = [];
+
+    console.log(`JUnit: Starting step (test method) - ${stepInfo}`);
+  }
+
+  /**
+   * Complete the current step test case
+   */
+  completeCurrentStep() {
     if (this.currentTest) {
-      const duration = this.commandStartTime
-        ? (Date.now() - this.commandStartTime) / 1000
+      const duration = this.stepStartTime
+        ? (Date.now() - this.stepStartTime) / 1000
         : 0;
       this.currentTest.time(duration);
 
-      // Add all accumulated output to this command
+      // Add all accumulated output from this step
       if (this.outputBuffer.length > 0) {
         // For system-out: strip ANSI codes for plain text
         const plainTextOutput = this.outputBuffer
@@ -354,7 +438,7 @@ class JUnitReporter {
           .map((output) => this.formatOutput(output))
           .join("\n");
         const htmlContent = `
-        <h3>Command Output</h3>
+        <h3>Test Step Output</h3>
         <div style="font-family: monospace; background: #f5f5f5; padding: 10px; border-radius: 4px;">
           ${formattedOutput}
         </div>`;
@@ -362,7 +446,7 @@ class JUnitReporter {
         this.currentTest.property("html:richtext", htmlContent);
       }
 
-      // If there were any errors, mark as failed
+      // If there were any errors in this step, mark as failed
       if (this.currentCommandErrors.length > 0) {
         const errorMessage = this.currentCommandErrors
           .map((err) => this.formatError(err))
@@ -373,52 +457,6 @@ class JUnitReporter {
       this.currentTest = null;
       this.currentCommandErrors = [];
     }
-  }
-
-  /**
-   * Handle command success
-   * @param {Object} data - Event data
-   */
-  handleCommandSuccess(data) {
-    const commandInfo =
-      typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`Command succeeded: ${commandInfo}`);
-
-    // Don't complete the test case yet - let it accumulate more output
-    // It will be completed when the next command starts or the test ends
-  }
-
-  /**
-   * Handle command error
-   * @param {Object} data - Event data
-   */
-  handleCommandError(data) {
-    this.currentCommandErrors.push(data);
-    const errorInfo =
-      typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    this.outputBuffer.push(`Command failed: ${errorInfo}`);
-
-    // Don't complete the test case yet - let it accumulate more output
-    // It will be completed when the next command starts or the test ends
-  }
-
-  /**
-   * Handle step start
-   * @param {Object} data - Event data
-   */
-  handleStepStart(data) {
-    // Complete any previous command test case first
-    this.completeCurrentCommand();
-
-    const stepInfo =
-      typeof data === "string"
-        ? data
-        : data?.prompt || data?.command || JSON.stringify(data, null, 2);
-
-    // Store the current step name for hierarchical test naming
-    this.currentStep = stepInfo;
-
-    console.log(`JUnit: Starting step - ${stepInfo}`);
   }
 
   /**
