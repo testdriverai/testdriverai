@@ -127,7 +127,7 @@ class JUnitReporter {
     });
   }
 
-  handleCommandStart(data) {
+  handleCommandStart() {
     // Commands are tracked but we wait for completion to record results
   }
 
