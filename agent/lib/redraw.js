@@ -19,6 +19,9 @@ const createRedraw = (emitter, system, sandbox) => {
   let networkSettled = true;
   let screenHasRedrawn = null;
 
+  // Track network interval to ensure only one exists
+  let networkInterval = null;
+
   const resetState = () => {
     lastTxBytes = null;
     lastRxBytes = null;
@@ -104,8 +107,24 @@ const createRedraw = (emitter, system, sandbox) => {
 
   let startImage = null;
 
+  // Start network monitoring only when needed
+  function startNetworkMonitoring() {
+    if (!networkInterval) {
+      networkInterval = setInterval(updateNetwork, networkUpdateInterval);
+    }
+  }
+
+  // Stop network monitoring
+  function stopNetworkMonitoring() {
+    if (networkInterval) {
+      clearInterval(networkInterval);
+      networkInterval = null;
+    }
+  }
+
   async function start() {
     resetState();
+    startNetworkMonitoring();
     startImage = await system.captureScreenPNG(0.25, true);
     return startImage;
   }
@@ -173,14 +192,14 @@ const createRedraw = (emitter, system, sandbox) => {
   function wait(timeoutMs) {
     return new Promise((resolve) => {
       const startTime = Date.now();
+      // Start network monitoring if not already started
+      startNetworkMonitoring();
       checkCondition(resolve, startTime, timeoutMs);
     });
   }
 
-  const networkInterval = setInterval(updateNetwork, networkUpdateInterval);
-
   function cleanup() {
-    clearInterval(networkInterval);
+    stopNetworkMonitoring(networkInterval);
   }
 
   return { start, wait, cleanup };
