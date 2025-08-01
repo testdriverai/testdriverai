@@ -35,7 +35,7 @@ const { createSession } = require("./lib/session.js");
 const { createOutputs } = require("./lib/outputs.js");
 
 const isValidVersion = require("./lib/valid-version.js");
-const { events, createEmitter, setEmitter } = require("./events.js");
+const { events, createEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
 let debuggerStarted = false;
@@ -66,7 +66,9 @@ class TestDriverAgent extends EventEmitter2 {
     this.resultFile = flags.resultFile || null;
     this.newSandbox = flags.newSandbox || false;
     this.healMode = flags.healMode || flags.heal || false;
-    this.sandboxId = flags.sandboxId || null;
+    this.sandboxId = flags["sandbox-id"] || null;
+    this.sandboxAmi = flags["sandbox-ami"] || null;
+    this.sandboxInstance = flags["sandbox-instance"] || null;
     this.workingDir = flags.workingDir || process.cwd();
     this.postrun = flags.postrun || null;
     this.provision = flags.provision || null;
@@ -86,9 +88,6 @@ class TestDriverAgent extends EventEmitter2 {
       }
     }
 
-    // Set this emitter as the global current emitter for other modules to use
-    setEmitter(this.emitter);
-
     // Create parser instance with this agent's emitter
     this.parser = createParser(this.emitter);
 
@@ -104,11 +103,11 @@ class TestDriverAgent extends EventEmitter2 {
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
-    // Create sandbox instance with this agent's emitter
-    this.sandbox = createSandbox(this.emitter);
+    // Create sandbox instance with this agent's emitter and analytics
+    this.sandbox = createSandbox(this.emitter, this.analytics);
 
-    // Create system instance with sandbox and config
-    this.system = createSystem(this.sandbox, this.config);
+    // Create system instance with emitter, sandbox and config
+    this.system = createSystem(this.emitter, this.sandbox, this.config);
 
     // Create commands instance with this agent's emitter and system
     const commandsResult = createCommands(
@@ -120,6 +119,7 @@ class TestDriverAgent extends EventEmitter2 {
       () => this.sourceMapper.currentFilePath || this.thisFile,
     );
     this.commands = commandsResult.commands;
+    this.redraw = commandsResult.redraw;
 
     // Create commander instance with this agent's emitter and commands
     this.commander = createCommander(
@@ -160,6 +160,11 @@ class TestDriverAgent extends EventEmitter2 {
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunLifecycle = false) {
     this.emitter.emit(events.log.log, theme.dim("exiting..."), true);
+
+    // Clean up redraw interval
+    if (this.redraw && this.redraw.cleanup) {
+      this.redraw.cleanup();
+    }
 
     shouldRunLifecycle = shouldRunLifecycle || this.cliArgs?.command == "run";
 
@@ -643,8 +648,10 @@ class TestDriverAgent extends EventEmitter2 {
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
-        events.error.fatal,
-        `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        events.log.warn,
+        theme.yellow(
+          `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        ),
       );
     }
 
@@ -1325,6 +1332,7 @@ ${regression}
       os.homedir(),
       ".testdriverai-last-sandbox",
     );
+
     if (fs.existsSync(lastSandboxFile)) {
       try {
         const stats = fs.statSync(lastSandboxFile);
@@ -1332,11 +1340,32 @@ ${regression}
         const now = new Date();
         const diffMinutes = (now - mtime) / (1000 * 60);
         if (diffMinutes < 30) {
-          const lastSandboxId = fs
-            .readFileSync(lastSandboxFile, "utf-8")
-            .trim();
-          if (lastSandboxId) {
-            return lastSandboxId;
+          const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+
+          // Parse sandbox info (supports both old format and new format)
+          let sandboxInfo;
+          try {
+            sandboxInfo = JSON.parse(fileContent);
+          } catch {
+            return fileContent || null;
+          }
+
+          // Check if AMI and instance type match current requirements
+          const currentAmi = this.sandboxAmi || null;
+          const currentInstance = this.sandboxInstance || null;
+          const storedAmi = sandboxInfo.ami || null;
+          const storedInstance = sandboxInfo.instanceType || null;
+
+          if (currentAmi === storedAmi && currentInstance === storedInstance) {
+            return sandboxInfo.instanceId;
+          } else {
+            this.emitter.emit(
+              events.log.log,
+              theme.dim(
+                "Recent sandbox found but AMI/instance type doesn't match current requirements",
+              ),
+            );
+            return null;
           }
         }
       } catch {
@@ -1352,7 +1381,15 @@ ${regression}
       ".testdriverai-last-sandbox",
     );
     try {
-      fs.writeFileSync(lastSandboxFile, instanceId, { encoding: "utf-8" });
+      const sandboxInfo = {
+        instanceId: instanceId,
+        ami: this.sandboxAmi || null,
+        instanceType: this.sandboxInstance || null,
+        timestamp: new Date().toISOString(),
+      };
+      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
+        encoding: "utf-8",
+      });
     } catch {
       // ignore errors
     }
@@ -1586,7 +1623,11 @@ ${regression}
   async renderSandbox(instance, headless = false) {
     if (!headless) {
       let url =
-        "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html";
+        "http://" +
+        instance.ip +
+        ":" +
+        instance.vncPort +
+        "/vnc_lite.html?token=V3b8wG9";
 
       let data = {
         resolution: this.config.TD_RESOLUTION,
@@ -1620,11 +1661,21 @@ ${regression}
   }
 
   async createNewSandbox() {
-    let instance = await this.sandbox.send({
+    const sandboxConfig = {
       type: "create",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
-    });
+    };
+
+    // Add AMI and instance type if specified
+    if (this.sandboxAmi) {
+      sandboxConfig.ami = this.sandboxAmi;
+    }
+    if (this.sandboxInstance) {
+      sandboxConfig.instanceType = this.sandboxInstance;
+    }
+
+    let instance = await this.sandbox.send(sandboxConfig);
     return instance;
   }
 

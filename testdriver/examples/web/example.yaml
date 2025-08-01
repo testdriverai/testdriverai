@@ -1,0 +1,6 @@
+version: 6.0.6
+steps:
+  - prompt: log in
+  - prompt: add an item to the cart
+  - prompt: click on the cart icon
+  - prompt: complete checkout

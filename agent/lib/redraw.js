@@ -19,13 +19,16 @@ const createRedraw = (emitter, system, sandbox) => {
   let networkSettled = true;
   let screenHasRedrawn = null;
 
-  async function resetState() {
+  // Track network interval to ensure only one exists
+  let networkInterval = null;
+
+  const resetState = () => {
     lastTxBytes = null;
     lastRxBytes = null;
     measurements = [];
     networkSettled = true;
     screenHasRedrawn = false;
-  }
+  };
 
   const parseNetworkStats = (thisRxBytes, thisTxBytes) => {
     diffRxBytes = lastRxBytes !== null ? thisRxBytes - lastRxBytes : 0;
@@ -65,6 +68,7 @@ const createRedraw = (emitter, system, sandbox) => {
   };
 
   async function updateNetwork() {
+    console.debug("Updating network stats...");
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
         type: "system.network",
@@ -103,8 +107,24 @@ const createRedraw = (emitter, system, sandbox) => {
 
   let startImage = null;
 
+  // Start network monitoring only when needed
+  function startNetworkMonitoring() {
+    if (!networkInterval) {
+      networkInterval = setInterval(updateNetwork, networkUpdateInterval);
+    }
+  }
+
+  // Stop network monitoring
+  function stopNetworkMonitoring() {
+    if (networkInterval) {
+      clearInterval(networkInterval);
+      networkInterval = null;
+    }
+  }
+
   async function start() {
     resetState();
+    startNetworkMonitoring();
     startImage = await system.captureScreenPNG(0.25, true);
     return startImage;
   }
@@ -172,13 +192,17 @@ const createRedraw = (emitter, system, sandbox) => {
   function wait(timeoutMs) {
     return new Promise((resolve) => {
       const startTime = Date.now();
+      // Start network monitoring if not already started
+      startNetworkMonitoring();
       checkCondition(resolve, startTime, timeoutMs);
     });
   }
 
-  setInterval(updateNetwork, networkUpdateInterval);
+  function cleanup() {
+    stopNetworkMonitoring(networkInterval);
+  }
 
-  return { start, wait };
+  return { start, wait, cleanup };
 };
 
 module.exports = { createRedraw };
