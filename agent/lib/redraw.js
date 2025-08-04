@@ -68,7 +68,6 @@ const createRedraw = (emitter, system, sandbox) => {
   };
 
   async function updateNetwork() {
-    console.debug("Updating network stats...");
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
         type: "system.network",
