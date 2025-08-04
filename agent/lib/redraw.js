@@ -1,4 +1,3 @@
-const pixelmatch = require("pixelmatch");
 const { PNG } = require("pngjs");
 const fs = require("fs");
 const { events } = require("../events");
@@ -81,6 +80,9 @@ const createRedraw = (emitter, system, sandbox) => {
 
   async function imageDiffPercent(image1Url, image2Url) {
     try {
+      // Dynamic import for ES module pixelmatch
+      const { default: pixelmatch } = await import("pixelmatch");
+
       // Read PNG files
       const img1Buffer = fs.readFileSync(image1Url);
       const img2Buffer = fs.readFileSync(image2Url);
