@@ -34,7 +34,6 @@
               "/features/generation",
               "/features/visual-assertions",
               "/features/auto-healing",
-              "/features/cross-platform",
               "/features/reusable-snippets",
               "/features/parallel-testing"
             ]

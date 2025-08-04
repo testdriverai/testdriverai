@@ -6,24 +6,28 @@ icon: "text"
 mode: "wide"
 ---
 
-import Replay from '/snippets/tests/hover-text-replay.mdx'
-import Example from '/snippets/tests/hover-text-yaml.mdx'
+import Replay from "/snippets/tests/hover-text-replay.mdx";
+import Example from "/snippets/tests/hover-text-yaml.mdx";
 
 <Replay />
+
 <Example />
 
 ## Description
+
 The `hover-text` command is used to locate text on the screen based on a description and perform an action on it. This can include hovering, clicking, right-clicking, or double-clicking the text.
 
 ## Arguments
-| Argument      | Type     | Description                                                                 |
-|---------------|----------|-----------------------------------------------------------------------------|
-| `text`        | `string` | The text to find on the screen. Longer and unique is better.     |
-| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here. |
+
+| Argument      | Type     | Description                                                                                                        |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `text`        | `string` | The text to find on the screen. Longer and unique is better.                                                       |
+| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.               |
 | `action`      | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
-| `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default) and `ai`. |
+| `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default), `levenshtein`, and `ai`.                     |
 
 ## Example usage
+
 ```yaml
 command: hover-text
 text: Sign Up
@@ -32,16 +36,20 @@ action: click
 ```
 
 ## Protips
+
 - Use unique and specific text to improve detection accuracy.
 - Choose the appropriate `method` for your use case:
-  - `turbo`: Faster and more efficient for most scenarios.
-  - `ai`: More robust for complex or ambiguous text matching.
+  - `ai`: More robust for complex or ambiguous text matching (default) using [Set-of-Mark](https://arxiv.org/abs/2310.11441).
+  - `levenshtein`: Compare string similarity using [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance).
+  - `turbo`: Ideal for simpler scenarios, combining `ai` & `levenshtein`
 - Ensure the action specified matches the intended interaction with the text.
 
 ## Gotchas
+
 - If the text can't be located, the command will fail. Ensure the text is visible on the screen and matches exactly.
 - Variations in font size, style, or screen resolution may affect detection accuracy.
 
 ## Notes
+
 - The `hover-text` command is ideal for interacting with textual elements that can't be identified using other selectors.
 - Supported actions allow flexibility in how the text is interacted with during the test.
