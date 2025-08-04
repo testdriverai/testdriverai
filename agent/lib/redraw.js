@@ -1,6 +1,4 @@
-const os = require("os");
-const path = require("path");
-const { compare } = require("odiff-bin");
+const looksSame = require("looks-same");
 const { events } = require("../events");
 const theme = require("./theme");
 
@@ -80,27 +78,19 @@ const createRedraw = (emitter, system, sandbox) => {
   }
 
   async function imageDiffPercent(image1Url, image2Url) {
-    // generate a temporary file path
-    const tmpImage = path.join(os.tmpdir(), `tmp-${Date.now()}.png`);
+    const result = await looksSame(image1Url, image2Url, {
+      strict: false,
+      tolerance: 2.3,
+      createDiffImage: true,
+    });
 
-    const { reason, diffPercentage, match } = await compare(
-      image1Url,
-      image2Url,
-      tmpImage,
-      {
-        failOnLayoutDiff: false,
-        outputDiffMask: false,
-      },
-    );
-
-    if (match) {
+    if (result.equal) {
       return false;
     } else {
-      if (reason === "pixel-diff") {
-        return diffPercentage.toFixed(1);
-      } else {
-        return false;
-      }
+      // Calculate percentage difference based on pixel differences
+      const diffPercentage =
+        (result.differentPixels / result.totalPixels) * 100;
+      return diffPercentage.toFixed(1);
     }
   }
 
