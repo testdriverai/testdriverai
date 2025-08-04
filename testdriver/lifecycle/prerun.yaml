@@ -9,10 +9,3 @@ steps:
       - command: exec
         lang: pwsh
         code: dashcam start
-  # UNCOMMENT THE BELOW IF U NEED THIS FOR LOCAL TESTING
-  # - prompt: start chrome
-  #   commands:
-  #     - command: exec
-  #       lang: pwsh
-  #       code: |
-  #         Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${TD_WEBSITE}"
