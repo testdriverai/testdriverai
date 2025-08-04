@@ -1,4 +1,6 @@
-const looksSame = require("looks-same");
+const pixelmatch = require("pixelmatch");
+const { PNG } = require("pngjs");
+const fs = require("fs");
 const { events } = require("../events");
 const theme = require("./theme");
 
@@ -78,19 +80,46 @@ const createRedraw = (emitter, system, sandbox) => {
   }
 
   async function imageDiffPercent(image1Url, image2Url) {
-    const result = await looksSame(image1Url, image2Url, {
-      strict: false,
-      tolerance: 2.3,
-      createDiffImage: true,
-    });
+    try {
+      // Read PNG files
+      const img1Buffer = fs.readFileSync(image1Url);
+      const img2Buffer = fs.readFileSync(image2Url);
 
-    if (result.equal) {
+      // Parse PNG data
+      const img1 = PNG.sync.read(img1Buffer);
+      const img2 = PNG.sync.read(img2Buffer);
+
+      // Ensure images have the same dimensions
+      if (img1.width !== img2.width || img1.height !== img2.height) {
+        throw new Error("Images must have the same dimensions");
+      }
+
+      const { width, height } = img1;
+      const totalPixels = width * height;
+
+      // Create diff image buffer
+      const diff = new PNG({ width, height });
+
+      // Compare images using pixelmatch
+      const differentPixels = pixelmatch(
+        img1.data,
+        img2.data,
+        diff.data,
+        width,
+        height,
+        { threshold: 0.1 },
+      );
+
+      if (differentPixels === 0) {
+        return false;
+      } else {
+        // Calculate percentage difference based on pixel differences
+        const diffPercentage = (differentPixels / totalPixels) * 100;
+        return diffPercentage.toFixed(1);
+      }
+    } catch (error) {
+      console.error("Error comparing images:", error);
       return false;
-    } else {
-      // Calculate percentage difference based on pixel differences
-      const diffPercentage =
-        (result.differentPixels / result.totalPixels) * 100;
-      return diffPercentage.toFixed(1);
     }
   }
 
