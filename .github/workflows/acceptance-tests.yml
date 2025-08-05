@@ -1,8 +1,14 @@
-name: v6 Acceptance
+name: Acceptance Tests
 
 on:
+  # So that we do a final check before publishing
   pull_request_review:
     types: [submitted]
+  # So that we don't do expensive tests until approved
+  push:
+    branches: [main]
+  # So that we can manually trigger tests when there's flake
+  workflow_dispatch:
 
 jobs:
   gather-test-files:
@@ -47,6 +53,7 @@ jobs:
 
       - name: Install dependencies
         run: NODE_ENV=production npm ci
+
       - name: Run test in headless mode
         run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }}
         env:
