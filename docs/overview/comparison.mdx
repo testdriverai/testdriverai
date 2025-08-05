@@ -5,86 +5,94 @@ description: "TestDriver vs Playwright vs Selenium"
 icon: boxing-glove
 ---
 
-### Application support
+## Application support
 
 TestDriver operates a full desktop environment, so it can run any application.
-
+<div className="comparison-table">
 | Application       | TestDriver | Playwright | Selenium |
-|:-------------------|:--------------|:-----------|:---------|
-| Web Apps          | ✅            | ✅         | ✅       |
-| Desktop Apps      | ✅            |          |        |
-| Chrome Extensions | ✅            |          |        |
+| :---------------- | :--------: | :--------: | :------: |
+| Web Apps          | ✅         | ✅         | ✅       |
+| Desktop Apps      | ✅         |            |          |
+| Chrome Extensions | ✅         |            |          |
+</div>
 
-
-### Testing features
+## Testing features
 
 TestDriver is AI first.
 
+<div className="comparison-table">
 | Feature               | TestDriver | Playwright | Selenium |
-|:-----------------------|:--------------|:-----------|:---------|
-| Test Generation       | ✅            |          |        |
-| Adaptive Testing      | ✅            |          |        |
-| Visual Assertions     | ✅            |          |        |
-| Self Healing          | ✅            |          |        |
-| Application Switching | ✅            |          |        |
-| GitHub Actions        | ✅            | ✅         |        |
-| Team Dashboard        | ✅            |          |        |
-| Team Collaboration    | ✅            |          |        |
+| :-------------------- | :---------: | :---------: | :-------: |
+| Test Generation       | ✅         |            |          |
+| Adaptive Testing      | ✅         |            |          |
+| Visual Assertions     | ✅         |            |          |
+| Self Healing          | ✅         |            |          |
+| Application Switching | ✅         |            |          |
+| GitHub Actions        | ✅         | ✅         |          |
+| Team Dashboard        | ✅         |            |          |
+| Team Collaboration    | ✅         |            |          |
+</div>
 
-### Test coverage
+## Test coverage
 
 TestDriver has more coverage than selector-based frameworks.
-
+<div className="comparison-table">
 | Feature            | TestDriver | Playwright | Selenium |
-|:--------------------|:--------------|:-----------|:---------|
-| Browser Viewport   | ✅            | ✅         | ✅       |
-| Browser App        | ✅            |          |        |
-| Operating System   | ✅            |          |        |
-| PDFs               | ✅            |          |        |
-| File System        | ✅            |          |        |
-| Push Notifications | ✅            |          |        |
-| Image Content      | ✅            |          |        |
-| Video Content      | ✅            |          |        |
-| `<iframe>`         | ✅            |          |        |
-| `<canvas>`         | ✅            |          |        |
-| `<video>`          | ✅            |          |        |
+| :----------------- | :---------: | :---------: | :-------: |
+| Browser Viewport   | ✅         | ✅         | ✅        |
+| Browser App        | ✅         |            |          |
+| Operating System   | ✅         |            |          |
+| PDFs               | ✅         |            |          |
+| File System        | ✅         |            |          |
+| Push Notifications | ✅         |            |          |
+| Image Content      | ✅         |            |          |
+| Video Content      | ✅         |            |          |
+| `<iframe>`         | ✅         |            |          |
+| `<canvas>`         | ✅         |            |          |
+| `<video>`          | ✅         |            |          |
+</div>
 
-### Debugging features
+## Debugging features
 
 Debugging features are powered by [Dashcam.io](https://dashcam.io).
-
+<div className="comparison-table">
 | Feature            | TestDriver | Playwright | Selenium |
-|:--------------------|:--------------|:-----------|:---------|
-| AI Summary         | ✅            |          |        |
-| Video Replay       | ✅            | ✅         |        |
-| Browser Logs       | ✅            | ✅         |        |
-| Desktop Logs       | ✅            |          |        |
-| Network Requests   | ✅            | ✅         |        |
-| Team Dashboard     | ✅            |          |        |
-| Team Collaboration | ✅            |          |        |
+| :----------------- | :---------: | :---------: | :-------: |
+| AI Summary         | ✅         |            |          |
+| Video Replay       | ✅         | ✅         |          |
+| Browser Logs       | ✅         | ✅         |          |
+| Desktop Logs       | ✅         |            |          |
+| Network Requests   | ✅         | ✅         |          |
+| Team Dashboard     | ✅         |            |          |
+| Team Collaboration | ✅         |            |          |
+</div>
 
-### Web browser support
+## Web browser support
 
 TestDriver is browser agnostic and supports any version of any browser.
+<div className="comparison-table">
+| Feature | TestDriver | Playwright | Selenium |
+| :------ | :--------: | :--------: | :------: |
+| Chrome  | ✅         | ✅         | ✅       |
+| Firefox | ✅         | ✅         | ✅       |
+| Webkit  | ✅         | ✅         | ✅       |
+| IE      | ✅         |            | ✅       |
+| Edge    | ✅         | ✅         | ✅       |
+| Opera   | ✅         |            | ✅       |
+| Safari  | ✅         |            | ✅       |
+</div>
 
-| Feature  | TestDriver | Playwright | Selenium |
-|:----------|:--------------|:-----------|:---------|
-| Chrome   | ✅            | ✅         | ✅       |
-| Firefox  | ✅            | ✅         | ✅       |
-| Webkit   | ✅            | ✅         | ✅       |
-| IE       | ✅            |          | ✅       |
-| Edge     | ✅            | ✅         | ✅       |
-| Opera    | ✅            |          | ✅       |
-| Safari   | ✅            |          | ✅       |
-
-### Operating system support
+## Operating system support
 
 TestDriver currently supports Mac and Windows!
+<div className="comparison-table">
+| Feature | TestDriver | Playwright | Selenium |
+| :------ | :--------: | :--------: | :------: |
+| Windows | ✅         | ✅         | ✅       |
+| Mac     | ✅         | ✅         | ✅       |
+| Linux   |            | ✅         | ✅       |
+</div>
 
-| Feature  | TestDriver | Playwright | Selenium |
-|:----------|:--------------|:-----------|:---------|
-| Windows  | ✅            | ✅         | ✅       |
-| Mac      | ✅            | ✅         | ✅       |
-| Linux    |             | ✅         | ✅       |
-
-<Tip>You **can** use TestDriver on Linux with hosted runners, but not locally yet.</Tip>
+<Tip>
+  You **can** use TestDriver on Linux with hosted runners, but not locally yet.
+</Tip>

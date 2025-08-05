@@ -1,0 +1,15 @@
+.comparison-table th {
+  font-size: 18px;
+  padding: 12px 30px;
+}
+
+.comparison-table td {
+  padding: 12px 30px;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: start;
+}
+
+.comparison-table code {
+  font-size: 1em;
+}
