@@ -444,7 +444,6 @@
                         "type": "string",
                         "enum": [
                           "ai",
-                          "levenshtein",
                           "turbo"
                         ]
                       }
@@ -560,7 +559,6 @@
                         "type": "string",
                         "enum": [
                           "ai",
-                          "levenshtein",
                           "turbo"
                         ]
                       }
