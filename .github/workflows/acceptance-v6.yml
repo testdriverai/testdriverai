@@ -1,21 +1,14 @@
 name: v6 Acceptance
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-  schedule:
-    - cron: "0 0 * * *"
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   gather-test-files:
     name: Gather Test Files
     runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == 'main'
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
     steps:
