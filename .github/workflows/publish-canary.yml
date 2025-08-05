@@ -1,4 +1,4 @@
-name: Publish to NPM beta
+name: Publish @canary to NPM
 
 permissions:
   contents: write
@@ -7,14 +7,14 @@ permissions:
   statuses: write
 
 on:
-  # Instead of a Merge Queue, we'll just run this on main.
+  # So that we publish for every push to `main`, despite tests
   push:
     branches: [main]
   workflow_dispatch:
 
 jobs:
   publish-canary:
-    name: Publish testdriverai@beta
+    name: Publish testdriverai@canary
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,7 +34,5 @@ jobs:
       - name: Publish to canary and beta tags
         run: |
           npm publish --tag canary
-          sleep 15
-          npm dist-tag add testdriverai@$(npm view testdriverai@canary version) beta
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
