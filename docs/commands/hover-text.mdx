@@ -1,14 +1,3 @@
----
-title: "hover-text"
-sidebarTitle: "hover-text"
-description: "Locate text on the screen and perform an action."
-icon: "text"
-mode: "wide"
----
-
-import Replay from "/snippets/tests/hover-text-replay.mdx";
-import Example from "/snippets/tests/hover-text-yaml.mdx";
-
 <Replay />
 
 <Example />
@@ -24,7 +13,7 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 | `text`        | `string` | The text to find on the screen. Longer and unique is better.                                                       |
 | `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.               |
 | `action`      | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
-| `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default), `levenshtein`, and `ai`.                     |
+| `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                     |
 
 ## Example usage
 
