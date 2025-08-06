@@ -5,9 +5,8 @@ const { version } = require("../../package.json");
 const axios = require("axios");
 
 // Factory function that creates SDK with the provided emitter, config, and session
+let token = null;
 const createSDK = (emitter, config, sessionInstance) => {
-  let token = null;
-
   // Config is required - no fallback to avoid process.env usage
   if (!config) {
     throw new Error("Config must be provided to createSDK");
