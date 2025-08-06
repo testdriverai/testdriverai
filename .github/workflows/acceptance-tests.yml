@@ -14,7 +14,7 @@ jobs:
   gather-test-files:
     name: Gather Test Files
     runs-on: ubuntu-latest
-    if: github.event.pull_request.base.ref == 'main'
+    if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
     steps:
