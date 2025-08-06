@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "6.0.10",
+  "version": "6.0.11",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -47,8 +47,8 @@
     "marked-terminal": "^7.0.0",
     "marky": "^1.2.5",
     "node-ipc": "^12.0.0",
-    "odiff-bin": "^3.1.2",
     "open": "^10.1.2",
+    "pixelmatch": "^7.1.0",
     "prompts": "^2.4.2",
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",

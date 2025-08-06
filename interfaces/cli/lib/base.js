@@ -114,14 +114,9 @@ class BaseCommand extends Command {
     }
 
     // Handle exit events
-    this.agent.emitter.on("error:fatal", async (error) => {
+    this.agent.emitter.on("error:fatal", (error) => {
       console.error("Fatal error:", error);
-      // Call the agent's exit method to ensure postrun lifecycle script is executed
-      if (this.agent) {
-        await this.agent.exit(true, false, true);
-      } else {
-        process.exit(1);
-      }
+      process.exit(1);
     });
 
     this.agent.emitter.on("exit", (exitCode) => {

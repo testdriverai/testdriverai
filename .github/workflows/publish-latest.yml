@@ -1,0 +1,60 @@
+# `main` is always published to `testdriverai@latest`. Checks are performed in PRs and the Merge Queue to ensure a healthy `main` branch."
+name: Publish @latest to NPM
+
+on:
+  workflow_run:
+    workflows: ["Acceptance Tests"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  bump_version:
+    name: "Bump Version"
+    if: ${{ github.event.workflow_run.conclusion == 'success' && !contains(github.event.workflow_run.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - name: Configure Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: "Bump version"
+        run: npm version patch -m "Bump version to %s [skip ci]"
+
+      - name: Push changes to main
+        run: |
+          git push https://${{ secrets.GH_TOKEN }}@github.com/testdriverai/testdriverai.git HEAD:main --force
+
+  publish-latest:
+    name: Publish testdriverai@latest
+    needs: bump_version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  trigger-vscode-build:
+    runs-on: ubuntu-latest
+    needs: publish-latest
+    steps:
+      - name: Trigger VSCode Build + Publish
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          repository: testdriverai/vscode
+          event-type: cli-publish
+          token: ${{ secrets.GH_TOKEN }}
