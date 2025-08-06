@@ -1,6 +1,5 @@
-const os = require("os");
-const path = require("path");
-const { compare } = require("odiff-bin");
+const { PNG } = require("pngjs");
+const fs = require("fs");
 const { events } = require("../events");
 const theme = require("./theme");
 
@@ -68,7 +67,6 @@ const createRedraw = (emitter, system, sandbox) => {
   };
 
   async function updateNetwork() {
-    console.debug("Updating network stats...");
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
         type: "system.network",
@@ -81,27 +79,49 @@ const createRedraw = (emitter, system, sandbox) => {
   }
 
   async function imageDiffPercent(image1Url, image2Url) {
-    // generate a temporary file path
-    const tmpImage = path.join(os.tmpdir(), `tmp-${Date.now()}.png`);
+    try {
+      // Dynamic import for ES module pixelmatch
+      const { default: pixelmatch } = await import("pixelmatch");
 
-    const { reason, diffPercentage, match } = await compare(
-      image1Url,
-      image2Url,
-      tmpImage,
-      {
-        failOnLayoutDiff: false,
-        outputDiffMask: false,
-      },
-    );
+      // Read PNG files
+      const img1Buffer = fs.readFileSync(image1Url);
+      const img2Buffer = fs.readFileSync(image2Url);
 
-    if (match) {
-      return false;
-    } else {
-      if (reason === "pixel-diff") {
-        return diffPercentage.toFixed(1);
-      } else {
-        return false;
+      // Parse PNG data
+      const img1 = PNG.sync.read(img1Buffer);
+      const img2 = PNG.sync.read(img2Buffer);
+
+      // Ensure images have the same dimensions
+      if (img1.width !== img2.width || img1.height !== img2.height) {
+        throw new Error("Images must have the same dimensions");
       }
+
+      const { width, height } = img1;
+      const totalPixels = width * height;
+
+      // Create diff image buffer
+      const diff = new PNG({ width, height });
+
+      // Compare images using pixelmatch
+      const differentPixels = pixelmatch(
+        img1.data,
+        img2.data,
+        diff.data,
+        width,
+        height,
+        { threshold: 0.1 },
+      );
+
+      if (differentPixels === 0) {
+        return false;
+      } else {
+        // Calculate percentage difference based on pixel differences
+        const diffPercentage = (differentPixels / totalPixels) * 100;
+        return diffPercentage.toFixed(1);
+      }
+    } catch (error) {
+      console.error("Error comparing images:", error);
+      return false;
     }
   }
 
