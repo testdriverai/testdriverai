@@ -1,0 +1,123 @@
+name: Acceptance Tests
+
+on:
+  # So that we do a final check before publishing
+  pull_request_review:
+    types: [submitted]
+  # So that we don't do expensive tests until approved
+  push:
+    branches: [main]
+  # So that we can manually trigger tests when there's flake
+  workflow_dispatch:
+
+jobs:
+  gather-test-files:
+    name: Gather Test Files
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/acceptance/*.yaml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+  test-workflow:
+    needs:
+      - gather-test-files
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+      max-parallel: 8
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+
+      - name: Run test in headless mode
+        run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }}
+        env:
+          FORCE_COLOR: 3
+          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app
+          TD_THIS_FILE: ${{ matrix.test }}
+#
+# TODO: Add snippets back, but this should only happen on `main`
+#     - name: Write MDX snippets separately
+#       run: |
+#         mkdir -p snippets
+#         FILE_NAME=$(basename "${{ matrix.test }}" .yaml)
+#         TEST_FILE="testdriver/${FILE_NAME}.yaml"
+
+#         EMBED_URL="${{ steps.testdriver.outputs.link }}"
+#         PARAMS="embed=true&timestamp=90000&playbackRate=5"
+
+#         if [[ "$EMBED_URL" == *\?* ]]; then
+#           EMBED_URL="${EMBED_URL}&${PARAMS}"
+#         else
+#           EMBED_URL="${EMBED_URL}?${PARAMS}"
+#         fi
+
+#         # Write iframe MDX
+#         echo "<iframe src=\"$EMBED_URL\" width=\"100%\" height=\"300\" />" > "snippets/${FILE_NAME}-replay.mdx"
+
+#         # Write YAML MDX
+#         echo '```yaml' > "snippets/${FILE_NAME}-yaml.mdx"
+#         cat "$TEST_FILE" >> "snippets/${FILE_NAME}-yaml.mdx"
+#         echo '```' >> "snippets/${FILE_NAME}-yaml.mdx"
+
+#     - name: Upload snippets artifact
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: snippets-${{ matrix.os }}-${{ matrix.test }}
+#         path: snippets/
+#         retention-days: 1
+
+# create-snippets-commit:
+#   name: Commit Snippets
+#   needs: run-tests
+#   runs-on: ubuntu-latest
+#   env:
+#     BASE_BRANCH: ${{ github.ref_name }}
+#   steps:
+#     - name: Check out current branch
+#       uses: actions/checkout@v3
+#       with:
+#         token: ${{ secrets.GH_TOKEN }}
+#         ref: ${{ github.head_ref }}
+#     - name: Download all snippets artifacts
+#       uses: actions/download-artifact@v4
+#       with:
+#         path: docs/snippets/tests
+#         pattern: snippets-*
+#         merge-multiple: true
+
+#     - name: Commit updated snippets
+#       uses: EndBug/add-and-commit@v9
+#       with:
+#         author_name: github-actions[bot]
+#         author_email: github-actions[bot]@users.noreply.github.com
+#         message: "Update test snippets [skip ci]"
+#         add: "docs/snippets/tests"
+#         new_branch: ${{ github.head_ref }}
+#         tag_push: "--force-with-lease"
