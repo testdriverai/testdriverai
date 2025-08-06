@@ -201,7 +201,8 @@ class TestDriverAgent extends EventEmitter2 {
     }
 
     await this.summarize(error.message);
-    return await this.exit(true);
+    // Always run postrun lifecycle script, even for fatal errors
+    return await this.exit(true, false, true);
   }
 
   // creates a new "thread" in which the AI is given an error
