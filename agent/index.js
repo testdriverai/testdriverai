@@ -140,6 +140,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.lastScreenshot = null; // the last screenshot taken by the agent
     this.readlineInterface = null; // the readline interface for interactive mode
     this.tasks = []; // list of prompts that the user has given us
+    this.hasRunPostrun = false; // whether the postrun lifecycle has been run. prevents infinite loops
 
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
@@ -156,7 +157,7 @@ class TestDriverAgent extends EventEmitter2 {
   }
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
-  async exit(failed = true, shouldSave = false, shouldRunLifecycle = false) {
+  async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
     this.emitter.emit(events.log.log, theme.dim("exiting..."), true);
 
     // Clean up redraw interval
@@ -164,7 +165,9 @@ class TestDriverAgent extends EventEmitter2 {
       this.redraw.cleanup();
     }
 
-    shouldRunLifecycle = shouldRunLifecycle || this.cliArgs?.command == "run";
+    shouldRunPostrun =
+      !this.hasRunPostrun &&
+      (shouldRunPostrun || this.cliArgs?.command == "run");
 
     if (shouldSave) {
       await this.save();
@@ -172,7 +175,8 @@ class TestDriverAgent extends EventEmitter2 {
 
     this.analytics.track("exit", { failed });
 
-    if (shouldRunLifecycle) {
+    if (shouldRunPostrun) {
+      this.hasRunPostrun = true;
       await this.runLifecycle("postrun");
     }
 

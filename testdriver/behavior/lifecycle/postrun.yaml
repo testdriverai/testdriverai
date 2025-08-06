@@ -5,4 +5,6 @@ steps:
     commands:
       - command: exec
         lang: pwsh
-        code: Write-Output "postrun.yaml"
+        code: |
+          Write-Output "postrun.yaml"
+          exit 1

@@ -1,3 +1,10 @@
+/*
+This is an implementation of the TestDriver library. This file should not:
+- modify the agent's state
+- emit events back to the agent
+- etc
+*/
+
 const { Command } = require("@oclif/core");
 const { events } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
@@ -99,17 +106,6 @@ class BaseCommand extends Command {
     });
 
     logger.createMarkdownLogger(this.agent.emitter);
-
-    // Handle exit events
-    this.agent.emitter.on("error:fatal", async (error) => {
-      console.error("Fatal error:", error);
-      // Call the agent's exit method to ensure postrun lifecycle script is executed
-      if (this.agent) {
-        await this.agent.exit(true, false, true);
-      } else {
-        process.exit(1);
-      }
-    });
 
     this.agent.emitter.on("exit", (exitCode) => {
       process.exit(exitCode);
