@@ -95,7 +95,7 @@ function createOclifCommand(commandName) {
           const lifecycleDir = path.join(testdriverDir, "lifecycle");
           if (!fs.existsSync(lifecycleDir)) {
             fs.mkdirSync(lifecycleDir, { recursive: true });
-            console.log(`Created directory: ${lifecycleDir}`);
+            console.log(`Created directory: ${path.relative(workingDir, lifecycleDir)}`);
           }
 
           // Copy lifecycle files
