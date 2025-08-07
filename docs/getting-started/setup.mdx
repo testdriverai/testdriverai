@@ -1,7 +1,7 @@
 ---
 title: "Setting up TestDriver CLI"
 sidebarTitle: "CLI Setup"
-description: "Follow these steps to install and set up TestDriver CLI."
+description: "Follow these steps to install and run TestDriver CLI."
 icon: "square-terminal"
 ---
 
@@ -32,82 +32,45 @@ icon: "square-terminal"
     ```sh
     npx testdriverai@latest init
     ```
-
-    TestDriver requires a runner to execute tests. You can use either a hosted sandbox or your own computer.
-
-    - **TestDriver Sandbox** - Run tests in a ephemeral linux virtual machine. Recommended for ease of use, added privacy, and parallelization. Requires a TestDriver API key.
-    - **Local Runner** - Run tests on your own computer. Recommended for working with existing user sessions, files, and applications. Requires additional setup.
-
-    <Tabs>
-      <Tab title="Hosted Sandbox Setup">
-        Running `init` in your project directory and choose "yes" for the sandbox option. This will prompt you for your API key.
+  <Tip>
+    TestDriver runs on a dedicated virtual machine which makes it easier to use without having to install much of programs on your local machine.
+    </Tip>
 
         ```
-        Beginning setup...
-        ✔ Use TestDriver Sandbox Runners? (Recommended) … yes
+        🚀 Initializing TestDriver project ...
         ? API KEY (from https://app.testdriver.ai/team) › ********
         ```
 
         This will write the `TD_API_KEY` values to `.env` file in your project directory.
-      </Tab>
-      <Tab title="Local Windows Setup">
-        #### Install Python & Visual Studio build tools
 
-        ```powershell
-        choco install python visualstudio2022-workload-vctools -y
-        ```
-
-        #### Install Node.js
-
-        You will also need Node.js if you don't have it yet.
-
-        ```powershell
-        choco install nodejs-lts --version="20.17.0"
-        ```
-
-        #### Set execution policy
-
-        Open a new terminal with admin privileges and execute the following command :
-
-        ```powershell
-        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-        ```
-
-        This gives TestDriver the right to execute it's scripts and is only valid for the current user.
-      </Tab>
-      <Tab title="Local Mac Setup">
-        #### Enable screen recording permissions
-
-        TestDriver requires screen recording permissions to capture your screen during test execution.
-
-        - Open **System Preferences \> Security & Privacy \> Privacy \> Screen Recording**.
-        - Check the box next to your terminal application (for example, Terminal, iTerm2) to allow screen recording.
-
-        This is required for TestDriver to capture your screen during test execution.
-
-        #### Enable accessibility permissions
-
-        - Open **System Preferences \> Security & Privacy \> Privacy \> Accessibility**.
-        - Check the box next to your terminal application (for example, Terminal, iTerm2) to allow accessibility features.
-
-        This is required for TestDriver to interact with your applications during test execution.
-      </Tab>
-    </Tabs>
+        You will also be prompted to add the website that you want to test, if you are about to test a desktop application or any non web application skip it by pressing enter, else make sure to enter the url of your website. 
+        You can always change the website later by editing the `.env` file in your project directory.
 
   </Step>
   <Step title="Run TestDriver in Interactive Mode" stepNumber={4}>
-    Start TestDriver in interactive mode.
+    Once the setup is completed you will notice a new folder called `testdriver` in your project directory.
+    Inside this folder you will see the [lifecycle files](/guide/lifecycle)
+
+    To start TestDriver in interactive mode run the below command:
 
     ```bash
-    npx testdriverai@latest
+    npx testdriverai@latest edit
     ```
 
-    You should see a prompt like this:
+    You are now inside our CLI terminal and the first thing that happens is, you will be given a new sandbox instance, so expect a new browser window to open that basically contains a windows machine instance.
 
     ```bash
-    Howdy! I'm TestDriver v4.2.26
-    ```
+    Howdy! I'm TestDriver v6.0.0
+    Working on /Users/kid/Desktop/my-project/testdriver/testdriver.yaml
+    - establishing connection...
+    - authenticating...
+    - creating new sandbox...
+      (this can take between 10 - 240 seconds)
+    - connecting...
 
+    >
+    ```
+    You can now start writing your prompts after the `>`
   </Step>
 </Steps>
 
