@@ -1,3 +1,10 @@
+/*
+This is an implementation of the TestDriver library. This file should not:
+- modify the agent's state
+- emit events back to the agent
+- etc
+*/
+
 const { Command } = require("@oclif/core");
 const { events } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
@@ -112,12 +119,6 @@ class BaseCommand extends Command {
       );
       console.log(`JUnit reporting enabled: ${junitOutputPath}`);
     }
-
-    // Handle exit events
-    this.agent.emitter.on("error:fatal", (error) => {
-      console.error("Fatal error:", error);
-      process.exit(1);
-    });
 
     this.agent.emitter.on("exit", (exitCode) => {
       process.exit(exitCode);
