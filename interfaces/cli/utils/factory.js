@@ -27,7 +27,7 @@ function createOclifCommand(commandName) {
           const readlineInterface = new ReadlineInterface(this.agent);
           this.agent.readlineInterface = readlineInterface;
           await readlineInterface.start();
-        } else if (commandName === "init") {          
+        } else if (commandName === "init") {
           // Simple init without full agent setup
           const fs = require("fs");
           const path = require("path");
@@ -44,13 +44,15 @@ function createOclifCommand(commandName) {
           }
 
           // Get API key
-          let apiKey = flags['api-key'] || process.env.TD_API_KEY;
+          let apiKey = flags["api-key"] || process.env.TD_API_KEY;
           if (!apiKey) {
             const response = await prompts({
               type: "password",
               name: "apiKey",
-              message: "Enter your TestDriver API key (from https://app.testdriver.ai/team):",
-              validate: (value) => (value.length > 0 ? true : "API key is required"),
+              message:
+                "Enter your TestDriver API key (from https://app.testdriver.ai/team):",
+              validate: (value) =>
+                value.length > 0 ? true : "API key is required",
             });
             apiKey = response.apiKey;
           }
@@ -61,13 +63,16 @@ function createOclifCommand(commandName) {
             const response = await prompts({
               type: "text",
               name: "website",
-              message: "Enter the website URL to test (e.g., https://google.com): ",
+              message:
+                "Enter the website URL to test (e.g., https://google.com): ",
               validate: (value) => {
                 if (!value) value = "https://docs.testdriver.ai";
                 try {
-                  const urlToValidate = value.includes('://') ? value : `https://${value}`;
+                  const urlToValidate = value.includes("://")
+                    ? value
+                    : `https://${value}`;
                   new URL(urlToValidate);
-                  return true;  
+                  return true;
                 } catch {
                   return "Please enter a valid URL";
                 }
@@ -82,7 +87,7 @@ function createOclifCommand(commandName) {
           if (apiKey) envContent += `TD_API_KEY=${apiKey}\n`;
           if (website) envContent += `TD_WEBSITE=${website}\n`;
           envContent += `TD_THIS_FILE=My first test\n`;
-          
+
           fs.writeFileSync(envPath, envContent);
           console.log("Created .env file");
 
@@ -94,9 +99,16 @@ function createOclifCommand(commandName) {
           }
 
           // Copy lifecycle files
-          const templateDir = path.join(__dirname, "..", "..", "..", "testdriver", "lifecycle");
+          const templateDir = path.join(
+            __dirname,
+            "..",
+            "..",
+            "..",
+            "testdriver",
+            "lifecycle",
+          );
           const files = ["prerun.yaml", "provision.yaml", "postrun.yaml"];
-          
+
           for (const file of files) {
             const sourcePath = path.join(templateDir, file);
             const destPath = path.join(lifecycleDir, file);
@@ -108,7 +120,7 @@ function createOclifCommand(commandName) {
 
           console.log("✅ Project initialized successfully!");
           console.log("Run 'testdriverai edit' to start writing tests.");
-          
+
           process.exit(0);
         } else {
           // For run and sandbox commands, use the unified command system
