@@ -62,7 +62,6 @@
           {
             "group": "Getting Started",
             "pages": [
-              "/getting-started/setup",
               "/getting-started/vscode",
               "/getting-started/running",
               "/getting-started/ci",
