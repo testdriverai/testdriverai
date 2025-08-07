@@ -25,7 +25,7 @@ const createSandbox = (emitter, analytics) => {
         message.requestId = `${this.uniqueId}-${this.messageId}`;
 
         // Start timing for this message
-        const timingKey = `sandbox-${message.type}-${message.requestId}`;
+        const timingKey = `sandbox-${message.type}`;
         marky.mark(timingKey);
 
         let p = new Promise((resolve, reject) => {
