@@ -109,6 +109,10 @@ function createCommandDefinitions(agent) {
       },
     },
 
+    init: {
+      description: "Initialize a new TestDriver project",
+    },
+
     // Interactive commands that can be used within edit mode
     explore: {
       description: "Explore and interact with the current environment",
