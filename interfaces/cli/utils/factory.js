@@ -118,6 +118,43 @@ function createOclifCommand(commandName) {
             }
           }
 
+          const githubWorkflowContent = `name: TestDriver Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout the test file
+        uses: actions/checkout@v4
+
+      - name: Run Tests
+        run: |
+          npx testdriverai@latest run testdriver/testdriver.yaml
+        env:
+          TD_API_KEY: \${{ secrets.TD_API_KEY }}
+          TD_WEBSITE: \${{ secrets.TD_WEBSITE }}
+          TD_THIS_FILE: My first test
+`;
+
+          const githubWorkflowPath = path.join(
+            workingDir,
+            ".github",
+            "workflows",
+            "testdriver.yml",
+          );
+          if (!fs.existsSync(githubWorkflowPath)) {
+            fs.mkdirSync(path.dirname(githubWorkflowPath), { recursive: true });
+            fs.writeFileSync(githubWorkflowPath, githubWorkflowContent);
+            console.log("Created CI workflow at .github/workflows/testdriver.yml");
+          }
+
           console.log("✅ Project initialized successfully!");
           console.log("Run 'testdriverai edit' to start writing tests.");
 
