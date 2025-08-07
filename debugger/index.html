@@ -490,11 +490,6 @@
         if (interactionTimeout) {
           clearTimeout(interactionTimeout);
         }
-
-        // Set timeout to show overlay again after 30 seconds
-        interactionTimeout = setTimeout(() => {
-          isInteractionEnabled = false;
-        }, 30000);
       };
 
       // Event listeners for interaction overlay
@@ -674,6 +669,12 @@
 
       // Handle window resize to recalculate scale (throttled)
       window.addEventListener("resize", throttle(resizeOverlay, 100));
+
+      // Handle window blur/focus for screen locking
+      window.addEventListener("blur", () => {
+        showInteractionOverlay();
+        isInteractionEnabled = false;
+      });
     </script>
   </body>
 </html>
