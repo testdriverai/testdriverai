@@ -23,9 +23,9 @@ Parallel testing allows you to split your test actions into multiple files and r
 - Use a test matrix strategy to execute these files in parallel.
 
 <Warning>
-  The `run` command is used in your test files to run other test files. This is
-  useful for breaking down large tests into smaller, more manageable pieces. To
-  run multiple separate tests, use a test matrix strategy.
+  The [`run`](/commands/run) command is used in your test files to run other
+  test files. This is useful for breaking down large tests into smaller, more
+  manageable pieces. To run multiple separate tests, use a test matrix strategy.
 </Warning>
 
 Example:
@@ -43,7 +43,7 @@ strategy:
 
 ### 2. Use optimized matching methods
 
-For actions like `hover-text`, `wait-for-text`, and `scroll-until-text`, use the `turbo` matching method instead of `ai`. The `turbo` method uses text similarity to quickly compute the most relevant match, making it about 40% faster than the `ai` method.
+For actions like [`hover-text`](/commands/hover-text), [`wait-for-text`](/commands/wait-for-text), and [`scroll-until-text`](/commands/scroll-until-text), use the `turbo` matching method instead of `ai`. The `turbo` method uses text similarity to quickly compute the most relevant match, making it about 40% faster than the `ai` method.
 
 #### Example
 
@@ -59,7 +59,7 @@ method: turbo
 
 ### 3. Use `async` asserts
 
-The `assert` command supports the `async: true` property, allowing you to create non-blocking assertions. This means your tests can continue running while the assertion is being validated, saving valuable time.
+The [`assert`](/commands/assert) command supports the `async: true` property, allowing you to create non-blocking assertions. This means your tests can continue running while the assertion is being validated, saving valuable time.
 
 #### Example
 

@@ -13,7 +13,7 @@ Reusable snippets in TestDriver allow you to modularize your test steps by creat
 
 ## What are reusable snippets?
 
-Reusable snippets are YAML files containing a set of test steps that perform a specific task, such as logging in, navigating to a page, or setting up test prerequisites. These snippets can be referenced in other test files using the `run` command, enabling you to reuse common actions across multiple tests.
+Reusable snippets are YAML files containing a set of test steps that perform a specific task, such as logging in, navigating to a page, or setting up test prerequisites. These snippets can be referenced in other test files using the [`run`](/commands/run) command, enabling you to reuse common actions across multiple tests.
 
 ---
 
@@ -58,7 +58,7 @@ steps:
 
 <Step title="Reference the Snippet in a Test">
 
-Use the `run` command to include the snippet in your main test file. For example:
+Use the [`run`](/commands/run) command to include the snippet in your main test file. For example:
 
 ```yaml
 version: 4.2.18

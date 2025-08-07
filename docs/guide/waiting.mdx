@@ -19,8 +19,8 @@ Waiting is a critical feature in TestDriver that ensures tests are stable and re
 | **Feature**          | **Description**                                                                 |
 |-----------------------|---------------------------------------------------------------------------------|
 | **`redraw`(automatic)** | TestDriver automatically waits for UI changes and network activity to resolve. |
-| **`wait-for-text`**   | Waits for specific text to appear on the screen.                                |
-| **`wait-for-image`**  | Waits for a specific image or visual element to appear on the screen.           |
+| **[`wait-for-text`](/commands/wait-for-text)**   | Waits for specific text to appear on the screen.                                |
+| **[`wait-for-image`](/commands/wait-for-image)**  | Waits for a specific image or visual element to appear on the screen.           |
 
 ## Key waiting features in TestDriver
 
@@ -31,20 +31,20 @@ Waiting is a critical feature in TestDriver that ensures tests are stable and re
     - Network activity to stabilize (for example, API calls).
   - Reduces the need for manual waits, making tests faster and less prone to flakiness.
 
-2. **`wait-for-text` Command**:
+2. **[`wait-for-text`](/commands/wait-for-text) Command**:
   - Waits for specific text to appear on the screen.
   - Useful for validating dynamic content or ensuring that a page has fully loaded before proceeding.
 
-3. **`wait-for-image` Command**:
+3. **[`wait-for-image`](/commands/wait-for-image) Command**:
   - Waits for a specific image or visual element to appear on the screen.
   - Ideal for verifying the presence of icons, logos, or other graphical elements.
 
 
 ## Commands for explicit waiting
 
-### 1. **`wait-for-text`**
+### 1. **[`wait-for-text`](/commands/wait-for-text)**
 
-The `wait-for-text` command pauses the test until the specified text appears on the screen. This is particularly useful for dynamic content that takes time to load.
+The [`wait-for-text`](/commands/wait-for-text) command pauses the test until the specified text appears on the screen. This is particularly useful for dynamic content that takes time to load.
 
 #### Syntax
 
@@ -64,9 +64,9 @@ The `wait-for-text` command pauses the test until the specified text appears on 
 
 In this example, the test waits up to 10 seconds for the text "Welcome, Test User!" to appear.
 
-### **`wait-for-image`**
+### **[`wait-for-image`](/commands/wait-for-image)**
 
-The `wait-for-image` command pauses the test until the specified image or visual element appears on the screen.
+The [`wait-for-image`](/commands/wait-for-image) command pauses the test until the specified image or visual element appears on the screen.
 
 #### Syntax:
 
@@ -109,10 +109,10 @@ TestDriver's **`redraw` function** is a built-in mechanism that automatically wa
   - Rely on TestDriver's `redraw` function to handle most waiting scenarios automatically.
 
 1. **Use Explicit Waiting for Dynamic Elements**:
-  - Use `wait-for-text` or `wait-for-image` for elements that take time to load.
+  - Use [`wait-for-text`](/commands/wait-for-text) or [`wait-for-image`](/commands/wait-for-image) for elements that take time to load.
 
 3. **Avoid Hardcoded Delays**:
-  - Replace hardcoded `sleep` or `wait` commands with dynamic waiting commands to improve test reliability.
+  - Replace hardcoded `sleep` or [`wait`](/commands/wait) commands with dynamic waiting commands to improve test reliability.
 
 4. **Set Appropriate Timeouts**:
   - Use reasonable timeouts for explicit waiting commands to balance reliability and test execution time.
