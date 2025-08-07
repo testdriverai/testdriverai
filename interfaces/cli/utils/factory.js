@@ -95,7 +95,9 @@ function createOclifCommand(commandName) {
           const lifecycleDir = path.join(testdriverDir, "lifecycle");
           if (!fs.existsSync(lifecycleDir)) {
             fs.mkdirSync(lifecycleDir, { recursive: true });
-            console.log(`Created directory: ${path.relative(workingDir, lifecycleDir)}`);
+            console.log(
+              `Created directory: ${path.relative(workingDir, lifecycleDir)}`,
+            );
           }
 
           // Copy lifecycle files
@@ -152,7 +154,9 @@ jobs:
           if (!fs.existsSync(githubWorkflowPath)) {
             fs.mkdirSync(path.dirname(githubWorkflowPath), { recursive: true });
             fs.writeFileSync(githubWorkflowPath, githubWorkflowContent);
-            console.log("Created CI workflow at .github/workflows/testdriver.yml");
+            console.log(
+              "Created CI workflow at .github/workflows/testdriver.yml",
+            );
           }
 
           console.log("✅ Project initialized successfully!");
