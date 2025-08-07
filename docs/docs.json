@@ -79,7 +79,8 @@
               "/guide/authentication",
               "/guide/lifecycle",
               "/guide/code",
-              "/guide/environment-variables"
+              "/guide/environment-variables",
+              "/guide/protips"
             ]
           },
           {
