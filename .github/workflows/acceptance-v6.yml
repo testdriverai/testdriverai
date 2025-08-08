@@ -2,7 +2,10 @@ name: v6 Acceptance
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["lint"]
+    types:
+      - completed
     branches:
       - main
   pull_request:
@@ -16,6 +19,8 @@ jobs:
   # Job to gather all test files
   test-setup:
     runs-on: ubuntu-latest
+    # Only run if lint workflow succeeded or if triggered manually/scheduled
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'pull_request' }}
     outputs:
       testmo-run-id: ${{ steps.run-tests.outputs.testmo-run-id }}
     steps:
@@ -51,6 +56,8 @@ jobs:
   gather:
     name: Gather Test Files
     runs-on: ubuntu-latest
+    # Only run if lint workflow succeeded or if triggered manually/scheduled
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || github.event_name == 'pull_request' }}
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
     steps:
