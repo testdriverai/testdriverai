@@ -12,6 +12,7 @@ const createCommander = (
   config,
   outputsInstance,
   sessionInstance,
+  cliArgs,
 ) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
@@ -252,10 +253,18 @@ commands:
       timestamp: Date.now(),
     });
 
-    await Promise.all([
+    const promises = [
       sdk.req("ran", { command: object.command, data: object }),
-      analytics.track("command", { data: object, depth, timing }),
-    ]);
+    ];
+
+    // Only track analytics when in edit mode (not run mode)
+    if (cliArgs?.command === "edit") {
+      promises.push(
+        analytics.track("command", { data: object, depth, timing }),
+      );
+    }
+
+    await Promise.all(promises);
 
     return response;
   };

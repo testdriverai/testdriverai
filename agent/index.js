@@ -127,6 +127,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.config,
       this.outputs,
       this.session,
+      this.cliArgs,
     );
 
     // these are "in-memory" globals
