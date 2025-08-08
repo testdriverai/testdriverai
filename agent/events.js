@@ -63,6 +63,12 @@ const events = {
     status: "step:status",
     progress: "step:progress",
   },
+  test: {
+    start: "test:start",
+    stop: "test:stop",
+    success: "test:success",
+    error: "test:error",
+  },
   file: {
     start: "file:start",
     stop: "file:stop",

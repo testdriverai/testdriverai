@@ -8,7 +8,8 @@ const createAnalytics = (emitter, config, sessionInstance) => {
     track: async (event, data) => {
       if (!config["TD_ANALYTICS"]) {
         return;
-      } else {
+      }
+      if (Math.random() <= 0.01) {
         await sdk.req("analytics", { event, data });
       }
     },
