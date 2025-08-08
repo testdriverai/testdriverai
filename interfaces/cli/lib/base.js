@@ -8,6 +8,7 @@ This is an implementation of the TestDriver library. This file should not:
 const { Command } = require("@oclif/core");
 const { events } = require("../../../agent/events.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
+const { createJUnitReporter } = require("../../junit-reporter.js");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -106,6 +107,18 @@ class BaseCommand extends Command {
     });
 
     logger.createMarkdownLogger(this.agent.emitter);
+
+    // Initialize JUnit reporter if junit flag is provided
+    if (this.agent.cliArgs?.options?.junit) {
+      const junitOutputPath = this.agent.cliArgs.options.junit;
+      const mainTestFile = this.agent.thisFile; // Get the main test file from the agent
+      this.junitReporter = createJUnitReporter(
+        this.agent.emitter,
+        junitOutputPath,
+        mainTestFile,
+      );
+      console.log(`JUnit reporting enabled: ${junitOutputPath}`);
+    }
 
     this.agent.emitter.on("exit", (exitCode) => {
       process.exit(exitCode);
