@@ -32,6 +32,7 @@ jobs:
     needs:
       - gather-test-files
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     strategy:
       matrix:
