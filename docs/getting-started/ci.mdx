@@ -9,7 +9,8 @@ This guide explains how to set up TestDriver in CI/CD pipelines, using **GitHub 
 
 ## Prerequisites
 
-1. **TestDriver API Key**: Obtain your API key from TestDriver and store it as a CI/CD secret (for example, `TD_API_KEY` in GitHub Actions).
+1. **Add API key to secrets**: Obtain your API key from TestDriver and store it as a [CI/CD secret](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets) as `TD_API_KEY`.
+Also make sure to add the `TD_WEBSITE` secret to the repository with the value of the website you are testing if its a web based application.
 2. **Test Files**: Ensure your test files are saved in the `testdriver/` directory of your repository.
 
 ## Create a CI/CD workflow
@@ -17,6 +18,11 @@ This guide explains how to set up TestDriver in CI/CD pipelines, using **GitHub 
 This example uses GitHub Actions, but the same approach can be adapted for other CI/CD platforms:
 
 1. Create a new file in your repository: `.github/workflows/testdriver.yaml`.
+
+<Note>
+  If you have already [initialized the project](/getting-started/setup) with `npx testdriverai@latest init`, the workflow file will already be created.
+</Note>
+
 2. Add the following workflow configuration:
 
 ### Example GitHub Actions workflow
@@ -33,64 +39,23 @@ on:
     - cron: '0 13 * * *'  # Every day at 1 PM UTC (adjust if needed for timezone)
 
 permissions:
-  actions: read
   contents: read
-  statuses: write
-  pull-requests: write
+  pull-requests: read
 
 jobs:
-  gather-test-files:
-    name: Setup Test Matrix (./testdriver/*.yaml)
-    runs-on: ubuntu-latest
-    outputs:
-      test_files: ${{ steps.test_list.outputs.files }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.ref }}
-      - name: Find all test files and extract filenames
-        id: test_list
-        run: |
-          FILES=$(ls ./testdriver/*.yaml)
-          FILENAMES=$(basename -a $FILES)
-          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
-          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
 
   test:
-    needs: gather-test-files
-    strategy:
-      matrix:
-        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
-      fail-fast: false
-    name: ${{ matrix.test }}
+    name: TestDriver
+    runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.ref }}
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: NODE_ENV=production npm ci
-
-      - name: Display filename being tested
-        run: echo "Running job for file: ${{ matrix.test }}"
 
       - name: Run TestDriver
-        run: npx testdriverai@latest run testdriver/${{ matrix.test }} --headless
+        run: npx testdriverai@latest run testdriver/testdriver.yaml --headless
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FORCE_COLOR: "3"
-          TD_WEBSITE: ${{ vars.TD_WEBSITE || 'https://your-app.com' }}
-          TD_THIS_FILE: ${{ matrix.test }}
+          TD_WEBSITE: ${{ secrets.TD_WEBSITE }}
 ```
 
 ## Trigger the workflow
@@ -102,7 +67,11 @@ jobs:
 ## View results
 
 1. Navigate to the **Actions** tab in your GitHub repository (or equivalent CI/CD dashboard).
-2. Select the workflow run to view the test results.
+2. Select the workflow run to view the test results. You will also find the link to the test recording at the end of the run, the url is of the format: `https://app.dashcam.io/replay/1234567890`
+
+<Tip>
+You can also intregate our supported [reporting platform](/exporting/junit) to get more currated results.
+</Tip>
 
 <Note>
   For other CI/CD platforms, adapt the workflow syntax to match your platform's
@@ -153,3 +122,24 @@ TestDriver provides a powerful debugging interface through its platform. This in
 
 - Share test results with your team by generating a shareable link.
 - Add comments or annotations to specific steps to facilitate discussions and debugging.
+
+---
+
+## How it works
+
+1. **Trigger**: The GitHub workflow is triggered based on the conditions defined in the `on` section.
+2. **Fetch the test files**: The test files are fetched from the repository based off the current branch.
+3. **Running the tests**: The TestDriver CLI is installed and the tests are run via the `run` command.
+4. **Authentication**: The `TD_API_KEY` environment variable authenticates your account.
+5. **Dashcam Recording**: Dashcam begins recording the test execution.
+6. **Test Execution**: The TestDriver CLI executes your commands on the cloud VM.
+8. **Test Summary**: TestDriver summarizes the test and sets the exit code based on the pass or fail state.
+9. **Cleanup**: The recording is uploaded to the TestDriver platform and the VM is destroyed, and all data is wiped.
+
+---
+
+## Additional features
+
+- **Parallel testing**: You can run multiple tests in [parallel](/features/parallel-testing#setting-up-parallel-testing-with-a-matrix-strategy). The number of parallel instances depends on the plan you are on.
+- **Environment Variables**: Pass [custom environment variables](guide/authentication#step-2%3A-pass-credentials-to-the-workflow) to configure credentials that are required for the tests.
+- **Chaining Workflows**: A common workflow involves waiting for staging to deploy and testing against the staging environment by passing in the deployed url as `TD_WEBSITE` or the staging build's installation url depending on the kind of application you are testing.
