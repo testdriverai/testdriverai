@@ -1,6 +1,11 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/testdriverai/cli/refs/heads/main/schema.json",
   "type": "object",
+  "required": [
+    "version",
+    "steps"
+  ],
   "properties": {
     "version": {
       "type": "string",
@@ -15,6 +20,9 @@
       "description": "An array of test steps.",
       "items": {
         "type": "object",
+        "required": [
+          "prompt"
+        ],
         "properties": {
           "prompt": {
             "type": "string",
@@ -24,743 +32,1007 @@
             "type": "array",
             "description": "An array of commands to execute in this step.",
             "items": {
-              "type": "object",
-              "properties": {
-                "command": {
-                  "type": "string",
-                  "description": "The command to execute."
-                }
-              },
-              "required": [
-                "command"
-              ],
-              "allOf": [
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "type"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "text": {
-                        "type": [
-                          "string",
-                          "integer"
-                        ]
-                      },
-                      "delay": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": [
-                      "text"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "press-keys"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "keys": {
-                        "type": "array",
-                        "contains": {
-                          "type": "string",
-                          "enum": [
-                            "\t",
-                            "\n",
-                            "\r",
-                            " ",
-                            "!",
-                            "\"",
-                            "#",
-                            "$",
-                            "%",
-                            "&",
-                            "'",
-                            "(",
-                            ")",
-                            "*",
-                            "+",
-                            ",",
-                            "-",
-                            ".",
-                            "/",
-                            "0",
-                            "1",
-                            "2",
-                            "3",
-                            "4",
-                            "5",
-                            "6",
-                            "7",
-                            "8",
-                            "9",
-                            ":",
-                            ";",
-                            "<",
-                            "=",
-                            ">",
-                            "?",
-                            "@",
-                            "[",
-                            "\\",
-                            "]",
-                            "^",
-                            "_",
-                            "`",
-                            "a",
-                            "b",
-                            "c",
-                            "d",
-                            "e",
-                            "f",
-                            "g",
-                            "h",
-                            "i",
-                            "j",
-                            "k",
-                            "l",
-                            "m",
-                            "n",
-                            "o",
-                            "p",
-                            "q",
-                            "r",
-                            "s",
-                            "t",
-                            "u",
-                            "v",
-                            "w",
-                            "x",
-                            "y",
-                            "z",
-                            "{",
-                            "|",
-                            "}",
-                            "~",
-                            "accept",
-                            "add",
-                            "alt",
-                            "altleft",
-                            "altright",
-                            "apps",
-                            "backspace",
-                            "browserback",
-                            "browserfavorites",
-                            "browserforward",
-                            "browserhome",
-                            "browserrefresh",
-                            "browsersearch",
-                            "browserstop",
-                            "capslock",
-                            "clear",
-                            "convert",
-                            "ctrl",
-                            "ctrlleft",
-                            "ctrlright",
-                            "decimal",
-                            "del",
-                            "delete",
-                            "divide",
-                            "down",
-                            "end",
-                            "enter",
-                            "esc",
-                            "escape",
-                            "execute",
-                            "f1",
-                            "f10",
-                            "f11",
-                            "f12",
-                            "f13",
-                            "f14",
-                            "f15",
-                            "f16",
-                            "f17",
-                            "f18",
-                            "f19",
-                            "f2",
-                            "f20",
-                            "f21",
-                            "f22",
-                            "f23",
-                            "f24",
-                            "f3",
-                            "f4",
-                            "f5",
-                            "f6",
-                            "f7",
-                            "f8",
-                            "f9",
-                            "final",
-                            "fn",
-                            "hanguel",
-                            "hangul",
-                            "hanja",
-                            "help",
-                            "home",
-                            "insert",
-                            "junja",
-                            "kana",
-                            "kanji",
-                            "launchapp1",
-                            "launchapp2",
-                            "launchmail",
-                            "launchmediaselect",
-                            "left",
-                            "modechange",
-                            "multiply",
-                            "nexttrack",
-                            "nonconvert",
-                            "num0",
-                            "num1",
-                            "num2",
-                            "num3",
-                            "num4",
-                            "num5",
-                            "num6",
-                            "num7",
-                            "num8",
-                            "num9",
-                            "numlock",
-                            "pagedown",
-                            "pageup",
-                            "pause",
-                            "pgdn",
-                            "pgup",
-                            "playpause",
-                            "prevtrack",
-                            "print",
-                            "printscreen",
-                            "prntscrn",
-                            "prtsc",
-                            "prtscr",
-                            "return",
-                            "right",
-                            "scrolllock",
-                            "select",
-                            "separator",
-                            "shift",
-                            "shiftleft",
-                            "shiftright",
-                            "sleep",
-                            "space",
-                            "stop",
-                            "subtract",
-                            "tab",
-                            "up",
-                            "volumedown",
-                            "volumemute",
-                            "volumeup",
-                            "win",
-                            "winleft",
-                            "winright",
-                            "yen",
-                            "command",
-                            "option",
-                            "optionleft",
-                            "optionright"
-                          ]
-                        }
-                      }
-                    },
-                    "required": [
-                      "keys"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "scroll"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "direction": {
-                        "type": "string",
-                        "enum": [
-                          "up",
-                          "down",
-                          "left",
-                          "right"
-                        ]
-                      },
-                      "amount": {
-                        "type": "integer"
-                      },
-                      "method": {
-                        "type": "string",
-                        "enum": [
-                          "keyboard",
-                          "mouse"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "direction"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "wait"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "timeout": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": [
-                      "timeout"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "click"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "x": {
-                        "type": "integer"
-                      },
-                      "y": {
-                        "type": "integer"
-                      },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "click",
-                          "right-click",
-                          "double-click",
-                          "hover",
-                          "drag-start",
-                          "drag-end"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "x",
-                      "y",
-                      "action"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "hover"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "x": {
-                        "type": "integer"
-                      },
-                      "y": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": [
-                      "x",
-                      "y"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "drag"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "x": {
-                        "type": "integer"
-                      },
-                      "y": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": [
-                      "x",
-                      "y"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "hover-text"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "text": {
-                        "type": "string"
-                      },
-                      "description": {
-                        "type": "string"
-                      },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "click",
-                          "right-click",
-                          "double-click",
-                          "hover",
-                          "drag-start",
-                          "drag-end"
-                        ]
-                      },
-                      "method": {
-                        "type": "string",
-                        "enum": [
-                          "ai",
-                          "turbo"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "text",
-                      "description",
-                      "action"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "hover-image"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "description": {
-                        "type": "string"
-                      },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "click",
-                          "right-click",
-                          "double-click",
-                          "hover",
-                          "drag-start",
-                          "drag-end"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "description",
-                      "action"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "match-image"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "path": {
-                        "type": "string"
-                      },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "click",
-                          "right-click",
-                          "double-click",
-                          "hover",
-                          "drag-start",
-                          "drag-end"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "path",
-                      "action"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "wait-for-image"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "description": {
-                        "type": "string"
-                      },
-                      "timeout": {
-                        "type": "integer"
-                      }
-                    },
-                    "required": [
-                      "description"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "wait-for-text"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "text": {
-                        "type": "string"
-                      },
-                      "timeout": {
-                        "type": "integer"
-                      },
-                      "method": {
-                        "type": "string",
-                        "enum": [
-                          "ai",
-                          "turbo"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "text"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "scroll-until-text"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "text": {
-                        "type": "string"
-                      },
-                      "direction": {
-                        "type": "string",
-                        "enum": [
-                          "up",
-                          "down",
-                          "left",
-                          "right"
-                        ]
-                      },
-                      "distance": {
-                        "type": "integer"
-                      },
-                      "method": {
-                        "type": "string",
-                        "enum": [
-                          "keyboard",
-                          "mouse"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "text",
-                      "direction"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "scroll-until-image"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "description": {
-                        "type": "string"
-                      },
-                      "path": {
-                        "type": "string"
-                      },
-                      "direction": {
-                        "type": "string",
-                        "enum": [
-                          "up",
-                          "down",
-                          "left",
-                          "right"
-                        ]
-                      },
-                      "distance": {
-                        "type": "integer"
-                      }
-                    },
-                    "anyOf": [
-                      {
-                        "required": [
-                          "description"
-                        ]
-                      },
-                      {
-                        "required": [
-                          "path"
-                        ]
-                      }
-                    ],
-                    "required": [
-                      "direction"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "focus-application"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "name": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "name"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "remember"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "description": {
-                        "type": "string"
-                      },
-                      "output": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "description",
-                      "output"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "assert"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "expect": {
-                        "type": "string"
-                      },
-                      "async": {
-                        "type": "boolean"
-                      }
-                    },
-                    "required": [
-                      "expect"
-                    ]
-                  }
-                },
-                {
-                  "if": {
-                    "properties": {
-                      "command": {
-                        "const": "exec"
-                      }
-                    }
-                  },
-                  "then": {
-                    "properties": {
-                      "lang": {
-                        "type": "string",
-                        "enum": [
-                          "js",
-                          "pwsh"
-                        ]
-                      },
-                      "code": {
-                        "type": "string"
-                      },
-                      "timeout": {
-                        "type": "number"
-                      },
-                      "silent": {
-                        "type": "boolean"
-                      },
-                      "output": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "lang",
-                      "code"
-                    ]
-                  }
-                }
-              ]
+              "$ref": "#/$defs/commandsAvailable/anyCommand"
             }
           }
         }
       }
     }
   },
-  "required": [
-    "steps"
-  ]
+  "$defs": {
+    "commandsAvailable": {
+      "typeCommand": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "type"
+          },
+          "text": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "delay": {
+            "type": "integer"
+          }
+        }
+      },
+      "press-keys": {
+        "type": "object",
+        "required": [
+          "keys"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "press-keys"
+          },
+          "keys": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "\\t",
+                "\n",
+                "\r",
+                " ",
+                "!",
+                "\"",
+                "#",
+                "$",
+                "%",
+                "&",
+                "'",
+                "(",
+                ")",
+                "*",
+                "+",
+                ",",
+                "-",
+                ".",
+                "/",
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                ":",
+                ";",
+                "<",
+                "=",
+                ">",
+                "?",
+                "@",
+                "[",
+                "\\",
+                "]",
+                "^",
+                "_",
+                "`",
+                "a",
+                "b",
+                "c",
+                "d",
+                "e",
+                "f",
+                "g",
+                "h",
+                "i",
+                "j",
+                "k",
+                "l",
+                "m",
+                "n",
+                "o",
+                "p",
+                "q",
+                "r",
+                "s",
+                "t",
+                "u",
+                "v",
+                "w",
+                "x",
+                "y",
+                "z",
+                "{",
+                "|",
+                "}",
+                "~",
+                "accept",
+                "add",
+                "alt",
+                "altleft",
+                "altright",
+                "apps",
+                "backspace",
+                "browserback",
+                "browserfavorites",
+                "browserforward",
+                "browserhome",
+                "browserrefresh",
+                "browsersearch",
+                "browserstop",
+                "capslock",
+                "clear",
+                "convert",
+                "ctrl",
+                "ctrlleft",
+                "ctrlright",
+                "decimal",
+                "del",
+                "delete",
+                "divide",
+                "down",
+                "end",
+                "enter",
+                "esc",
+                "escape",
+                "execute",
+                "f1",
+                "f10",
+                "f11",
+                "f12",
+                "f13",
+                "f14",
+                "f15",
+                "f16",
+                "f17",
+                "f18",
+                "f19",
+                "f2",
+                "f20",
+                "f21",
+                "f22",
+                "f23",
+                "f24",
+                "f3",
+                "f4",
+                "f5",
+                "f6",
+                "f7",
+                "f8",
+                "f9",
+                "final",
+                "fn",
+                "hanguel",
+                "hangul",
+                "hanja",
+                "help",
+                "home",
+                "insert",
+                "junja",
+                "kana",
+                "kanji",
+                "launchapp1",
+                "launchapp2",
+                "launchmail",
+                "launchmediaselect",
+                "left",
+                "modechange",
+                "multiply",
+                "nexttrack",
+                "nonconvert",
+                "num0",
+                "num1",
+                "num2",
+                "num3",
+                "num4",
+                "num5",
+                "num6",
+                "num7",
+                "num8",
+                "num9",
+                "numlock",
+                "pagedown",
+                "pageup",
+                "pause",
+                "pgdn",
+                "pgup",
+                "playpause",
+                "prevtrack",
+                "print",
+                "printscreen",
+                "prntscrn",
+                "prtsc",
+                "prtscr",
+                "return",
+                "right",
+                "scrolllock",
+                "select",
+                "separator",
+                "shift",
+                "shiftleft",
+                "shiftright",
+                "sleep",
+                "space",
+                "stop",
+                "subtract",
+                "tab",
+                "up",
+                "volumedown",
+                "volumemute",
+                "volumeup",
+                "win",
+                "winleft",
+                "winright",
+                "yen",
+                "command",
+                "option",
+                "optionleft",
+                "optionright"
+              ]
+            }
+          }
+        }
+      },
+      "scroll": {
+        "type": "object",
+        "required": [
+          "direction"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "scroll"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "left",
+              "right"
+            ]
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "keyboard",
+              "mouse"
+            ]
+          }
+        }
+      },
+      "wait": {
+        "type": "object",
+        "required": [
+          "timeout"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "wait"
+          },
+          "timeout": {
+            "type": "integer"
+          }
+        }
+      },
+      "click": {
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "action"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "click"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "right-click",
+              "double-click",
+              "hover",
+              "drag-start",
+              "drag-end"
+            ]
+          }
+        }
+      },
+      "hover": {
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "hover"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          }
+        }
+      },
+      "hover-text": {
+        "type": "object",
+        "required": [
+          "text",
+          "description",
+          "action"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "hover-text"
+          },
+          "text": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "right-click",
+              "double-click",
+              "hover",
+              "drag-start",
+              "drag-end"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "ai",
+              "turbo"
+            ]
+          }
+        }
+      },
+      "hover-image": {
+        "type": "object",
+        "required": [
+          "description",
+          "action"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "hover-image"
+          },
+          "description": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "right-click",
+              "double-click",
+              "hover",
+              "drag-start",
+              "drag-end"
+            ]
+          }
+        }
+      },
+      "match-image": {
+        "type": "object",
+        "required": [
+          "path",
+          "action"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "match-image"
+          },
+          "path": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "right-click",
+              "double-click",
+              "hover",
+              "drag-start",
+              "drag-end"
+            ]
+          }
+        }
+      },
+      "wait-for-image": {
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "wait-for-image"
+          },
+          "description": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "integer"
+          }
+        }
+      },
+      "wait-for-text": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "wait-for-text"
+          },
+          "text": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "integer"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "ai",
+              "turbo"
+            ]
+          }
+        }
+      },
+      "scroll-until-text": {
+        "type": "object",
+        "required": [
+          "text",
+          "direction"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "scroll-until-text"
+          },
+          "text": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "left",
+              "right"
+            ]
+          },
+          "distance": {
+            "type": "integer"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "keyboard",
+              "mouse"
+            ]
+          }
+        }
+      },
+      "scroll-until-image": {
+        "type": "object",
+        "required": [
+          "direction"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "scroll-until-image"
+          },
+          "description": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "left",
+              "right"
+            ]
+          },
+          "distance": {
+            "type": "integer"
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "description"
+            ]
+          },
+          {
+            "required": [
+              "path"
+            ]
+          }
+        ]
+      },
+      "focus-application": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "focus-application"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "remember": {
+        "type": "object",
+        "required": [
+          "description",
+          "output"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "remember"
+          },
+          "description": {
+            "type": "string"
+          },
+          "output": {
+            "type": "string"
+          }
+        }
+      },
+      "assert": {
+        "type": "object",
+        "required": [
+          "expect"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "assert"
+          },
+          "expect": {
+            "type": "string"
+          },
+          "async": {
+            "type": "boolean"
+          }
+        }
+      },
+      "exec": {
+        "type": "object",
+        "required": [
+          "lang",
+          "code"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "exec"
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "js",
+              "pwsh"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "number"
+          },
+          "silent": {
+            "type": "boolean"
+          },
+          "output": {
+            "type": "string"
+          }
+        }
+      },
+      "drag": {
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "drag"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          }
+        }
+      },
+      "if": {
+        "type": "object",
+        "required": [
+          "condition",
+          "then"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "if"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "then": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/commandsAvailable/anyCommand"
+            }
+          },
+          "else": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/commandsAvailable/anyCommand"
+            }
+          }
+        }
+      },
+      "run": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "const": "run"
+          },
+          "file": {
+            "type": "string"
+          }
+        }
+      },
+      "anyCommand": {
+        "type": "object",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "type",
+              "press-keys",
+              "scroll",
+              "wait",
+              "click",
+              "hover",
+              "drag",
+              "hover-text",
+              "hover-image",
+              "match-image",
+              "wait-for-image",
+              "wait-for-text",
+              "scroll-until-text",
+              "scroll-until-image",
+              "focus-application",
+              "remember",
+              "assert",
+              "exec",
+              "if",
+              "run"
+            ]
+          },
+          "commands": {
+            "type": "array",
+            "description": "An array of commands to execute in this step.",
+            "items": {
+              "$ref": "#/$defs/commandsAvailable/anyCommand"
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "type"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/typeCommand"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "press-keys"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/press-keys"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "scroll"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/scroll"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "wait"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/wait"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "click"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/click"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "hover"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/hover"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "hover-text"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/hover-text"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "hover-image"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/hover-image"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "match-image"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/match-image"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "wait-for-image"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/wait-for-image"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "wait-for-text"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/wait-for-text"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "scroll-until-text"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/scroll-until-text"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "scroll-until-image"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/scroll-until-image"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "focus-application"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/focus-application"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "remember"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/remember"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "assert"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/assert"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "exec"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/exec"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "drag"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/drag"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "if"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/if"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "command": {
+                  "const": "run"
+                }
+              }
+            },
+            "then": {
+              "$ref": "#/$defs/commandsAvailable/run"
+            }
+          }
+        ]
+      }
+    }
+  }
 }

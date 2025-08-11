@@ -1,7 +1,8 @@
 version: 5.7.7
 session: 682f60bf2856e2eb4066427f
 steps:
-  - commands:
+  - prompt: complete the login process
+    commands:
       - command: run
         file: snippets/login.yaml
   - prompt: click on the image of a shopping cart
