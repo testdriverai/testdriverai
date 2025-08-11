@@ -16,10 +16,10 @@ Variables in **TestDriver** allow you to dynamically store and reuse data during
 
 By leveraging variables in TestDriver, you can create dynamic, flexible, and reusable test scripts that adapt to changing conditions and data.
 
-#### Test file example:
+#### Example:
 
-```yaml
-version: 5.1.0
+```yaml random.yaml highlight={6, 11, 19, 20}
+version: 6.0.0
 steps:
   - prompt: Generate a random number
     commands:
@@ -45,7 +45,7 @@ steps:
 
 You can run TestDriver in any CI/CD pipeline. Here is an example using the CLI in a generic workflow (adapt for your platform, e.g., GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.):
 
-```yaml
+```yaml workflows/testdriver.yml lines focus={6-13}
 steps:
   - name: Check out repository
     # For GitHub Actions: uses: actions/checkout@v4
@@ -58,17 +58,27 @@ steps:
       TD_PASSWORD: ${{ secrets.TD_PASSWORD }}
       # Add any other required environment variables
     run: |
-      npx testdriverai@latest run --key "$TD_API_KEY" --prompt "1. Log in with username and password\n2. Verify the dashboard is displayed"
+      npx testdriverai@latest run testdriver/login.yaml
 ```
 
-> **Note:** This approach works with any CI/CD system (GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.). Just set the appropriate environment variables and use the `npx testdriverai@latest run ...` command in your pipeline.
+Now inside the `login.yaml` test file you can refer the variables
 
-#### Test file
-
-```yaml
-version: 4.2.18
+```yaml login.yaml lines highlight={21, 22, 27, 28}
+version: 6.0.0
 steps:
-  - prompt: Log in to the application
+  - prompt: Open the homepage
+    commands:
+      - command: hover-text
+        text: Login
+        description: Login button in the top-right corner
+        action: click
+
+  - prompt: Verify the login form is displayed
+    commands:
+      - command: assert
+        expect: The login form is displayed
+
+  - prompt: Enter credentials and submit
     commands:
       - command: hover-text
         text: Email
@@ -83,8 +93,8 @@ steps:
       - command: type
         text: ${TD_PASSWORD}
       - command: hover-text
-        text: Log In
-        description: Log In button
+        text: Submit
+        description: Submit button
         action: click
 ```
 
@@ -92,16 +102,16 @@ steps:
 
 #### Test file example:
 
-```yaml
-version: 5.1.0
+```yaml capture-text.yaml lines highlight={5, 6, 14, 15}
+version: 6.0.0
 steps:
   - prompt: Capture text from the screen
     commands:
-      - command: capture-text
-        description: Capture the welcome message
+      - command: remember
         output: welcomeMessage
+        description: Capture the welcome message
 
-  - prompt: Verify the captured text
+  - prompt: Verify the dashboard is displayed
     commands:
       - command: exec
         js: |
