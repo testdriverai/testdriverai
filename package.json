@@ -10,7 +10,7 @@
     "start": "node bin/testdriverai.js",
     "dev": "DEV=true node bin/testdriverai.js",
     "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
-    "docs": "cd docs && npx mint dev",
+    "docs": "cd docs && npm mint dev",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "docs-lint": "cd docs && vale **/*.mdx",
@@ -74,6 +74,7 @@
     "globals": "^15.9.0",
     "http-server": "^14.1.1",
     "junit-viewer": "^4.11.1",
+    "mint": "^4.2.67",
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3"
