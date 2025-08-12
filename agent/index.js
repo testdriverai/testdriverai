@@ -35,7 +35,7 @@ const { createSession } = require("./lib/session.js");
 const { createOutputs } = require("./lib/outputs.js");
 
 const isValidVersion = require("./lib/valid-version.js");
-const { events, createEmitter, setEmitter } = require("./events.js");
+const { events, createEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
 let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
 let debuggerStarted = false;
@@ -66,19 +66,25 @@ class TestDriverAgent extends EventEmitter2 {
     this.resultFile = flags.resultFile || null;
     this.newSandbox = flags.newSandbox || false;
     this.healMode = flags.healMode || flags.heal || false;
-    this.sandboxId = flags.sandboxId || null;
+    this.sandboxId = flags["sandbox-id"] || null;
+    this.sandboxAmi = flags["sandbox-ami"] || null;
+    this.sandboxInstance = flags["sandbox-instance"] || null;
     this.workingDir = flags.workingDir || process.cwd();
 
     // Resolve thisFile to absolute path with proper extension
     if (this.thisFile) {
-      this.thisFile = path.join(this.workingDir, this.thisFile);
-      if (!this.thisFile.endsWith(".yaml") && !this.thisFile.endsWith(".yml")) {
-        this.thisFile += ".yaml";
+      if (this.thisFile === ".") {
+        this.thisFile = path.join(this.workingDir, "testdriver.yaml");
+      } else {
+        this.thisFile = path.join(this.workingDir, this.thisFile);
+        if (
+          !this.thisFile.endsWith(".yaml") &&
+          !this.thisFile.endsWith(".yml")
+        ) {
+          this.thisFile += ".yaml";
+        }
       }
     }
-
-    // Set this emitter as the global current emitter for other modules to use
-    setEmitter(this.emitter);
 
     // Create parser instance with this agent's emitter
     this.parser = createParser(this.emitter);
@@ -95,11 +101,11 @@ class TestDriverAgent extends EventEmitter2 {
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
-    // Create sandbox instance with this agent's emitter
-    this.sandbox = createSandbox(this.emitter);
+    // Create sandbox instance with this agent's emitter and analytics
+    this.sandbox = createSandbox(this.emitter, this.analytics);
 
-    // Create system instance with sandbox and config
-    this.system = createSystem(this.sandbox, this.config);
+    // Create system instance with emitter, sandbox and config
+    this.system = createSystem(this.emitter, this.sandbox, this.config);
 
     // Create commands instance with this agent's emitter and system
     const commandsResult = createCommands(
@@ -111,6 +117,7 @@ class TestDriverAgent extends EventEmitter2 {
       () => this.sourceMapper.currentFilePath || this.thisFile,
     );
     this.commands = commandsResult.commands;
+    this.redraw = commandsResult.redraw;
 
     // Create commander instance with this agent's emitter and commands
     this.commander = createCommander(
@@ -133,6 +140,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.lastScreenshot = null; // the last screenshot taken by the agent
     this.readlineInterface = null; // the readline interface for interactive mode
     this.tasks = []; // list of prompts that the user has given us
+    this.hasRunPostrun = false; // whether the postrun lifecycle has been run. prevents infinite loops
 
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
@@ -149,10 +157,17 @@ class TestDriverAgent extends EventEmitter2 {
   }
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
-  async exit(failed = true, shouldSave = false, shouldRunLifecycle = false) {
+  async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
     this.emitter.emit(events.log.log, theme.dim("exiting..."), true);
 
-    shouldRunLifecycle = shouldRunLifecycle || this.cliArgs?.command == "run";
+    // Clean up redraw interval
+    if (this.redraw && this.redraw.cleanup) {
+      this.redraw.cleanup();
+    }
+
+    shouldRunPostrun =
+      !this.hasRunPostrun &&
+      (shouldRunPostrun || this.cliArgs?.command == "run");
 
     if (shouldSave) {
       await this.save();
@@ -160,7 +175,8 @@ class TestDriverAgent extends EventEmitter2 {
 
     this.analytics.track("exit", { failed });
 
-    if (shouldRunLifecycle) {
+    if (shouldRunPostrun) {
+      this.hasRunPostrun = true;
       await this.runLifecycle("postrun");
     }
 
@@ -189,7 +205,8 @@ class TestDriverAgent extends EventEmitter2 {
     }
 
     await this.summarize(error.message);
-    return await this.exit(true);
+    // Always run postrun lifecycle script, even for fatal errors
+    return await this.exit(true, false, true);
   }
 
   // creates a new "thread" in which the AI is given an error
@@ -633,8 +650,10 @@ class TestDriverAgent extends EventEmitter2 {
 
     if (unreplacedVars.length > 0) {
       this.emitter.emit(
-        events.error.fatal,
-        `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        events.log.warn,
+        theme.yellow(
+          `Unreplaced variables in YAML: ${unreplacedVars.join(", ")}`,
+        ),
       );
     }
 
@@ -769,7 +788,8 @@ commands:
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
-      await this.run(baseYaml, false, false, false);
+      await this.run(baseYaml, false, false);
+      await this.runLifecycle("postrun");
     }
 
     let image = await this.system.captureScreenBase64();
@@ -1083,12 +1103,22 @@ ${regression}
 
     await this.runLifecycle("prerun");
     await this.run(tmpobj.name, false, false);
+    await this.runLifecycle("postrun");
   }
 
   // this will load a regression test from a file location
   // it parses the markdown file and executes the codeblocks exactly as if they were
   // generated by the AI in a single prompt
   async run(file = this.thisFile, shouldSave = false, shouldExit = true) {
+    const fileStartTime = Date.now();
+
+    // Emit file start event (for individual file execution within a test)
+    this.emitter.emit(events.file.start, {
+      operation: "run",
+      filePath: file,
+      timestamp: fileStartTime,
+    });
+
     this.emitter.emit(events.log.log, theme.cyan(`running ${file}...`));
 
     let ymlObj = await this.loadYML(file);
@@ -1130,98 +1160,132 @@ ${regression}
       await this.exit(true, shouldSave, true);
     }
 
-    for (const step of ymlObj.steps) {
-      const stepIndex = ymlObj.steps.indexOf(step);
-      const stepStartTime = Date.now();
+    try {
+      for (const step of ymlObj.steps) {
+        const stepIndex = ymlObj.steps.indexOf(step);
+        const stepStartTime = Date.now();
 
-      // Update current step tracking
-      this.sourceMapper.setCurrentStep(stepIndex);
+        // Update current step tracking
+        this.sourceMapper.setCurrentStep(stepIndex);
 
-      // Get source position for current step
-      const sourcePosition = this.sourceMapper.getCurrentSourcePosition();
+        // Get source position for current step
+        const sourcePosition = this.sourceMapper.getCurrentSourcePosition();
 
-      // Emit step start event with source mapping
-      this.emitter.emit(events.step.start, {
-        stepIndex,
-        prompt: step.prompt,
-        commandCount: step.commands ? step.commands.length : 0,
-        timestamp: stepStartTime,
-        sourcePosition: sourcePosition,
-      });
-
-      this.emitter.emit(events.log.log, ``, null);
-      this.emitter.emit(
-        events.log.log,
-        theme.yellow(`> ${step.prompt || "no prompt"}`),
-        null,
-      );
-
-      try {
-        if (!step.commands && !step.prompt) {
-          this.emitter.emit(
-            events.log.log,
-            theme.red("No commands or prompt found"),
-          );
-
-          this.emitter.emit(events.step.error, {
-            stepIndex,
-            prompt: step.prompt,
-            error: "No commands or prompt found",
-            timestamp: Date.now(),
-          });
-
-          await this.exit(true, shouldSave, true);
-        } else if (!step.commands) {
-          this.emitter.emit(
-            events.log.log,
-            theme.yellow("No commands found, running exploratory"),
-          );
-          await this.exploratoryLoop(step.prompt, false, true, shouldSave);
-        } else {
-          await this.executeCommands(step.commands, 0, true, false, shouldSave);
-        }
-
-        const stepEndTime = Date.now();
-        const stepDuration = stepEndTime - stepStartTime;
-
-        // Emit step success event with source mapping
-        this.emitter.emit(events.step.success, {
+        // Emit step start event with source mapping
+        this.emitter.emit(events.step.start, {
           stepIndex,
           prompt: step.prompt,
           commandCount: step.commands ? step.commands.length : 0,
-          duration: stepDuration,
-          timestamp: stepEndTime,
+          timestamp: stepStartTime,
           sourcePosition: sourcePosition,
         });
 
-        if (shouldSave) {
-          await this.save({ silent: true });
+        this.emitter.emit(events.log.log, ``, null);
+        this.emitter.emit(
+          events.log.log,
+          theme.yellow(`> ${step.prompt || "no prompt"}`),
+          null,
+        );
+
+        try {
+          if (!step.commands && !step.prompt) {
+            this.emitter.emit(
+              events.log.log,
+              theme.red("No commands or prompt found"),
+            );
+
+            this.emitter.emit(events.step.error, {
+              stepIndex,
+              prompt: step.prompt,
+              error: "No commands or prompt found",
+              timestamp: Date.now(),
+            });
+
+            await this.exit(true, shouldSave, true);
+          } else if (!step.commands) {
+            this.emitter.emit(
+              events.log.log,
+              theme.yellow("No commands found, running exploratory"),
+            );
+            await this.exploratoryLoop(step.prompt, false, true, shouldSave);
+          } else {
+            await this.executeCommands(
+              step.commands,
+              0,
+              true,
+              false,
+              shouldSave,
+            );
+          }
+
+          const stepEndTime = Date.now();
+          const stepDuration = stepEndTime - stepStartTime;
+
+          // Emit step success event with source mapping
+          this.emitter.emit(events.step.success, {
+            stepIndex,
+            prompt: step.prompt,
+            commandCount: step.commands ? step.commands.length : 0,
+            duration: stepDuration,
+            timestamp: stepEndTime,
+            sourcePosition: sourcePosition,
+          });
+
+          if (shouldSave) {
+            await this.save({ silent: true });
+          }
+        } catch (error) {
+          const stepEndTime = Date.now();
+          const stepDuration = stepEndTime - stepStartTime;
+
+          // Emit step error event with source mapping
+          this.emitter.emit(events.step.error, {
+            stepIndex,
+            prompt: step.prompt,
+            error: error.message,
+            duration: stepDuration,
+            timestamp: stepEndTime,
+            sourcePosition: sourcePosition,
+          });
+
+          throw error; // Re-throw to maintain existing error handling
         }
-      } catch (error) {
-        const stepEndTime = Date.now();
-        const stepDuration = stepEndTime - stepStartTime;
-
-        // Emit step error event with source mapping
-        this.emitter.emit(events.step.error, {
-          stepIndex,
-          prompt: step.prompt,
-          error: error.message,
-          duration: stepDuration,
-          timestamp: stepEndTime,
-          sourcePosition: sourcePosition,
-        });
-
-        throw error; // Re-throw to maintain existing error handling
       }
-    }
 
-    if (shouldSave) {
-      await this.save({ filepath: file, silent: false });
-    }
+      const testEndTime = Date.now();
+      const fileDuration = testEndTime - fileStartTime;
 
-    if (shouldExit) {
-      await this.summarize();
-      await this.exit(false, shouldSave, true);
+      // Emit file success event
+      this.emitter.emit(events.file.stop, {
+        operation: "run",
+        filePath: file,
+        duration: fileDuration,
+        success: true,
+        timestamp: testEndTime,
+      });
+
+      if (shouldSave) {
+        await this.save({ filepath: file, silent: false });
+      }
+      if (shouldExit) {
+        await this.summarize();
+        await this.exit(false, shouldSave, true);
+      }
+    } catch (error) {
+      const testEndTime = Date.now();
+      const fileDuration = testEndTime - fileStartTime;
+
+      // Emit file error event
+      this.emitter.emit(events.file.error, {
+        operation: "run",
+        filePath: file,
+        error: error.message,
+        duration: fileDuration,
+        timestamp: testEndTime,
+      });
+
+      // Re-throw the error to maintain existing error handling
+      throw error;
     }
   }
 
@@ -1314,6 +1378,7 @@ ${regression}
       os.homedir(),
       ".testdriverai-last-sandbox",
     );
+
     if (fs.existsSync(lastSandboxFile)) {
       try {
         const stats = fs.statSync(lastSandboxFile);
@@ -1321,11 +1386,32 @@ ${regression}
         const now = new Date();
         const diffMinutes = (now - mtime) / (1000 * 60);
         if (diffMinutes < 30) {
-          const lastSandboxId = fs
-            .readFileSync(lastSandboxFile, "utf-8")
-            .trim();
-          if (lastSandboxId) {
-            return lastSandboxId;
+          const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+
+          // Parse sandbox info (supports both old format and new format)
+          let sandboxInfo;
+          try {
+            sandboxInfo = JSON.parse(fileContent);
+          } catch {
+            return fileContent || null;
+          }
+
+          // Check if AMI and instance type match current requirements
+          const currentAmi = this.sandboxAmi || null;
+          const currentInstance = this.sandboxInstance || null;
+          const storedAmi = sandboxInfo.ami || null;
+          const storedInstance = sandboxInfo.instanceType || null;
+
+          if (currentAmi === storedAmi && currentInstance === storedInstance) {
+            return sandboxInfo.instanceId;
+          } else {
+            this.emitter.emit(
+              events.log.log,
+              theme.dim(
+                "Recent sandbox found but AMI/instance type doesn't match current requirements",
+              ),
+            );
+            return null;
           }
         }
       } catch {
@@ -1341,7 +1427,29 @@ ${regression}
       ".testdriverai-last-sandbox",
     );
     try {
-      fs.writeFileSync(lastSandboxFile, instanceId, { encoding: "utf-8" });
+      const sandboxInfo = {
+        instanceId: instanceId,
+        ami: this.sandboxAmi || null,
+        instanceType: this.sandboxInstance || null,
+        timestamp: new Date().toISOString(),
+      };
+      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
+        encoding: "utf-8",
+      });
+    } catch {
+      // ignore errors
+    }
+  }
+
+  clearRecentSandboxId() {
+    const lastSandboxFile = path.join(
+      os.homedir(),
+      ".testdriverai-last-sandbox",
+    );
+    try {
+      if (fs.existsSync(lastSandboxFile)) {
+        fs.unlinkSync(lastSandboxFile);
+      }
     } catch {
       // ignore errors
     }
@@ -1351,36 +1459,56 @@ ${regression}
     if (this.instance) {
       this.emitter.emit(
         events.log.log,
-        theme.dim("Sandbox instance already exists, skipping buildEnv."),
+        theme.dim("- sandbox instance already exists, skipping launch."),
       );
       return;
     }
 
-    const { headless = false, heal, reconnect } = options;
+    let { headless = false, heal, new: createNew = false } = options;
+
+    // If CI environment variable is true, always create a new sandbox
+    if (this.config.CI) {
+      createNew = true;
+      this.emitter.emit(
+        events.log.log,
+        theme.dim("CI environment detected, will create a new sandbox"),
+      );
+    }
 
     if (heal) this.healMode = heal;
 
-    // order is important!
-    await this.connectToSandboxService();
-
-    const recentId = this.getRecentSandboxId();
-
-    if (reconnect) {
-      if (recentId) {
+    // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
+    if (createNew) {
+      this.clearRecentSandboxId();
+      if (!this.config.CI) {
         this.emitter.emit(
           events.log.log,
-          theme.dim(`- using recent sandbox: ${recentId}`),
-        );
-        this.sandboxId = recentId;
-      } else {
-        this.emitter.emit(
-          events.log.warn,
-          theme.yellow(`No recent sandbox found, creating a new one.`),
+          theme.dim("-- `new` flag detected, will create a new sandbox"),
         );
       }
     }
 
-    if (this.sandboxId) {
+    // order is important!
+    await this.connectToSandboxService();
+
+    const recentId = createNew ? null : this.getRecentSandboxId();
+
+    // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
+    if (!createNew && recentId) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`- using recent sandbox: ${recentId}`),
+      );
+      this.sandboxId = recentId;
+    } else if (!createNew) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`- no recent sandbox found, creating a new one.`),
+      );
+    }
+
+    // Only attempt to connect to existing sandbox if not in CI mode and not creating new
+    if (this.sandboxId && !this.config.CI && !createNew) {
       // Attempt to connect to known instance
       this.emitter.emit(
         events.log.log,
@@ -1390,7 +1518,7 @@ ${regression}
       try {
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
-          options.persist,
+          true, // always persist by default
         );
 
         this.instance = instance;
@@ -1425,7 +1553,7 @@ ${regression}
     this.saveLastSandboxId(newSandbox.sandbox.instanceId);
     let instance = await this.connectToSandboxDirect(
       newSandbox.sandbox.instanceId,
-      options.persist,
+      true, // always persist by default
     );
     this.instance = instance;
     await this.renderSandbox(instance, headless);
@@ -1538,7 +1666,11 @@ ${regression}
   async renderSandbox(instance, headless = false) {
     if (!headless) {
       let url =
-        "http://" + instance.ip + ":" + instance.vncPort + "/vnc_lite.html";
+        "http://" +
+        instance.ip +
+        ":" +
+        instance.vncPort +
+        "/vnc_lite.html?token=V3b8wG9";
 
       let data = {
         resolution: this.config.TD_RESOLUTION,
@@ -1572,10 +1704,21 @@ ${regression}
   }
 
   async createNewSandbox() {
-    let instance = await this.sandbox.send({
+    const sandboxConfig = {
       type: "create",
       resolution: this.config.TD_RESOLUTION,
-    });
+      ci: this.config.CI,
+    };
+
+    // Add AMI and instance type if specified
+    if (this.sandboxAmi) {
+      sandboxConfig.ami = this.sandboxAmi;
+    }
+    if (this.sandboxInstance) {
+      sandboxConfig.instanceType = this.sandboxInstance;
+    }
+
+    let instance = await this.sandbox.send(sandboxConfig);
     return instance;
   }
 
@@ -1661,12 +1804,10 @@ ${regression}
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
-
     // Ensure we have an absolute path
     if (currentFilePath && !path.isAbsolute(currentFilePath)) {
       currentFilePath = path.resolve(this.workingDir, currentFilePath);
     }
-
     let lifecycleFile = null;
 
     // First, check if there's a local lifecycle directory in the same directory as the current file
@@ -1677,7 +1818,6 @@ ${regression}
         localLifecycleDir,
         `${lifecycleName}.yaml`,
       );
-
       // If there's a local lifecycle directory, only look there (don't fall back to global)
       if (
         fs.existsSync(localLifecycleDir) &&
@@ -1700,9 +1840,8 @@ ${regression}
         }
       }
     }
-
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false, false);
+      await this.run(lifecycleFile, false, false);
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {

@@ -21,7 +21,7 @@ const createConfig = (environment = {}) => {
   // Start with defaults
   const config = {
     TD_ANALYTICS: true,
-    TD_API_ROOT: "https://testdriverai-v6-c96fc597be11.herokuapp.com",
+    TD_API_ROOT: "https://v6.testdriver.ai",
     TD_API_KEY: null,
     TD_PROFILE: false,
     TD_RESOLUTION: [1366, 768],
@@ -40,6 +40,11 @@ const createConfig = (environment = {}) => {
     if (key.startsWith("TD_")) {
       config[key] = parseValue(environment[key]);
     }
+  }
+
+  // Add support for CI environment variable
+  if (environment.CI) {
+    config.CI = parseValue(environment.CI);
   }
 
   return config;

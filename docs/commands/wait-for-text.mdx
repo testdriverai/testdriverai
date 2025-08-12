@@ -6,16 +6,19 @@ icon: "clock-nine"
 ---
 
 ## Description
+
 The `wait-for-text` command waits until the specified text is detected on the screen. This is useful for ensuring that textual elements are present before proceeding with the next steps in a test.
 
 ## Arguments
-| Argument  | Type     | Description                                                                 |
-|-----------|----------|-----------------------------------------------------------------------------|
-| `text`    | `string` | The text to find on the screen.                                             |
+
+| Argument  | Type     | Description                                                                                |
+| --------- | -------- | ------------------------------------------------------------------------------------------ |
+| `text`    | `string` | The text to find on the screen.                                                            |
 | `timeout` | `number` | (Optional) The duration in milliseconds to wait for the text to appear. Default is `5000`. |
-| `method`  | `enum`   | (Optional) The matching algorithm to use. Possible values are `ai` (default) and `turbo`. |
+| `method`  | `enum`   | (Optional) The matching algorithm to use. Possible values are `ai` (default) and `turbo`.  |
 
 ## Example usage
+
 ```yaml
 command: wait-for-text
 text: Copyright 2024
@@ -23,16 +26,20 @@ timeout: 5000
 ```
 
 ## Protips
+
 - Use unique and specific text to improve detection accuracy.
 - Choose the appropriate `method` for your use case:
-  - `ai`: More robust for complex or ambiguous text matching (default).
-  - `turbo`: Faster and more efficient for simpler scenarios.
+  - `ai`: More robust for complex or ambiguous text matching (default) using [Set-of-Mark](https://arxiv.org/abs/2310.11441).
+  - `levenshtein`: Compare string similarity using [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance).
+  - `turbo`: Ideal for simpler scenarios, combining `ai` & `levenshtein`
 - Adjust the `timeout` value based on the expected load time of the text to avoid unnecessary delays.
 
 ## Gotchas
+
 - If the text doesn't appear within the specified `timeout`, the command will fail.
 - Ensure the text matches exactly, as variations in font size, style, or screen resolution may affect detection accuracy.
 
 ## Notes
+
 - The `wait-for-text` command is ideal for synchronizing tests with textual elements that may take time to load.
 - This command supports flexible matching algorithms to accommodate different scenarios.

@@ -3,9 +3,9 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const Jimp = require("jimp");
-const { getEmitter, events } = require("../events.js");
+const { events } = require("../events.js");
 
-const createSystem = (sandbox, config) => {
+const createSystem = (emitter, sandbox, config) => {
   const screenshot = async (options) => {
     let { base64 } = await sandbox.send({ type: "system.screenshot" });
 
@@ -35,7 +35,7 @@ const createSystem = (sandbox, config) => {
   const captureAndResize = async (scale = 1, silent = false, mouse = false) => {
     try {
       if (!silent) {
-        getEmitter().emit(events.screenCapture.start, {
+        emitter.emit(events.screenCapture.start, {
           scale,
           silent,
           display: primaryDisplay,
@@ -70,7 +70,7 @@ const createSystem = (sandbox, config) => {
 
       await image.writeAsync(step2);
 
-      getEmitter().emit(events.screenCapture.end, {
+      emitter.emit(events.screenCapture.end, {
         scale,
         silent,
         display: primaryDisplay,
@@ -78,7 +78,7 @@ const createSystem = (sandbox, config) => {
 
       return step2;
     } catch (error) {
-      getEmitter().emit(events.screenCapture.error, {
+      emitter.emit(events.screenCapture.error, {
         error,
         scale,
         silent,

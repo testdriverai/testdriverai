@@ -1,0 +1,218 @@
+---
+title: "JUnit XML Reports"
+sidebarTitle: "JUnit"
+description: "Generate JUnit XML test reports for seamless integration with CI/CD pipelines and test reporting tools."
+icon: "file-xml"
+---
+
+TestDriver supports generating **JUnit XML reports** that are compatible with most CI/CD systems, test reporting tools, and IDEs. This feature enables you to integrate TestDriver tests into your existing test infrastructure and get detailed test results in a standardized format.
+
+---
+
+## Overview
+
+JUnit XML reports provide structured test results that include:
+
+- **Test Suite Information**: Organized by folder structure from your `testdriver` directory
+- **Test Case Details**: Individual test files with execution status
+- **Step-by-Step Results**: Each step in your test with pass/fail status
+- **System Output**: Complete logs from test execution (ANSI codes stripped)
+- **Error Information**: Detailed failure messages and stack traces
+- **Timing Data**: Execution duration for tests and individual steps
+
+---
+
+## Basic Usage
+
+Enable JUnit reporting by adding the `--junit` flag to your TestDriver command:
+
+```bash
+npx testdriverai@latest run path/to/test.yaml --junit=test-results.xml
+```
+
+This will:
+
+1. Execute your TestDriver test normally
+2. Generate a JUnit XML report at the specified file path
+3. Include all test execution details in the report
+
+---
+
+## Command Line Options
+
+| Flag             | Description                                 | Example                            |
+| ---------------- | ------------------------------------------- | ---------------------------------- |
+| `--junit=<path>` | Generate JUnit XML report to specified file | `--junit=reports/test-results.xml` |
+
+### Examples
+
+**Basic usage:**
+
+```bash
+npx testdriverai@latest run testdriver/login.yaml --junit=junit-report.xml
+```
+
+---
+
+## Report Structure
+
+### Test Suite Hierarchy
+
+JUnit reports organize your tests using the following structure:
+
+- **Test Suite**: Named after the folder path from your `testdriver` directory
+- **Test Case**: Individual test files (`.yaml` files)
+- **Properties**: Each step in your test with its status and prompt
+
+### Example Report Structure
+
+For a test file at `testdriver/features/login.yaml`:
+
+```xml
+<testsuites tests="1" failures="0" errors="0" skipped="0">
+  <testsuite name="testdriver/features" tests="1" failures="0" errors="0" skipped="0">
+    <testcase classname="testdriver/features" name="login.yaml" time="12.543">
+      <properties>
+        <property name="step1[passed]" value="Navigate to login page"/>
+        <property name="step2[passed]" value="Enter username and password"/>
+        <property name="step3[passed]" value="Click login button"/>
+        <property name="step4[passed]" value="Verify dashboard appears"/>
+      </properties>
+      <system-out><![CDATA[
+        Complete test execution logs...
+      ]]></system-out>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+---
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+name: TestDriver Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run TestDriver Tests
+        run: npx testdriverai@latest run testdriver/test.yaml --headless --junit=test-results.xml
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: TestDriver Tests
+          path: test-results.xml
+          reporter: java-junit
+```
+
+### Jenkins
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+        stage('Test') {
+            steps {
+                script {
+                    sh 'npx testdriverai@latest run testdriver/test.yaml --headless --junit=junit-results.xml'
+                }
+            }
+            post {
+                always {
+                    junit 'junit-results.xml'
+                }
+            }
+        }
+    }
+}
+```
+
+### GitLab CI
+
+```yaml
+test:
+  script:
+    - npx testdriverai@latest run testdriver/test.yaml --headless --junit=test-results.xml
+  artifacts:
+    when: always
+    reports:
+      junit: test-results.xml
+```
+
+---
+
+## Test Result Details
+
+### Successful Tests
+
+For passing tests, the report includes:
+
+- Test execution time
+- All step prompts with `[passed]` status
+- Complete system output logs
+- Command execution details
+
+### Failed Tests
+
+For failing tests, the report includes:
+
+- Detailed failure messages
+- Failed assertion information
+- Failed step prompts with `[failed]` status
+- Error logs in `<system-err>` section
+- Exit code information
+
+### Example Failure Report
+
+```xml
+<testcase classname="testdriver/features" name="login.yaml" time="8.234">
+  <failure message="Failed assertions: user should see welcome message"/>
+  <properties>
+    <property name="step1[passed]" value="Navigate to login page"/>
+    <property name="step2[failed]" value="Verify welcome message appears"/>
+  </properties>
+  <system-err><![CDATA[
+    Assertion failed: Expected welcome message not found
+  ]]></system-err>
+</testcase>
+```
+
+---
+
+## Integration with Test Viewers
+
+### JUnit Viewer
+
+Generate HTML reports from your XML:
+
+```bash
+# Install junit-viewer
+npm install -g junit-viewer
+
+# Generate HTML report
+junit-viewer --results=test-results.xml --save=report.html
+
+# Serve the report
+npx http-server . -p 8080 -o report.html
+```
+
+### IDE Integration
+
+Most IDEs support JUnit XML reports:
+
+- **VS Code**: Use test result extensions
+- **IntelliJ IDEA**: Import test results directly
+- **Eclipse**: Built-in JUnit viewer support

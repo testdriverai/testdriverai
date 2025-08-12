@@ -15,6 +15,7 @@ Parallel testing allows you to run multiple tests simultaneously, significantly 
 2. **Scalability**: Easily scale your testing efforts as your test suite grows.
 3. **Dynamic Distribution**: Automatically distribute tests across jobs using GitHub's matrix strategy.
 4. **Cost Efficiency**: Optimize resource usage by running tests in parallel.
+5. **Reliability**: Avoid failures from going beyond your [plan's max instances](https://testdriver.ai/pricing).
 
 ---
 
@@ -66,6 +67,8 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
       fail-fast: false
+      max-parallel: 8
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -98,30 +101,31 @@ jobs:
 
 1. **`gather-test-files` Job**:
 
-- Collects all test files in the `testdriver/acceptance/` directory.
-- Uses `basename` to get just the filenames without the full path.
-- Outputs the list of test files as a JSON array for the matrix strategy.
+   - Collects all test files in the `testdriver/acceptance/` directory.
+   - Uses `basename` to get just the filenames without the full path.
+   - Outputs the list of test files as a JSON array for the matrix strategy.
 
 2. **`run-tests` Job**:
 
-- Uses the matrix strategy to dynamically create a job for each test file.
-- Sets up Node.js and installs dependencies for TestDriver CLI.
-- Runs each test file in parallel using `npx testdriverai@latest` with the `--headless` flag.
+   - Uses the matrix strategy to dynamically create a job for each test file.
+   - Sets up Node.js and installs dependencies for TestDriver CLI.
+   - Runs each test file in parallel using `npx testdriverai@latest` with the `--headless` flag.
+   - The `max-parallel` setting limits the number of tests that can run in parallel to `8` (the max instances for the [Medium Team Plan](https://testdriver.ai/pricing)).
 
 3. **Matrix Strategy**:
 
-- The `matrix.test` variable represents each test filename.
-- Each job runs a single test file from the `testdriver/acceptance/` directory.
+   - The `matrix.test` variable represents each test filename.
+   - Each job runs a single test file from the `testdriver/acceptance/` directory.
 
 4. **Environment Variables**:
 
-- `TD_API_KEY`: Your TestDriver API key for authentication.
-- `TD_WEBSITE`: The target website URL for testing.
-- `TD_THIS_FILE`: The current test file being executed.
+   - `TD_API_KEY`: Your TestDriver API key for authentication.
+   - `TD_WEBSITE`: The target website URL for testing.
+   - `TD_THIS_FILE`: The current test file being executed.
 
 5. **Fail-Fast**:
 
-- Set to `false` to ensure all tests run even if one fails.
+   - Set to `false` to ensure all tests run even if one fails.
 
 ---
 

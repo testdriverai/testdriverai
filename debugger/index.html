@@ -89,9 +89,10 @@
         border-radius: 5px;
       }
 
-      .container {
+      .effects {
         inset: 0;
         position: absolute;
+        z-index: 20;
       }
 
       #mouse {
@@ -177,6 +178,7 @@
         left: 0px;
         width: 100%;
         height: 100%;
+        z-index: 1;
       }
 
       /* Loading screen styles */
@@ -315,11 +317,10 @@
     </div>
 
     <div class="overlay" id="overlay">
-      <div class="container" id="container">
+      <div class="effects" id="effects">
         <div class="mouse" id="mouse"></div>
         <div class="screenshot" id="screenshot"></div>
         <div class="status" id="status"></div>
-        <iframe id="vm-iframe" src=""></iframe>
         <div class="interaction-overlay" id="interaction-overlay">
           <svg class="lock-icon" viewBox="0 0 24 24">
             <path
@@ -329,6 +330,7 @@
           <div class="message">Click to interact with VM</div>
         </div>
       </div>
+      <iframe id="vm-iframe" src=""></iframe>
     </div>
 
     <script>
@@ -464,7 +466,7 @@
         },
       };
 
-      const container = document.getElementById("container");
+      const effects = document.getElementById("effects");
       const mouse = document.getElementById("mouse");
       const screenshotElement = document.getElementById("screenshot");
       const interactionOverlay = document.getElementById("interaction-overlay");
@@ -488,11 +490,6 @@
         if (interactionTimeout) {
           clearTimeout(interactionTimeout);
         }
-
-        // Set timeout to show overlay again after 30 seconds
-        interactionTimeout = setTimeout(() => {
-          isInteractionEnabled = false;
-        }, 30000);
       };
 
       // Event listeners for interaction overlay
@@ -519,7 +516,7 @@
           boxElement.style.top = toCss(box.y);
           boxElement.style.width = toCss(box.width);
           boxElement.style.height = toCss(box.height);
-          container.appendChild(boxElement);
+          effects.appendChild(boxElement);
         });
       };
       // Screen capture event handlers
@@ -672,6 +669,12 @@
 
       // Handle window resize to recalculate scale (throttled)
       window.addEventListener("resize", throttle(resizeOverlay, 100));
+
+      // Handle window blur/focus for screen locking
+      window.addEventListener("blur", () => {
+        showInteractionOverlay();
+        isInteractionEnabled = false;
+      });
     </script>
   </body>
 </html>

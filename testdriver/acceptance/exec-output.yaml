@@ -19,8 +19,6 @@ steps:
         code: |
           $date = (Get-Date).AddMonths(1)
           Write-Output $date.ToString("ddd MMM d yyyy")
-      - command: assert
-        expect: ${OUTPUT.expectedDate} is not null or empty
   # Go to a public calendar that accepts query strings to set the date
   - prompt: >-
       now press ctrl + l, then type

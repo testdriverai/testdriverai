@@ -1,5 +1,6 @@
 const path = require("path");
 const { Args, Flags } = require("@oclif/core");
+const { events } = require("./events.js");
 
 /**
  * Creates command definitions using oclif format as the single source of truth
@@ -43,27 +44,65 @@ function createCommandDefinitions(agent) {
           description: "Run in headless mode (no GUI)",
           default: false,
         }),
-        persist: Flags.boolean({
-          description: "Prevent sandbox from being deleted after use",
+        new: Flags.boolean({
+          description:
+            "Create a new sandbox instead of reconnecting to an existing one",
           default: false,
         }),
-        reconnect: Flags.boolean({
-          description:
-            "Connect to the last sandbox instance (must have been created with --persist)",
-          default: false,
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
+        }),
+        junit: Flags.string({
+          description: "Generate JUnit XML test report to specified file",
+          default: false,
         }),
       },
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file
         const file = normalizeFilePath(args.file);
+        const testStartTime = Date.now();
 
-        await agent.runLifecycle("prerun");
-        // When run() is called through run.js CLI command, shouldExit should be true
-        const shouldExit = agent.cliArgs?.command === "run";
-        await agent.run(file, flags.write, shouldExit, true);
+        // Emit test start event for the entire test execution
+        agent.emitter.emit(events.test.start, {
+          filePath: file,
+          timestamp: testStartTime,
+        });
+
+        try {
+          await agent.runLifecycle("prerun");
+          // When run() is called through run.js CLI command, shouldExit should be true
+          const shouldExit = agent.cliArgs?.command === "run";
+          await agent.run(file, flags.write, shouldExit);
+
+          const testEndTime = Date.now();
+          const testDuration = testEndTime - testStartTime;
+
+          // Emit test success event for the entire test execution
+          agent.emitter.emit(events.test.success, {
+            filePath: file,
+            duration: testDuration,
+            timestamp: testEndTime,
+          });
+        } catch (error) {
+          const testEndTime = Date.now();
+          const testDuration = testEndTime - testStartTime;
+
+          // Emit test error event for the entire test execution
+          agent.emitter.emit(events.test.error, {
+            filePath: file,
+            error: error.message,
+            duration: testDuration,
+            timestamp: testEndTime,
+          });
+
+          throw error; // Re-throw to maintain existing error handling
+        }
       },
     },
 
@@ -85,14 +124,16 @@ function createCommandDefinitions(agent) {
           description: "Run in headless mode",
           default: false,
         }),
-        persist: Flags.boolean({
-          description: "Prevent sandbox from being deleted after use",
+        new: Flags.boolean({
+          description:
+            "Create a new sandbox instead of reconnecting to an existing one",
           default: false,
         }),
-        reconnect: Flags.boolean({
-          description:
-            "Connect to the last sandbox instance (must have been created with --persist)",
-          default: false,
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
