@@ -62,7 +62,6 @@
           {
             "group": "Getting Started",
             "pages": [
-              "/getting-started/setup",
               "/getting-started/vscode",
               "/getting-started/running",
               "/getting-started/ci",
@@ -79,7 +78,8 @@
               "/guide/authentication",
               "/guide/lifecycle",
               "/guide/code",
-              "/guide/environment-variables"
+              "/guide/environment-variables",
+              "/guide/protips"
             ]
           },
           {
