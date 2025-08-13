@@ -7,38 +7,39 @@ icon: "clock"
 
 # Waiting in TestDriver: Ensuring stability and reducing flakiness
 
-Waiting is a critical feature in TestDriver that ensures tests are stable and reliable, even in dynamic or slow-loading environments. 
+Waiting is a critical feature in TestDriver that ensures tests are stable and reliable, even in dynamic or slow-loading environments.
 
 - Automatically adjusts to varying load times, reducing the need for hardcoded delays.
 - Ensures that tests wait for dynamic elements to appear, reducing false negatives caused by incomplete rendering.
 - By waiting for the screen and network to stabilize, `redraw` minimizes the risk of interacting with incomplete or incorrect elements.
 
-
 ## Summary of waiting features
 
-| **Feature**          | **Description**                                                                 |
-|-----------------------|---------------------------------------------------------------------------------|
-| **`redraw`(automatic)** | TestDriver automatically waits for UI changes and network activity to resolve. |
-| **[`wait-for-text`](/commands/wait-for-text)**   | Waits for specific text to appear on the screen.                                |
-| **[`wait-for-image`](/commands/wait-for-image)**  | Waits for a specific image or visual element to appear on the screen.           |
+| **Feature**                                      | **Description**                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| **`redraw`(automatic)**                          | TestDriver automatically waits for UI changes and network activity to resolve. |
+| **[`wait-for-text`](/commands/wait-for-text)**   | Waits for specific text to appear on the screen.                               |
+| **[`wait-for-image`](/commands/wait-for-image)** | Waits for a specific image or visual element to appear on the screen.          |
 
 ## Key waiting features in TestDriver
 
 1. **Automatic Waiting with `redraw`**:
-  - TestDriver automatically waits for the machine before moving to the next step.
-  - This includes waiting for:
-    - UI changes to complete.
-    - Network activity to stabilize (for example, API calls).
-  - Reduces the need for manual waits, making tests faster and less prone to flakiness.
+
+- TestDriver automatically waits for the machine before moving to the next step.
+- This includes waiting for:
+  - UI changes to complete.
+  - Network activity to stabilize (for example, API calls).
+- Reduces the need for manual waits, making tests faster and less prone to flakiness.
 
 2. **[`wait-for-text`](/commands/wait-for-text) Command**:
-  - Waits for specific text to appear on the screen.
-  - Useful for validating dynamic content or ensuring that a page has fully loaded before proceeding.
+
+- Waits for specific text to appear on the screen.
+- Useful for validating dynamic content or ensuring that a page has fully loaded before proceeding.
 
 3. **[`wait-for-image`](/commands/wait-for-image) Command**:
-  - Waits for a specific image or visual element to appear on the screen.
-  - Ideal for verifying the presence of icons, logos, or other graphical elements.
 
+- Waits for a specific image or visual element to appear on the screen.
+- Ideal for verifying the presence of icons, logos, or other graphical elements.
 
 ## Commands for explicit waiting
 
@@ -91,31 +92,39 @@ In this example, the test waits up to 8 seconds for the company logo to appear i
 TestDriver's **`redraw` function** is a built-in mechanism that automatically waits for the screen to stabilize before proceeding to the next step. This includes:
 
 1. **UI Changes**:
-  - Waits for animations, transitions, or DOM updates to complete.
-  - Ensures that the screen is fully rendered before interacting with elements.
+
+- Waits for animations, transitions, or DOM updates to complete.
+- Ensures that the screen is fully rendered before interacting with elements.
 
 2. **Network Stabilization**:
-  - Waits for network activity (for example, API calls, AJAX requests) to finish.
-  - Ensures that dynamic content is fully loaded before proceeding.
+
+- Waits for network activity (for example, API calls, AJAX requests) to finish.
+- Ensures that dynamic content is fully loaded before proceeding.
 
 3. **Screen Stabilization**:
-  - Continuously monitors the screen for changes and only moves forward when the screen is stable.
+
+- Continuously monitors the screen for changes and only moves forward when the screen is stable.
 
 ---
 
 ## Best practices for waiting
 
 2. **Leverage Automatic Waiting**:
-  - Rely on TestDriver's `redraw` function to handle most waiting scenarios automatically.
+
+- Rely on TestDriver's `redraw` function to handle most waiting scenarios automatically.
 
 1. **Use Explicit Waiting for Dynamic Elements**:
-  - Use [`wait-for-text`](/commands/wait-for-text) or [`wait-for-image`](/commands/wait-for-image) for elements that take time to load.
+
+- Use [`wait-for-text`](/commands/wait-for-text) or [`wait-for-image`](/commands/wait-for-image) for elements that take time to load.
 
 3. **Avoid Hardcoded Delays**:
-  - Replace hardcoded `sleep` or [`wait`](/commands/wait) commands with dynamic waiting commands to improve test reliability.
+
+- Replace hardcoded `sleep` or [`wait`](/commands/wait) commands with dynamic waiting commands to improve test reliability.
 
 4. **Set Appropriate Timeouts**:
-  - Use reasonable timeouts for explicit waiting commands to balance reliability and test execution time.
+
+- Use reasonable timeouts for explicit waiting commands to balance reliability and test execution time.
 
 5. **Test Incrementally**:
-  - Add waiting commands step-by-step to ensure each part of the workflow is stable.
+
+- Add waiting commands step-by-step to ensure each part of the workflow is stable.
