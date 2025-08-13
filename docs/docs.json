@@ -62,7 +62,6 @@
           {
             "group": "Getting Started",
             "pages": [
-              "/getting-started/setup",
               "/getting-started/vscode",
               "/getting-started/running",
               "/getting-started/ci",
@@ -79,7 +78,8 @@
               "/guide/authentication",
               "/guide/lifecycle",
               "/guide/code",
-              "/guide/environment-variables"
+              "/guide/environment-variables",
+              "/guide/protips"
             ]
           },
           {
@@ -141,11 +141,11 @@
           },
           {
             "group": "Exporting",
-            "pages": ["/exporting/playwright"]
+            "pages": ["/exporting/playwright", "exporting/junit"]
           },
           {
-            "group": "Bug Reporting",
-            "pages": ["/bugs/jira"]
+            "group": "Test Reporting",
+            "pages": ["exporting/junit", "/bugs/jira"]
           }
         ]
       },

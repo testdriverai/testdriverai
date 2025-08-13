@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "6.0.11",
+  "version": "6.0.15",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -16,7 +16,10 @@
     "docs-lint": "cd docs && vale **/*.mdx",
     "docs-upload": "node upload-docs-to-openai.js",
     "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'",
-    "test-assert": "node index.js run --path=testdriver/acceptance/assert.yaml"
+    "test-assert": "node index.js run --path=testdriver/acceptance/assert.yaml",
+    "generate-report": "junit-viewer --results=out.xml --save=report.html",
+    "serve-report": "npx http-server . -p 8080 -o report.html",
+    "report": "npm run generate-report && npm run serve-report"
   },
   "author": "",
   "license": "ISC",
@@ -29,6 +32,7 @@
     "@oclif/plugin-warn-if-update-available": "^3.1.43",
     "@stoplight/yaml-ast-parser": "^0.0.50",
     "ajv": "^8.17.1",
+    "ansi-to-html": "^0.7.2",
     "arktype": "^2.1.19",
     "axios": "^1.7.7",
     "chalk": "^4.1.2",
@@ -38,7 +42,7 @@
     "eventemitter2": "^6.4.9",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
-    "listr2": "^9.0.1",
+    "junit-report-builder": "^5.1.1",
     "markdown-parser": "0.0.8",
     "marked": "^12.0.1",
     "marked-terminal": "^7.0.0",
@@ -50,6 +54,7 @@
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",
     "semver": "^7.6.2",
+    "strip-ansi": "^6.0.1",
     "tmp": "^0.2.3",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
@@ -68,6 +73,8 @@
     "esbuild-plugin-fileloc": "^0.0.6",
     "eslint": "^9.10.0",
     "globals": "^15.9.0",
+    "http-server": "^14.1.1",
+    "junit-viewer": "^4.11.1",
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3"
