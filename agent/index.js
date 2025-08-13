@@ -1503,13 +1503,13 @@ ${regression}
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (!createNew && recentId) {
       this.emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.dim(`- using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
     } else if (!createNew) {
       this.emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.dim(`- no recent sandbox found, creating a new one.`),
       );
     }
