@@ -33,7 +33,6 @@ const events = {
   vm: {
     show: "vm:show",
   },
-  narration: "narration",
   status: "status",
   log: {
     markdown: {
@@ -45,6 +44,7 @@ const events = {
     log: "log:log",
     warn: "log:warn",
     debug: "log:debug",
+    narration: "log:narration",
   },
   command: {
     start: "command:start",

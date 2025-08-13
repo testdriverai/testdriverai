@@ -80,20 +80,20 @@ commands:
       // this will actually interpret the command and execute it
       switch (object.command) {
         case "type":
-          emitter.emit(events.narration, `typing ${object.text}`);
+          emitter.emit(events.log.narration, `typing ${object.text}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands.type(object.text, object.delay);
           break;
         case "press-keys":
           emitter.emit(
-            events.narration,
+            events.log.narration,
             `pressing keys ${object.keys.join(",")}`,
           );
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["press-keys"](object.keys);
           break;
         case "scroll":
-          emitter.emit(events.narration, `scrolling ${object.direction}`);
+          emitter.emit(events.log.narration, `scrolling ${object.direction}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands.scroll(
             object.direction,
@@ -102,17 +102,20 @@ commands:
           );
           break;
         case "wait":
-          emitter.emit(events.narration, `waiting ${object.timeout} seconds`);
+          emitter.emit(
+            events.log.narration,
+            `waiting ${object.timeout} seconds`,
+          );
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands.wait(object.timeout);
           break;
         case "click":
-          emitter.emit(events.narration, `${object.action}`);
+          emitter.emit(events.log.narration, `${object.action}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["click"](object.x, object.y, object.action);
           break;
         case "hover":
-          emitter.emit(events.narration, `moving mouse`);
+          emitter.emit(events.log.narration, `moving mouse`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["hover"](object.x, object.y);
           break;
@@ -121,7 +124,10 @@ commands:
           response = await commands["drag"](object.x, object.y);
           break;
         case "hover-text":
-          emitter.emit(events.narration, `searching for ${object.description}`);
+          emitter.emit(
+            events.log.narration,
+            `searching for ${object.description}`,
+          );
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["hover-text"](
             object.text,
@@ -132,7 +138,7 @@ commands:
           break;
         case "hover-image":
           emitter.emit(
-            events.narration,
+            events.log.narration,
             `searching for image of ${object.description}`,
           );
           emitter.emit(events.log.log, generator.jsonToManual(object));
@@ -144,13 +150,16 @@ commands:
         case "match-image":
           emitter.emit(events.log.log, generator.jsonToManual(object));
           emitter.emit(
-            events.narration,
+            events.log.narration,
             `${object.action} image ${object.path}`,
           );
           response = await commands["match-image"](object.path, object.action);
           break;
         case "wait-for-image":
-          emitter.emit(events.narration, `waiting for ${object.description}`);
+          emitter.emit(
+            events.log.narration,
+            `waiting for ${object.description}`,
+          );
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["wait-for-image"](
             object.description,
@@ -158,7 +167,7 @@ commands:
           );
           break;
         case "wait-for-text":
-          emitter.emit(events.narration, `waiting for ${object.text}`);
+          emitter.emit(events.log.narration, `waiting for ${object.text}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           copy.text = "*****";
           response = await commands["wait-for-text"](
@@ -168,7 +177,7 @@ commands:
           );
           break;
         case "scroll-until-text":
-          emitter.emit(events.narration, `scrolling until ${object.text}`);
+          emitter.emit(events.log.narration, `scrolling until ${object.text}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           copy.text = "*****";
           response = await commands["scroll-until-text"](
@@ -181,7 +190,7 @@ commands:
           break;
         case "scroll-until-image": {
           const needle = object.description || object.path;
-          emitter.emit(events.narration, `scrolling until ${needle}`);
+          emitter.emit(events.log.narration, `scrolling until ${needle}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["scroll-until-image"](
             object.description,
@@ -193,7 +202,7 @@ commands:
           break;
         }
         case "focus-application":
-          emitter.emit(events.narration, `focusing ${object.name}`);
+          emitter.emit(events.log.narration, `focusing ${object.name}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["focus-application"](object.name);
           break;
@@ -205,12 +214,12 @@ commands:
           break;
         }
         case "assert":
-          emitter.emit(events.narration, `asserting ${object.expect}`);
+          emitter.emit(events.log.narration, `asserting ${object.expect}`);
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands.assert(object.expect, object.async);
           break;
         case "exec":
-          emitter.emit(events.narration, `exec`);
+          emitter.emit(events.log.narration, `exec`);
           emitter.emit(
             events.log.log,
             generator.jsonToManual({
