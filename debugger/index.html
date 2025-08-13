@@ -670,6 +670,8 @@
       // Handle window resize to recalculate scale (throttled)
       window.addEventListener("resize", throttle(resizeOverlay, 100));
 
+      setInterval(resizeOverlay, 1000);
+
       // Handle window blur/focus for screen locking
       window.addEventListener("blur", () => {
         showInteractionOverlay();
