@@ -36,9 +36,11 @@ swap:
   jump the reservation: disobey|endure|object to|oppose|resist
   latina: Latinx
   latino: Latinx
-  long time no hear: "I haven\u2019t seen you in a long time|it\u2019s been a long\
+  long time no hear:
+    "I haven\u2019t seen you in a long time|it\u2019s been a long\
     \ time"
-  long time no see: "I haven\u2019t seen you in a long time|it\u2019s been a long\
+  long time no see:
+    "I haven\u2019t seen you in a long time|it\u2019s been a long\
     \ time"
   master: primary|hub|reference
   masters: primaries|hubs|references
