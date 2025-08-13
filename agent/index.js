@@ -1392,7 +1392,7 @@ ${regression}
         const mtime = new Date(stats.mtime);
         const now = new Date();
         const diffMinutes = (now - mtime) / (1000 * 60);
-        if (diffMinutes < 30) {
+        if (diffMinutes < 10) {
           const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
 
           // Parse sandbox info (supports both old format and new format)
@@ -1465,8 +1465,8 @@ ${regression}
     // If instance already exists, do not build environment again
     if (this.instance) {
       this.emitter.emit(
-        events.log.log,
-        theme.dim("- sandbox instance already exists, skipping launch."),
+        events.log.narration,
+        theme.dim("sandbox instance already exists, skipping launch."),
       );
       return;
     }
@@ -1490,7 +1490,7 @@ ${regression}
       if (!this.config.CI) {
         this.emitter.emit(
           events.log.log,
-          theme.dim("-- `new` flag detected, will create a new sandbox"),
+          theme.dim("--`new` flag detected, will create a new sandbox"),
         );
       }
     }
@@ -1504,13 +1504,13 @@ ${regression}
     if (!createNew && recentId) {
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`- using recent sandbox: ${recentId}`),
+        theme.dim(`using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
     } else if (!createNew) {
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`- no recent sandbox found, creating a new one.`),
+        theme.dim(`no recent sandbox found, creating a new one.`),
       );
     }
 
