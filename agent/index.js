@@ -1584,9 +1584,12 @@ ${regression}
       this.emitter.emit(events.log.log, `This is beta software!`);
       this.emitter.emit(
         events.log.log,
-        theme.yellow(`Join our Forums for help`),
+        theme.yellow(`Join our Discord for help`),
       );
-      this.emitter.emit(events.log.log, `https://forums.testdriver.ai`);
+      this.emitter.emit(
+        events.log.log,
+        `https://discord.com/invite/cWDFW8DzPm`,
+      );
 
       // make testdriver directory if it doesn't exist
       let testdriverFolder = path.join(this.workingDir);
