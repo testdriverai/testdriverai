@@ -13,9 +13,9 @@ To integrate **TestDriver** with a workflow that uses the **runner artifact URL*
 
 This workflow builds the application, uploads the build as an artifact, and then uses TestDriver to download the artifact via the runner artifact URL and run tests.
 
-### Workflow file: `.github/workflows/testdriver-integration.yaml`
+### Workflow file
 
-```yaml
+```yaml .github/workflows/testdriver-integration.yaml
 name: Build and Test with TestDriver
 
 on:
@@ -31,12 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "16"
+          node-version: "20"
 
       - name: Install dependencies
         run: npm install
@@ -61,12 +61,12 @@ jobs:
           echo "ARTIFACT_URL=${{ github.server_url }}/repos/${{ github.repository }}/actions/artifacts" >> $GITHUB_ENV
 
       - name: Run TestDriver CLI
+        run: |
+          npx testdriverai@latest run testdriver/test.yaml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           ARTIFACT_URL: ${{ env.ARTIFACT_URL }}
           FORCE_COLOR: "3"
-        run: |
-          npx testdriverai@latest run testdriver/test.yaml --headless --key "$TD_API_KEY"
 ```
 
 ---
@@ -78,61 +78,35 @@ To ensure your Electron app is downloaded and run in the correct environment, us
 - **lifecycle/provision.yaml**: Download and extract the Electron app artifact here.
 - **lifecycle/prerun.yaml**: Start your Electron app here before the test begins.
 
-### Example: `lifecycle/provision.yaml`
+### Example:
 
-```yaml
+```yaml testdriver/lifecycle/provision.yaml
+version: 6.0.0
 steps:
-  - name: Download Electron app artifact
-    run: |
-      echo "Downloading artifact..."
-      curl -H "Authorization: Bearer $GITHUB_TOKEN" \
-        -L "$ARTIFACT_URL" \
-        --output artifact.zip
-      echo "Extracting artifact..."
-      unzip artifact.zip -d ./app
-    env:
-      GITHUB_TOKEN: $GITHUB_TOKEN
-      ARTIFACT_URL: $ARTIFACT_URL
-```
-
-### Example: `lifecycle/prerun.yaml`
-
-```yaml
-steps:
-  - name: Start Electron app
-    run: |
-      ./app/your-app-binary & # Replace with the actual binary or executable path
-```
+  - prompt: Download Electron app artifact
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          Write-Host "Downloading artifact..."
+          curl -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -L "${ARTIFACT_URL}" \
+          --output artifact.zip
+        echo "Extracting artifact..."
+        unzip artifact.zip -d ./app
+  ```
 
 ---
 
-## Example lifecycle files using TestDriver prompt/commands
-
-You can also use TestDriver's YAML format with `prompt` and `commands` for lifecycle files:
-
-### `lifecycle/provision.yaml`
-
-```yaml
-prompt: Download Electron app artifact
-commands:
-  - command: exec
-    lang: pwsh
-    code: |
-      Write-Host "Downloading artifact..."
-      curl -H "Authorization: Bearer $env:GITHUB_TOKEN" -L "$env:ARTIFACT_URL" --output artifact.zip
-      Write-Host "Extracting artifact..."
-      Expand-Archive -Path artifact.zip -DestinationPath ./app -Force
-```
-
-### `lifecycle/prerun.yaml`
-
-```yaml
-prompt: Start Electron app
-commands:
-  - command: exec
-    lang: pwsh
-    code: |
-      Start-Process -FilePath "./app/your-app-binary" # Replace with the actual binary or executable path
+```yaml testdriver/lifecycle/prerun.yaml
+version: 6.0.0
+steps:
+  - prompt: Start Electron app
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          Start-Process -FilePath "./app/your-app-binary" # Replace with the actual binary or executable path
 ```
 
 ---

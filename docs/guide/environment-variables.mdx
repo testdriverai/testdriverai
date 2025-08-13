@@ -2,33 +2,31 @@
 title: "Environment Variables"
 sidebarTitle: "Environment Variables"
 description: "Learn how which environment variables are supported by TestDriver."
-icon: "key"
+icon: "sliders-up"
 ---
+
 
 import GitignoreWarning from "/snippets/gitignore-warning.mdx";
 
 The supported environment variables in TestDriver are:
-
-|    Variable     |   Type    | Description                                                                              |
-| :-------------: | :-------: | :--------------------------------------------------------------------------------------- |
-| `TD_ANALYTICS`  | `boolean` | Send analytics to TestDriver servers. This helps provide feedback to inform our roadmap. |
-|  `TD_API_ROOT`  | `string`  | Developer only. Set API root to another URL. For on-prem.                                |
-|  `TD_API_KEY`   | `string`  | Set this to spawn VMs with TestDriver Pro.                                               |
-| `TD_RESOLUTION` | `string`  | Change resolution when TD_VM is true. Format like `1280x1024`.                           |
-|    `TD_TYPE`    | `string`  | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required.     |
+<div className="env-vars-table">
+|    Variable     |   Type    | Description |
+|:---------------:|:---------:|-----------|
+| TD_ANALYTICS  | boolean | Send analytics to TestDriver servers. This helps provide feedback to inform our roadmap. |
+|  TD_API_ROOT  | string  | Developer only. Set API root to another URL. For on-prem. |
+|  TD_API_KEY   | string  | Set this to spawn VMs with TestDriver Pro. |
+| TD_RESOLUTION | string  | Change resolution when TD_VM is true. Format like `1280x1024`. |
+|    TD_TYPE    | string  | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required. |
+</div>
 
 <GitignoreWarning />
 
----
 
-## Example
-
-```
+```bash .env
 TD_API_KEY=your_api_key
 TD_RESOLUTION=1024x768
 TD_TYPE=website
 TD_WEBSITE=www.jeep.com
-TD_ANALYTICS=true
 ```
 
 In this example `.env` file, we're running a website test in a local Linux VM with a resolution of 1024x768. The terminal will be minimized, and the overlay won't be shown. Analytics will be sent to TestDriver servers.

@@ -42,9 +42,9 @@ This guide explains how to integrate the **TestDriver CLI** with the **Jira GitH
 
 Here's a complete workflow that integrates TestDriver and Jira:
 
-### Workflow File: `.github/workflows/testdriver-jira.yaml`
+### Workflow File:
 
-```yaml [expandable]
+```yaml .github/workflows/testdriver-jira.yaml [expandable]
 name: TestDriver with Jira Integration
 
 on:
@@ -152,15 +152,14 @@ jobs:
 
 ### 1. **Run Tests with TestDriver CLI**
 
-The TestDriver CLI runs your tests in headless mode using the `--headless` flag. The `--output` flag specifies where to save the test results for later use in Jira tickets.
+This step runs the TestDriver CLI with the `testdriver/test.yaml` file.
 
-```yaml
+```yaml testdriver/test.yaml
 - name: Run TestDriver
   id: testdriver
-  run: npx testdriverai@latest run testdriver/test.yaml --headless --key $env:TD_API_KEY --output="testdriver-output.txt"
+  run: npx testdriverai@latest run testdriver/test.yaml
   env:
     TD_API_KEY: ${{ secrets.TD_API_KEY }}
-  shell: powershell
 ```
 
 ---
@@ -169,7 +168,7 @@ The TestDriver CLI runs your tests in headless mode using the `--headless` flag.
 
 This step checks the exit code and success status from the TestDriver CLI run. If the tests failed, it sets an environment variable (`failure=true`) to trigger the Jira ticket creation step and prepares the output file for the Jira ticket.
 
-```yaml
+```yaml testdriver/test.yaml
 - name: Check for Test Failures
   id: check-failures
   run: |
@@ -195,7 +194,7 @@ If any tests failed, the `create-jira-ticket` job uses the `atlassian/gajira-cre
 - **Summary**: A brief description of the failure with repository information.
 - **Description**: Detailed information about the failure, including repository details, workflow run links, and the captured test output.
 
-```yaml
+```yaml testdriver/test.yaml
 - name: Create Jira Ticket
   uses: atlassian/gajira-create@v3
   with:
@@ -231,65 +230,3 @@ Add the following secrets to your GitHub repository:
 4. **`JIRA_USERNAME`**: Your Jira account email.
 
 ---
-
-## Lifecycle files
-
-TestDriver supports lifecycle files to customize test execution at different phases. These files replace the previous `prerun` parameter from the GitHub Action and provide more comprehensive control over the test environment.
-
-The main lifecycle files are:
-
-- **`lifecycle/provision.yaml`**: Executed when a new sandbox is created
-- **`lifecycle/prerun.yaml`**: Executed before tests run (replaces the old `prerun` parameter)
-- **`lifecycle/postrun.yaml`**: Executed after tests complete
-
-<Note>
-  These lifecycle files should be placed in your repository's `lifecycle/`
-  directory and will be automatically executed by TestDriver during the
-  appropriate phases.
-</Note>
-
-For detailed information about lifecycle files, including complete examples and best practices, see the [Lifecycle Files guide](/guide/lifecycle).
-
----
-
-## Example Jira ticket
-
-### Summary:
-
-`TestDriver Test Failure in mycompany/myproject`
-
-### Description:
-
-```
-A test failure occurred during the TestDriver workflow.
-
-**Repository**: mycompany/myproject
-**Branch**: refs/heads/main
-**Commit**: abc123def456
-**Workflow Run**: https://github.com/mycompany/myproject/actions/runs/123456789
-
-**Failure Details**:
-```
-
-TestDriver CLI execution failed
-Error: Test 'Login Test' failed - element not found
-Exit code: 1
-
-```
-
-Please investigate the issue and resolve it promptly.
-
-```
-
----
-
-## Benefits of this workflow
-
-1. **Automated Issue Tracking**: Automatically creates Jira tickets for test failures, ensuring no issues are overlooked.
-2. **Detailed Context**: Includes test output, repository information, and workflow run links in the Jira ticket for easier debugging.
-3. **Streamlined Workflow**: Integrates testing and issue tracking into a single automated pipeline.
-4. **Flexible Lifecycle Management**: Supports custom setup, provisioning, and cleanup through lifecycle files.
-
----
-
-By combining TestDriver CLI with Jira GitHub Actions, you can automate the process of tracking test failures, improving collaboration and ensuring faster resolution of issues.

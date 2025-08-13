@@ -28,15 +28,28 @@ Parallel testing allows you to split your test actions into multiple files and r
   run multiple separate tests, use a test matrix strategy.
 </Warning>
 
-Example:
+#### Example
 
-```yaml
-strategy:
-  matrix:
-    test_file:
-      - tests/login.yaml
-      - tests/search.yaml
-      - tests/cart.yaml
+```yaml .github/workflows/testdriver.yaml focus={3-9, 14}
+run tests:
+  name: Run tests in parallel
+  strategy:
+    matrix:
+      test_file:
+        - tests/login.yaml
+        - tests/search.yaml
+        - tests/cart.yaml
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run the tests
+          run: npx testdriverai@latest run testdriver/${{ matrix.test_file }} 
+          env:
+            FORCE_COLOR: 3
+            TD_API_KEY: ${{ secrets.TD_API_KEY }}
+            TD_WEBSITE: https://testdriver-sandbox.vercel.app
+            TD_THIS_FILE: ${{ matrix.test }}
 ```
 
 ---
@@ -54,6 +67,11 @@ description: login button
 action: click
 method: turbo
 ```
+
+<Note>
+`turbo` is the default method that is currently implemented. The other method being `ai` 
+</Note>
+
 
 ---
 

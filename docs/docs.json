@@ -64,9 +64,9 @@
             "pages": [
               "/getting-started/setup",
               "/getting-started/vscode",
+              "/getting-started/editing",
               "/getting-started/running",
-              "/getting-started/ci",
-              "/getting-started/editing"
+              "/getting-started/ci"
             ]
           },
           {
@@ -85,7 +85,7 @@
           {
             "group": "Running in CI",
             "pages": [
-              "/action/setup",
+              "/getting-started/ci",
               "/action/performance",
               "/action/secrets",
               "/action/ami"

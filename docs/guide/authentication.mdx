@@ -1,12 +1,9 @@
 ---
-title: "Authentication in TestDriver"
+title: "Authentication"
 sidebarTitle: "Authentication"
-description: "Learn how to securely handle authentication workflows in TestDriver using GitHub Actions."
-icon: "fingerprint"
+description: "Learn how to handle authentication workflows in TestDriver using GitHub Actions."
+icon: "key"
 ---
-
-import GitignoreWarning from "/snippets/gitignore-warning.mdx";
-
 This guide explains how to handle **authentication workflows** in **TestDriver** using GitHub Actions. It covers securely passing credentials (for example, usernames and passwords) to the TestDriver action and using them in both the `prerun` script and test files. Save these locally in your `.env` file and use them in CI as GitHub secrets.
 
 <GitignoreWarning />
@@ -27,7 +24,7 @@ This guide explains how to handle **authentication workflows** in **TestDriver**
 
 - Dynamically reference credentials in the `prerun` script or test files to perform authentication steps.
 
-store credentials in GitHub secrets
+## Step 1: Store credentials in GitHub secrets
 
 1. Navigate to your repository's **Settings** > **Secrets and variables** > **Actions**.
 2. Add the following secrets:
@@ -45,7 +42,7 @@ Secrets are passed to the workflow using the `secrets` context. They can be supp
 
 ### Example GitHub Actions workflow (adapt for your CI/CD platform)
 
-```yaml
+```yaml workflows/td-auth.yml focus={17-24}
 name: TestDriver / Authentication
 
 on:
@@ -63,7 +60,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Authentication Test
-        run: npx testdriverai@latest run testdriver/authentication.yaml --headless
+        run: npx testdriverai@latest run testdriver/authentication.yaml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_USERNAME: ${{ secrets.TD_USERNAME }}
@@ -79,8 +76,8 @@ Secrets can be referenced in the test file using placeholders (for example, `${T
 
 ### Example test file:
 
-```yaml
-version: 4.2.18
+```yaml login.yaml highlight={9, 10, 15, 16}
+version: 6.0.0
 steps:
   - prompt: Log in to the application
     commands:

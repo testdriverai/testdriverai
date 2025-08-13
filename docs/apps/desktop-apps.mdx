@@ -46,28 +46,29 @@ TestDriver supports a wide range of desktop applications, including:
 
 ## Installation
 
-To use TestDriver with desktop applications, no special setup is needed. Simply run the local agent to interact with applications on your local machine, or add instructions to `prerun.yaml` to tell the runner to launch or install the application. Here is an example that performs a calculation on a calculator app:
+To use TestDriver with desktop applications, no special setup is needed. Simply run the local agent to interact with applications on your local machine, or add instructions to `provision.yaml` to tell the runner to launch or install the application. Here is an example that performs a calculation on a calculator app:
 
-```yaml
-version: 5.5.5
+```yaml testdriver/lifecycle/provision.yaml
+version: 6.0.0 
 steps:
   - prompt: launch a calculator
     commands:
       - command: exec
         lang: pwsh
-        code: start /B calc.exe
+        code: |
+          start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "calculator"
         timeout: 30000
 ```
 
-A `calculator_test.yaml` file might look like this:
+A `calculator.yaml` file might look like this:
 
-```yaml
-version: 5.5.5
+```yaml calculator.yaml
+version: 6.0.0
 steps:
-  - prompt: /try performing the operation 2 + 2 = on the calculator that is opened
+  - prompt: perform the operation 2 + 2 = on the calculator that is opened
     commands:
       - command: focus-application
         name: galculator
@@ -83,6 +84,8 @@ steps:
       - command: hover-image
         description: equals button on the calculator
         action: click
+      - command: assert
+        expected: 4 is displayed as the result
 ```
 
 ## Conclusion

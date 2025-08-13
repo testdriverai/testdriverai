@@ -5,10 +5,6 @@ description: "Learn how to customize TestDriver execution with lifecycle files f
 icon: "arrows-rotate"
 ---
 
-# Lifecycle Files
-
-TestDriver supports lifecycle files to customize test execution at different phases. These files allow you to define custom setup, provisioning, and cleanup steps that run automatically during test execution.
-
 ---
 
 ## Overview
@@ -26,7 +22,7 @@ Lifecycle files are YAML files placed in your repository's `lifecycle/` director
 All lifecycle files follow the standard TestDriver YAML format:
 
 ```yaml
-version: 5.1.1
+version: 6.0.0
 steps:
   - prompt: description of what this step does
     commands:
@@ -45,17 +41,25 @@ steps:
 
 The `lifecycle/provision.yaml` file is executed when a new sandbox is created. This is ideal for installing dependencies, setting up the environment, or preparing the system for testing.
 
-### Example: `lifecycle/provision.yaml`
+### Example
 
-```yaml
-version: 5.1.1
+```yaml lifecycle/provision.yaml
+version: 6.0.0
 steps:
   - prompt: setup testing environment
     commands:
       - command: exec
         lang: pwsh
         code: |
-          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${TD_WEBSITE}"
+          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList @(
+            "--start-maximized",
+            "--disable-infobars",
+            "--disable-fre",
+            "--no-default-browser-check",
+            "--no-first-run",
+            "--guest",
+            "${TD_WEBSITE}"
+          )
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 60000
@@ -72,19 +76,16 @@ steps:
 
 ## Prerun Scripts
 
-The `lifecycle/prerun.yaml` file is executed before each test run. This replaces the previous `prerun` parameter from the GitHub Action and is useful for preparing the immediate test environment.
+The `lifecycle/prerun.yaml` file is executed before each test run irrespective of whether its a new sandbox or an already running one. This is useful for preparing the immediate test environment.
 
-### Example: `lifecycle/prerun.yaml`
+### Example
 
-```yaml
-version: 5.1.1
+```yaml lifecycle/prerun.yaml
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: launch chrome and start tracking
+  - prompt: start dashcam
     commands:
-      - command: exec
-        lang: pwsh
-        code: |
-          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${TD_WEBSITE}"
       - command: exec
         lang: pwsh
         code: dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
@@ -107,16 +108,16 @@ steps:
 
 The `lifecycle/postrun.yaml` file is executed after tests complete. This is useful for cleanup tasks, generating reports, or capturing final state information.
 
-### Example: `lifecycle/postrun.yaml`
+### Example
 
-```yaml
-version: 5.1.1
+```yaml lifecycle/postrun.yaml
+version: 6.0.0
 steps:
   - prompt: cleanup and generate reports
     commands:
       - command: exec
         lang: pwsh
-        code: dashcam -t '${TD_THIS_FILE}' -p
+        code: dashcam -t 'demo-test-title' -p # use '${TD_THIS_FILE}' to dynamically set the title for the recording
 ```
 
 ### Common postrun tasks:
@@ -140,8 +141,8 @@ Lifecycle files have access to TestDriver environment variables:
 
 ### Using variables in lifecycle files:
 
-```yaml
-version: 5.1.1
+```yaml highlight={8, 9}
+version: 6.0.0
 steps:
   - prompt: setup with custom variables
     commands:
@@ -199,13 +200,16 @@ Place lifecycle files in your repository's root directory:
 
 ```
 your-project/
-├── lifecycle/
-│   ├── provision.yaml
-│   ├── prerun.yaml
-│   └── postrun.yaml
 ├── testdriver/
-│   └── your-tests.yaml
-└── package.json
+│   ├── demo-test.yaml
+│   └── lifecycle/
+│       ├── provision.yaml
+│       ├── prerun.yaml
+│       └── postrun.yaml
+│   ├── screenshots/
+│   │   └── 
+│   └── snippets/
+│       └── 
 ```
 
 ---
@@ -225,7 +229,7 @@ When TestDriver runs, lifecycle files execute in this order:
 
 ### Lifecycle files not executing
 
-- Verify files are in the `lifecycle/` directory
+- Verify files are in the `testdriver/lifecycle/` directory
 - Check YAML syntax is valid
 - Ensure version number is specified
 - Verify file permissions in your repository
@@ -236,7 +240,3 @@ When TestDriver runs, lifecycle files execute in this order:
 - Verify file paths exist on the target system
 - Add error handling and logging
 - Use appropriate timeouts for operations
-
----
-
-Lifecycle files provide powerful customization capabilities for your TestDriver workflows. Use them to create reliable, reproducible test environments that meet your specific requirements.

@@ -13,3 +13,27 @@
 .comparison-table code {
   font-size: 1em;
 }
+
+.env-vars-table table{
+  width: 120%;
+
+}
+
+.env-vars-table th {
+  font-size: 18px;
+  padding: 12px 30px;
+  border: 1.5px solid #05f1d9;
+}
+
+.env-vars-table td {
+  padding: 12px 30px;
+  font-size: 16px;
+  line-height: 1.5;
+  border: 1.5px solid #05f1d9;
+  vertical-align: middle;
+}
+
+.env-vars-table code {
+  font-size: 0.9em;
+}
+

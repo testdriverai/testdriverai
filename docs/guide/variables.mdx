@@ -45,7 +45,7 @@ steps:
 
 You can run TestDriver in any CI/CD pipeline. Here is an example using the CLI in a generic workflow (adapt for your platform, e.g., GitHub Actions, GitLab CI, CircleCI, Jenkins, etc.):
 
-```yaml workflows/testdriver.yml lines focus={6-13}
+```yaml workflows/testdriver.yml focus={6-13}
 steps:
   - name: Check out repository
     # For GitHub Actions: uses: actions/checkout@v4
@@ -63,7 +63,7 @@ steps:
 
 Now inside the `login.yaml` test file you can refer the variables
 
-```yaml login.yaml lines highlight={21, 22, 27, 28}
+```yaml login.yaml highlight={21, 22, 27, 28}
 version: 6.0.0
 steps:
   - prompt: Open the homepage
@@ -102,7 +102,7 @@ steps:
 
 #### Test file example:
 
-```yaml capture-text.yaml lines highlight={5, 6, 14, 15}
+```yaml capture-text.yaml highlight={5, 6, 14, 15}
 version: 6.0.0
 steps:
   - prompt: Capture text from the screen

@@ -29,7 +29,7 @@ This guide explains how to integrate **TestDriver** with **Netlify deployments**
 
 Here's a complete workflow to test Netlify deployments with TestDriver CLI (adapt for your CI/CD platform):
 
-```yaml
+```yaml .github/workflows/testdriver-netlify.yaml
 name: Test Netlify Deployment with TestDriver
 
 on:
@@ -58,12 +58,11 @@ jobs:
           fi
 
       - name: Run Tests with TestDriver CLI
+        run: |
+          npx testdriverai@latest run testdriver/test.yaml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-          DEPLOY_URL: $DEPLOY_URL
-          FORCE_COLOR: "3"
-        run: |
-          npx testdriverai@latest run --key "$TD_API_KEY" --headless --prompt "1. Open the deployment URL: $DEPLOY_URL\n2. Verify the homepage loads correctly\n3. Click the 'Sign Up' button\n4. Fill out the registration form\n5. Submit the form and verify the success message"
+          DEPLOY_URL: ${{ env.DEPLOY_URL }}
 ```
 
 ---
@@ -74,7 +73,7 @@ jobs:
 
 Netlify automatically sets the `DEPLOY_URL` environment variable for each deployment. This step ensures the deployment URL is available before running tests.
 
-```yaml
+```yaml .github/workflows/testdriver-netlify.yaml
 - name: Wait for Netlify Deployment
   id: netlify
   run: |
@@ -90,14 +89,12 @@ Netlify automatically sets the `DEPLOY_URL` environment variable for each deploy
 
 ### 2. **Run tests with TestDriver CLI**
 
-The TestDriver CLI runs tests on the deployed application using the deployment URL. The `--prompt` argument specifies the test steps to execute.
+The TestDriver CLI runs tests on the deployed application using the deployment URL.
 
-```yaml
+```yaml .github/workflows/testdriver-netlify.yaml
 - name: Run Tests with TestDriver CLI
+  run: npx testdriverai@latest run testdriver/test.yaml
   env:
     TD_API_KEY: ${{ secrets.TD_API_KEY }}
-    DEPLOY_URL: $DEPLOY_URL
-    FORCE_COLOR: "3"
-  run: |
-    npx testdriverai@latest run --key "$TD_API_KEY" --headless --prompt "1. Open the deployment URL: $DEPLOY_URL\n2. Verify the homepage loads correctly\n3. Click the 'Sign Up' button\n4. Fill out the registration form\n5. Submit the form and verify the success message"
+    DEPLOY_URL: ${{ env.DEPLOY_URL }}
 ```

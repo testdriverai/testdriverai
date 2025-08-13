@@ -26,20 +26,19 @@ TestDriver allows you to execute custom **Node.js** scripts and shell scripts wi
 
 This example demonstrates how to generate a one-time password (OTP) using the `totp-generator` NPM package and use it in a test.
 
-### Test file: `testdriver/testdriver.yaml`
 
-```yaml
-version: 5.3.8
+```yaml verify-otp.yaml
+version: 6.0.0
 steps:
   - commands:
       - command: exec
         lang: pwsh
-        linux: |
+        code: |
           npm install totp-generator
       - command: exec
         lang: js
         output: totp
-        linux: |
+        code: |
           const { TOTP } = require("totp-generator");
           let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
           console.log(otp);
@@ -50,14 +49,17 @@ steps:
 
 ## Additional details
 
-- The `exec` command now takes a `lang` argument and supports different operating systems (`linux`, `mac`, and `windows`).
-- Supported `lang` values are `js` or `shell`:
-  - `js` code is executed in a Node.js VM on the host machine (your computer).
-  - `shell` code is executed in the shell on the runner.
-- Code specified in `linux`, `mac`, and `windows` is executed based on the platform of the runner machine.
+- The `exec` command now takes a `lang` argument with supported values `js` or `pwsh`.
+- `js` code is executed in a Node.js [VM](https://nodejs.org/api/vm.html) module internally.
+- `pwsh` code is executed in the PowerShell on the runner.
+
+<Note>
+The `result` variable is already available in your script, overwrite it to store the output as shown in the example.
+
+The `output`argument is assigned automatically by setting `result = somestringvalue` in the script you run.
+</Note>
 
 ## Protips
 
 - Always assign the output of your script to the `result` variable.
 - Ensure all required NPM packages are installed locally and in the `prerun` script when using GitHub Actions.
-- The script runs in the same context as the calling process and uses Node.js's [VM module](https://nodejs.org/api/vm.html) internally.
