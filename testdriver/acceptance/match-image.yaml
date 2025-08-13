@@ -1,10 +1,12 @@
 version: 5.7.7
 session: 682f5d92811bd5a322c0e636
 steps:
-  - commands:
+  - prompt: complete the login process
+    commands:
       - command: run
         file: snippets/login.yaml
-  - commands:
+  - prompt: match the image of a shopping cart
+    commands:
       - command: run
         file: snippets/match-cart.yaml
   - prompt: assert that you see an empty shopping cart

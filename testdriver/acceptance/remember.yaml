@@ -1,7 +1,27 @@
-version: 5.7.7
-session: 682f66241f5b5f003ee139cb
+version: 6.0.11
+session: 689a163a8d474e20a6142e70
 steps:
-  - prompt: remember the username of the user who cannot login
+  - prompt: focus chrome, remember the password, enter the username and the remembered password and login
     commands:
-      - command: focus-application
-        name: Google Chrome
+      - command: remember
+        description: the password
+        output: my_password
+      - command: hover-text
+        text: Username
+        description: username input field
+        action: click
+      - command: type
+        text: standard_user
+      - command: press-keys
+        keys:
+          - tab
+      - command: type
+        text: ${OUTPUT.my_password}
+      - command: press-keys
+        keys:
+          - tab
+      - command: press-keys
+        keys:
+          - enter
+      - command: assert
+        expect: the homepage is visible

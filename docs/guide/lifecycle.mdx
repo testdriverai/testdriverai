@@ -5,14 +5,6 @@ description: "Learn how to customize TestDriver execution with lifecycle files f
 icon: "arrows-rotate"
 ---
 
-# Lifecycle Files
-
-TestDriver supports lifecycle files to customize test execution at different phases. These files allow you to define custom setup, provisioning, and cleanup steps that run automatically during test execution.
-
----
-
-## Overview
-
 Lifecycle files are YAML files placed in your repository's `lifecycle/` directory. TestDriver automatically executes these files during the appropriate phases:
 
 - **`lifecycle/provision.yaml`**: Executed when a new sandbox is created

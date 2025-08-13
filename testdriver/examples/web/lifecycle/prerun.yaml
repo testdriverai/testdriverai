@@ -22,16 +22,33 @@ steps:
 
           # Define paths
           $extensionPath = Join-Path (Get-Location) "node_modules/dashcam-chrome/build"
-          $profilePath = Join-Path $env:TEMP "chrome-profile-$(Get-Random)"
+          $profilePath   = Join-Path $env:TEMP "chrome-profile-$(Get-Random)"
+          $defaultDir    = Join-Path $profilePath "Default"
+          $prefsPath     = Join-Path $defaultDir "Preferences"
 
           Write-Host "Extension path: $extensionPath"
           Write-Host "Chrome user data dir: $profilePath"
 
-          # Validate extension path
-          if (-not (Test-Path $extensionPath)) {
-              Write-Host "Extension not found at $extensionPath"
-          }
+          # Create a clean profile + Preferences to disable password manager & autofill
+          Remove-Item $profilePath -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item $defaultDir -ItemType Directory -Force | Out-Null
 
+          $prefs = @{
+            "credentials_enable_service" = $false
+            "profile" = @{
+              "password_manager_enabled" = $false
+            }
+            "autofill" = @{
+              "profile_enabled"       = $false
+              "address_enabled"       = $false
+              "credit_card_enabled"   = $false
+            }
+          } | ConvertTo-Json -Depth 6
+
+          # Write Preferences before Chrome starts (ASCII/UTF8 is fine)
+          $prefs | Set-Content -Path $prefsPath -Encoding ASCII
+
+          # Build args
           $chromeArgs = @(
             "--start-maximized",
             "--load-extension=$extensionPath",
@@ -43,9 +60,6 @@ steps:
           ) -join ' '
 
           Start-Process "cmd.exe" -ArgumentList "/c", "npx @puppeteer/browsers launch chrome -- $chromeArgs"
-
-          Write-Host "Script complete."
-          exit
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 60000
