@@ -10,7 +10,7 @@
     "start": "node bin/testdriverai.js",
     "dev": "DEV=true node bin/testdriverai.js",
     "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
-    "docs": "cd docs && npm mint dev",
+    "docs": "cd docs && mint dev",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "docs-lint": "cd docs && vale **/*.mdx",
