@@ -84,10 +84,6 @@ const createSandbox = (emitter, analytics) => {
         this.socket.on("close", () => {
           clearInterval(this.heartbeat);
           // Emit a clear error event for API key issues
-          emitter.emit(events.error.fatal, {
-            message: "Socket closed. Check your API KEY (TD_API_KEY)",
-            code: "API_KEY_MISSING_OR_INVALID",
-          });
           reject();
           this.apiSocketConnected = false;
         });
