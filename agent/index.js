@@ -192,7 +192,7 @@ class TestDriverAgent extends EventEmitter2 {
 
   // fatal errors always exit the program
   // this ensure we log the error, summarize it, and exit cleanly
-  async dieOnFatal(error) {
+  async dieOnFatal(error, skipPostrun = false) {
     // Show error with source context if available
     const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
     if (errorContext) {
@@ -204,9 +204,13 @@ class TestDriverAgent extends EventEmitter2 {
       );
     }
 
-    await this.summarize(error.message);
-    // Always run postrun lifecycle script, even for fatal errors
-    return await this.exit(true, false, true);
+    if (skipPostrun) {
+      this.exit(true);
+    } else {
+      await this.summarize(error.message);
+      // Always run postrun lifecycle script, even for fatal errors
+      return await this.exit(true, false, true);
+    }
   }
 
   // creates a new "thread" in which the AI is given an error
@@ -1696,9 +1700,26 @@ ${regression}
       events.log.log,
       theme.gray(`- establishing connection...`),
     );
-    await this.sandbox.boot(this.config.TD_API_ROOT);
+    let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
+
+    if (!ableToBoot) {
+      return await this.dieOnFatal(
+        `Unable to connect to TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+Please check your network connection, TD_API_KEY, or the service status.`,
+        true,
+      );
+    }
+
     this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
-    await this.sandbox.auth(this.config.TD_API_KEY);
+    let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
+
+    if (!ableToAuth) {
+      return await this.dieOnFatal(
+        `Unable to authorize with TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+Please check your network connection, TD_API_KEY, or the service status.`,
+        true,
+      );
+    }
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
