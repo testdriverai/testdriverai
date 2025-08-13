@@ -158,7 +158,7 @@ class TestDriverAgent extends EventEmitter2 {
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
-    this.emitter.emit(events.log.log, theme.dim("exiting..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("exiting..."), true);
 
     // Clean up redraw interval
     if (this.redraw && this.redraw.cleanup) {
@@ -290,7 +290,7 @@ class TestDriverAgent extends EventEmitter2 {
       image = null;
     }
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     const streamId = `error-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -332,14 +332,14 @@ class TestDriverAgent extends EventEmitter2 {
 
     if (this.checkCount >= this.checkLimit) {
       this.emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.red("Exploratory loop detected. Exiting."),
       );
       await this.summarize("Check loop detected.");
       return await this.exit(true);
     }
 
-    this.emitter.emit(events.log.log, theme.dim("checking..."));
+    this.emitter.emit(events.log.narration, theme.dim("checking..."));
 
     // check asks the ai if the task is complete
     let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
@@ -583,8 +583,6 @@ class TestDriverAgent extends EventEmitter2 {
           "check thinks more needs to be done",
         );
 
-        this.emitter.emit(events.log.log, theme.dim("not done yet!"));
-
         return await this.aiExecute(response, validateAndLoop);
       } else {
         this.emitter.emit(events.log.debug, "seems complete, returning");
@@ -719,7 +717,7 @@ class TestDriverAgent extends EventEmitter2 {
       }
     }
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     let response = `\`\`\`yaml
 commands:
@@ -747,7 +745,7 @@ commands:
 
     this.tasks.push(currentTask);
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     this.lastScreenshot = await this.system.captureScreenBase64();
 
@@ -789,7 +787,7 @@ commands:
   async generate(type, count, baseYaml, skipYaml = false) {
     this.emitter.emit(events.log.debug, "generate called, %s", type);
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
@@ -866,7 +864,7 @@ commands:
 
   // this is the functinoality for "undo"
   async popFromHistory(fullStep) {
-    this.emitter.emit(events.log.log, theme.dim("undoing..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("undoing..."), true);
 
     if (this.executionHistory.length) {
       if (fullStep) {
@@ -946,12 +944,16 @@ ${yml}
   async summarize(error = null) {
     this.analytics.track("summarize");
 
-    this.emitter.emit(events.log.log, theme.dim("reviewing test..."), true);
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim("reviewing test..."),
+      true,
+    );
 
     // let text = prompts.summarize(tasks, error);
     let image = await this.system.captureScreenBase64();
 
-    this.emitter.emit(events.log.log, theme.dim("summarizing..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("summarizing..."), true);
 
     const streamId = `summarize-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -1124,7 +1126,7 @@ ${regression}
       timestamp: fileStartTime,
     });
 
-    this.emitter.emit(events.log.log, theme.cyan(`running ${file}...`));
+    this.emitter.emit(events.log.narration, theme.cyan(`running ${file}...`));
 
     let ymlObj = await this.loadYML(file);
 
@@ -1516,8 +1518,8 @@ ${regression}
     if (this.sandboxId && !this.config.CI && !createNew) {
       // Attempt to connect to known instance
       this.emitter.emit(
-        events.log.log,
-        theme.dim(`- connecting to sandbox ${this.sandboxId}...`),
+        events.log.narration,
+        theme.dim(`connecting to sandbox ${this.sandboxId}...`),
       );
 
       try {
@@ -1539,17 +1541,20 @@ ${regression}
       }
     }
 
-    this.emitter.emit(events.log.log, theme.dim(`- creating new sandbox...`));
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim(`creating new sandbox...`),
+    );
     this.emitter.emit(
       events.log.log,
-      theme.dim(`  (this can take between 10 - 240 seconds)`),
+      theme.dim(`this can take between 10 - 240 seconds`),
     );
     // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
     // to see if that fixes the issue.
     let newSandbox = await this.createNewSandbox().catch(() => {
       this.emitter.emit(
-        events.log.log,
-        theme.dim(`  (double-checking sandbox availability)`),
+        events.log.narration,
+        theme.dim(`double-checking sandbox availability`),
       );
 
       return this.createNewSandbox();
@@ -1576,7 +1581,7 @@ ${regression}
       if (!debuggerStarted) {
         debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
         this.emitter.emit(
-          events.log.log,
+          events.log.narration,
           theme.green(`Starting debugger server...`),
         );
         debuggerProcess = await createDebuggerProcess(
@@ -1697,8 +1702,8 @@ ${regression}
 
   async connectToSandboxService() {
     this.emitter.emit(
-      events.log.log,
-      theme.gray(`- establishing connection...`),
+      events.log.narration,
+      theme.dim(`establishing connection...`),
     );
     let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
 
@@ -1710,7 +1715,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       );
     }
 
-    this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
+    this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
     let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
 
     if (!ableToAuth) {
@@ -1723,7 +1728,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
-    this.emitter.emit(events.log.log, theme.gray(`- connecting...`));
+    this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
     let instance = await this.sandbox.connect(sandboxId, persist);
     return instance;
   }
