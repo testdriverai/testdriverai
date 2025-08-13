@@ -13,6 +13,7 @@ When executing the `hover-image` and `hover-text` command, TestDriver may use th
 
 TestDriver may not accurately locate matches in certain cases. This can lead to unexpected behavior when using the `hover-image` or `hover-text` command. For example, if you specify a description that's too generic or similar to other images on the screen, TestDriver may not be able to identify the correct image to interact with. To improve accuracy, use specific and unique descriptions for images and text.
 When executing the `hover-image` and `hover-text` commands, TestDriver uses the provided description to identify the target image or text. If the description is too generic or matches multiple elements on the screen, TestDriver may not be able to determine which one to interact with, leading to unexpected behavior. To improve accuracy, always use specific and unique descriptions for both images and text.
+
 ### Avoid using `hover-text` for single characters (ex: `1`, `>`, `|`)
 
 To improve accuracy of our model, we do not include single characters or symbols in the matching data. This means that `hover-text` may not work as expected for these cases. If you need to interact with single characters or symbols, consider using the `match-image` command with a screenshot of the target element instead.
@@ -29,14 +30,14 @@ Assertions use the current state of the page to determine if the step passes or 
 
 ## Reporting issues
 
-If you encounter any issues while using TestDriver, please report them to us. You can do this by creating a new issue in the [Feedback Forum](https://forums.testdriver.ai/c/feedback/10). We appreciate your feedback and will work to resolve any problems as quickly as possible.
+If you encounter any issues while using TestDriver, please report them to us. You can do this by creating a new issue in the [discord](https://discord.com/invite/cWDFW8DzPm). We appreciate your feedback and will work to resolve any problems as quickly as possible.
 
 <Card
   title="Report an Issue"
   icon="arrow-turn-down-right"
   iconType="duotone"
   horizontal
-  href="https://forums.testdriver.ai/c/feedback/10"
+  href="https://discord.com/invite/cWDFW8DzPm"
 >
   We'd love to hear from you!
 </Card>
