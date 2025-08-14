@@ -158,11 +158,15 @@ class TestDriverAgent extends EventEmitter2 {
     this.emitter.emit(events.log.log, JSON.stringify(environment));
     this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
   }
-  
+
   // Stop method to immediately halt execution
   stop() {
     this.stopped = true;
-    this.emitter.emit(events.log.narration, theme.dim("stopping execution..."), true);
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim("stopping execution..."),
+      true,
+    );
   }
 
   // single function to handle all program exits
@@ -340,7 +344,11 @@ class TestDriverAgent extends EventEmitter2 {
   async check() {
     // Check if execution has been stopped
     if (this.stopped) {
-      this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
       return;
     }
 
@@ -487,7 +495,11 @@ class TestDriverAgent extends EventEmitter2 {
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
-      this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
       return;
     }
 
@@ -495,7 +507,11 @@ class TestDriverAgent extends EventEmitter2 {
       for (const command of commands) {
         // Check if execution has been stopped before each command
         if (this.stopped) {
-          this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+          this.emitter.emit(
+            events.log.narration,
+            theme.dim("execution stopped"),
+            true,
+          );
           return;
         }
 
@@ -537,7 +553,11 @@ class TestDriverAgent extends EventEmitter2 {
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
-      this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
       return;
     }
 
@@ -546,7 +566,11 @@ class TestDriverAgent extends EventEmitter2 {
     for (const codeblock of codeblocks) {
       // Check if execution has been stopped before each codeblock
       if (this.stopped) {
-        this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim("execution stopped"),
+          true,
+        );
         return;
       }
 
@@ -585,7 +609,11 @@ class TestDriverAgent extends EventEmitter2 {
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
-      this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
       return;
     }
 
@@ -786,7 +814,11 @@ commands:
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
-      this.emitter.emit(events.log.narration, theme.dim("execution stopped"), true);
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
       return;
     }
 
