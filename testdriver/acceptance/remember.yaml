@@ -24,4 +24,4 @@ steps:
         keys:
           - enter
       - command: assert
-        expect: the homepage is visible
+        expect: The product listing page is visible
