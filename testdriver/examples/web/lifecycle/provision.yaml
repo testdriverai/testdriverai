@@ -63,11 +63,3 @@ steps:
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 60000
-      - command: exec
-        lang: pwsh
-        code: |
-          dashcam track --name="Web Logs" --type="web" --pattern="*"
-          dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
-      - command: exec
-        lang: pwsh
-        code: dashcam start
