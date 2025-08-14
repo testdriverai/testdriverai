@@ -606,6 +606,7 @@ class TestDriverAgent extends EventEmitter2 {
     validateAndLoop = false,
     dry = false,
     shouldSave = false,
+    isLoopContinuation = false,
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
@@ -617,7 +618,10 @@ class TestDriverAgent extends EventEmitter2 {
       return;
     }
 
-    this.executionHistory.push({ prompt: this.lastPrompt, commands: [] });
+    // Only create new execution history entry if this is not a loop continuation
+    if (!isLoopContinuation) {
+      this.executionHistory.push({ prompt: this.lastPrompt, commands: [] });
+    }
 
     if (shouldSave) {
       await this.save({ silent: true });
@@ -657,7 +661,13 @@ class TestDriverAgent extends EventEmitter2 {
           "check thinks more needs to be done",
         );
 
-        return await this.aiExecute(response, validateAndLoop);
+        return await this.aiExecute(
+          response,
+          validateAndLoop,
+          dry,
+          shouldSave,
+          true,
+        );
       } else {
         this.emitter.emit(events.log.debug, "seems complete, returning");
 
