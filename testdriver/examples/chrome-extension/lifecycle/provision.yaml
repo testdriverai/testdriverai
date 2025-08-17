@@ -1,52 +1,74 @@
 version: 6.0.0
 session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: Focus Chrome and navigate to extension in Chrome Web Store
+  - prompt: launch chrome
     commands:
-      - command: focus-application
-        name: Google Chrome
-      - command: wait-for-text
-        text: chrome.google.com/webstore
-        timeout: 10000
-      - command: wait-for-text
-        text: Add to Chrome
-        timeout: 15000
-  - prompt: Install the extension by clicking Add to Chrome
-    commands:
-      - command: hover-text
-        text: Add to Chrome
-        description: blue Add to Chrome button
-        action: click
-      - command: wait-for-text
-        text: Add extension
-        timeout: 5000
-  - prompt: Confirm extension installation
-    commands:
-      - command: hover-text
-        text: Add extension
-        description: confirmation dialog Add extension button
-        action: click
-      - command: wait-for-text
-        text: Extension added
-        timeout: 10000
+      - command: exec
+        lang: pwsh
+        code: |
+          Write-Host "Cloning Chrome extension samples..."
+          $repoUrl = "https://github.com/GoogleChrome/chrome-extensions-samples.git"
+          $clonePath = Join-Path $env:TEMP "chrome-extensions-samples"
+          if (!(Test-Path $clonePath)) {
+            git clone $repoUrl $clonePath
+          } else {
+            Write-Host "Repo already cloned at $clonePath"
+          }
+          Write-Host "Repo ready at $clonePath"
 
-  - prompt: Pin extension to toolbar
-    commands:
-      - command: hover-image
-        description: puzzle piece icon for extensions
-        action: click
-      - command: hover-text
-        text: Google Translate
-        description: Google Translate extension in dropdown
-        action: click
-      - command: hover-image
-        description: pin icon next to Google Translate
-        action: click
+          Write-Host "Initializing new npm project..."
+          cd $env:TEMP
+          Write-Host "Changed directory to TEMP: $env:TEMP"
 
-  - prompt: Test the extension is working
-    commands:
-      - command: hover-image
-        description: Google Translate extension icon in toolbar
-        action: click
-      - command: assert
-        expect: Google Translate extension popup is visible
+          Write-Host "Running 'npm init -y'..."
+          npm init -y
+
+          Write-Host "Installing dependencies: @puppeteer/browsers and dashcam-chrome..."
+          npm install @puppeteer/browsers dashcam-chrome
+
+          Write-Host "Installing Chromium via '@puppeteer/browsers'..."
+          npx @puppeteer/browsers install chrome
+
+          # Define paths - redefining variables for this script
+          $extensionPath = Join-Path (Join-Path $env:TEMP "chrome-extensions-samples") "functional-samples/tutorial.hello-world"
+          $profilePath = Join-Path $env:TEMP "chrome-profile-$(Get-Random)"
+          $defaultDir = Join-Path $profilePath "Default"
+          $prefsPath = Join-Path $defaultDir "Preferences"
+
+          Write-Host "Extension path (hello-world): $extensionPath"
+          Write-Host "Chrome user data dir: $profilePath"
+
+          # Create a clean profile + Preferences to disable password manager & autofill
+          Remove-Item $profilePath -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item $defaultDir -ItemType Directory -Force | Out-Null
+
+          $prefs = @{
+            "credentials_enable_service" = $false
+            "profile" = @{
+              "password_manager_enabled" = $false
+            }
+            "autofill" = @{
+              "profile_enabled"       = $false
+              "address_enabled"       = $false
+              "credit_card_enabled"   = $false
+            }
+          } | ConvertTo-Json -Depth 6
+
+          # Write Preferences before Chrome starts (ASCII/UTF8 is fine)
+          $prefs | Set-Content -Path $prefsPath -Encoding ASCII
+
+          # Build args - load only hello-world extension
+          $chromeArgs = @(
+            "--start-maximized",
+            "--load-extension=$extensionPath",
+            "--user-data-dir=$profilePath",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-infobars"
+            "https://testdriver.ai"
+          ) -join ' '
+
+          Start-Process "cmd.exe" -ArgumentList "/c", "npx @puppeteer/browsers launch chrome -- $chromeArgs"
+
+          Write-Host "Script complete."
+          exit

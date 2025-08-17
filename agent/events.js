@@ -85,6 +85,7 @@ const events = {
     load: "file:load",
     save: "file:save",
     modification: "file:modification",
+    diff: "file:diff",
     error: "file:error",
     status: "file:status",
   },

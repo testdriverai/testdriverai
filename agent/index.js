@@ -15,6 +15,7 @@ const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter2 } = require("eventemitter2");
+const diff = require("diff");
 
 // global utilities
 const generator = require("./lib/generator.js");
@@ -1117,11 +1118,110 @@ ${yml}
       return;
     }
 
+    // Read existing file content for diff comparison
+    let existingContent = "";
+    let fileExists = false;
+    try {
+      if (fs.existsSync(filepath)) {
+        existingContent = fs.readFileSync(filepath, "utf8");
+        fileExists = true;
+      }
+    } catch {
+      // File doesn't exist or can't be read, treat as empty
+      existingContent = "";
+    }
+
     // write reply to /tmp/testdriver-summary.md
     let regression = await generator.dumpToYML(
       this.executionHistory,
       this.session,
     );
+
+    // Create diff if file exists and content has changed
+    let diffResult = null;
+    console.log("Checking for diff. File exists:", fileExists);
+    console.log(
+      "Content changed:",
+      fileExists && existingContent !== regression,
+    );
+    if (fileExists) {
+      console.log(
+        "Existing content preview:",
+        existingContent.substring(0, 100),
+      );
+      console.log("New content preview:", regression.substring(0, 100));
+    }
+
+    if (fileExists && existingContent !== regression) {
+      console.log("Creating diff - content has changed");
+      const patches = diff.structuredPatch(
+        filepath,
+        filepath,
+        existingContent,
+        regression,
+        `${new Date().toISOString()} (before)`,
+        `${new Date().toISOString()} (after)`,
+      );
+
+      // Create source map-like information for VS Code
+      const diffLines = diff.diffLines(existingContent, regression);
+      const sourceMaps = [];
+      let oldLineNumber = 1;
+      let newLineNumber = 1;
+
+      diffLines.forEach((part) => {
+        const lineCount = part.value.split("\n").length - 1;
+        if (part.added) {
+          sourceMaps.push({
+            type: "addition",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber,
+            newStart: newLineNumber,
+            newEnd: newLineNumber + lineCount,
+            content: part.value,
+            lines: lineCount,
+          });
+          newLineNumber += lineCount;
+        } else if (part.removed) {
+          sourceMaps.push({
+            type: "deletion",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber + lineCount,
+            newStart: newLineNumber,
+            newEnd: newLineNumber,
+            content: part.value,
+            lines: lineCount,
+          });
+          oldLineNumber += lineCount;
+        } else {
+          // unchanged
+          sourceMaps.push({
+            type: "unchanged",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber + lineCount,
+            newStart: newLineNumber,
+            newEnd: newLineNumber + lineCount,
+            content: part.value,
+            lines: lineCount,
+          });
+          oldLineNumber += lineCount;
+          newLineNumber += lineCount;
+        }
+      });
+
+      diffResult = {
+        patches,
+        sourceMaps,
+        summary: {
+          additions: diffLines.filter((part) => part.added).length,
+          deletions: diffLines.filter((part) => part.removed).length,
+          modifications: diffLines.filter(
+            (part) => !part.added && !part.removed,
+          ).length,
+        },
+      };
+    }
+
     try {
       fs.writeFileSync(filepath, regression);
 
@@ -1133,6 +1233,17 @@ ${yml}
         size: regression.length,
         timestamp: endTime,
       });
+
+      // Emit diff event if there were changes
+      if (diffResult) {
+        this.emitter.emit(events.file.diff, {
+          filePath: filepath,
+          diff: diffResult,
+          timestamp: endTime,
+        });
+      } else {
+        console.log("No diff result to emit");
+      }
 
       // Emit file save completion event
       this.emitter.emit(events.file.stop, {
