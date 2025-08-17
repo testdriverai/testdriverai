@@ -574,10 +574,7 @@ const createCommands = (
       }
 
       let scrollDistance = 0;
-      let incrementDistance = 300;
-      if (method === "mouse") {
-        incrementDistance = 200;
-      }
+      let incrementDistance = 500;
       let passed = false;
 
       while (scrollDistance <= maxDistance && !passed) {
