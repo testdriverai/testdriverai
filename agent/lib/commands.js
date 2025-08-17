@@ -547,7 +547,7 @@ const createCommands = (
     "scroll-until-text": async (
       text,
       direction = "down",
-      maxDistance = 1200,
+      maxDistance = 10000,
       textMatchMethod = "turbo",
       method = "keyboard",
     ) => {
