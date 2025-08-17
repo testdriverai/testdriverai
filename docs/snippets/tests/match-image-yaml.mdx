@@ -1,14 +1,15 @@
-```yaml
-version: 5.7.7
+```yaml testdriver/match-image.yaml highlight={10-12}
+version: 6.0.0
 session: 682f5d92811bd5a322c0e636
 steps:
-  - commands:
-    - command: run
-      file: testdriver/snippets/login.yaml
+  - prompt: login
+    commands:
+      - command: run
+        file: snippets/login.yaml
   - prompt: assert the testdriver login page shows
     commands:
       - command: match-image
-        path: cart.png
+        path: screenshots/cart.png
         action: click
   - prompt: assert that you see an empty shopping cart
     commands:

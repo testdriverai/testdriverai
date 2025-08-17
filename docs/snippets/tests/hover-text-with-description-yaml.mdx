@@ -1,30 +1,25 @@
-```yaml
-version: 5.7.7
+```yaml testdriver/hover-text-with-description.yaml
+version: 6.0.0
 session: 682f62f6811bd5a322c0e726
 steps:
-  - commands:
-    - command: run
-      file: testdriver/snippets/login.yaml
+  - prompt: login
+    commands:
+      - command: run
+        file: testdriver/snippets/login.yaml
   - prompt: click on add to cart under the testdriver hat
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: hover-text
         text: Add to Cart
         description: add to cart button under TestDriver Hat
         action: click
   - prompt: click on the cart
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: hover-text
         text: Cart
         description: cart button in the top right corner
         action: click
   - prompt: assert the testdriver hat is in the cart
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: assert
         expect: TestDriver Hat is in the cart
 ```

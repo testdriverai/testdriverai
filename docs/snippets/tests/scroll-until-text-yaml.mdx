@@ -1,21 +1,18 @@
-```yaml
-version: 5.7.7
+```yaml testdriver/scroll-until-text.yaml
+version: 6.0.0
 session: 682f62a1811bd5a322c0e70b
 steps:
-  - commands:
+  - prompt: login
+    commands:
       - command: run
         file: testdriver/snippets/login.yaml
   - prompt: scroll until text testdriver socks
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: scroll-until-text
         text: testdriver socks
         direction: down
   - prompt: assert testdriver socks appears on screen
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: assert
         expect: TestDriver Socks appears on screen
 ```

@@ -3,7 +3,6 @@ title: "hover-image"
 sidebarTitle: "hover-image"
 description: "Locate an image on the screen and perform an action."
 icon: "image"
-mode: "wide"
 ---
 
 import Replay from '/snippets/tests/hover-image-replay.mdx'
@@ -14,15 +13,37 @@ import Example from '/snippets/tests/hover-image-yaml.mdx'
 
 ## Description
 
-The `hover-image` command is used to locate an image on the screen based on a description and perform an action on it. This can include hovering, clicking, right-clicking, or double-clicking the image.
+The `hover-image` command is used to locate an image on the screen based on a description and perform an action on it. This can include hovering, clicking, double-clicking or dragging the image.
 
 ## Arguments
 | Argument      | Type     | Description                                                                 |
 |---------------|----------|-----------------------------------------------------------------------------|
 | `description` | `string` | A description of the image and what it represents. Don't include the image itself here. |
-| `action`      | `string` | The action to take when the image is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
+| `action`      | `string` | The action to take when the image is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for dragging images |
 
 The `hover-image` command is useful for interacting with visual elements that can't be identified using text-based selectors.
+
+---
+
+## Drag functionality
+- The `drag-start` and `drag-end` actions are used to drag an image to a specific location. `drag-start` could be the image (or inner text element, in which case using `hover-text` is preferred) to drag and `drag-end` is the location is supposed to be dragged to. This could be coupled with [`hover-text`](/commands/hover-text) or [`match-image`](/commands/match-image) or just `hover-image`.
+
+### Example: Drag and Drop to upload an image
+```yaml drag-and-drop.yaml
+version: 6.0.0
+steps:
+  - prompt: click on the image of a shopping cart
+    commands:
+      - command: hover-image
+        description: a pink tree image in the file explorer
+        action: drag-start
+      - command: hover-text
+        text: Upload
+        description: The drop zone of the application
+        action: drag-end
+```
+
+---
 
 ## Example usage
 ```yaml
@@ -39,4 +60,3 @@ action: click
 ## Gotchas
 - If the image can't be located based on the description, the command will fail.
 - Ensure the screen resolution and scaling settings are consistent to avoid detection issues.
-

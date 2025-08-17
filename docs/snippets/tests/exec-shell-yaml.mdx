@@ -1,5 +1,5 @@
-```yaml
-version: 5.1.1
+```yaml testdriver/exec-shell.yaml highlight={6-9}
+version: 6.0.0
 session: 67f00511acbd9ccac373edf7
 steps:
   - prompt: launch chrome
@@ -7,10 +7,10 @@ steps:
       - command: exec
         lang: pwsh
         code: |
-          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--disable-fre", "--no-default-browser-check", "--no-first-run", "--guest", "${TD_WEBSITE}"
+          Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--no-default-browser-check", "--no-first-run", "--guest", "${TD_WEBSITE}"
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 30000
       - command: assert
-        expect: Google Chrome is running
+        expect: ${TD_WEBSITE} is loaded
 ```

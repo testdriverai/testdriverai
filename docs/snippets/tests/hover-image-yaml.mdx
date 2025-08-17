@@ -1,14 +1,13 @@
-```yaml
-version: 5.7.7
+```yaml testdriver/hover-image.yaml highlight={10-12}
+version: 6.0.0
 session: 682f60bf2856e2eb4066427f
 steps:
-  - commands:
-    - command: run
-      file: testdriver/snippets/login.yaml
+  - prompt: login
+    commands:
+      - command: run
+        file: testdriver/snippets/login.yaml
   - prompt: click on the image of a shopping cart
     commands:
-      - command: focus-application
-        name: Google Chrome
       - command: hover-image
         description: shopping cart icon next to the Cart text in the top right corner
         action: click

@@ -26,8 +26,17 @@ name: Google Chrome
 
 - Ensure the application name matches the exact name displayed in your operating system's task manager.
 - Use this command at the start of a test or before interacting with an application to avoid focus-related issues.
-- If the specified application isn't running, the command will fail. Ensure the application is open before using this command.
+<Note>
+If the specified application isn't running, the command will fail. Ensure the application is open before using this command.
+For example, to launch chrome try using the exec command:
+```yaml
+- command: exec
+  lang: pwsh
+  code: start chrome
+```
 
+
+</Note>
 ## Notes
 
 - The `focus-application` command is useful for multi-application workflows where you need to switch between different apps during a test.
