@@ -18,10 +18,18 @@ The `scroll-until-text` command is used to scroll the screen in a specified dire
 ## Arguments
 
 | Argument    | Type     | Description                                                                                   |
-| ----------- | -------- | --------------------------------------------------------------------------------------------- |
+| :---------: | :------: | :-------------------------------------------------------------------------------------------- |
 | `text`      | `string` | The text to find on the screen. Longer and unique are better. Note this is **case sensitive** |
-| `direction` | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`.             |
-| `distance`  | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `300`.         |
+| `direction` | `string` | (Optional) The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. Defaults to `down`. |
+| `method`    | `string` | (Optional) The method to use to scroll the page. Available methods are: `mouse` and `keyboard`. Defaults to `keyboard`. |
+| `distance`  | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `10000`. |
+
+<Note>
+If the method is `keyboard` it just searches for the string by doing `ctrl + f`. 
+This is helpful if there is a single string match that you want to operate with.
+
+If you are using `mouse` method, the command will manually scroll the page (based on the `distance`) until the text is found.
+</Note>
 
 ## Example usage
 
@@ -29,12 +37,11 @@ The `scroll-until-text` command is used to scroll the screen in a specified dire
 command: scroll-until-text
 text: Sign Up
 direction: down
-distance: 500
+distance: 1000
 ```
 
 ## Protips
 
-- The `keyboard` method will trigger a "find" action (ex: `Command + F`) to locate the text, while the `mouse` method will use a mouse scroll action only.
 - Use unique and specific text to improve detection accuracy.
 - Adjust the `distance` value to control how far the command scrolls before giving up.
 - If you don't specify a `distance`, the command will scroll 300 pixels at a time, giving up after 5 attempts.
@@ -45,7 +52,6 @@ distance: 500
 - Ensure the text is visible and matches exactly, as variations in font size, style, or screen resolution may affect detection accuracy.
 - Note that `text` is case-sensitive, so **Sign Up** and **sign up** would be treated as different strings.
 
-## Notes
+---
 
-- The `scroll-until-text` command is ideal for navigating to elements that are off-screen and can't be located using other commands.
-- This command supports both vertical and horizontal scrolling for flexible navigation.
+The `scroll-until-text` command is ideal for navigating to elements that are off-screen and can't be located using other commands.
