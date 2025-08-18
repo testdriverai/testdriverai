@@ -549,7 +549,7 @@ const createCommands = (
       direction = "down",
       maxDistance = 10000,
       textMatchMethod = "turbo",
-      method = "keyboard",
+      method = "mouse",
     ) => {
       await redraw.start();
 
