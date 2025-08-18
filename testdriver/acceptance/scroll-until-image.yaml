@@ -4,13 +4,13 @@ steps:
   - prompt: scroll until image
     commands:
       - command: press-keys
-        keys: 
+        keys:
           - ctrl
           - l
       - command: type
         text: https://en.wikipedia.org/wiki/Leonardo_da_Vinci
       - command: press-keys
-        keys: 
+        keys:
           - enter
       - command: hover-text
         text: Leonardo Da Vinci
