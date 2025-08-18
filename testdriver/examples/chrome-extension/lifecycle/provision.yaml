@@ -1,0 +1,74 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch chrome
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          Write-Host "Cloning Chrome extension samples..."
+          $repoUrl = "https://github.com/GoogleChrome/chrome-extensions-samples.git"
+          $clonePath = Join-Path $env:TEMP "chrome-extensions-samples"
+          if (!(Test-Path $clonePath)) {
+            git clone $repoUrl $clonePath
+          } else {
+            Write-Host "Repo already cloned at $clonePath"
+          }
+          Write-Host "Repo ready at $clonePath"
+
+          Write-Host "Initializing new npm project..."
+          cd $env:TEMP
+          Write-Host "Changed directory to TEMP: $env:TEMP"
+
+          Write-Host "Running 'npm init -y'..."
+          npm init -y
+
+          Write-Host "Installing dependencies: @puppeteer/browsers and dashcam-chrome..."
+          npm install @puppeteer/browsers dashcam-chrome
+
+          Write-Host "Installing Chromium via '@puppeteer/browsers'..."
+          npx @puppeteer/browsers install chrome
+
+          # Define paths - redefining variables for this script
+          $extensionPath = Join-Path (Join-Path $env:TEMP "chrome-extensions-samples") "functional-samples/tutorial.hello-world"
+          $profilePath = Join-Path $env:TEMP "chrome-profile-$(Get-Random)"
+          $defaultDir = Join-Path $profilePath "Default"
+          $prefsPath = Join-Path $defaultDir "Preferences"
+
+          Write-Host "Extension path (hello-world): $extensionPath"
+          Write-Host "Chrome user data dir: $profilePath"
+
+          # Create a clean profile + Preferences to disable password manager & autofill
+          Remove-Item $profilePath -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item $defaultDir -ItemType Directory -Force | Out-Null
+
+          $prefs = @{
+            "credentials_enable_service" = $false
+            "profile" = @{
+              "password_manager_enabled" = $false
+            }
+            "autofill" = @{
+              "profile_enabled"       = $false
+              "address_enabled"       = $false
+              "credit_card_enabled"   = $false
+            }
+          } | ConvertTo-Json -Depth 6
+
+          # Write Preferences before Chrome starts (ASCII/UTF8 is fine)
+          $prefs | Set-Content -Path $prefsPath -Encoding ASCII
+
+          # Build args - load only hello-world extension
+          $chromeArgs = @(
+            "--start-maximized",
+            "--load-extension=$extensionPath",
+            "--user-data-dir=$profilePath",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-infobars"
+            "https://testdriver.ai"
+          ) -join ' '
+
+          Start-Process "cmd.exe" -ArgumentList "/c", "npx @puppeteer/browsers launch chrome -- $chromeArgs"
+
+          Write-Host "Script complete."
+          exit

@@ -15,6 +15,7 @@ const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter2 } = require("eventemitter2");
+const diff = require("diff");
 
 // global utilities
 const generator = require("./lib/generator.js");
@@ -152,9 +153,23 @@ class TestDriverAgent extends EventEmitter2 {
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
+    // Flag to indicate if the agent should stop execution
+    this.stopped = false;
+
     this.emitter.emit(events.log.log, JSON.stringify(environment));
     this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
   }
+
+  // Stop method to immediately halt execution
+  stop() {
+    this.stopped = true;
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim("stopping execution..."),
+      true,
+    );
+  }
+
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
@@ -328,6 +343,16 @@ class TestDriverAgent extends EventEmitter2 {
   // this checks that the task is "really done" using a screenshot of the desktop state
   // it's likely that the task will not be complete and the AI will respond with more codeblocks to execute
   async check() {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     this.checkCount++;
 
     if (this.checkCount >= this.checkLimit) {
@@ -469,8 +494,28 @@ class TestDriverAgent extends EventEmitter2 {
     dry = false,
     shouldSave = false,
   ) {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     if (commands?.length) {
       for (const command of commands) {
+        // Check if execution has been stopped before each command
+        if (this.stopped) {
+          this.emitter.emit(
+            events.log.narration,
+            theme.dim("execution stopped"),
+            true,
+          );
+          return;
+        }
+
         // Update current command tracking
         const commandIndex = commands.indexOf(command);
         this.sourceMapper.setCurrentCommand(commandIndex);
@@ -507,9 +552,29 @@ class TestDriverAgent extends EventEmitter2 {
     dry = false,
     shouldSave = false,
   ) {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     depth = depth + 1;
 
     for (const codeblock of codeblocks) {
+      // Check if execution has been stopped before each codeblock
+      if (this.stopped) {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim("execution stopped"),
+          true,
+        );
+        return;
+      }
+
       let commands;
 
       try {
@@ -542,8 +607,22 @@ class TestDriverAgent extends EventEmitter2 {
     validateAndLoop = false,
     dry = false,
     shouldSave = false,
+    isLoopContinuation = false,
   ) {
-    this.executionHistory.push({ prompt: this.lastPrompt, commands: [] });
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
+    // Only create new execution history entry if this is not a loop continuation
+    if (!isLoopContinuation) {
+      this.executionHistory.push({ prompt: this.lastPrompt, commands: [] });
+    }
 
     if (shouldSave) {
       await this.save({ silent: true });
@@ -583,7 +662,13 @@ class TestDriverAgent extends EventEmitter2 {
           "check thinks more needs to be done",
         );
 
-        return await this.aiExecute(response, validateAndLoop);
+        return await this.aiExecute(
+          response,
+          validateAndLoop,
+          dry,
+          shouldSave,
+          true,
+        );
       } else {
         this.emitter.emit(events.log.debug, "seems complete, returning");
 
@@ -738,6 +823,16 @@ commands:
     validateAndLoop = false,
     shouldSave = true,
   ) {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     this.lastPrompt = currentTask;
     this.checkCount = 0;
 
@@ -1023,11 +1118,110 @@ ${yml}
       return;
     }
 
+    // Read existing file content for diff comparison
+    let existingContent = "";
+    let fileExists = false;
+    try {
+      if (fs.existsSync(filepath)) {
+        existingContent = fs.readFileSync(filepath, "utf8");
+        fileExists = true;
+      }
+    } catch {
+      // File doesn't exist or can't be read, treat as empty
+      existingContent = "";
+    }
+
     // write reply to /tmp/testdriver-summary.md
     let regression = await generator.dumpToYML(
       this.executionHistory,
       this.session,
     );
+
+    // Create diff if file exists and content has changed
+    let diffResult = null;
+    console.log("Checking for diff. File exists:", fileExists);
+    console.log(
+      "Content changed:",
+      fileExists && existingContent !== regression,
+    );
+    if (fileExists) {
+      console.log(
+        "Existing content preview:",
+        existingContent.substring(0, 100),
+      );
+      console.log("New content preview:", regression.substring(0, 100));
+    }
+
+    if (fileExists && existingContent !== regression) {
+      console.log("Creating diff - content has changed");
+      const patches = diff.structuredPatch(
+        filepath,
+        filepath,
+        existingContent,
+        regression,
+        `${new Date().toISOString()} (before)`,
+        `${new Date().toISOString()} (after)`,
+      );
+
+      // Create source map-like information for VS Code
+      const diffLines = diff.diffLines(existingContent, regression);
+      const sourceMaps = [];
+      let oldLineNumber = 1;
+      let newLineNumber = 1;
+
+      diffLines.forEach((part) => {
+        const lineCount = part.value.split("\n").length - 1;
+        if (part.added) {
+          sourceMaps.push({
+            type: "addition",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber,
+            newStart: newLineNumber,
+            newEnd: newLineNumber + lineCount,
+            content: part.value,
+            lines: lineCount,
+          });
+          newLineNumber += lineCount;
+        } else if (part.removed) {
+          sourceMaps.push({
+            type: "deletion",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber + lineCount,
+            newStart: newLineNumber,
+            newEnd: newLineNumber,
+            content: part.value,
+            lines: lineCount,
+          });
+          oldLineNumber += lineCount;
+        } else {
+          // unchanged
+          sourceMaps.push({
+            type: "unchanged",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber + lineCount,
+            newStart: newLineNumber,
+            newEnd: newLineNumber + lineCount,
+            content: part.value,
+            lines: lineCount,
+          });
+          oldLineNumber += lineCount;
+          newLineNumber += lineCount;
+        }
+      });
+
+      diffResult = {
+        patches,
+        sourceMaps,
+        summary: {
+          additions: diffLines.filter((part) => part.added).length,
+          deletions: diffLines.filter((part) => part.removed).length,
+          modifications: diffLines.filter(
+            (part) => !part.added && !part.removed,
+          ).length,
+        },
+      };
+    }
+
     try {
       fs.writeFileSync(filepath, regression);
 
@@ -1039,6 +1233,17 @@ ${yml}
         size: regression.length,
         timestamp: endTime,
       });
+
+      // Emit diff event if there were changes
+      if (diffResult) {
+        this.emitter.emit(events.file.diff, {
+          filePath: filepath,
+          diff: diffResult,
+          timestamp: endTime,
+        });
+      } else {
+        console.log("No diff result to emit");
+      }
 
       // Emit file save completion event
       this.emitter.emit(events.file.stop, {
@@ -1867,7 +2072,15 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       }
     }
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false);
+      // Store current source mapping state before running lifecycle file
+      const previousContext = this.sourceMapper.saveContext();
+
+      try {
+        await this.run(lifecycleFile, false, false);
+      } finally {
+        // Restore previous source mapping state after lifecycle file execution
+        this.sourceMapper.restoreContext(previousContext);
+      }
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {
