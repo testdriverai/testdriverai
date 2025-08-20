@@ -178,13 +178,9 @@
           {
             "group": "Interactive Commands",
             "pages": [
-              "/interactive/assert",
-              "/interactive/dry",
               "/interactive/explore",
-              "/interactive/generate",
               "/interactive/run",
-              "/interactive/save",
-              "/interactive/undo"
+              "/interactive/save"
             ]
           },
           {

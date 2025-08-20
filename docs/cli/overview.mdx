@@ -16,7 +16,7 @@ npx testdriverai@latest <command> [options]
 ## Available commands
 
 | Command | Description                                                  |
-| ------- | ------------------------------------------------------------ |
+| :------: | :----------------------------------------------------------- |
 | `run`   | Executes a TestDriver test.                                  |
 | `edit`  | Launch interactive mode.                                     |
 | `help`  | Displays help information for the CLI or a specific command. |
@@ -24,11 +24,11 @@ npx testdriverai@latest <command> [options]
 ## Available Flags
 
 | Flag                | Description                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------ |
+| :------------------ | :----------------------------------------------------------------------------------------- |
 | `--heal`            | Launch exploratory mode and attemp to recover if an error or failing state is encountered. |
 | `--write`           | Ovewrite test file with new commands resulting from agentic testing                        |
 | `--headless`        | Run test without opening a browser window (useful for CI/CD environments)                  |
-| `--new-sandbox`     | Create a new sandbox environment for the test run.                                         |
+| `--new`             | Create a new sandbox environment for the test run.                                         |
 | `--summary=<value>` | Output file where AI summary should be saved.                                              |
 
 ## Example usage
@@ -54,13 +54,3 @@ This command sets up a new TestDriver project in the current directory, creating
 ```bash
 npx testdriverai@latest help
 ```
-
-This command displays general help information. To get help for a specific command, use:
-
-```bash
-npx testdriverai@latest help <command>
-```
-
-## Protips
-
-- Combine `run` and `--headless` with CI/CD pipelines to automate test execution.

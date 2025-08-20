@@ -10,15 +10,21 @@ The `/run` command is used to execute a test file from a specified file. This co
 
 ## Usage
 ```bash
-/run <file>
+npx testdriverai@latest edit <filename.yaml>
+/run [other-filename.yaml] # if no path is present it will run the `filename.yaml`
 ```
 
 ## Example usage
 ```bash
-testdriverai
+testdriverai edit
 > /run helloworld.yaml
 ```
 This command runs the `helloworld.yaml` test file, executing each command in the file sequentially.
+
+<Warning>
+The `helloworld.yaml` file needs to be present in the present directory.
+If its present outside, need to specify the relative path like `../snippets/helloworld.yaml`
+</Warning>
 
 ## Behavior
 - TestDriver will execute the test file, performing each command as defined in the file.
@@ -28,10 +34,8 @@ This command runs the `helloworld.yaml` test file, executing each command in the
 ## Protips
 - Ensure the test file path is correct and accessible before running the command.
 - Use descriptive filenames for your test files to make them easier to identify.
-- Combine `/run` with debugging tools to troubleshoot failing tests.
 
 ## Gotchas
-- This command will exit the program upon execution, so ensure all necessary setup is complete before running it.
 - Any errors in the test file (for example, invalid commands or missing arguments) will cause the test to fail.
 
 ## Notes
