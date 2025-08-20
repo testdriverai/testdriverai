@@ -151,7 +151,7 @@
         ]
       },
       {
-        "group": "Commands",
+        "group": "Reference",
         "pages": [
           "/commands/assert",
           "/commands/exec",
