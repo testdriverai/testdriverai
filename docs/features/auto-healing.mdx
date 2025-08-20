@@ -1,15 +1,15 @@
 ---
-title: "Auto-Healing in TestDriver"
-sidebarTitle: "Auto-Healing"
-description: "Learn how TestDriver's auto-healing feature keeps your tests resilient and up-to-date with minimal manual effort."
+title: "Self-Healing in TestDriver"
+sidebarTitle: "Self-Healing"
+description: "Learn how TestDriver's self-healing feature keeps your tests resilient and up-to-date with minimal manual effort."
 icon: "bandage"
 ---
 
-Auto-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes.
+Self-healing is a powerful feature in TestDriver that ensures your tests remain resilient even when the application under test changes.
 
-Use `--heal` to enable auto-healing in your test runs. This feature allows TestDriver to automatically update tests when minor changes occur, such as text updates or small UI adjustments, without requiring manual intervention.
+Use `--heal` to enable self-healing in your test runs. This feature allows TestDriver to automatically recover when minor changes occur, such as text updates or small UI adjustments, without requiring manual intervention.
 
-## Why use auto-healing?
+## Why use self-healing?
 
 In modern software development, applications frequently undergo changes, whether it's UI updates, text modifications, or layout adjustments. These changes can lead to test failures, requiring developers to manually update test scripts to reflect the new state of the application.
 
@@ -17,28 +17,28 @@ This means that if a test fails due to a change in the application, TestDriver w
 
 This feature is particularly useful in continuous integration (CI) environments, where tests need to adapt to frequent changes in the application.
 
-## How to enable auto-healing
+## How to enable self-healing
 
-To enable auto-healing in TestDriver, simply add the `--heal` and `--write` flags when running your tests. The `--heal` flag instructs TestDriver to attempt to automatically update any failing tests due to minor changes in the application, while `--write` ensures the updated test files are saved.
+To enable self-healing in TestDriver, simply add the `--heal` and `--write` flags when running your tests. The `--heal` flag instructs TestDriver to recover when test fail due to minor changes in the application, while `--write` saves newly generated steps to the test file.
 
 ```bash
 npx testdriverai@latest run my-tests.yaml --heal --write
 ```
 
-## How auto-healing works
+## How self-healing works
 
 When TestDriver steps fail, the AI will progressively fall back to attempt to complete the test.
 
-When running with `--heal` and `--write`, TestDriver will update the test files locally with any changes made during auto-healing. You can then use GitHub Actions to commit these changes and create a pull request for review.
+When running with `--heal` and `--write`, TestDriver will update the test files locally with any changes made during self-healing. You can then use GitHub Actions to commit these changes and create a pull request for review.
 
-## Benefits of auto-healing
+## Benefits of self-healing
 
 - **Reduced Maintenance**: Eliminates the need for manual updates to tests when minor UI changes occur.
 - **Increased Test Resilience**: Ensures tests adapt to changes without breaking.
 - **Continuous Integration**: Keeps your test suite aligned with the latest application changes.
 - **Developer Collaboration**: Automatically opens a PR, allowing developers to review and approve updates.
 
-## How auto-healing works
+## How self-healing works
 
 1. **Test Execution**: TestDriver runs your test suite as usual.
 2. **Failure Detection**: If a test fails due to a change in the application (for example, text or UI updates), the AI identifies the failure point.
@@ -67,7 +67,7 @@ When running with `--heal` and `--write`, TestDriver will update the test files 
   - TestDriver runs the test and fails to find the "Submit" button.
 </Step>
 
-<Step title="Auto-Healing">
+<Step title="Self-Healing">
   - The AI detects the failure and searches for a similar element.
   - It identifies the "Send" button as the updated element and retries the action.
 </Step>
@@ -88,12 +88,12 @@ When running with `--heal` and `--write`, TestDriver will update the test files 
 
 </Step>
 </Steps>
-## Example GitHub Action for Auto-Healing
+## Example GitHub Action for self-healing
 
-Here's how you can configure a GitHub Action to enable auto-healing and automatically create PRs for any test updates:
+Here's how you can configure a GitHub Action to enable self-healing and automatically create PRs for any test updates:
 
 ```yaml
-name: TestDriver Auto-Healing
+name: TestDriver Self-Healing
 
 on:
   push:
@@ -104,12 +104,12 @@ on:
 
 jobs:
   test:
-    name: "Run Tests with Auto-Healing"
+    name: "Run Tests with Self-Healing"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Run TestDriver with Auto-Healing
+      - name: Run TestDriver with Self-Healing
         run: npx testdriverai@latest run testdriver/onboarding.yaml --heal --write --headless
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
@@ -126,7 +126,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Auto-healed test updates"
-          title: "Auto-Healed Test Updates"
+          title: "Self-Healed Test Updates"
           branch: auto-heal-updates
           base: main
           body: |
@@ -137,8 +137,8 @@ jobs:
 
 ---
 
-## Limitations of Auto-Healing
+## Limitations of Self-Healing
 
-- **Major UI Overhauls**: Auto-healing is best suited for minor changes (for example, text updates, small layout adjustments). Significant UI changes may still require manual intervention.
+- **Major UI Overhauls**: Self-healing is best suited for minor changes (for example, text updates, small layout adjustments). Significant UI changes may still require manual intervention.
 - **Ambiguous Changes**: If multiple elements match the updated criteria, the AI may require additional context to make the correct decision.
 - **Step Deletion**: If UI or wizard pages are removed, the AI may not be able to recover. In such cases, manual updates are necessary.

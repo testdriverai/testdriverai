@@ -4,3 +4,7 @@
   padding-bottom: 0 !important;
   text-decoration: none !important;
 }
+
+.card img {
+  background-color: transparent !important;
+}
