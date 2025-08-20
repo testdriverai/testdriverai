@@ -10,6 +10,7 @@ steps:
         then:
           - command: hover-text
             text: Accept Cookies
+            description: accept cookies button
             action: click
         else:
           - command: focus-application
@@ -19,6 +20,7 @@ steps:
         then:
           - command: hover-text
             text: Username
+            description: username field
             action: click
           - command: type
             text: testuser

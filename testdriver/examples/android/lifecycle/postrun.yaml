@@ -1,0 +1,11 @@
+version: 6.0.0
+session: 685c63558f43d1527c84d053
+steps:
+  - prompt: Stop the Android Instance
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          $instance = Get-Content -Path C:\instance_id -Raw
+
+          gmsaas instances stop $instance

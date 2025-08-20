@@ -6,27 +6,33 @@ icon: "play"
 ---
 
 ## Description
+
 The `run` command is used to embed and execute another file within the current script. This is useful for reusing common sequences of commands or modularizing your scripts for better organization and maintainability.
 
 ## Arguments
-| Argument | Type     | Description                                                                 |
-|----------|----------|-----------------------------------------------------------------------------|
+
+| Argument | Type     | Description                                                                                   |
+| -------- | -------- | --------------------------------------------------------------------------------------------- |
 | `file`   | `string` | The path to the file to embed and run. Should be relative to the root of your git repository. |
 
 ## Example usage
+
 ```yaml
 command: run
 file: path/to/another-script.yaml
 ```
 
 ## Protips
+
 - Use the `run` command to centralize reusable logic, such as login flows or setup steps, into separate files.
 - Ensure the file path is correct and relative to the root of your git repository to avoid errors.
 
 ## Gotchas
+
 - If the specified file doesn't exist or contains errors, the command will fail.
 - Ensure the embedded file is compatible with the current script's context, such as variable dependencies or session requirements.
 
 ## Notes
+
 - The `run` command is ideal for creating modular and maintainable test scripts by reusing common workflows.
 - This command supports nesting, allowing you to call scripts that themselves use the `run` command.

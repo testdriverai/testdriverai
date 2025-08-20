@@ -190,7 +190,7 @@ const createCommands = (
       }
     };
 
-    emitter.emit(events.log.log, `thinking...`);
+    emitter.emit(events.log.narration, `thinking...`);
 
     if (async) {
       await sdk
@@ -276,7 +276,7 @@ const createCommands = (
     }
 
     emitter.emit(
-      "log:debug",
+      events.log.narration,
       theme.dim(`${action} ${button} clicking at ${x}, ${y}...`),
       true,
     );
@@ -347,7 +347,7 @@ const createCommands = (
 
       description = description ? description.toString() : null;
 
-      emitter.emit(events.log.log, theme.dim("thinking..."), true);
+      emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
       let response = await sdk.req(
         "hover/text",
@@ -375,7 +375,7 @@ const createCommands = (
     // uses our api to find all images on screen
     "hover-image": async (description, action = "click") => {
       // take a screenshot
-      emitter.emit(events.log.log, theme.dim("thinking..."), true);
+      emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
       let response = await sdk.req(
         "hover/image",
@@ -446,7 +446,7 @@ const createCommands = (
     },
     "wait-for-image": async (description, timeout = 10000) => {
       emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.dim(
           `waiting for an image matching description "${description}"...`,
         ),
@@ -467,7 +467,7 @@ const createCommands = (
         durationPassed = new Date().getTime() - startTime;
         if (!passed) {
           emitter.emit(
-            events.log.log,
+            events.log.narration,
             theme.dim(
               `${niceSeconds(durationPassed)} seconds have passed without finding an image matching the description "${description}"`,
             ),
@@ -479,7 +479,7 @@ const createCommands = (
 
       if (passed) {
         emitter.emit(
-          events.log.log,
+          events.log.narration,
           theme.dim(
             `An image matching the description "${description}" found!`,
           ),
@@ -496,7 +496,7 @@ const createCommands = (
       await redraw.start();
 
       emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.dim(`waiting for text: "${text}"...`),
         true,
       );
@@ -525,7 +525,7 @@ const createCommands = (
         durationPassed = new Date().getTime() - startTime;
         if (!passed) {
           emitter.emit(
-            events.log.log,
+            events.log.narration,
             theme.dim(
               `${niceSeconds(durationPassed)} seconds have passed without finding "${text}"`,
             ),
@@ -536,7 +536,7 @@ const createCommands = (
       }
 
       if (passed) {
-        emitter.emit(events.log.log, theme.dim(`"${text}" found!`), true);
+        emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
         return;
       } else {
         throw new MatchError(
@@ -547,14 +547,14 @@ const createCommands = (
     "scroll-until-text": async (
       text,
       direction = "down",
-      maxDistance = 1200,
+      maxDistance = 10000,
       textMatchMethod = "turbo",
       method = "keyboard",
     ) => {
       await redraw.start();
 
       emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.dim(`scrolling for text: "${text}"...`),
         true,
       );
@@ -574,10 +574,7 @@ const createCommands = (
       }
 
       let scrollDistance = 0;
-      let incrementDistance = 300;
-      if (method === "mouse") {
-        incrementDistance = 200;
-      }
+      let incrementDistance = 500;
       let passed = false;
 
       while (scrollDistance <= maxDistance && !passed) {
@@ -598,7 +595,7 @@ const createCommands = (
         passed = response.data;
         if (!passed) {
           emitter.emit(
-            events.log.log,
+            events.log.narration,
             theme.dim(
               `scrolling ${direction} ${incrementDistance}px. ${scrollDistance + incrementDistance}/${maxDistance}px scrolled...`,
             ),
@@ -610,7 +607,7 @@ const createCommands = (
       }
 
       if (passed) {
-        emitter.emit(events.log.log, theme.dim(`"${text}" found!`), true);
+        emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
         return;
       } else {
         throw new MatchError(
@@ -638,7 +635,7 @@ const createCommands = (
       }
 
       emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.dim(`scrolling for an image matching "${needle}"...`),
         true,
       );
@@ -665,7 +662,7 @@ const createCommands = (
 
         if (!passed) {
           emitter.emit(
-            events.log.log,
+            events.log.narration,
             theme.dim(`scrolling ${direction} ${incrementDistance} pixels...`),
             true,
           );
@@ -675,7 +672,11 @@ const createCommands = (
       }
 
       if (passed) {
-        emitter.emit(events.log.log, theme.dim(`"${needle}" found!`), true);
+        emitter.emit(
+          events.log.narration,
+          theme.dim(`"${needle}" found!`),
+          true,
+        );
         return;
       } else {
         throw new CommandError(
@@ -705,7 +706,7 @@ const createCommands = (
       return await assert(assertion, true, async);
     },
     exec: async (language, code, timeout, silent = false) => {
-      emitter.emit(events.log.log, theme.dim(`calling exec...`), true);
+      emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);
 
       emitter.emit(events.log.log, code);
 
@@ -738,10 +739,10 @@ const createCommands = (
           return result.out?.stdout?.trim();
         }
       } else if (language == "js") {
-        emitter.emit(events.log.log, theme.dim(`running js...`), true);
+        emitter.emit(events.log.narration, theme.dim(`running js...`), true);
 
         emitter.emit(
-          events.log.log,
+          events.log.narration,
           theme.dim(`running value of \`${plat}\` in local JS vm...`),
           true,
         );

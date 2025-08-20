@@ -1,0 +1,9 @@
+version: 6.0.11
+session: 682f5fc22856e2eb40664261
+steps:
+  - prompt: run login test
+    commands:
+      - command: run
+        file: ./snippets/login.yaml
+      - command: assert
+        expect: home page appears

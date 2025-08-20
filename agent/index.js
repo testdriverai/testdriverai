@@ -15,6 +15,7 @@ const path = require("path");
 const yaml = require("js-yaml");
 const sanitizeFilename = require("sanitize-filename");
 const { EventEmitter2 } = require("eventemitter2");
+const diff = require("diff");
 
 // global utilities
 const generator = require("./lib/generator.js");
@@ -152,13 +153,27 @@ class TestDriverAgent extends EventEmitter2 {
     // temporary file for command history
     this.commandHistoryFile = path.join(os.homedir(), ".testdriver_history");
 
+    // Flag to indicate if the agent should stop execution
+    this.stopped = false;
+
     this.emitter.emit(events.log.log, JSON.stringify(environment));
     this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
   }
+
+  // Stop method to immediately halt execution
+  stop() {
+    this.stopped = true;
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim("stopping execution..."),
+      true,
+    );
+  }
+
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
-    this.emitter.emit(events.log.log, theme.dim("exiting..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("exiting..."), true);
 
     // Clean up redraw interval
     if (this.redraw && this.redraw.cleanup) {
@@ -192,7 +207,7 @@ class TestDriverAgent extends EventEmitter2 {
 
   // fatal errors always exit the program
   // this ensure we log the error, summarize it, and exit cleanly
-  async dieOnFatal(error) {
+  async dieOnFatal(error, skipPostrun = false) {
     // Show error with source context if available
     const errorContext = this.sourceMapper.getErrorWithSourceContext(error);
     if (errorContext) {
@@ -204,9 +219,13 @@ class TestDriverAgent extends EventEmitter2 {
       );
     }
 
-    await this.summarize(error.message);
-    // Always run postrun lifecycle script, even for fatal errors
-    return await this.exit(true, false, true);
+    if (skipPostrun) {
+      this.exit(true);
+    } else {
+      await this.summarize(error.message);
+      // Always run postrun lifecycle script, even for fatal errors
+      return await this.exit(true, false, true);
+    }
   }
 
   // creates a new "thread" in which the AI is given an error
@@ -286,7 +305,7 @@ class TestDriverAgent extends EventEmitter2 {
       image = null;
     }
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     const streamId = `error-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -324,18 +343,28 @@ class TestDriverAgent extends EventEmitter2 {
   // this checks that the task is "really done" using a screenshot of the desktop state
   // it's likely that the task will not be complete and the AI will respond with more codeblocks to execute
   async check() {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     this.checkCount++;
 
     if (this.checkCount >= this.checkLimit) {
       this.emitter.emit(
-        events.log.log,
+        events.log.narration,
         theme.red("Exploratory loop detected. Exiting."),
       );
       await this.summarize("Check loop detected.");
       return await this.exit(true);
     }
 
-    this.emitter.emit(events.log.log, theme.dim("checking..."));
+    this.emitter.emit(events.log.narration, theme.dim("checking..."));
 
     // check asks the ai if the task is complete
     let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
@@ -447,13 +476,14 @@ class TestDriverAgent extends EventEmitter2 {
         sourcePosition: sourcePosition,
       });
 
-      return await this.haveAIResolveError(
+      await this.haveAIResolveError(
         error,
         yaml.dump({ commands: [yml] }),
         depth,
         true,
         shouldSave,
       );
+      throw error;
     }
   }
 
@@ -464,8 +494,28 @@ class TestDriverAgent extends EventEmitter2 {
     dry = false,
     shouldSave = false,
   ) {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     if (commands?.length) {
       for (const command of commands) {
+        // Check if execution has been stopped before each command
+        if (this.stopped) {
+          this.emitter.emit(
+            events.log.narration,
+            theme.dim("execution stopped"),
+            true,
+          );
+          return;
+        }
+
         // Update current command tracking
         const commandIndex = commands.indexOf(command);
         this.sourceMapper.setCurrentCommand(commandIndex);
@@ -502,9 +552,29 @@ class TestDriverAgent extends EventEmitter2 {
     dry = false,
     shouldSave = false,
   ) {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     depth = depth + 1;
 
     for (const codeblock of codeblocks) {
+      // Check if execution has been stopped before each codeblock
+      if (this.stopped) {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim("execution stopped"),
+          true,
+        );
+        return;
+      }
+
       let commands;
 
       try {
@@ -537,8 +607,22 @@ class TestDriverAgent extends EventEmitter2 {
     validateAndLoop = false,
     dry = false,
     shouldSave = false,
+    isLoopContinuation = false,
   ) {
-    this.executionHistory.push({ prompt: this.lastPrompt, commands: [] });
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
+    // Only create new execution history entry if this is not a loop continuation
+    if (!isLoopContinuation) {
+      this.executionHistory.push({ prompt: this.lastPrompt, commands: [] });
+    }
 
     if (shouldSave) {
       await this.save({ silent: true });
@@ -578,9 +662,13 @@ class TestDriverAgent extends EventEmitter2 {
           "check thinks more needs to be done",
         );
 
-        this.emitter.emit(events.log.log, theme.dim("not done yet!"));
-
-        return await this.aiExecute(response, validateAndLoop);
+        return await this.aiExecute(
+          response,
+          validateAndLoop,
+          dry,
+          shouldSave,
+          true,
+        );
       } else {
         this.emitter.emit(events.log.debug, "seems complete, returning");
 
@@ -714,7 +802,7 @@ class TestDriverAgent extends EventEmitter2 {
       }
     }
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     let response = `\`\`\`yaml
 commands:
@@ -735,6 +823,16 @@ commands:
     validateAndLoop = false,
     shouldSave = true,
   ) {
+    // Check if execution has been stopped
+    if (this.stopped) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim("execution stopped"),
+        true,
+      );
+      return;
+    }
+
     this.lastPrompt = currentTask;
     this.checkCount = 0;
 
@@ -742,7 +840,7 @@ commands:
 
     this.tasks.push(currentTask);
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     this.lastScreenshot = await this.system.captureScreenBase64();
 
@@ -784,7 +882,7 @@ commands:
   async generate(type, count, baseYaml, skipYaml = false) {
     this.emitter.emit(events.log.debug, "generate called, %s", type);
 
-    this.emitter.emit(events.log.log, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     if (baseYaml && !skipYaml) {
       await this.runLifecycle("prerun");
@@ -861,7 +959,7 @@ commands:
 
   // this is the functinoality for "undo"
   async popFromHistory(fullStep) {
-    this.emitter.emit(events.log.log, theme.dim("undoing..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("undoing..."), true);
 
     if (this.executionHistory.length) {
       if (fullStep) {
@@ -941,12 +1039,16 @@ ${yml}
   async summarize(error = null) {
     this.analytics.track("summarize");
 
-    this.emitter.emit(events.log.log, theme.dim("reviewing test..."), true);
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim("reviewing test..."),
+      true,
+    );
 
     // let text = prompts.summarize(tasks, error);
     let image = await this.system.captureScreenBase64();
 
-    this.emitter.emit(events.log.log, theme.dim("summarizing..."), true);
+    this.emitter.emit(events.log.narration, theme.dim("summarizing..."), true);
 
     const streamId = `summarize-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
@@ -1016,11 +1118,110 @@ ${yml}
       return;
     }
 
+    // Read existing file content for diff comparison
+    let existingContent = "";
+    let fileExists = false;
+    try {
+      if (fs.existsSync(filepath)) {
+        existingContent = fs.readFileSync(filepath, "utf8");
+        fileExists = true;
+      }
+    } catch {
+      // File doesn't exist or can't be read, treat as empty
+      existingContent = "";
+    }
+
     // write reply to /tmp/testdriver-summary.md
     let regression = await generator.dumpToYML(
       this.executionHistory,
       this.session,
     );
+
+    // Create diff if file exists and content has changed
+    let diffResult = null;
+    console.log("Checking for diff. File exists:", fileExists);
+    console.log(
+      "Content changed:",
+      fileExists && existingContent !== regression,
+    );
+    if (fileExists) {
+      console.log(
+        "Existing content preview:",
+        existingContent.substring(0, 100),
+      );
+      console.log("New content preview:", regression.substring(0, 100));
+    }
+
+    if (fileExists && existingContent !== regression) {
+      console.log("Creating diff - content has changed");
+      const patches = diff.structuredPatch(
+        filepath,
+        filepath,
+        existingContent,
+        regression,
+        `${new Date().toISOString()} (before)`,
+        `${new Date().toISOString()} (after)`,
+      );
+
+      // Create source map-like information for VS Code
+      const diffLines = diff.diffLines(existingContent, regression);
+      const sourceMaps = [];
+      let oldLineNumber = 1;
+      let newLineNumber = 1;
+
+      diffLines.forEach((part) => {
+        const lineCount = part.value.split("\n").length - 1;
+        if (part.added) {
+          sourceMaps.push({
+            type: "addition",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber,
+            newStart: newLineNumber,
+            newEnd: newLineNumber + lineCount,
+            content: part.value,
+            lines: lineCount,
+          });
+          newLineNumber += lineCount;
+        } else if (part.removed) {
+          sourceMaps.push({
+            type: "deletion",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber + lineCount,
+            newStart: newLineNumber,
+            newEnd: newLineNumber,
+            content: part.value,
+            lines: lineCount,
+          });
+          oldLineNumber += lineCount;
+        } else {
+          // unchanged
+          sourceMaps.push({
+            type: "unchanged",
+            oldStart: oldLineNumber,
+            oldEnd: oldLineNumber + lineCount,
+            newStart: newLineNumber,
+            newEnd: newLineNumber + lineCount,
+            content: part.value,
+            lines: lineCount,
+          });
+          oldLineNumber += lineCount;
+          newLineNumber += lineCount;
+        }
+      });
+
+      diffResult = {
+        patches,
+        sourceMaps,
+        summary: {
+          additions: diffLines.filter((part) => part.added).length,
+          deletions: diffLines.filter((part) => part.removed).length,
+          modifications: diffLines.filter(
+            (part) => !part.added && !part.removed,
+          ).length,
+        },
+      };
+    }
+
     try {
       fs.writeFileSync(filepath, regression);
 
@@ -1032,6 +1233,17 @@ ${yml}
         size: regression.length,
         timestamp: endTime,
       });
+
+      // Emit diff event if there were changes
+      if (diffResult) {
+        this.emitter.emit(events.file.diff, {
+          filePath: filepath,
+          diff: diffResult,
+          timestamp: endTime,
+        });
+      } else {
+        console.log("No diff result to emit");
+      }
 
       // Emit file save completion event
       this.emitter.emit(events.file.stop, {
@@ -1119,7 +1331,7 @@ ${regression}
       timestamp: fileStartTime,
     });
 
-    this.emitter.emit(events.log.log, theme.cyan(`running ${file}...`));
+    this.emitter.emit(events.log.narration, theme.cyan(`running ${file}...`));
 
     let ymlObj = await this.loadYML(file);
 
@@ -1385,7 +1597,7 @@ ${regression}
         const mtime = new Date(stats.mtime);
         const now = new Date();
         const diffMinutes = (now - mtime) / (1000 * 60);
-        if (diffMinutes < 30) {
+        if (diffMinutes < 10) {
           const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
 
           // Parse sandbox info (supports both old format and new format)
@@ -1458,8 +1670,8 @@ ${regression}
     // If instance already exists, do not build environment again
     if (this.instance) {
       this.emitter.emit(
-        events.log.log,
-        theme.dim("- sandbox instance already exists, skipping launch."),
+        events.log.narration,
+        theme.dim("sandbox instance already exists, skipping launch."),
       );
       return;
     }
@@ -1483,7 +1695,7 @@ ${regression}
       if (!this.config.CI) {
         this.emitter.emit(
           events.log.log,
-          theme.dim("-- `new` flag detected, will create a new sandbox"),
+          theme.dim("--`new` flag detected, will create a new sandbox"),
         );
       }
     }
@@ -1496,14 +1708,14 @@ ${regression}
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (!createNew && recentId) {
       this.emitter.emit(
-        events.log.log,
-        theme.dim(`- using recent sandbox: ${recentId}`),
+        events.log.narration,
+        theme.dim(`using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
     } else if (!createNew) {
       this.emitter.emit(
-        events.log.log,
-        theme.dim(`- no recent sandbox found, creating a new one.`),
+        events.log.narration,
+        theme.dim(`no recent sandbox found, creating a new one.`),
       );
     }
 
@@ -1511,8 +1723,8 @@ ${regression}
     if (this.sandboxId && !this.config.CI && !createNew) {
       // Attempt to connect to known instance
       this.emitter.emit(
-        events.log.log,
-        theme.dim(`- connecting to sandbox ${this.sandboxId}...`),
+        events.log.narration,
+        theme.dim(`connecting to sandbox ${this.sandboxId}...`),
       );
 
       try {
@@ -1534,17 +1746,16 @@ ${regression}
       }
     }
 
-    this.emitter.emit(events.log.log, theme.dim(`- creating new sandbox...`));
     this.emitter.emit(
-      events.log.log,
-      theme.dim(`  (this can take between 10 - 240 seconds)`),
+      events.log.narration,
+      theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
     );
     // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
     // to see if that fixes the issue.
     let newSandbox = await this.createNewSandbox().catch(() => {
       this.emitter.emit(
-        events.log.log,
-        theme.dim(`  (double-checking sandbox availability)`),
+        events.log.narration,
+        theme.dim(`double-checking sandbox availability`),
       );
 
       return this.createNewSandbox();
@@ -1571,7 +1782,7 @@ ${regression}
       if (!debuggerStarted) {
         debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
         this.emitter.emit(
-          events.log.log,
+          events.log.narration,
           theme.green(`Starting debugger server...`),
         );
         debuggerProcess = await createDebuggerProcess(
@@ -1583,9 +1794,12 @@ ${regression}
       this.emitter.emit(events.log.log, `This is beta software!`);
       this.emitter.emit(
         events.log.log,
-        theme.yellow(`Join our Forums for help`),
+        theme.yellow(`Join our Discord for help`),
       );
-      this.emitter.emit(events.log.log, `https://forums.testdriver.ai`);
+      this.emitter.emit(
+        events.log.log,
+        `https://discord.com/invite/cWDFW8DzPm`,
+      );
 
       // make testdriver directory if it doesn't exist
       let testdriverFolder = path.join(this.workingDir);
@@ -1689,16 +1903,33 @@ ${regression}
 
   async connectToSandboxService() {
     this.emitter.emit(
-      events.log.log,
-      theme.gray(`- establishing connection...`),
+      events.log.narration,
+      theme.dim(`establishing connection...`),
     );
-    await this.sandbox.boot(this.config.TD_API_ROOT);
-    this.emitter.emit(events.log.log, theme.gray(`- authenticating...`));
-    await this.sandbox.auth(this.config.TD_API_KEY);
+    let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
+
+    if (!ableToBoot) {
+      return await this.dieOnFatal(
+        `Unable to connect to TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+Please check your network connection, TD_API_KEY, or the service status.`,
+        true,
+      );
+    }
+
+    this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
+    let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
+
+    if (!ableToAuth) {
+      return await this.dieOnFatal(
+        `Unable to authorize with TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+Please check your network connection, TD_API_KEY, or the service status.`,
+        true,
+      );
+    }
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
-    this.emitter.emit(events.log.log, theme.gray(`- connecting...`));
+    this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
     let instance = await this.sandbox.connect(sandboxId, persist);
     return instance;
   }
@@ -1841,7 +2072,15 @@ ${regression}
       }
     }
     if (lifecycleFile) {
-      await this.run(lifecycleFile, false, false);
+      // Store current source mapping state before running lifecycle file
+      const previousContext = this.sourceMapper.saveContext();
+
+      try {
+        await this.run(lifecycleFile, false, false);
+      } finally {
+        // Restore previous source mapping state after lifecycle file execution
+        this.sourceMapper.restoreContext(previousContext);
+      }
     }
   } // Unified command definitions that work for both CLI and interactive modes
   getCommandDefinitions() {

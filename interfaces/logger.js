@@ -44,31 +44,13 @@ class CustomTransport extends Transport {
 // responsible for rendering ai markdown output
 const { marked } = require("marked");
 const { markedTerminal } = require("marked-terminal");
+const { censorSensitiveData } = require("../agent/lib/censorship");
 
 const { printf } = winston.format;
 
 const logFormat = printf(({ message }) => {
   return `${message}`;
 });
-
-let interpolationVars = JSON.parse(process.env.TD_INTERPOLATION_VARS || "{}");
-
-// this handles local `TD_*` variables
-for (const [key, value] of Object.entries(process.env)) {
-  if (key.startsWith("TD_") && key !== "TD_INTERPOLATION_VARS") {
-    interpolationVars[key] = value;
-  }
-}
-
-const censorSensitiveData = (message) => {
-  for (let value of Object.values(interpolationVars)) {
-    // Avoid replacing vars that are 0 or 1 characters
-    if (value.length >= 2) {
-      message = message.replaceAll(value, "****");
-    }
-  }
-  return message;
-};
 
 const logger = winston.createLogger({
   format: winston.format.combine(

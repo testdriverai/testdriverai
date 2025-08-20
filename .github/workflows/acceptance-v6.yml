@@ -1,4 +1,4 @@
-name: v6 Acceptance
+name: v6 Acceptance [disabled]
 
 on:
   workflow_dispatch:

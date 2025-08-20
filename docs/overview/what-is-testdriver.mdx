@@ -11,7 +11,7 @@ TestDriver uses AI vision and keyboard and mouse control to automate end-to-end 
   <Card title="Easier Setup" icon="wrench">
     No need to craft complex selectors.
   </Card>
-    <Card title="More Power" icon="bolt">
+  <Card title="More Power" icon="bolt">
     TestDriver can test anything a user can do.
   </Card>
   <Card title="Less Maintenance" icon="bandage">
@@ -34,7 +34,7 @@ This means that you can write tests without worrying about the underlying code s
 - Test any user flow on any website in any browser
 - Clone, build, and test any desktop app
 - Render multiple browser windows and popups like 3rd party auth
-- Test `<canvas>`, `<iframe>`,  and `<video>` tags with ease
+- Test `<canvas>`, `<iframe>`, and `<video>` tags with ease
 - Use file selectors to upload files to the browser
 - Resize the browser
 - Test chrome extensions
@@ -42,42 +42,44 @@ This means that you can write tests without worrying about the underlying code s
 
 ### The problem with current approach to end-to-end testing
 
-End-to-end is commonly described as the most expensive and time-consuming test method. Right now we write end-to-end tests using complex selectors that are tightly coupled with the code. 
+End-to-end is commonly described as the most expensive and time-consuming test method. Right now we write end-to-end tests using complex selectors that are tightly coupled with the code.
 
 ```js
-const e = await page.$('div[class="product-card"] >> text="Add to Cart" >> nth=2');
+const e = await page.$(
+  'div[class="product-card"] >> text="Add to Cart" >> nth=2',
+);
 ```
 
 This tight coupling means developers need to spend time to understand the codebase and maintain the tests every time the code changes. And code is always changing!
 
 ### End-to-end is about users, not code
 
-In end-to-end testing the business priority is usability. All that really matters is that the user can accomplish the goal. 
+In end-to-end testing the business priority is usability. All that really matters is that the user can accomplish the goal.
 
 TestDriver uses human language to define test requirements. Then our simulated software tester figures out how to accomplish those goals.
 
-Old and Busted (Selectors)  | New Hotness (TestDriver)
-|:----------------------|:-------------------|
-```div[class="product-card"] >> text="Add to Cart" >> nth=2``` | buy the 2nd product
+| Old and Busted (Selectors)                                 | New Hotness (TestDriver) |
+| :--------------------------------------------------------- | :----------------------- |
+| `div[class="product-card"] >> text="Add to Cart" >> nth=2` | buy the 2nd product      |
 
 These high level instructions are easier to create and maintain because they're loosely coupled from the codebase. We're describing a high level goal, not a low level interaction.
 
-The tests will still continue to work even when the junior developer changes .product-card to .product.card or the designers change Add to Cart to Buy Now . The concepts remain the same so the AI will adapt. 
+The tests will still continue to work even when the junior developer changes .product-card to .product.card or the designers change Add to Cart to Buy Now . The concepts remain the same so the AI will adapt.
 
 ## How exactly does this work?
 
 TestDriver uses a combination of reinforcement learning and computer vision. The context from successful text executions inform future executions. Here's an example of the context our model considers when locating a text match:
 
-Context| What's it? | Touchpoint
-|:----------|:------------------|:----------------|
-Prompt | Desired outcome | User Input
-Screenshot | Image of computer desktop | Runtime
-OCR | All possible text found on screen  Runtime
-Text Similarity | Closely matching text | Runtime 
-Redraw | Visual difference between previous and current desktop screenshots | Runtime
-Network | The current network activity compared to a baseline | Runtime
-Execution History | Previous test steps | Runtime
-System Information | Platform, Display Size, etc | Runtime
-Mouse Position | X, Y coordinates of mouse | Runtime
-Description | An elaborate description of the target element including it's position and function | Past Execution
-Text | The exact text value clicked | Past Execution
+| Context            | What's it?                                                                          | Touchpoint     |
+| :----------------- | :---------------------------------------------------------------------------------- | :------------- |
+| Prompt             | Desired outcome                                                                     | User Input     |
+| Screenshot         | Image of computer desktop                                                           | Runtime        |
+| OCR                | All possible text found on screen Runtime                                           |
+| Text Similarity    | Closely matching text                                                               | Runtime        |
+| Redraw             | Visual difference between previous and current desktop screenshots                  | Runtime        |
+| Network            | The current network activity compared to a baseline                                 | Runtime        |
+| Execution History  | Previous test steps                                                                 | Runtime        |
+| System Information | Platform, Display Size, etc                                                         | Runtime        |
+| Mouse Position     | X, Y coordinates of mouse                                                           | Runtime        |
+| Description        | An elaborate description of the target element including it's position and function | Past Execution |
+| Text               | The exact text value clicked                                                        | Past Execution |

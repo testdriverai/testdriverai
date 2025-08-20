@@ -24,11 +24,11 @@ TestDriver is designed to work with any desktop application, including Electron,
 
 ## Sample test steps
 
-1. **Launch the application**: Use the `exec` command to launch the application. You can specify the path to the executable file and any command-line arguments needed to start the application.
-2. **Wait for the application to load**: Use the `wait-for-text` command to wait for a specific text or element to appear in the application window. This ensures that the application is fully loaded before proceeding with the test.
-3. **Interact with the application**: Use the `focus-application` command to bring the application window to the foreground. Then, use the `hover-image` command to interact with specific elements in the application, such as buttons or text fields.
-4. **Perform actions**: Use the `hover-image` command to click on buttons or enter text in input fields. You can also use the `wait-for-text` command to verify that the expected output appears after performing an action.
-5. **Verify results**: Use the `assert` command to check if the expected result matches the actual output. This step is crucial for validating the functionality of the application.
+1. **Launch the application**: Use the [`exec`](/commands/exec) command to launch the application. You can specify the path to the executable file and any command-line arguments needed to start the application.
+2. **Wait for the application to load**: Use the [`wait-for-text`](/commands/wait-for-text) command to wait for a specific text or element to appear in the application window. This ensures that the application is fully loaded before proceeding with the test.
+3. **Interact with the application**: Use the [`focus-application`](/commands/focus-application) command to bring the application window to the foreground. Then, use the [`hover-image`](/commands/hover-image) command to interact with specific elements in the application, such as buttons or text fields.
+4. **Perform actions**: Use the [`hover-image`](/commands/hover-image) command to click on buttons or enter text in input fields. You can also use the [`wait-for-text`](/commands/wait-for-text) command to verify that the expected output appears after performing an action.
+5. **Verify results**: Use the [`assert`](/commands/assert) command to check if the expected result matches the actual output. This step is crucial for validating the functionality of the application.
 
 ## Supported desktop applications
 
