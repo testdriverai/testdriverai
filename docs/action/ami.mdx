@@ -34,6 +34,18 @@ icon: "image"
 
   </Step>
 
+  <Step title="Change the Windows password">
+    Inside the Windows desktop environment:
+
+    1. Open up Powershell
+    2. Run `C:\testdriver\RotateLocalPasswords.ps1`
+    3. Copy the password presented in the output to a safe place. This is the only chance to copy the password.
+    4. Restart the instance and double check you can log in before continuing.
+
+    Note that this will change the password for the testdriver and rdp_local accounts, but Administrator will remain as a password you can only retreive through the AWS EC2 UI ((Instructions Here)[https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-rdp.html#retrieve-initial-admin-password]).
+
+  </Step>
+
   <Step title="Customize the Instance">
     Inside the Windows desktop environment:
 
