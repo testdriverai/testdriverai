@@ -111,9 +111,9 @@
               "/guide/waiting",
               "/guide/assertions",
               "/guide/code",
-              "/features/reusable-snippets",
               "/guide/variables",
               "/guide/environment-variables",
+              "/features/reusable-snippets",
               "/guide/protips"
             ]
           },
