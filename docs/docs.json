@@ -100,7 +100,12 @@
           {
             "group": "Configuration",
             "icon": "desktop",
-            "pages": ["/guide/lifecycle", "/action/ami"]
+            "pages": [
+              "/guide/variables",
+              "/guide/lifecycle",
+              "/guide/environment-variables",
+              "/action/ami"
+            ]
           },
           {
             "group": "Writing",
@@ -111,8 +116,6 @@
               "/guide/waiting",
               "/guide/assertions",
               "/guide/code",
-              "/guide/variables",
-              "/guide/environment-variables",
               "/features/reusable-snippets",
               "/guide/protips"
             ]
