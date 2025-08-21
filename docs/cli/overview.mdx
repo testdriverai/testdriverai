@@ -1,8 +1,8 @@
 ---
-title: "Overview of the TestDriver CLI"
-sidebarTitle: "CLI Overview"
+title: "TestDriver CLI Flags"
+sidebarTitle: "Flags"
 description: "Learn about the TestDriver CLI, its commands, and how to use it effectively."
-icon: "terminal"
+icon: "flag"
 ---
 
 The `testdriverai` CLI is the primary interface for running, managing, and debugging TestDriver scripts. It provides commands to execute tests, validate configurations, and interact with the TestDriver framework.
@@ -16,8 +16,8 @@ npx testdriverai@latest <command> [options]
 ## Available commands
 
 | Command | Description                                                  |
-| :------: | :----------------------------------------------------------- |
-| `run`   | Executes a TestDriver test.                                  |
+| :-----: | :----------------------------------------------------------- |
+| [`run`](/commands/run)   | Executes a TestDriver test.                 |
 | `edit`  | Launch interactive mode.                                     |
 | `help`  | Displays help information for the CLI or a specific command. |
 
@@ -54,3 +54,13 @@ This command sets up a new TestDriver project in the current directory, creating
 ```bash
 npx testdriverai@latest help
 ```
+
+This command displays general help information. To get help for a specific command, use:
+
+```bash
+npx testdriverai@latest help <command>
+```
+
+## Protips
+
+- Combine [`run`](/commands/run) and `--headless` with CI/CD pipelines to automate test execution.

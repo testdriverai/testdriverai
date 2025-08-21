@@ -1,0 +1,12 @@
+version: 6.0.0
+session: 685c63558f43d1527c84d053
+steps:
+  - prompt: assert app opens
+    commands:
+      - command: assert
+        expect: The Todo App is open
+
+      - command: hover-text
+        action: click
+        text: "click anywhere"
+        description: Label that describes to click anywhere

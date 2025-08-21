@@ -1,7 +1,7 @@
 version: 5.7.7
 session: 682f62a1811bd5a322c0e70b
 steps:
-  - prompt: login
+  - prompt: complete the login process
     commands:
       - command: run
         file: snippets/login.yaml

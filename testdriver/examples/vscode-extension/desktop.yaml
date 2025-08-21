@@ -1,4 +1,0 @@
-version: 6.0.6
-session: 687eb092664035296ec57e6a
-steps:
-  - prompt: click on something in vs code

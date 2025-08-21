@@ -6,6 +6,7 @@ icon: "split"
 ---
 
 ## Description
+
 The `if` command is used to conditionally execute a set of commands based on whether a specified condition evaluates to true or false. If the condition is true, the commands in the `then` block are executed. Otherwise, the commands in the `else` block are executed.
 
 ## Arguments
@@ -16,6 +17,7 @@ The `if` command is used to conditionally execute a set of commands based on whe
 | `else`      | `list of commands`| The commands to run if the condition is false. It is an **optional command**. |
 
 ## Example usage
+
 ```yaml
 - prompt: click on sign up, if cookie banner appears close it
   commands:
@@ -34,6 +36,7 @@ The `if` command is used to conditionally execute a set of commands based on whe
 ```
 
 ## Protips
+
 - Ensure the `condition` is clearly defined and evaluates correctly to avoid unexpected behavior.
 - Use descriptive `then` and `else` blocks to handle both outcomes effectively.
 

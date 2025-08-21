@@ -21,16 +21,23 @@ The `remember` command is used to save a variable for later use. This is useful 
 | `output`      | `string` | The variable name you will use to recall the value later. |
 | `description` | `string` | A prompt describing the value you want to store. |
 
+| Argument      | Type   | Description                                               |
+| ------------- | ------ | --------------------------------------------------------- |
+| `output`      | string | the variable name you will use to recall the value later. |
+| `description` | string | A prompt describing the value you want to store.          |
 
 ---
 
 ## Example usage
+
 ```yaml
 - command: remember
   description: The date value shown to the right of 'Order Date'
   output: my_variable
 ```
+
 ## Protips
+
 - Use the output later with this syntax `${OUTPUT.my_variable}`.
 - The `remember` command does not persist variables across different test runs. If you need to store values for later use in different test runs, consider using external storage solutions or environment variables.
 - For now, the `remember` command only supports string values. If you need to store complex data types, you may use `remember` multiple times for the values. This may change in a later version.
@@ -40,5 +47,5 @@ The `remember` command is used to save a variable for later use. This is useful 
 - The variable name is case-sensitive, so `my_variable` and `My_Variable` would be treated as different variables.
 
 ## Notes
-- The `remember` command is ideal for storing values that are generated during the test run, such as timestamps, IDs, the text value of a link you might click later, or any other dynamic data.
 
+- The `remember` command is ideal for storing values that are generated during the test run, such as timestamps, IDs, the text value of a link you might click later, or any other dynamic data.

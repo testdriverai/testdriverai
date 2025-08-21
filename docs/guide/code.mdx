@@ -5,7 +5,7 @@ description: "Learn how to integrate custom Node.js scripts into your TestDriver
 icon: "code"
 ---
 
-TestDriver allows you to execute custom **Node.js** scripts and shell scripts within your test workflows using the `exec` command. This feature, introduced in version `5.1.0`, enables you to integrate custom logic, such as generating one-time passwords (OTPs), hitting APIs, or performing other dynamic operations, directly into your tests.
+TestDriver allows you to execute custom **Node.js** scripts and shell scripts within your test workflows using the [`exec`](/commands/exec) command. This feature, introduced in version `5.1.0`, enables you to integrate custom logic, such as generating one-time passwords (OTPs), hitting APIs, or performing other dynamic operations, directly into your tests.
 
 ## Key features
 
@@ -49,7 +49,7 @@ steps:
 
 ## Additional details
 
-- The `exec` command now takes a `lang` argument with supported values `js` or `pwsh`.
+- The [`exec`](/commands/exec) command now takes a `lang` argument with supported values `js` or `pwsh`.
 - `js` code is executed in a Node.js [VM](https://nodejs.org/api/vm.html) module internally.
 - `pwsh` code is executed in the PowerShell on the runner.
 

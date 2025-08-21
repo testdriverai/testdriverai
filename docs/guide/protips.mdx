@@ -1,0 +1,43 @@
+---
+title: "Pro Tips"
+sidebarTitle: "Pro Tips"
+description: "Navigate TestDriver like a pro with these tips and tricks."
+icon: "star"
+---
+
+TestDriver is a vision-based testing tool and is not aware of the underlying HTML structure of the page. Pay attention to the following tips to improve your testing experience and reduce test flake.
+
+### Use unique descriptions for [`hover-image`](/commands/hover-image) and [`hover-text`](/commands/hover-text)
+
+When executing the [`hover-image`](/commands/hover-image) and [`hover-text`](/commands/hover-text) command, TestDriver may use the description to identify the image, especially if multiple images are visible. If multiple images on the screen match the description, TestDriver may not be able to determine which one to interact with. To improve accuracy, use specific and unique descriptions for images.
+
+TestDriver may not accurately locate matches in certain cases. This can lead to unexpected behavior when using the [`hover-image`](/commands/hover-image) or [`hover-text`](/commands/hover-text) command. For example, if you specify a description that's too generic or similar to other images on the screen, TestDriver may not be able to identify the correct image to interact with. To improve accuracy, use specific and unique descriptions for images and text.
+When executing the [`hover-image`](/commands/hover-image) and [`hover-text`](/commands/hover-text) commands, TestDriver uses the provided description to identify the target image or text. If the description is too generic or matches multiple elements on the screen, TestDriver may not be able to determine which one to interact with, leading to unexpected behavior. To improve accuracy, always use specific and unique descriptions for both images and text.
+
+### Avoid using [`hover-text`](/commands/hover-text) for single characters (ex: `1`, `>`, `|`)
+
+To improve accuracy of our model, we do not include single characters or symbols in the matching data. This means that [`hover-text`](/commands/hover-text) may not work as expected for these cases. If you need to interact with single characters or symbols, consider using the [`match-image`](/commands/match-image) command with a screenshot of the target element instead.
+
+### Use `<label>`s to match empty text inputs.
+
+To focus empty text inputs, prefer to [`hover-text`](/commands/hover-text) on the label associated with the input. This [should](https://www.w3.org/WAI/tutorials/forms/labels/) focus the input field.
+
+This is more reliable than trying to match the empty input itself, which may not have any visible text. You can always use [`match-image`](/commands/match-image) to match the input field if needed.
+
+### Provide strict criteria for [`assert`](/commands/assert)
+
+Assertions use the current state of the page to determine if the step passes or fails. [`assert`](/commands/assert) is not aware of the past, so avoid writing "assert" steps that rely on previous state. Instead, use [`assert`](/commands/assert) to check the current state of the page against strict criteria.
+
+## Reporting issues
+
+If you encounter any issues while using TestDriver, please report them to us. You can do this by creating a new issue in the [discord](https://discord.com/invite/cWDFW8DzPm). We appreciate your feedback and will work to resolve any problems as quickly as possible.
+
+<Card
+  title="Report an Issue"
+  icon="arrow-turn-down-right"
+  iconType="duotone"
+  horizontal
+  href="https://discord.com/invite/cWDFW8DzPm"
+>
+  We'd love to hear from you!
+</Card>

@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "willow",
   "name": "TestDriver",
   "colors": {
     "primary": "#b3d334",
@@ -12,92 +12,63 @@
   },
   "favicon": "/images/template/icon.png",
   "navigation": {
-    "tabs": [
+    "groups": [
       {
-        "tab": "Overview",
-        "groups": [
+        "group": "Overview",
+        "pages": [
+          "/overview/what-is-testdriver",
           {
-            "group": "Intro",
-            "pages": [
-              "/overview/quickstart",
-              "/overview/what-is-testdriver",
-              "/overview/faq",
-              "/overview/comparison",
-              "/overview/performance",
-              "/account/enterprise"
-            ]
-          },
-          {
-            "group": "Features",
+            "group": "Concepts",
+            "icon": "book",
             "pages": [
               "/features/selectorless",
-              "/features/generation",
-              "/features/visual-assertions",
-              "/features/auto-healing",
-              "/features/reusable-snippets",
-              "/features/parallel-testing"
+              "/overview/comparison",
+              "/overview/performance",
+              "/overview/faq"
             ]
           },
+          "/account/enterprise"
+        ]
+      },
+      {
+        "group": "Get Started",
+        "pages": [
+          "/overview/quickstart",
           {
-            "group": "Security & Privacy",
+            "group": "CLI",
+            "icon": "terminal",
             "pages": [
-              "/security/agent",
-              "/security/action",
-              "/security/platform"
-            ]
-          },
-          {
-            "group": "Account",
-            "pages": [
-              "/account/dashboard",
-              "/account/projects",
-              "/account/team"
+              "/getting-started/cli",
+              "/cli/overview",
+              {
+                "group": "Commands",
+                "icon": "command",
+                "pages": [
+                  "/interactive/explore",
+                  "/interactive/run",
+                  "/interactive/save"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "Guide",
-        "groups": [
+        "group": "Examples",
+        "pages": [
           {
-            "group": "Getting Started",
+            "group": "Apps",
+            "icon": "laptop",
             "pages": [
-              "/getting-started/setup",
-              "/getting-started/vscode",
-              "/getting-started/editing",
-              "/getting-started/running",
-              "/getting-started/ci"
+              "apps/static-websites",
+              "apps/desktop-apps",
+              "apps/chrome-extensions",
+              "apps/mobile-apps"
             ]
           },
-          {
-            "group": "Writing Tests",
-            "pages": [
-              "/guide/locating",
-              "/guide/waiting",
-              "/guide/assertions",
-              "/guide/variables",
-              "/guide/authentication",
-              "/guide/lifecycle",
-              "/guide/code",
-              "/guide/environment-variables"
-            ]
-          },
-          {
-            "group": "Running in CI",
-            "pages": [
-              "/getting-started/ci",
-              "/action/performance",
-              "/action/secrets",
-              "/action/ami"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Examples",
-        "groups": [
           {
             "group": "Scenarios",
+            "icon": "computer-mouse",
             "pages": [
               "scenarios/ai-chatbot",
               "scenarios/cookie-banner",
@@ -109,29 +80,46 @@
             ]
           },
           {
-            "group": "Apps",
-            "pages": [
-              "apps/chrome-extensions",
-              "apps/desktop-apps",
-              "apps/mobile-apps",
-              "apps/static-websites"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Integrations",
-        "groups": [
-          {
-            "group": "Building",
+            "group": "Build Systems",
+            "icon": "helmet-safety",
             "pages": [
               "/integrations/electron",
               "/integrations/netlify",
               "/integrations/vercel"
             ]
+          }
+        ]
+      },
+      {
+        "group": "Guide",
+        "pages": [
+          {
+            "group": "Configuration",
+            "icon": "desktop",
+            "pages": [
+              "/guide/authentication",
+              "/guide/variables",
+              "/guide/lifecycle",
+              "/guide/environment-variables",
+              "/action/ami"
+            ]
+          },
+          {
+            "group": "Writing",
+            "icon": "pencil",
+            "pages": [
+              "/features/generation",
+              "/guide/locating",
+              "/guide/waiting",
+              "/guide/assertions",
+              "/guide/code",
+              "/features/reusable-snippets",
+              "/guide/protips"
+            ]
           },
           {
             "group": "Importing",
+            "icon": "file-import",
             "pages": [
               "/importing/csv",
               "/importing/gherkin",
@@ -140,53 +128,48 @@
             ]
           },
           {
-            "group": "Exporting",
-            "pages": ["/exporting/playwright", "exporting/junit"]
+            "group": "Running",
+            "icon": "play",
+            "pages": [
+              "/getting-started/running",
+              "/getting-started/ci",
+              "/features/parallel-testing",
+              "/action/performance",
+              "/action/secrets"
+            ]
           },
           {
-            "group": "Test Reporting",
+            "group": "Maintaining",
+            "icon": "wrench",
+            "pages": ["/getting-started/editing", "/features/auto-healing"]
+          },
+          {
+            "group": "Reporting",
+            "icon": "chart-simple",
             "pages": ["exporting/junit", "/bugs/jira"]
           }
         ]
       },
       {
-        "tab": "Reference",
-        "groups": [
-          {
-            "group": "Commands",
-            "pages": [
-              "/commands/assert",
-              "/commands/exec",
-              "/commands/focus-application",
-              "/commands/hover-image",
-              "/commands/hover-text",
-              "/commands/if",
-              "/commands/match-image",
-              "/commands/press-keys",
-              "/commands/remember",
-              "/commands/run",
-              "/commands/scroll",
-              "/commands/scroll-until-image",
-              "/commands/scroll-until-text",
-              "/commands/type",
-              "/commands/wait",
-              "/commands/wait-for-image",
-              "/commands/wait-for-text",
-              "/commands/issues"
-            ]
-          },
-          {
-            "group": "Interactive Commands",
-            "pages": [
-              "/interactive/explore",
-              "/interactive/run",
-              "/interactive/save"
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": ["/cli/overview"]
-          }
+        "group": "Reference",
+        "pages": [
+          "/commands/assert",
+          "/commands/exec",
+          "/commands/focus-application",
+          "/commands/hover-image",
+          "/commands/hover-text",
+          "/commands/if",
+          "/commands/match-image",
+          "/commands/press-keys",
+          "/commands/remember",
+          "/commands/run",
+          "/commands/scroll",
+          "/commands/scroll-until-image",
+          "/commands/scroll-until-text",
+          "/commands/type",
+          "/commands/wait",
+          "/commands/wait-for-image",
+          "/commands/wait-for-text"
         ]
       }
     ],
@@ -212,16 +195,9 @@
   "navbar": {
     "links": [
       {
-        "label": "GitHub",
-        "href": "https://github.com/testdriverai/testdriverai"
-      },
-      {
-        "label": "Forums",
-        "href": "https://forums.testdriver.ai"
-      },
-      {
-        "label": "Report an Issue",
-        "href": "https://forums.testdriver.ai/new-topic?category=help"
+        "label": "Discord",
+        "icon": "discord",
+        "href": "https://discord.com/invite/cWDFW8DzPm"
       }
     ],
     "primary": {

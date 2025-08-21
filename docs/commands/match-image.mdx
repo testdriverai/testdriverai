@@ -5,13 +5,14 @@ description: "Locate an image on the screen and perform an action."
 icon: "images"
 ---
 
-import Replay from '/snippets/tests/match-image-replay.mdx'
-import Example from '/snippets/tests/match-image-yaml.mdx'
+import Replay from "/snippets/tests/match-image-replay.mdx";
+import Example from "/snippets/tests/match-image-yaml.mdx";
 
 <Replay />
 <Example />
 
 ## Description
+
 The `match-image` command is used to locate an image on the screen by matching it with a reference image file and performing an action (For example, click or hover) at its center. This command is particularly useful for interacting with elements that the AI has difficulty locating using descriptions or other methods.
 
 ## Arguments
@@ -21,6 +22,7 @@ The `match-image` command is used to locate an image on the screen by matching i
 | `action`      | `string` | The action to take when the image is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging images](/commands/hover-image#drag-functionality) |
 
 ## Example usage
+
 ```yaml
 command: match-image
 path: screenshots/button.png
@@ -28,11 +30,13 @@ action: click
 ```
 
 ## How it works
+
 - The `match-image` command takes a screenshot of the desktop and searches for the location of the reference image within the screenshot.
 - The matching logic looks for the most similar image within the screenshot, not an exact match. If the similarity is below ~80%, it will search additional scales. If no match is found, the command will fail.
 - Screenshots should be stored in the `testdriver/screenshots/` directory. 
 
 ## Protips
+
 - To create high-quality screenshots for matching:
   - Download the video of the test and open it at **full or actual size** on your computer.
   - Use a screenshot tool (like Cleanshot X) to capture the target element.
@@ -52,6 +56,7 @@ action: click
 ```
 
 ## Notes
+
 - The `match-image` command is ideal for interacting with visual elements that can't be reliably described or located using other commands like `hover-image`.
 - This command supports flexible scaling to account for minor differences in image size or resolution.
 - Use this command as a fallback when other methods fail to locate the desired element.

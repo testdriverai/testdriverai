@@ -37,3 +37,13 @@
   font-size: 0.9em;
 }
 
+.prose
+  :where(a code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+  text-decoration: none !important;
+}
+
+.card img {
+  background-color: transparent !important;
+}

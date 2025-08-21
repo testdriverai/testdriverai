@@ -1,0 +1,64 @@
+version: 6.0.0
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: download and install Spotify
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          $spotifyUrl = "https://download.scdn.co/SpotifySetup.exe"
+          $installerPath = "$env:TEMP\SpotifySetup.exe"
+
+          Write-Host "Downloading Spotify installer..."
+          Invoke-WebRequest -Uri $spotifyUrl -OutFile $installerPath -UseBasicParsing
+
+          Write-Host "Downloaded to $installerPath"
+      - command: exec
+        lang: pwsh
+        code: |
+          $installerPath = "$env:TEMP\SpotifySetup.exe"
+
+          if (-Not (Test-Path $installerPath)) {
+              Write-Error "Spotify installer not found at $installerPath"
+              exit 1
+          }
+
+          Write-Host "Installing Spotify silently..."
+          $process = Start-Process -FilePath $installerPath -ArgumentList "/silent" -Wait -PassThru
+
+          if ($process.ExitCode -eq 0) {
+              Write-Host "Spotify installed successfully."
+              Remove-Item $installerPath -Force
+              exit 0
+          } else {
+              Write-Error "Installation failed with exit code $($process.ExitCode)"
+              exit $process.ExitCode
+          }
+      - command: exec
+        lang: pwsh
+        code: |
+          # patch-path.ps1
+
+          $spotifyPath = "$env:APPDATA\Spotify"
+
+          if (-not ($env:PATH -like "*$spotifyPath*")) {
+              Write-Host "Temporarily appending Spotify to PATH for current session."
+              $env:PATH += ";$spotifyPath"
+          } else {
+              Write-Host "Spotify path already in PATH."
+          }
+      - command: exec
+        lang: pwsh
+        code: |
+          # launch-spotify.ps1
+
+          Write-Host "Launching Spotify..."
+          $spotifyExe = "$env:APPDATA\Spotify\Spotify.exe"
+
+          if (Test-Path $spotifyExe) {
+              Start-Process $spotifyExe
+              Write-Host "Spotify launched successfully."
+          } else {
+              Write-Error "Spotify executable not found at $spotifyExe"
+              exit 1
+          }

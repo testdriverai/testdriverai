@@ -2,7 +2,7 @@
 title: "Lifecycle Files"
 sidebarTitle: "Lifecycle Files"
 description: "Learn how to customize TestDriver execution with lifecycle files for setup, provisioning, and cleanup."
-icon: "arrows-rotate"
+icon: "wrench"
 ---
 
 ---
@@ -168,8 +168,8 @@ Each lifecycle file should have a specific purpose:
 
 ### Use appropriate commands
 
-- Use `exec` with `lang: pwsh` for system commands
-- Use TestDriver commands (`wait-for-text`, `hover-text`, etc.) for UI interactions
+- Use [`exec`](/commands/exec) with `lang: pwsh` for system commands
+- Use TestDriver commands ([`wait-for-text`](/commands/wait-for-text), [`hover-text`](/commands/hover-text), etc.) for UI interactions
 - Include appropriate timeouts for reliability
 
 ### Error handling
@@ -236,7 +236,7 @@ When TestDriver runs, lifecycle files execute in this order:
 
 ### Commands failing
 
-- Check PowerShell syntax for `exec` commands
+- Check PowerShell syntax for [`exec`](/commands/exec) commands
 - Verify file paths exist on the target system
 - Add error handling and logging
 - Use appropriate timeouts for operations

@@ -5,8 +5,8 @@ description: "Locate an image on the screen and perform an action."
 icon: "image"
 ---
 
-import Replay from '/snippets/tests/hover-image-replay.mdx'
-import Example from '/snippets/tests/hover-image-yaml.mdx'
+import Replay from "/snippets/tests/hover-image-replay.mdx";
+import Example from "/snippets/tests/hover-image-yaml.mdx";
 
 <Replay />
 <Example />
@@ -46,6 +46,7 @@ steps:
 ---
 
 ## Example usage
+
 ```yaml
 command: hover-image
 description: search icon in the webpage content
@@ -53,10 +54,12 @@ action: click
 ```
 
 ## Protips
+
 - Use clear and concise descriptions for the image to improve detection accuracy.
 - Ensure the action specified matches the intended interaction with the image.
 - If the hover-image command fails to locate an image based on the provided description, consider using the match-image command instead. The match-image command is specifically designed for scenarios where precise image matching is required, such as when the visual element can't be reliably described with text. It works by directly comparing the image on the screen with a reference image file.
 
 ## Gotchas
+
 - If the image can't be located based on the description, the command will fail.
 - Ensure the screen resolution and scaling settings are consistent to avoid detection issues.

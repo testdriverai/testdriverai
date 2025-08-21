@@ -1,11 +1,11 @@
 ---
-title: "Selectorless Testing with TestDriver"
+title: "Selectorless Testing"
 sidebarTitle: "Selectorless Testing"
 description: "Selectorless testing approach simplifies end-to-end testing by using natural language and AI vision."
 icon: "eye"
 ---
 
-Selectorless testing eliminates the need for brittle selectors like CSS classes, IDs, or XPath. 
+Selectorless testing eliminates the need for brittle selectors like CSS classes, IDs, or XPath.
 
 Instead, TestDriver uses natural language prompts and AI-powered vision to interact with applications as a user would. This makes tests more resilient to UI changes and reduces maintenance overhead.
 
@@ -32,7 +32,7 @@ steps:
         expect: The registration form is visible
 ```
 
-This allows TestDriver to locate the target for `hover-text` based on its context and description. The agent will search for elements in the following order :
+This allows TestDriver locates the target for [`hover-text`](/commands/hover-text) based on its context and description. The agent will search for elements: in the following order.
 
 - `text` - exact element to match
 - `description` - a description of the element given the exact text isn't found, or there are multiple matches
@@ -40,7 +40,7 @@ This allows TestDriver to locate the target for `hover-text` based on its contex
 
 ### What happens when "Sign Up" changes to "Register"?
 
-If the button text changes to "Register," TestDriver's AI vision will still locate the button based on its context and description. You don't need to update the test manually. 
+If the button text changes to "Register," TestDriver's AI vision will still locate the button based on its context and description. You don't need to update the test manually.
 TestDriver will then update the test to reflect the new UI by modifying the `text` field. Then, it will open a new pull request with the changes.
 
 ```yaml
@@ -61,13 +61,19 @@ steps:
 
 ## Why selectorless testing?
 
-Traditional testing frameworks rely on selectors tightly coupled to the codebase. 
+Traditional testing frameworks rely on selectors tightly coupled to the codebase.
 For example:
 
 ```javascript
 const button = await page.$('button[class="sign-up-btn"]');
 ```
 
-<Warning>When using legacy frameworks, if the class name changes, the test will break, requiring updates to the test code!</Warning> 
+<Warning>
+  When using legacy frameworks, if the class name changes, the test will break,
+  requiring updates to the test code!
+</Warning>{" "}
 
-<Check>Selectorless testing avoids this by focusing on the intent of the interaction rather than the implementation details.</Check>
+<Check>
+  Selectorless testing avoids this by focusing on the intent of the interaction
+  rather than the implementation details.
+</Check>

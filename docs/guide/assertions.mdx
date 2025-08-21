@@ -7,7 +7,7 @@ icon: "square-check"
 
 # Guide: Using assertions in TestDriver
 
-Assertions in TestDriver allow you to validate that your application behaves as expected during a test. By using the `assert` command and visual assertions, you can ensure that specific conditions are met, such as verifying the presence of text, images, or UI elements on the screen.
+Assertions in TestDriver allow you to validate that your application behaves as expected during a test. By using the [`assert`](/commands/assert) command and visual assertions, you can ensure that specific conditions are met, such as verifying the presence of text, images, or UI elements on the screen.
 
 ---
 
@@ -16,15 +16,16 @@ Assertions in TestDriver allow you to validate that your application behaves as 
 Assertions are checks that validate whether a specific condition is true. If the condition isn't met, the test will fail, providing feedback on what went wrong.
 
 ### Types of assertions in TestDriver:
+
 1. **Text Assertions**: Verify that specific text is visible on the screen.
 2. **Visual Assertions**: Validate the presence of images, icons, or UI elements.
 3. **Custom Assertions**: Use descriptive conditions to check for specific outcomes.
 
 ---
 
-## How to use the `assert` command
+## How to use the [`assert`](/commands/assert) command
 
-The `assert` command is used to validate conditions during a test. It checks whether the specified expectation is true.
+The [`assert`](/commands/assert) command is used to validate conditions during a test. It checks whether the specified expectation is true.
 
 ### Syntax:
 
@@ -32,9 +33,7 @@ The `assert` command is used to validate conditions during a test. It checks whe
 - command: assert
   expect: <condition to check>
   async: <true|false> # Optional, defaults to false
-
 ```
-
 
 - **`expect`**: The condition to validate (for example, "The login form is displayed").
 - **`async`**: (Optional) If set to `true`, the test will continue running without waiting for the assertion to pass.
@@ -48,9 +47,7 @@ The `assert` command is used to validate conditions during a test. It checks whe
 ```yaml
 - command: assert
   expect: The login form is displayed
-
 ```
-
 
 This assertion checks if the login form is visible on the screen.
 
@@ -64,9 +61,7 @@ This assertion checks if the login form is visible on the screen.
 - command: assert
   expect: The success message is displayed
   async: true
-
 ```
-
 
 This assertion runs asynchronously, allowing the test to continue without waiting for the success message to appear.
 
@@ -84,9 +79,7 @@ Visual assertions validate the presence of images, icons, or UI elements on the 
 - command: hover-image
   description: Company logo in the top-left corner
   action: hover
-
 ```
-
 
 This command hovers over the company logo to ensure it's present on the screen.
 
@@ -101,9 +94,7 @@ This command hovers over the company logo to ensure it's present on the screen.
   text: Submit
   description: Blue button with the text 'Submit' at the bottom of the form
   action: hover
-
 ```
-
 
 This command hovers over the "Submit" button to confirm its presence.
 
@@ -154,18 +145,18 @@ steps:
     commands:
       - command: assert
         expect: The dashboard is displayed
-
 ```
-
 
 ---
 
 ## Debugging assertions
 
 1. **Review Error Messages**:
+
    - If an assertion fails, TestDriver provides detailed error messages to help identify the issue.
 
 2. **Use Visual Feedback**:
+
    - Leverage screenshots and visual feedback to verify the state of the application during the assertion.
 
 3. **Refine Descriptions**:
@@ -176,15 +167,19 @@ steps:
 ## Best practices for assertions
 
 1. **Be Specific**:
+
    - Use clear and concise conditions for assertions (for example, "The login form is displayed").
 
 2. **Use Visual Assertions for Non-Text Elements**:
-   - Validate images, icons, and other UI elements using `hover-image` or `hover-text`.
+
+   - Validate images, icons, and other UI elements using [`hover-image`](/commands/hover-image) or [`hover-text`](/commands/hover-text).
 
 3. **Combine Assertions with Navigation**:
+
    - Place assertions after navigation or interaction steps to validate the application's state.
 
 4. **Leverage Async Assertions**:
+
    - Use `async: true` for non-blocking checks, especially for dynamic content.
 
 5. **Test Incrementally**:
@@ -192,4 +187,4 @@ steps:
 
 ---
 
-By using the `assert` command and visual assertions effectively, you can create robust and reliable tests that ensure your application behaves as expected.
+By using the [`assert`](/commands/assert) command and visual assertions effectively, you can create robust and reliable tests that ensure your application behaves as expected.
