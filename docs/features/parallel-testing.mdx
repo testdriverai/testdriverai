@@ -76,7 +76,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run test in headless mode
-        run: npx testdriverai@latest run testdriver/acceptance/${{ matrix.test }} --headless
+        run: npx testdriverai@latest run testdriver/acceptance/${{ matrix.test }}
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TD_API_KEY }}

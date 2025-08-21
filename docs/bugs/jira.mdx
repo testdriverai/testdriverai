@@ -69,10 +69,11 @@ jobs:
 
       - name: Run TestDriver
         id: testdriver
+        shell: powershell
         run: |
           $exitCode = 0
           try {
-            npx testdriverai@latest run testdriver/test.yaml --headless --key $env:TD_API_KEY --output="testdriver-output.txt"
+            npx testdriverai@latest run testdriver/test.yaml --summary="testdriver-summary.txt"
           } catch {
             $exitCode = $LASTEXITCODE
           }
@@ -86,22 +87,21 @@ jobs:
           }
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        shell: powershell
 
       - name: Check for Test Failures
         id: check-failures
+        shell: powershell
         run: |
           if ("${{ steps.testdriver.outputs.success }}" -eq "false") {
             echo "TestDriver tests failed."
             echo "failure=true" >> $env:GITHUB_ENV
             
             # Copy the output file for Jira ticket
-            Copy-Item testdriver-output.txt failure-details.txt
+            Copy-Item testdriver-summary.txt failure-details.txt
           } else {
             echo "All tests passed."
             echo "failure=false" >> $env:GITHUB_ENV
           }
-        shell: powershell
 
       - name: Upload test results
         if: always()
@@ -109,7 +109,7 @@ jobs:
         with:
           name: testdriver-results
           path: |
-            testdriver-output.txt
+            testdriver-summary.txt
             failure-details.txt
 
   create-jira-ticket:

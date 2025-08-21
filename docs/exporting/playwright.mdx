@@ -57,7 +57,7 @@ jobs:
           ref: ${{ github.event.ref }}
 
       - name: Run TestDriver
-        run: npx testdriverai@latest run testdriver/test.yaml --headless
+        run: npx testdriverai@latest run testdriver/test.yaml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,7 +87,7 @@ TestDriver CLI executes the test file in headless mode. The test file should con
 
 ```yaml
 - name: Run TestDriver
-  run: npx testdriverai@latest run testdriver/test.yaml --headless
+  run: npx testdriverai@latest run testdriver/test.yaml
   env:
     TD_API_KEY: ${{ secrets.TD_API_KEY }}
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
