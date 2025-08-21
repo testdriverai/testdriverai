@@ -5,8 +5,6 @@ description: "Comprehensive guide to installing and setting up TestDriver for VS
 icon: "file-code"
 ---
 
-import YmlWarning from "/snippets/yml-warning.mdx";
-
 <Card
   title="Get the VS Code Extension"
   icon="link"
@@ -34,9 +32,7 @@ import YmlWarning from "/snippets/yml-warning.mdx";
     npx testdriverai@latest
     ```
 
-    Once started, you can use commands like `/try`, `/undo`, and `/save` to interactively build and test your flows.
-
-    <YmlWarning />
+    Once started, you can use commands like `/explore`, `/run`, and `/save` to interactively build and test your flows.
 
   </Step>
   <Step title="Define Your Test Steps" stepNumber={3}>
@@ -58,13 +54,14 @@ import YmlWarning from "/snippets/yml-warning.mdx";
     - command: type
       text: testdriverai
     - command: press-keys
-      keys: [enter]
+      keys: 
+        - enter
     ```
 
   </Step>
   <Step title="Refine and Save Your Test" stepNumber={4}>
-    - Use `/undo` to remove the last step if needed.
     - Save your test with `/save` to generate a reusable YAML file.
+    - Use `/run` to run the test.
   </Step>
   <Step title="Run Saved Tests" stepNumber={5}>
     Once saved, you can run your test file anytime:
