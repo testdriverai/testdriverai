@@ -1,6 +1,5 @@
-```yaml highlight={15-18}
+```yaml highlight={14-17}
 version: 6.0.0
-session: 6879467764060bdfedd4709d
 steps:
   - prompt: go to testdriver.ai and wait for the hero image to load
     commands:
@@ -12,7 +11,7 @@ steps:
         text: testdriver.ai
       - command: press-keys
         keys:
-          - enter 
+          - enter
       - command: wait-for-image
         description: the hero section image
         timeout: 10000 # 10 seconds
