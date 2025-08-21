@@ -10,7 +10,7 @@ This guide explains how to set up TestDriver in CI/CD pipelines, using **GitHub 
 ## Prerequisites
 
 1. **Add API key to secrets**: Obtain your API key from TestDriver and store it as a [CI/CD secret](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets) as `TD_API_KEY`.
-Also make sure to add the `TD_WEBSITE` secret to the repository with the value of the website you are testing if its a web based application.
+   Also make sure to add the `TD_WEBSITE` secret to the repository with the value of the website you are testing if its a web based application.
 2. **Test Files**: Ensure your test files are saved in the `testdriver/` directory of your repository.
 
 ## Create a CI/CD workflow
@@ -20,7 +20,8 @@ This example uses GitHub Actions, but the same approach can be adapted for other
 1. Create a new file in your repository: `.github/workflows/testdriver.yaml`.
 
 <Note>
-  If you have already [initialized the project](/getting-started/setup) with `npx testdriverai@latest init`, the workflow file will already be created.
+  If you have already [initialized the project](/getting-started/setup) with
+  `npx testdriverai@latest init`, the workflow file will already be created.
 </Note>
 
 2. Add the following workflow configuration:
@@ -36,14 +37,13 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 13 * * *'  # Every day at 1 PM UTC (adjust if needed for timezone)
+    - cron: "0 13 * * *" # Every day at 1 PM UTC (adjust if needed for timezone)
 
 permissions:
   contents: read
   pull-requests: read
 
 jobs:
-
   test:
     name: TestDriver
     runs-on: ubuntu-latest
@@ -70,7 +70,8 @@ jobs:
 2. Select the workflow run to view the test results. You will also find the link to the test recording at the end of the run, the url is of the format: `https://app.dashcam.io/replay/1234567890`
 
 <Tip>
-You can also intregate our supported [reporting platform](/exporting/junit) to get more currated results.
+  You can also intregate our supported [reporting platform](/exporting/junit) to
+  get more currated results.
 </Tip>
 
 <Note>
@@ -133,8 +134,8 @@ TestDriver provides a powerful debugging interface through its platform. This in
 4. **Authentication**: The `TD_API_KEY` environment variable authenticates your account.
 5. **Dashcam Recording**: Dashcam begins recording the test execution.
 6. **Test Execution**: The TestDriver CLI executes your commands on the cloud VM.
-8. **Test Summary**: TestDriver summarizes the test and sets the exit code based on the pass or fail state.
-9. **Cleanup**: The recording is uploaded to the TestDriver platform and the VM is destroyed, and all data is wiped.
+7. **Test Summary**: TestDriver summarizes the test and sets the exit code based on the pass or fail state.
+8. **Cleanup**: The recording is uploaded to the TestDriver platform and the VM is destroyed, and all data is wiped.
 
 ---
 

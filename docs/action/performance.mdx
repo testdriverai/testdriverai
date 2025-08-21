@@ -44,7 +44,7 @@ run tests:
         uses: actions/checkout@v4
 
       - name: Run the tests
-          run: npx testdriverai@latest run testdriver/${{ matrix.test_file }} 
+          run: npx testdriverai@latest run testdriver/${{ matrix.test_file }}
           env:
             FORCE_COLOR: 3
             TD_API_KEY: ${{ secrets.TD_API_KEY }}
@@ -69,9 +69,9 @@ method: turbo
 ```
 
 <Note>
-`turbo` is the default method that is currently implemented. The other method being `ai` 
+  `turbo` is the default method that is currently implemented. The other method
+  being `ai`
 </Note>
-
 
 ---
 

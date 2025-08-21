@@ -6,11 +6,13 @@ icon: "play"
 ---
 
 ## Description
+
 The `run` command is used to embed and execute another file within the current script. This is **useful for reusing common sequences of commands or modularizing your scripts** for better organization and maintainability.
 
 ## Arguments
-| Argument | Type     | Description                                                                 |
-|----------|----------|:----------------------------------------------------------------------------|
+
+| Argument | Type     | Description                                                                                   |
+| -------- | -------- | :-------------------------------------------------------------------------------------------- |
 | `file`   | `string` | The path to the file to embed and run. Should be relative to the root of your git repository. |
 
 ## Example usage
@@ -24,6 +26,7 @@ file: relative/path/to/another-script.yaml
 
 - Use the `run` command to centralize reusable logic, such as login flows or setup steps, into separate files.
 - Ensure the file path is relative to the current test file's directory. For example, if the test file is at `testdriver/homepage/chat-functionalities.yaml` and say the login snippet is present at the conventional `testdriver/snippets/login.yaml` it should be referrenced as :
+
 ```yaml highlight={2}
 command: run
 file: ../snippets/login.yaml

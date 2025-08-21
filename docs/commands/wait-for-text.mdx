@@ -5,8 +5,8 @@ description: "Wait until the specified text is detected on the screen."
 icon: "clock-nine"
 ---
 
-import Replay from '/snippets/tests/wait-for-text-replay.mdx'
-import Example from '/snippets/tests/wait-for-text-yaml.mdx'
+import Replay from "/snippets/tests/wait-for-text-replay.mdx";
+import Example from "/snippets/tests/wait-for-text-yaml.mdx";
 
 <Replay />
 <Example />
@@ -17,11 +17,11 @@ The `wait-for-text` command waits until the specified text is detected on the sc
 
 ## Arguments
 
-| Argument  | Type     | Description                                                                                |
-| :-------: | :------: | :----------------------------------------------------------------------------------------- |
-| `text`    | `string` | The text to find on the screen.                                                            |
+| Argument  |   Type   | Description                                                                                            |
+| :-------: | :------: | :----------------------------------------------------------------------------------------------------- |
+|  `text`   | `string` | The text to find on the screen.                                                                        |
 | `timeout` | `number` | (Optional) The duration in milliseconds to wait for the text to appear. Default is `5000` (5 seconds). |
-| `method`  | `enum`   | (Optional) The matching algorithm to use. Possible values are `ai` and `turbo`. Default is `turbo`  |
+| `method`  |  `enum`  | (Optional) The matching algorithm to use. Possible values are `ai` and `turbo`. Default is `turbo`     |
 
 ## Example usage
 

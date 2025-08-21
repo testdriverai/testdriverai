@@ -5,8 +5,8 @@ description: "Scroll the screen in a specified direction using the mouse wheel."
 icon: "computer-mouse"
 ---
 
-import Replay from '/snippets/tests/scroll-replay.mdx'
-import Example from '/snippets/tests/scroll-yaml.mdx'
+import Replay from "/snippets/tests/scroll-replay.mdx";
+import Example from "/snippets/tests/scroll-yaml.mdx";
 
 <Replay />
 <Example />
@@ -17,14 +17,16 @@ The `scroll` command is used to scroll the screen in a specified direction using
 
 ## Arguments
 
-| Argument    | Type     | Description                                                                       |
-| :---------: | :------: | :-------------------------------------------------------------------------------- |
-| `direction` | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. |
-| `method`    | `string` | The method to scroll. Available methods are: `mouse`, `keyboard`. Defaults to `mouse` |
-| `amount`    | `number` | (Optional) Pixels to scroll. If not specified, a default amount of 300 is used.       |
+|  Argument   |   Type   | Description                                                                           |
+| :---------: | :------: | :------------------------------------------------------------------------------------ |
+| `direction` | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`.     |
+|  `method`   | `string` | The method to scroll. Available methods are: `mouse`, `keyboard`. Defaults to `mouse` |
+|  `amount`   | `number` | (Optional) Pixels to scroll. If not specified, a default amount of 300 is used.       |
 
 <Warning>
-The `amount` should only be used when the `method` is mouse. If the `method` is keyboard, it is redundant as the action performed is pressing the `pageup` or `pagedown` keys.
+  The `amount` should only be used when the `method` is mouse. If the `method`
+  is keyboard, it is redundant as the action performed is pressing the `pageup`
+  or `pagedown` keys.
 </Warning>
 
 ## Example usage

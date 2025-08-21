@@ -16,10 +16,11 @@ import Example from "/snippets/tests/match-image-yaml.mdx";
 The `match-image` command is used to locate an image on the screen by matching it with a reference image file and performing an action (For example, click or hover) at its center. This command is particularly useful for interacting with elements that the AI has difficulty locating using descriptions or other methods.
 
 ## Arguments
-| Argument       | Type     | Description                                                                  |
-|----------------|----------|:-----------------------------------------------------------------------------|
-| `path`         | `string` | The path to the image that needs to be matched. The path needs to be relative to the current test file |
-| `action`      | `string` | The action to take when the image is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging images](/commands/hover-image#drag-functionality) |
+
+| Argument | Type     | Description                                                                                                                                                                                                                   |
+| -------- | -------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path`   | `string` | The path to the image that needs to be matched. The path needs to be relative to the current test file                                                                                                                        |
+| `action` | `string` | The action to take when the image is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging images](/commands/hover-image#drag-functionality) |
 
 ## Example usage
 
@@ -33,7 +34,7 @@ action: click
 
 - The `match-image` command takes a screenshot of the desktop and searches for the location of the reference image within the screenshot.
 - The matching logic looks for the most similar image within the screenshot, not an exact match. If the similarity is below ~80%, it will search additional scales. If no match is found, the command will fail.
-- Screenshots should be stored in the `testdriver/screenshots/` directory. 
+- Screenshots should be stored in the `testdriver/screenshots/` directory.
 
 ## Protips
 
@@ -44,11 +45,13 @@ action: click
 - Ensure the image file is clear and free of unnecessary visual noise to improve matching accuracy.
 
 ## Gotchas
-- The screenshot image should be of the actual size of the image that's being match against. 
+
+- The screenshot image should be of the actual size of the image that's being match against.
 - If the image match is below ~80% similarity, the program tries to match will different scales, its recommended to have an actual size image.
 - Variations in screen resolution, scaling settings, or platform-specific UI differences may affect matching accuracy.
 - Ensure the image file is stored in the correct directory structure (`testdriver/screenshots/`) for dynamic resolution.
 - The `path`needs to be relative to the current test file's directory. For example, if the test file is at `testdriver/onboarding/login.yaml` and the image is present at the conventional `testdriver/screenshots/nepal-flag.png` it should be referrenced as :
+
 ```yaml highlight={2}
 command: match-image
 path: ../screenshots/nepal-flag.png

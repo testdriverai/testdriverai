@@ -5,8 +5,8 @@ description: "Scroll the screen until an image matching the description is found
 icon: "film-simple"
 ---
 
-import Replay from '/snippets/tests/scroll-until-image-replay.mdx'
-import Example from '/snippets/tests/scroll-until-image-yaml.mdx'
+import Replay from "/snippets/tests/scroll-until-image-replay.mdx";
+import Example from "/snippets/tests/scroll-until-image-yaml.mdx";
 
 <Replay />
 <Example />
@@ -17,17 +17,19 @@ The `scroll-until-image` command is used to scroll the screen in a specified dir
 
 ## Arguments
 
-| Argument      | Type     | Description                                                                                |
-| :-----------: | :------: | :----------------------------------------------------------------------------------------- |
-| `description` | `string` | A description of the image and what it represents.                                         |
-| `direction`   | `string` | (Optional) The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. Defaults to `down`. |
-| `distance`    | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `10000`. |
-| `method`      | `string` | (Optional) The method to use to scroll the page. Available methods are: `mouse` and `keyboard`. Defaults to `keyboard`. |
-| `path`        | `string` | (Optional) The relative path to the image file that needs to be matched on the screen.  |
+|   Argument    |   Type   | Description                                                                                                             |
+| :-----------: | :------: | :---------------------------------------------------------------------------------------------------------------------- |
+| `description` | `string` | A description of the image and what it represents.                                                                      |
+|  `direction`  | `string` | (Optional) The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. Defaults to `down`.        |
+|  `distance`   | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `10000`.                                 |
+|   `method`    | `string` | (Optional) The method to use to scroll the page. Available methods are: `mouse` and `keyboard`. Defaults to `keyboard`. |
+|    `path`     | `string` | (Optional) The relative path to the image file that needs to be matched on the screen.                                  |
 
 <Note>
-Use either the `description` or `path` argument to match an image on the screen.  
-If you are using `path` argument, make sure to upload an accurate representation of the actual image and reference it relative to the current test path.
+  Use either the `description` or `path` argument to match an image on the
+  screen. If you are using `path` argument, make sure to upload an accurate
+  representation of the actual image and reference it relative to the current
+  test path.
 </Note>
 
 ## Example usage
