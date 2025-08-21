@@ -5,8 +5,8 @@ description: "Hover or click on text elements based on a description."
 icon: "text"
 ---
 
-import Replay from '/snippets/tests/hover-text-replay.mdx'
-import Example from '/snippets/tests/hover-text-yaml.mdx'
+import Replay from "/snippets/tests/hover-text-replay.mdx";
+import Example from "/snippets/tests/hover-text-yaml.mdx";
 
 <Replay />
 <Example />
@@ -17,12 +17,12 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 
 ## Arguments
 
-| Argument      | Type     | Description                                                                |
-|:-------------:|:--------:|:---------------------------------------------------------------------------|
-| `text`        | `string` | The text to find on the screen. Longer and unique is better.|
-| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.|
-| `action`      | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging text](/commands/hover-image#drag-functionality).|
-| `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.|
+|   Argument    |   Type   | Description                                                                                                                                                                                                                 |
+| :-----------: | :------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    `text`     | `string` | The text to find on the screen. Longer and unique is better.                                                                                                                                                                |
+| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.                                                                                                                        |
+|   `action`    | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging text](/commands/hover-image#drag-functionality). |
+|   `method`    |  `enum`  | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                                                                                                                              |
 
 ## Example usage
 
