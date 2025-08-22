@@ -6,8 +6,6 @@ icon: "download"
 mode: "wide"
 ---
 
-import Comments from "/snippets/comments.mdx";
-
 <Steps>
   <Step title="Set up your environment">
       
@@ -46,7 +44,7 @@ import Comments from "/snippets/comments.mdx";
       - prompt: complete checkout
     ```
 
-    Each step has a `prompt` that describes what the agent should do. The agent will use the prompt to generate [commands](/commands) that make the tests faster and more reliable the next time you run the test.
+    Each step has a `prompt` that describes what the agent should do. The agent will use the prompt to generate [commands](/commands/assert) that make the tests faster and more reliable the next time you run the test.
 
   </Step>
   <Step title="Generate test steps from prompts">
@@ -54,7 +52,7 @@ import Comments from "/snippets/comments.mdx";
     Run the following command to run the test file. TestDriver will spawn a virtual machine, launch the sandbox test page, and execute the steps defined in the `example.yaml` file.
 
     ```bash
-    npx testdriverai@beta run example.yaml --write --heal
+    npx testdriverai@latest run example.yaml --write --heal
     ```
 
     The `--write` flag tells TestDriver to save any generated commands to the test file, and the `--heal` flag allows TestDriver to recover from unexpected issues during the test run.
@@ -63,8 +61,7 @@ import Comments from "/snippets/comments.mdx";
   <Step title="Run a regression test">
 
     ```yaml
-      version: 5.7.7
-      session: 682f6071811bd5a322c0e6dd
+      version: 6.0.0
       steps:
         - prompt: focus chrome
           commands:
@@ -92,6 +89,3 @@ import Comments from "/snippets/comments.mdx";
 
   </Step>
 </Steps>
-
-<Comments />
-```
