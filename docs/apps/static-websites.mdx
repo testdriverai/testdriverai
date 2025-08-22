@@ -41,7 +41,7 @@ steps:
           Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
           exit
       - command: wait-for-text
-        text: $
+        text: ${TD_WEBSITE}
         timeout: 30000
 ```
 
