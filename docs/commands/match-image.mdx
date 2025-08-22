@@ -50,7 +50,7 @@ action: click
 - If the image match is below ~80% similarity, the program tries to match will different scales, its recommended to have an actual size image.
 - Variations in screen resolution, scaling settings, or platform-specific UI differences may affect matching accuracy.
 - Ensure the image file is stored in the correct directory structure (`testdriver/screenshots/`) for dynamic resolution.
-- The `path`needs to be relative to the current test file's directory. For example, if the test file is at `testdriver/onboarding/login.yaml` and the image is present at the conventional `testdriver/screenshots/nepal-flag.png` it should be referrenced as :
+- The `path`needs to be relative to the current test file's directory. For example, if the test file is at `testdriver/onboarding/login.yaml` and the image is present at the conventional `testdriver/screenshots/nepal-flag.png` it should be referrenced as
 
 ```yaml highlight={2}
 command: match-image
