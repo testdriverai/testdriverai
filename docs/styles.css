@@ -46,3 +46,11 @@
 .card img {
   background-color: transparent !important;
 }
+
+.replay-block {
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  justify-content: center;
+  display: flex;
+}
