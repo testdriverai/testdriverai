@@ -1,19 +1,14 @@
-```yaml
-version: 5.7.62
-session: 685accd3d043aff871e84071
+```yaml testdriver/scroll.yaml highlight={22-24}
+version: 6.0.0
 steps:
   - prompt: Navigate to https://developer.mozilla.org/en-US/docs/Web/HTML
     commands:
       - command: focus-application
         name: Google Chrome
-      - command: hover-text
-        text: testdriver-sandbox.vercel.app/login
-        description: the URL in the omnibox showing the current page
-        action: click
       - command: press-keys
         keys:
-          - command
-          - a
+          - ctrl
+          - l
       - command: type
         text: https://developer.mozilla.org/en-US/docs/Web/HTML
       - command: press-keys
@@ -32,8 +27,4 @@ steps:
     commands:
       - command: assert
         expect: the page is scrolled down
-      - command: press-keys
-        keys:
-          - alt
-          - f4
 ```

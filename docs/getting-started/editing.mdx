@@ -5,11 +5,7 @@ description: "Edit previously generated tests."
 icon: "file-pen"
 ---
 
-import YmlWarning from "/snippets/yml-warning.mdx";
-
 Test scripts are written in YAML format, making them easy to read and modify manually if you need to.
-
-<YmlWarning />
 
 <Card title="Commands Reference" icon="link" href="/commands/assert">
   Explore the available commands and their parameters.
@@ -27,12 +23,12 @@ Use your preferred text editor or IDE (for example, Visual Studio Code) to open 
 
 Each test file consists of:
 
-- **Version**: Specifies the TestDriver version.
+- **Version**: Specifies the TestDriver version that was used to generate the test file. This is used to lock the version of TestDriver that is used to run the test.
 - **Session**: A unique identifier for the test session.
 - **Steps**: A list of prompts and commands to execute.
 
-```yaml testfile.yaml
-version: 4.2.18
+```yaml test-file.yaml
+version: 6.0.0
 session: abc1234
 steps:
   - prompt: Open Google Chrome and navigate to Airbnb
@@ -46,7 +42,8 @@ steps:
       - command: type
         text: airbnb.com
       - command: press-keys
-        keys: [enter]
+        keys:
+          - enter
 ```
 
 <Tip>
@@ -61,7 +58,7 @@ steps:
 You can add, edit, or remove steps as needed. Each step contains:
 
 - **Prompt**: A description of the action.
-- **Commands**: The specific actions to perform.
+- **Commands**: The specific actions to perform. It is an **optional** field, meaning, if there are no `commands` the AI considers the `prompt` and generates and executes the yaml on-the-go using the [exploratory mode](/interactive/explore)
 
 #### Example edits:
 
@@ -86,7 +83,13 @@ Ensure the YAML file is properly formatted:
 
 - Use consistent indentation (2 spaces recommended).
 - Avoid trailing spaces or tabs.
-- Validate the file using a YAML linter if needed.
+- TestDriver will validate the yaml syntax and provide suggestions to fix any errors when you run the test.
+
+<Tip>
+  It is recommended to use our [VS Code extension](/getting-started/vscode)
+  while you are editing the yaml. It will provide you with a rich experience
+  with auto-completion, syntax highlighting, and validation.
+</Tip>
 
 ### Test the changes
 

@@ -18,7 +18,7 @@ Instead, TestDriver uses natural language prompts and AI-powered vision to inter
 The following is an example of a TestDriver test.
 
 ```yaml
-version: 4.2.18
+version: 6.0.0
 steps:
   - prompt: Click the "Sign Up" button
     commands:
@@ -44,7 +44,7 @@ If the button text changes to "Register," TestDriver's AI vision will still loca
 TestDriver will then update the test to reflect the new UI by modifying the `text` field. Then, it will open a new pull request with the changes.
 
 ```yaml
-version: 4.2.18
+version: 6.0.0
 steps:
   - prompt: Click the "Register" button
     commands:
@@ -53,6 +53,12 @@ steps:
         description: button in the header for user registration
         action: click
 ```
+
+<Note>
+  Need to add `--heal` flag during the run command to enable auto-healing of the
+  tests. Refer the [Auto-Healing](/getting-started/running#auto-healing) section
+  to know more.
+</Note>
 
 ## Why selectorless testing?
 

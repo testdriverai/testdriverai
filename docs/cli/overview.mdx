@@ -15,20 +15,20 @@ npx testdriverai@latest <command> [options]
 
 ## Available commands
 
-| Command                | Description                                                  |
-| ---------------------- | ------------------------------------------------------------ |
+|        Command         | Description                                                  |
+| :--------------------: | :----------------------------------------------------------- |
 | [`run`](/commands/run) | Executes a TestDriver test.                                  |
-| `edit`                 | Launch interactive mode.                                     |
-| `help`                 | Displays help information for the CLI or a specific command. |
+| [`edit`](/commands/edit)         | Launch interactive mode.                                     |
+| [`help`](/commands/help)         | Displays help information for the CLI or a specific command. |
 
 ## Available Flags
 
 | Flag                | Description                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------ |
+| :------------------ | :----------------------------------------------------------------------------------------- |
 | `--heal`            | Launch exploratory mode and attemp to recover if an error or failing state is encountered. |
 | `--write`           | Ovewrite test file with new commands resulting from agentic testing                        |
 | `--headless`        | Run test without opening a browser window (useful for CI/CD environments)                  |
-| `--new-sandbox`     | Create a new sandbox environment for the test run.                                         |
+| `--new`             | Create a new sandbox environment for the test run.                                         |
 | `--summary=<value>` | Output file where AI summary should be saved.                                              |
 
 ## Example usage

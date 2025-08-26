@@ -9,16 +9,16 @@ icon: "play-pause"
 
 The `/explore` command is used to execute a single step in a test file and add it to a specified file. This command generates and performs steps in an interactive way while creating a test file.
 
-<Tip>
+<Check>
   `/explore` is the default command sent to TestDriver when no command is
   provided.
-</Tip>
+</Check>
 
 ## Usage
 
 ```bash
-npx testdriverai@latest <filename.yaml>
-/run prompt
+testdriverai edit <filename.yaml>
+/explore prompt
 ```
 
 ## Example usage
@@ -57,7 +57,7 @@ command='hover-text' text='Add to Cart' description='add to cart button on the s
 thinking...
 ```
 
-In this case, the user wasn't logged in, so the AI will 'undo' the steps it thought it should take, and add steps to log in first.
+**In this case, the user wasn't logged in, so the AI will 'undo' the steps it thought it should take, and add steps to log in first.**
 
 ```bash
 undoing...
@@ -92,10 +92,8 @@ thinking...
 - Use descriptive prompts for higher success with generating test steps with `/explore`.
 - Use `/explore` multiple times in succession to build a comprehensive test file.
 
-## Gotchas
+<Note>The AI will retry 3 times if it can't complete the task.</Note>
 
-- The AI will retry 3 times if it can't complete the task.
+---
 
-## Notes
-
-- The `/explore` command is ideal for creating test files in an interactive session.
+The `/explore` command is ideal for creating test files in an interactive session.

@@ -3,7 +3,14 @@ title: "wait"
 sidebarTitle: "wait"
 description: "Pause the execution of the script for a specified duration."
 icon: "clock"
+"mode": "wide"
 ---
+
+import Replay from "/snippets/tests/wait-replay.mdx";
+import Example from "/snippets/tests/wait-yaml.mdx";
+
+<Replay />
+<Example />
 
 ## Description
 
@@ -35,4 +42,4 @@ timeout: 5000
 ## Notes
 
 - The `wait` command is ideal for introducing controlled pauses in your test scripts.
-- This command is supported across all platforms for consistent behavior.
+- Whenever you are waiting for something to load, use the [wait-for-text](/commands/wait-for-text) or [wait-for-image](/commands/wait-for-image) commands instead to make the test more efficient.

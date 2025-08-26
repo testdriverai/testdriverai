@@ -18,29 +18,29 @@ The `exec` command allows you to execute custom Node.js scripts within your Test
 
 ## Arguments
 
-| Argument | Type     | Description                                                                                                                                                                        |
-| -------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lang`   | `string` | The language of the script to execute. Supported values are `shell` and `js`.                                                                                                      |
+| Argument |   Type   | Description                                                                                                                                                                        |
+| :------: | :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  `lang`  | `string` | The language of the script to execute. Supported values are `pwsh` and `js`.                                                                                                       |
 | `output` | `string` | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps.                                                           |
-| `silent` | `string` | Defaults to `false`. The command will print the output of the script. This is useful for suppressing unnecessary or private output in the test logs. This is useful for debugging. |
-| `code`   | `string` | The script to execute on Windows systems. For `js`, the script must define the output as `result`.                                                                                 |
+|  `code`  | `string` | The script to execute on Windows systems. For `js`, the script must define the output as `result`.                                                                                 |
+| `silent` | `string` | Defaults to `false`. The command will print the output of the script. This is useful for suppressing unnecessary or private output in the test logs and it's useful for debugging. |
 
 ## Example usage
 
 This example demonstrates how to use the `exec` command to generate a TOTP (Time-based One-Time Password) using the `totp-generator` library.
 
-```yaml
-version: 5.3.8
+```yaml otp-generator.yaml
+version: 6.0.0
 steps:
   - commands:
       - command: exec
         lang: pwsh
-        linux: |
+        code: |
           npm install totp-generator
       - command: exec
         lang: js
         output: totp
-        linux: |
+        code: |
           const { TOTP } = require("totp-generator");
           let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
           console.log(otp);
@@ -51,19 +51,16 @@ steps:
 
 ## Additional details
 
-- The `exec` command now takes a `lang` argument and supports different operating systems (`linux`, `mac`, and `windows`).
-- Supported `lang` values are `js` or `shell`:
-  - `js` code is executed in a Node.js VM on the host machine (for example the machine where your CI/CD runs, or your computer if using the local agent).
-  - `shell` code is executed in the shell on target runner (which can be the cloud runner, local sandbox, or local machine, depending on where you run your tests).
-    - Note: You can also use `shell` in [`prerun`](/guide/lifecycle-prerun) scripts to install npm packages if you need them.
-    - Otherwise, the `shell` code can be used within test steps to launch applications or perform simple commands (like writing text to a file on the machine to perform a simple file upload).
-- Code specified in `linux`, `mac`, and `windows` is executed based on the platform of the runner machine.
+- Supported `lang` values are `js` or `pwsh`:
+  - `js` code is executed in a Node.js [VM](https://nodejs.org/api/vm.html) internally on the host machine (for example the machine where your CI/CD runs, or your computer if using the local agent).
+  - `pwsh` code is executed in the shell on target runner (which can be the cloud runner, local sandbox, or local machine, depending on where you run your tests).
+    - **Note:** You can also use `pwsh` in [lifecycle](/guide/lifecycle) scripts to install npm packages if you need them.
+    - Otherwise, the `pwsh` code can be used within test steps to launch applications or perform simple commands (like writing text to a file on the machine to perform a simple file upload).
 - The `output`argument is assigned automatically by setting `result = somestringvalue` in the script you run.
 
 ## Protips
 
 - The `result` variable is already available in your script, overwrite it to store the output as shown in the examples.
-- Node.js code executes in the same context as the calling process on the host machine, using the [VM](https://nodejs.org/api/vm.html) module internally.
 - Do any handling of arrays or nested objects within your `js` script:
   - ✅ `result = users[1].profile.firstName`
   - ✅ `result = data.length > 0 ? data[0].userEmail : 'no user found'` if no data is found the value of output will be `null`
@@ -79,21 +76,19 @@ steps:
 
 ## Ways to use `exec`
 
-Here is an example using both `shell` and `js` contexts within a [`prerun.yaml`](guide/lifecycle-prerun) script:
+Here is an example using both `pwsh` and `js` contexts within a `prerun.yaml` script which creates a temporary email account and automatically clicks links found in received emails.
 
 ```yaml ./lifecycle/prerun.yaml [expandable]
-version: 5.3.8
+version: 6.0.0
 steps:
   - commands:
       - command: exec
         lang: pwsh
-        silent: false
         code: |
           npm install @sendgrid/mail
       - command: exec
         lang: js
         output: accountData
-        silent: false
         code: |
           const Mailjs = require("@cemalgnlts/mailjs");
           const mailjs = new Mailjs();
@@ -103,7 +98,6 @@ steps:
       - command: exec
         lang: js
         output: emailAddress
-        silent: false
         code: |
           const accountData = ${OUTPUT.accountData};
           result = accountData.username
@@ -119,7 +113,6 @@ steps:
     commands:
       - command: exec
         lang: js
-        silent: false
         code: |
           const Mailjs = require("@cemalgnlts/mailjs");
           const { JSDOM } = require('jsdom'); // To parse HTML and extract links
@@ -174,23 +167,24 @@ steps:
           getLatestEmailAndClickLinks();
 ```
 
-### Using `exec` shell commands in a test file
+### Using `exec` pwsh commands in a test file
 
-In a test file, you can use the `shell` context directly:
+In a test file, you can use the `pwsh` context directly:
 
-```yaml testfile.yaml [expandable]
-version: 5.5.5
+```yaml calculator.yaml highlight={5-8} [expandable]
+version: 6.0.0
 steps:
   - prompt: launch a calculator
     commands:
       - command: exec
         lang: pwsh
-        code: start /B calc.exe
+        code: |
+          start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "calculator"
         timeout: 30000
-  - prompt: /try performing the operation 2 + 2 = on the calculator that is opened
+  - prompt: performing the operation 2 + 2 = on the calculator that is opened
     commands:
       - command: focus-application
         name: galculator
@@ -212,14 +206,15 @@ steps:
 
 You can also save reusable snippets (like launching the calculator) to be inserted into a script later with the [`run`](/commands/run) command. That version would look something like this:
 
-```yaml launchcalculator.yaml [expandable]
-version: 5.5.5
+```yaml snippets/launch-calculator.yaml [expandable]
+version: 6.0.0
 steps:
   - prompt: launch a calculator
     commands:
       - command: exec
         lang: pwsh
-        code: start /B calc.exe
+        code: |
+        start /B calc.exe
           timeout /t 5
       - command: wait-for-text
         text: "calculator"
@@ -228,14 +223,14 @@ steps:
 
 Then in the test:
 
-```yaml {5-6} testfile.yaml [expandable]
-version: 5.5.5
+```yaml calculator.yaml highlight={5-6} [expandable]
+version: 6.0.0
 steps:
   - prompt: launch a calculator
     commands:
       - command: run
-        file: ./launchcalculator.yaml
-  - prompt: /try performing the operation 2 + 2 = on the calculator that is opened
+        file: snippets/launch-calculator.yaml
+  - prompt: performing the operation 2 + 2 = on the calculator that is opened
     commands:
       - command: focus-application
         name: galculator
@@ -258,7 +253,7 @@ steps:
 This example will fail at runtime, so don't try to execute `js` context directly in a test file. Remember - use this in `prerun` to setup your test!
 
 ```yaml badtestfile.yaml [expandable]
-version: 5.5.5
+version: 6.0.0
 commands:
       - command: exec
         lang: pwsh

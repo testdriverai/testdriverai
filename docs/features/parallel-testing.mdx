@@ -75,17 +75,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: NODE_ENV=production npm ci
-
       - name: Run test in headless mode
-        run: npx testdriverai@latest run testdriver/acceptance/${{ matrix.test }} --headless
+        run: npx testdriverai@latest run testdriver/acceptance/${{ matrix.test }}
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
@@ -108,7 +99,6 @@ jobs:
 2. **`run-tests` Job**:
 
    - Uses the matrix strategy to dynamically create a job for each test file.
-   - Sets up Node.js and installs dependencies for TestDriver CLI.
    - Runs each test file in parallel using `npx testdriverai@latest` with the `--headless` flag.
    - The `max-parallel` setting limits the number of tests that can run in parallel to `8` (the max instances for the [Medium Team Plan](https://testdriver.ai/pricing)).
 
@@ -120,8 +110,8 @@ jobs:
 4. **Environment Variables**:
 
    - `TD_API_KEY`: Your TestDriver API key for authentication.
-   - `TD_WEBSITE`: The target website URL for testing.
-   - `TD_THIS_FILE`: The current test file being executed.
+   - `TD_WEBSITE`: The target website URL for testing if its a web application.
+   - `TD_THIS_FILE`: The current test file being executed, this will also be the title of the test recording.
 
 5. **Fail-Fast**:
 

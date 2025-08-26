@@ -3,20 +3,25 @@ title: "remember"
 sidebarTitle: "remember"
 description: "Save a variable to use later."
 icon: "brain"
+mode: "wide"
 ---
+
+import Replay from "/snippets/tests/remember-replay.mdx";
+import Example from "/snippets/tests/remember-yaml.mdx";
+
+<Replay />
+<Example />
 
 ## Description
 
-The `remember` command is used to save a variable for later use. This is useful for storing values that you want to reference in subsequent commands or steps, especially for things that are dynamic or change frequently from run to run.
-
-**The `remember` command is only availble form `v5.7.0` and later.**
+The `remember` command is used to save a variable for later use. This is useful for storing values that you want to reference in subsequent commands or steps, **especially for things that are dynamic or change frequently from run to run**.
 
 ## Arguments
 
-| Argument      | Type   | Description                                               |
-| ------------- | ------ | --------------------------------------------------------- |
-| `output`      | string | the variable name you will use to recall the value later. |
-| `description` | string | A prompt describing the value you want to store.          |
+|   Argument    |   Type   | Description                                               |
+| :-----------: | :------: | :-------------------------------------------------------- |
+|   `output`    | `string` | The variable name you will use to recall the value later. |
+| `description` | `string` | A prompt describing the value you want to store.          |
 
 ---
 
@@ -24,8 +29,8 @@ The `remember` command is used to save a variable for later use. This is useful 
 
 ```yaml
 - command: remember
+  description: The date value shown to the right of 'Order Date'
   output: my_variable
-  description: The date value shown to the right or 'Order Date'
 ```
 
 ## Protips
@@ -36,7 +41,6 @@ The `remember` command is used to save a variable for later use. This is useful 
 
 ## Gotchas
 
-- The `remeember` command is only available from `v5.7.0` and later.
 - Ensure the variable name is unique to avoid overwriting existing variables.
 - The variable name is case-sensitive, so `my_variable` and `My_Variable` would be treated as different variables.
 

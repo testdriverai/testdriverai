@@ -1,3 +1,41 @@
+.comparison-table th {
+  font-size: 18px;
+  padding: 12px 30px;
+}
+
+.comparison-table td {
+  padding: 12px 30px;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: start;
+}
+
+.comparison-table code {
+  font-size: 1em;
+}
+
+.env-vars-table table {
+  width: 120%;
+}
+
+.env-vars-table th {
+  font-size: 18px;
+  padding: 12px 30px;
+  border: 1.5px solid #05f1d9;
+}
+
+.env-vars-table td {
+  padding: 12px 30px;
+  font-size: 16px;
+  line-height: 1.5;
+  border: 1.5px solid #05f1d9;
+  vertical-align: middle;
+}
+
+.env-vars-table code {
+  font-size: 0.9em;
+}
+
 .prose
   :where(a code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   border-bottom: none !important;
@@ -7,4 +45,12 @@
 
 .card img {
   background-color: transparent !important;
+}
+
+.replay-block {
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  justify-content: center;
+  display: flex;
 }

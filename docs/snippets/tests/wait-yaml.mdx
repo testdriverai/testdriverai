@@ -1,0 +1,13 @@
+```yaml highlight={5, 6}
+version: 6.0.0
+steps:
+  - prompt: wait for 5 seconds and type testdriver
+    commands:
+      - command: wait
+        timeout: 5000 # 5 seconds
+      - command: type
+        text: testdriver
+      - command: press-keys
+        keys:
+          - enter
+```

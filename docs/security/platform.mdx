@@ -27,20 +27,22 @@ Dashcam and TestDriver share the same API and web application back end, which in
 
 - Administrators can add or remove individual team members.
 - Only administrators have the ability to manage team settings.
+- Everyone in the team gets their own API key
+- The team also gets a shared API key which can be used for CI/CD workflows.
 
 ### Role-based access control (RBAC)
 
 - The first user to create a team is designated as the administrator.
 - Administrators:
-  - Are the only users who can view the API key.
   - Can manage team settings.
-  - can't be removed from the team.
+  - Can't be removed from the team.
 - All other users are normal members with limited access.
 
 ### API key rotation
 
 - Teams can rotate their API key for enhanced security.
 - It's recommended to rotate the API key every 90 days to minimize risk.
+- Only the administrators can rotate the shared API key.
 
 <Check>
   For more details on **Team Management** see the [Team

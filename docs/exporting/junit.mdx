@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run TestDriver Tests
-        run: npx testdriverai@latest run testdriver/test.yaml --headless --junit=test-results.xml
+        run: npx testdriverai@latest run testdriver/test.yaml --junit=test-results.xml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
 
@@ -127,7 +127,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    sh 'npx testdriverai@latest run testdriver/test.yaml --headless --junit=junit-results.xml'
+                    sh 'npx testdriverai@latest run testdriver/test.yaml --junit=junit-results.xml'
                 }
             }
             post {
@@ -145,7 +145,7 @@ pipeline {
 ```yaml
 test:
   script:
-    - npx testdriverai@latest run testdriver/test.yaml --headless --junit=test-results.xml
+    - npx testdriverai@latest run testdriver/test.yaml --junit=test-results.xml
   artifacts:
     when: always
     reports:

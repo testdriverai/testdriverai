@@ -28,27 +28,27 @@ To get started with testing static websites using TestDriver, follow these steps
 1. [**Follow our quick start guide to set up your TestDriver account.**](/getting-started/setup)
 2. **Create a new test project** in your TestDriver dashboard.
 3. **Add your static website URL** to the test settings.
-   It looks like this in the `prerun.yaml` file:
+   It looks like this in the `provision.yaml` file:
 
-```yaml
-version: 5.1.1
+```yaml testdriver/lifecycle/provision.yaml
+version: 6.0.0
 steps:
   - prompt: launch chrome
     commands:
       - command: exec
         lang: pwsh
-        code:
+        code: |
           Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "${TD_WEBSITE}"
           exit
       - command: wait-for-text
-        text: "Google Chrome"
+        text: ${TD_WEBSITE}
         timeout: 30000
 ```
 
-Set the `TD_WEBSITE` environment variable to the URL of your static website. This will allow TestDriver to launch the browser and navigate to your website. You can do this by adding this `prerun.yaml` file to your project or by simply using:
+Set the `TD_WEBSITE` environment variable to the URL of your static website. This will allow TestDriver to launch the browser and navigate to your website. You can do this by adding this `provision.yaml` file to your project or by simply using:
 
 ```bash
 npx testdriverai@latest init
 ```
 
-Running init will create the `prerun.yaml` file for you and ask you which website to load with your test.
+Running init will create the `provision.yaml` file for you and ask you which website to load with your test.

@@ -34,7 +34,7 @@ Reusable snippets are YAML files containing a set of test steps that perform a s
 Save a YAML file containing the reusable steps. For example, create a `snippets/login.yaml` file for logging into an application:
 
 ```yaml
-version: 4.2.18
+version: 6.0.0
 steps:
   - prompt: Log in to the application
     commands:
@@ -63,7 +63,7 @@ steps:
 Use the [`run`](/commands/run) command to include the snippet in your main test file. For example:
 
 ```yaml
-version: 4.2.18
+version: 6.0.0
 steps:
   - prompt: Log in and navigate to the dashboard
     commands:
@@ -95,7 +95,7 @@ TD_PASSWORD=your_password
 You can chain multiple snippets together to create complex workflows. For example:
 
 ```yaml
-version: 4.2.18
+version: 6.0.0
 steps:
   - prompt: Log in, search for a product, and add it to the cart
     commands:

@@ -119,10 +119,10 @@ fetchJiraTickets();
 
 The script above generates a YAML file for each Jira ticket. Each file contains the **acceptance criteria** as `prompt` entries.
 
-### Example YAML file (`testdriver_tests/PROJ-123.yaml`):
+### Example
 
-```yaml
-version: 4.2.18
+```yaml testdriver/proj_123.yaml
+version: 6.0.0
 steps:
   - prompt: The user can log in with valid credentials.
   - prompt: An error message is displayed for invalid credentials.
@@ -133,7 +133,7 @@ steps:
 
 ## Step 3: Save and organize test files
 
-1. The generated YAML files will be saved in the `testdriver_tests/` directory.
+1. The generated YAML files will be saved in the `testdriver/` directory.
 2. Ensure the directory is part of your TestDriver project structure.
 
 ---
@@ -145,13 +145,7 @@ Use the TestDriver CLI to execute the generated test files.
 ### Run a single test file:
 
 ```bash
-npx testdriverai@latest run testdriver_tests/PROJ-123.yaml
-```
-
-### Run all test files:
-
-```bash
-npx testdriverai@latest run testdriver_tests/*.yaml
+npx testdriverai@latest run testdriver/proj_123.yaml
 ```
 
 ---
@@ -161,7 +155,7 @@ npx testdriverai@latest run testdriver_tests/*.yaml
 1. **Field Mapping**: Ensure the correct Jira field ID (for example, `customfield_12345`) is used for "Acceptance Criteria."
 2. **Secure Credentials**: Store Jira API credentials in environment variables or secrets.
 3. **Review Generated Files**: Manually review the YAML files to ensure they align with your testing requirements.
-4. **Organize Tests**: Use a structured directory (for example, `testdriver_tests/`) to manage your test files.
+4. **Organize Tests**: Use a structured directory (for example, `testdriver/`) to manage your test files.
 
 ---
 

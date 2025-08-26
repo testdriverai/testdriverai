@@ -106,10 +106,8 @@ Assertions can be combined with navigation and interaction commands to validate 
 
 ### Example: Login workflow with assertions
 
-#### TestDriver command:
-
-```yaml
-version: 4.2.18
+```yaml login.yaml highlight={12,13, 36, 37}
+version: 6.0.0
 steps:
   - prompt: Open the homepage
     commands:

@@ -44,13 +44,9 @@
                 "group": "Commands",
                 "icon": "command",
                 "pages": [
-                  "/interactive/assert",
-                  "/interactive/dry",
                   "/interactive/explore",
-                  "/interactive/generate",
                   "/interactive/run",
-                  "/interactive/save",
-                  "/interactive/undo"
+                  "/interactive/save"
                 ]
               }
             ]
@@ -101,6 +97,7 @@
             "group": "Configuration",
             "icon": "desktop",
             "pages": [
+              "/guide/authentication",
               "/guide/variables",
               "/guide/lifecycle",
               "/guide/environment-variables",
@@ -135,7 +132,7 @@
             "icon": "play",
             "pages": [
               "/getting-started/running",
-              "/action/setup",
+              "/getting-started/ci",
               "/features/parallel-testing",
               "/action/performance",
               "/action/secrets"
@@ -199,6 +196,7 @@
     "links": [
       {
         "label": "Discord",
+        "icon": "discord",
         "href": "https://discord.com/invite/cWDFW8DzPm"
       }
     ],

@@ -68,7 +68,7 @@ When running with `--heal` and `--write`, TestDriver will update the test files 
 </Step>
 
 <Step title="Self-Healing">
-  - The AI detects the failure and searches for a similar element.
+  - The AI detects the failure and searches for a similar element based on the `description`.
   - It identifies the "Send" button as the updated element and retries the action.
 </Step>
 <Step title="Test Update">
@@ -109,8 +109,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Run TestDriver with Self-Healing
-        run: npx testdriverai@latest run testdriver/onboarding.yaml --heal --write --headless
+      - name: Run TestDriver with Auto-Healing
+        run: npx testdriverai@latest run testdriver/onboarding.yaml --heal --write
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
 

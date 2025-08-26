@@ -52,7 +52,7 @@ The [`wait-for-text`](/commands/wait-for-text) command pauses the test until the
 ```yaml
 - command: wait-for-text
   text: <text to wait for>
-  timeout: <time in milliseconds> # Optional, defaults to 5000ms
+  timeout: <time in milliseconds> # Optional, defaults to 5000ms or 5 seconds
 ```
 
 #### Example
@@ -74,7 +74,7 @@ The [`wait-for-image`](/commands/wait-for-image) command pauses the test until t
 ```yaml
 - command: wait-for-image
   description: <description of the image>
-  timeout: <time in milliseconds> # Optional, defaults to 5000ms
+  timeout: <time in milliseconds> # Optional, defaults to 10000ms or 10 seconds
 ```
 
 #### Example:

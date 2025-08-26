@@ -3,10 +3,13 @@ title: "hover-text"
 sidebarTitle: "hover-text"
 description: "Hover or click on text elements based on a description."
 icon: "text"
+mode: "wide"
 ---
 
-<Replay />
+import Replay from "/snippets/tests/hover-text-replay.mdx";
+import Example from "/snippets/tests/hover-text-yaml.mdx";
 
+<Replay />
 <Example />
 
 ## Description
@@ -15,12 +18,12 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 
 ## Arguments
 
-| Argument      | Type     | Description                                                                                                        |
-| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
-| `text`        | `string` | The text to find on the screen. Longer and unique is better.                                                       |
-| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.               |
-| `action`      | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. |
-| `method`      | `enum`   | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                     |
+|   Argument    |   Type   | Description                                                                                                                                                                                                                 |
+| :-----------: | :------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    `text`     | `string` | The text to find on the screen. Longer and unique is better.                                                                                                                                                                |
+| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.                                                                                                                        |
+|   `action`    | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging text](/commands/hover-image#drag-functionality). |
+|   `method`    |  `enum`  | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                                                                                                                              |
 
 ## Example usage
 
@@ -30,15 +33,6 @@ text: Sign Up
 description: link in the header
 action: click
 ```
-
-## Protips
-
-- Use unique and specific text to improve detection accuracy.
-- Choose the appropriate `method` for your use case:
-  - `ai`: More robust for complex or ambiguous text matching (default) using [Set-of-Mark](https://arxiv.org/abs/2310.11441).
-  - `levenshtein`: Compare string similarity using [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance).
-  - `turbo`: Ideal for simpler scenarios, combining `ai` & `levenshtein`
-- Ensure the action specified matches the intended interaction with the text.
 
 ## Gotchas
 

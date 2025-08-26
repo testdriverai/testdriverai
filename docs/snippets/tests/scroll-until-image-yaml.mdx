@@ -1,0 +1,14 @@
+```yaml testdriver/scroll-until-image.yaml highlight={5-7}
+version: 6.0.0
+steps:
+  - prompt: scroll until image of a house appears, then click on it and assert the home insurance page is loaded
+    commands:
+      - command: scroll-until-image
+        description: a pink colored house
+        direction: down
+      - command: hover-image
+        description: a pink colored house
+        action: click
+      - command: assert
+        expect: Home Insurance page appears
+```

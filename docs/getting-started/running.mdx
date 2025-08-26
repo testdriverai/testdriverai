@@ -17,6 +17,11 @@ npx testdriverai@latest run path/to/test.yaml
 
 This will execute the test script located at `path/to/test.yaml`. If the test passes, the command will exit with a status code of `0`. If it fails, the command will exit with a status code of `1`.
 
+<Note>
+  The path to the test file provided should be relative to the current working
+  directory.
+</Note>
+
 ### Interactive mode
 
 To run a test interactively:
@@ -24,13 +29,13 @@ To run a test interactively:
 1. Launch the TestDriver CLI:
 
 ```bash
-npx testdriverai@latest
+npx testdriverai@latest edit
 ```
 
 2. At the `>` prompt, type:
 
 ```bash
-/run path/to/test.yaml
+> /run path/to/test.yaml
 ```
 
 ## Notes

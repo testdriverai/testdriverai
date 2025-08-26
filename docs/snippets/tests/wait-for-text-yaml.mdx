@@ -1,0 +1,18 @@
+```yaml highlight={14-17}
+version: 6.0.0
+steps:
+  - prompt: go to testdriver.ai and verify the page loads
+    commands:
+      - command: press-keys
+        keys:
+          - ctrl
+          - l
+      - command: type
+        text: testdriver.ai
+      - command: press-keys
+        keys:
+          - enter
+      - command: wait-for-text
+        text: Book a Demo
+        timeout: 10000 # 10 seconds
+```
