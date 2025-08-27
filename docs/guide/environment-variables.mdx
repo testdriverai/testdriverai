@@ -11,18 +11,16 @@ import GitignoreWarning from "/snippets/gitignore-warning.mdx";
 The supported environment variables in TestDriver are:
 
 <div className="env-vars-table">
-  | Variable | Type | Description | |:---------------:|:---------:|-----------|
-  | TD_ANALYTICS | boolean | Send analytics to TestDriver servers. This helps
-  provide feedback to inform our roadmap. | | TD_API_ROOT | string | Developer
-  only. Set API root to another URL. For on-prem. | | TD_API_KEY | string | Set
-  this to spawn VMs with TestDriver Pro. | | TD_RESOLUTION | string | Change
-  resolution when TD_VM is true. Format like `1280x1024`. | | TD_TYPE | string |
-  Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not
-  required. |
+  |   Variable      |   Type    | Description                                                                     |
+  |:---------------:|:---------:|---------------------------------------------------------------------------------|
+  | TD_ANALYTICS    | boolean   | Send analytics to TestDriver servers. This helps provide feedback to inform our roadmap. |
+  | TD_API_ROOT     | string    | Developer only. Set API root to another URL. For on-prem.                        |
+  | TD_API_KEY      | string    | Set this to spawn VMs with TestDriver Pro.                                        |
+  | TD_RESOLUTION   | string    | Change resolution when TD_VM is true. Format like `1280x1024`. |
+  | TD_TYPE         | string    | Set the type of test to run. Can be `website`, `desktop`, or `mobile`. Not required. |
 </div>
-
-<GitignoreWarning />
-
+  
+<GitignoreWarning/>
 ## Example
 
 ```bash .env
