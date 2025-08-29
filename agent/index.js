@@ -222,7 +222,15 @@ class TestDriverAgent extends EventEmitter2 {
     if (skipPostrun) {
       this.exit(true);
     } else {
-      await this.summarize(error.message);
+      try {
+        await this.summarize(error.message);
+      } catch (summarizeError) {
+        // If summarization fails, log it but don't let it prevent postrun from running
+        this.emitter.emit(
+          events.log.warn,
+          theme.yellow(`Failed to summarize: ${summarizeError.message}`),
+        );
+      }
       // Always run postrun lifecycle script, even for fatal errors
       return await this.exit(true, false, true);
     }
@@ -1480,7 +1488,7 @@ ${regression}
         await this.save({ filepath: file, silent: false });
       }
       if (shouldExit) {
-        await this.summarize();
+        // await this.summarize();
         await this.exit(false, shouldSave, true);
       }
     } catch (error) {

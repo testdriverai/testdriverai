@@ -765,7 +765,13 @@ const createCommands = (
         try {
           await script.runInNewContext(context);
         } catch (e) {
-          console.error(e);
+          // Log the error to the emitter instead of console.error to maintain consistency
+          emitter.emit(
+            events.log.debug,
+            `JavaScript execution error: ${e.message}`,
+          );
+          // Wait a tick to allow any promise rejections to be handled
+          await new Promise((resolve) => setImmediate(resolve));
           throw new CommandError(`Error running script: ${e.message}`);
         }
 
