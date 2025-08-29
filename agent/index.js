@@ -1488,7 +1488,7 @@ ${regression}
         await this.save({ filepath: file, silent: false });
       }
       if (shouldExit) {
-        // await this.summarize();
+        await this.summarize();
         await this.exit(false, shouldSave, true);
       }
     } catch (error) {
