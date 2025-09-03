@@ -4,9 +4,17 @@ steps:
   - prompt: launch chrome
     commands:
       - command: exec
-        lang: pwsh
+        lang: sh
         code: |
-          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${TD_WEBSITE}"
+          google-chrome \
+            --start-maximized \
+            --disable-infobars \
+            --disable-fre \
+            --no-default-browser-check \
+            --no-first-run \
+            --guest \
+            "${TD_WEBSITE}" \
+            >/dev/null 2>&1 &
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 60000

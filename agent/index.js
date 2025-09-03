@@ -1761,15 +1761,24 @@ ${regression}
       return this.createNewSandbox();
     });
 
-    this.saveLastSandboxId(newSandbox.sandbox.instanceId);
-    let instance = await this.connectToSandboxDirect(
-      newSandbox.sandbox.instanceId,
-      true, // always persist by default
-    );
-    this.instance = instance;
-    await this.renderSandbox(instance, headless);
+    console.log("New sandbox created:", newSandbox);
+
+    let data = {
+      resolution: this.config.TD_RESOLUTION,
+      url: newSandbox.url,
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    // Use the debugger URL instead of the VNC URL
+    const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
+
+    this.emitter.emit(events.showWindow, urlToOpen);
+
     await this.newSession();
     await this.runLifecycle("provision");
+
+    console.log("provision run");
   }
 
   async start() {
@@ -1937,6 +1946,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   async createNewSandbox() {
     const sandboxConfig = {
       type: "create",
+      os: "linux",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
     };
@@ -1949,7 +1959,12 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       sandboxConfig.instanceType = this.sandboxInstance;
     }
 
+    console.log("sending create");
+
     let instance = await this.sandbox.send(sandboxConfig);
+
+    console.log("instance created", instance);
+
     return instance;
   }
 

@@ -29,6 +29,7 @@ class CustomTransport extends Transport {
         }
 
         this.sandbox.send({
+          os: "linux",
           type: "output",
           output: Buffer.from(message).toString("base64"),
         });

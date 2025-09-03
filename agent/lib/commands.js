@@ -227,17 +227,31 @@ const createCommands = (
     switch (direction) {
       case "up":
         if (method === "mouse") {
-          await sandbox.send({ type: "scroll", amount, direction });
+          await sandbox.send({
+            os: "linux",
+            type: "scroll",
+            amount,
+            direction,
+          });
         } else {
-          await sandbox.send({ type: "press", keys: ["pageup"] });
+          await sandbox.send({ os: "linux", type: "press", keys: ["pageup"] });
         }
         await redraw.wait(2500);
         break;
       case "down":
         if (method === "mouse") {
-          await sandbox.send({ type: "scroll", amount, direction });
+          await sandbox.send({
+            os: "linux",
+            type: "scroll",
+            amount,
+            direction,
+          });
         } else {
-          await sandbox.send({ type: "press", keys: ["pagedown"] });
+          await sandbox.send({
+            os: "linux",
+            type: "press",
+            keys: ["pagedown"],
+          });
         }
         await redraw.wait(2500);
         break;
@@ -284,7 +298,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ type: "moveMouse", x, y });
+    await sandbox.send({ os: "linux", type: "moveMouse", x, y });
 
     emitter.emit(events.mouseMove, { x, y });
 
@@ -292,17 +306,21 @@ const createCommands = (
 
     if (action !== "hover") {
       if (action === "click" || action === "left-click") {
-        await sandbox.send({ type: "leftClick" });
+        await sandbox.send({ os: "linux", type: "leftClick" });
       } else if (action === "right-click") {
-        await sandbox.send({ type: "rightClick" });
+        await sandbox.send({ os: "linux", type: "rightClick" });
       } else if (action === "middle-click") {
-        await sandbox.send({ type: "middleClick" });
+        await sandbox.send({ os: "linux", type: "middleClick" });
       } else if (action === "double-click") {
-        await sandbox.send({ type: "doubleClick" });
+        await sandbox.send({ os: "linux", type: "doubleClick" });
       } else if (action === "drag-start") {
-        await sandbox.send({ type: "mousePress", button: "left" });
+        await sandbox.send({ os: "linux", type: "mousePress", button: "left" });
       } else if (action === "drag-end") {
-        await sandbox.send({ type: "mouseRelease", button: "left" });
+        await sandbox.send({
+          os: "linux",
+          type: "mouseRelease",
+          button: "left",
+        });
       }
 
       emitter.emit(events.mouseClick, { x, y, button, click, double });
@@ -319,7 +337,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ type: "moveMouse", x, y });
+    await sandbox.send({ os: "linux", type: "moveMouse", x, y });
 
     await redraw.wait(2500);
 
@@ -419,12 +437,13 @@ const createCommands = (
       return true;
     },
     // type a string
+    os: "linux",
     type: async (string, delay = 250) => {
       await redraw.start();
 
       string = string.toString();
 
-      await sandbox.send({ type: "write", text: string, delay });
+      await sandbox.send({ os: "linux", type: "write", text: string, delay });
       await redraw.wait(5000);
       return;
     },
@@ -434,7 +453,7 @@ const createCommands = (
       await redraw.start();
 
       // finally, press the keys
-      await sandbox.send({ type: "press", keys: inputKeys });
+      await sandbox.send({ os: "linux", type: "press", keys: inputKeys });
 
       await redraw.wait(5000);
 
@@ -561,11 +580,15 @@ const createCommands = (
 
       if (method === "keyboard") {
         try {
-          await sandbox.send({ type: "press", keys: ["f", "ctrl"] });
+          await sandbox.send({
+            os: "linux",
+            type: "press",
+            keys: ["f", "ctrl"],
+          });
           await delay(1000);
-          await sandbox.send({ type: "write", text });
+          await sandbox.send({ os: "linux", type: "write", text });
           await redraw.wait(5000);
-          await sandbox.send({ type: "press", keys: ["escape"] });
+          await sandbox.send({ os: "linux", type: "press", keys: ["escape"] });
         } catch {
           throw new MatchError(
             "Could not find element using browser text search",
@@ -689,6 +712,7 @@ const createCommands = (
       await redraw.start();
 
       await sandbox.send({
+        os: "linux",
         type: "commands.focus-application",
         name,
       });
@@ -705,21 +729,24 @@ const createCommands = (
     assert: async (assertion, async = false) => {
       return await assert(assertion, true, async);
     },
-    exec: async (language, code, timeout, silent = false) => {
+    exec: async (language = "pwsh", code, timeout, silent = false) => {
       emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);
 
       emitter.emit(events.log.log, code);
 
       let plat = system.platform();
 
-      if (language == "pwsh") {
+      if (language == "pwsh" || language == "sh") {
         let result = null;
 
         result = await sandbox.send({
+          os: "linux",
           type: "commands.run",
           command: code,
           timeout,
         });
+
+        console.log("Exec result:", result);
 
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(
