@@ -110,7 +110,7 @@ class ReadlineInterface {
 
     try {
       // Parse interactive commands (starting with /)
-      if (input.startsWith("/")) {
+      if (input.startsWith("/") && !input.startsWith("/explore")) {
         const parts = input.slice(1).split(" ");
         const commandName = parts[0];
         const args = parts.slice(1);
