@@ -1139,21 +1139,8 @@ ${yml}
 
     // Create diff if file exists and content has changed
     let diffResult = null;
-    // console.log("Checking for diff. File exists:", fileExists);
-    // console.log(
-    //   "Content changed:",
-    //   fileExists && existingContent !== regression,
-    // );
-    if (fileExists) {
-      // console.log(
-      //   "Existing content preview:",
-      //   existingContent.substring(0, 100),
-      // );
-      // console.log("New content preview:", regression.substring(0, 100));
-    }
 
     if (fileExists && existingContent !== regression) {
-      // console.log("Creating diff - content has changed");
       const patches = diff.structuredPatch(
         filepath,
         filepath,
@@ -1242,9 +1229,6 @@ ${yml}
           timestamp: endTime,
         });
       }
-      // else {
-      // console.log("No diff result to emit");
-      // }
 
       // Emit file save completion event
       this.emitter.emit(events.file.stop, {
