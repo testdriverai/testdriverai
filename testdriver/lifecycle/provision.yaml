@@ -6,7 +6,7 @@ steps:
       - command: exec
         lang: pwsh
         code: |
-          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "${TD_WEBSITE}"
+          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "https://testdriver-sandbox.vercel.app/"
       - command: wait-for-text
         text: ${TD_WEBSITE}
         timeout: 60000
