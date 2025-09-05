@@ -3,5 +3,8 @@
     "source.organizeImports": "explicit"
   },
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/testdriverai/testdriverai/main/schema.json": "file:///Users/kid/Desktop/td/internal/testdriverai/testdriver.yaml"
+  }
 }
