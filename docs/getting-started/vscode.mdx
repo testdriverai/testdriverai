@@ -1,75 +1,81 @@
 ---
 title: "Install the TestDriver VS Code Extension"
-sidebarTitle: "VS Code Setup"
+sidebarTitle: "VS Code (Beta)"
 description: "Comprehensive guide to installing and setting up TestDriver for VS Code"
 icon: "file-code"
 ---
 
-<Card
-  title="Get the VS Code Extension"
-  icon="link"
-  href="https://marketplace.visualstudio.com/items?itemName=testdriver.testdriver"
->
-  Turn your IDE into a powerful computer-use automation tool with our VS Code
-  extension.
-</Card>
+<iframe
+  className="w-full aspect-video rounded-xl"
+  src="https://www.youtube.com/embed/dell_2tI6nc"
+  title="YouTube video player"
+  frameBorder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowFullScreen
+></iframe>
+
+The TestDriver VS Code extension is a powerful tool that integrates TestDriver's AI-driven test generation capabilities directly into your development environment:
+
+- Get started with example scripts for different platforms
+- Get syntax highlighting and autocompletion for [TestDriver YAML](/getting-started/editing)
+- Chat with the TestDriver agent to generate tests based on your requirements
+- Save and manage your tests directly within your project
+- Run and debug tests directly from the IDE
+- View test results and logs within the IDE
+
+<Tip>The TestDriver VS Code Extension is currently in beta. If you encounter any issues or have feedback, please let us know [in Discord](https://discord.com/invite/cWDFW8DzPm)</Tip>
 
 <Steps>
-  <Step title="Initialize Your Project" stepNumber={1}>
-    Set up your project with:
+  <Step title="Install the VS Code Extension">
+    
+    Click the button below to install the TestDriver extension for your preferred IDE. Then, follow the setup guide and chat with TestDriver to create your first test.
 
-    ```bash
-    npx testdriverai@latest init
-    ```
+    <Card
+      horizontal
+      title="VS Code"
+      arrow
+      href="vscode:extension/testdriver.testdriver"
+      icon="/images/content/extension/vscode.svg"
+    ></Card>
 
-    This creates a `.env` file and sample workflow files.
+    <Card
+      horizontal
+      title="Cursor"
+      arrow
+    href="cursor:extension/testdriver.testdriver"
+    icon="/images/content/extension/cursor.svg"
 
-  </Step>
-  <Step title="Run TestDriver in Interactive Mode" stepNumber={2}>
-    Start TestDriver in interactive mode to create and refine tests dynamically:
+    > </Card>
 
-    ```bash
-    npx testdriverai@latest
-    ```
-
-    Once started, you can use commands like `/explore`, `/run`, and `/save` to interactively build and test your flows.
-
-  </Step>
-  <Step title="Define Your Test Steps" stepNumber={3}>
-    Use natural language to describe what you want to test. For example:
-
-    ```
-    > Open Google Chrome and search for "testdriverai"
-    ```
-
-    TestDriver will generate steps like:
-
-    ```yaml
-    - command: focus-application
-      name: Google Chrome
-    - command: hover-text
-      text: Search Google or type a URL
-      description: main search bar
-      action: click
-    - command: type
-      text: testdriverai
-    - command: press-keys
-      keys:
-        - enter
-    ```
+    <Card
+      horizontal
+      title="Windsurf"
+      arrow
+      href="windsurf:extension/testdriver.testdriver"
+      icon="/images/content/extension/windsurf.svg"
+    ></Card>
 
   </Step>
-  <Step title="Refine and Save Your Test" stepNumber={4}>
-    - Save your test with `/save` to generate a reusable YAML file.
-    - Use `/run` to run the test.
+  <Step title="Set Your TestDriver API Key">
+    
+    After installing the extension, you'll need to set your TestDriver API key in the extension settings.
+
+    1. Open the command palette (Cmd+Shift+P or Ctrl+Shift+P).
+    2. Search for "Preferences: Open Settings (UI)" and select it.
+    3. In the search bar, type "TestDriver" to filter the settings.
+    4. Find the "TestDriver: Set API Key" field and enter your API key from [the TestDriver dashboard](https://app.testdriver.ai/team).
+
+    <Tip>You can also set the `TD_API_KEY` environment variable in your system if you prefer not to enter it directly in the extension settings.</Tip>
+    
   </Step>
-  <Step title="Run Saved Tests" stepNumber={5}>
-    Once saved, you can run your test file anytime:
-
-    ```bash
-    npx testdriverai@latest run path/to/test.yaml
-    ```
-
+  <Step title="Choose a Platform">
+    Click on the TestDriver icon in the sidebar to open the extension panel and choose a platform to get started (Web, Desktop, or Mobile).
+  </Step>
+  <Step title="Create Your First Test">
+    Now chat with the TestDriver agent to create your first test! Describe what you want to test, and the agent will generate the test steps for you.
+  </Step>
+  <Step title="Run your test">
+    Run your test by clicking the "Run" button in the extension panel. You can view the test results and logs directly within VS Code's Test Explorer. [Learn more about running tests in VS Code](https://code.visualstudio.com/docs/debugtest/testing). 
   </Step>
 </Steps>
 
