@@ -339,11 +339,12 @@ const createCommands = (
       description = null,
       action = "click",
       method = "turbo",
+      timeout = 5000, // we pass this to the subsequent wait-for-text block
     ) => {
       text = text ? text.toString() : null;
 
       // wait for the text to appear on screen
-      await commands["wait-for-text"](text, 5000);
+      await commands["wait-for-text"](text, timeout);
 
       description = description ? description.toString() : null;
 

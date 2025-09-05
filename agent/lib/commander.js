@@ -134,6 +134,7 @@ commands:
             object.description,
             object.action,
             object.method,
+            object.timeout,
           );
           break;
         case "hover-image":
