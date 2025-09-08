@@ -1,0 +1,10 @@
+version: 6.0.26
+session: test-postrun
+steps:
+  - prompt: "postrun cleanup"
+    commands:
+      - command: exec
+        lang: js
+        code: |
+          console.log("POSTRUN EXECUTED SUCCESSFULLY!");
+          console.log("This proves postrun lifecycle ran after the error.");

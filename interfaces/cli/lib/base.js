@@ -124,6 +124,14 @@ class BaseCommand extends Command {
       process.exit(exitCode);
     });
 
+    // Handle unhandled promise rejections to prevent them from interfering with the exit flow
+    // This is particularly important when JavaScript execution in VM contexts leaves dangling promises
+    process.on("unhandledRejection", (reason) => {
+      // Log the rejection but don't let it crash the process
+      console.error("Unhandled Promise Rejection:", reason);
+      // The exit flow should continue normally
+    });
+
     // Handle show window events
     this.agent.emitter.on("show-window", async (url) => {
       console.log(`Live test execution: `);
