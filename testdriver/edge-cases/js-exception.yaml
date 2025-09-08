@@ -1,0 +1,8 @@
+version: 6.0.0
+steps:
+  - prompt: asfdsdf
+    commands:
+      - command: exec
+        lang: js
+        code: |
+          throw new Error("test error");
