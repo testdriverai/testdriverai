@@ -771,7 +771,6 @@ const createCommands = (
             `JavaScript execution error: ${e.message}`,
           );
           // Wait a tick to allow any promise rejections to be handled
-          await new Promise((resolve) => setImmediate(resolve));
           throw new CommandError(`Error running script: ${e.message}`);
         }
 
