@@ -1,4 +1,4 @@
-version: 5.7.7
+version: 6.0.0
 session: 682f5aab811bd5a322c0e5a1
 steps:
   - prompt: click on sign in
@@ -9,5 +9,6 @@ steps:
         text: Sign In
         description: black button below the password field
         action: click
+        timeout: 5000
       - command: assert
         expect: an error shows that fields are required
