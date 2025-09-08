@@ -38,7 +38,6 @@
             "group": "CLI",
             "icon": "terminal",
             "pages": [
-              "/getting-started/cli",
               "/cli/overview",
               {
                 "group": "Commands",
@@ -50,7 +49,8 @@
                 ]
               }
             ]
-          }
+          },
+          "/getting-started/vscode"
         ]
       },
       {
@@ -172,16 +172,7 @@
           "/commands/wait-for-text"
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Book a Demo",
-          "href": "https://testdriver.ai/demo",
-          "icon": "calendar"
-        }
-      ]
-    }
+    ]
   },
   "modeToggle": {
     "enabled": false,
@@ -198,13 +189,17 @@
         "label": "Discord",
         "icon": "discord",
         "href": "https://discord.com/invite/cWDFW8DzPm"
-      }
-    ],
-    "primary": {
-      "type": "button",
+      }, 
+      {
+        "label": "Book a Demo",
+        "href": "https://form.typeform.com/to/UECf9rDx?typeform-source=docs.testdriver.ai",
+        "icon": "calendar"
+      }, {
+      "icon": "gauge-high",
       "label": "Dashboard",
       "href": "https://app.testdriver.ai"
     }
+    ]
   },
   "footer": {
     "socials": {

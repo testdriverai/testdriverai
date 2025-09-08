@@ -415,6 +415,9 @@
               "ai",
               "turbo"
             ]
+          },
+          "timeout": {
+            "type": "integer"
           }
         }
       },
