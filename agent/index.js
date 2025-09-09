@@ -1772,11 +1772,10 @@ ${regression}
         theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
       );
 
-
       // Emit test start event for the entire test execution
       this.emitter.emit(events.test.start, {
         filePath: this.thisFile,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Start the debugger server as early as possible to ensure event listeners are attached
