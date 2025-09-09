@@ -14,140 +14,139 @@ set -euo pipefail
 TAG_NAME="${AWS_TAG_PREFIX}-"$(date +%s)
 WS_CONFIG_PATH='C:\Windows\Temp\pyautogui-ws.json'
 
-# echo "Launching AWS Instance..."
+echo "Launching AWS Instance..."
 
-# # --- 1) Launch instance ---
-# RUN_JSON=$(aws ec2 run-instances \
-#   --region "$AWS_REGION" \
-#   --image-id "$AMI_ID" \
-#   --instance-type "$INSTANCE_TYPE" \
-#   --key-name "$AWS_KEY_NAME" \
-#   --iam-instance-profile Name="$AWS_IAM_INSTANCE_PROFILE" \
-#   --security-group-ids $(tr ',' ' ' <<<"$AWS_SECURITY_GROUP_IDS") \
-#   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}},{Key=Class,Value=${RUNNER_CLASS_ID}}]" \
-#   --output json)
+# --- 1) Launch instance ---
+RUN_JSON=$(aws ec2 run-instances \
+  --region "$AWS_REGION" \
+  --image-id "$AMI_ID" \
+  --instance-type "$INSTANCE_TYPE" \
+  --key-name "$AWS_KEY_NAME" \
+  --iam-instance-profile Name="$AWS_IAM_INSTANCE_PROFILE" \
+  --security-group-ids $(tr ',' ' ' <<<"$AWS_SECURITY_GROUP_IDS") \
+  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}},{Key=Class,Value=${RUNNER_CLASS_ID}}]" \
+  --output json)
 
-# INSTANCE_ID=$(jq -r '.Instances[0].InstanceId' <<<"$RUN_JSON")
-INSTANCE_ID=i-0d10ed68ae5831348
+INSTANCE_ID=$(jq -r '.Instances[0].InstanceId' <<<"$RUN_JSON")
 
-# echo "Launched: $INSTANCE_ID"
-# echo "Instance details:"
-# echo "  Region: $AWS_REGION"
-# echo "  AMI ID: $AMI_ID"
-# echo "  Instance Type: $INSTANCE_TYPE"
-# echo "  IAM Instance Profile: $AWS_IAM_INSTANCE_PROFILE"
+echo "Launched: $INSTANCE_ID"
+echo "Instance details:"
+echo "  Region: $AWS_REGION"
+echo "  AMI ID: $AMI_ID"
+echo "  Instance Type: $INSTANCE_TYPE"
+echo "  IAM Instance Profile: $AWS_IAM_INSTANCE_PROFILE"
 
-# echo "Waiting for instance to be running..."
+echo "Waiting for instance to be running..."
 
-# # --- 2) Wait for running + status checks ---
-# aws ec2 wait instance-running --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
-# echo "✓ Instance is now running"
+# --- 2) Wait for running + status checks ---
+aws ec2 wait instance-running --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
+echo "✓ Instance is now running"
 
-# echo "Waiting for instance to pass status checks..."
+echo "Waiting for instance to pass status checks..."
 
-# aws ec2 wait instance-status-ok --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
-# echo "✓ Instance passed all status checks"
+aws ec2 wait instance-status-ok --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
+echo "✓ Instance passed all status checks"
 
-# # Additional validation - check instance state details
-# echo "Validating instance readiness..."
-# INSTANCE_STATE=$(aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" \
-#   --query 'Reservations[0].Instances[0].{State:State.Name,StatusChecks:StateTransitionReason}' \
-#   --output json)
-# echo "Instance state details: $INSTANCE_STATE"
+# Additional validation - check instance state details
+echo "Validating instance readiness..."
+INSTANCE_STATE=$(aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" \
+  --query 'Reservations[0].Instances[0].{State:State.Name,StatusChecks:StateTransitionReason}' \
+  --output json)
+echo "Instance state details: $INSTANCE_STATE"
 
-# # --- 3) Ensure SSM connectivity ---
-# echo "Waiting for SSM connectivity..."
-# echo "This can take several minutes for the SSM agent to be fully ready..."
+# --- 3) Ensure SSM connectivity ---
+echo "Waiting for SSM connectivity..."
+echo "This can take several minutes for the SSM agent to be fully ready..."
 
-# # First, check if the instance is registered with SSM
-# echo "Checking SSM instance registration..."
-# TRIES=0; MAX_TRIES=60
-# while :; do
-#   echo "Attempt $((TRIES+1))/$MAX_TRIES: Checking if instance is registered with SSM..."
+# First, check if the instance is registered with SSM
+echo "Checking SSM instance registration..."
+TRIES=0; MAX_TRIES=60
+while :; do
+  echo "Attempt $((TRIES+1))/$MAX_TRIES: Checking if instance is registered with SSM..."
   
-#   # Check if instance appears in SSM managed instances
-#   if aws ssm describe-instance-information \
-#       --region "$AWS_REGION" \
-#       --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
-#       --query 'InstanceInformationList[0].InstanceId' \
-#       --output text 2>/dev/null | grep -q "$INSTANCE_ID"; then
-#     echo "✓ Instance is registered with SSM"
-#     break
-#   fi
+  # Check if instance appears in SSM managed instances
+  if aws ssm describe-instance-information \
+      --region "$AWS_REGION" \
+      --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+      --query 'InstanceInformationList[0].InstanceId' \
+      --output text 2>/dev/null | grep -q "$INSTANCE_ID"; then
+    echo "✓ Instance is registered with SSM"
+    break
+  fi
   
-#   TRIES=$((TRIES+1))
-#   if [ $TRIES -ge $MAX_TRIES ]; then
-#     echo "❌ SSM registration timeout - instance may not have proper IAM role or SSM agent"
-#     echo "Checking instance details for debugging..."
-#     aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" \
-#       --query 'Reservations[0].Instances[0].{State:State.Name,IAMProfile:IamInstanceProfile.Arn,SecurityGroups:SecurityGroups[].GroupId}' \
-#       --output table
-#     exit 2
-#   fi
-#   echo "Instance not yet registered with SSM, waiting..."
-#   sleep 10
-# done
+  TRIES=$((TRIES+1))
+  if [ $TRIES -ge $MAX_TRIES ]; then
+    echo "❌ SSM registration timeout - instance may not have proper IAM role or SSM agent"
+    echo "Checking instance details for debugging..."
+    aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" \
+      --query 'Reservations[0].Instances[0].{State:State.Name,IAMProfile:IamInstanceProfile.Arn,SecurityGroups:SecurityGroups[].GroupId}' \
+      --output table
+    exit 2
+  fi
+  echo "Instance not yet registered with SSM, waiting..."
+  sleep 10
+done
 
-# # Now test SSM command execution
-# echo "Testing SSM command execution..."
-# TRIES=0; MAX_TRIES=30
-# while :; do
-#   echo "Attempt $((TRIES+1))/$MAX_TRIES: Sending test SSM command..."
+# Now test SSM command execution
+echo "Testing SSM command execution..."
+TRIES=0; MAX_TRIES=30
+while :; do
+  echo "Attempt $((TRIES+1))/$MAX_TRIES: Sending test SSM command..."
   
-#   if CMD_JSON=$(aws ssm send-command \
-#       --region "$AWS_REGION" \
-#       --targets "Key=instanceIds,Values=$INSTANCE_ID" \
-#       --document-name "AWS-RunPowerShellScript" \
-#       --parameters 'commands=["echo SSM connectivity test successful"]' \
-#       --output json 2>/dev/null); then
+  if CMD_JSON=$(aws ssm send-command \
+      --region "$AWS_REGION" \
+      --targets "Key=instanceIds,Values=$INSTANCE_ID" \
+      --document-name "AWS-RunPowerShellScript" \
+      --parameters 'commands=["echo SSM connectivity test successful"]' \
+      --output json 2>/dev/null); then
       
-#     COMMAND_ID=$(jq -r '.Command.CommandId' <<<"$CMD_JSON")
-#     echo "✓ SSM command sent successfully (Command ID: $COMMAND_ID)"
+    COMMAND_ID=$(jq -r '.Command.CommandId' <<<"$CMD_JSON")
+    echo "✓ SSM command sent successfully (Command ID: $COMMAND_ID)"
     
-#     # Wait for command to complete and check status
-#     echo "Waiting for command execution..."
-#     if aws ssm wait command-executed --region "$AWS_REGION" --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" 2>/dev/null; then
-#       echo "✓ SSM connectivity confirmed"
-#       break
-#     else
-#       echo "⚠ Command execution may have failed, checking status..."
-#       CMD_STATUS=$(aws ssm get-command-invocation \
-#         --region "$AWS_REGION" \
-#         --command-id "$COMMAND_ID" \
-#         --instance-id "$INSTANCE_ID" \
-#         --query 'Status' \
-#         --output text 2>/dev/null || echo "Unknown")
-#       echo "Command status: $CMD_STATUS"
+    # Wait for command to complete and check status
+    echo "Waiting for command execution..."
+    if aws ssm wait command-executed --region "$AWS_REGION" --command-id "$COMMAND_ID" --instance-id "$INSTANCE_ID" 2>/dev/null; then
+      echo "✓ SSM connectivity confirmed"
+      break
+    else
+      echo "⚠ Command execution may have failed, checking status..."
+      CMD_STATUS=$(aws ssm get-command-invocation \
+        --region "$AWS_REGION" \
+        --command-id "$COMMAND_ID" \
+        --instance-id "$INSTANCE_ID" \
+        --query 'Status' \
+        --output text 2>/dev/null || echo "Unknown")
+      echo "Command status: $CMD_STATUS"
       
-#       if [ "$CMD_STATUS" = "Success" ]; then
-#         echo "✓ Command actually succeeded"
-#         break
-#       fi
-#     fi
-#   else
-#     echo "⚠ Failed to send SSM command"
-#   fi
+      if [ "$CMD_STATUS" = "Success" ]; then
+        echo "✓ Command actually succeeded"
+        break
+      fi
+    fi
+  else
+    echo "⚠ Failed to send SSM command"
+  fi
   
-#   TRIES=$((TRIES+1))
-#   if [ $TRIES -ge $MAX_TRIES ]; then
-#     echo "❌ SSM command execution timeout"
-#     echo "Final debugging information:"
+  TRIES=$((TRIES+1))
+  if [ $TRIES -ge $MAX_TRIES ]; then
+    echo "❌ SSM command execution timeout"
+    echo "Final debugging information:"
     
-#     # Get SSM agent status
-#     echo "SSM Agent status on instance:"
-#     aws ssm describe-instance-information \
-#       --region "$AWS_REGION" \
-#       --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
-#       --query 'InstanceInformationList[0].{PingStatus:PingStatus,LastPingDateTime:LastPingDateTime,AgentVersion:AgentVersion}' \
-#       --output table 2>/dev/null || echo "Could not retrieve SSM status"
+    # Get SSM agent status
+    echo "SSM Agent status on instance:"
+    aws ssm describe-instance-information \
+      --region "$AWS_REGION" \
+      --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+      --query 'InstanceInformationList[0].{PingStatus:PingStatus,LastPingDateTime:LastPingDateTime,AgentVersion:AgentVersion}' \
+      --output table 2>/dev/null || echo "Could not retrieve SSM status"
     
-#     exit 2
-#   fi
-#   echo "Retrying in 20 seconds..."
-#   sleep 20
-# done
+    exit 2
+  fi
+  echo "Retrying in 20 seconds..."
+  sleep 20
+done
 
-# echo "Getting Public IP..."
+echo "Getting Public IP..."
 
 # # --- 4) Get instance Public IP ---
 DESC_JSON=$(aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" --output json)
@@ -193,7 +192,34 @@ echo "Outputting..."
 # Validate/parse JSON using jq (safe fallback to empty object if invalid)
 WS_JSON=$(echo "$STDOUT" | jq -c '.' 2>/dev/null || echo '{}')
 
-# --- 6) Final JSON output ---
+# --- 6) Final JSON output and export environment variables ---
+
+# Export variables for CLI to use
+export AWS_REGION
+export AMI_ID
+export INSTANCE_TYPE
+export AWS_KEY_NAME
+export AWS_SECURITY_GROUP_IDS
+export AWS_IAM_INSTANCE_PROFILE
+export INSTANCE_ID
+export PUBLIC_IP
+
+# Write environment variables to a file for later sourcing
+ENV_FILE="$(pwd)/.aws-env"
+cat > "$ENV_FILE" << EOF
+export AWS_REGION="$AWS_REGION"
+export AMI_ID="$AMI_ID"
+export INSTANCE_TYPE="$INSTANCE_TYPE"
+export AWS_KEY_NAME="$AWS_KEY_NAME"
+export AWS_SECURITY_GROUP_IDS="$AWS_SECURITY_GROUP_IDS"
+export AWS_IAM_INSTANCE_PROFILE="$AWS_IAM_INSTANCE_PROFILE"
+export INSTANCE_ID="$INSTANCE_ID"
+export PUBLIC_IP="$PUBLIC_IP"
+EOF
+
+echo "Environment variables saved to: $ENV_FILE"
+echo "To use with TestDriver CLI, run: source $ENV_FILE && node bin/testdriverai.js ..."
+
 jq -n \
   --arg instanceId "$INSTANCE_ID" \
   --arg publicIp "$PUBLIC_IP" \

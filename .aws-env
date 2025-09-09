@@ -1,0 +1,8 @@
+export AWS_REGION="us-east-2"
+export AMI_ID="ami-085f872ca0cd80fed"
+export INSTANCE_TYPE="c5.xlarge"
+export AWS_KEY_NAME="alex-rowe2"
+export AWS_SECURITY_GROUP_IDS="sg-02309153292e8f1ca"
+export AWS_IAM_INSTANCE_PROFILE="gh-auto-runner-role"
+export INSTANCE_ID="i-0f60e080e2f926406"
+export PUBLIC_IP="3.15.191.89"

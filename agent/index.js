@@ -1671,6 +1671,18 @@ ${regression}
 
     let { headless = false, heal, new: createNew = false } = options;
 
+    // Check for AWS environment variables early
+    const awsEnvVars = this.getAWSEnvironmentVariables();
+    if (awsEnvVars.hasValidAWSConfig && awsEnvVars.instanceId) {
+      this.emitter.emit(
+        events.log.log,
+        theme.green(`🔗 AWS environment detected! Will use existing instance: ${awsEnvVars.instanceId}`),
+      );
+      
+      // Force createNew to false when using external instance
+      createNew = false;
+    }
+
     // If CI environment variable is true, always create a new sandbox
     if (this.config.CI) {
       createNew = true;
@@ -1934,16 +1946,68 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       ci: this.config.CI,
     };
 
-    // Add AMI and instance type if specified
-    if (this.sandboxAmi) {
-      sandboxConfig.ami = this.sandboxAmi;
-    }
-    if (this.sandboxInstance) {
-      sandboxConfig.instanceType = this.sandboxInstance;
+    // Check for AWS environment variables from aws.sh
+    const awsEnvVars = this.getAWSEnvironmentVariables();
+    if (awsEnvVars.hasValidAWSConfig && awsEnvVars.instanceId) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`Found AWS environment variables, using external instance: ${awsEnvVars.instanceId}`),
+      );
+      
+      sandboxConfig.externalInstance = {
+        instanceId: awsEnvVars.instanceId,
+        region: awsEnvVars.region,
+        publicIp: awsEnvVars.publicIp
+      };
+    } else {
+      // Add AMI and instance type if specified for new instance creation
+      if (this.sandboxAmi) {
+        sandboxConfig.ami = this.sandboxAmi;
+      }
+      if (this.sandboxInstance) {
+        sandboxConfig.instanceType = this.sandboxInstance;
+      }
     }
 
     let instance = await this.sandbox.send(sandboxConfig);
     return instance;
+  }
+
+  // Check for AWS environment variables set by aws.sh
+  getAWSEnvironmentVariables() {
+    const awsRegion = process.env.AWS_REGION;
+    const instanceId = process.env.INSTANCE_ID;
+    const publicIp = process.env.PUBLIC_IP;
+    const amiId = process.env.AMI_ID;
+    const instanceType = process.env.INSTANCE_TYPE;
+    const awsKeyName = process.env.AWS_KEY_NAME;
+    const awsSecurityGroupIds = process.env.AWS_SECURITY_GROUP_IDS;
+
+    // Use console.log to avoid potential recursion issues with emitter
+    console.log(`AWS Environment Variables: REGION=${awsRegion}, INSTANCE_ID=${instanceId}, AMI_ID=${amiId}, INSTANCE_TYPE=${instanceType}, KEY_NAME=${awsKeyName}, SECURITY_GROUP_IDS=${awsSecurityGroupIds}`);
+    
+    const hasValidAWSConfig = !!(
+      awsRegion &&
+      instanceId &&
+      amiId &&
+      awsKeyName &&
+      awsSecurityGroupIds
+    );
+
+    if (hasValidAWSConfig) {
+      console.log(`AWS Environment detected: Region=${awsRegion}, Instance=${instanceId}, AMI=${amiId}`);
+    }
+
+    return {
+      hasValidAWSConfig,
+      region: awsRegion,
+      instanceId,
+      publicIp,
+      amiId,
+      instanceType,
+      awsKeyName,
+      awsSecurityGroupIds
+    };
   }
 
   async newSession() {
