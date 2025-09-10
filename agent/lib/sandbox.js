@@ -1,26 +1,26 @@
-const WebSocket = require("ws");
+const { WindowsSpawner } = require("./windows-spawner");
 const marky = require("marky");
 const { events } = require("../events");
 
 const createSandbox = (emitter, analytics) => {
   class Sandbox {
     constructor() {
-      this.socket = null;
+      this.spawner = null;
       this.ps = {};
-      this.heartbeat = null;
-      this.apiSocketConnected = false;
-      this.instanceSocketConnected = false;
-      this.authenticated = false;
-      this.instance = null;
       this.messageId = 0;
       this.uniqueId = Math.random().toString(36).substring(7);
+      this.authenticated = false;
+      this.instance = null;
     }
 
     send(message) {
       let resolvePromise;
       let rejectPromise;
 
-      if (this.socket) {
+      // For connection-related messages, we don't need an existing client
+      const connectionMessages = ["authenticate", "connect", "create"];
+      
+      if (this.spawner && (connectionMessages.includes(message.type) || this.spawner.getClient())) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
 
@@ -29,10 +29,18 @@ const createSandbox = (emitter, analytics) => {
         marky.mark(timingKey);
 
         let p = new Promise((resolve, reject) => {
-          this.socket.send(JSON.stringify(message));
-          emitter.emit(events.sandbox.sent, message);
           resolvePromise = resolve;
           rejectPromise = reject;
+          
+          // Handle different message types
+          this.handleMessage(message)
+            .then(result => {
+              emitter.emit(events.sandbox.sent, message);
+              resolve(result);
+            })
+            .catch(err => {
+              reject(err);
+            });
         });
 
         this.ps[message.requestId] = {
@@ -45,109 +53,276 @@ const createSandbox = (emitter, analytics) => {
         };
 
         return p;
+      } else {
+        return Promise.reject(new Error("Sandbox not initialized or client not connected"));
       }
     }
 
-    async auth(apiKey) {
-      let reply = await this.send({
-        type: "authenticate",
-        apiKey,
-      });
-
-      if (reply.success) {
+    async handleMessage(message) {
+      // For connection messages, we don't need the client yet
+      if (message.type === "authenticate") {
+        // For direct connection, we don't need API authentication
         this.authenticated = true;
         emitter.emit(events.sandbox.authenticated);
-        return true;
+        return { success: true };
       }
+      
+      if (message.type === "connect") {
+        // Connect to existing instance from .aws-env
+        await this.spawner.connectToExisting(message.apiKey || process.env.TD_API_KEY);
+        emitter.emit(events.sandbox.connected);
+        return { success: true, sandbox: this.spawner.toJSON() };
+      }
+      
+      if (message.type === "create") {
+        // For CLI, we always connect to existing instance from .aws-env
+        // Instance creation is handled by aws.sh script
+        await this.spawner.connectToExisting(process.env.TD_API_KEY);
+        return { 
+          success: true, 
+          sandbox: this.spawner.toJSON()
+        };
+      }
+      
+      // For all other messages, we need the client
+      const client = this.spawner.getClient();
+      if (!client) {
+        throw new Error("PyAutoGUI client is not connected");
+      }
+      
+      switch (message.type) {
+        case "leftClick":
+          await client.click(message.x, message.y, 'left');
+          return { type: 'reply' };
+          
+        case "rightClick":
+          await client.rightClick(message.x, message.y);
+          return { type: 'reply' };
+          
+        case "doubleClick":
+          await client.doubleClick(message.x, message.y);
+          return { type: 'reply' };
+          
+        case "write":
+          await client.write(message.text);
+          return { type: 'reply' };
+          
+        case "press":
+          if (Array.isArray(message.keys)) {
+            await client.hotkey(...message.keys);
+          } else {
+            await client.press(message.keys);
+          }
+          return { type: 'reply' };
+          
+        case "system.screenshot": {
+          const screenshot = await client.screenshot();
+          return {
+            type: 'screenshot.reply',
+            base64: screenshot
+          };
+        }
+          
+        case "moveTo":
+          await client.moveTo(message.x, message.y);
+          return { type: 'reply' };
+          
+        case "scroll":
+          await client.scroll(message.amount);
+          return { type: 'reply' };
+          
+        case "drag":
+          // Simulate drag with moveTo and click sequence
+          await client.moveTo(message.start.x, message.start.y);
+          await client.click(message.start.x, message.start.y, 'left');
+          await client.moveTo(message.end.x, message.end.y);
+          return { type: 'reply' };
+          
+        case "mousePress":
+          await client.mouseDown(message.x, message.y, message.button);
+          return { type: 'reply' };
+          
+        case "mouseRelease":
+          await client.mouseUp(message.x, message.y, message.button);
+          return { type: 'reply' };
+          
+        case "exec": {
+          const result = await client.exec(message.command);
+          return {
+            type: 'reply',
+            success: true,
+            out: result
+          };
+        }
+        
+        case "output": {
+          // Handle output logging to the instance
+          if (!message.output || !message.output.length) {
+            return { type: 'reply' };
+          }
+
+          let outputString = typeof message.output === 'string' 
+            ? message.output 
+            : JSON.stringify(message.output);
+
+          // Decode base64 output and write to testdriver.log preserving ANSI characters
+          const command = `$bytes = [System.Convert]::FromBase64String('${outputString}');
+Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([System.Text.Encoding]::ASCII.GetString($bytes))`;
+          
+          const out = await client.exec(command);
+          return {
+            type: 'reply',
+            success: true,
+            out: out
+          };
+        }
+        
+        case "system.get-mouse-position": {
+          const out = await client.exec(
+            `Add-Type -AssemblyName System.Windows.Forms; $p=[System.Windows.Forms.Cursor]::Position; Write-Output ("{""x"":$($p.X),""y"":$($p.Y)}")`
+          );
+
+          let result = { x: 0, y: 0 };
+          
+          if (out.stdout) {
+            try {
+              result = JSON.parse(out.stdout);
+            } catch (e) {
+              console.warn('Failed to parse mouse position:', out.stdout);
+            }
+          }
+
+          return {
+            type: 'system.get-mouse-position.reply',
+            out: result
+          };
+        }
+        
+        case "system.get-active-window": {
+          const out = await client.exec(`C:\\testdriver\\pyautogui-cli\\getActiveWindow.ps1`);
+          
+          let result = out.stdout || '';
+          
+          try {
+            const parsed = JSON.parse(out.stdout);
+            result = `${parsed.owner?.name} - ${parsed.title}`;
+          } catch (e) {
+            // If parsing fails, use the raw output
+            result = out.stdout || '';
+          }
+
+          return {
+            type: 'system.get-active-window.reply',
+            out: result
+          };
+        }
+        
+        case "getScreenSize": {
+          const out = await client.exec('wmic desktopmonitor get screenheight,screenwidth /format:csv');
+          return {
+            type: 'getScreenSize',
+            out: out
+          };
+        }
+        
+        case "commands.run": {
+          const timeout_ms = message.timeout || 30 * 1000;
+          const timeout_s = timeout_ms / 1000;
+          const out = await client.exec(message.command, timeout_s);
+          return {
+            type: 'commands.run.reply',
+            out: out
+          };
+        }
+        
+        case "commands.focus-application": {
+          const out = await client.exec(
+            `powershell -ExecutionPolicy Bypass -Command "& { C:\\testdriver\\pyautogui-cli\\focusWindow.ps1 '${message.name}' 'Focus' }"`
+          );
+          return {
+            type: 'commands.focus-application',
+            out: out
+          };
+        }
+        
+        case "system.network": {
+          const out = await client.exec(
+            `powershell -ExecutionPolicy Bypass -Command "& { C:\\testdriver\\pyautogui-cli\\network.ps1 '${message.name}' 'Focus' }"`
+          );
+
+          let result = out;
+          try {
+            result = JSON.parse(out.stdout);
+          } catch (e) {
+            console.warn('Error parsing network output:', e);
+            result = out.stdout || out.stderr || 'Unknown error';
+          }
+
+          return {
+            type: 'system.network',
+            out: result
+          };
+        }
+        
+        case "middleClick":
+          await client.middleClick(message.x, message.y);
+          return { type: 'reply' };
+          
+        case "moveMouse":
+          await client.moveTo(message.x, message.y);
+          return { type: 'reply' };
+          
+        case "list":
+          // For CLI, we don't maintain a list of instances - just return empty
+          return {
+            type: 'list.reply',
+            success: true,
+            sandboxes: []
+          };
+          
+        case "destroy":
+          // For CLI, we don't handle instance destruction - that's done by aws.sh
+          return {
+            type: 'destroy.reply',
+            success: true
+          };
+          
+        default:
+          throw new Error(`Unknown message type: ${message.type}`);
+      }
+    }
+
+    async auth() {
+      // For direct connection, we always return true since we don't need API auth
+      this.authenticated = true;
+      emitter.emit(events.sandbox.authenticated);
+      return true;
     }
 
     async connect(sandboxId, persist = false) {
-      let reply = await this.send({
+      const message = {
         type: "connect",
         persist,
         sandboxId,
-      });
-
+        apiKey: process.env.TD_API_KEY
+      };
+      
+      const reply = await this.send(message);
+      
       if (reply.success) {
-        this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
       }
 
       return reply.sandbox;
     }
 
-    async boot(apiRoot) {
-      return new Promise((resolve, reject) => {
-        this.socket = new WebSocket(apiRoot.replace("https://", "wss://"));
-
-        // handle errors
-        this.socket.on("close", () => {
-          clearInterval(this.heartbeat);
-          // Emit a clear error event for API key issues
-          reject();
-          this.apiSocketConnected = false;
-        });
-
-        this.socket.on("error", (err) => {
-          console.log("Socket Error");
-          err && console.log(err);
-          clearInterval(this.heartbeat);
-          emitter.emit(events.error.sandbox, err);
-          this.apiSocketConnected = false;
-          throw err;
-        });
-
-        this.socket.on("open", async () => {
-          this.apiSocketConnected = true;
-
-          setInterval(() => {
-            if (this.socket.readyState === WebSocket.OPEN) {
-              this.socket.ping();
-            }
-          }, 5000);
-
-          resolve(this);
-        });
-
-        this.socket.on("message", async (raw) => {
-          let message = JSON.parse(raw);
-
-          if (!this.ps[message.requestId]) {
-            console.warn(
-              "No pending promise found for requestId:",
-              message.requestId,
-            );
-            return;
-          }
-
-          if (message.error) {
-            emitter.emit(events.error.sandbox, message.errorMessage);
-            this.ps[message.requestId].reject(JSON.stringify(message));
-          } else {
-            emitter.emit(events.sandbox.received);
-
-            // Get timing information for this message
-            const pendingMessage = this.ps[message.requestId];
-            if (pendingMessage) {
-              const timing = marky.stop(pendingMessage.timingKey);
-
-              // Track timing for each message type
-              await analytics.track("sandbox", {
-                operation: pendingMessage.message.type,
-                timing,
-                requestId: message.requestId,
-                timestamp: Date.now(),
-                data: {
-                  messageType: pendingMessage.message.type,
-                  ...pendingMessage.message,
-                },
-              });
-            }
-
-            this.ps[message.requestId]?.resolve(message);
-          }
-          delete this.ps[message.requestId];
-        });
+    async boot() {
+      return new Promise((resolve) => {
+        // Initialize the Windows spawner
+        this.spawner = new WindowsSpawner();
+        
+        emitter.emit(events.sandbox.connected);
+        resolve(this);
       });
     }
   }

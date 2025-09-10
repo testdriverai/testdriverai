@@ -33,7 +33,8 @@ async function openBrowser(url) {
 class BaseCommand extends Command {
   constructor(argv, config) {
     super(argv, config);
-    this.agent = null; // Initialize as null, create only when needed
+    this.messageQueue = []; // Queue messages until sandbox is connected
+    this.sandboxConnected = false;
   }
 
   sendToSandbox(message) {
@@ -41,10 +42,29 @@ class BaseCommand extends Command {
     if (typeof message !== "string") {
       message = JSON.stringify(message);
     }
-    this.agent.sandbox.send({
+
+    const messageData = {
       type: "output",
       output: Buffer.from(message).toString("base64"),
-    });
+    };
+
+    // If sandbox is connected, send immediately
+    if (this.sandboxConnected && this.agent.sandbox && this.agent.sandbox.spawner && this.agent.sandbox.spawner.getClient()) {
+      this.agent.sandbox.send(messageData);
+    } else {
+      // Otherwise, queue the message for later
+      this.messageQueue.push(messageData);
+    }
+  }
+
+  flushMessageQueue() {
+    // Send all queued messages
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift();
+      if (this.agent.sandbox && this.agent.sandbox.spawner && this.agent.sandbox.spawner.getClient()) {
+        this.agent.sandbox.send(message);
+      }
+    }
   }
 
   setupEventListeners() {
@@ -90,6 +110,11 @@ class BaseCommand extends Command {
 
     // Handle sandbox connection with pattern matching for subsequent events
     this.agent.emitter.on("sandbox:connected", () => {
+      this.sandboxConnected = true;
+      
+      // Flush any queued messages
+      this.flushMessageQueue();
+      
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {
         this.sendToSandbox(message);

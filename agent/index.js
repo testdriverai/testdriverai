@@ -1646,6 +1646,80 @@ ${regression}
     }
   }
 
+  /**
+   * Track instances that have been provisioned
+   */
+  saveProvisionedInstance(instanceId) {
+    const provisionedInstancesFile = path.join(
+      os.homedir(),
+      ".testdriverai-provisioned-instances",
+    );
+    try {
+      let provisionedInstances = [];
+      
+      // Read existing provisioned instances
+      if (fs.existsSync(provisionedInstancesFile)) {
+        const content = fs.readFileSync(provisionedInstancesFile, "utf-8");
+        provisionedInstances = JSON.parse(content);
+      }
+      
+      // Add current instance if not already tracked
+      const existingIndex = provisionedInstances.findIndex(
+        instance => instance.instanceId === instanceId
+      );
+      
+      const instanceInfo = {
+        instanceId: instanceId,
+        ami: this.sandboxAmi || null,
+        instanceType: this.sandboxInstance || null,
+        timestamp: new Date().toISOString(),
+      };
+      
+      if (existingIndex >= 0) {
+        // Update existing entry
+        provisionedInstances[existingIndex] = instanceInfo;
+      } else {
+        // Add new entry
+        provisionedInstances.push(instanceInfo);
+      }
+      
+      // Keep only last 50 entries to prevent file from growing too large
+      if (provisionedInstances.length > 50) {
+        provisionedInstances = provisionedInstances.slice(-50);
+      }
+      
+      fs.writeFileSync(provisionedInstancesFile, JSON.stringify(provisionedInstances, null, 2), {
+        encoding: "utf-8",
+      });
+    } catch (error) {
+      console.warn('Failed to save provisioned instance info:', error.message);
+    }
+  }
+
+  /**
+   * Check if an instance has been provisioned before
+   */
+  hasInstanceBeenProvisioned(instanceId) {
+    const provisionedInstancesFile = path.join(
+      os.homedir(),
+      ".testdriverai-provisioned-instances",
+    );
+    
+    try {
+      if (!fs.existsSync(provisionedInstancesFile)) {
+        return false;
+      }
+      
+      const content = fs.readFileSync(provisionedInstancesFile, "utf-8");
+      const provisionedInstances = JSON.parse(content);
+      
+      return provisionedInstances.some(instance => instance.instanceId === instanceId);
+    } catch (error) {
+      console.warn('Failed to read provisioned instances:', error.message);
+      return false; // Assume not provisioned if we can't read the file
+    }
+  }
+
   clearRecentSandboxId() {
     const lastSandboxFile = path.join(
       os.homedir(),
@@ -1722,7 +1796,6 @@ ${regression}
 
       try {
         let instance = await this.connectToSandboxDirect(
-          this.sandboxId,
           true, // always persist by default
         );
 
@@ -1730,6 +1803,26 @@ ${regression}
 
         await this.renderSandbox(instance, headless);
         await this.newSession();
+        
+        // Check if this instance needs provisioning
+        if (!this.hasInstanceBeenProvisioned(this.sandboxId)) {
+          this.emitter.emit(
+            events.log.log,
+            theme.dim(`First time connecting to instance ${this.sandboxId}, running provision script...`),
+          );
+          await this.runLifecycle("provision");
+          this.saveProvisionedInstance(this.sandboxId);
+          this.emitter.emit(
+            events.log.log,
+            theme.dim(`Instance ${this.sandboxId} has been provisioned and tracked`),
+          );
+        } else {
+          this.emitter.emit(
+            events.log.log,
+            theme.dim(`Instance ${this.sandboxId} has been provisioned before, skipping provision script`),
+          );
+        }
+        
         return;
       } catch (error) {
         // But if it fails because the machine 404s, fall-through to `createNewSandbox()`
@@ -1756,13 +1849,31 @@ ${regression}
 
     this.saveLastSandboxId(newSandbox.sandbox.instanceId);
     let instance = await this.connectToSandboxDirect(
-      newSandbox.sandbox.instanceId,
       true, // always persist by default
     );
     this.instance = instance;
     await this.renderSandbox(instance, headless);
     await this.newSession();
-    await this.runLifecycle("provision");
+    
+    // Only run provision if this instance hasn't been provisioned before
+    const instanceId = newSandbox.sandbox.instanceId;
+    if (!this.hasInstanceBeenProvisioned(instanceId)) {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`First time connecting to instance ${instanceId}, running provision script...`),
+      );
+      await this.runLifecycle("provision");
+      this.saveProvisionedInstance(instanceId);
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`Instance ${instanceId} has been provisioned and tracked`),
+      );
+    } else {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(`Instance ${instanceId} has been provisioned before, skipping provision script`),
+      );
+    }
   }
 
   async start() {
@@ -1904,33 +2015,37 @@ ${regression}
   async connectToSandboxService() {
     this.emitter.emit(
       events.log.narration,
-      theme.dim(`establishing connection...`),
+      theme.dim(`initializing direct AWS connection...`),
     );
-    let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
+    
+    // For direct connection, we just initialize the sandbox
+    let ableToBoot = await this.sandbox.boot();
 
     if (!ableToBoot) {
       return await this.dieOnFatal(
-        `Unable to connect to TestDriver sandbox service at ${this.config.TD_API_ROOT}.
-Please check your network connection, TD_API_KEY, or the service status.`,
+        `Unable to initialize TestDriver sandbox service with direct AWS connection.
+Please check that you have run the aws.sh script and have valid AWS credentials.`,
         true,
       );
     }
 
-    this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
-    let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
+    this.emitter.emit(events.log.narration, theme.dim(`ready for direct connection...`));
+    
+    // For direct connection, auth always succeeds
+    let ableToAuth = await this.sandbox.auth();
 
     if (!ableToAuth) {
       return await this.dieOnFatal(
-        `Unable to authorize with TestDriver sandbox service at ${this.config.TD_API_ROOT}.
-Please check your network connection, TD_API_KEY, or the service status.`,
+        `Unable to authorize sandbox service.`,
         true,
       );
     }
   }
 
-  async connectToSandboxDirect(sandboxId, persist = false) {
-    this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
-    let instance = await this.sandbox.connect(sandboxId, persist);
+  async connectToSandboxDirect(persist = false) {
+    this.emitter.emit(events.log.narration, theme.dim(`connecting to AWS instance...`));
+    // For direct connection, we always connect to .aws-env instance
+    let instance = await this.sandbox.connect(null, persist);
     return instance;
   }
 
