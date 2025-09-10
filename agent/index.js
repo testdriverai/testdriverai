@@ -34,8 +34,6 @@ const { createConfig } = require("./lib/config.js");
 const { createAnalytics } = require("./lib/analytics.js");
 const { createSession } = require("./lib/session.js");
 const { createOutputs } = require("./lib/outputs.js");
-const { TestDriverClient } = require("./lib/testdriver-client.js");
-const { TestDriverEC2Client, createEC2Client } = require("./lib/ec2-client.js");
 
 const isValidVersion = require("./lib/valid-version.js");
 const { events, createEmitter } = require("./events.js");
@@ -74,14 +72,6 @@ class TestDriverAgent extends EventEmitter2 {
     this.sandboxInstance = flags["sandbox-instance"] || null;
     this.workingDir = flags.workingDir || process.cwd();
 
-    // Direct EC2 connection properties
-    this.directMode = flags.directMode || false;
-    this.ec2InstanceId = flags.instanceId || null;
-    this.ec2PublicIp = flags.publicIp || null;
-    this.ec2WsHost = flags.wsHost || null;
-    this.ec2WsPort = flags.wsPort || null;
-    this.awsInfo = flags.awsInfo || null;
-
     // Resolve thisFile to absolute path with proper extension
     if (this.thisFile) {
       if (this.thisFile === ".") {
@@ -114,9 +104,6 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Create sandbox instance with this agent's emitter and analytics
     this.sandbox = createSandbox(this.emitter, this.analytics);
-
-    // Create EC2 client for direct instance connections
-    this.ec2Client = null; // will be initialized when needed
 
     // Create system instance with emitter, sandbox and config
     this.system = createSystem(this.emitter, this.sandbox, this.config);
@@ -1684,18 +1671,6 @@ ${regression}
 
     let { headless = false, heal, new: createNew = false } = options;
 
-    // Check for AWS environment variables early
-    const awsEnvVars = this.getAWSEnvironmentVariables();
-    if (awsEnvVars.hasValidAWSConfig && awsEnvVars.instanceId) {
-      this.emitter.emit(
-        events.log.log,
-        theme.green(`🔗 AWS environment detected! Will use existing instance: ${awsEnvVars.instanceId}`),
-      );
-      
-      // Force createNew to false when using external instance
-      createNew = false;
-    }
-
     // If CI environment variable is true, always create a new sandbox
     if (this.config.CI) {
       createNew = true;
@@ -1796,6 +1771,13 @@ ${regression}
         events.log.log,
         theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
       );
+
+      // Emit test start event for the entire test execution
+      this.emitter.emit(events.test.start, {
+        filePath: this.thisFile,
+        timestamp: Date.now(),
+      });
+
       // Start the debugger server as early as possible to ensure event listeners are attached
       if (!debuggerStarted) {
         debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
@@ -1959,68 +1941,16 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       ci: this.config.CI,
     };
 
-    // Check for AWS environment variables from aws.sh
-    const awsEnvVars = this.getAWSEnvironmentVariables();
-    if (awsEnvVars.hasValidAWSConfig && awsEnvVars.instanceId) {
-      this.emitter.emit(
-        events.log.log,
-        theme.dim(`Found AWS environment variables, using external instance: ${awsEnvVars.instanceId}`),
-      );
-      
-      sandboxConfig.externalInstance = {
-        instanceId: awsEnvVars.instanceId,
-        region: awsEnvVars.region,
-        publicIp: awsEnvVars.publicIp
-      };
-    } else {
-      // Add AMI and instance type if specified for new instance creation
-      if (this.sandboxAmi) {
-        sandboxConfig.ami = this.sandboxAmi;
-      }
-      if (this.sandboxInstance) {
-        sandboxConfig.instanceType = this.sandboxInstance;
-      }
+    // Add AMI and instance type if specified
+    if (this.sandboxAmi) {
+      sandboxConfig.ami = this.sandboxAmi;
+    }
+    if (this.sandboxInstance) {
+      sandboxConfig.instanceType = this.sandboxInstance;
     }
 
     let instance = await this.sandbox.send(sandboxConfig);
     return instance;
-  }
-
-  // Check for AWS environment variables set by aws.sh
-  getAWSEnvironmentVariables() {
-    const awsRegion = process.env.AWS_REGION;
-    const instanceId = process.env.INSTANCE_ID;
-    const publicIp = process.env.PUBLIC_IP;
-    const amiId = process.env.AMI_ID;
-    const instanceType = process.env.INSTANCE_TYPE;
-    const awsKeyName = process.env.AWS_KEY_NAME;
-    const awsSecurityGroupIds = process.env.AWS_SECURITY_GROUP_IDS;
-
-    // Use console.log to avoid potential recursion issues with emitter
-    console.log(`AWS Environment Variables: REGION=${awsRegion}, INSTANCE_ID=${instanceId}, AMI_ID=${amiId}, INSTANCE_TYPE=${instanceType}, KEY_NAME=${awsKeyName}, SECURITY_GROUP_IDS=${awsSecurityGroupIds}`);
-    
-    const hasValidAWSConfig = !!(
-      awsRegion &&
-      instanceId &&
-      amiId &&
-      awsKeyName &&
-      awsSecurityGroupIds
-    );
-
-    if (hasValidAWSConfig) {
-      console.log(`AWS Environment detected: Region=${awsRegion}, Instance=${instanceId}, AMI=${amiId}`);
-    }
-
-    return {
-      hasValidAWSConfig,
-      region: awsRegion,
-      instanceId,
-      publicIp,
-      amiId,
-      instanceType,
-      awsKeyName,
-      awsSecurityGroupIds
-    };
   }
 
   async newSession() {
@@ -2219,89 +2149,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
     await command.handler(argsObj, options);
   }
-
-  /**
-   * Create and connect an EC2 client for direct instance connections
-   * @param {Object} options - Connection options
-   * @returns {TestDriverEC2Client} The connected EC2 client
-   */
-  async createEC2Client(options = {}) {
-    const ec2Options = {
-      instanceId: options.instanceId || process.env.TD_INSTANCE_ID,
-      region: options.region || process.env.AWS_REGION,
-      publicIp: options.publicIp || process.env.TD_PUBLIC_IP,
-      wsPort: options.wsPort || process.env.TD_WS_PORT,
-      wsHost: options.wsHost || process.env.TD_WS_HOST,
-      ...options
-    };
-
-    this.ec2Client = createEC2Client(ec2Options);
-    
-    // Set up event forwarding from EC2 client to agent emitter
-    this.ec2Client.on('aws-info-fetching', () => {
-      this.emitter.emit('ec2:aws-info-fetching');
-    });
-    
-    this.ec2Client.on('aws-info-received', (awsInfo) => {
-      this.emitter.emit('ec2:aws-info-received', awsInfo);
-    });
-    
-    this.ec2Client.on('connecting', (info) => {
-      this.emitter.emit('ec2:connecting', info);
-    });
-    
-    this.ec2Client.on('connected', (info) => {
-      this.emitter.emit('ec2:connected', info);
-    });
-    
-    this.ec2Client.on('disconnected', () => {
-      this.emitter.emit('ec2:disconnected');
-    });
-    
-    this.ec2Client.on('error', (error) => {
-      this.emitter.emit('ec2:error', error);
-    });
-
-    await this.ec2Client.connect();
-    return this.ec2Client;
-  }
-
-  /**
-   * Get the current EC2 client instance
-   * @returns {TestDriverEC2Client|null} The EC2 client or null if not created
-   */
-  getEC2Client() {
-    return this.ec2Client;
-  }
-
-  /**
-   * Check if EC2 client is connected and ready
-   * @returns {boolean} True if EC2 client is ready
-   */
-  isEC2ClientReady() {
-    return this.ec2Client && this.ec2Client.isReady();
-  }
-
-  /**
-   * Disconnect the EC2 client
-   */
-  async disconnectEC2Client() {
-    if (this.ec2Client) {
-      await this.ec2Client.disconnect();
-      this.ec2Client = null;
-    }
-  }
-
-  /**
-   * Get EC2 instance information
-   * @returns {Object|null} Instance information or null if no client
-   */
-  getEC2InstanceInfo() {
-    return this.ec2Client ? this.ec2Client.getInstanceInfo() : null;
-  }
 }
 
 module.exports = TestDriverAgent;
-module.exports.TestDriverClient = TestDriverClient;
-module.exports.TestDriverEC2Client = TestDriverEC2Client;
-module.exports.createEC2Client = createEC2Client;

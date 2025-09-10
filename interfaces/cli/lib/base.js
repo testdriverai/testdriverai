@@ -169,9 +169,6 @@ class BaseCommand extends Command {
     // Load .env file into process.env for CLI usage
     require("dotenv").config();
 
-    // Extract AWS properties if available
-    const awsProperties = this.extractAWSProperties();
-
     // Create the agent only when actually needed
     const TestDriverAgent = require("../../../agent/index.js");
 
@@ -188,8 +185,6 @@ class BaseCommand extends Command {
           flags.summary && typeof flags.summary === "string"
             ? path.resolve(flags.summary)
             : null,
-        // Include AWS properties for direct EC2 connection
-        ...awsProperties,
       },
     };
 
@@ -212,61 +207,6 @@ class BaseCommand extends Command {
         process.exit(1);
       }
     }
-  }
-
-  // Extract AWS properties for direct EC2 connection
-  extractAWSProperties() {
-    const { execSync } = require("child_process");
-    const path = require("path");
-    
-    try {
-      // Check if aws.sh exists and AWS environment variables are set
-      const awsScriptPath = path.resolve(__dirname, "../../../aws.sh");
-      if (!fs.existsSync(awsScriptPath)) {
-        return {};
-      }
-
-      // Check for required AWS environment variables
-      const requiredVars = ['AWS_REGION', 'AMI_ID', 'AWS_KEY_NAME', 'AWS_SECURITY_GROUP_IDS', 'AWS_IAM_INSTANCE_PROFILE'];
-      const hasRequiredVars = requiredVars.every(varName => process.env[varName]);
-      
-      if (!hasRequiredVars) {
-        return {};
-      }
-
-      console.log('🔍 Detecting AWS configuration, checking for direct EC2 connection...');
-      
-      // Execute aws.sh to get instance information
-      const output = execSync(`bash "${awsScriptPath}"`, { 
-        encoding: 'utf8',
-        stdio: ['inherit', 'pipe', 'inherit'], // pipe stdout only
-        env: process.env
-      });
-
-      // Parse JSON output (should be the last line)
-      const lines = output.trim().split('\n');
-      const jsonLine = lines[lines.length - 1];
-      const awsInfo = JSON.parse(jsonLine);
-
-      if (awsInfo.instanceId && awsInfo.publicIp) {
-        console.log(`✅ AWS EC2 instance detected: ${awsInfo.instanceId} (${awsInfo.publicIp})`);
-        
-        // Return properties that will enable direct EC2 connection
-        return {
-          directMode: true,
-          instanceId: awsInfo.instanceId,
-          publicIp: awsInfo.publicIp,
-          wsHost: awsInfo.ws?.host || awsInfo.publicIp,
-          wsPort: awsInfo.ws?.port || 8080,
-          awsInfo: awsInfo
-        };
-      }
-    } catch (error) {
-      // Silently fall back to regular sandbox connection if AWS setup fails
-      console.log(`ℹ️  AWS setup not available (${error.message}), using standard sandbox connection`);
-    }
-    
-    return {};
   }
 
   // Get unified command definition for this command
