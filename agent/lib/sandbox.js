@@ -219,8 +219,10 @@ const createSandbox = (emitter, analytics) => {
       }
 
       // Reject any pending promises to prevent hanging
-      Object.values(this.ps).forEach(({ reject }) => {
-        reject(new Error("Connection closed"));
+      Object.values(this.ps).forEach((pendingRequest) => {
+        if (pendingRequest && typeof pendingRequest.reject === 'function') {
+          pendingRequest.reject(new Error("Connection closed"));
+        }
       });
       this.ps = {};
     }
