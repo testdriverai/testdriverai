@@ -1946,6 +1946,10 @@ ${regression}
 
       if (this.config.TD_API_KEY) {
         await this.sdk.auth();
+      } else {
+        throw new Error(
+          "No API key provided. Please set the TD_API_KEY environment variable.",
+        );
       }
 
       if (this.cliArgs.command !== "sandbox") {
