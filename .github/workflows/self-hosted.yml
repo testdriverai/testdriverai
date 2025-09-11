@@ -16,9 +16,9 @@ jobs:
         run: |
           # apt-get update
           # apt-get install curl unzip -y
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
+          # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          # unzip awscliv2.zip
+          # ./aws/install
       - name: Spawn AWS Instance
         run: ./aws-setup.sh
         env:
