@@ -180,6 +180,11 @@ class TestDriverAgent extends EventEmitter2 {
       this.redraw.cleanup();
     }
 
+    // Clean up sandbox connection to prevent resource leaks
+    if (this.sandbox && this.sandbox.cleanup) {
+      this.sandbox.cleanup();
+    }
+
     shouldRunPostrun =
       !this.hasRunPostrun &&
       (shouldRunPostrun || this.cliArgs?.command == "run");
@@ -1744,14 +1749,19 @@ ${regression}
       theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
     );
     // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-    // to see if that fixes the issue.
-    let newSandbox = await this.createNewSandbox().catch(() => {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`double-checking sandbox availability`),
-      );
-
-      return this.createNewSandbox();
+    // to see if that fixes the issue, but prevent infinite loops
+    let newSandbox = await this.createNewSandbox().catch(async (error) => {
+      // Only retry once and only for specific errors
+      if (error.message && !error.message.includes("Maximum connection attempts")) {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`double-checking sandbox availability`),
+        );
+        return this.createNewSandbox();
+      } else {
+        // Don't retry if we've exceeded connection attempts
+        throw error;
+      }
     });
 
     this.saveLastSandboxId(newSandbox.sandbox.instanceId);
@@ -1906,22 +1916,34 @@ ${regression}
       events.log.narration,
       theme.dim(`establishing connection...`),
     );
-    let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
+    
+    try {
+      let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
 
-    if (!ableToBoot) {
-      return await this.dieOnFatal(
-        `Unable to connect to TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+      if (!ableToBoot) {
+        return await this.dieOnFatal(
+          `Unable to connect to TestDriver sandbox service at ${this.config.TD_API_ROOT}.
 Please check your network connection, TD_API_KEY, or the service status.`,
-        true,
-      );
-    }
+          true,
+        );
+      }
 
-    this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
-    let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
+      this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
+      let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
 
-    if (!ableToAuth) {
+      if (!ableToAuth) {
+        return await this.dieOnFatal(
+          `Unable to authorize with TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+Please check your network connection, TD_API_KEY, or the service status.`,
+          true,
+        );
+      }
+    } catch (error) {
+      // Clean up sandbox on connection failure to prevent loops
+      this.sandbox.cleanup?.();
+      
       return await this.dieOnFatal(
-        `Unable to authorize with TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+        `Failed to connect to TestDriver sandbox service: ${error.message}.
 Please check your network connection, TD_API_KEY, or the service status.`,
         true,
       );
