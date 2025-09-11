@@ -29,12 +29,11 @@ jobs:
       - name: Run test in headless mode
         run: |
           ./aws-setup.sh
-          source .aws-env && node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --junit=out.xml
+          source /home/runner/work/cli/cli/.aws-env && node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --junit=out.xml
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app 
-
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-2 
@@ -43,9 +42,17 @@ jobs:
           AWS_KEY_NAME: alex-rowe2 
           AWS_SECURITY_GROUP_IDS: sg-02309153292e8f1ca 
           AWS_IAM_INSTANCE_PROFILE: gh-auto-runner-role
+      - name: Upload TestDriver AI CLI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testdriverai-cli-logs
+          path: /tmp/testdriverai-cli-*.log
+          if-no-files-found: warn
+          retention-days: 30
       - name: Shutdown AWS Instance
         if: always()
-        run: ./aws-shutdown.sh
+        run: aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
