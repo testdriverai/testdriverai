@@ -14,11 +14,11 @@ jobs:
       testmo-run-id: ${{ steps.run-tests.outputs.testmo-run-id }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 22
+      #     cache: npm
+      # - run: npm ci
 
       # Optionally add a couple of fields such as the git hash and link to the build
       # - run: |
@@ -74,16 +74,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: NODE_ENV=production npm ci
       - name: Spawn AWS Instance
-        run: sh aws-setup.sh
+        run: ./aws-setup.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -93,6 +85,14 @@ jobs:
           AWS_KEY_NAME: alex-rowe2 
           AWS_SECURITY_GROUP_IDS: sg-02309153292e8f1ca 
           AWS_IAM_INSTANCE_PROFILE: gh-auto-runner-role
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
       - name: Run test in headless mode
         run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --junit=out.xml
         env:
