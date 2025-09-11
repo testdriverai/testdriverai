@@ -5,13 +5,37 @@ on:
   push:
 
 jobs:
-  test:
+  gather:
+    name: Gather Test Files
     runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/acceptance/*.yaml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+
+  test:
+    needs: gather
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather.outputs.test_files) }}
+      max-parallel: 8
+      fail-fast: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # only needed for `act`
       # - name: Install AWS CLI
       #   run: |
       #     apt-get update
@@ -48,17 +72,25 @@ jobs:
           AWS_SECURITY_GROUP_IDS: sg-02309153292e8f1ca 
           AWS_IAM_INSTANCE_PROFILE: gh-auto-runner-role
       - name: Run TestDriver
-        run: node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --ip="${{ steps.aws-setup.outputs.public-ip }}" --junit=out.xml
+        run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --ip="${{ steps.aws-setup.outputs.public-ip }}" --junit=out.xml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
+          TD_THIS_FILE: ${{ matrix.test }}
       - name: Upload TestDriver AI CLI logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: testdriverai-cli-logs
+          name: testdriverai-cli-logs-${{ matrix.test }}
           path: /tmp/testdriverai-cli-*.log
           if-no-files-found: warn
+          retention-days: 30
+      - name: Upload test results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test }}
+          path: out.xml
           retention-days: 30
       - name: Shutdown AWS Instance
         if: always()
