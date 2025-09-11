@@ -1,10 +1,11 @@
-name: v6 Acceptance [disabled]
+name: Computer-Use Acceptance
 
 on:
   workflow_dispatch:
   push:
   pull_request:
-
+    branches:
+      - main
   schedule:
     - cron: "0 0 * * *"
 
