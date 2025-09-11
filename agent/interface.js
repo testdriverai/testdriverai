@@ -68,12 +68,6 @@ function createCommandDefinitions(agent) {
         const file = normalizeFilePath(args.file);
         const testStartTime = Date.now();
 
-        // Emit test start event for the entire test execution
-        agent.emitter.emit(events.test.start, {
-          filePath: file,
-          timestamp: testStartTime,
-        });
-
         try {
           await agent.runLifecycle("prerun");
           // When run() is called through run.js CLI command, shouldExit should be true
