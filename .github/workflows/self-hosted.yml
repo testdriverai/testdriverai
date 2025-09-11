@@ -38,7 +38,11 @@ jobs:
       - name: Install dependencies
         run: NODE_ENV=production npm ci
       - name: Run test in headless mode
-        run: node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --junit=out.xml
+        run: |
+          echo "Contents of .aws-env:"
+          cat .aws-env || echo ".aws-env file not found"
+          echo "Sourcing .aws-env and running testdriver..."
+          source .aws-env && node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --junit=out.xml
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TD_API_KEY }}

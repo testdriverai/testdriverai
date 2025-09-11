@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Baseline artifacts (NO EC2 instance): Security Group, IAM Role/Profile, optional KeyPair,
+  and an EC2 Launch Template so you can spawn many instances programmatically. Writes handy IDs
+  into SSM Parameter Store for easy lookup in scripts or automation.
+
+Parameters:
+  ProjectTag:
+    Type: String
+    Default: ec2-starter
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC for the security group.
+  DefaultSubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Default subnet used in the Launch Template (can be overridden at run-time).
+
+  InstanceType:
+    Type: String
+    Default: c5.xlarge
+
+  AllowedIngressCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR allowed to access inbound ports (tighten in production).
+
+  CreateKeyPair:
+    Type: String
+    AllowedValues: [yes, no]
+    Default: no
+  ExistingKeyName:
+    Type: String
+    Default: ''
+
+Conditions:
+  CreateKey: !Equals [!Ref CreateKeyPair, 'yes']
+  UseExistingKeyProvided: !Not [!Equals [!Ref ExistingKeyName, '']]
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SG for QA desktop testing (RDP/HTTPS/NGINX/pyautogui + VNC)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 8765, ToPort: 8765, CidrIp: !Ref AllowedIngressCidr, Description: 'pyautogui-cli WebSockets' }
+        - { IpProtocol: tcp, FromPort: 8443, ToPort: 8443, CidrIp: !Ref AllowedIngressCidr, Description: 'Custom 8443' }
+        - { IpProtocol: tcp, FromPort: 8080, ToPort: 8080, CidrIp: !Ref AllowedIngressCidr, Description: 'NGINX 8080' }
+        - { IpProtocol: tcp, FromPort: 80,   ToPort: 80,   CidrIp: !Ref AllowedIngressCidr, Description: 'HTTP 80' }
+        - { IpProtocol: tcp, FromPort: 443,  ToPort: 443,  CidrIp: !Ref AllowedIngressCidr, Description: 'HTTPS 443' }
+        - { IpProtocol: tcp, FromPort: 3389, ToPort: 3389, CidrIp: !Ref AllowedIngressCidr, Description: 'RDP 3389' }
+        - { IpProtocol: tcp, FromPort: 5900, ToPort: 5900, CidrIp: !Ref AllowedIngressCidr, Description: 'TightVNC 5900' }
+        - { IpProtocol: tcp, FromPort: 5901, ToPort: 5901, CidrIp: !Ref AllowedIngressCidr, Description: 'noVNC Websockify 5901' }
+        - { IpProtocol: tcp, FromPort: 6080, ToPort: 6080, CidrIp: !Ref AllowedIngressCidr, Description: 'noVNC HTTP 6080' }
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound
+      Tags:
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Condition: CreateKey
+    Properties:
+      KeyName: !Sub '${AWS::StackName}-key'
+      KeyType: rsa
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub '${AWS::StackName}-lt'
+      LaunchTemplateData:
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            SubnetId: !Ref DefaultSubnetId
+            Groups: [!Ref SecurityGroup]
+            AssociatePublicIpAddress: true
+        KeyName: !If
+          - CreateKey
+          - !Ref KeyPair
+          - !If
+            - UseExistingKeyProvided
+            - !Ref ExistingKeyName
+            - !Ref AWS::NoValue
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - { Key: Project, Value: !Ref ProjectTag }
+          - ResourceType: volume
+            Tags:
+              - { Key: Project, Value: !Ref ProjectTag }
+
+  SsmParamSg:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /testdriver/infra/security-group-id
+      Type: String
+      Value: !Ref SecurityGroup
+
+  SsmParamIp:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /testdriver/infra/instance-profile-name
+      Type: String
+      Value: !Ref InstanceProfile
+
+  SsmParamLt:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /testdriver/infra/launch-template-id
+      Type: String
+      Value: !Ref LaunchTemplate
+
+  SsmParamLtLatest:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /testdriver/infra/launch-template-latest-version
+      Type: String
+      Value: !GetAtt LaunchTemplate.LatestVersionNumber
+
+Outputs:
+  SecurityGroupId:
+    Value: !Ref SecurityGroup
+    Description: Security Group for QA desktop testing
+  InstanceProfileName:
+    Value: !Ref InstanceProfile
+    Description: Instance Profile to attach to instances
+  LaunchTemplateId:
+    Value: !Ref LaunchTemplate
+    Description: EC2 Launch Template ID
+  LaunchTemplateLatestVersion:
+    Value: !GetAtt LaunchTemplate.LatestVersionNumber
+    Description: Latest Launch Template version
+  KeyPairSsmParam:
+    Condition: CreateKey
+    Value: !Sub '/ec2/keypair/${KeyPair.KeyPairId}'
+    Description: SSM parameter that stores the generated private key
+  SsmNamespaceUsed:
+    Value: /testdriver/infra
+    Description: Prefix where IDs are stored for discovery

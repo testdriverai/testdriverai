@@ -8,3 +8,9 @@ https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-depl
 ```
  act --container-architecture=linux/amd64 -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-22.04 --secret-file .env -W .github/workflows/self-hosted.yml
  ```
+
+```sh
+# Override the Launch Template
+aws ec2 run-instances \
+  --launch-template LaunchTemplateId=lt-xxxxxxxxx,Version=1,Overrides='[{ImageId=ami-0abcdef1234567890}]'
+```
