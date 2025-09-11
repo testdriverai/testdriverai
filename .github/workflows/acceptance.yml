@@ -3,9 +3,6 @@ name: Computer-Use Acceptance
 on:
   workflow_dispatch:
   push:
-  pull_request:
-    branches:
-      - main
   schedule:
     - cron: "0 0 * * *"
 
@@ -24,27 +21,27 @@ jobs:
       - run: npm ci
 
       # Optionally add a couple of fields such as the git hash and link to the build
-      - run: |
-          npx @testmo/testmo-cli automation:resources:add-field --name git --type string \
-            --value ${GITHUB_SHA:0:7} --resources resources.json
-          RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          npx @testmo/testmo-cli automation:resources:add-link --name build \
-            --url $RUN_URL --resources resources.json
+      # - run: |
+      #     npx @testmo/testmo-cli automation:resources:add-field --name git --type string \
+      #       --value ${GITHUB_SHA:0:7} --resources resources.json
+      #     RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      #     npx @testmo/testmo-cli automation:resources:add-link --name build \
+      #       --url $RUN_URL --resources resources.json
 
-      # Create test run
-      - run: |
-          npx @testmo/testmo-cli automation:run:create \
-            --instance "$TESTMO_URL" \
-            --project-id 1 \
-            --name "TestDriver Acceptance Tests" \
-            --resources resources.json \
-            --source "TestDriver" > testmo-run-id.txt
-          ID=$(cat testmo-run-id.txt)
-          echo "testmo-run-id=$ID" >> $GITHUB_OUTPUT
-        env:
-          TESTMO_URL: ${{ secrets.TESTMO_URL }}
-          TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
-        id: run-tests
+      # # Create test run
+      # - run: |
+      #     npx @testmo/testmo-cli automation:run:create \
+      #       --instance "$TESTMO_URL" \
+      #       --project-id 1 \
+      #       --name "TestDriver Acceptance Tests" \
+      #       --resources resources.json \
+      #       --source "TestDriver" > testmo-run-id.txt
+      #     ID=$(cat testmo-run-id.txt)
+      #     echo "testmo-run-id=$ID" >> $GITHUB_OUTPUT
+      #   env:
+      #     TESTMO_URL: ${{ secrets.TESTMO_URL }}
+      #     TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+      #   id: run-tests
   gather:
     name: Gather Test Files
     runs-on: ubuntu-latest
@@ -104,16 +101,16 @@ jobs:
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
           TD_THIS_FILE: ${{ matrix.test }}
       - run: ls
-      - name: Upload JUnit report to Testmo
-        if: always()
-        run: |
-          npx @testmo/testmo-cli automation:run:submit-thread \
-            --instance "$TESTMO_URL" \
-            --run-id "${{ needs.test-setup.outputs.testmo-run-id }}" \
-            --results out.xml \
-        env:
-          TESTMO_URL: ${{ secrets.TESTMO_URL }}
-          TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+      # - name: Upload JUnit report to Testmo
+      #   if: always()
+      #   run: |
+      #     npx @testmo/testmo-cli automation:run:submit-thread \
+      #       --instance "$TESTMO_URL" \
+      #       --run-id "${{ needs.test-setup.outputs.testmo-run-id }}" \
+      #       --results out.xml \
+        # env:
+        #   TESTMO_URL: ${{ secrets.TESTMO_URL }}
+        #   TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
 
       - name: Upload test results as artifact
         if: always()
@@ -161,13 +158,13 @@ jobs:
           done
 
       # Mark test run completed
-      - run: |
-          npx @testmo/testmo-cli automation:run:complete \
-            --instance "$TESTMO_URL" \
-            --run-id "${{ needs.test-setup.outputs.testmo-run-id }}"
-        env:
-          TESTMO_URL: ${{ secrets.TESTMO_URL }}
-          TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
+      # - run: |
+      #     npx @testmo/testmo-cli automation:run:complete \
+      #       --instance "$TESTMO_URL" \
+      #       --run-id "${{ needs.test-setup.outputs.testmo-run-id }}"
+      #   env:
+      #     TESTMO_URL: ${{ secrets.TESTMO_URL }}
+      #     TESTMO_TOKEN: ${{ secrets.TESTMO_TOKEN }}
       - name: Test Summary
         uses: test-summary/action@v2
         with:
