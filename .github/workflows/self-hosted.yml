@@ -19,17 +19,6 @@ jobs:
           # curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           # unzip awscliv2.zip
           # ./aws/install
-      - name: Spawn AWS Instance
-        run: ./aws-setup.sh
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-2 
-          AMI_ID: ami-085f872ca0cd80fed 
-          INSTANCE_TYPE: c5.xlarge 
-          AWS_KEY_NAME: alex-rowe2 
-          AWS_SECURITY_GROUP_IDS: sg-02309153292e8f1ca 
-          AWS_IAM_INSTANCE_PROFILE: gh-auto-runner-role
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -39,14 +28,21 @@ jobs:
         run: NODE_ENV=production npm ci
       - name: Run test in headless mode
         run: |
-          echo "Contents of .aws-env:"
-          cat .aws-env || echo ".aws-env file not found"
-          echo "Sourcing .aws-env and running testdriver..."
+          ./aws-setup.sh
           source .aws-env && node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --junit=out.xml
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-          TD_WEBSITE: https://testdriver-sandbox.vercel.app
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app 
+
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2 
+          AMI_ID: ami-085f872ca0cd80fed 
+          INSTANCE_TYPE: c5.xlarge 
+          AWS_KEY_NAME: alex-rowe2 
+          AWS_SECURITY_GROUP_IDS: sg-02309153292e8f1ca 
+          AWS_IAM_INSTANCE_PROFILE: gh-auto-runner-role
       - name: Shutdown AWS Instance
         if: always()
         run: ./aws-shutdown.sh
