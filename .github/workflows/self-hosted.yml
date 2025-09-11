@@ -12,6 +12,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Install AWS CLI
+        run: |
+          apt-get update
+          apt-get install curl unzip -y
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Spawn AWS Instance
         run: ./aws-setup.sh
         env:
@@ -28,12 +35,18 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-
       - name: Install dependencies
         run: NODE_ENV=production npm ci
       - name: Run test in headless mode
         run: node bin/testdriverai.js run testdriver/acceptance/hover-text.yaml --junit=out.xml
         env:
           FORCE_COLOR: 3
-          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
+      - name: Shutdown AWS Instance
+        if: always()
+        run: ./aws-shutdown.sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
