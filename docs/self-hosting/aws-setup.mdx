@@ -5,3 +5,6 @@ https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-depl
 
 # aws auth is up to you, make sure you do it
 
+```
+ act --container-architecture=linux/amd64 -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-22.04 --secret-file .env -W .github/workflows/self-hosted.yml
+ ```
