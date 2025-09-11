@@ -1,16 +1,15 @@
-const { AWSManager } = require('./aws-manager.js');
+const { ConnectionManager } = require('./connection-manager.js');
 const { PyAutoGUIClient } = require('./pyautogui-client.js');
 
 /**
- * Main Windows Spawner class for CLI that connects to existing EC2 instances
- * Instance creation is handled by aws.sh script
+ * Main Windows Spawner class for CLI that connects to TestDriver instances
  */
 class WindowsSpawner {
-  constructor() {
-    this.awsManager = new AWSManager();
+  constructor(ip = null) {
+    this.connectionManager = ip ? new ConnectionManager(ip) : null;
     this.pyautoguiClient = null;
     this.instanceId = null;
-    this.ip = null;
+    this.ip = ip;
     this.vncPort = 8080;
     this.wsUrl = null;
     this.wsPort = 8765;
@@ -28,30 +27,38 @@ class WindowsSpawner {
   }
 
   /**
-   * Connect to the existing instance from .aws-env
+   * Connect to the TestDriver instance by IP
    */
-  async connectToExisting(apiKey) {
-    // Get existing instance info from .aws-env
-    const instanceInfo = this.awsManager.getExistingInstanceInfo();
-    this.instanceId = instanceInfo.instanceId;
-    this.ip = instanceInfo.publicIp;
+  async connectToInstance(apiKey, ip = null) {
+    // Use provided IP or the one from constructor
+    if (ip) {
+      this.ip = ip;
+      this.connectionManager = new ConnectionManager(ip);
+    }
     
-    console.log(`Connecting to existing instance ${this.instanceId} at ${this.ip}`);
+    if (!this.connectionManager) {
+      throw new Error('No IP address provided for connection');
+    }
     
-    // Check if instance exists and is running
-    const isRunning = await this.awsManager.isInstanceRunning(this.instanceId);
-    if (!isRunning) {
-      const error = new Error(`Instance ${this.instanceId} is not running or does not exist`);
+    const connectionInfo = this.connectionManager.getConnectionInfo();
+    this.ip = connectionInfo.ip;
+    this.wsUrl = connectionInfo.wsUrl;
+    this.vncUrl = connectionInfo.vncUrl;
+    this.instanceId = `testdriver-${this.ip.replace(/\./g, '-')}`;
+    
+    console.log(`Connecting to TestDriver instance at ${this.ip}`);
+    
+    // Check if instance is reachable
+    const isReachable = await this.connectionManager.isInstanceReachable();
+    if (!isReachable) {
+      const error = new Error(`TestDriver instance at ${this.ip}:${this.wsPort} is not reachable`);
       error.name = 'InvalidInstanceID.NotFound';
       throw error;
     }
     
-    console.log(`http://${this.ip}:${this.vncPort}`);
+    console.log(`VNC available at: ${this.vncUrl}`);
     
     // Connect PyAutoGUI client
-    this.wsUrl = `ws://${this.ip}:${this.wsPort}`;
-    this.vncUrl = `http://${this.ip}:${this.vncPort}`;
-    
     try {
       console.log('Connecting to pyautogui client at ' + this.wsUrl);
       this.pyautoguiClient = new PyAutoGUIClient(this.wsUrl);
@@ -65,6 +72,13 @@ class WindowsSpawner {
     await this.authorizeDashcam(apiKey);
     
     return this;
+  }
+
+  /**
+   * Backward compatibility method - redirects to connectToInstance
+   */
+  async connectToExisting(apiKey) {
+    return this.connectToInstance(apiKey);
   }
 
   /**

@@ -7,7 +7,7 @@ Description: >-
 Parameters:
   ProjectTag:
     Type: String
-    Default: ec2-starter
+    Default: testdriver
 
   VpcId:
     Type: AWS::EC2::VPC::Id
@@ -19,23 +19,35 @@ Parameters:
   InstanceType:
     Type: String
     Default: c5.xlarge
+    AllowedValues:
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c5.metal
+      - i3.metal
+    Description: Instance type - only c5.xlarge or larger, plus c5.metal and i3.metal allowed
 
   AllowedIngressCidr:
     Type: String
     Default: 0.0.0.0/0
-    Description: CIDR allowed to access inbound ports (tighten in production).
+    Description: CIDR allowed to access inbound ports (0.0.0.0/0 means "anyone", we recommend tighening this in production).
 
   CreateKeyPair:
     Type: String
     AllowedValues: [yes, no]
-    Default: no
+    Default: yes
+    Description: Create a new key pair for instance access? (If 'no', you must provide an existing key name)
   ExistingKeyName:
     Type: String
     Default: ''
 
 Conditions:
-  CreateKey: !Equals [!Ref CreateKeyPair, 'yes']
   UseExistingKeyProvided: !Not [!Equals [!Ref ExistingKeyName, '']]
+  CreateKey: !Equals [!Ref CreateKeyPair, 'yes']
 
 Resources:
   SecurityGroup:

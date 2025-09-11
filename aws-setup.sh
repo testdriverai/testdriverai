@@ -187,41 +187,8 @@ if [ -n "$STDERR" ] && [ "$STDERR" != "null" ]; then
 fi
 echo "WebSocket config raw output: $STDOUT"
 
-echo "Outputting..."
-
-# Validate/parse JSON using jq (safe fallback to empty object if invalid)
-WS_JSON=$(echo "$STDOUT" | jq -c '.' 2>/dev/null || echo '{}')
-
-# --- 6) Final JSON output and export environment variables ---
-
-# Export variables for CLI to use
-export AWS_REGION
-export AMI_ID
-export INSTANCE_TYPE
-export AWS_KEY_NAME
-export AWS_SECURITY_GROUP_IDS
-export AWS_IAM_INSTANCE_PROFILE
-export INSTANCE_ID
-export PUBLIC_IP
-
-# Write environment variables to a file for later sourcing
-ENV_FILE="$(pwd)/.aws-env"
-cat > "$ENV_FILE" << EOF
-export AWS_REGION="$AWS_REGION"
-export AMI_ID="$AMI_ID"
-export INSTANCE_TYPE="$INSTANCE_TYPE"
-export AWS_KEY_NAME="$AWS_KEY_NAME"
-export AWS_SECURITY_GROUP_IDS="$AWS_SECURITY_GROUP_IDS"
-export AWS_IAM_INSTANCE_PROFILE="$AWS_IAM_INSTANCE_PROFILE"
-export INSTANCE_ID="$INSTANCE_ID"
-export PUBLIC_IP="$PUBLIC_IP"
-EOF
-
-echo "Environment variables saved to: $ENV_FILE"
-echo "To use with TestDriver CLI, run: source $ENV_FILE && node bin/testdriverai.js ..."
-
-jq -n \
-  --arg instanceId "$INSTANCE_ID" \
-  --arg publicIp "$PUBLIC_IP" \
-  --argjson ws "$WS_JSON" \
-  '{instanceId: $instanceId, publicIp: $publicIp, ws: $ws}'
+# --- 6) Output results ---
+echo "Setup complete!"
+echo "PUBLIC_IP=$PUBLIC_IP"
+echo "INSTANCE_ID=$INSTANCE_ID"
+echo "AWS_REGION=$AWS_REGION"

@@ -74,17 +74,17 @@ icon: "image"
 
   </Step>
 
-  <Step title="Share Your AMI and Use with TestDriver CLI">
-    After creating your custom AMI:
+  <Step title="Connect to Your TestDriver Instance">
+    After setting up your TestDriver instance:
 
-    1. **Share the AMI ID** with your **TestDriver account manager** so we can launch it in our infrastructure. Follow [Amazon's explicit AMI sharing process](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html) if needed.
-    2. Once confirmed, you can reference the AMI directly from your machine using the TestDriver CLI:
+    1. **Get the IP address** of your running TestDriver instance.
+    2. Connect directly to your instance using the TestDriver CLI:
 
     ```bash
-    testdriverai --sandbox-ami=ami-0abcd1234efgh5678
+    testdriverai --ip=192.168.1.100
     ```
 
-    This instructs the CLI to launch a sandbox using **your customized AMI**, enabling test execution in your environment.
+    This instructs the CLI to connect directly to your TestDriver instance at the specified IP address.
 
   </Step>
 </Steps>

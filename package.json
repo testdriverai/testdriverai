@@ -27,8 +27,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.883.0",
-    "@aws-sdk/client-ssm": "^3.883.0",
     "@npmcli/redact": "^3.2.2",
     "@oclif/core": "^4.5.0",
     "@oclif/plugin-commands": "^4.1.28",

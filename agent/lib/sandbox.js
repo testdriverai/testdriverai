@@ -2,7 +2,7 @@ const { WindowsSpawner } = require("./windows-spawner");
 const marky = require("marky");
 const { events } = require("../events");
 
-const createSandbox = (emitter, analytics) => {
+const createSandbox = (emitter, analytics, ip = null) => {
   class Sandbox {
     constructor() {
       this.spawner = null;
@@ -11,6 +11,7 @@ const createSandbox = (emitter, analytics) => {
       this.uniqueId = Math.random().toString(36).substring(7);
       this.authenticated = false;
       this.instance = null;
+      this.instanceIp = ip;
     }
 
     send(message) {
@@ -68,16 +69,15 @@ const createSandbox = (emitter, analytics) => {
       }
       
       if (message.type === "connect") {
-        // Connect to existing instance from .aws-env
-        await this.spawner.connectToExisting(message.apiKey || process.env.TD_API_KEY);
+        // Connect to TestDriver instance by IP
+        await this.spawner.connectToInstance(message.apiKey || process.env.TD_API_KEY, this.instanceIp);
         emitter.emit(events.sandbox.connected);
         return { success: true, sandbox: this.spawner.toJSON() };
       }
       
       if (message.type === "create") {
-        // For CLI, we always connect to existing instance from .aws-env
-        // Instance creation is handled by aws.sh script
-        await this.spawner.connectToExisting(process.env.TD_API_KEY);
+        // For CLI, we always connect to existing instance by IP
+        await this.spawner.connectToInstance(process.env.TD_API_KEY, this.instanceIp);
         return { 
           success: true, 
           sandbox: this.spawner.toJSON()
@@ -281,7 +281,7 @@ Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([Sy
           };
           
         case "destroy":
-          // For CLI, we don't handle instance destruction - that's done by aws.sh
+          // For CLI, we don't handle instance destruction - instances are managed externally
           return {
             type: 'destroy.reply',
             success: true
@@ -318,8 +318,8 @@ Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([Sy
 
     async boot() {
       return new Promise((resolve) => {
-        // Initialize the Windows spawner
-        this.spawner = new WindowsSpawner();
+        // Initialize the Windows spawner with IP
+        this.spawner = new WindowsSpawner(this.instanceIp);
         
         emitter.emit(events.sandbox.connected);
         resolve(this);

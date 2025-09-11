@@ -68,8 +68,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.newSandbox = flags.newSandbox || false;
     this.healMode = flags.healMode || flags.heal || false;
     this.sandboxId = flags["sandbox-id"] || null;
-    this.sandboxAmi = flags["sandbox-ami"] || null;
-    this.sandboxInstance = flags["sandbox-instance"] || null;
+    this.instanceIp = flags.ip || null;
     this.workingDir = flags.workingDir || process.cwd();
 
     // Resolve thisFile to absolute path with proper extension
@@ -102,8 +101,8 @@ class TestDriverAgent extends EventEmitter2 {
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
-    // Create sandbox instance with this agent's emitter and analytics
-    this.sandbox = createSandbox(this.emitter, this.analytics);
+    // Create sandbox instance with this agent's emitter, analytics, and IP
+    this.sandbox = createSandbox(this.emitter, this.analytics, this.instanceIp);
 
     // Create system instance with emitter, sandbox and config
     this.system = createSystem(this.emitter, this.sandbox, this.config);
@@ -2013,23 +2012,30 @@ ${regression}
   }
 
   async connectToSandboxService() {
-    this.emitter.emit(
-      events.log.narration,
-      theme.dim(`initializing direct AWS connection...`),
-    );
-    
-    // For direct connection, we just initialize the sandbox
-    let ableToBoot = await this.sandbox.boot();
-
-    if (!ableToBoot) {
+    if (!this.instanceIp) {
       return await this.dieOnFatal(
-        `Unable to initialize TestDriver sandbox service with direct AWS connection.
-Please check that you have run the aws.sh script and have valid AWS credentials.`,
+        `No IP address provided. Please use the --ip flag to specify the TestDriver instance IP address.`,
         true,
       );
     }
 
-    this.emitter.emit(events.log.narration, theme.dim(`ready for direct connection...`));
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim(`initializing connection to TestDriver instance at ${this.instanceIp}...`),
+    );
+    
+    // Initialize the sandbox with the provided IP
+    let ableToBoot = await this.sandbox.boot();
+
+    if (!ableToBoot) {
+      return await this.dieOnFatal(
+        `Unable to initialize TestDriver sandbox service.
+Please check that the TestDriver instance at ${this.instanceIp} is running and accessible.`,
+        true,
+      );
+    }
+
+    this.emitter.emit(events.log.narration, theme.dim(`ready for connection...`));
     
     // For direct connection, auth always succeeds
     let ableToAuth = await this.sandbox.auth();
@@ -2043,8 +2049,8 @@ Please check that you have run the aws.sh script and have valid AWS credentials.
   }
 
   async connectToSandboxDirect(persist = false) {
-    this.emitter.emit(events.log.narration, theme.dim(`connecting to AWS instance...`));
-    // For direct connection, we always connect to .aws-env instance
+    this.emitter.emit(events.log.narration, theme.dim(`connecting to TestDriver instance at ${this.instanceIp}...`));
+    // Connect to the TestDriver instance at the provided IP
     let instance = await this.sandbox.connect(null, persist);
     return instance;
   }
@@ -2055,14 +2061,6 @@ Please check that you have run the aws.sh script and have valid AWS credentials.
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
     };
-
-    // Add AMI and instance type if specified
-    if (this.sandboxAmi) {
-      sandboxConfig.ami = this.sandboxAmi;
-    }
-    if (this.sandboxInstance) {
-      sandboxConfig.instanceType = this.sandboxInstance;
-    }
 
     let instance = await this.sandbox.send(sandboxConfig);
     return instance;
