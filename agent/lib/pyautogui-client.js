@@ -35,11 +35,32 @@ class PyAutoGUIClient extends EventEmitter {
   async connect() {
     const maxRetries = 30;
     const retryDelay = 1000; // 1 second
-    let attempts = 0;
 
     return new Promise((resolve, reject) => {
+      let attempts = 0;
+      let retryTimer = null;
+
+      const cleanup = () => {
+        if (retryTimer) {
+          clearTimeout(retryTimer);
+          retryTimer = null;
+        }
+      };
+
       const tryConnect = () => {
-        this._log('info', 'Connecting to PyAutoGUI server at: %s', this.url);
+        // Clean up any existing timer
+        cleanup();
+
+        this._log('info', 'Connecting to PyAutoGUI server at: %s (attempt %d)', this.url, attempts + 1);
+
+        // Clean up any existing WebSocket connection
+        if (this.ws) {
+          this.ws.removeAllListeners();
+          if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+            this.ws.close();
+          }
+          this.ws = null;
+        }
 
         this._log('info', 'Creating new WebSocket instance');
         this.ws = new WebSocket(this.url);
@@ -47,6 +68,7 @@ class PyAutoGUIClient extends EventEmitter {
         this.ws.on('open', () => {
           this._log('info', 'WebSocket connection opened');
           this.connected = true;
+          cleanup();
           this.emit('connected');
           this.startKeepalive();
           resolve();
@@ -95,9 +117,14 @@ class PyAutoGUIClient extends EventEmitter {
               this.url,
               attempts
             );
-            setTimeout(tryConnect, retryDelay);
+            // Use setImmediate to break the call stack instead of setTimeout
+            retryTimer = setTimeout(() => {
+              // Use setImmediate to ensure we don't build up call stack
+              setImmediate(tryConnect);
+            }, retryDelay);
           } else {
             this._log('error', 'Max retries reached, giving up.');
+            cleanup();
             reject(
               new Error(
                 'Failed to connect to PyAutoGUI server after multiple attempts'

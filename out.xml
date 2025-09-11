@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="1" errors="0" skipped="0">
+  <testsuite name="testdriver/acceptance" tests="1" failures="1" errors="0" skipped="0">
+    <testcase classname="testdriver/acceptance" name="hover-text.yaml" time="10.485">
+      <failure message="Failed commands: exec"/>
+      <system-out><![CDATA[Starting debugger server...
+This is beta software!
+Join our Discord for help
+https://discord.com/invite/cWDFW8DzPm
+Working on /Users/ianjennings/Development/cli/testdriver/acceptance/hover-text.yaml
+initializing connection to TestDriver instance at 18.224.2.255...
+ready for connection...
+no recent sandbox found, creating a new one.
+creating new sandbox (can take up to 2 minutes)...
+double-checking sandbox availability
+exiting...
+running /Users/ianjennings/Development/cli/testdriver/lifecycle/postrun.yaml...
+Version mismatch detected!
+Running a test created with v5.1.1.
+The local testdriverai version is v6.0.28.
+
+> stop dashcam
+postrun.yaml:4:6 (exec)
+exec
+command='exec' code='dashcam -t '/Users/ianjennings/Development/cli/testdriver/lifecycle/postrun.yaml' -p' lang='pwsh'
+calling exec...
+dashcam -t '/Users/ianjennings/Development/cli/testdriver/lifecycle/postrun.yaml' -p
+To attempt automatic recovery, re-run with the --heal flag.
+reviewing test...
+Failed to summarize: Sandbox not initialized or client not connected
+exiting...]]></system-out>
+      <system-err><![CDATA[TestDriver instance at 18.224.2.255:8765 is not reachable
+Error detected, but recovery mode is not enabled.
+Error in postrun.yaml:
+
+   3     steps:
+   4       - prompt: stop dashcam
+   5         commands:
+   6 >>>       - command: exec
+   7             lang: pwsh
+   8             code: dashcam -t '${TD_THIS_FILE}' -p
+   9     
+
+Error: Sandbox not initialized or client not connected]]></system-err>
+    </testcase>
+  </testsuite>
+</testsuites>
