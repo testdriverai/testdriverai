@@ -28,7 +28,6 @@ jobs:
     strategy:
       matrix:
         test: ${{ fromJson(needs.gather.outputs.test_files) }}
-      max-parallel: 8
       fail-fast: false
     steps:
       - name: Checkout repository
@@ -36,13 +35,13 @@ jobs:
         with:
           fetch-depth: 0
       # only needed for `act`
-      # - name: Install AWS CLI
-      #   run: |
-      #     apt-get update
-      #     apt-get install curl unzip -y
-      #     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-      #     unzip awscliv2.zip
-      #     ./aws/install
+      - name: Install AWS CLI
+        run: |
+          apt-get update
+          apt-get install curl unzip -y
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -65,12 +64,8 @@ jobs:
           FORCE_COLOR: 3
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-2 
-          AMI_ID: ami-085f872ca0cd80fed 
-          INSTANCE_TYPE: c5.xlarge 
-          AWS_KEY_NAME: alex-rowe2 
-          AWS_SECURITY_GROUP_IDS: sg-02309153292e8f1ca 
-          AWS_IAM_INSTANCE_PROFILE: gh-auto-runner-role
+          AWS_LAUNCH_TEMPLATE_ID: lt-067e8bc85566dd5d6
+          AMI_ID: ami-085f872ca0cd80fed
       - name: Run TestDriver
         run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --ip="${{ steps.aws-setup.outputs.public-ip }}" --junit=out.xml
         env:

@@ -1,8 +1,15 @@
 const { WindowsSpawner } = require("./windows-spawner");
+const { createHostedSandbox } = require("./hosted-sandbox");
 const marky = require("marky");
 const { events } = require("../events");
 
-const createSandbox = (emitter, analytics, ip = null) => {
+const createSandbox = (emitter, analytics, ip = null, useHosted = false) => {
+  // If useHosted is true, return the hosted sandbox
+  if (useHosted) {
+    return createHostedSandbox(emitter, analytics);
+  }
+
+  // Otherwise, return the direct connection sandbox
   class Sandbox {
     constructor() {
       this.spawner = null;
@@ -187,7 +194,7 @@ Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([Sy
           if (out.stdout) {
             try {
               result = JSON.parse(out.stdout);
-            } catch (e) {
+            } catch {
               console.warn('Failed to parse mouse position:', out.stdout);
             }
           }
@@ -206,7 +213,7 @@ Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([Sy
           try {
             const parsed = JSON.parse(out.stdout);
             result = `${parsed.owner?.name} - ${parsed.title}`;
-          } catch (e) {
+          } catch {
             // If parsing fails, use the raw output
             result = out.stdout || '';
           }
@@ -253,8 +260,8 @@ Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([Sy
           let result = out;
           try {
             result = JSON.parse(out.stdout);
-          } catch (e) {
-            console.warn('Error parsing network output:', e);
+          } catch {
+            console.warn('Error parsing network output:', out.stderr || 'Unknown error');
             result = out.stdout || out.stderr || 'Unknown error';
           }
 
@@ -324,6 +331,15 @@ Add-Content -Path "C:\\Users\\testdriver\\Documents\\testdriver.log" -Value ([Sy
         emitter.emit(events.sandbox.connected);
         resolve(this);
       });
+    }
+
+    // Convert to JSON representation
+    toJSON() {
+      return {
+        ...this.spawner?.toJSON(),
+        type: "sandbox-direct",
+        instanceIp: this.instanceIp,
+      };
     }
   }
 

@@ -102,7 +102,9 @@ class TestDriverAgent extends EventEmitter2 {
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
     // Create sandbox instance with this agent's emitter, analytics, and IP
-    this.sandbox = createSandbox(this.emitter, this.analytics, this.instanceIp);
+    // Use hosted connection if --api flag is set OR if no IP is provided
+    const useHostedConnection = flags.api || !this.instanceIp;
+    this.sandbox = createSandbox(this.emitter, this.analytics, this.instanceIp, useHostedConnection);
 
     // Create system instance with emitter, sandbox and config
     this.system = createSystem(this.emitter, this.sandbox, this.config);
@@ -2016,45 +2018,85 @@ ${regression}
   }
 
   async connectToSandboxService() {
-    if (!this.instanceIp) {
-      return await this.dieOnFatal(
-        `No IP address provided. Please use the --ip flag to specify the TestDriver instance IP address.`,
-        true,
-      );
-    }
-
-    this.emitter.emit(
-      events.log.narration,
-      theme.dim(`initializing connection to TestDriver instance at ${this.instanceIp}...`),
-    );
+    const flags = this.cliArgs.options || {};
     
-    // Initialize the sandbox with the provided IP
-    let ableToBoot = await this.sandbox.boot();
+    if (this.instanceIp && !flags.api) {
+      // Direct IP connection
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim(`initializing connection to TestDriver instance at ${this.instanceIp}...`),
+      );
+      
+      // Initialize the sandbox with the provided IP
+      let ableToBoot = await this.sandbox.boot();
 
-    if (!ableToBoot) {
-      return await this.dieOnFatal(
-        `Unable to initialize TestDriver sandbox service.
+      if (!ableToBoot) {
+        return await this.dieOnFatal(
+          `Unable to initialize TestDriver sandbox service.
 Please check that the TestDriver instance at ${this.instanceIp} is running and accessible.`,
-        true,
-      );
-    }
+          true,
+        );
+      }
 
-    this.emitter.emit(events.log.narration, theme.dim(`ready for connection...`));
-    
-    // For direct connection, auth always succeeds
-    let ableToAuth = await this.sandbox.auth();
+      this.emitter.emit(events.log.narration, theme.dim(`ready for connection...`));
+      
+      // For direct connection, auth always succeeds
+      let ableToAuth = await this.sandbox.auth();
 
-    if (!ableToAuth) {
-      return await this.dieOnFatal(
-        `Unable to authorize sandbox service.`,
-        true,
+      if (!ableToAuth) {
+        return await this.dieOnFatal(
+          `Unable to authorize sandbox service.`,
+          true,
+        );
+      }
+    } else {
+      // Hosted connection
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim(`initializing connection to TestDriver hosted service...`),
       );
+
+      // Initialize the hosted sandbox connection
+      let ableToBoot = await this.sandbox.boot(this.config.TD_API_ROOT);
+
+      if (!ableToBoot) {
+        return await this.dieOnFatal(
+          `Unable to initialize TestDriver hosted connection.
+Please check your network connection and ensure TD_API_KEY is set.`,
+          true,
+        );
+      }
+
+      this.emitter.emit(events.log.narration, theme.dim(`ready for authentication...`));
+
+      if (!this.config.TD_API_KEY) {
+        return await this.dieOnFatal(
+          `No API key provided. Please set the TD_API_KEY environment variable.`,
+          true,
+        );
+      }
+
+      // For hosted connection, we need to authenticate with the API key
+      let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
+
+      if (!ableToAuth) {
+        return await this.dieOnFatal(
+          `Unable to authenticate with TestDriver hosted service.
+Please check your TD_API_KEY environment variable.`,
+          true,
+        );
+      }
     }
   }
 
   async connectToSandboxDirect(persist = false) {
-    this.emitter.emit(events.log.narration, theme.dim(`connecting to TestDriver instance at ${this.instanceIp}...`));
-    // Connect to the TestDriver instance at the provided IP
+    if (this.instanceIp) {
+      this.emitter.emit(events.log.narration, theme.dim(`connecting to TestDriver instance at ${this.instanceIp}...`));
+    } else {
+      this.emitter.emit(events.log.narration, theme.dim(`connecting to sandbox via hosted service...`));
+    }
+    
+    // Connect to the TestDriver instance (either direct IP or via hosted service)
     let instance = await this.sandbox.connect(null, persist);
     return instance;
   }

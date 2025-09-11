@@ -47,14 +47,7 @@ class WindowsSpawner {
     this.instanceId = `testdriver-${this.ip.replace(/\./g, '-')}`;
     
     console.log(`Connecting to TestDriver instance at ${this.ip}`);
-    
-    // Check if instance is reachable
-    const isReachable = await this.connectionManager.isInstanceReachable();
-    if (!isReachable) {
-      const error = new Error(`TestDriver instance at ${this.ip}:${this.wsPort} is not reachable`);
-      error.name = 'InvalidInstanceID.NotFound';
-      throw error;
-    }
+  
     
     console.log(`VNC available at: ${this.vncUrl}`);
     

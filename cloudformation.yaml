@@ -1,20 +1,52 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  Baseline artifacts (NO EC2 instance): Security Group, IAM Role/Profile, optional KeyPair,
-  and an EC2 Launch Template so you can spawn many instances programmatically. Writes handy IDs
-  into SSM Parameter Store for easy lookup in scripts or automation.
+  Baseline artifacts (NO EC2 instance): Creates a dedicated VPC with public subnet, Security Group, 
+  IAM Role/Profile, optional KeyPair, and an EC2 Launch Template so you can spawn many instances 
+  programmatically. Writes handy IDs into SSM Parameter Store for easy lookup in scripts or automation.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectTag
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - AllowedIngressCidr
+      - Label:
+          default: "Instance Configuration"
+        Parameters:
+          - InstanceType
+      - Label:
+          default: "Key Pair Configuration"
+        Parameters:
+          - CreateKeyPair
+          - ExistingKeyName
+    ParameterLabels:
+      ProjectTag:
+        default: "Project Tag"
+      InstanceType:
+        default: "Instance Type"
+      AllowedIngressCidr:
+        default: "Allowed Ingress CIDR"
+      CreateKeyPair:
+        default: "Create New Key Pair"
+      ExistingKeyName:
+        default: "Existing Key Name (only required if 'Create New Key Pair' is 'no')"
+
+Rules:
+  ValidateKeyPairConfiguration:
+    RuleCondition: !Equals [!Ref CreateKeyPair, 'no']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref ExistingKeyName, '']]
+        AssertDescription: "ExistingKeyName must be provided when CreateKeyPair is 'no'"
 
 Parameters:
   ProjectTag:
     Type: String
     Default: testdriver
-
-  VpcId:
-    Type: AWS::EC2::VPC::Id
-    Description: VPC for the security group.
-  DefaultSubnetId:
-    Type: AWS::EC2::Subnet::Id
-    Description: Default subnet used in the Launch Template (can be overridden at run-time).
 
   InstanceType:
     Type: String
@@ -44,17 +76,81 @@ Parameters:
   ExistingKeyName:
     Type: String
     Default: ''
+    Description: Name of existing EC2 Key Pair (only required when CreateKeyPair is 'no')
 
 Conditions:
   UseExistingKeyProvided: !Not [!Equals [!Ref ExistingKeyName, '']]
   CreateKey: !Equals [!Ref CreateKeyPair, 'yes']
 
 Resources:
+  # VPC for TestDriver
+  TestDriverVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - { Key: Name, Value: !Sub '${AWS::StackName}-vpc' }
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  # Public subnet for EC2 instances
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref TestDriverVpc
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - { Key: Name, Value: !Sub '${AWS::StackName}-public-subnet' }
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - { Key: Name, Value: !Sub '${AWS::StackName}-igw' }
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  # Attach Internet Gateway to VPC
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref TestDriverVpc
+      InternetGatewayId: !Ref InternetGateway
+
+  # Route table for public subnet
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref TestDriverVpc
+      Tags:
+        - { Key: Name, Value: !Sub '${AWS::StackName}-public-rt' }
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  # Route to Internet Gateway
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # Associate route table with public subnet
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: SG for QA desktop testing (RDP/HTTPS/NGINX/pyautogui + VNC)
-      VpcId: !Ref VpcId
+      VpcId: !Ref TestDriverVpc
       SecurityGroupIngress:
         - { IpProtocol: tcp, FromPort: 8765, ToPort: 8765, CidrIp: !Ref AllowedIngressCidr, Description: 'pyautogui-cli WebSockets' }
         - { IpProtocol: tcp, FromPort: 8443, ToPort: 8443, CidrIp: !Ref AllowedIngressCidr, Description: 'Custom 8443' }
@@ -106,11 +202,7 @@ Resources:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref InstanceProfile
-        NetworkInterfaces:
-          - DeviceIndex: 0
-            SubnetId: !Ref DefaultSubnetId
-            Groups: [!Ref SecurityGroup]
-            AssociatePublicIpAddress: true
+        SecurityGroupIds: [!Ref SecurityGroup]
         KeyName: !If
           - CreateKey
           - !Ref KeyPair
@@ -154,7 +246,27 @@ Resources:
       Type: String
       Value: !GetAtt LaunchTemplate.LatestVersionNumber
 
+  SsmParamVpc:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /testdriver/infra/vpc-id
+      Type: String
+      Value: !Ref TestDriverVpc
+
+  SsmParamSubnet:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /testdriver/infra/subnet-id
+      Type: String
+      Value: !Ref PublicSubnet
+
 Outputs:
+  VpcId:
+    Value: !Ref TestDriverVpc
+    Description: VPC ID created for TestDriver
+  SubnetId:
+    Value: !Ref PublicSubnet
+    Description: Public subnet ID for TestDriver instances
   SecurityGroupId:
     Value: !Ref SecurityGroup
     Description: Security Group for QA desktop testing

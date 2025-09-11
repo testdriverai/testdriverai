@@ -60,6 +60,10 @@ function createCommandDefinitions(agent) {
           description: "Generate JUnit XML test report to specified file",
           default: false,
         }),
+        api: Flags.boolean({
+          description: "Use hosted sandbox connection instead of direct IP connection",
+          default: false,
+        }),
       },
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file
@@ -127,6 +131,10 @@ function createCommandDefinitions(agent) {
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
+        }),
+        api: Flags.boolean({
+          description: "Use hosted sandbox connection instead of direct IP connection",
+          default: false,
         }),
       },
       handler: async () => {

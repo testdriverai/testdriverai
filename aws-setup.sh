@@ -4,10 +4,8 @@ set -euo pipefail
 # --- Config (reads from env) ---
 : "${AWS_REGION:?Set AWS_REGION}"
 : "${AMI_ID:?Set AMI_ID (TestDriver Ami)}"
-: "${INSTANCE_TYPE:=c5.xlarge}"
-: "${AWS_KEY_NAME:?Set AWS_KEY_NAME}"
-: "${AWS_SECURITY_GROUP_IDS:?Set AWS_SECURITY_GROUP_IDS (comma-separated)}"
-: "${AWS_IAM_INSTANCE_PROFILE:?Set AWS_IAM_INSTANCE_PROFILE (name)}"
+: "${AWS_LAUNCH_TEMPLATE_ID:?Set AWS_LAUNCH_TEMPLATE_ID}"
+: "${AWS_LAUNCH_TEMPLATE_VERSION:=\$Latest}"
 : "${AWS_TAG_PREFIX:=td}"
 : "${RUNNER_CLASS_ID:=default}"
 
@@ -20,10 +18,7 @@ echo "Launching AWS Instance..."
 RUN_JSON=$(aws ec2 run-instances \
   --region "$AWS_REGION" \
   --image-id "$AMI_ID" \
-  --instance-type "$INSTANCE_TYPE" \
-  --key-name "$AWS_KEY_NAME" \
-  --iam-instance-profile Name="$AWS_IAM_INSTANCE_PROFILE" \
-  --security-group-ids $(tr ',' ' ' <<<"$AWS_SECURITY_GROUP_IDS") \
+  --launch-template "LaunchTemplateId=$AWS_LAUNCH_TEMPLATE_ID,Version=$AWS_LAUNCH_TEMPLATE_VERSION" \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}},{Key=Class,Value=${RUNNER_CLASS_ID}}]" \
   --output json)
 
@@ -33,8 +28,8 @@ echo "Launched: $INSTANCE_ID"
 echo "Instance details:"
 echo "  Region: $AWS_REGION"
 echo "  AMI ID: $AMI_ID"
-echo "  Instance Type: $INSTANCE_TYPE"
-echo "  IAM Instance Profile: $AWS_IAM_INSTANCE_PROFILE"
+echo "  Launch Template ID: $AWS_LAUNCH_TEMPLATE_ID"
+echo "  Launch Template Version: $AWS_LAUNCH_TEMPLATE_VERSION"
 
 echo "Waiting for instance to be running..."
 

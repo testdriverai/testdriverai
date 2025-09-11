@@ -33,7 +33,6 @@ async function openBrowser(url) {
 class BaseCommand extends Command {
   constructor(argv, config) {
     super(argv, config);
-    this.messageQueue = []; // Queue messages until sandbox is connected
     this.sandboxConnected = false;
   }
 
@@ -52,12 +51,17 @@ class BaseCommand extends Command {
     if (this.sandboxConnected && this.agent.sandbox && this.agent.sandbox.spawner && this.agent.sandbox.spawner.getClient()) {
       this.agent.sandbox.send(messageData);
     } else {
-      // Otherwise, queue the message for later
-      this.messageQueue.push(messageData);
+      console.log("Sandbox not connected yet, missing message");
+      console.log(messageData);
     }
   }
 
   flushMessageQueue() {
+
+    console.log(`Flushing ${this.messageQueue.length} queued messages to sandbox...`);
+
+    console.log(this.messageQueue);
+
     // Send all queued messages
     while (this.messageQueue.length > 0) {
       const message = this.messageQueue.shift();
