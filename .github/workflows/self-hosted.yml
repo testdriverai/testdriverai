@@ -35,13 +35,13 @@ jobs:
         with:
           fetch-depth: 0
       # only needed for `act`
-      - name: Install AWS CLI
-        run: |
-          apt-get update
-          apt-get install curl unzip -y
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
+      # - name: Install AWS CLI
+      #   run: |
+      #     apt-get update
+      #     apt-get install curl unzip -y
+      #     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      #     unzip awscliv2.zip
+      #     ./aws/install
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
