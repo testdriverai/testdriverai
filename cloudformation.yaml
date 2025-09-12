@@ -8,6 +8,10 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
+          default: "Notification Configuration"
+        Parameters:
+          - NotificationEmail
+      - Label:
           default: "Project Configuration"
         Parameters:
           - ProjectTag
@@ -35,6 +39,8 @@ Metadata:
         default: "Create New Key Pair"
       ExistingKeyName:
         default: "Existing Key Name (only required if 'Create New Key Pair' is 'no')"
+      NotificationEmail:
+        default: "Notification Email (optional)"
 
 Rules:
   ValidateKeyPairConfiguration:
@@ -44,6 +50,11 @@ Rules:
         AssertDescription: "ExistingKeyName must be provided when CreateKeyPair is 'no'"
 
 Parameters:
+  NotificationEmail:
+    Type: String
+    Default: ''
+    Description: Email address to receive deployment completion notifications (optional)
+
   ProjectTag:
     Type: String
     Default: testdriver
@@ -81,6 +92,7 @@ Parameters:
 Conditions:
   UseExistingKeyProvided: !Not [!Equals [!Ref ExistingKeyName, '']]
   CreateKey: !Equals [!Ref CreateKeyPair, 'yes']
+  SendNotification: !Not [!Equals [!Ref NotificationEmail, '']]
 
 Resources:
   # VPC for TestDriver
@@ -195,74 +207,177 @@ Resources:
       KeyType: rsa
 
   LaunchTemplate:
-  Type: AWS::EC2::LaunchTemplate
-  Properties:
-    LaunchTemplateName: !Sub '${AWS::StackName}-lt'
-    LaunchTemplateData:
-      InstanceType: !Ref InstanceType
-      IamInstanceProfile:
-        Name: !Ref InstanceProfile
-      # Lock SG + Subnet to the same VPC
-      NetworkInterfaces:
-        - DeviceIndex: 0
-          SubnetId: !Ref PublicSubnet
-          Groups: [ !Ref SecurityGroup ]
-          AssociatePublicIpAddress: true
-      # If you prefer the old spot, remove SecurityGroupIds above and keep this:
-      # SecurityGroupIds: [ !Ref SecurityGroup ]
-      KeyName: !If
-        - CreateKey
-        - !Ref KeyPair
-        - !If
-          - UseExistingKeyProvided
-          - !Ref ExistingKeyName
-          - !Ref AWS::NoValue
-      TagSpecifications:
-        - ResourceType: instance
-          Tags: [ { Key: Project, Value: !Ref ProjectTag } ]
-        - ResourceType: volume
-          Tags: [ { Key: Project, Value: !Ref ProjectTag } ]
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub '${AWS::StackName}-lt'
+      LaunchTemplateData:
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        # Lock SG + Subnet to the same VPC
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            SubnetId: !Ref PublicSubnet
+            Groups: [ !Ref SecurityGroup ]
+            AssociatePublicIpAddress: true
+        KeyName: !If
+          - CreateKey
+          - !Ref KeyPair
+          - !If
+            - UseExistingKeyProvided
+            - !Ref ExistingKeyName
+            - !Ref AWS::NoValue
+        TagSpecifications:
+          - ResourceType: instance
+            Tags: [ { Key: Project, Value: !Ref ProjectTag } ]
+          - ResourceType: volume
+            Tags: [ { Key: Project, Value: !Ref ProjectTag } ]
 
+  # SNS Topic for deployment notifications
+  DeploymentNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: SendNotification
+    Properties:
+      TopicName: !Sub '${AWS::StackName}-deployment-notifications'
+      DisplayName: !Sub '${AWS::StackName} Deployment Notifications'
+      Tags:
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  # SNS Subscription for email notifications
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: SendNotification
+    Properties:
+      Protocol: email
+      TopicArn: !Ref DeploymentNotificationTopic
+      Endpoint: !Ref NotificationEmail
+
+  # Custom resource to send completion notification
+  DeploymentCompleteNotification:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: SendNotification
+    Properties:
+      ServiceToken: !GetAtt NotificationLambda.Arn
+      StackName: !Ref AWS::StackName
+      TopicArn: !Ref DeploymentNotificationTopic
+    DependsOn:
+      - SsmParamSg
+      - SsmParamIp
+      - SsmParamLt
+      - SsmParamLtLatest
+      - SsmParamVpc
+      - SsmParamSubnet
+
+  # Lambda function to send the notification
+  NotificationLambda:
+    Type: AWS::Lambda::Function
+    Condition: SendNotification
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-deployment-notifier'
+      Runtime: python3.11
+      Handler: index.lambda_handler
+      Role: !GetAtt NotificationLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import cfnresponse
+          
+          def lambda_handler(event, context):
+              try:
+                  if event['RequestType'] == 'Create':
+                      sns = boto3.client('sns')
+                      stack_name = event['ResourceProperties']['StackName']
+                      topic_arn = event['ResourceProperties']['TopicArn']
+                      
+                      message = f"""
+          TestDriver Infrastructure Deployment Complete!
+          
+          Stack Name: {stack_name}
+          Status: CREATE_COMPLETE
+          
+          Your TestDriver infrastructure is now ready to use.
+          Check the CloudFormation outputs for resource IDs and configuration details.
+                      """
+                      
+                      sns.publish(
+                          TopicArn=topic_arn,
+                          Subject=f'TestDriver Stack {stack_name} - Deployment Complete',
+                          Message=message
+                      )
+                  
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+              except Exception as e:
+                  print(f"Error: {e}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
+      Tags:
+        - { Key: Project, Value: !Ref ProjectTag }
+
+  # IAM Role for the notification Lambda
+  NotificationLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: SendNotification
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SNSPublishPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref DeploymentNotificationTopic
+      Tags:
+        - { Key: Project, Value: !Ref ProjectTag }
 
   SsmParamSg:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /testdriver/infra/security-group-id
+      Name: !Sub '/testdriver/infra/${AWS::StackName}/security-group-id'
       Type: String
       Value: !Ref SecurityGroup
 
   SsmParamIp:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /testdriver/infra/instance-profile-name
+      Name: !Sub '/testdriver/infra/${AWS::StackName}/instance-profile-name'
       Type: String
       Value: !Ref InstanceProfile
 
   SsmParamLt:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /testdriver/infra/launch-template-id
+      Name: !Sub '/testdriver/infra/${AWS::StackName}/launch-template-id'
       Type: String
       Value: !Ref LaunchTemplate
 
   SsmParamLtLatest:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /testdriver/infra/launch-template-latest-version
+      Name: !Sub '/testdriver/infra/${AWS::StackName}/launch-template-latest-version'
       Type: String
       Value: !GetAtt LaunchTemplate.LatestVersionNumber
 
   SsmParamVpc:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /testdriver/infra/vpc-id
+      Name: !Sub '/testdriver/infra/${AWS::StackName}/testdriver-vpc-id'
       Type: String
       Value: !Ref TestDriverVpc
 
   SsmParamSubnet:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: /testdriver/infra/subnet-id
+      Name: !Sub '/testdriver/infra/${AWS::StackName}/testdriver-public-subnet-id'
       Type: String
       Value: !Ref PublicSubnet
 
@@ -290,5 +405,5 @@ Outputs:
     Value: !Sub '/ec2/keypair/${KeyPair.KeyPairId}'
     Description: SSM parameter that stores the generated private key
   SsmNamespaceUsed:
-    Value: /testdriver/infra
+    Value: !Sub '/testdriver/infra/${AWS::StackName}'
     Description: Prefix where IDs are stored for discovery
