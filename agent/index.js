@@ -1712,8 +1712,22 @@ ${regression}
       );
     }
 
-    // Only attempt to connect to existing sandbox if not in CI mode and not creating new
-    if (this.sandboxId && !this.config.CI && !createNew) {
+    if (true) {
+      
+      let instance = await this.sandbox.send({
+        type: "direct",
+        resolution: this.config.TD_RESOLUTION,
+        ci: this.config.CI,
+        ip: '3.15.159.245'
+      });
+      
+      await this.renderSandbox(instance.instance, headless);
+      await this.newSession();
+      
+      return;
+
+    } else if (this.sandboxId && !this.config.CI && !createNew) {
+      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
         events.log.narration,
