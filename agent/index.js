@@ -70,6 +70,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.sandboxId = flags["sandbox-id"] || null;
     this.sandboxAmi = flags["sandbox-ami"] || null;
     this.sandboxInstance = flags["sandbox-instance"] || null;
+    this.ip = flags.ip || null;
     this.workingDir = flags.workingDir || process.cwd();
 
     // Resolve thisFile to absolute path with proper extension
@@ -1699,20 +1700,7 @@ ${regression}
     const recentId = createNew ? null : this.getRecentSandboxId();
 
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
-    if (!createNew && recentId) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`using recent sandbox: ${recentId}`),
-      );
-      this.sandboxId = recentId;
-    } else if (!createNew) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`no recent sandbox found, creating a new one.`),
-      );
-    }
-
-    if (true) {
+    if (this.ip) {
       
       let instance = await this.sandbox.send({
         type: "direct",
@@ -1726,7 +1714,18 @@ ${regression}
       
       return;
 
-    } else if (this.sandboxId && !this.config.CI && !createNew) {
+    } else if (!createNew && recentId) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim(`using recent sandbox: ${recentId}`),
+      );
+      this.sandboxId = recentId;
+    } else if (!createNew) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim(`no recent sandbox found, creating a new one.`),
+      );
+    } else if (this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(

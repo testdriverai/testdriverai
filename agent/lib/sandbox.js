@@ -77,8 +77,8 @@ const createSandbox = (emitter, analytics) => {
     }
 
     // connect to non-sandbox instance
-    async direct(ip = "3.15.159.245") {
-      
+    async direct(ip) {
+
       let reply = await this.send({
         type: "direct"
       });
