@@ -78,7 +78,7 @@ Parameters:
   AllowedIngressCidr:
     Type: String
     Default: 0.0.0.0/0
-    Description: CIDR allowed to access inbound ports (0.0.0.0/0 means "anyone", we recommend tighening this in production).
+    Description: CIDR allowed to access inbound ports (0.0.0.0/0 means "anyone", we recommend tightening this in production).
 
   CreateKeyPair:
     Type: String
