@@ -95,7 +95,7 @@ const createSDK = (emitter, config, sessionInstance) => {
         return token;
       } catch (error) {
         outputError(error);
-        return;
+        throw error; // Re-throw the error so calling code can handle it properly
       }
     }
   };
@@ -194,6 +194,7 @@ const createSDK = (emitter, config, sessionInstance) => {
       return value;
     } catch (error) {
       outputError(error);
+      throw error; // Re-throw the error so calling code can handle it properly
     }
   };
 
