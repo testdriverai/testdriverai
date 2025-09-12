@@ -1711,6 +1711,7 @@ ${regression}
       
       await this.renderSandbox(instance.instance, headless);
       await this.newSession();
+      await this.runLifecycle("provision");
       
       return;
 
