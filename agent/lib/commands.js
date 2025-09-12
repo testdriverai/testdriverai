@@ -722,6 +722,8 @@ const createCommands = (
           timeout,
         });
 
+        console.log('pwsh result', result)
+
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,

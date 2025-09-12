@@ -1660,109 +1660,118 @@ ${regression}
     }
   }
   async buildEnv(options = {}) {
-    // If instance already exists, do not build environment again
-    if (this.instance) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim("sandbox instance already exists, skipping launch."),
-      );
-      return;
-    }
 
-    let { headless = false, heal, new: createNew = false } = options;
 
-    // If CI environment variable is true, always create a new sandbox
-    if (this.config.CI) {
-      createNew = true;
-      this.emitter.emit(
-        events.log.log,
-        theme.dim("CI environment detected, will create a new sandbox"),
-      );
-    }
+    if (false) {
 
-    if (heal) this.healMode = heal;
+      // If instance already exists, do not build environment again
+      if (this.instance) {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim("sandbox instance already exists, skipping launch."),
+        );
+        return;
+      }
 
-    // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
-    if (createNew) {
-      this.clearRecentSandboxId();
-      if (!this.config.CI) {
+      let { headless = false, heal, new: createNew = false } = options;
+
+      // If CI environment variable is true, always create a new sandbox
+      if (this.config.CI) {
+        createNew = true;
         this.emitter.emit(
           events.log.log,
-          theme.dim("--`new` flag detected, will create a new sandbox"),
+          theme.dim("CI environment detected, will create a new sandbox"),
         );
       }
-    }
 
-    // order is important!
-    await this.connectToSandboxService();
+      if (heal) this.healMode = heal;
 
-    const recentId = createNew ? null : this.getRecentSandboxId();
-
-    // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
-    if (!createNew && recentId) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`using recent sandbox: ${recentId}`),
-      );
-      this.sandboxId = recentId;
-    } else if (!createNew) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`no recent sandbox found, creating a new one.`),
-      );
-    }
-
-    // Only attempt to connect to existing sandbox if not in CI mode and not creating new
-    if (this.sandboxId && !this.config.CI && !createNew) {
-      // Attempt to connect to known instance
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`connecting to sandbox ${this.sandboxId}...`),
-      );
-
-      try {
-        let instance = await this.connectToSandboxDirect(
-          this.sandboxId,
-          true, // always persist by default
-        );
-
-        this.instance = instance;
-
-        await this.renderSandbox(instance, headless);
-        await this.newSession();
-        return;
-      } catch (error) {
-        // But if it fails because the machine 404s, fall-through to `createNewSandbox()`
-        if (error?.name !== "InvalidInstanceID.NotFound") {
-          throw error;
+      // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
+      if (createNew) {
+        this.clearRecentSandboxId();
+        if (!this.config.CI) {
+          this.emitter.emit(
+            events.log.log,
+            theme.dim("--`new` flag detected, will create a new sandbox"),
+          );
         }
       }
-    }
 
-    this.emitter.emit(
-      events.log.narration,
-      theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
-    );
-    // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-    // to see if that fixes the issue.
-    let newSandbox = await this.createNewSandbox().catch(() => {
+      // order is important!
+      await this.connectToSandboxService();
+
+      const recentId = createNew ? null : this.getRecentSandboxId();
+
+      // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
+      if (!createNew && recentId) {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`using recent sandbox: ${recentId}`),
+        );
+        this.sandboxId = recentId;
+      } else if (!createNew) {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`no recent sandbox found, creating a new one.`),
+        );
+      }
+
+      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
+      if (this.sandboxId && !this.config.CI && !createNew) {
+        // Attempt to connect to known instance
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`connecting to sandbox ${this.sandboxId}...`),
+        );
+
+        try {
+          let instance = await this.connectToSandboxDirect(
+            this.sandboxId,
+            true, // always persist by default
+          );
+
+          this.instance = instance;
+
+          await this.renderSandbox(instance, headless);
+          await this.newSession();
+          return;
+        } catch (error) {
+          // But if it fails because the machine 404s, fall-through to `createNewSandbox()`
+          if (error?.name !== "InvalidInstanceID.NotFound") {
+            throw error;
+          }
+        }
+      }
+
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`double-checking sandbox availability`),
+        theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
       );
+      // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
+      // to see if that fixes the issue.
+      let newSandbox = await this.createNewSandbox().catch(async () => {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`double-checking sandbox availability`),
+        );
 
-      return this.createNewSandbox();
-    });
+        return await this.createNewSandbox();
+      });
 
-    this.saveLastSandboxId(newSandbox.sandbox.instanceId);
-    let instance = await this.connectToSandboxDirect(
-      newSandbox.sandbox.instanceId,
-      true, // always persist by default
-    );
-    this.instance = instance;
-    await this.renderSandbox(instance, headless);
-    await this.newSession();
-    await this.runLifecycle("provision");
+      this.saveLastSandboxId(newSandbox.sandbox.instanceId);
+      let instance = await this.connectToSandboxDirect(
+        newSandbox.sandbox.instanceId,
+        true, // always persist by default
+      );
+      this.instance = instance;
+      await this.renderSandbox(instance, headless);
+      await this.newSession();
+      await this.runLifecycle("provision");
+    } else {
+      let ip = 'ws://3.15.159.245:8765';
+      await this.sandbox.boot(ip)
+    }
+
   }
 
   async start() {
@@ -1910,7 +1919,7 @@ ${regression}
 
     if (!ableToBoot) {
       return await this.dieOnFatal(
-        `Unable to connect to TestDriver sandbox service at ${this.config.TD_API_ROOT}.
+        `Unable to connect to TestDriver Hosted Runners at ${this.config.TD_API_ROOT}.
 Please check your network connection, TD_API_KEY, or the service status.`,
         true,
       );
