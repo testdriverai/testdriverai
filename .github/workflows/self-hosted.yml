@@ -64,6 +64,7 @@ jobs:
           FORCE_COLOR: 3
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
           AWS_LAUNCH_TEMPLATE_ID: lt-067e8bc85566dd5d6
           AMI_ID: ami-085f872ca0cd80fed
       - name: Run TestDriver
