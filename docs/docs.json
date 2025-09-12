@@ -50,7 +50,8 @@
               }
             ]
           },
-          "/getting-started/vscode"
+          "/getting-started/vscode",
+          "/getting-started/self-hosting"
         ]
       },
       {
