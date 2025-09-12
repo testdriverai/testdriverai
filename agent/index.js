@@ -1706,7 +1706,7 @@ ${regression}
         type: "direct",
         resolution: this.config.TD_RESOLUTION,
         ci: this.config.CI,
-        ip: '3.15.159.245'
+        ip: this.ip
       });
       
       await this.renderSandbox(instance.instance, headless);

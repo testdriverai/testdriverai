@@ -63,6 +63,7 @@ Parameters:
     Type: String
     Default: c5.xlarge
     AllowedValues:
+
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge

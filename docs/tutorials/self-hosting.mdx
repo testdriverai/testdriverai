@@ -1,15 +1,294 @@
 
-# Recommended Security
-https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws
+---
+title: "Self-Hosting TestDriver"
+sidebarTitle: "Self-Hosting"
+description: "Complete guide to self-hosting TestDriver instances on AWS"
+icon: "server"
+---
 
-# aws auth is up to you, make sure you do it
+## Quick Start (TL;DR)
 
+1. **Copy the workflow file**: Use `.github/workflows/self-hosted.yml` as your template
+2. **Run CloudFormation**: Deploy our `cloudformation.yaml` to provision infrastructure
+3. **Setup instances**: Use `aws-setup.sh` with your launch template ID
+4. **Configure GitHub Actions**: Add AWS credentials to your repository secrets
+
+## Overview
+
+Self-hosting TestDriver gives you complete control over your test execution environment. You'll provision EC2 instances on AWS using our pre-configured AMI and infrastructure templates.
+
+<Warning>
+  You must use our TestDriver AMI for proper functionality. Contact your account manager to get access to the shared AMI.
+</Warning>
+
+## Prerequisites
+
+- AWS account with appropriate permissions
+- AWS CLI installed and configured
+- Access to TestDriver's shared AMI (Enterprise customers)
+- GitHub repository for your tests
+
+## Step 1: Infrastructure Setup
+
+### Deploy CloudFormation Stack
+
+Our `cloudformation.yaml` template creates:
+- Dedicated VPC with public subnet
+- Security group with proper port access
+- IAM roles and instance profiles
+- EC2 launch template for programmatic instance creation
+
+```bash
+# Deploy the CloudFormation stack
+aws cloudformation deploy \
+  --template-file cloudformation.yaml \
+  --stack-name testdriver-infrastructure \
+  --parameter-overrides \
+    ProjectTag=testdriver \
+    AllowedIngressCidr=0.0.0.0/0 \
+    InstanceType=t3.medium \
+    CreateKeyPair=yes \
+  --capabilities CAPABILITY_IAM
 ```
- act --container-architecture=linux/amd64 -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-22.04 --secret-file .env -W .github/workflows/self-hosted.yml
- ```
 
-```sh
-# Override the Launch Template
-aws ec2 run-instances \
-  --launch-template LaunchTemplateId=lt-xxxxxxxxx,Version=1,Overrides='[{ImageId=ami-0abcdef1234567890}]'
+<Note>
+  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to lock down access to your VPC.
+</Note>
+
+### Get Launch Template ID
+
+After CloudFormation completes, find the launch template ID in the stack outputs:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name testdriver-infrastructure \
+  --query 'Stacks[0].Outputs[?OutputKey==`LaunchTemplateId`].OutputValue' \
+  --output text
+```
+
+Save this ID - you'll need it for the next step.
+
+## Step 2: Instance Management
+
+### Using aws-setup.sh
+
+Our `aws-setup.sh` script handles the complete instance lifecycle:
+- Launches instances using your launch template
+- Waits for proper initialization
+- Returns instance details for CLI usage
+- Handles cleanup and termination
+
+```bash
+# Launch an instance
+export AWS_REGION=us-east-2
+export AMI_ID=ami-085f872ca0cd80fed  # Your TestDriver AMI
+export AWS_LAUNCH_TEMPLATE_ID=lt-07c53ce8349b958d1  # From CloudFormation output
+
+./aws-setup.sh
+```
+
+The script outputs:
+```
+PUBLIC_IP=1.2.3.4
+INSTANCE_ID=i-1234567890abcdef0
+AWS_REGION=us-east-2
+```
+
+## Step 3: GitHub Actions Integration
+
+### Example Workflow
+
+Our `.github/workflows/self-hosted.yml` demonstrates the complete workflow:
+
+```yaml
+name: TestDriver Self-Hosted
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup AWS Instance
+        id: aws-setup
+        run: |
+          OUTPUT=$(./aws-setup.sh | tee /dev/stderr)
+          PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
+          INSTANCE_ID=$(echo "$OUTPUT" | grep "INSTANCE_ID=" | cut -d'=' -f2)
+          echo "public-ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "instance-id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+          AWS_LAUNCH_TEMPLATE_ID: ${{ secrets.AWS_LAUNCH_TEMPLATE_ID }}
+          AMI_ID: ${{ secrets.AMI_ID }}
+          
+      - name: Run TestDriver
+        run: |
+          node bin/testdriverai.js run your-test.yaml \
+            --ip="${{ steps.aws-setup.outputs.public-ip }}" \
+            --junit=results.xml
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          
+      - name: Shutdown AWS Instance
+        if: always()
+        run: |
+          aws ec2 terminate-instances \
+            --region us-east-2 \
+            --instance-ids ${{ steps.aws-setup.outputs.instance-id }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+```
+
+### Required Secrets
+
+Configure these secrets in your GitHub repository:
+
+| Secret | Description | Example |
+|--------|-------------|---------|
+| `AWS_ACCESS_KEY_ID` | AWS access key | `AKIAIOSFODNN7EXAMPLE` |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
+| `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1` |
+| `AMI_ID` | TestDriver AMI ID | `ami-085f872ca0cd80fed` |
+| `TD_API_KEY` | TestDriver API key | Your API key from dashboard |
+
+## Step 4: Running Tests
+
+### CLI Usage
+
+Once you have an instance IP, run tests directly:
+
+```bash
+# Basic test execution
+npx testdriverai run test.yaml --ip=1.2.3.4
+
+# With custom outputs
+npx testdriverai run test.yaml --ip=1.2.3.4 --junit=results.xml
+```
+
+### TestDriver Configuration
+
+The CLI only needs the instance IP address. All other configuration (AMI setup, networking, etc.) is handled by the infrastructure.
+
+## AMI Customization
+
+### Using the Base AMI
+
+Our AMI comes pre-configured with:
+- Windows Server with desktop environment
+- Required TestDriver dependencies
+- Optimized settings for test execution
+
+### Modifying the AMI
+
+You can customize the AMI for your specific needs:
+
+1. **Launch an instance** from our base AMI
+2. **Make your changes** (install software, configure settings)
+3. **Create a new AMI** from your modified instance
+4. **Update your workflow** to use the new AMI ID
+
+### Amazon Image Builder
+
+For automated AMI builds, use [Amazon EC2 Image Builder](https://aws.amazon.com/image-builder/):
+
+```yaml
+# Example Image Builder pipeline
+Components:
+  - Name: testdriver-base
+    Version: 1.0.0
+    Platform: Windows
+    Type: BUILD
+    Data: |
+      name: TestDriver Custom Setup
+      description: Custom TestDriver AMI with additional software
+      schemaVersion: 1.0
+      phases:
+        - name: build
+          steps:
+            - name: InstallSoftware
+              action: ExecutePowerShell
+              inputs:
+                commands:
+                  - "# Your custom installation commands here"
+```
+
+## Security Considerations
+
+### Network Security
+
+1. **Restrict CIDR blocks**: Only allow access from your known IP ranges
+2. **Use VPC endpoints**: For private communication with AWS services
+3. **Enable VPC Flow Logs**: For network monitoring and debugging
+
+### AWS Authentication
+
+Use [OIDC for GitHub Actions](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect) instead of long-term credentials:
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - name: Configure AWS credentials
+    uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole
+      aws-region: us-east-2
+```
+
+### Instance Security
+
+- **Terminate instances** immediately after use
+- **Monitor costs** with AWS billing alerts
+- **Use least-privilege IAM roles** for instance profiles
+- **Enable CloudTrail** for audit logging
+
+## Troubleshooting
+
+### Common Issues
+
+**Instance not responding:**
+- Check security group rules allow necessary ports
+- Verify instance has passed all status checks
+- Ensure AMI is compatible with selected instance type
+
+**Connection timeouts:**
+- Verify network connectivity from runner to instance
+- Check VPC routing and internet gateway configuration
+- Confirm instance is in correct subnet
+
+**AWS CLI errors:**
+- Validate AWS credentials and permissions
+- Check AWS service quotas and limits
+- Verify region consistency across all resources
+
+### Getting Help
+
+For enterprise customers:
+- Contact your account manager for AMI access issues
+- Use support channels for infrastructure questions
+- Check the TestDriver documentation for CLI usage
+
+## Cost Optimization
+
+### Instance Management
+- **Auto-terminate** instances after tests complete
+- **Use spot instances** for cost savings (if compatible with your workflow)
+- **Right-size instances** based on test requirements
+- **Schedule tests** during off-peak hours for better pricing
+
+### Monitoring
+```bash
+# Set up billing alerts
+aws budgets create-budget --account-id 123456789012 --budget file://budget.json
 ```
