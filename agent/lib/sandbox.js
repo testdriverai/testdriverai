@@ -76,21 +76,6 @@ const createSandbox = (emitter, analytics) => {
       return reply.sandbox;
     }
 
-    // connect to non-sandbox instance
-    async direct(ip) {
-
-      let reply = await this.send({
-        type: "direct"
-      });
-
-      if (reply.success) {
-        this.instanceSocketConnected = true;
-        emitter.emit(events.sandbox.connected);
-      }
-
-      return reply.sandbox;
-    }
-
     async boot(apiRoot) {
       return new Promise((resolve, reject) => {
         this.socket = new WebSocket(apiRoot.replace("https://", "wss://"));
