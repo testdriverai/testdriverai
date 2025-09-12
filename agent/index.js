@@ -1813,7 +1813,7 @@ ${regression}
       }
 
       // if the directory for thisFile doesn't exist, create it
-      if (this.cliArgs.command !== "sandbox") {
+      if (this.cliArgs.command !== "sandbox" && this.cliArgs.command !== "generate") {
         const dir = path.dirname(this.thisFile);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
@@ -1838,7 +1838,7 @@ ${regression}
         await this.sdk.auth();
       }
 
-      if (this.cliArgs.command !== "sandbox") {
+      if (this.cliArgs.command !== "sandbox" && this.cliArgs.command !== "generate") {
         this.emitter.emit(
           events.log.log,
           theme.dim(`Working on ${this.thisFile}`),
@@ -2140,7 +2140,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
 
     // Move environment setup and special handling here
-    if (["edit", "run"].includes(commandName)) {
+    if (["edit", "run", "generate"].includes(commandName)) {
       await this.buildEnv(options);
     }
 

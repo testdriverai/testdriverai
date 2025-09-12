@@ -178,7 +178,7 @@ class BaseCommand extends Command {
     // Prepare CLI args for the agent with all derived options
     const cliArgs = {
       command: this.id,
-      args: [filePath], // Pass the resolved file path as the first argument
+      args: filePath ? [filePath] : [], // Only pass file path if it exists
       options: {
         ...flags,
         resultFile:

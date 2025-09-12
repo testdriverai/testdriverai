@@ -196,6 +196,54 @@ function createCommandDefinitions(agent) {
         console.log(`TestDriver.ai v${packageJson.version}`);
       },
     },
+
+    generate: {
+      description: "Generate test files based on current screen state",
+      args: {
+        type: Args.string({
+          description: "Type of test to generate (e.g., 'acceptance', 'regression', 'smoke')",
+          required: false,
+          default: "acceptance",
+        }),
+      },
+      flags: {
+        count: Flags.integer({
+          description: "Number of test files to generate",
+          default: 3,
+        }),
+        base: Flags.string({
+          description: "Base YAML file to run before generating tests",
+        }),
+        "skip-yaml": Flags.boolean({
+          description: "Skip running the base YAML file",
+          default: false,
+        }),
+        headless: Flags.boolean({
+          description: "Run in headless mode (no GUI)",
+          default: false,
+        }),
+        new: Flags.boolean({
+          description:
+            "Create a new sandbox instead of reconnecting to an existing one",
+          default: false,
+        }),
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
+        }),
+      },
+      handler: async (args, flags) => {
+        // Call the generate method with the provided arguments
+        await agent.generate(
+          args.type || "acceptance",
+          flags.count || 3,
+          flags.base,
+          flags["skip-yaml"] || false
+        );
+      },
+    },
   };
 }
 
