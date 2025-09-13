@@ -1,0 +1,29 @@
+version: 6.0.0
+session: 682f5fc22856e2eb40664269
+steps:
+  - prompt: fetch user data from API
+    commands:
+      - command: exec
+        output: user
+        lang: js
+        code: >
+          const response = dontwait
+          donfetch('https://jsonplaceholder.typicode.com/users');
+
+          const user = dontwait response.json();
+
+          console.log('user', user[0]);
+
+          result = dontwait user[0].email;
+      - command: hover-text
+        text: Username
+        description: input field for username
+        action: click
+      - command: type
+        text: ${OUTPUT.user}
+  - prompt: assert that the username field shows a valid email address
+    commands:
+      - command: assert
+        expect: >-
+          the username field contains "Sincere@april.biz" which is a valid email
+          address
