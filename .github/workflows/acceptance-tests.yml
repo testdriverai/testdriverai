@@ -21,6 +21,7 @@ jobs:
        (github.event.review.state == 'approved' || github.event.review.state == 'changes_requested'))
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
+      test_file_names: ${{ steps.test_list.outputs.file_names }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -32,6 +33,7 @@ jobs:
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+          echo "file_names=$FILENAMES" >> $GITHUB_OUTPUT
   test-workflow:
     needs:
       - gather-test-files
@@ -41,6 +43,7 @@ jobs:
     strategy:
       matrix:
         test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+        test_file_name: ${{ fromJson(needs.gather-test-files.outputs.test_file_names) }}
       max-parallel: 8
       fail-fast: false
 
@@ -60,12 +63,20 @@ jobs:
         run: NODE_ENV=production npm ci
 
       - name: Run test in headless mode
-        run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --junit=reports/${{ matrix.test }}.xml
+        run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --junit=reports/${{ matrix.test_file_name }}.xml
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
-          TD_THIS_FILE: ${{ matrix.test }}
+          TD_THIS_FILE: ${{ matrix.test_file_name }}
+      
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: uploading-${{ matrix.test_file_name}}
+          path: reports/${{ matrix.test_file_name }}.xml
+          reporter: java-junit
 #
 # TODO: Add snippets back, but this should only happen on `main`
 #     - name: Write MDX snippets separately
