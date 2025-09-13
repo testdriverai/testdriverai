@@ -69,7 +69,7 @@ jobs:
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
           TD_THIS_FILE: ${{ matrix.test_file_name }}
-      
+
       - name: Publish Test Results
         uses: dorny/test-reporter@v1
         if: always()
