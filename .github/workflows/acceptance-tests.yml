@@ -32,8 +32,9 @@ jobs:
           FILES=$(ls ./testdriver/acceptance/*.yaml)
           FILENAMES=$(basename -a $FILES)
           FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          FILE_NAMES_JSON=$(echo "$FILES_JSON" |jq -c 'map(sub("\\.ya?ml$";""))')
           echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
-          echo "file_names=$FILENAMES" >> $GITHUB_OUTPUT
+          echo "file_names=$FILE_NAMES_JSON" >> $GITHUB_OUTPUT
   test-workflow:
     needs:
       - gather-test-files
