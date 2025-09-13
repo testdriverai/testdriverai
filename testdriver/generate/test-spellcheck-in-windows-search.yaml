@@ -1,0 +1,9 @@
+version: 6.0.28
+steps:
+  - prompt: >-
+      Click on the search box labeled "Type here to search" in the bottom left
+      of the screen.
+  - prompt: Type a deliberately misspelled word such as "recieve".
+  - prompt: >-
+      Assert that a spellcheck suggestion or correction is offered by the
+      Windows search.

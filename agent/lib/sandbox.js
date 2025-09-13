@@ -23,7 +23,7 @@ const createSandbox = (emitter, analytics) => {
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
-
+        
         // Start timing for this message
         const timingKey = `sandbox-${message.type}`;
         marky.mark(timingKey);

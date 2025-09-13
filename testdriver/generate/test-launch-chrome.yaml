@@ -1,0 +1,27 @@
+version: 6.0.28
+session: 68c4bb1257025326e38cdab9
+steps:
+  - prompt: Click on the "Google Chrome" icon on the desktop.
+    commands:
+      - command: hover-text
+        text: Google Chrome
+        description: >-
+          Google Chrome desktop shortcut icon with the Chrome logo, second from
+          the top on the left
+        action: click
+      - command: wait
+        timeout: 4000
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Google Chrome
+        description: >-
+          Google Chrome desktop shortcut icon with the Chrome logo, second from
+          the top on the left
+        action: double-click
+  - prompt: Assert that Google Chrome opens successfully and is visible on the screen.
+    commands:
+      - command: assert
+        expect: >-
+          Google Chrome is open and visible on the screen with the Google
+          homepage displayed

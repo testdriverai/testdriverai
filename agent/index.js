@@ -887,30 +887,33 @@ commands:
   // based on the current state of the system (primarily the current screenshot)
   // it will generate files that contain only "prompts"
   // @todo revit the generate command
-  async generate(type, count, baseYaml, skipYaml = false) {
-    this.emitter.emit(events.log.debug, "generate called, %s", type);
+  async generate(type, count = 1) {
+
+    console.log('is this generate being called', type, count)
+
+    this.emitter.emit(events.log.debug, `generate called with ${type} and ${count}`);
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    if (baseYaml && !skipYaml) {
-      await this.runLifecycle("prerun");
-      await this.run(baseYaml, false, false);
-      await this.runLifecycle("postrun");
-    }
+    await this.runLifecycle("prerun");
 
     let image = await this.system.captureScreenBase64();
 
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
+    let mouse = await this.system.getMousePosition();
+    let activeWindow = await this.system.activeWin();
+
     let message = await this.sdk.req(
       "generate",
       {
-        type,
+        prompt: 'make sure to do a spellcheck',
         image,
-        mousePosition: await this.system.getMousePosition(),
-        activeWindow: await this.system.activeWin(),
+        mousePosition: mouse,
+        activeWindow: activeWindow,
         count,
+        stream: false
       },
       (chunk) => {
         if (chunk.type === "data") {
@@ -923,6 +926,8 @@ commands:
 
     let testPrompts = await this.parser.findGenerativePrompts(message.data);
 
+    console.log(testPrompts)
+
     // for each testPrompt
     for (const testPrompt of testPrompts) {
       // with the contents of the testPrompt
@@ -933,34 +938,36 @@ commands:
           .replace(/['"`]/g, "")
           .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
           .toLowerCase() + ".yaml";
+
       let path1 = path.join(
         this.workingDir,
         "testdriver",
         "generate",
         fileName,
       );
-
       // create generate directory if it doesn't exist
-      if (!fs.existsSync(path.join(this.workingDir, "generate"))) {
-        fs.mkdirSync(path.join(this.workingDir, "generate"));
+      const generateDir = path.join(this.workingDir, "testdriver", "generate");
+      if (!fs.existsSync(generateDir)) {
+        fs.mkdirSync(generateDir);
+        console.log('Created generate directory:', generateDir);
+      } else {
+        console.log('Generate directory already exists:', generateDir);
       }
 
       let list = testPrompt.steps;
 
-      if (baseYaml && fs.existsSync(baseYaml)) {
-        list.unshift({
-          step: {
-            command: "run",
-            file: baseYaml,
-          },
-        });
-      }
       let contents = yaml.dump({
         version: packageJson.version,
         steps: list,
       });
+
+
+      console.log('writing file', path1, contents)
+
       fs.writeFileSync(path1, contents);
     }
+
+    await this.runLifecycle("postrun");
 
     this.exit(false);
   }

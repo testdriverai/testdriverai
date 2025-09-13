@@ -237,11 +237,9 @@ function createCommandDefinitions(agent) {
       handler: async (args, flags) => {
         // Call the generate method with the provided arguments
         await agent.generate(
-          args.type || "acceptance",
-          flags.count || 3,
-          flags.base,
-          flags["skip-yaml"] || false
-        );
+          flags.count || 3
+        );/* The line `flags["skip-yaml"] || false` is a logical OR operation in JavaScript. */
+        
       },
     },
   };
