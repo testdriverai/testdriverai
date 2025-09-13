@@ -21,7 +21,7 @@ const createConfig = (environment = {}) => {
   // Start with defaults
   const config = {
     TD_ANALYTICS: true,
-    TD_API_ROOT: "https://api.testdriver.ai",
+    TD_API_ROOT: "https://v6.testdriver.ai",
     TD_API_KEY: null,
     TD_PROFILE: false,
     TD_RESOLUTION: [1366, 768],
