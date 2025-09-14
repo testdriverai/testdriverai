@@ -63,7 +63,11 @@ class TestDriverAgent extends EventEmitter2 {
     // Derive properties from cliArgs
     const flags = cliArgs.options || {};
     const firstArg = cliArgs.args && cliArgs.args[0];
+    
+    // All commands (run, edit, generate) use the same pattern:
+    // first argument is the main file to work with
     this.thisFile = firstArg || this.config.TD_DEFAULT_TEST_FILE;
+    
     this.resultFile = flags.resultFile || null;
     this.newSandbox = flags.newSandbox || false;
     this.healMode = flags.healMode || flags.heal || false;
@@ -86,6 +90,8 @@ class TestDriverAgent extends EventEmitter2 {
         }
       }
     }
+
+
 
     // Create parser instance with this agent's emitter
     this.parser = createParser(this.emitter);
@@ -887,15 +893,15 @@ commands:
   // based on the current state of the system (primarily the current screenshot)
   // it will generate files that contain only "prompts"
   // @todo revit the generate command
-  async generate(type, count = 1) {
+  async generate(count = 1) {
 
-    console.log('is this generate being called', type, count)
+    console.log('generate being called with count:', count)
 
-    this.emitter.emit(events.log.debug, `generate called with ${type} and ${count}`);
-
-    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
+    this.emitter.emit(events.log.debug, `generate called with count: ${count}`);
 
     await this.runLifecycle("prerun");
+
+    this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     let image = await this.system.captureScreenBase64();
 
@@ -2039,9 +2045,21 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   }
 
   async runLifecycle(lifecycleName) {
+
+    console.log("Running lifecycle:", lifecycleName);
+
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
+
+    console.log("Current file path:", currentFilePath);
+    
+    // If we still don't have a currentFilePath, fall back to the default testdriver directory
+    if (!currentFilePath) {
+      currentFilePath = path.join(this.workingDir, "testdriver", "testdriver.yaml");
+      console.log("No currentFilePath found, using fallback:", currentFilePath);
+    }
+    
     // Ensure we have an absolute path
     if (currentFilePath && !path.isAbsolute(currentFilePath)) {
       currentFilePath = path.resolve(this.workingDir, currentFilePath);
@@ -2078,6 +2096,9 @@ Please check your network connection, TD_API_KEY, or the service status.`,
         }
       }
     }
+
+    console.log(lifecycleFile)
+
     if (lifecycleFile) {
       // Store current source mapping state before running lifecycle file
       const previousContext = this.sourceMapper.saveContext();

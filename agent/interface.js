@@ -200,23 +200,15 @@ function createCommandDefinitions(agent) {
     generate: {
       description: "Generate test files based on current screen state",
       args: {
-        type: Args.string({
-          description: "Type of test to generate (e.g., 'acceptance', 'regression', 'smoke')",
+        file: Args.string({
+          description: "Base test file to run before generating (optional)",
           required: false,
-          default: "acceptance",
         }),
       },
       flags: {
         count: Flags.integer({
           description: "Number of test files to generate",
           default: 3,
-        }),
-        base: Flags.string({
-          description: "Base YAML file to run before generating tests",
-        }),
-        "skip-yaml": Flags.boolean({
-          description: "Skip running the base YAML file",
-          default: false,
         }),
         headless: Flags.boolean({
           description: "Run in headless mode (no GUI)",
@@ -235,11 +227,9 @@ function createCommandDefinitions(agent) {
         }),
       },
       handler: async (args, flags) => {
-        // Call the generate method with the provided arguments
-        await agent.generate(
-          flags.count || 3
-        );/* The line `flags["skip-yaml"] || false` is a logical OR operation in JavaScript. */
-        
+        // The file argument is already handled by thisFile in the agent constructor
+        // Just call generate with the count
+        await agent.generate(flags.count || 3);
       },
     },
   };

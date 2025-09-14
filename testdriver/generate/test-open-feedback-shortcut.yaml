@@ -1,6 +1,0 @@
-version: 6.0.28
-steps:
-  - prompt: Click on the "EC2 Feedback" shortcut on the desktop.
-  - prompt: >-
-      Assert that the EC2 Feedback application launches and displays the
-      expected interface.

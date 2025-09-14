@@ -1,0 +1,160 @@
+version: 6.0.23
+session: 68acf25541189ac907c336fe
+steps:
+  - prompt: Upload Playwright test files to Airtable
+    commands:
+      - command: exec
+        lang: pwsh
+        timeout: 300000
+        code: |
+          echo "Uploading Playwright test files to Airtable using TestDriver variables..."
+          
+          # Get TestDriver variables
+          $repoUrl = "${TD_GITHUB_REPO_URL}"
+          $branchName = "${TD_GITHUB_BRANCH_NAME}"
+          $commitMessage = "${TD_GITHUB_COMMIT_MESSAGE}"
+          $prTitle = "${TD_GITHUB_PR_TITLE}"
+          $prBody = "${TD_GITHUB_PR_body}"
+          $gitUserName = "${TD_GIT_USER_NAME}"
+          $gitUserEmail = "${TD_GIT_USER_EMAIL}"
+          $thisFile = "${TD_THIS_FILE}"
+          
+          # Get Airtable configuration from environment variables
+          $airtableToken = "${TD_AIRTABLE_TOKEN}"
+          $airtableBaseId = "${TD_AIRTABLE_BASE_ID}"
+          $airtableTableName = "${TD_AIRTABLE_TABLE_NAME}"
+          
+          # Set defaults if not provided
+          if ([string]::IsNullOrEmpty($airtableTableName)) { $airtableTableName = "Playwright Tests" }
+          if ([string]::IsNullOrEmpty($gitUserName)) { $gitUserName = "TestDriver Bot" }
+          if ([string]::IsNullOrEmpty($gitUserEmail)) { $gitUserEmail = "testdriver@automation.com" }
+          
+          # Extract the base name from the test file (without .yaml extension) to use for spec file naming
+          $testFileName = "unknown"
+          if (![string]::IsNullOrEmpty($thisFile)) {
+              $testFileName = [System.IO.Path]::GetFileNameWithoutExtension($thisFile)
+              Write-Host "Using test file name: $testFileName"
+          } else {
+              Write-Host "Warning: TD_THIS_FILE not available, using default name"
+          }
+          
+          Write-Host "Preparing to upload Playwright test file to Airtable..."
+          Write-Host "Repository: $repoUrl"
+          Write-Host "Airtable Base: $airtableBaseId"
+          Write-Host "Airtable Table: $airtableTableName"
+          
+          # Check if Airtable credentials are available for API calls
+          if ([string]::IsNullOrEmpty($airtableToken)) {
+              Write-Error "TD_AIRTABLE_TOKEN is required for uploading to Airtable"
+              exit 1
+          }
+          
+          if ([string]::IsNullOrEmpty($airtableBaseId)) {
+              Write-Error "TD_AIRTABLE_BASE_ID is required for uploading to Airtable"
+              exit 1
+          }
+          
+          # Step 1: Check for Playwright test file and prepare for Airtable upload
+          Write-Host "Step 1: Checking for Playwright test file..."
+          $desktopPath = [Environment]::GetFolderPath("Desktop")
+          $playwrightFile = Join-Path $desktopPath "pw-test.spec.js"
+          
+          if (Test-Path $playwrightFile) {
+              Write-Host "Found Playwright test file at: $playwrightFile"
+              
+              # Read the content of the Playwright test file
+              $specFileContent = Get-Content -Path $playwrightFile -Raw
+              Write-Host "Read Playwright test file content ($(($specFileContent.Length)) characters)"
+              
+              # Prepare record data for Airtable
+              $currentDateTime = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
+              Write-Host "Preparing Airtable record data..."
+              
+              # Upload to Airtable using REST API
+              Write-Host "Uploading Playwright test to Airtable..."
+              
+              try {
+                  # Create Airtable record data
+                  $recordData = @{
+                      records = @(
+                          @{
+                              fields = @{
+                                  "Test Name" = $testFileName
+                                  "File Name" = "pw-test-$testFileName.spec.js"
+                                  "Test Content" = $specFileContent
+                                  "Generated At" = $currentDateTime
+                                  "Source File" = $playwrightFile
+                                  "Test File Path" = $thisFile
+                                  "Repository URL" = $repoUrl
+                                  "Branch Name" = $branchName
+                                  "Commit Message" = $commitMessage
+                                  "PR Title" = $prTitle
+                                  "PR Body" = $prBody
+                                  "Git User Name" = $gitUserName
+                                  "Git User Email" = $gitUserEmail
+                                  "Workflow Run" = $env:GITHUB_RUN_NUMBER
+                                  "Status" = "Generated"
+                              }
+                          }
+                      )
+                  } | ConvertTo-Json -Depth 4
+                  
+                  # Set up Airtable API headers
+                  $headers = @{
+                      "Authorization" = "Bearer $airtableToken"
+                      "Content-Type" = "application/json"
+                  }
+                  
+                  # Airtable API URL
+                  $airtableUrl = "https://api.airtable.com/v0/$airtableBaseId/$airtableTableName"
+                  
+                  Write-Host "Uploading to Airtable URL: $airtableUrl"
+                  Write-Host "Record data size: $(($recordData.Length)) characters"
+                  
+                  # Make the API call to Airtable
+                  $uploadResponse = Invoke-RestMethod -Uri $airtableUrl -Method Post -Headers $headers -Body $recordData
+                  
+                  Write-Host "✅ Playwright test uploaded successfully to Airtable!"
+                  Write-Host "Record ID: $($uploadResponse.records[0].id)"
+                  Write-Host "Test Name: $($uploadResponse.records[0].fields.'Test Name')"
+                  Write-Host "Created Time: $($uploadResponse.records[0].createdTime)"
+                  
+                  # Output success information for potential use in workflows
+                  if ($env:GITHUB_OUTPUT) {
+                      "AIRTABLE_RECORD_ID=$($uploadResponse.records[0].id)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                      "TEST_FILE_FOUND=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                      "UPLOAD_STATUS=success" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                  }
+                  
+              } catch {
+                  Write-Error "Failed to upload to Airtable: $($_.Exception.Message)"
+                  
+                  # Try to get more detailed error information
+                  if ($_.Exception.Response) {
+                      $errorStream = $_.Exception.Response.GetResponseStream()
+                      $reader = New-Object System.IO.StreamReader($errorStream)
+                      $errorBody = $reader.ReadToEnd()
+                      Write-Host "Error response body: $errorBody"
+                  }
+                  
+                  # Set failure status in GitHub output
+                  if ($env:GITHUB_OUTPUT) {
+                      "TEST_FILE_FOUND=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                      "UPLOAD_STATUS=failed" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                  }
+                  
+                  # Don't exit with error - continue execution
+                  Write-Host "Upload failed, but continuing execution..."
+              }
+              
+              Write-Host "Playwright test file upload to Airtable completed"
+          } else {
+              Write-Host "No Playwright test file found at: $playwrightFile"
+              if ($env:GITHUB_OUTPUT) {
+                  "TEST_FILE_FOUND=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                  "UPLOAD_STATUS=no_file" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+              }
+          }
+          
+          Write-Host "Airtable upload workflow completed successfully!"
+          

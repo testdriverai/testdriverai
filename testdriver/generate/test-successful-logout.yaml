@@ -1,0 +1,36 @@
+version: 6.0.28
+session: 68c70449c65164d6ea5e596b
+steps:
+  - prompt: Log in as "standard_user" with password "secret_password".
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Username
+        description: Username label above the first input field on the login form
+        action: click
+      - command: type
+        text: standard_user
+      - command: press-keys
+        keys:
+          - tab
+      - command: type
+        text: secret_password
+      - command: hover-text
+        text: Sign in
+        description: Black "Sign in" button below the password field
+        action: click
+  - prompt: Locate and click the "Logout" button or menu option after login.
+    commands:
+      - command: focus-application
+        name: Google Chrome
+      - command: hover-text
+        text: Logout
+        description: Logout button in the top right corner of the header next to Cart
+        action: click
+  - prompt: Assert that the user is redirected to the login page and is logged out.
+    commands:
+      - command: assert
+        expect: >-
+          The login page with 'TestDriver.ai Sandbox' is visible and the user is
+          logged out

@@ -1,0 +1,37 @@
+version: 6.0.28
+session: 68c70444c65164d6ea5e5967
+steps:
+  - prompt: Focus the browser window.
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  - prompt: Enter "standard_user" as the username.
+    commands:
+      - command: hover-text
+        text: Username
+        description: label above the username input field on the login form
+        action: click
+      - command: type
+        text: standard_user
+  - prompt: Enter "secret_password" as the password.
+    commands:
+      - command: hover-text
+        text: Password
+        description: label above the password input field on the login form
+        action: click
+      - command: type
+        text: secret_password
+  - prompt: Click the "Sign in" button.
+    commands:
+      - command: hover-text
+        text: Sign in
+        description: black button below the password field on the login form
+        action: click
+  - prompt: >-
+      Assert that login is successful and user is navigated to the main shop
+      page.
+    commands:
+      - command: assert
+        expect: >-
+          the main shop page with the heading "TestDriver.ai Sandbox" and
+          product listings is visible, confirming successful login

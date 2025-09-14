@@ -37,10 +37,11 @@ function createOclifCommand(commandName) {
             // Execute through unified command system
             await this.agent.executeUnifiedCommand(commandName, [fileArg], flags);
           } else if (commandName === "generate") {
-            // For generate command, we pass all args as they contain type
-            await this.setupAgent(null, flags);
+            // For generate command, pass the file argument if provided
+            const fileArg = args.file || null;
+            await this.setupAgent(fileArg, flags);
             // Execute through unified command system  
-            await this.agent.executeUnifiedCommand(commandName, args, flags);
+            await this.agent.executeUnifiedCommand(commandName, [fileArg], flags);
           } else {
             const primaryArg = args.file || args.action || null;
             await this.setupAgent(primaryArg, flags);
