@@ -151,7 +151,7 @@
         ]
       },
       {
-        "group": "Reference",
+        "group": "YAML Reference",
         "pages": [
           "/commands/assert",
           "/commands/exec",
