@@ -185,16 +185,17 @@
         "label": "Discord",
         "icon": "discord",
         "href": "https://discord.com/invite/cWDFW8DzPm"
-      }, 
+      },
       {
         "label": "Book a Demo",
         "href": "https://form.typeform.com/to/UECf9rDx?typeform-source=docs.testdriver.ai",
         "icon": "calendar"
-      }, {
-      "icon": "gauge-high",
-      "label": "Dashboard",
-      "href": "https://app.testdriver.ai"
-    }
+      },
+      {
+        "icon": "gauge-high",
+        "label": "Dashboard",
+        "href": "https://app.testdriver.ai"
+      }
     ]
   },
   "footer": {
