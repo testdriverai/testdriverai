@@ -174,10 +174,6 @@
       }
     ]
   },
-  "modeToggle": {
-    "enabled": true,
-    "default": "dark"
-  },
   "logo": {
     "light": "/images/template/light.png",
     "dark": "/images/template/dark.png",
