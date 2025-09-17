@@ -175,7 +175,7 @@
     ]
   },
   "modeToggle": {
-    "enabled": false,
+    "enabled": true,
     "default": "dark"
   },
   "logo": {
