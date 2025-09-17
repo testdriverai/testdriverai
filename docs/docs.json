@@ -151,25 +151,31 @@
         ]
       },
       {
-        "group": "YAML Reference",
+        "group": "Reference",
         "pages": [
-          "/commands/assert",
-          "/commands/exec",
-          "/commands/focus-application",
-          "/commands/hover-image",
-          "/commands/hover-text",
-          "/commands/if",
-          "/commands/match-image",
-          "/commands/press-keys",
-          "/commands/remember",
-          "/commands/run",
-          "/commands/scroll",
-          "/commands/scroll-until-image",
-          "/commands/scroll-until-text",
-          "/commands/type",
-          "/commands/wait",
-          "/commands/wait-for-image",
-          "/commands/wait-for-text"
+          {
+            "group": "YAML",
+            "icon": "file-code",
+            "pages": [
+              "/commands/assert",
+              "/commands/exec",
+              "/commands/focus-application",
+              "/commands/hover-image",
+              "/commands/hover-text",
+              "/commands/if",
+              "/commands/match-image",
+              "/commands/press-keys",
+              "/commands/remember",
+              "/commands/run",
+              "/commands/scroll",
+              "/commands/scroll-until-image",
+              "/commands/scroll-until-text",
+              "/commands/type",
+              "/commands/wait",
+              "/commands/wait-for-image",
+              "/commands/wait-for-text"
+            ]
+          }
         ]
       }
     ]
