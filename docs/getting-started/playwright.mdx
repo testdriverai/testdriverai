@@ -1,0 +1,155 @@
+---
+title: Get Started with TestDriver & Playwright
+sidebarTitle: Playwright
+tag: NEW
+description: In this guide, you'll setup your TestDriver account, create a new Playwright project, and leverage TestDriver's AI to convert tests to natural language.
+icon: "masks-theater"
+---
+
+<Steps>
+  <Step title="Create a TestDriver Account">
+    You will need a [TestDriver Pro](https://app.testdriver.ai/team) account ($20/month) to get an API key.
+
+    <Card
+      title="Sign Up for TestDriver"
+      icon="user-plus"
+      href="https://app.testdriver.ai/team"
+      arrow
+      horizontal
+    />
+
+  </Step>
+  <Step title="Set up your environment">
+      
+    Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
+    
+    <Tabs>
+      <Tab title="macOS / Linux">
+        ```bash Export an environment variable on macOS or Linux systems
+        export TD_API_KEY="your_api_key_here"
+        ```
+      </Tab>
+      <Tab title="Windows">
+      ```powershell Export an environment variable in PowerShell
+      setx TD_API_KEY "your_api_key_here"
+      ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Initialize Playwright">
+
+    <Info>
+      This is a condensed version of [Playwright's Installation Instructions](https://playwright.dev/docs/intro).
+
+      **If you're new to Playwright, you should follow their guide first.**
+    </Info>
+
+    In an new folder or existing run:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm init playwright@latest
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn create playwright
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm create playwright
+        ```
+      </Tab>
+    </Tabs>
+
+    Select the following options when prompted:
+
+    ```console
+    ✔ Do you want to use TypeScript or JavaScript?
+    > TypeScript
+    ✔ Where to put your end-to-end tests?
+    > tests
+    ✔ Add a GitHub Actions workflow? (y/N)
+    > N
+    ✔ Install Playwright browsers (can be done manually via 'npx playwright install')? (Y/n)
+    > Y
+    ```
+
+  </Step>
+
+  <Step title="Install TestDriver">
+
+    TestDriver provides a backwards-compatible wrapper around `@playwright/test`.
+
+    Install `@testdriver.ai/playwright` in your Playwright project.
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm install @testdriver.ai/playwright
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn add @testdriver.ai/playwright
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm add @testdriver.ai/playwright
+        ```
+      </Tab>
+    </Tabs>
+
+  </Step>
+
+  <Step title="Run Playwright">
+
+    Before we start using TestDriver in our tests, run Playwright in UI Mode:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npx playwright test --ui
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn playwright test --ui
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm exec playwright test --ui
+        ```
+      </Tab>
+    </Tabs>
+
+    ![Playwright UI Mode](https://playwright.dev/assets/ideal-img/ui-mode.4e54d6b.3598.png)
+
+    <Tip>Learn more about UI Mode in the [Playwright documentation](https://playwright.dev/docs/test-ui-mode).</Tip>
+
+    You should be able to successfully run your Playwright tests before continuing.
+
+  </Step>
+
+  <Step title="Replace Playwright with TestDriver">
+
+    Replace `@playwright/test` with `@testdriver.ai/playwright` in your test files.
+
+    ```typescript icon="square-js" title="tests/example.spec.ts"
+    import { test, expect } from '@playwright/test'; // [!code --]
+    import { test, expect } from '@testdriver.ai/playwright'; // [!code ++]
+    ```
+
+
+    <Tip>Learn more about the TestDriver wrapper in the [Playwright documentation](https://playwright.dev/docs/test-testdriver).</Tip>
+
+    You should be able to successfully run your Playwright tests before continuing.
+
+  </Step>
+
+</Steps>
