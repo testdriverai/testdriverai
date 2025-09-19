@@ -6,12 +6,38 @@ description: In this guide, you'll setup your TestDriver account, create a new P
 icon: "masks-theater"
 ---
 
+## Overview
+
 `@testdriver.ai/playwright` is a backwards-compatible wrapper around `@playwright/test` that uses TestDriver's Vision AI to:
 
 - Make [natural language assertions](#assertions-with-expect-tomatchprompt)
 - [Replace brittle selectors](#locating-elements-with-testdriver-locate) with natural language
 - [Perform actions](#performing-actions-with-testdriver-act) with a prompt
 - Test with an [automated agent](#agentic-tests-with-test-agent)
+
+We'll be incrementally converting Playwright's example test from imperactive code:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+// Before
+test("get started link", async ({ page, testdriver }) => {
+  await page.goto("https://playwright.dev/");
+  await testdriver(page).act("Click the 'Get started' link");
+  await expect(page).toMatchPrompt("'Installation' heading is visible");
+});
+```
+
+To using natural language:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+// After
+test.describe("get started link", () => {
+  test.beforeEach(async ({ page }) => page.goto("https://playwright.dev/"));
+  test.agent(`
+    - Click the 'Get started' link
+    - Verify the 'Installation' heading is visible
+  `);
+});
+```
 
 ## Prerequisites
 
