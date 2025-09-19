@@ -6,6 +6,15 @@ description: In this guide, you'll setup your TestDriver account, create a new P
 icon: "masks-theater"
 ---
 
+`@testdriver.ai/playwright` is a backwards-compatible wrapper around `@playwright/test` that uses TestDriver's Vision AI to:
+
+- Make [natural language assertions](#assertions-with-expect-tomatchprompt)
+- [Replace brittle selectors](#locating-elements-with-testdriver-locate) with natural language
+- [Perform actions](#performing-actions-with-testdriver-act) with a prompt
+- Test with an [automated agent](#agentic-tests-with-test-agent)
+
+## Prerequisites
+
 <Steps>
   <Step title="Create a TestDriver Account">
     You will need a [TestDriver Pro](https://app.testdriver.ai/team) account ($20/month) to get an API key.
@@ -36,7 +45,11 @@ icon: "masks-theater"
       </Tab>
     </Tabs>
   </Step>
+</Steps>
 
+## Setup Playwright
+
+<Steps>
   <Step title="Initialize Playwright">
 
     <Info>
@@ -78,13 +91,36 @@ icon: "masks-theater"
     > Y
     ```
 
+    Then, confirm Playwright works by running:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npx playwright test
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn playwright test
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm exec playwright test
+        ```
+      </Tab>
+    </Tabs>
+
   </Step>
+</Steps>
+
+## Setup `@testdriver.ai/playwright`
+
+<Steps>
 
   <Step title="Install TestDriver">
 
-    TestDriver provides a backwards-compatible wrapper around `@playwright/test`.
-
-    Install `@testdriver.ai/playwright` in your Playwright project.
+    `@testdriver.ai/playwright` as a backwards-compatible wrapper around `@playwright/test`:
 
     <Tabs>
       <Tab title="npm">
@@ -108,7 +144,7 @@ icon: "masks-theater"
 
   <Step title="Run Playwright">
 
-    Before we start using TestDriver in our tests, run Playwright in UI Mode:
+    Before we start using TestDriver in our tests, run Playwright in [UI Mode](https://playwright.dev/docs/test-ui-mode):
 
     <Tabs>
       <Tab title="npm">
@@ -130,26 +166,164 @@ icon: "masks-theater"
 
     ![Playwright UI Mode](https://playwright.dev/assets/ideal-img/ui-mode.4e54d6b.3598.png)
 
-    <Tip>Learn more about UI Mode in the [Playwright documentation](https://playwright.dev/docs/test-ui-mode).</Tip>
-
-    You should be able to successfully run your Playwright tests before continuing.
+    Clicking the ▶️ button should successfully run the tests in the UI,
+    just as they did before with `playwright test` in the CLI.
 
   </Step>
 
-  <Step title="Replace Playwright with TestDriver">
+  <Step title="Import TestDriver">
 
-    Replace `@playwright/test` with `@testdriver.ai/playwright` in your test files.
+    For the sake of simplicity, we'll be working with one test file for now.
+
+    Open `tests/example.spec.ts` in your editor & rename the `@playwright/test`
+    import to `@testdriver.ai/playwright`:
 
     ```typescript icon="square-js" title="tests/example.spec.ts"
     import { test, expect } from '@playwright/test'; // [!code --]
     import { test, expect } from '@testdriver.ai/playwright'; // [!code ++]
     ```
 
+    Click the <Icon icon="play" /> button to run the test and verify everything still works.
 
-    <Tip>Learn more about the TestDriver wrapper in the [Playwright documentation](https://playwright.dev/docs/test-testdriver).</Tip>
-
-    You should be able to successfully run your Playwright tests before continuing.
+    <Tip>
+      Click the <Icon icon="eye" /> button to automatically re-run tests on save.
+    </Tip>
 
   </Step>
 
 </Steps>
+
+## Usage
+
+Because TestDriver uses AI vision instead of selectors, we can use natural language for
+[assertions](#assertions-with-expect-tomatchprompt),
+[locating](#locating-elements-with-testdriver-locate),
+performing [actions](#performing-actions-with-testdriver-act),
+or even having an [agent](#agentic-tests-with-test-agent) test for you!
+
+### Assertions with `expect.toMatchPrompt`
+
+Replace `toBeVisible` with `toMatchPrompt` to assert that the element is visible on the screen:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+// [!code --:2]
+// Expects page to have a heading with the name of Installation.
+await expect(page.getByRole("heading", { name: "Installation" })).toBeVisible();
+// [!code ++:2]
+await expect(page).toMatchPrompt("'Installation' heading is visible");
+```
+
+Before, the test needed code comments to describe what the assertion is _actually checking_.
+
+With `toMatchPrompt`, natural language acts as a description, selector, and assertion in one
+
+<Tip>
+  TestDriver can reduce the amount of complexity in your tests, but you can
+  still "opt-in" to Playwright assertions and selectors if you need to (e.g.
+  validating accessibility with `page.getByRole`).
+</Tip>
+
+### Locating elements with `testdriver.locate`
+
+TestDriver can replace `data-testid`s, `getByRole`, and CSS selectors with natural language.
+
+First, update your test to get access to the `testdriver` fixture:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+// [!code --]
+test('get started link', async ({ page, }) => {
+// [!code ++]
+test('get started link', async ({ page, testdriver }) => {
+```
+
+Then, replace `getByRole` with `testdriver.locate`:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+test('get started link', async ({ page, testdriver }) => {
+  await page.goto('https://playwright.dev/');
+
+  // [!code --:2]
+  // Click the get started link.
+  await page.getByRole("link", { name: "Get started" }).click();
+  // [!code ++:2]
+  const link = await testdriver(page).locate("Get started link");
+  await link.click();
+
+  await expect(page).toMatchPrompt("'Installation' heading is visible");
+```
+
+Now, our test uses natural language to both describe & locate the element.
+
+<Tip>
+  In the example above, you can still use Playwright to assert that the element is indeed a link for accessibility:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+const link = await testdriver(page).locate("Get started link");
+// [!code ++]
+expect(link).toHaveRole("link");
+await link.click();
+```
+
+This way you can write user-centric tests _and_ validate the implementation.
+
+</Tip>
+
+### Performing actions with `testdriver.act`
+
+We can combine `locate` and `click` from the previous example into one line with `testdriver.act`:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+test("get started link", async ({ page, testdriver }) => {
+  await page.goto("https://playwright.dev/");
+
+  // [!code --:2]
+  const link = await testdriver(page).locate("Get started link");
+  await link.click();
+  // [!code ++]
+  await testdriver(page).act("Click the 'Get started' link");
+
+  await expect(page).toMatchPrompt("'Installation' heading is visible");
+});
+```
+
+Now the test uses the page the way a user would!
+
+### Agentic tests with `test.agent`
+
+TestDriver can automatically perform the entire test for you with an AI agent:
+
+```typescript icon="square-js" title="tests/example.spec.ts"
+// [!code --:6]
+test("get started link", async ({ page, testdriver }) => {
+  await page.goto("https://playwright.dev/");
+  await testdriver(page).act("Click the 'Get started' link");
+  await expect(page).toMatchPrompt("'Installation' heading is visible");
+});
+
+// [!code ++:7]
+test.describe("get started link", () => {
+  test.beforeEach(async ({ page }) => page.goto("https://playwright.dev/"));
+  test.agent(`
+    - Click the 'Get started' link
+    - Verify the 'Installation' heading is visible
+  `);
+});
+```
+
+Instead of writing the test implementation, we've used [`test.describe`](https://playwright.dev/docs/api/class-test#test-describe) to describe the test still,
+but replaced the `test` itself with `test.agent`.
+
+<Tip>
+  Use
+  [`test.beforEach`](https://playwright.dev/docs/api/class-test#test-after-each)
+  to prepare the page for the agent (e.g.
+  [`page.goto`](https://playwright.dev/docs/api/class-page#page-goto), calling
+  an API to create a user). Use
+  [`test.afterEach`](https://playwright.dev/docs/api/class-test#test-after-each)
+  to clean up after the agent (e.g. `page.close`) or perform additional logic
+  (e.g. clearing the session).
+</Tip>
+
+## Conclusion
+
+With `@testdriver.ai/playwright`, you can use as much or as little of Playwright's _or_ TestDriver's API as you need to validate correctness. It's up to you!
