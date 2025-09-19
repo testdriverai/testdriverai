@@ -1,8 +1,8 @@
 ---
-title: Get Started with TestDriver & Playwright
-sidebarTitle: Playwright
-tag: NEW
-description: In this guide, you'll setup your TestDriver account, create a new Playwright project, and leverage TestDriver's AI to convert tests to natural language.
+title: "Get Started with TestDriver & Playwright"
+sidebarTitle: "Playwright"
+tag: "NEW"
+description: "In this guide, you'll setup your TestDriver account, create a new Playwright project, and leverage TestDriver's AI to convert tests to natural language."
 icon: "masks-theater"
 ---
 
@@ -15,9 +15,9 @@ icon: "masks-theater"
 - [Perform actions](#performing-actions-with-testdriver-act) with a prompt
 - Test with an [automated agent](#agentic-tests-with-test-agent)
 
-We'll be incrementally converting Playwright's example test from imperactive code:
+We'll be incrementally converting Playwright's example test from the sample code:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 // Before
 test("get started link", async ({ page, testdriver }) => {
   await page.goto("https://playwright.dev/");
@@ -26,9 +26,9 @@ test("get started link", async ({ page, testdriver }) => {
 });
 ```
 
-To using natural language:
+To using natural language with TestDriver:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 // After
 test.describe("get started link", () => {
   test.beforeEach(async ({ page }) => page.goto("https://playwright.dev/"));
@@ -43,21 +43,15 @@ test.describe("get started link", () => {
 
 <Steps>
   <Step title="Create a TestDriver Account">
-    You will need a [TestDriver Pro](https://app.testdriver.ai/team) account ($20/month) to get an API key.
+    You will need a [TestDriver Pro](https://app.testdriver.ai/team) account (\$20/month) to get an API key.
 
-    <Card
-      title="Sign Up for TestDriver"
-      icon="user-plus"
-      href="https://app.testdriver.ai/team"
-      arrow
-      horizontal
-    />
-
+    <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team">
+      
+    </Card>
   </Step>
   <Step title="Set up your environment">
-      
     Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
-    
+
     <Tabs>
       <Tab title="macOS / Linux">
         ```bash Export an environment variable on macOS or Linux systems
@@ -65,9 +59,9 @@ test.describe("get started link", () => {
         ```
       </Tab>
       <Tab title="Windows">
-      ```powershell Export an environment variable in PowerShell
-      setx TD_API_KEY "your_api_key_here"
-      ```
+        ```powershell Export an environment variable in PowerShell
+        setx TD_API_KEY "your_api_key_here"
+        ```
       </Tab>
     </Tabs>
   </Step>
@@ -77,13 +71,11 @@ test.describe("get started link", () => {
 
 <Steps>
   <Step title="Initialize Playwright">
-
     <Info>
       This is a condensed version of [Playwright's Installation Instructions](https://playwright.dev/docs/intro).
 
       **If you're new to Playwright, you should follow their guide first.**
     </Info>
-
     In an new folder or existing run:
 
     <Tabs>
@@ -103,7 +95,6 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
-
     Select the following options when prompted:
 
     ```console
@@ -136,16 +127,13 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
-
   </Step>
 </Steps>
 
 ## Setup `@testdriver.ai/playwright`
 
 <Steps>
-
   <Step title="Install TestDriver">
-
     `@testdriver.ai/playwright` as a backwards-compatible wrapper around `@playwright/test`:
 
     <Tabs>
@@ -165,11 +153,8 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
-
   </Step>
-
   <Step title="Run Playwright">
-
     Before we start using TestDriver in our tests, run Playwright in [UI Mode](https://playwright.dev/docs/test-ui-mode):
 
     <Tabs>
@@ -189,22 +174,18 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
-
     ![Playwright UI Mode](https://playwright.dev/assets/ideal-img/ui-mode.4e54d6b.3598.png)
 
     Clicking the ▶️ button should successfully run the tests in the UI,
     just as they did before with `playwright test` in the CLI.
-
   </Step>
-
   <Step title="Import TestDriver">
-
     For the sake of simplicity, we'll be working with one test file for now.
 
     Open `tests/example.spec.ts` in your editor & rename the `@playwright/test`
     import to `@testdriver.ai/playwright`:
 
-    ```typescript icon="square-js" title="tests/example.spec.ts"
+    ```typescript tests/example.spec.ts icon=square-js
     import { test, expect } from '@playwright/test'; // [!code --]
     import { test, expect } from '@testdriver.ai/playwright'; // [!code ++]
     ```
@@ -214,9 +195,7 @@ test.describe("get started link", () => {
     <Tip>
       Click the <Icon icon="eye" /> button to automatically re-run tests on save.
     </Tip>
-
   </Step>
-
 </Steps>
 
 ## Usage
@@ -231,7 +210,7 @@ or even having an [agent](#agentic-tests-with-test-agent) test for you!
 
 Replace `toBeVisible` with `toMatchPrompt` to assert that the element is visible on the screen:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 // [!code --:2]
 // Expects page to have a heading with the name of Installation.
 await expect(page.getByRole("heading", { name: "Installation" })).toBeVisible();
@@ -255,7 +234,7 @@ TestDriver can replace `data-testid`s, `getByRole`, and CSS selectors with natur
 
 First, update your test to get access to the `testdriver` fixture:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 // [!code --]
 test('get started link', async ({ page, }) => {
 // [!code ++]
@@ -264,7 +243,7 @@ test('get started link', async ({ page, testdriver }) => {
 
 Then, replace `getByRole` with `testdriver.locate`:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 test('get started link', async ({ page, testdriver }) => {
   await page.goto('https://playwright.dev/');
 
@@ -283,22 +262,21 @@ Now, our test uses natural language to both describe & locate the element.
 <Tip>
   In the example above, you can still use Playwright to assert that the element is indeed a link for accessibility:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
-const link = await testdriver(page).locate("Get started link");
-// [!code ++]
-expect(link).toHaveRole("link");
-await link.click();
-```
+  ```typescript tests/example.spec.ts icon=square-js
+  const link = await testdriver(page).locate("Get started link");
+  // [!code ++]
+  expect(link).toHaveRole("link");
+  await link.click();
+  ```
 
-This way you can write user-centric tests _and_ validate the implementation.
-
+  This way you can write user-centric tests _and_ validate the implementation.
 </Tip>
 
 ### Performing actions with `testdriver.act`
 
 We can combine `locate` and `click` from the previous example into one line with `testdriver.act`:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 test("get started link", async ({ page, testdriver }) => {
   await page.goto("https://playwright.dev/");
 
@@ -318,7 +296,7 @@ Now the test uses the page the way a user would!
 
 TestDriver can automatically perform the entire test for you with an AI agent:
 
-```typescript icon="square-js" title="tests/example.spec.ts"
+```typescript tests/example.spec.ts icon=square-js
 // [!code --:6]
 test("get started link", async ({ page, testdriver }) => {
   await page.goto("https://playwright.dev/");
@@ -340,10 +318,7 @@ Instead of writing the test implementation, we've used [`test.describe`](https:/
 but replaced the `test` itself with `test.agent`.
 
 <Tip>
-  Use
-  [`test.beforEach`](https://playwright.dev/docs/api/class-test#test-after-each)
-  to prepare the page for the agent (e.g.
-  [`page.goto`](https://playwright.dev/docs/api/class-page#page-goto), calling
+  Use `test.beforeEach` to prepare the page for the agent (e.g. [`page.goto`](https://playwright.dev/docs/api/class-page#page-goto), calling
   an API to create a user). Use
   [`test.afterEach`](https://playwright.dev/docs/api/class-test#test-after-each)
   to clean up after the agent (e.g. `page.close`) or perform additional logic
