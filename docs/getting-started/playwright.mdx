@@ -80,21 +80,34 @@ test.describe("get started link", () => {
     <Tabs>
       <Tab title="npm">
         ```bash
-        npm init playwright@latest --yes -- --lang=ts --quiet --browser=chromium --install-deps --no-github-actions .
+        npm init playwright@latest
         ```
       </Tab>
       <Tab title="yarn">
         ```bash
-        yarn create playwright --yes -- --lang=ts --quiet --browser=chromium --install-deps --no-github-actions .
+        yarn create playwright
         ```
       </Tab>
       <Tab title="pnpm">
         ```bash
-        pnpm create playwright --yes -- --lang=ts --quiet --browser=chromium --install-deps --no-github-actions .
+        pnpm create playwright
         ```
       </Tab>
     </Tabs>
-    Wait for the installation to complete, this might take a min or two as it would be installing the chromium browser.
+    Select the following options when prompted:
+
+    ```console
+    ✔ Do you want to use TypeScript or JavaScript?
+    > TypeScript
+    ✔ Where to put your end-to-end tests?
+    > tests
+    ✔ Add a GitHub Actions workflow? (y/N)
+    > N
+    ✔ Install Playwright browsers (can be done manually via 'npx playwright install')? (Y/n)
+    > Y
+    ```
+
+    Then, confirm Playwright works by running:
 
     <Tabs>
       <Tab title="npm">
