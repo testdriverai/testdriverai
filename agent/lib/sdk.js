@@ -1,4 +1,5 @@
 const { events } = require("../events");
+const { SDKCache } = require("./cache");
 
 // get the version from package.json
 const { version } = require("../../package.json");
@@ -16,6 +17,9 @@ const createSDK = (emitter, config, sessionInstance) => {
   if (!sessionInstance) {
     throw new Error("Session instance must be provided to createSDK");
   }
+
+  // Initialize cache
+  const cache = new SDKCache();
 
   const outputError = (error) => {
     emitter.emit(events.error.sdk, {
@@ -100,11 +104,60 @@ const createSDK = (emitter, config, sessionInstance) => {
     }
   };
 
+  // Determine if a request should be cached
+  const shouldCache = (path) => {
+    // Cache visual/AI requests that are likely to be repeated
+    const cacheablePaths = [
+      'assert',
+      'assert/text',
+      'hover/text',
+      'hover/image',
+      'remember',
+      'wait-for-image',
+      'wait-for-text',
+      'input',        // AI input processing (streaming)
+      'generate',     // AI generation (streaming)
+      'summarize'     // AI summarization (streaming)
+    ];
+    
+    return cacheablePaths.some(cachePath => path.includes(cachePath));
+  };
+
   const req = async (path, data, onChunk) => {
+
     // for each value of data, if it is empty remove it
     for (let key in data) {
       if (!data[key]) {
         delete data[key];
+      }
+    }
+
+    // Check cache before making request (including streaming requests)
+    if (shouldCache(path)) {
+      const cachedResponse = await cache.get(path, data);
+
+      console.log(`Cache lookup for ${path}: ${cachedResponse ? 'HIT' : 'MISS'}`);
+      console.log(cachedResponse)
+
+      if (cachedResponse) {
+        emitter.emit(events.sdk.response, {
+          path,
+          cached: true,
+        });
+        
+          console.log(`Replaying ${cachedResponse.streamingChunks.length} cached chunks for ${path}`);
+          let data = "";
+          for (const chunk of cachedResponse.streamingChunks) {
+            if (chunk.type == "data") {
+              data += chunk.data;
+            }
+          }
+
+          console.log(
+            'Replayed cached streaming response for ' + path + ' with data length: ' + data.length, data
+          )
+
+          return {data};
       }
     }
 
@@ -146,6 +199,7 @@ const createSDK = (emitter, config, sessionInstance) => {
       if (onChunk) {
         result = "";
         let lastLineIndex = -1;
+        let streamingChunks = []; // Collect chunks for caching
 
         await new Promise((resolve, reject) => {
           // theres some kind of race condition here that makes things resolve
@@ -162,6 +216,7 @@ const createSDK = (emitter, config, sessionInstance) => {
 
             for (const event of events) {
               onChunk(event);
+              streamingChunks.push(event); // Store for caching
             }
 
             lastLineIndex = lines.length - 2;
@@ -177,6 +232,7 @@ const createSDK = (emitter, config, sessionInstance) => {
 
               for (const event of events) {
                 onChunk(event);
+                streamingChunks.push(event); // Store for caching
               }
             }
 
@@ -187,9 +243,51 @@ const createSDK = (emitter, config, sessionInstance) => {
             reject(error);
           });
         });
+
+        // Store streaming chunks for caching
+        if (shouldCache(path) && streamingChunks.length > 0) {
+          result = { streamingChunks };
+        }
       }
 
-      const value = await parseBody(response, result);
+      let value;
+      if (onChunk && result && result.streamingChunks) {
+        // For streaming requests, construct the response from data chunks
+        let data = "";
+        for (const chunk of result.streamingChunks) {
+          if (chunk.type === "data") {
+            data += chunk.data;
+          }
+        }
+        value = { data };
+      } else {
+        value = await parseBody(response, result);
+      }
+
+      // Cache successful responses (including streaming requests)
+      if (shouldCache(path)) {
+        try {
+          let cacheValue = value;
+          
+          // For streaming requests, store both chunks and final response
+          if (onChunk && result && result.streamingChunks) {
+            cacheValue = {
+              streamingChunks: result.streamingChunks,
+              finalResponse: value
+            };
+            console.log(`Caching streaming response with ${result.streamingChunks.length} chunks for ${path}`);
+          } else if (value) {
+            console.log(`Caching response for ${path}`);
+          }
+          
+          if (cacheValue) {
+            await cache.set(path, data, cacheValue);
+          }
+        } catch (cacheError) {
+          console.error('Error caching response:', cacheError);
+          // Don't fail the request if caching fails
+        }
+      }
 
       return value;
     } catch (error) {

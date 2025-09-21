@@ -1,11 +1,12 @@
-version: 6.0.0
+version: 5.1.1
 session: 67f00511acbd9ccac373edf7
 steps:
-  - prompt: start dashcam
+  - prompt: launch chrome
     commands:
       - command: exec
         lang: pwsh
-        code: dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
-      - command: exec
-        lang: pwsh
-        code: dashcam start
+        code: |
+          Start-Process "C:\Program Files\Google\Chrome\Application\chrome.exe" -ArgumentList "--start-maximized --disable-infobars --disable-fre --no-default-browser-check --no-first-run --guest --load-extension=$(pwd)/node_modules/dashcam-chrome/build", "https://testdriver-sandbox.vercel.app/"
+      - command: wait-for-text
+        text: testdriver-sandbox.vercel.app
+        timeout: 60000

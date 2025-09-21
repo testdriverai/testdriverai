@@ -367,6 +367,8 @@ const createCommands = (
         },
       );
 
+      console.log('response', response  )
+
       if (!response.data) {
         throw new MatchError("No text on screen matches description");
       } else {
@@ -521,6 +523,8 @@ const createCommands = (
             }
           },
         );
+
+        console.log("WAIT FOR TEXT RESPONSE", response);
 
         passed = response.data;
         durationPassed = new Date().getTime() - startTime;

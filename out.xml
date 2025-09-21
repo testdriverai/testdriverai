@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="1" errors="0" skipped="0">
+  <testsuite name="testdriver/edge-cases" tests="1" failures="1" errors="0" skipped="0">
+    <testcase classname="testdriver/edge-cases" name="exec-js-error.yaml" time="11.02">
+      <properties>
+        <property name="step1[passed]" value="stop dashcam"/>
+      </properties>
+      <failure message="Failed commands: exec"/>
+      <system-out><![CDATA[running /Users/ianjennings/Development/testdriverai/testdriver/edge-cases/exec-js-error.yaml...
+
+> validate the prompt appears in the API
+exec-js-error.yaml:3:5 (exec)
+exec
+command='exec' code='throw new Error('Validation failed');' lang='js'
+calling exec...
+throw new Error('Validation failed');
+running js...
+running value of `windows` in local JS vm...
+
+------
+To attempt automatic recovery, re-run with the --heal flag.
+reviewing test...
+summarizing...
+Summary written to: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/testdriver-summary.md
+exiting...
+running /Users/ianjennings/Development/testdriverai/testdriver/lifecycle/postrun.yaml...
+Version mismatch detected!
+Running a test created with v5.1.1.
+The local testdriverai version is v6.0.26.
+
+> stop dashcam
+postrun.yaml:4:6 (exec)
+exec
+command='exec' code='echo "hello world"' lang='pwsh'
+calling exec...
+echo "hello world"
+Command stdout:
+hello world
+]]></system-out>
+      <system-err><![CDATA[Error detected, but recovery mode is not enabled.
+Error in exec-js-error.yaml:
+
+   2     steps:
+   3       - prompt: validate the prompt appears in the API
+   4         commands:
+   5 >>>     - command: exec
+   6           lang: js
+   7           output: validation_result
+   8           code: throw new Error('Validation failed');
+
+Error: Error running script: Validation failed]]></system-err>
+    </testcase>
+  </testsuite>
+</testsuites>

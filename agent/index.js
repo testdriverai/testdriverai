@@ -410,6 +410,10 @@ class TestDriverAgent extends EventEmitter2 {
   // parameters can be mapped to actual functions
   async runCommand(command, depth, shouldSave, pushToHistory) {
     let yml = await yaml.dump(command);
+
+
+    console.log(yml);
+
     const commandName = command.command;
     const startTime = Date.now();
 

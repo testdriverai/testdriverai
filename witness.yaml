@@ -1,0 +1,7 @@
+steps:
+  - prompt: validate the prompt appears in the API
+    commands:
+    - command: exec
+      lang: js
+      output: validation_result
+      code: throw new Error('Validation failed')
