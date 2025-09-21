@@ -19,10 +19,10 @@ We'll be incrementally converting Playwright's example test from the sample code
 
 ```typescript tests/example.spec.ts icon=square-js
 // Before
-test("get started link", async ({ page, testdriver }) => {
+test("get started link", async ({ page }) => {
   await page.goto("https://playwright.dev/");
-  await testdriver(page).act("Click the 'Get started' link");
-  await expect(page).toMatchPrompt("'Installation' heading is visible");
+  await page.getByRole('link', { name: 'Get started' }).click();
+  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
 });
 ```
 
@@ -30,6 +30,8 @@ To using natural language with TestDriver:
 
 ```typescript tests/example.spec.ts icon=square-js
 // After
+import { test } from '@testdriver.ai/playwright';
+
 test.describe("get started link", () => {
   test.beforeEach(async ({ page }) => page.goto("https://playwright.dev/"));
   test.agent(`
@@ -44,10 +46,7 @@ test.describe("get started link", () => {
 <Steps>
   <Step title="Create a TestDriver Account">
     You will need a [TestDriver Pro](https://app.testdriver.ai/team) account (\$20/month) to get an API key.
-
-    <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team">
-      
-    </Card>
+    <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team" />
   </Step>
   <Step title="Set up your environment">
     Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
@@ -76,39 +75,26 @@ test.describe("get started link", () => {
 
       **If you're new to Playwright, you should follow their guide first.**
     </Info>
-    In an new folder or existing run:
+    In a new folder or an existing, run:
 
     <Tabs>
       <Tab title="npm">
         ```bash
-        npm init playwright@latest
+        npm init playwright@latest --yes -- --lang=ts --quiet --browser=chromium --install-deps --no-github-actions .
         ```
       </Tab>
       <Tab title="yarn">
         ```bash
-        yarn create playwright
+        yarn create playwright --yes -- --lang=ts --quiet --browser=chromium --install-deps --no-github-actions .
         ```
       </Tab>
       <Tab title="pnpm">
         ```bash
-        pnpm create playwright
+        pnpm create playwright --yes -- --lang=ts --quiet --browser=chromium --install-deps --no-github-actions .
         ```
       </Tab>
     </Tabs>
-    Select the following options when prompted:
-
-    ```console
-    ✔ Do you want to use TypeScript or JavaScript?
-    > TypeScript
-    ✔ Where to put your end-to-end tests?
-    > tests
-    ✔ Add a GitHub Actions workflow? (y/N)
-    > N
-    ✔ Install Playwright browsers (can be done manually via 'npx playwright install')? (Y/n)
-    > Y
-    ```
-
-    Then, confirm Playwright works by running:
+    Wait for the installation to complete, this might take a min or two as it would be installing the chromium browser.
 
     <Tabs>
       <Tab title="npm">
