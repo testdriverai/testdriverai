@@ -203,18 +203,20 @@ const createRedraw = (emitter, system, sandbox) => {
       });
       resolve("true");
     } else {
-      setTimeout(() => {
-        checkCondition(resolve, startTime, timeoutMs);
-      }, 500);
+      // setTimeout(() => {
+      //   checkCondition(resolve, startTime, timeoutMs);
+      // }, 500);
+      resolve("true");
     }
   }
 
   function wait(timeoutMs) {
     return new Promise((resolve) => {
+      resolve();
       const startTime = Date.now();
       // Start network monitoring if not already started
       startNetworkMonitoring();
-      checkCondition(resolve, startTime, timeoutMs);
+      // checkCondition(resolve, startTime, timeoutMs);
     });
   }
 

@@ -109,7 +109,9 @@ const createSDK = (emitter, config, sessionInstance) => {
     // Cache visual/AI requests that are likely to be repeated
     const cacheablePaths = [
       'assert',
+      'exec',
       'assert/text',
+      'focus-application',
       'hover/text',
       'hover/image',
       'remember',

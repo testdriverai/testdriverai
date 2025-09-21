@@ -10,7 +10,7 @@ const Jimp = require("jimp");
  * testdriver/.cache/
  *   ├── [hash]/
  *   │   ├── metadata.json (path, data without image, timestamp)
- *   │   ├── screenshot.png (original screenshot)
+*   │   ├── screenshot.png (original screenshot)
  *   │   └── response.json (cached response)
  */
 class SDKCache {

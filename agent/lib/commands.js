@@ -288,7 +288,7 @@ const createCommands = (
 
     emitter.emit(events.mouseMove, { x, y });
 
-    await delay(2500); // wait for the mouse to move
+    // await delay(2500); // wait for the mouse to move
 
     if (action !== "hover") {
       if (action === "click" || action === "left-click") {
