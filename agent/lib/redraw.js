@@ -5,7 +5,7 @@ const theme = require("./theme");
 
 // Factory function that creates redraw functionality with the provided system instance
 const createRedraw = (emitter, system, sandbox) => {
-  const redrawThresholdPercent = 0.1;
+  const redrawThresholdPercent = 0;
   const networkUpdateInterval = 15000;
 
   let lastTxBytes = null;

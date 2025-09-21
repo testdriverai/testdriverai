@@ -184,7 +184,7 @@ class SDKCache {
    * @param {number} similarityThreshold - Screenshot similarity threshold (0-1)
    * @returns {Promise<object|null>} Cached response or null if not found/not similar enough
    */
-  async get(requestPath, data, similarityThreshold = 1) {
+  async get(requestPath, data, similarityThreshold = 0.95) {
     try {
       const hash = this.generateHash(requestPath, data);
       const cacheDir = this.getCacheDir(hash);
