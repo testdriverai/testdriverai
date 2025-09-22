@@ -37,7 +37,7 @@ const events = {
   status: "status",
   log: {
     markdown: {
-      static: "log:markdown",
+      static: "log:markdown:static",
       start: "log:markdown:start",
       chunk: "log:markdown:chunk",
       end: "log:markdown:end",
