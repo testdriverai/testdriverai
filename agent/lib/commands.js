@@ -176,7 +176,6 @@ const createCommands = (
     }
 
     const handleAssertResponse = (response) => {
-      emitter.emit(events.log.markdown.static, response);
 
       if (response.indexOf("The task passed") > -1) {
         return true;
