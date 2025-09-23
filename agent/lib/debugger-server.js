@@ -65,11 +65,6 @@ function createDebuggerServer(config = {}) {
 
       ws.on("close", () => {
         clients.delete(ws);
-
-        // If no clients connected, we can optionally shut down
-        if (clients.size === 0) {
-          console.log("No clients connected, keeping server alive");
-        }
       });
 
       ws.on("error", (error) => {

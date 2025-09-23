@@ -34,7 +34,6 @@
     "@oclif/plugin-not-found": "^3.2.59",
     "@oclif/plugin-warn-if-update-available": "^3.1.43",
     "@stoplight/yaml-ast-parser": "^0.0.50",
-    "@trigger.dev/sdk": "^4.0.2",
     "ajv": "^8.17.1",
     "arktype": "^2.1.19",
     "axios": "^1.7.7",
@@ -66,7 +65,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
-    "@trigger.dev/build": "^4.0.2",
     "chai": "^5.1.2",
     "esbuild": "0.20.2",
     "esbuild-plugin-fileloc": "^0.0.6",

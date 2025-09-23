@@ -896,8 +896,6 @@ commands:
   // @todo revit the generate command
   async generate(count = 1) {
 
-    console.log('generate being called with count:', count)
-
     this.emitter.emit(events.log.debug, `generate called with count: ${count}`);
 
     await this.runLifecycle("prerun");
@@ -1526,6 +1524,9 @@ ${regression}
   }
 
   async embed(file, depth, pushToHistory) {
+
+    let inputFile = JSON.parse(JSON.stringify(file));
+
     this.analytics.track("embed", { file });
 
     this.emitter.emit(
@@ -1535,7 +1536,7 @@ ${regression}
 
     depth = depth + 1;
 
-    this.emitter.emit(events.log.log, `${file} (start)`);
+    this.emitter.emit(events.log.log, `${inputFile} (start)`);
 
     // Use the new helper method to resolve file paths relative to testdriver directory
     const currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
@@ -1588,7 +1589,7 @@ ${regression}
       this.sourceMapper.restoreContext(previousContext);
     }
 
-    this.emitter.emit(events.log.log, `${file} (end)`);
+    this.emitter.emit(events.log.log, `${inputFile} (end)`);
   }
 
   // Returns sandboxId to use (either from file if recent, or null)
@@ -1795,10 +1796,10 @@ ${regression}
       // Start the debugger server as early as possible to ensure event listeners are attached
       if (!debuggerStarted) {
         debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
-        this.emitter.emit(
-          events.log.narration,
-          theme.green(`Starting debugger server...`),
-        );
+        // this.emitter.emit(
+        //   events.log.narration,
+        //   theme.green(`Starting debugger server...`),
+        // );
         debuggerProcess = await createDebuggerProcess(
           this.config,
           this.emitter,
@@ -2049,13 +2050,13 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 
   async runLifecycle(lifecycleName) {
 
-    console.log("Running lifecycle:", lifecycleName);
 
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
 
-    console.log("Current file path:", currentFilePath);
+    this.emitter.emit(events.log.log, ``);
+    this.emitter.emit(events.log.log, "Running lifecycle: " + lifecycleName);
     
     // If we still don't have a currentFilePath, fall back to the default testdriver directory
     if (!currentFilePath) {
@@ -2100,7 +2101,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       }
     }
 
-    console.log(lifecycleFile)
+    this.emitter.emit(events.log.log, lifecycleFile);
 
     if (lifecycleFile) {
       // Store current source mapping state before running lifecycle file
