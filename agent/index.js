@@ -433,6 +433,7 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Log current execution position for debugging
     if (this.sourceMapper.currentFileSourceMap) {
+      this.emitter.emit(events.log.log, "");
       this.emitter.emit(
         events.log.log,
         theme.dim(`${this.sourceMapper.getCurrentPositionDescription()}`),
