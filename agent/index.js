@@ -1806,6 +1806,7 @@ ${regression}
       }
       this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
       this.emitter.emit(events.log.log, `This is beta software!`);
+      this.emitter.emit(events.log.log, ``);
       this.emitter.emit(
         events.log.log,
         theme.yellow(`Join our Discord for help`),
@@ -1814,6 +1815,7 @@ ${regression}
         events.log.log,
         `https://discord.com/invite/cWDFW8DzPm`,
       );
+      this.emitter.emit(events.log.log, ``);
 
       // make testdriver directory if it doesn't exist
       let testdriverFolder = path.join(this.workingDir);

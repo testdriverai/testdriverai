@@ -142,13 +142,14 @@ class BaseCommand extends Command {
 
     // Handle show window events
     this.agent.emitter.on("show-window", async (url) => {
-      console.log(`Live test execution: `);
+
+      this.emitter.emit(events.log.log, `Live test execution: `);
       if (this.agent.config.CI) {
         let u = new URL(url);
         u = JSON.parse(u.searchParams.get("data"));
-        console.log(`${u.url}&view_only=true`);
+        this.emitter.emit(`${u.url}&view_only=true`);
       } else {
-        console.log(url);
+        this.emitter.emit(url);
         await openBrowser(url);
       }
     });
