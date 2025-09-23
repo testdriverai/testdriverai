@@ -967,7 +967,7 @@ commands:
       });
 
 
-      console.log('writing file', path1, contents)
+      this.emitter.emit(events.log.debug, `writing file ${path1} ${contents}`);
 
       fs.writeFileSync(path1, contents);
     }
