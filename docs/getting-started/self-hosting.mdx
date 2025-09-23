@@ -5,11 +5,26 @@ description: "Complete guide to self-hosting TestDriver instances on AWS"
 icon: "server"
 ---
 
+```mermaid
+graph LR
+    A[CLI] <--> B[api.testdriver.ai]
+    B <--> C[Your AWS EC2 Instance]
+```
+
+Self-hosting TestDriver allows you to run tests on your own infrastructure, giving you full control over the environment, security, and configurations. 
+This guide walks you through setting up and managing self-hosted TestDriver instances using AWS.
+
+## Why self host?
+
+- **Enhanced security**: Get complete control over ingress and egress rules.
+- **Complete customization**: Modify the TestDriver Golden Image to include custom dependencies, software, and configurations at launch time.
+- **Powerful Infrastructure**: Run tests on bare metal infrastructure that support emulators and simulators.
+
 ## Quick Start (TL;DR)
 
-1. **Copy the workflow file**: Use `.github/workflows/self-hosted.yml` as your template
-2. **Run CloudFormation**: Deploy our `cloudformation.yaml` to provision infrastructure
-3. **Setup instances**: Use `aws-setup.sh` with your launch template ID
+1. **Copy the workflow file**: Use [`.github/workflows/self-hosted.yml`](https://github.com/testdriverai/cli/tree/main/.github/workflows/self-hosted.yml) as your template
+2. **Run CloudFormation**: Deploy our [`setup/aws/cloudformation.yaml`](https://github.com/testdriverai/cli/tree/main/setup/aws/cloudformation.yaml) to provision infrastructure
+3. **Setup instances**: Use [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/setup/aws/spawn-runner.sh) with your launch template ID
 4. **Configure GitHub Actions**: Add AWS credentials to your repository secrets
 
 ## Overview
@@ -19,30 +34,33 @@ Self-hosting TestDriver gives you complete control over your test execution envi
 ## Prerequisites
 
 - AWS account with appropriate permissions
-- AWS CLI installed and configured
-- Access to TestDriver's shared AMI (Enterprise customers)
+- AWS CLI installed locally
+- Access to TestDriver's shared AMI. [Contact us for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
 - GitHub repository for your tests
 
-## Step 1: Infrastructure Setup
+## Step 1: Set Up AWS Infrastructure
 
 ### Deploy CloudFormation Stack
 
-Our `cloudformation.yaml` template creates:
+Our [`setup/aws/cloudformation.yaml`](https://github.com/testdriverai/cli/tree/main/setup/aws/cloudformation.yaml) template creates:
+
 - Dedicated VPC with public subnet
 - Security group with proper port access
 - IAM roles and instance profiles
 - EC2 launch template for programmatic instance creation
 
+This is a one-time setup used to generate a template ID for launching instances.
+
 ```bash
 # Deploy the CloudFormation stack
 aws cloudformation deploy \
-  --template-file cloudformation.yaml \
-  --stack-name testdriver-infrastructure \
+  --template-file setup/aws/cloudformation.yaml \
+  --stack-name testdriver-infrastructure-11 \
   --parameter-overrides \
     ProjectTag=testdriver \
     AllowedIngressCidr=0.0.0.0/0 \
-    InstanceType=t3.medium \
-    CreateKeyPair=yes \
+    InstanceType=c5.xlarge \
+    CreateKeyPair=true \
   --capabilities CAPABILITY_IAM
 ```
 
@@ -56,28 +74,29 @@ After CloudFormation completes, find the launch template ID in the stack outputs
 
 ```bash
 aws cloudformation describe-stacks \
-  --stack-name testdriver-infrastructure \
+  --stack-name testdriver-infrastructure-11 \
   --query 'Stacks[0].Outputs[?OutputKey==`LaunchTemplateId`].OutputValue' \
   --output text
 ```
 
 Save this ID - you'll need it for the next step.
 
-## Step 2: Instance Management
+## Step 2: Spawn a New TestDriver Runner
 
 ### Using aws-setup.sh
 
-Our `aws-setup.sh` script handles the complete instance lifecycle:
+Our [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/setup/aws/spawn-runner.sh) spawns and initializes instances:
+
 - Launches instances using your launch template
-- Waits for proper initialization
+- Completes TestDriver handshake
 - Returns instance details for CLI usage
-- Handles cleanup and termination
+
 
 ```bash
 # Launch an instance
 export AWS_REGION=us-east-2
-export AMI_ID=ami-085f872ca0cd80fed  # Your TestDriver AMI
-export AWS_LAUNCH_TEMPLATE_ID=lt-07c53ce8349b958d1  # From CloudFormation output
+export AMI_ID=ami-085f872ca0cd80fed  # Your TestDriver AMI (contact us to get one)
+export AWS_LAUNCH_TEMPLATE_ID=lt-00d02f31cfc602f27  # From CloudFormation output from step 1
 
 ./aws-setup.sh
 ```
@@ -89,11 +108,35 @@ INSTANCE_ID=i-1234567890abcdef0
 AWS_REGION=us-east-2
 ```
 
+### CLI Usage
+
+Once you have an instance IP, run tests directly:
+
+```bash
+# Basic test execution
+npx testdriverai run test.yaml --ip=1.2.3.4
+```
+
+You can use the `PUBLIC_IP` to target the instance you just spawned via `./setup/aws/spawn-runner.sh`:
+
+```sh
+npx testdriverai@latest run testdriver/your-test.yaml \
+  --ip="$PUBLIC_IP" \
+```
+
+Note that the instance will remain running until you terminate it. You can do this manually via the AWS console, or programmatically in your CI workflow:
+
+```bash
+aws ec2 terminate-instances \
+  --region us-east-2 \
+  --instance-ids $INSTANCE_ID
+```
+
 ## Step 3: GitHub Actions Integration
 
 ### Example Workflow
 
-Our `.github/workflows/self-hosted.yml` demonstrates the complete workflow:
+Our [`.github/workflows/self-hosted.yml`](https://github.com/testdriverai/cli/tree/main/.github/workflows/self-hosted.yml) demonstrates the complete workflow:
 
 ```yaml
 name: TestDriver Self-Hosted
@@ -112,7 +155,7 @@ jobs:
       - name: Setup AWS Instance
         id: aws-setup
         run: |
-          OUTPUT=$(./aws-setup.sh | tee /dev/stderr)
+          OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr)
           PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
           INSTANCE_ID=$(echo "$OUTPUT" | grep "INSTANCE_ID=" | cut -d'=' -f2)
           echo "public-ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
@@ -127,8 +170,7 @@ jobs:
       - name: Run TestDriver
         run: |
           node bin/testdriverai.js run your-test.yaml \
-            --ip="${{ steps.aws-setup.outputs.public-ip }}" \
-            --junit=results.xml
+            --ip="${{ steps.aws-setup.outputs.public-ip }}"
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           
@@ -153,25 +195,7 @@ Configure these secrets in your GitHub repository:
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
 | `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1` |
 | `AMI_ID` | TestDriver AMI ID | `ami-085f872ca0cd80fed` |
-| `TD_API_KEY` | TestDriver API key | Your API key from dashboard |
-
-## Step 4: Running Tests
-
-### CLI Usage
-
-Once you have an instance IP, run tests directly:
-
-```bash
-# Basic test execution
-npx testdriverai run test.yaml --ip=1.2.3.4
-
-# With custom outputs
-npx testdriverai run test.yaml --ip=1.2.3.4 --junit=results.xml
-```
-
-### TestDriver Configuration
-
-The CLI only needs the instance IP address. All other configuration (AMI setup, networking, etc.) is handled by the infrastructure.
+| `TD_API_KEY` | TestDriver API key | Your API key from [the dashboard](https://app.testdriver.ai) |
 
 ## AMI Customization
 
@@ -273,17 +297,3 @@ For enterprise customers:
 - Contact your account manager for AMI access issues
 - Use support channels for infrastructure questions
 - Check the TestDriver documentation for CLI usage
-
-## Cost Optimization
-
-### Instance Management
-- **Auto-terminate** instances after tests complete
-- **Use spot instances** for cost savings (if compatible with your workflow)
-- **Right-size instances** based on test requirements
-- **Schedule tests** during off-peak hours for better pricing
-
-### Monitoring
-```bash
-# Set up billing alerts
-aws budgets create-budget --account-id 123456789012 --budget file://budget.json
-```
