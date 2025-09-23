@@ -1,4 +1,4 @@
-name: Computer-Use Acceptance
+name: AWS
 
 on:
   workflow_dispatch:
