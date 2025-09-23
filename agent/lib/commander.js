@@ -86,7 +86,7 @@ commands:
           break;
         case "press-keys":
           emitter.emit(events.log.log, generator.jsonToManual(object));
-          emitter.emit(events.log.narration, `scrolling ${object.direction}`);
+          emitter.emit(events.log.narration, `pressing keys: ${Array.isArray(object.keys) ? object.keys.join(', ') : object.keys}`);
           response = await commands["press-keys"](object.keys);
           break;
         case "scroll":
