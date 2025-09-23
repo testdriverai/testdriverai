@@ -1726,7 +1726,7 @@ ${regression}
         events.log.narration,
         theme.dim(`no recent sandbox found, creating a new one.`),
       );
-    } else if (this.sandboxId && !this.config.CI && !createNew) {
+    } else if (this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
