@@ -11,7 +11,7 @@ graph LR
     B <--> C[Your AWS EC2 Instance]
 ```
 
-Self-hosting TestDriver allows you to run tests on your own infrastructure, giving you full control over the environment, security, and configurations. 
+Self-hosting TestDriver allows you to run tests on your own infrastructure, giving you full control over the environment, security, and configurations.
 This guide walks you through setting up and managing self-hosted TestDriver instances using AWS.
 
 ## Why self host?
@@ -65,7 +65,8 @@ aws cloudformation deploy \
 ```
 
 <Danger>
-  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to lock down access to your VPC.
+  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP
+  ranges to lock down access to your VPC.
 </Danger>
 
 ### Get Launch Template ID
@@ -91,7 +92,6 @@ Our [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/
 - Completes TestDriver handshake
 - Returns instance details for CLI usage
 
-
 ```bash
 # Launch an instance
 export AWS_REGION=us-east-2
@@ -102,6 +102,7 @@ export AWS_LAUNCH_TEMPLATE_ID=lt-00d02f31cfc602f27  # From CloudFormation output
 ```
 
 The script outputs:
+
 ```
 PUBLIC_IP=1.2.3.4
 INSTANCE_ID=i-1234567890abcdef0
@@ -151,7 +152,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Setup AWS Instance
         id: aws-setup
         run: |
@@ -166,14 +167,14 @@ jobs:
           AWS_REGION: us-east-2
           AWS_LAUNCH_TEMPLATE_ID: ${{ secrets.AWS_LAUNCH_TEMPLATE_ID }}
           AMI_ID: ${{ secrets.AMI_ID }}
-          
+
       - name: Run TestDriver
         run: |
           node bin/testdriverai.js run your-test.yaml \
             --ip="${{ steps.aws-setup.outputs.public-ip }}"
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-          
+
       - name: Shutdown AWS Instance
         if: always()
         run: |
@@ -189,19 +190,20 @@ jobs:
 
 Configure these secrets in your GitHub repository:
 
-| Secret | Description | Example |
-|--------|-------------|---------|
-| `AWS_ACCESS_KEY_ID` | AWS access key | `AKIAIOSFODNN7EXAMPLE` |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
-| `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1` |
-| `AMI_ID` | TestDriver AMI ID | `ami-085f872ca0cd80fed` |
-| `TD_API_KEY` | TestDriver API key | Your API key from [the dashboard](https://app.testdriver.ai) |
+| Secret                   | Description                         | Example                                                      |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------ |
+| `AWS_ACCESS_KEY_ID`      | AWS access key                      | `AKIAIOSFODNN7EXAMPLE`                                       |
+| `AWS_SECRET_ACCESS_KEY`  | AWS secret key                      | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`                   |
+| `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1`                                       |
+| `AMI_ID`                 | TestDriver AMI ID                   | `ami-085f872ca0cd80fed`                                      |
+| `TD_API_KEY`             | TestDriver API key                  | Your API key from [the dashboard](https://app.testdriver.ai) |
 
 ## AMI Customization
 
 ### Using the Base AMI
 
 Our AMI comes pre-configured with:
+
 - Windows Server with desktop environment
 - Required TestDriver dependencies
 - Optimized settings for test execution
@@ -277,16 +279,19 @@ steps:
 ### Common Issues
 
 **Instance not responding:**
+
 - Check security group rules allow necessary ports
 - Verify instance has passed all status checks
 - Ensure AMI is compatible with selected instance type
 
 **Connection timeouts:**
+
 - Verify network connectivity from runner to instance
 - Check VPC routing and internet gateway configuration
 - Confirm instance is in correct subnet
 
 **AWS CLI errors:**
+
 - Validate AWS credentials and permissions
 - Check AWS service quotas and limits
 - Verify region consistency across all resources
@@ -294,6 +299,7 @@ steps:
 ### Getting Help
 
 For enterprise customers:
+
 - Contact your account manager for AMI access issues
 - Use support channels for infrastructure questions
 - Check the TestDriver documentation for CLI usage

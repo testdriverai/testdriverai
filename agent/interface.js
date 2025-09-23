@@ -56,7 +56,8 @@ function createCommandDefinitions(agent) {
           description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
         ip: Flags.string({
-          description: "Connect directly to a sandbox at the specified IP address",
+          description:
+            "Connect directly to a sandbox at the specified IP address",
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
@@ -133,7 +134,8 @@ function createCommandDefinitions(agent) {
           description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
         ip: Flags.string({
-          description: "Connect directly to a sandbox at the specified IP address",
+          description:
+            "Connect directly to a sandbox at the specified IP address",
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",

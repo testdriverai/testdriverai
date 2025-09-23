@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   Baseline artifacts (NO EC2 instance): Creates a dedicated VPC with public subnet, Security Group, 
   IAM Role/Profile, optional KeyPair, and an EC2 Launch Template so you can spawn many instances 
@@ -44,15 +44,15 @@ Metadata:
 
 Rules:
   ValidateKeyPairConfiguration:
-    RuleCondition: !Equals [!Ref CreateKeyPair, 'no']
+    RuleCondition: !Equals [!Ref CreateKeyPair, "no"]
     Assertions:
-      - Assert: !Not [!Equals [!Ref ExistingKeyName, '']]
+      - Assert: !Not [!Equals [!Ref ExistingKeyName, ""]]
         AssertDescription: "ExistingKeyName must be provided when CreateKeyPair is 'no'"
 
 Parameters:
   NotificationEmail:
     Type: String
-    Default: ''
+    Default: ""
     Description: Email address to receive deployment completion notifications (optional)
 
   ProjectTag:
@@ -63,7 +63,6 @@ Parameters:
     Type: String
     Default: c5.xlarge
     AllowedValues:
-
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
@@ -87,13 +86,13 @@ Parameters:
     Description: Create a new key pair for instance access? (If 'no', you must provide an existing key name)
   ExistingKeyName:
     Type: String
-    Default: ''
+    Default: ""
     Description: Name of existing EC2 Key Pair (only required when CreateKeyPair is 'no')
 
 Conditions:
-  UseExistingKeyProvided: !Not [!Equals [!Ref ExistingKeyName, '']]
-  CreateKey: !Equals [!Ref CreateKeyPair, 'yes']
-  SendNotification: !Not [!Equals [!Ref NotificationEmail, '']]
+  UseExistingKeyProvided: !Not [!Equals [!Ref ExistingKeyName, ""]]
+  CreateKey: !Equals [!Ref CreateKeyPair, "yes"]
+  SendNotification: !Not [!Equals [!Ref NotificationEmail, ""]]
 
 Resources:
   # VPC for TestDriver
@@ -104,7 +103,7 @@ Resources:
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags:
-        - { Key: Name, Value: !Sub '${AWS::StackName}-vpc' }
+        - { Key: Name, Value: !Sub "${AWS::StackName}-vpc" }
         - { Key: Project, Value: !Ref ProjectTag }
 
   # Public subnet for EC2 instances
@@ -113,10 +112,10 @@ Resources:
     Properties:
       VpcId: !Ref TestDriverVpc
       CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs '']
+      AvailabilityZone: !Select [0, !GetAZs ""]
       MapPublicIpOnLaunch: true
       Tags:
-        - { Key: Name, Value: !Sub '${AWS::StackName}-public-subnet' }
+        - { Key: Name, Value: !Sub "${AWS::StackName}-public-subnet" }
         - { Key: Project, Value: !Ref ProjectTag }
 
   # Internet Gateway
@@ -124,7 +123,7 @@ Resources:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
-        - { Key: Name, Value: !Sub '${AWS::StackName}-igw' }
+        - { Key: Name, Value: !Sub "${AWS::StackName}-igw" }
         - { Key: Project, Value: !Ref ProjectTag }
 
   # Attach Internet Gateway to VPC
@@ -140,7 +139,7 @@ Resources:
     Properties:
       VpcId: !Ref TestDriverVpc
       Tags:
-        - { Key: Name, Value: !Sub '${AWS::StackName}-public-rt' }
+        - { Key: Name, Value: !Sub "${AWS::StackName}-public-rt" }
         - { Key: Project, Value: !Ref ProjectTag }
 
   # Route to Internet Gateway
@@ -165,15 +164,69 @@ Resources:
       GroupDescription: SG for QA desktop testing (RDP/HTTPS/NGINX/pyautogui + VNC)
       VpcId: !Ref TestDriverVpc
       SecurityGroupIngress:
-        - { IpProtocol: tcp, FromPort: 8765, ToPort: 8765, CidrIp: !Ref AllowedIngressCidr, Description: 'pyautogui-cli WebSockets' }
-        - { IpProtocol: tcp, FromPort: 8443, ToPort: 8443, CidrIp: !Ref AllowedIngressCidr, Description: 'Custom 8443' }
-        - { IpProtocol: tcp, FromPort: 8080, ToPort: 8080, CidrIp: !Ref AllowedIngressCidr, Description: 'NGINX 8080' }
-        - { IpProtocol: tcp, FromPort: 80,   ToPort: 80,   CidrIp: !Ref AllowedIngressCidr, Description: 'HTTP 80' }
-        - { IpProtocol: tcp, FromPort: 443,  ToPort: 443,  CidrIp: !Ref AllowedIngressCidr, Description: 'HTTPS 443' }
-        - { IpProtocol: tcp, FromPort: 3389, ToPort: 3389, CidrIp: !Ref AllowedIngressCidr, Description: 'RDP 3389' }
-        - { IpProtocol: tcp, FromPort: 5900, ToPort: 5900, CidrIp: !Ref AllowedIngressCidr, Description: 'TightVNC 5900' }
-        - { IpProtocol: tcp, FromPort: 5901, ToPort: 5901, CidrIp: !Ref AllowedIngressCidr, Description: 'noVNC Websockify 5901' }
-        - { IpProtocol: tcp, FromPort: 6080, ToPort: 6080, CidrIp: !Ref AllowedIngressCidr, Description: 'noVNC HTTP 6080' }
+        - {
+            IpProtocol: tcp,
+            FromPort: 8765,
+            ToPort: 8765,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "pyautogui-cli WebSockets",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 8443,
+            ToPort: 8443,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "Custom 8443",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 8080,
+            ToPort: 8080,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "NGINX 8080",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 80,
+            ToPort: 80,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "HTTP 80",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 443,
+            ToPort: 443,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "HTTPS 443",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 3389,
+            ToPort: 3389,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "RDP 3389",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 5900,
+            ToPort: 5900,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "TightVNC 5900",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 5901,
+            ToPort: 5901,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "noVNC Websockify 5901",
+          }
+        - {
+            IpProtocol: tcp,
+            FromPort: 6080,
+            ToPort: 6080,
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "noVNC HTTP 6080",
+          }
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -185,7 +238,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal: { Service: ec2.amazonaws.com }
@@ -204,13 +257,13 @@ Resources:
     Type: AWS::EC2::KeyPair
     Condition: CreateKey
     Properties:
-      KeyName: !Sub '${AWS::StackName}-key'
+      KeyName: !Sub "${AWS::StackName}-key"
       KeyType: rsa
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: !Sub '${AWS::StackName}-lt'
+      LaunchTemplateName: !Sub "${AWS::StackName}-lt"
       LaunchTemplateData:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
@@ -219,7 +272,7 @@ Resources:
         NetworkInterfaces:
           - DeviceIndex: 0
             SubnetId: !Ref PublicSubnet
-            Groups: [ !Ref SecurityGroup ]
+            Groups: [!Ref SecurityGroup]
             AssociatePublicIpAddress: true
         KeyName: !If
           - CreateKey
@@ -230,17 +283,17 @@ Resources:
             - !Ref AWS::NoValue
         TagSpecifications:
           - ResourceType: instance
-            Tags: [ { Key: Project, Value: !Ref ProjectTag } ]
+            Tags: [{ Key: Project, Value: !Ref ProjectTag }]
           - ResourceType: volume
-            Tags: [ { Key: Project, Value: !Ref ProjectTag } ]
+            Tags: [{ Key: Project, Value: !Ref ProjectTag }]
 
   # SNS Topic for deployment notifications
   DeploymentNotificationTopic:
     Type: AWS::SNS::Topic
     Condition: SendNotification
     Properties:
-      TopicName: !Sub '${AWS::StackName}-deployment-notifications'
-      DisplayName: !Sub '${AWS::StackName} Deployment Notifications'
+      TopicName: !Sub "${AWS::StackName}-deployment-notifications"
+      DisplayName: !Sub "${AWS::StackName} Deployment Notifications"
       Tags:
         - { Key: Project, Value: !Ref ProjectTag }
 
@@ -274,7 +327,7 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: SendNotification
     Properties:
-      FunctionName: !Sub '${AWS::StackName}-deployment-notifier'
+      FunctionName: !Sub "${AWS::StackName}-deployment-notifier"
       Runtime: python3.11
       Handler: index.lambda_handler
       Role: !GetAtt NotificationLambdaRole.Arn
@@ -283,7 +336,7 @@ Resources:
           import boto3
           import json
           import cfnresponse
-          
+
           def lambda_handler(event, context):
               try:
                   if event['RequestType'] == 'Create':
@@ -293,10 +346,10 @@ Resources:
                       
                       message = f"""
           TestDriver Infrastructure Deployment Complete!
-          
+
           Stack Name: {stack_name}
           Status: CREATE_COMPLETE
-          
+
           Your TestDriver infrastructure is now ready to use.
           Check the CloudFormation outputs for resource IDs and configuration details.
                       """
@@ -320,7 +373,7 @@ Resources:
     Condition: SendNotification
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -331,7 +384,7 @@ Resources:
       Policies:
         - PolicyName: SNSPublishPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -343,42 +396,42 @@ Resources:
   SsmParamSg:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub '/testdriver/infra/${AWS::StackName}/security-group-id'
+      Name: !Sub "/testdriver/infra/${AWS::StackName}/security-group-id"
       Type: String
       Value: !Ref SecurityGroup
 
   SsmParamIp:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub '/testdriver/infra/${AWS::StackName}/instance-profile-name'
+      Name: !Sub "/testdriver/infra/${AWS::StackName}/instance-profile-name"
       Type: String
       Value: !Ref InstanceProfile
 
   SsmParamLt:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub '/testdriver/infra/${AWS::StackName}/launch-template-id'
+      Name: !Sub "/testdriver/infra/${AWS::StackName}/launch-template-id"
       Type: String
       Value: !Ref LaunchTemplate
 
   SsmParamLtLatest:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub '/testdriver/infra/${AWS::StackName}/launch-template-latest-version'
+      Name: !Sub "/testdriver/infra/${AWS::StackName}/launch-template-latest-version"
       Type: String
       Value: !GetAtt LaunchTemplate.LatestVersionNumber
 
   SsmParamVpc:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub '/testdriver/infra/${AWS::StackName}/testdriver-vpc-id'
+      Name: !Sub "/testdriver/infra/${AWS::StackName}/testdriver-vpc-id"
       Type: String
       Value: !Ref TestDriverVpc
 
   SsmParamSubnet:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Sub '/testdriver/infra/${AWS::StackName}/testdriver-public-subnet-id'
+      Name: !Sub "/testdriver/infra/${AWS::StackName}/testdriver-public-subnet-id"
       Type: String
       Value: !Ref PublicSubnet
 
@@ -403,8 +456,8 @@ Outputs:
     Description: Latest Launch Template version
   KeyPairSsmParam:
     Condition: CreateKey
-    Value: !Sub '/ec2/keypair/${KeyPair.KeyPairId}'
+    Value: !Sub "/ec2/keypair/${KeyPair.KeyPairId}"
     Description: SSM parameter that stores the generated private key
   SsmNamespaceUsed:
-    Value: !Sub '/testdriver/infra/${AWS::StackName}'
+    Value: !Sub "/testdriver/infra/${AWS::StackName}"
     Description: Prefix where IDs are stored for discovery

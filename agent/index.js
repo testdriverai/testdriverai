@@ -1701,20 +1701,18 @@ ${regression}
 
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (this.ip) {
-      
       let instance = await this.sandbox.send({
         type: "direct",
         resolution: this.config.TD_RESOLUTION,
         ci: this.config.CI,
-        ip: this.ip
+        ip: this.ip,
       });
-      
+
       await this.renderSandbox(instance.instance, headless);
       await this.newSession();
       await this.runLifecycle("provision");
-      
-      return;
 
+      return;
     } else if (!createNew && recentId) {
       this.emitter.emit(
         events.log.narration,
