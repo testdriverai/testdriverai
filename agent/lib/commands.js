@@ -730,14 +730,13 @@ const createCommands = (
           if (!silent && result.out?.stdout) {
             emitter.emit(events.log.log, theme.dim(`stdout:`), true);
             emitter.emit(events.log.log, `${result.out.stdout}`, true);
-
           }
 
           if (!silent && result.out.stderr) {
             emitter.emit(events.log.log, theme.dim(`stderr:`), true);
             emitter.emit(events.log.log, `${result.out.stderr}`, true);
           }
-          
+
           return result.out?.stdout?.trim();
         }
       } else if (language == "js") {

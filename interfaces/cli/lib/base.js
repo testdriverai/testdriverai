@@ -79,8 +79,6 @@ class BaseCommand extends Command {
 
       if (event === events.log.narration && isConnected) return;
       console.log(message);
-      
-      
     });
 
     // Use pattern matching for error events
@@ -97,7 +95,6 @@ class BaseCommand extends Command {
 
     // Handle sandbox connection with pattern matching for subsequent events
     this.agent.emitter.on("sandbox:connected", () => {
-
       isConnected = true;
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {
@@ -143,7 +140,6 @@ class BaseCommand extends Command {
 
     // Handle show window events
     this.agent.emitter.on("show-window", async (url) => {
-      
       console.log("");
       console.log(`Live test execution: `);
       if (this.agent.config.CI) {
