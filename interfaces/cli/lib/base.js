@@ -69,7 +69,7 @@ class BaseCommand extends Command {
       );
     };
 
-    let isConnnected = false;
+    let isConnected = false;
 
     // Use pattern matching for log events, but skip log:Debug
     this.agent.emitter.on("log:*", (message) => {
@@ -77,7 +77,7 @@ class BaseCommand extends Command {
 
       if (event === events.log.debug) return;
 
-      if (event === events.log.narration && isConnnected) return;
+      if (event === events.log.narration && isConnected) return;
       console.log(message);
       
       
@@ -98,7 +98,7 @@ class BaseCommand extends Command {
     // Handle sandbox connection with pattern matching for subsequent events
     this.agent.emitter.on("sandbox:connected", () => {
 
-      isConnnected = true;
+      isConnected = true;
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {
         this.sendToSandbox(message);
