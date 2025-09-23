@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "6.0.28",
+  "version": "6.0.31",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "index.js",
   "bin": {
@@ -10,9 +10,9 @@
     "start": "node bin/testdriverai.js",
     "dev": "DEV=true node bin/testdriverai.js",
     "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
-    "docs": "node docs/_scripts/link-replacer.js && cd docs && npx mint dev",
+    "docs": "node docs/_scripts/link-replacer.js && cd docs && npx mint@latest dev",
     "docs:dev": "cd docs && npx mint dev",
-    "docs:build": "node docs/_scripts/link-replacer.js && cd docs && npx mint build",
+    "docs:build": "node docs/_scripts/link-replacer.js && cd docs && npx mint@latest build",
     "docs:links": "node docs/_scripts/link-replacer.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
