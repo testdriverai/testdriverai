@@ -928,7 +928,6 @@ commands:
 
     let testPrompts = await this.parser.findGenerativePrompts(message.data);
 
-
     // for each testPrompt
     for (const testPrompt of testPrompts) {
       // with the contents of the testPrompt
