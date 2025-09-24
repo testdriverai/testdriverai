@@ -484,7 +484,7 @@ class TestDriverAgent extends EventEmitter2 {
         sourcePosition: sourcePosition,
       });
 
-      await this.haveAIResolveError(
+      return await this.haveAIResolveError(
         error,
         yaml.dump({ commands: [yml] }),
         depth,
