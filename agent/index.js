@@ -1791,10 +1791,6 @@ ${regression}
       // Start the debugger server as early as possible to ensure event listeners are attached
       if (!debuggerStarted) {
         debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
-        // this.emitter.emit(
-        //   events.log.narration,
-        //   theme.green(`Starting debugger server...`),
-        // );
         debuggerProcess = await createDebuggerProcess(
           this.config,
           this.emitter,
