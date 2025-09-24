@@ -491,7 +491,6 @@ class TestDriverAgent extends EventEmitter2 {
         true,
         shouldSave,
       );
-      throw error;
     }
   }
 
