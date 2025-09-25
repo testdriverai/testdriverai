@@ -64,7 +64,8 @@
               "apps/static-websites",
               "apps/desktop-apps",
               "apps/chrome-extensions",
-              "apps/mobile-apps"
+              "apps/mobile-apps",
+              "apps/tauri-apps"
             ]
           },
           {
