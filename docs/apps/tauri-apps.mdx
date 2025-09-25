@@ -36,12 +36,16 @@ To start testing your Tauri app with TestDriver, you need the following:
 
         <Tabs>
           <Tab title="macOS / Linux">
-            ```bash Export an environment variable on macOS or Linux systems
+            Export an environment variable on macOS or Linux systems:
+
+            ```bash
             export TD_API_KEY="your_api_key_here"
             ```
           </Tab>
           <Tab title="Windows">
-            ```powershell Export an environment variable in PowerShell
+            Export an environment variable in PowerShell:
+
+            ```powershell
             setx TD_API_KEY "your_api_key_here"
             ```
           </Tab>
@@ -81,7 +85,8 @@ To start testing your Tauri app with TestDriver, you need the following:
 
       **If you're new to Playwright, you should follow their guide first.**
     </Info>
-    In a new folder or an existing, run:
+
+    In a new folder or an existing directory, run:
 
     <Tabs>
       <Tab title="npm">
@@ -120,7 +125,7 @@ To start testing your Tauri app with TestDriver, you need the following:
 
 ### Setup
 
-First, we need to modify the default Playwright configuration & our Tauri project to work together:
+First, we need to modify the default Playwright configuration and our Tauri project to work together:
 
 <Steps>
   <Step title="Configure Playwright to start the Tauri frontend">
