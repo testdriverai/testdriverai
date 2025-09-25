@@ -38,18 +38,23 @@ const censorSensitiveData = (message) => {
 
 // Function to censor sensitive data in any value (recursive for objects/arrays)
 const censorSensitiveDataDeep = (value) => {
-  if (typeof value === "string") {
-    return censorSensitiveData(value);
-  } else if (Array.isArray(value)) {
-    return value.map(censorSensitiveDataDeep);
-  } else if (value && typeof value === "object") {
-    const result = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = censorSensitiveDataDeep(val);
+  try {
+    if (typeof value === "string") {
+      return censorSensitiveData(value);
+    } else if (Array.isArray(value)) {
+      return value.map(censorSensitiveDataDeep);
+    } else if (value && typeof value === "object") {
+      const result = {};
+      for (const [key, val] of Object.entries(value)) {
+        result[key] = censorSensitiveDataDeep(val);
+      }
+      return result;
     }
-    return result;
+    return value;
+  } catch {
+    // If we hit any error (like circular reference), just return a safe placeholder
+    return "[Object]";
   }
-  return value;
 };
 
 // Function to update interpolation variables (for runtime updates)

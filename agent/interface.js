@@ -196,6 +196,42 @@ function createCommandDefinitions(agent) {
         console.log(`TestDriver.ai v${packageJson.version}`);
       },
     },
+
+    generate: {
+      description: "Generate test files based on current screen state",
+      args: {
+        file: Args.string({
+          description: "Base test file to run before generating (optional)",
+          required: false,
+        }),
+      },
+      flags: {
+        count: Flags.integer({
+          description: "Number of test files to generate",
+          default: 3,
+        }),
+        headless: Flags.boolean({
+          description: "Run in headless mode (no GUI)",
+          default: false,
+        }),
+        new: Flags.boolean({
+          description:
+            "Create a new sandbox instead of reconnecting to an existing one",
+          default: false,
+        }),
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
+        }),
+      },
+      handler: async (args, flags) => {
+        // The file argument is already handled by thisFile in the agent constructor
+        // Just call generate with the count
+        await agent.generate(flags.count || 3);
+      },
+    },
   };
 }
 

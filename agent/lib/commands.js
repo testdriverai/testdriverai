@@ -176,7 +176,7 @@ const createCommands = (
     }
 
     const handleAssertResponse = (response) => {
-      emitter.emit(events.log.markdown.static, response);
+      emitter.emit(events.log.log, response);
 
       if (response.indexOf("The task passed") > -1) {
         return true;
@@ -727,14 +727,14 @@ const createCommands = (
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
         } else {
-          if (!silent) {
-            emitter.emit(events.log.log, theme.dim(`Command stdout:`), true);
+          if (!silent && result.out?.stdout) {
+            emitter.emit(events.log.log, theme.dim(`stdout:`), true);
             emitter.emit(events.log.log, `${result.out.stdout}`, true);
+          }
 
-            if (result.out.stderr) {
-              emitter.emit(events.log.log, theme.dim(`Command stderr:`), true);
-              emitter.emit(events.log.log, `${result.out.stderr}`, true);
-            }
+          if (!silent && result.out.stderr) {
+            emitter.emit(events.log.log, theme.dim(`stderr:`), true);
+            emitter.emit(events.log.log, `${result.out.stderr}`, true);
           }
 
           return result.out?.stdout?.trim();
