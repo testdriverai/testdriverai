@@ -54,3 +54,12 @@
   justify-content: center;
   display: flex;
 }
+
+img[src$=".svg"] {
+  background: transparent !important;
+}
+
+img[src$="https://tauri.app/favicon.svg"]
+{
+  opacity: 0.3;
+}
