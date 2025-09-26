@@ -45,9 +45,13 @@ function createOclifCommand(commandName) {
             // Set error limit higher for run command
             this.agent.errorLimit = 100;
           }
-          
+
           // Execute through unified command system
-          await this.agent.executeUnifiedCommand(commandName, commandArgs, flags);
+          await this.agent.executeUnifiedCommand(
+            commandName,
+            commandArgs,
+            flags,
+          );
         }
       } catch (error) {
         console.error(`Error executing ${commandName} command:`, error);

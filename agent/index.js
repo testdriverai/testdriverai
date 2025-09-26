@@ -892,7 +892,10 @@ commands:
   // it will generate files that contain only "prompts"
   // @todo revit the generate command
   async generate(count = 1, prompt = null) {
-    this.emitter.emit(events.log.debug, `generate called with count: ${count}, prompt: ${prompt}`);
+    this.emitter.emit(
+      events.log.debug,
+      `generate called with count: ${count}, prompt: ${prompt}`,
+    );
 
     await this.runLifecycle("prerun");
 
