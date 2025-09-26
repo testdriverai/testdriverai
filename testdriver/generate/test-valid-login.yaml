@@ -1,6 +1,0 @@
-version: 6.1.3
-steps:
-  - prompt: Focus the browser window
-  - prompt: Enter standard user credentials
-  - prompt: Click sign in
-  - prompt: Assert that the user is logged in successfully

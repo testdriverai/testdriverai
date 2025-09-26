@@ -30,8 +30,8 @@ function createOclifCommand(commandName) {
         } else {
           // For run and generate commands, use the unified command system
           if (commandName === "generate") {
-            // Generate command needs special handling - pass prompt through setupAgent
-            await this.setupAgentForGenerate(args.prompt, flags);
+            // Generate command: pass prompt as first argument
+            await this.setupAgent(args.prompt, flags);
           } else {
             // Run and other commands use file argument
             const fileArg = args.file || args.action || null;
