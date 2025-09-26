@@ -7,18 +7,17 @@ icon: "https://tauri.app/favicon.svg"
 
 > [Tauri](https://tauri.app/) is a framework for building tiny, fast binaries for all major desktop and mobile platforms. Developers can integrate any frontend framework that compiles to HTML, JavaScript, and CSS for building their user experience while leveraging languages such as Rust, Swift, and Kotlin for backend logic when needed.
 >
-> <br />– [https://tauri.app/start](https://tauri.app/start/)
+> \
+> – [https://tauri.app/start](https://tauri.app/start/)
 
 ## Testing Tauri apps with TestDriver
 
-In this guide, we'll leverage [Playwright](https://playwright.dev/) and the
-[TestDriver Playwright SDK](/getting-started/playwright) to convert the [Tauri Quick Start](https://tauri.app/start/create-project/)
-to TestDriver's selectorless, Vision AI.
+In this guide, we'll leverage [Playwright](https://playwright.dev/) and the [TestDriver Playwright SDK](/getting-started/playwright) to convert the [Tauri Quick Start](https://tauri.app/start/create-project/) to TestDriver's selectorless, Vision AI.
 
-<Callout icon="code">
+<Info>
   View Source:
-  [https://github.com/testdriverai/demo-tauri-app](https://github.com/testdriverai/demo-tauri-app)
-</Callout>
+  https://github.com/testdriverai/demo-tauri-app
+</Info>
 
 ### Requirements
 
@@ -28,11 +27,14 @@ To start testing your Tauri app with TestDriver, you need the following:
   <Accordion title="Create a TestDriver account">
     <Steps>
       <Step title="Create a TestDriver Account">
-        You will need a [TestDriver Pro](https://app.testdriver.ai/team) account (\$20/month) to get an API key.
-        <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team" />
+        You will need a [Free TestDriver Account](https://app.testdriver.ai/team) to get an API key.
+
+        <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team">
+          
+        </Card>
       </Step>
       <Step title="Set up your environment">
-        Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
+        Copy your API key from [your TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
 
         <Tabs>
           <Tab title="macOS / Linux">
@@ -51,27 +53,20 @@ To start testing your Tauri app with TestDriver, you need the following:
           </Tab>
         </Tabs>
       </Step>
-
     </Steps>
-
   </Accordion>
-
   <Accordion title="Create a Tauri project">
-
     <Note>
       Follow Tauri's [Create a Project](https://tauri.app/start/create-project/)
       guide.
     </Note>
-
   </Accordion>
-
-    <Accordion title="Create a Playwright project">
+  <Accordion title="Create a Playwright project">
     <Info>
       This is a condensed version of [Playwright's Installation Instructions](https://playwright.dev/docs/intro).
 
       **If you're new to Playwright, you should follow their guide first.**
     </Info>
-
     In your Tauri project, run:
 
     <Tabs>
@@ -103,9 +98,7 @@ To start testing your Tauri app with TestDriver, you need the following:
     ✔ Install Playwright browsers (can be done manually via 'npx playwright install')? (Y/n)
     > Y
     ```
-
   </Accordion>
-
   <Accordion title="Install the TestDriver Playwright SDK">
     `@testdriver.ai/playwright` is an AI-powered extension of `@playwright/test`.
 
@@ -126,9 +119,7 @@ To start testing your Tauri app with TestDriver, you need the following:
         ```
       </Tab>
     </Tabs>
-
   </Accordion>
-
 </AccordionGroup>
 
 ## Testing the Tauri Web App
@@ -139,7 +130,6 @@ First, we need to modify the default Playwright configuration and our Tauri proj
 
 <Steps>
   <Step title="Configure Playwright to start the Tauri frontend">
-
     In the `playwright.config.ts` file, we'll configure the [`webServer`](https://playwright.dev/docs/test-webserver)
     to start the Tauri frontend for Playwright to test against:
 
@@ -156,11 +146,8 @@ First, we need to modify the default Playwright configuration and our Tauri proj
       },
     });
     ```
-
   </Step>
-
   <Step title="Mock Tauri APIs">
-
     Since we're testing the Tauri frontend, we need to [mock IPC Requests](https://tauri.app/develop/tests/mocking/)
     to simulate `invoke` calls to the Rust backend:
 
@@ -180,55 +167,43 @@ First, we need to modify the default Playwright configuration and our Tauri proj
     ```
 
     We only need to do this once, as we'll be accessing `window.mockIPC` in our tests.
-
   </Step>
-
   <Step title="Create a new test file">
     Create a new file (e.g. `tests/testdriver.spec.ts`) with:
 
     ```typescript tests/testdriver.spec.ts
     import type { mockIPC } from "@tauri-apps/api/mocks";
     import { expect, test } from "@playwright/test";
-
+    
     test.beforeEach(async ({ page }) => {
       await page.goto("http://localhost:1420");
     });
-
+    
     test("should have title", async ({ page }) => {
       await expect(page).toHaveTitle("Tauri + React + TypeScript");
     });
     ```
-
   </Step>
-
   <Step title="Run Playwright in UI Mode">
-
     Now we're ready to run Playwright and start working on our tests:
 
     <Tabs>
       <Tab title="npm">
-
         ```bash
         npx playwright test --ui
         ```
-
       </Tab>
       <Tab title="yarn">
-
         ```bash
         yarn playwright test --ui
         ```
-
       </Tab>
       <Tab title="pnpm">
-
         ```bash
         pnpm exec playwright test --ui
         ```
-
       </Tab>
     </Tabs>
-
     ![Playwright UI Mode](https://playwright.dev/assets/ideal-img/ui-mode.4e54d6b.3598.png)
 
     Click the <Icon icon="play" /> button to successfully run the tests in the UI.
@@ -236,9 +211,7 @@ First, we need to modify the default Playwright configuration and our Tauri proj
     <Tip>
       Click the <Icon icon="eye" /> button to automatically re-run tests on save.
     </Tip>
-
   </Step>
-
 </Steps>
 
 ### Usage
@@ -306,8 +279,7 @@ With TestDriver, we can skip the test implementation **entirely** and let AI per
 
 <Steps>
   <Step title="Mock the `greet` call">
-
-    First, we need to [mock our `invoke` calls](https://tauri.app/develop/tests/mocking/#ipc-requests),
+    First, we need to [`mock our invoke calls`](https://tauri.app/develop/tests/mocking/#ipc-requests),
     since we're testing the frontend behavior and not our Tauri backend:
 
     ```typescript tests/testdriver.spec.ts
@@ -328,11 +300,8 @@ With TestDriver, we can skip the test implementation **entirely** and let AI per
       });
     });
     ```
-
   </Step>
-
   <Step title="Add an Agentic Test">
-
     Next, wrap a _prompt_ in `test.agent` to perform the test:
 
     ```typescript tests/testdriver.spec.ts
@@ -344,7 +313,6 @@ With TestDriver, we can skip the test implementation **entirely** and let AI per
       `);
     });
     ```
-
   </Step>
 </Steps>
 
@@ -376,9 +344,10 @@ We can use TestDriver and natural language to test our Tauri desktop app:
       </Tab>
     </Tabs>
   </Step>
-
   <Step title="Continued Reading">
-    <Note>See [Desktop Apps](/apps/desktop-apps) for more information.</Note>
+    <Note>
+      See [Desktop Apps](/apps/desktop-apps) for more information.
+    </Note>
   </Step>
 </Steps>
 
@@ -406,8 +375,9 @@ We can use TestDriver and natural language to test our Tauri iOS app:
       </Tab>
     </Tabs>
   </Step>
-
   <Step title="Continued Reading">
-    <Note>See [Mobile Apps](/apps/mobile-apps) for more information.</Note>
+    <Note>
+      See [Mobile Apps](/apps/mobile-apps) for more information.
+    </Note>
   </Step>
 </Steps>
