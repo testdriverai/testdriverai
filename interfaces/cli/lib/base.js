@@ -172,20 +172,27 @@ class BaseCommand extends Command {
     return file;
   }
 
-  async setupAgent(file, flags) {
+  async setupAgent(firstArg, flags) {
     // Load .env file into process.env for CLI usage
     require("dotenv").config();
 
     // Create the agent only when actually needed
     const TestDriverAgent = require("../../../agent/index.js");
 
-    // Use --path flag if provided, otherwise use the file argument
-    const filePath = this.id === "run" && flags.path ? flags.path : file;
+    let args;
+    if (this.id === "generate") {
+      // For generate command, the first parameter is a prompt, not a file
+      args = firstArg ? [firstArg] : [];
+    } else {
+      // For run and other commands, handle file path
+      const filePath = this.id === "run" && flags.path ? flags.path : firstArg;
+      args = filePath ? [filePath] : [];
+    }
 
     // Prepare CLI args for the agent with all derived options
     const cliArgs = {
       command: this.id,
-      args: filePath ? [filePath] : [], // Only pass file path if it exists
+      args,
       options: {
         ...flags,
         resultFile:
