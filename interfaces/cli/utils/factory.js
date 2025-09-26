@@ -29,23 +29,22 @@ function createOclifCommand(commandName) {
           await readlineInterface.start();
         } else {
           // For run and generate commands, use the unified command system
+          let commandArgs;
           if (commandName === "generate") {
             // Generate command: pass prompt as first argument
             await this.setupAgent(args.prompt, flags);
+            commandArgs = [args.prompt];
           } else {
             // Run and other commands use file argument
             const fileArg = args.file || args.action || null;
             await this.setupAgent(fileArg, flags);
+            commandArgs = [fileArg];
           }
 
           if (commandName === "run") {
             // Set error limit higher for run command
             this.agent.errorLimit = 100;
           }
-
-          // For generate, the prompt is already set up in the agent
-          // For other commands, pass the file argument
-          const commandArgs = commandName === "generate" ? [args.prompt] : [args.file || args.action || null];
           
           // Execute through unified command system
           await this.agent.executeUnifiedCommand(commandName, commandArgs, flags);
