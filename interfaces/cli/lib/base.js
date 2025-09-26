@@ -198,6 +198,31 @@ class BaseCommand extends Command {
     // Create agent with explicit process.env and consolidated CLI args
     this.agent = new TestDriverAgent(process.env, cliArgs);
     this.setupEventListeners();
+  }
+
+  async setupAgentForGenerate(prompt, flags) {
+    // Load .env file into process.env for CLI usage
+    require("dotenv").config();
+
+    // Create the agent only when actually needed
+    const TestDriverAgent = require("../../../agent/index.js");
+
+    // For generate command, pass the prompt as the first argument
+    const cliArgs = {
+      command: this.id,
+      args: prompt ? [prompt] : [], // Pass prompt as first argument
+      options: {
+        ...flags,
+        resultFile:
+          flags.summary && typeof flags.summary === "string"
+            ? path.resolve(flags.summary)
+            : null,
+      },
+    };
+
+    // Create agent with explicit process.env and consolidated CLI args
+    this.agent = new TestDriverAgent(process.env, cliArgs);
+    this.setupEventListeners();
 
     try {
       // Start the agent's initialization

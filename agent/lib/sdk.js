@@ -108,6 +108,9 @@ const createSDK = (emitter, config, sessionInstance) => {
       }
     }
 
+    console.log(path)
+    console.log(data)
+
     emitter.emit(events.sdk.request, {
       path,
     });
