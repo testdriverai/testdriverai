@@ -204,10 +204,6 @@ function createCommandDefinitions(agent) {
           description: "Multi-line text prompt describing what to generate",
           required: false,
         }),
-        file: Args.string({
-          description: "Base test file to run before generating (optional)",
-          required: false,
-        }),
       },
       flags: {
         count: Flags.integer({
@@ -231,7 +227,6 @@ function createCommandDefinitions(agent) {
         }),
       },
       handler: async (args, flags) => {
-        // The file argument is already handled by thisFile in the agent constructor
         // Call generate with the count and prompt
         await agent.generate(flags.count || 3, args.prompt);
       },
