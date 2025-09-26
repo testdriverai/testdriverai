@@ -891,7 +891,7 @@ commands:
   // based on the current state of the system (primarily the current screenshot)
   // it will generate files that contain only "prompts"
   // @todo revit the generate command
-  async generate(count = 1) {
+  async generate(count = 1, prompt = null) {
     this.emitter.emit(events.log.debug, `generate called with count: ${count}`);
 
     await this.runLifecycle("prerun");
@@ -909,7 +909,7 @@ commands:
     let message = await this.sdk.req(
       "generate",
       {
-        prompt: "make sure to do a spellcheck",
+        prompt: prompt || "make sure to do a spellcheck",
         image,
         mousePosition: mouse,
         activeWindow: activeWindow,

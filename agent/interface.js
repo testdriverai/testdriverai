@@ -200,8 +200,8 @@ function createCommandDefinitions(agent) {
     generate: {
       description: "Generate test files based on current screen state",
       args: {
-        file: Args.string({
-          description: "Base test file to run before generating (optional)",
+        prompt: Args.string({
+          description: "Multi-line text prompt describing what to generate",
           required: false,
         }),
       },
@@ -227,9 +227,8 @@ function createCommandDefinitions(agent) {
         }),
       },
       handler: async (args, flags) => {
-        // The file argument is already handled by thisFile in the agent constructor
-        // Just call generate with the count
-        await agent.generate(flags.count || 3);
+        // Call generate with the count and prompt
+        await agent.generate(flags.count || 3, args.prompt);
       },
     },
   };
