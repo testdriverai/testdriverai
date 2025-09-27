@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" failures="0" errors="0" skipped="0">
+  <testsuite name="testdriver/acceptance" tests="1" failures="0" errors="0" skipped="0">
+    <testcase classname="testdriver/acceptance" name="exec-js.yaml" time="92.067">
+      <properties>
+        <property name="step1[passed]" value="launch chrome"/>
+        <property name="step2[passed]" value="fetch user data from API"/>
+        <property name="step3[passed]" value="assert that the username field shows a valid email address"/>
+        <property name="step4[passed]" value="stop dashcam"/>
+      </properties>
+      <system-out><![CDATA[This is beta software!
+
+Join our Discord for help
+https://discord.com/invite/cWDFW8DzPm
+
+Working on /Users/ianjennings/Development/cli/testdriver/acceptance/exec-js.yaml
+establishing connection...
+authenticating...
+no recent sandbox found, creating a new one.
+creating new sandbox (can take up to 2 minutes)...
+connecting...
+
+Running lifecycle: provision
+null
+
+Running lifecycle: prerun
+/Users/ianjennings/Development/cli/testdriver/lifecycle/prerun.yaml
+running /Users/ianjennings/Development/cli/testdriver/lifecycle/prerun.yaml...
+
+> launch chrome
+
+prerun.yaml:3:5
+command='exec' code='dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriv...' lang='pwsh'
+calling exec...
+dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
+
+prerun.yaml:3:8
+command='exec' code='dashcam start' lang='pwsh'
+calling exec...
+dashcam start
+
+prerun.yaml:3:11
+command='exec' code='Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximiz...' lang='pwsh'
+calling exec...
+Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "https://testdriver-sandbox.vercel.app/login"
+
+
+prerun.yaml:3:15
+command='wait-for-text' text='TestDriver.ai Sandbox' timeout=60000
+waiting for TestDriver.ai Sandbox
+waiting for text: "TestDriver.ai Sandbox"...
+1 seconds have passed without finding "TestDriver.ai Sandbox"
+5 seconds have passed without finding "TestDriver.ai Sandbox"
+10 seconds have passed without finding "TestDriver.ai Sandbox"
+"TestDriver.ai Sandbox" found!
+running /Users/ianjennings/Development/cli/testdriver/acceptance/exec-js.yaml...
+Version mismatch detected!
+Running a test created with v5.7.7.
+The local testdriverai version is v6.1.3.
+
+> fetch user data from API
+
+exec-js.yaml:4:6
+command='exec' code='const response = await fetch('https://jsonplaceholder.typicode.com/users');
+const user = await respo...' lang='js'
+calling exec...
+const response = await fetch('https://jsonplaceholder.typicode.com/users');
+const user = await response.json();
+console.log('user', user[0]);
+result = user[0].email;
+
+running js...
+running value of `windows` in local JS vm...
+
+------
+------
+
+Result:
+Sincere@april.biz
+
+exec-js.yaml:4:18
+command='hover-text' text='Username' description='input field for username' action='click'
+searching for input field for username
+waiting for text: "Username"...
+"Username" found!
+thinking...
+
+exec-js.yaml:4:6
+command='click' x=491 y=249 action='click'
+click
+click left clicking at 491, 249...
+
+exec-js.yaml:4:22
+command='type' text='Sincere@april.biz'
+typing Sincere@april.biz
+
+> assert that the username field shows a valid email address
+
+exec-js.yaml:24:26
+command='assert' expect='the username field contains "Sincere@april.biz" which is a valid email address'
+asserting the username field contains "Sincere@april.biz" which is a valid email address
+thinking...
+The task passed. The username field clearly contains “Sincere@april.biz,” which is in a valid email format.
+reviewing test...
+summarizing...
+Summary written to: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/testdriver-summary.md
+exiting...
+
+Running lifecycle: postrun
+/Users/ianjennings/Development/cli/testdriver/lifecycle/postrun.yaml
+running /Users/ianjennings/Development/cli/testdriver/lifecycle/postrun.yaml...
+
+> stop dashcam
+
+postrun.yaml:3:5
+command='exec' code='dashcam -t 'Web Test Recording' -p' lang='pwsh'
+calling exec...
+dashcam -t 'Web Test Recording' -p
+stdout:
+https://app.dashcam.io/replay/68d80efb4dd54d261bb02af9?share=BJGjZR91SpAWw9m0Na3syw
+]]></system-out>
+    </testcase>
+  </testsuite>
+</testsuites>

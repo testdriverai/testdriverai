@@ -1,0 +1,97 @@
+name: v6 Single Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: testdriver-16
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+
+      - name: Create logs directory
+        run: mkdir -p test-logs
+
+      - name: Build concurrently command for all tests
+        id: build_command
+        run: |
+          # Find all test files and build the concurrently command
+          TESTS=$(ls ./testdriver/acceptance/*.yaml | xargs -n1 basename)
+          COMMANDS=""
+          
+          for test in $TESTS; do
+            testname=$(basename "$test" .yaml)
+            if [ -n "$COMMANDS" ]; then
+              COMMANDS="$COMMANDS "
+            fi
+            # Each command runs the test and redirects output to separate log file
+            COMMANDS="$COMMANDS\"node bin/testdriverai.js run testdriver/acceptance/$test --junit=test-logs/$testname.xml > test-logs/$testname.log 2>&1\""
+          done
+          
+          echo "commands=$COMMANDS" >> $GITHUB_OUTPUT
+
+      - name: Run all tests in parallel
+        run: |
+          npx -y concurrently \
+            --prefix "[{name}]" \
+            --names "$(ls ./testdriver/acceptance/*.yaml | xargs -n1 basename | sed 's/.yaml//g' | paste -sd ',')" \
+            ${{ steps.build_command.outputs.commands }}
+        env:
+          FORCE_COLOR: 3
+          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: test-logs/
+
+      - name: Display test results summary
+        if: always()
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          total=0
+          passed=0
+          failed=0
+          
+          for logfile in test-logs/*.log; do
+            if [ -f "$logfile" ]; then
+              testname=$(basename "$logfile" .log)
+              total=$((total + 1))
+              
+              # Check if corresponding junit file exists and has passing tests
+              if [ -f "test-logs/$testname.xml" ] && ! grep -q 'failures="[1-9]' "test-logs/$testname.xml" 2>/dev/null && ! grep -q 'errors="[1-9]' "test-logs/$testname.xml" 2>/dev/null; then
+                echo "✅ $testname" >> $GITHUB_STEP_SUMMARY
+                passed=$((passed + 1))
+              else
+                echo "❌ $testname" >> $GITHUB_STEP_SUMMARY
+                failed=$((failed + 1))
+                echo "   - Log: [test-logs/$testname.log](./test-logs/$testname.log)" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Summary: $passed passed, $failed failed, $total total**" >> $GITHUB_STEP_SUMMARY
