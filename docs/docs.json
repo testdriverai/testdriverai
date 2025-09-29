@@ -50,6 +50,7 @@
               }
             ]
           },
+          "/getting-started/self-hosting",
           "/getting-started/playwright",
           "/getting-started/vscode"
         ]

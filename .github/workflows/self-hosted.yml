@@ -1,0 +1,98 @@
+name: AWS
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  gather:
+    name: Gather Test Files
+    runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/acceptance/*.yaml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+
+  test:
+    needs: gather
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather.outputs.test_files) }}
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # only needed for `act`
+      # - name: Install AWS CLI
+      #   run: |
+      #     apt-get update
+      #     apt-get install curl unzip -y
+      #     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      #     unzip awscliv2.zip
+      #     ./aws/install
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+      - name: Setup AWS Instance
+        id: aws-setup
+        run: |
+          OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr) # Capture and display output
+          echo "$OUTPUT"
+          PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
+          INSTANCE_ID=$(echo "$OUTPUT" | grep "INSTANCE_ID=" | cut -d'=' -f2)
+          AWS_REGION=$(echo "$OUTPUT" | grep "AWS_REGION=" | cut -d'=' -f2)
+          echo "public-ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "instance-id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          echo "aws-region=$AWS_REGION" >> $GITHUB_OUTPUT
+        env:
+          FORCE_COLOR: 3
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+          AWS_LAUNCH_TEMPLATE_ID: lt-00d02f31cfc602f27
+          AMI_ID: ami-085f872ca0cd80fed
+      - name: Run TestDriver
+        run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --ip="${{ steps.aws-setup.outputs.public-ip }}" --junit=out.xml
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app
+          TD_THIS_FILE: ${{ matrix.test }}
+      - name: Upload TestDriver AI CLI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testdriverai-cli-logs-${{ matrix.test }}
+          path: /tmp/testdriverai-cli-*.log
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Upload test results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test }}
+          path: out.xml
+          retention-days: 30
+      - name: Shutdown AWS Instance
+        if: always()
+        run: aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ steps.aws-setup.outputs.aws-region }}
+          INSTANCE_ID: ${{ steps.aws-setup.outputs.instance-id }}
