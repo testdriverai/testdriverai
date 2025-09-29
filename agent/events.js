@@ -1,5 +1,4 @@
 const { EventEmitter2 } = require("eventemitter2");
-const { censorSensitiveDataDeep } = require("./lib/censorship");
 
 // Factory function to create a new emitter instance with censoring middleware
 const createEmitter = () => {
@@ -12,14 +11,6 @@ const createEmitter = () => {
     verboseMemoryLeak: false,
     ignoreErrors: false,
   });
-
-  // Override emit to censor sensitive data before emitting
-  const originalEmit = emitter.emit.bind(emitter);
-  emitter.emit = function (event, ...args) {
-    // Censor all arguments passed to emit
-    const censoredArgs = args.map(censorSensitiveDataDeep);
-    return originalEmit(event, ...censoredArgs);
-  };
 
   return emitter;
 };
@@ -46,7 +37,7 @@ const events = {
   status: "status",
   log: {
     markdown: {
-      static: "log:markdown:static",
+      static: "log:markdown",
       start: "log:markdown:start",
       chunk: "log:markdown:chunk",
       end: "log:markdown:end",

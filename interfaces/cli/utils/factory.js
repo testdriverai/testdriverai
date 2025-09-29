@@ -28,9 +28,18 @@ function createOclifCommand(commandName) {
           this.agent.readlineInterface = readlineInterface;
           await readlineInterface.start();
         } else {
-          // For run and sandbox commands, use the unified command system
-          const fileArg = args.file || args.action || null;
-          await this.setupAgent(fileArg, flags);
+          // For run and generate commands, use the unified command system
+          let commandArgs;
+          if (commandName === "generate") {
+            // Generate command: pass prompt as first argument
+            await this.setupAgent(args.prompt, flags);
+            commandArgs = [args.prompt];
+          } else {
+            // Run and other commands use file argument
+            const fileArg = args.file || args.action || null;
+            await this.setupAgent(fileArg, flags);
+            commandArgs = [fileArg];
+          }
 
           if (commandName === "run") {
             // Set error limit higher for run command
@@ -38,7 +47,11 @@ function createOclifCommand(commandName) {
           }
 
           // Execute through unified command system
-          await this.agent.executeUnifiedCommand(commandName, [fileArg], flags);
+          await this.agent.executeUnifiedCommand(
+            commandName,
+            commandArgs,
+            flags,
+          );
         }
       } catch (error) {
         console.error(`Error executing ${commandName} command:`, error);

@@ -44,7 +44,7 @@ class CustomTransport extends Transport {
 // responsible for rendering ai markdown output
 const { marked } = require("marked");
 const { markedTerminal } = require("marked-terminal");
-const { censorSensitiveData } = require("../agent/lib/censorship");
+const { censorSensitiveDataDeep } = require("../agent/lib/censorship");
 
 const { printf } = winston.format;
 
@@ -56,7 +56,7 @@ const logger = winston.createLogger({
   format: winston.format.combine(
     winston.format.splat(),
     winston.format((info) => {
-      info.message = censorSensitiveData(info.message);
+      info.message = censorSensitiveDataDeep(info.message);
       return info;
     })(),
     logFormat,
@@ -340,7 +340,7 @@ const createMarkdownLogger = (emitter) => {
 
     let diff = consoleOutput.replace(previousConsoleOutput, "");
     if (diff) {
-      diff = censorSensitiveData(diff);
+      diff = censorSensitiveDataDeep(diff);
       process.stdout.write(diff);
     }
   });
@@ -357,7 +357,7 @@ const createMarkdownLogger = (emitter) => {
     let diff = consoleOutput.replace(previousConsoleOutput, "");
 
     if (diff) {
-      diff = censorSensitiveData(diff);
+      diff = censorSensitiveDataDeep(diff);
       process.stdout.write(diff);
     }
     process.stdout.write("\n\n");
