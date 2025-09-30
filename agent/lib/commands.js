@@ -170,7 +170,12 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false, async = false, invert = false) => {
+  const assert = async (
+    assertion,
+    shouldThrow = false,
+    async = false,
+    invert = false,
+  ) => {
     if (async) {
       shouldThrow = true;
     }
@@ -189,7 +194,10 @@ const createCommands = (
       } else {
         if (shouldThrow) {
           // Is fatal, othewise it just changes the assertion to be true
-          throw new MatchError(`AI Assertion failed ${invert && "(Inverted)"}`, true);
+          throw new MatchError(
+            `AI Assertion failed ${invert && "(Inverted)"}`,
+            true,
+          );
         } else {
           return false;
         }
@@ -473,7 +481,7 @@ const createCommands = (
           `An image matching the description "${description}" appears on screen.`,
           false,
           false,
-          invert
+          invert,
         );
 
         durationPassed = new Date().getTime() - startTime;
@@ -504,7 +512,12 @@ const createCommands = (
         );
       }
     },
-    "wait-for-text": async (text, timeout = 5000, method = "turbo", invert = false) => {
+    "wait-for-text": async (
+      text,
+      timeout = 5000,
+      method = "turbo",
+      invert = false,
+    ) => {
       await redraw.start();
 
       emitter.emit(
@@ -567,7 +580,7 @@ const createCommands = (
       maxDistance = 10000,
       textMatchMethod = "turbo",
       method = "keyboard",
-      invert = false
+      invert = false,
     ) => {
       await redraw.start();
 
@@ -644,7 +657,7 @@ const createCommands = (
       maxDistance = 10000,
       method = "keyboard",
       path,
-      invert = false
+      invert = false,
     ) => {
       const needle = description || path;
 
@@ -674,7 +687,7 @@ const createCommands = (
             `An image matching the description "${description}" appears on screen.`,
             false,
             false,
-            invert
+            invert,
           );
         }
 
