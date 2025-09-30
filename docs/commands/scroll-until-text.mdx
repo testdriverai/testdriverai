@@ -24,6 +24,7 @@ The `scroll-until-text` command is used to scroll the screen in a specified dire
 | `direction` | `string` | (Optional) The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. Defaults to `down`.        |
 |  `method`   | `string` | (Optional) The method to use to scroll the page. Available methods are: `mouse` and `keyboard`. Defaults to `keyboard`. |
 | `distance`  | `number` | (Optional) The maximum number of pixels to scroll before giving up. Default is `10000`.                                 |
+| `invert`  | `boolean`| (Optional) If set to `true`, the command will scroll until the specified text is NOT detected. Default is `false`. |
 
 <Note>
 If the method is `keyboard` it just searches for the string by doing `ctrl + f`. 

@@ -399,13 +399,17 @@ const createCommands = (
         return response.data;
       }
     },
-    "match-image": async (relativePath, action = "click") => {
+    "match-image": async (relativePath, action = "click", invert = false) => {
       // Resolve the image path relative to the current file
       const resolvedPath = resolveRelativePath(relativePath);
 
       let image = await system.captureScreenPNG();
 
       let result = await findImageOnScreen(resolvedPath, image);
+
+      if (invert) {
+        result = !result;
+      }
 
       if (!result) {
         throw new CommandError(`Image not found: ${resolvedPath}`);
@@ -445,7 +449,7 @@ const createCommands = (
     wait: async (timeout = 3000) => {
       return await delay(timeout);
     },
-    "wait-for-image": async (description, timeout = 10000) => {
+    "wait-for-image": async (description, timeout = 10000, invert = false) => {
       emitter.emit(
         events.log.narration,
         theme.dim(
@@ -466,6 +470,11 @@ const createCommands = (
         );
 
         durationPassed = new Date().getTime() - startTime;
+
+        if (invert) {
+          passed = !passed;
+        }
+
         if (!passed) {
           emitter.emit(
             events.log.narration,
@@ -493,7 +502,7 @@ const createCommands = (
         );
       }
     },
-    "wait-for-text": async (text, timeout = 5000, method = "turbo") => {
+    "wait-for-text": async (text, timeout = 5000, method = "turbo", invert = false) => {
       await redraw.start();
 
       emitter.emit(
@@ -523,7 +532,13 @@ const createCommands = (
         );
 
         passed = response.data;
+        
+        if (invert) {
+          passed = !passed;
+        }
+        
         durationPassed = new Date().getTime() - startTime;
+
         if (!passed) {
           emitter.emit(
             events.log.narration,
@@ -551,6 +566,7 @@ const createCommands = (
       maxDistance = 10000,
       textMatchMethod = "turbo",
       method = "keyboard",
+      invert = false
     ) => {
       await redraw.start();
 
@@ -594,6 +610,11 @@ const createCommands = (
         );
 
         passed = response.data;
+
+        if (invert) {
+          passed = !passed;
+        }
+
         if (!passed) {
           emitter.emit(
             events.log.narration,
@@ -622,6 +643,7 @@ const createCommands = (
       maxDistance = 10000,
       method = "keyboard",
       path,
+      invert=false
     ) => {
       const needle = description || path;
 
@@ -659,6 +681,10 @@ const createCommands = (
           passed = await commands["match-image"](path, null).catch(
             console.warn,
           );
+        }
+
+        if (invert) {
+          passed = !passed;
         }
 
         if (!passed) {
@@ -703,8 +729,14 @@ const createCommands = (
       });
       return result.data;
     },
-    assert: async (assertion, async = false) => {
-      return await assert(assertion, true, async);
+    assert: async (assertion, async = false, invert = false) => {
+      let response = await assert(assertion, true, async);
+
+      if (invert) {
+        response = !response;
+      }
+
+      return response;
     },
     exec: async (language, code, timeout, silent = false) => {
       emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);

@@ -19,8 +19,9 @@ steps:
       - command: scroll-until-image
         description: a brown colored house
         direction: down
-
+        invert: true
   - prompt: assert image of brown colored house appears on screen
     commands:
       - command: assert
         expect: image of brown colored house appears on screen
+        invert: true
