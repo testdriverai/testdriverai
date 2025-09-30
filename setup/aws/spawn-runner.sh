@@ -21,7 +21,7 @@ RUN_JSON=$(aws ec2 run-instances \
   --region "$AWS_REGION" \
   --image-id "$AMI_ID" \
   --launch-template "LaunchTemplateId=$AWS_LAUNCH_TEMPLATE_ID,Version=$AWS_LAUNCH_TEMPLATE_VERSION" \
-  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}},{Key=Class,Value=${RUNNER_CLASS_ID}}]" \
+  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}},{Key=Class,Value=${RUNNER_CLASS_ID}},{Key=TD_RESOLUTION,Value=${RESOLUTION_WIDTH}x${RESOLUTION_HEIGHT}}]" \
   --output json)
 
 INSTANCE_ID=$(jq -r '.Instances[0].InstanceId' <<<"$RUN_JSON")
