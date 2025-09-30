@@ -11,8 +11,7 @@ graph LR
     B <--> C[Your AWS EC2 Instance]
 ```
 
-Self-hosting TestDriver allows you to run tests on your own infrastructure, giving you full control over the environment, security, and configurations.
-This guide walks you through setting up and managing self-hosted TestDriver instances using AWS.
+Self-hosting TestDriver allows you to run tests on your own infrastructure, giving you full control over the environment, security, and configurations. This guide walks you through setting up and managing self-hosted TestDriver instances using AWS.
 
 ## Why self host?
 
@@ -65,8 +64,7 @@ aws cloudformation deploy \
 ```
 
 <Danger>
-  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP
-  ranges to lock down access to your VPC.
+  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to lock down access to your VPC.
 </Danger>
 
 ### Get Launch Template ID
@@ -170,7 +168,7 @@ jobs:
 
       - name: Run TestDriver
         run: |
-          node bin/testdriverai.js run your-test.yaml \
+          npx testdriverai run your-test.yaml \
             --ip="${{ steps.aws-setup.outputs.public-ip }}"
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
