@@ -644,7 +644,7 @@ const createCommands = (
       maxDistance = 10000,
       method = "keyboard",
       path,
-      invert=false
+      invert = false
     ) => {
       const needle = description || path;
 
