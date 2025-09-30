@@ -8,6 +8,8 @@ set -euo pipefail
 : "${AWS_LAUNCH_TEMPLATE_VERSION:=\$Latest}"
 : "${AWS_TAG_PREFIX:=td}"
 : "${RUNNER_CLASS_ID:=default}"
+: "${RESOLUTION_WIDTH:=1440}"
+: "${RESOLUTION_HEIGHT:=900}"
 
 TAG_NAME="${AWS_TAG_PREFIX}-"$(date +%s)
 WS_CONFIG_PATH='C:\Windows\Temp\pyautogui-ws.json'
@@ -141,9 +143,42 @@ while :; do
   sleep 20
 done
 
+echo "Setting screen resolution..."
+
+# --- 4) Set screen resolution ---
+echo "Setting resolution to ${RESOLUTION_WIDTH}x${RESOLUTION_HEIGHT}..."
+RES_JSON=$(aws ssm send-command \
+  --region "$AWS_REGION" \
+  --instance-ids "$INSTANCE_ID" \
+  --document-name "AWS-RunPowerShellScript" \
+  --parameters "commands=[\"powershell.exe -ExecutionPolicy Bypass -File 'C:\\\\testdriver\\\\SetResolution.ps1' -Width ${RESOLUTION_WIDTH} -Height ${RESOLUTION_HEIGHT}\"]" \
+  --output json)
+
+RES_CMD_ID=$(jq -r '.Command.CommandId' <<<"$RES_JSON")
+echo "Resolution command ID: $RES_CMD_ID"
+
+echo "Waiting for resolution command to complete..."
+aws ssm wait command-executed --region "$AWS_REGION" --command-id "$RES_CMD_ID" --instance-id "$INSTANCE_ID"
+
+RES_INVOC=$(aws ssm get-command-invocation \
+  --region "$AWS_REGION" \
+  --command-id "$RES_CMD_ID" \
+  --instance-id "$INSTANCE_ID" \
+  --output json)
+
+RES_STDOUT=$(jq -r '.StandardOutputContent // ""' <<<"$RES_INVOC")
+RES_STDERR=$(jq -r '.StandardErrorContent // ""' <<<"$RES_INVOC")
+RES_STATUS=$(jq -r '.Status // ""' <<<"$RES_INVOC")
+
+echo "Resolution command status: $RES_STATUS"
+if [ -n "$RES_STDERR" ] && [ "$RES_STDERR" != "null" ]; then
+  echo "Resolution stderr: $RES_STDERR"
+fi
+echo "Resolution command output: $RES_STDOUT"
+
 echo "Getting Public IP..."
 
-# # --- 4) Get instance Public IP ---
+# # --- 5) Get instance Public IP ---
 DESC_JSON=$(aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" --output json)
 PUBLIC_IP=$(jq -r '.Reservations[0].Instances[0].PublicIpAddress // empty' <<<"$DESC_JSON")
 [ -n "$PUBLIC_IP" ] || PUBLIC_IP="No public IP assigned"
@@ -151,7 +186,7 @@ PUBLIC_IP=$(jq -r '.Reservations[0].Instances[0].PublicIpAddress // empty' <<<"$
 # echo "Getting Websocket Port..."
 
 
-# --- 5) Read WebSocket config JSON ---
+# --- 6) Read WebSocket config JSON ---
 echo "Reading WebSocket configuration from: $WS_CONFIG_PATH"
 READ_JSON=$(aws ssm send-command \
   --region "$AWS_REGION" \
@@ -182,7 +217,7 @@ if [ -n "$STDERR" ] && [ "$STDERR" != "null" ]; then
 fi
 echo "WebSocket config raw output: $STDOUT"
 
-# --- 6) Output results ---
+# --- 7) Output results ---
 echo "Setup complete!"
 echo "PUBLIC_IP=$PUBLIC_IP"
 echo "INSTANCE_ID=$INSTANCE_ID"
