@@ -143,39 +143,6 @@ while :; do
   sleep 20
 done
 
-echo "Setting screen resolution..."
-
-# --- 4) Set screen resolution ---
-echo "Setting resolution to ${RESOLUTION_WIDTH}x${RESOLUTION_HEIGHT}..."
-RES_JSON=$(aws ssm send-command \
-  --region "$AWS_REGION" \
-  --instance-ids "$INSTANCE_ID" \
-  --document-name "AWS-RunPowerShellScript" \
-  --parameters "commands=[\"powershell.exe -ExecutionPolicy Bypass -File 'C:\\\\testdriver\\\\SetResolution.ps1' -Width ${RESOLUTION_WIDTH} -Height ${RESOLUTION_HEIGHT}\"]" \
-  --output json)
-
-RES_CMD_ID=$(jq -r '.Command.CommandId' <<<"$RES_JSON")
-echo "Resolution command ID: $RES_CMD_ID"
-
-echo "Waiting for resolution command to complete..."
-aws ssm wait command-executed --region "$AWS_REGION" --command-id "$RES_CMD_ID" --instance-id "$INSTANCE_ID"
-
-RES_INVOC=$(aws ssm get-command-invocation \
-  --region "$AWS_REGION" \
-  --command-id "$RES_CMD_ID" \
-  --instance-id "$INSTANCE_ID" \
-  --output json)
-
-RES_STDOUT=$(jq -r '.StandardOutputContent // ""' <<<"$RES_INVOC")
-RES_STDERR=$(jq -r '.StandardErrorContent // ""' <<<"$RES_INVOC")
-RES_STATUS=$(jq -r '.Status // ""' <<<"$RES_INVOC")
-
-echo "Resolution command status: $RES_STATUS"
-if [ -n "$RES_STDERR" ] && [ "$RES_STDERR" != "null" ]; then
-  echo "Resolution stderr: $RES_STDERR"
-fi
-echo "Resolution command output: $RES_STDOUT"
-
 echo "Getting Public IP..."
 
 # # --- 5) Get instance Public IP ---
