@@ -534,11 +534,10 @@ const createCommands = (
         );
 
         passed = response.data;
-        
+
         if (invert) {
           passed = !passed;
         }
-        
         durationPassed = new Date().getTime() - startTime;
 
         if (!passed) {
