@@ -154,7 +154,11 @@ commands:
             events.log.narration,
             `${object.action} image ${object.path}`,
           );
-          response = await commands["match-image"](object.path, object.action);
+          response = await commands["match-image"](
+            object.path,
+            object.action,
+            object.invert,
+          );
           break;
         case "wait-for-image":
           emitter.emit(events.log.log, generator.jsonToManual(object));
@@ -165,6 +169,7 @@ commands:
           response = await commands["wait-for-image"](
             object.description,
             object.timeout,
+            object.invert,
           );
           break;
         case "wait-for-text":
@@ -175,6 +180,7 @@ commands:
             object.text,
             object.timeout,
             object.method,
+            object.invert,
           );
           break;
         case "scroll-until-text":
@@ -187,6 +193,7 @@ commands:
             object.distance,
             object.textMatchMethod,
             object.method,
+            object.invert,
           );
           break;
         case "scroll-until-image": {
@@ -199,6 +206,7 @@ commands:
             object.distance,
             object.method,
             object.path,
+            object.invert,
           );
           break;
         }
@@ -217,7 +225,11 @@ commands:
         case "assert":
           emitter.emit(events.log.log, generator.jsonToManual(object));
           emitter.emit(events.log.narration, `asserting ${object.expect}`);
-          response = await commands.assert(object.expect, object.async);
+          response = await commands.assert(
+            object.expect,
+            object.async,
+            object.invert,
+          );
 
           break;
         case "exec":

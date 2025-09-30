@@ -474,6 +474,9 @@
               "drag-start",
               "drag-end"
             ]
+          },
+          "invert": {
+            "type": "boolean"
           }
         }
       },
@@ -493,6 +496,9 @@
           },
           "timeout": {
             "type": "integer"
+          },
+          "invert": {
+            "type": "boolean"
           }
         }
       },
@@ -519,6 +525,9 @@
               "ai",
               "turbo"
             ]
+          },
+          "invert": {
+            "type": "boolean"
           }
         }
       },
@@ -555,6 +564,9 @@
               "keyboard",
               "mouse"
             ]
+          },
+          "invert": {
+            "type": "boolean"
           }
         }
       },
@@ -593,6 +605,9 @@
               "keyboard",
               "mouse"
             ]
+          },
+          "invert": {
+            "type": "boolean"
           }
         },
         "anyOf": [
@@ -659,6 +674,9 @@
             "type": "string"
           },
           "async": {
+            "type": "boolean"
+          },
+          "invert": {
             "type": "boolean"
           }
         }
