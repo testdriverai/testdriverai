@@ -170,7 +170,7 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false, async = false) => {
+  const assert = async (assertion, shouldThrow = false, async = false, invert = false) => {
     if (async) {
       shouldThrow = true;
     }
@@ -178,12 +178,18 @@ const createCommands = (
     const handleAssertResponse = (response) => {
       emitter.emit(events.log.log, response);
 
-      if (response.indexOf("The task passed") > -1) {
+      let valid = response.indexOf("The task passed") > -1;
+
+      if (invert) {
+        valid = !valid;
+      }
+
+      if (valid) {
         return true;
       } else {
         if (shouldThrow) {
           // Is fatal, othewise it just changes the assertion to be true
-          throw new MatchError(`AI Assertion failed`, true);
+          throw new MatchError(`AI Assertion failed ${invert && "(Inverted)"}`, true);
         } else {
           return false;
         }
@@ -467,14 +473,10 @@ const createCommands = (
           `An image matching the description "${description}" appears on screen.`,
           false,
           false,
+          invert
         );
 
         durationPassed = new Date().getTime() - startTime;
-
-        if (invert) {
-          passed = !passed;
-        }
-
         if (!passed) {
           emitter.emit(
             events.log.narration,
@@ -673,6 +675,7 @@ const createCommands = (
             `An image matching the description "${description}" appears on screen.`,
             false,
             false,
+            invert
           );
         }
 
@@ -681,10 +684,6 @@ const createCommands = (
           passed = await commands["match-image"](path, null).catch(
             console.warn,
           );
-        }
-
-        if (invert) {
-          passed = !passed;
         }
 
         if (!passed) {
@@ -730,11 +729,7 @@ const createCommands = (
       return result.data;
     },
     assert: async (assertion, async = false, invert = false) => {
-      let response = await assert(assertion, true, async);
-
-      if (invert) {
-        response = !response;
-      }
+      let response = await assert(assertion, true, async, invert);
 
       return response;
     },
