@@ -19,23 +19,26 @@ Self-hosting TestDriver allows you to run tests on your own infrastructure, givi
 - **Complete customization**: Modify the TestDriver Golden Image to include custom dependencies, software, and configurations at launch time.
 - **Powerful Infrastructure**: Run tests on bare metal infrastructure that support emulators and simulators.
 
-## Quick Start (TL;DR)
-
-1. **Copy the workflow file**: Use [`.github/workflows/self-hosted.yml`](https://github.com/testdriverai/cli/tree/main/.github/workflows/self-hosted.yml) as your template
-2. **Run CloudFormation**: Deploy our [`setup/aws/cloudformation.yaml`](https://github.com/testdriverai/cli/tree/main/setup/aws/cloudformation.yaml) to provision infrastructure
-3. **Setup instances**: Use [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/setup/aws/spawn-runner.sh) with your launch template ID
-4. **Configure GitHub Actions**: Add AWS credentials to your repository secrets
-
 ## Overview
 
-Self-hosting TestDriver gives you complete control over your test execution environment. You'll provision EC2 instances on AWS using our pre-configured AMI and infrastructure templates.
+Self-hosting TestDriver gives you complete control over your test execution environment. You'll provision EC2 instances on AWS using our pre-configured AMI and infrastructure templates:
+
+1. **GitHub Workflow**: Use `.github/workflows/self-hosted.yml` as your template to test in CI.
+2. **CloudFormation**: Deploy our `setup/aws/cloudformation.yaml` to provision infrastructure.
+3. **On-Demand Runners**: Use `setup/aws/spawn-runner.sh` with your Launch Template ID from CloudFormation to spawn runners on-demand.
+4. **GitHub Secrets**: Store AWS Credentials to your GitHub repository's secrets.
 
 ## Prerequisites
 
-- AWS account with appropriate permissions
-- AWS CLI installed locally
-- Access to TestDriver's shared AMI. [Contact us for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
-- GitHub repository for your tests
+- AWS account with permissions to run CloudFormation.
+- [AWS CLI](https://aws.amazon.com/cli/) installed locally.
+
+  <Tip>
+    Be sure to run `aws configure` with your credentials
+  </Tip>
+- Access to the TestDriver AMI\
+  [Contact us with your preferred AWS Region for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
+- A GitHub repository for committing your tests & workflow.
 
 ## Step 1: Set Up AWS Infrastructure
 
@@ -78,7 +81,9 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-Save this ID - you'll need it for the next step.
+<Tip>
+  **Save this ID** – you'll need it for the next step.
+</Tip>
 
 ## Step 2: Spawn a New TestDriver Runner
 
@@ -93,10 +98,10 @@ Our [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/
 ```bash
 # Launch an instance
 export AWS_REGION=us-east-2
-export AMI_ID=ami-085f872ca0cd80fed  # Your TestDriver AMI (contact us to get one)
-export AWS_LAUNCH_TEMPLATE_ID=lt-00d02f31cfc602f27  # From CloudFormation output from step 1
+export AMI_ID=ami-••••••••••  # Your TestDriver AMI (contact us to get one)
+export AWS_LAUNCH_TEMPLATE_ID=lt-••••••••••  # From CloudFormation output from step 1
 
-./aws-setup.sh
+/bin/bash ./setup/aws/aws-setup.sh
 ```
 
 The script outputs:
@@ -113,7 +118,7 @@ Once you have an instance IP, run tests directly:
 
 ```bash
 # Basic test execution
-npx testdriverai run test.yaml --ip=1.2.3.4
+npx testdriverai@latest run test.yaml --ip=1.2.3.4
 ```
 
 You can use the `PUBLIC_IP` to target the instance you just spawned via `./setup/aws/spawn-runner.sh`:
@@ -126,9 +131,7 @@ npx testdriverai@latest run testdriver/your-test.yaml \
 Note that the instance will remain running until you terminate it. You can do this manually via the AWS console, or programmatically in your CI workflow:
 
 ```bash
-aws ec2 terminate-instances \
-  --region us-east-2 \
-  --instance-ids $INSTANCE_ID
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID
 ```
 
 ## Step 3: GitHub Actions Integration
@@ -162,7 +165,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-2
+          AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_LAUNCH_TEMPLATE_ID: ${{ secrets.AWS_LAUNCH_TEMPLATE_ID }}
           AMI_ID: ${{ secrets.AMI_ID }}
 
@@ -177,10 +180,11 @@ jobs:
         if: always()
         run: |
           aws ec2 terminate-instances \
-            --region us-east-2 \
+            --region ${{ secrets.AWS_REGION }}
             --instance-ids ${{ steps.aws-setup.outputs.instance-id }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+		  AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 ```
 
@@ -191,6 +195,7 @@ Configure these secrets in your GitHub repository:
 | Secret                   | Description                         | Example                                                      |
 | ------------------------ | ----------------------------------- | ------------------------------------------------------------ |
 | `AWS_ACCESS_KEY_ID`      | AWS access key                      | `AKIAIOSFODNN7EXAMPLE`                                       |
+| `AWS_REGION`             | AWS Region                          | `us-east-2`                                                  |
 | `AWS_SECRET_ACCESS_KEY`  | AWS secret key                      | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`                   |
 | `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1`                                       |
 | `AMI_ID`                 | TestDriver AMI ID                   | `ami-085f872ca0cd80fed`                                      |
