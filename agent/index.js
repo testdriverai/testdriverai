@@ -326,7 +326,8 @@ class TestDriverAgent extends EventEmitter2 {
     let response = await this.sdk.req(
       "error",
       {
-        description: eMessage,
+        error: eMessage,
+        description: `The current task is:\n" + ${this.lastPrompt} + "\n and the error context is:\n\n${errorContext}`,
         markdown,
         image,
       },
