@@ -189,6 +189,34 @@ class JUnitReporter {
     return path.basename(filePath);
   }
 
+  addDashcamReplayProperties() {
+    if (!this.currentTestCase || !this.systemOut.length) {
+      return;
+    }
+
+    // Join all system output into a single string for parsing
+    const fullOutput = this.systemOut.join("\n");
+
+    // Regular expression to match app.dashcam.io URLs
+    // This will match both http and https URLs to app.dashcam.io
+    const dashcamUrlRegex = /https?:\/\/app\.dashcam\.io[^\s)\]"'`]*/g;
+    
+    // Find all matches
+    const matches = fullOutput.match(dashcamUrlRegex);
+    
+    if (matches && matches.length > 0) {
+      // Remove duplicates by converting to Set and back to Array
+      const uniqueUrls = [...new Set(matches)];
+      
+      // Add each unique URL as a property
+      uniqueUrls.forEach((url, index) => {
+        // If there's only one URL, use "url:replay", otherwise add index
+        const propertyName = uniqueUrls.length === 1 ? "url:replay" : `url:replay${index + 1}`;
+        this.currentTestCase.property(propertyName, url);
+      });
+    }
+  }
+
   finalizeReport(exitCode) {
     // Store the exit code for determining test status
     this.finalExitCode = exitCode;
@@ -209,6 +237,9 @@ class JUnitReporter {
           step.prompt,
         );
       });
+
+      // Parse system output for Dashcam links and add as special properties
+      this.addDashcamReplayProperties();
 
       // Add system-out and system-err
       if (this.systemOut.length > 0) {
