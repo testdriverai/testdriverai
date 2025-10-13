@@ -15,18 +15,28 @@ Self-hosting TestDriver allows you to run tests on your own infrastructure, givi
 
 ## Why self host?
 
+Self-hosting TestDriver gives you complete control over your test execution environment:
+
 - **Enhanced security**: Get complete control over ingress and egress rules.
-- **Complete customization**: Modify the TestDriver Golden Image to include custom dependencies, software, and configurations at launch time.
+- **Complete customization**: Modify the TestDriver Golden Image (our pre-configured AMI) to include custom dependencies, software, and configurations at launch time.
 - **Powerful Infrastructure**: Run tests on bare metal infrastructure that support emulators and simulators.
+
+You'll use the [TestDriver CLI repository](https://github.com/testdriverai/cli) which contains all the infrastructure templates and setup scripts needed for self-hosting.
 
 ## Overview
 
-Self-hosting TestDriver gives you complete control over your test execution environment. You'll provision EC2 instances on AWS using our pre-configured AMI and infrastructure templates:
+By the end of this guide, you'll have a complete self-hosted testing infrastructure that can:
 
-1. **GitHub Workflow**: Use `.github/workflows/self-hosted.yml` as your template to test in CI.
-2. **CloudFormation**: Deploy our `setup/aws/cloudformation.yaml` to provision infrastructure.
-3. **On-Demand Runners**: Use `setup/aws/spawn-runner.sh` with your Launch Template ID from CloudFormation to spawn runners on-demand.
-4. **GitHub Secrets**: Store AWS Credentials to your GitHub repository's secrets.
+- Spawn TestDriver instances on-demand in your AWS account
+- Run tests on your own AWS infrastructure with custom configurations
+- Integrate seamlessly with GitHub Actions CI/CD workflows
+- Automatically clean up resources after test completion
+
+The setup process involves three main steps:
+
+1. **CloudFormation Infrastructure**: Deploy our `setup/aws/cloudformation.yaml` template to create the foundational AWS resources (VPC, security groups, IAM roles, and a launch template for instance creation).
+2. **On-Demand Instance Spawning**: Use `setup/aws/spawn-runner.sh` with your Launch Template ID to programmatically spawn TestDriver instances whenever you need to run tests.
+3. **GitHub Actions Integration**: Use `.github/workflows/self-hosted.yml` as a template for running tests in CI. This workflow demonstrates the complete lifecycle: spawning an instance, running tests, and shutting down the instance to minimize costs.
 
 ## Prerequisites
 
@@ -35,7 +45,7 @@ Self-hosting TestDriver gives you complete control over your test execution envi
 
   <Tip>Be sure to run `aws configure` with your credentials</Tip>
 
-- Access to the TestDriver AMI\
+- Access to the TestDriver AMI (Golden Image)\
   [Contact us with your preferred AWS Region for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
 - A GitHub repository for committing your tests & workflow.
 
@@ -56,7 +66,7 @@ This is a one-time setup used to generate a template ID for launching instances.
 # Deploy the CloudFormation stack
 aws cloudformation deploy \
   --template-file setup/aws/cloudformation.yaml \
-  --stack-name testdriver-infrastructure-11 \
+  --stack-name my-testdriver-infrastructure \
   --parameter-overrides \
     ProjectTag=testdriver \
     AllowedIngressCidr=0.0.0.0/0 \
@@ -76,7 +86,7 @@ After CloudFormation completes, find the launch template ID in the stack outputs
 
 ```bash
 aws cloudformation describe-stacks \
-  --stack-name testdriver-infrastructure-11 \
+  --stack-name my-testdriver-infrastructure \
   --query 'Stacks[0].Outputs[?OutputKey==`LaunchTemplateId`].OutputValue' \
   --output text
 ```
@@ -85,21 +95,26 @@ aws cloudformation describe-stacks \
 
 ## Step 2: Spawn a New TestDriver Runner
 
-### Using aws-setup.sh
+This step is performed **every time you want to run tests**. The `spawn-runner.sh` script launches a new EC2 instance on-demand for test execution.
 
-Our [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/setup/aws/spawn-runner.sh) spawns and initializes instances:
+### Using spawn-runner.sh
 
-- Launches instances using your launch template
-- Completes TestDriver handshake
-- Returns instance details for CLI usage
+Our [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/setup/aws/spawn-runner.sh) script:
+
+- Launches a new EC2 instance using your launch template from Step 1
+- Waits for the instance to become ready
+- Completes the TestDriver handshake
+- Returns instance details (IP, instance ID) for CLI usage
+
+The script accepts parameters as either environment variables or CLI arguments:
 
 ```bash
-# Launch an instance
+# Launch an instance using environment variables
 export AWS_REGION=us-east-2
 export AMI_ID=ami-••••••••••  # Your TestDriver AMI (contact us to get one)
 export AWS_LAUNCH_TEMPLATE_ID=lt-••••••••••  # From CloudFormation output from step 1
 
-/bin/bash ./setup/aws/aws-setup.sh
+/bin/bash ./setup/aws/spawn-runner.sh
 ```
 
 The script outputs:
@@ -109,6 +124,13 @@ PUBLIC_IP=1.2.3.4
 INSTANCE_ID=i-1234567890abcdef0
 AWS_REGION=us-east-2
 ```
+
+<Note>
+  **Instance Lifecycle**: Instances spawned by this script will continue running
+  until you manually terminate them. They are automatically tagged with
+  `Name=TestDriverRunner` and `Project=[your ProjectTag value]` for easy
+  identification in the AWS console.
+</Note>
 
 ### CLI Usage
 
@@ -126,17 +148,26 @@ npx testdriverai@latest run testdriver/your-test.yaml \
   --ip="$PUBLIC_IP" \
 ```
 
-Note that the instance will remain running until you terminate it. You can do this manually via the AWS console, or programmatically in your CI workflow:
+### Terminating Instances
+
+After your tests complete, terminate the instance to avoid unnecessary costs:
 
 ```bash
-aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+# Terminate the instance
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region $AWS_REGION
 ```
+
+You can also terminate instances manually through the AWS console by searching for instances tagged with `Name=TestDriverRunner`.
 
 ## Step 3: GitHub Actions Integration
 
+This step shows you how to automate the entire test lifecycle in CI/CD.
+
 ### Example Workflow
 
-Our [`.github/workflows/self-hosted.yml`](https://github.com/testdriverai/cli/tree/main/.github/workflows/self-hosted.yml) demonstrates the complete workflow:
+Our [`.github/workflows/self-hosted.yml`](https://github.com/testdriverai/cli/tree/main/.github/workflows/self-hosted.yml) demonstrates the complete workflow: spawning an EC2 instance, running your tests, and shutting down the instance automatically to minimize costs.
+
+The workflow uses the GitHub secrets you configure (see below) to authenticate with AWS and spawn instances on-demand:
 
 ```yaml
 name: TestDriver Self-Hosted
@@ -203,11 +234,24 @@ Configure these secrets in your GitHub repository:
 
 ### Using the Base AMI
 
-Our AMI comes pre-configured with:
+Our TestDriver Golden Image (AMI) comes pre-configured with everything you need to run tests:
+
+**Operating System & Environment:**
 
 - Windows Server with desktop environment
-- Required TestDriver dependencies
+- VNC + web server for remote desktop access through the browser
+
+**Development Tools:**
+
+- Python (with pip)
+- Node.js (with npm)
+- Git
+
+**Test Infrastructure:**
+
+- TestDriver agent and dependencies
 - Optimized settings for test execution
+- Pre-configured networking for TestDriver CLI communication
 
 ### Modifying the AMI
 
@@ -279,11 +323,13 @@ steps:
 
 ### Common Issues
 
-**Instance not responding:**
+**Instance not responding in TestDriver CLI:**
 
-- Check security group rules allow necessary ports
-- Verify instance has passed all status checks
-- Ensure AMI is compatible with selected instance type
+When the CLI displays connection errors or timeouts, check:
+
+- **Security group rules**: The CloudFormation template configures all necessary ports (RDP 3389, VNC 5900, and TestDriver communication ports). Verify your security group hasn't been modified.
+- **Instance status checks**: Ensure the instance has passed both system and instance status checks in the AWS console.
+- **AMI compatibility**: Verify the AMI is compatible with your selected instance type (some instance types don't support certain AMIs).
 
 **Connection timeouts:**
 
