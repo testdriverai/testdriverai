@@ -6,18 +6,26 @@ icon: "video"
 ---
 
 [Dashcam](https://www.dashcam.io), from the makers of TestDriver, is a powerful feature in TestDriver that allows you to record and replay your test sessions. This is particularly useful for debugging, sharing test runs with team members, or reviewing the steps taken during a test. For the full docs see the [Dashcam docs](https://docs.dashcam.io/dashcam/).
+
 ## Recording a Test Session
-To record a test session, you can use the `dashcam` command in your lifecycle scripts. There are two main lifecycle scripts where you can integrate Dashcam: `lifecycle/prerun.yaml` and `lifecycle/postrun.yaml`. 
+
+To record a test session, you can use the `dashcam` command in your lifecycle scripts. There are two main lifecycle scripts where you can integrate Dashcam: `lifecycle/prerun.yaml` and `lifecycle/postrun.yaml`.
 
 ## Ways to use Dashcam
-Dashcam comes as a standalone app and a Chrome extension. You can use either or both to capture your test sessions. 
+
+Dashcam comes as a standalone app and a Chrome extension. You can use either or both to capture your test sessions.
 
 <Info>
-  To capture web logs, make sure to install the Dashcam Chrome extension on the browser you are testing with. We recommend installing it via CLI to Chrome for Testing. You can also find the extension [in the Chrome Webstore](https://chromewebstore.google.com/detail/dashcam/dkcoeknmlfnfimigfagbcjgpokhdcbbp)
+  To capture web logs, make sure to install the Dashcam Chrome extension on the
+  browser you are testing with. We recommend installing it via CLI to Chrome for
+  Testing. You can also find the extension [in the Chrome
+  Webstore](https://chromewebstore.google.com/detail/dashcam/dkcoeknmlfnfimigfagbcjgpokhdcbbp)
 </Info>
 
 ### Installing the Dashcam Chrome extension via command line in prerun.yaml
+
 In this lifecycle script, we install Chrome for Testing with a user profile that has the password manager disabled and sets up TestDriver Dashcam for replays and logs.
+
 ```yaml lifecycle/prerun.yaml [expandable]
 - prompt: launch chrome for testing and setup dashcam
     commands:
@@ -65,20 +73,23 @@ In this lifecycle script, we install Chrome for Testing with a user profile that
           exit 0
 ```
 
-
 ### Using the Chrome extension and capturing web logs
+
 Now in the same `lifecycle/prerun.yaml` script, we set up Dashcam to track web logs and application logs. You can customize the patterns to match your needs. Testing Desktop? You can skip the web logs and just track application logs.
-````yaml lifecycle/prerun.yaml
+
+```yaml lifecycle/prerun.yaml
 ...
 - command: exec
     lang: pwsh
     code: |
         dashcam track --name="Web Logs" --type="web" --pattern="*"
         dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
-````
+```
 
 ### Starting Dashcam
+
 The final step in our `lifecycle/prerun.yaml` script is to start Dashcam recording.
+
 ```yaml lifecycle/prerun.yaml
 ...
 - command: exec
@@ -87,7 +98,9 @@ The final step in our `lifecycle/prerun.yaml` script is to start Dashcam recordi
 ```
 
 ### Publishing replays to a project in your account
+
 Lastly, in the `lifecycle/postrun.yaml` script, we publish the recorded Dashcam session to a project in your Dashcam account. Make sure to replace `<YOUR_PROJECT_ID>` with the actual ID of your project.
+
 ```yaml lifecycle/postrun.yaml
 - prompt: send dashcam recording to server
     # this script tells TestDriver Dashcam to send the recording to the server
@@ -98,5 +111,8 @@ Lastly, in the `lifecycle/postrun.yaml` script, we publish the recorded Dashcam 
 ```
 
 <Info>
-`${TD_THIS_FILE}` is an environment variable set by TestDriver that contains the name of the current test file being executed. This will be used as the title of the Dashcam recording. For more info see [parallel testing docs](/features/parallel-testing).
+  `${TD_THIS_FILE}` is an environment variable set by TestDriver that contains
+  the name of the current test file being executed. This will be used as the
+  title of the Dashcam recording. For more info see [parallel testing
+  docs](/features/parallel-testing).
 </Info>

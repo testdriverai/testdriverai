@@ -145,18 +145,12 @@
           {
             "group": "Maintaining",
             "icon": "wrench",
-            "pages": [
-              "/getting-started/editing",
-              "/features/auto-healing"
-            ]
+            "pages": ["/getting-started/editing", "/features/auto-healing"]
           },
           {
             "group": "Reporting",
             "icon": "chart-simple",
-            "pages": [
-              "exporting/junit",
-              "/bugs/jira"
-            ]
+            "pages": ["exporting/junit", "/bugs/jira"]
           }
         ]
       },
