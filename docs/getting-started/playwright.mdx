@@ -50,8 +50,9 @@ test.describe("get started link", () => {
     You will need a [Free TestDriver Account](https://app.testdriver.ai/team) to get an API key.
 
     <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team">
-      
+
     </Card>
+
   </Step>
   <Step title="Set up your environment">
     Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
@@ -68,6 +69,7 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
+
   </Step>
 </Steps>
 
@@ -131,6 +133,7 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
+
   </Step>
 </Steps>
 
@@ -157,6 +160,7 @@ test.describe("get started link", () => {
         ```
       </Tab>
     </Tabs>
+
   </Step>
   <Step title="Run Playwright">
     Before we start using TestDriver in our tests, run Playwright in [UI Mode](https://playwright.dev/docs/test-ui-mode):
@@ -182,6 +186,7 @@ test.describe("get started link", () => {
 
     Clicking the ▶️ button should successfully run the tests in the UI,
     just as they did before with `playwright test` in the CLI.
+
   </Step>
   <Step title="Import TestDriver">
     For the sake of simplicity, we'll be working with one test file for now.
@@ -199,6 +204,7 @@ test.describe("get started link", () => {
     <Tip>
       Click the <Icon icon="eye" /> button to automatically re-run tests on save.
     </Tip>
+
   </Step>
 </Steps>
 
@@ -266,14 +272,15 @@ Now, our test uses natural language to both describe & locate the element.
 <Tip>
   In the example above, you can still use Playwright to assert that the element is indeed a link for accessibility:
 
-  ```typescript tests/example.spec.ts icon=square-js
-  const link = await testdriver(page).locate("Get started link");
-  // [!code ++]
-  expect(link).toHaveRole("link");
-  await link.click();
-  ```
+```typescript tests/example.spec.ts icon=square-js
+const link = await testdriver(page).locate("Get started link");
+// [!code ++]
+expect(link).toHaveRole("link");
+await link.click();
+```
 
-  This way you can write user-centric tests _and_ validate the implementation.
+This way you can write user-centric tests _and_ validate the implementation.
+
 </Tip>
 
 ### Performing actions with `testdriver.act`

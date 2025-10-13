@@ -3,6 +3,8 @@ name: AWS
 on:
   workflow_dispatch:
   push:
+    paths-ignore:
+      - "docs/**"
 
 jobs:
   gather:

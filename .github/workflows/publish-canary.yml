@@ -10,6 +10,8 @@ on:
   # So that we publish for every push to `main`, despite tests
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
   workflow_dispatch:
 
 jobs:
