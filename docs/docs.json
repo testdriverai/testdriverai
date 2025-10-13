@@ -103,6 +103,7 @@
               "/guide/authentication",
               "/guide/variables",
               "/guide/lifecycle",
+              "/guide/dashcam",
               "/guide/environment-variables",
               "/action/ami"
             ]
@@ -144,12 +145,18 @@
           {
             "group": "Maintaining",
             "icon": "wrench",
-            "pages": ["/getting-started/editing", "/features/auto-healing"]
+            "pages": [
+              "/getting-started/editing",
+              "/features/auto-healing"
+            ]
           },
           {
             "group": "Reporting",
             "icon": "chart-simple",
-            "pages": ["exporting/junit", "/bugs/jira"]
+            "pages": [
+              "exporting/junit",
+              "/bugs/jira"
+            ]
           }
         ]
       },
