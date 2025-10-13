@@ -1,7 +1,10 @@
 # Ensure affected code follows standards and is formatted correctly. Otherwise, automatic formatting in future changes will cause larger diffs.
 name: Lint + Prettier
 
-on: push
+on:
+  push:
+    paths-ignore:
+      - "docs/**"
 
 jobs:
   lint:

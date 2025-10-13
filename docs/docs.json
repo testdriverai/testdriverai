@@ -103,6 +103,7 @@
               "/guide/authentication",
               "/guide/variables",
               "/guide/lifecycle",
+              "/guide/dashcam",
               "/guide/environment-variables",
               "/action/ami"
             ]
