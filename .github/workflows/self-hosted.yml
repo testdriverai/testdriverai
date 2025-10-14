@@ -69,6 +69,8 @@ jobs:
           AWS_REGION: us-east-2
           AWS_LAUNCH_TEMPLATE_ID: lt-00d02f31cfc602f27
           AMI_ID: ami-085f872ca0cd80fed
+          RESOLUTION_WIDTH: 1920
+          RESOLUTION_HEIGHT: 1080
       - name: Run TestDriver
         run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --ip="${{ steps.aws-setup.outputs.public-ip }}" --junit=out.xml
         env:
