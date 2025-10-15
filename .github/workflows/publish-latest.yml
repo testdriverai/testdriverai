@@ -2,6 +2,7 @@
 name: Publish @latest to NPM
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Acceptance Tests"]
     branches: [main]
