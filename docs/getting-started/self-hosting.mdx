@@ -113,6 +113,7 @@ The script accepts parameters as either environment variables or CLI arguments:
 export AWS_REGION=us-east-2
 export AMI_ID=ami-••••••••••  # Your TestDriver AMI (contact us to get one)
 export AWS_LAUNCH_TEMPLATE_ID=lt-••••••••••  # From CloudFormation output from step 1
+export RESOLUTION=1440x900 # Change screen resolution if desired (default is 1440x900)
 
 /bin/bash ./setup/aws/spawn-runner.sh
 ```
@@ -131,6 +132,23 @@ AWS_REGION=us-east-2
   `Name=TestDriverRunner` and `Project=[your ProjectTag value]` for easy
   identification in the AWS console.
 </Note>
+
+#### Changing Resolution in Lifecycle Files
+
+You can also change the resolution before running tests by adding an `exec` command in your `lifecycle/provision.yaml` file:
+
+```yaml lifecycle/provision.yaml
+version: 6.0.0
+steps:
+  - prompt: set screen resolution
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          C:\testdriver\SetResolution.ps1 -Width 1920 -Height 1080
+```
+
+This approach is useful when you need different resolutions for different test scenarios. See the [Lifecycle Files documentation](/guide/lifecycle) for more information about provision scripts.
 
 ### CLI Usage
 
