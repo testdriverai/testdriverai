@@ -1,0 +1,19 @@
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: execute powershell multiline
+    commands:
+      - command: exec
+        lang: js
+        code: |
+          const failingPromise = new Promise((resolve, reject) => {
+            try {
+              // Simulate some operation that fails
+              throw new Error("Something went wrong!");
+            } catch (err) {
+              reject(err);
+            }
+          });
+
+          // Usage
+          await failingPromise()

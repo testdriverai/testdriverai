@@ -1,0 +1,9 @@
+version: 6.0.26
+session: test-postrun-success
+steps:
+  - prompt: "simple success test"
+    commands:
+      - command: exec
+        lang: js
+        code: |
+          console.log("This test should succeed and then run postrun");

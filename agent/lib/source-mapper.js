@@ -263,7 +263,7 @@ class SourceMapper {
     let description = `${fileName}:${(sourcePosition.step.startLine || 0) + 1}`;
 
     if (sourcePosition.command) {
-      description += `:${(sourcePosition.command.startLine || 0) + 1} (${sourcePosition.command.command || "unknown command"})`;
+      description += `:${(sourcePosition.command.startLine || 0) + 1}`;
     } else {
       description += ` (step ${sourcePosition.step.stepIndex + 1})`;
     }

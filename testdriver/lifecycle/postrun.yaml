@@ -1,0 +1,7 @@
+version: 6.0.0
+steps:
+  - prompt: stop dashcam
+    commands:
+      - command: exec
+        lang: pwsh
+        code: dashcam -t 'Web Test Recording' -p

@@ -170,20 +170,34 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false, async = false) => {
+  const assert = async (
+    assertion,
+    shouldThrow = false,
+    async = false,
+    invert = false,
+  ) => {
     if (async) {
       shouldThrow = true;
     }
 
     const handleAssertResponse = (response) => {
-      emitter.emit(events.log.markdown.static, response);
+      emitter.emit(events.log.log, response);
 
-      if (response.indexOf("The task passed") > -1) {
+      let valid = response.indexOf("The task passed") > -1;
+
+      if (invert) {
+        valid = !valid;
+      }
+
+      if (valid) {
         return true;
       } else {
         if (shouldThrow) {
           // Is fatal, othewise it just changes the assertion to be true
-          throw new MatchError(`AI Assertion failed`, true);
+          throw new MatchError(
+            `AI Assertion failed ${invert && "(Inverted)"}`,
+            true,
+          );
         } else {
           return false;
         }
@@ -357,11 +371,12 @@ const createCommands = (
       description = null,
       action = "click",
       method = "turbo",
+      timeout = 5000, // we pass this to the subsequent wait-for-text block
     ) => {
       text = text ? text.toString() : null;
 
       // wait for the text to appear on screen
-      await commands["wait-for-text"](text, 5000);
+      await commands["wait-for-text"](text, timeout);
 
       description = description ? description.toString() : null;
 
@@ -416,13 +431,17 @@ const createCommands = (
         return response.data;
       }
     },
-    "match-image": async (relativePath, action = "click") => {
+    "match-image": async (relativePath, action = "click", invert = false) => {
       // Resolve the image path relative to the current file
       const resolvedPath = resolveRelativePath(relativePath);
 
       let image = await system.captureScreenPNG();
 
       let result = await findImageOnScreen(resolvedPath, image);
+
+      if (invert) {
+        result = !result;
+      }
 
       if (!result) {
         throw new CommandError(`Image not found: ${resolvedPath}`);
@@ -463,7 +482,7 @@ const createCommands = (
     wait: async (timeout = 3000) => {
       return await delay(timeout);
     },
-    "wait-for-image": async (description, timeout = 10000) => {
+    "wait-for-image": async (description, timeout = 10000, invert = false) => {
       emitter.emit(
         events.log.narration,
         theme.dim(
@@ -481,6 +500,7 @@ const createCommands = (
           `An image matching the description "${description}" appears on screen.`,
           false,
           false,
+          invert,
         );
 
         durationPassed = new Date().getTime() - startTime;
@@ -511,7 +531,12 @@ const createCommands = (
         );
       }
     },
-    "wait-for-text": async (text, timeout = 5000, method = "turbo") => {
+    "wait-for-text": async (
+      text,
+      timeout = 5000,
+      method = "turbo",
+      invert = false,
+    ) => {
       await redraw.start();
 
       emitter.emit(
@@ -541,7 +566,12 @@ const createCommands = (
         );
 
         passed = response.data;
+
+        if (invert) {
+          passed = !passed;
+        }
         durationPassed = new Date().getTime() - startTime;
+
         if (!passed) {
           emitter.emit(
             events.log.narration,
@@ -569,6 +599,7 @@ const createCommands = (
       maxDistance = 10000,
       textMatchMethod = "turbo",
       method = "keyboard",
+      invert = false,
     ) => {
       await redraw.start();
 
@@ -616,6 +647,11 @@ const createCommands = (
         );
 
         passed = response.data;
+
+        if (invert) {
+          passed = !passed;
+        }
+
         if (!passed) {
           emitter.emit(
             events.log.narration,
@@ -644,6 +680,7 @@ const createCommands = (
       maxDistance = 10000,
       method = "keyboard",
       path,
+      invert = false,
     ) => {
       const needle = description || path;
 
@@ -673,6 +710,7 @@ const createCommands = (
             `An image matching the description "${description}" appears on screen.`,
             false,
             false,
+            invert,
           );
         }
 
@@ -726,8 +764,10 @@ const createCommands = (
       });
       return result.data;
     },
-    assert: async (assertion, async = false) => {
-      return await assert(assertion, true, async);
+    assert: async (assertion, async = false, invert = false) => {
+      let response = await assert(assertion, true, async, invert);
+
+      return response;
     },
     exec: async (language = "pwsh", code, timeout, silent = false) => {
       emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);
@@ -753,14 +793,14 @@ const createCommands = (
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
         } else {
-          if (!silent) {
-            emitter.emit(events.log.log, theme.dim(`Command stdout:`), true);
+          if (!silent && result.out?.stdout) {
+            emitter.emit(events.log.log, theme.dim(`stdout:`), true);
             emitter.emit(events.log.log, `${result.out.stdout}`, true);
+          }
 
-            if (result.out.stderr) {
-              emitter.emit(events.log.log, theme.dim(`Command stderr:`), true);
-              emitter.emit(events.log.log, `${result.out.stderr}`, true);
-            }
+          if (!silent && result.out.stderr) {
+            emitter.emit(events.log.log, theme.dim(`stderr:`), true);
+            emitter.emit(events.log.log, `${result.out.stderr}`, true);
           }
 
           return result.out?.stdout?.trim();
@@ -792,7 +832,12 @@ const createCommands = (
         try {
           await script.runInNewContext(context);
         } catch (e) {
-          console.error(e);
+          // Log the error to the emitter instead of console.error to maintain consistency
+          emitter.emit(
+            events.log.debug,
+            `JavaScript execution error: ${e.message}`,
+          );
+          // Wait a tick to allow any promise rejections to be handled
           throw new CommandError(`Error running script: ${e.message}`);
         }
 

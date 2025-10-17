@@ -63,13 +63,18 @@ class TestDriverAgent extends EventEmitter2 {
     // Derive properties from cliArgs
     const flags = cliArgs.options || {};
     const firstArg = cliArgs.args && cliArgs.args[0];
+
+    // All commands (run, edit, generate) use the same pattern:
+    // first argument is the main file to work with
     this.thisFile = firstArg || this.config.TD_DEFAULT_TEST_FILE;
+
     this.resultFile = flags.resultFile || null;
     this.newSandbox = flags.newSandbox || false;
     this.healMode = flags.healMode || flags.heal || false;
     this.sandboxId = flags["sandbox-id"] || null;
     this.sandboxAmi = flags["sandbox-ami"] || null;
     this.sandboxInstance = flags["sandbox-instance"] || null;
+    this.ip = flags.ip || null;
     this.workingDir = flags.workingDir || process.cwd();
 
     // Resolve thisFile to absolute path with proper extension
@@ -222,7 +227,15 @@ class TestDriverAgent extends EventEmitter2 {
     if (skipPostrun) {
       this.exit(true);
     } else {
-      await this.summarize(error.message);
+      try {
+        await this.summarize(error.message);
+      } catch (summarizeError) {
+        // If summarization fails, log it but don't let it prevent postrun from running
+        this.emitter.emit(
+          events.log.warn,
+          theme.yellow(`Failed to summarize: ${summarizeError.message}`),
+        );
+      }
       // Always run postrun lifecycle script, even for fatal errors
       return await this.exit(true, false, true);
     }
@@ -419,6 +432,7 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Log current execution position for debugging
     if (this.sourceMapper.currentFileSourceMap) {
+      this.emitter.emit(events.log.log, "");
       this.emitter.emit(
         events.log.log,
         theme.dim(`${this.sourceMapper.getCurrentPositionDescription()}`),
@@ -476,14 +490,13 @@ class TestDriverAgent extends EventEmitter2 {
         sourcePosition: sourcePosition,
       });
 
-      await this.haveAIResolveError(
+      return await this.haveAIResolveError(
         error,
         yaml.dump({ commands: [yml] }),
         depth,
         true,
         shouldSave,
       );
-      throw error;
     }
   }
 
@@ -879,30 +892,33 @@ commands:
   // based on the current state of the system (primarily the current screenshot)
   // it will generate files that contain only "prompts"
   // @todo revit the generate command
-  async generate(type, count, baseYaml, skipYaml = false) {
-    this.emitter.emit(events.log.debug, "generate called, %s", type);
+  async generate(count = 1, prompt = null) {
+    this.emitter.emit(
+      events.log.debug,
+      `generate called with count: ${count}, prompt: ${prompt}`,
+    );
+
+    await this.runLifecycle("prerun");
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
-
-    if (baseYaml && !skipYaml) {
-      await this.runLifecycle("prerun");
-      await this.run(baseYaml, false, false);
-      await this.runLifecycle("postrun");
-    }
 
     let image = await this.system.captureScreenBase64();
 
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
+    let mouse = await this.system.getMousePosition();
+    let activeWindow = await this.system.activeWin();
+
     let message = await this.sdk.req(
       "generate",
       {
-        type,
+        prompt: prompt || "make sure to do a spellcheck",
         image,
-        mousePosition: await this.system.getMousePosition(),
-        activeWindow: await this.system.activeWin(),
+        mousePosition: mouse,
+        activeWindow: activeWindow,
         count,
+        stream: false,
       },
       (chunk) => {
         if (chunk.type === "data") {
@@ -925,34 +941,35 @@ commands:
           .replace(/['"`]/g, "")
           .replace(/[^a-zA-Z0-9-]/g, "") // remove any non-alphanumeric chars except hyphens
           .toLowerCase() + ".yaml";
+
       let path1 = path.join(
         this.workingDir,
         "testdriver",
         "generate",
         fileName,
       );
-
       // create generate directory if it doesn't exist
-      if (!fs.existsSync(path.join(this.workingDir, "generate"))) {
-        fs.mkdirSync(path.join(this.workingDir, "generate"));
+      const generateDir = path.join(this.workingDir, "testdriver", "generate");
+      if (!fs.existsSync(generateDir)) {
+        fs.mkdirSync(generateDir);
+        console.log("Created generate directory:", generateDir);
+      } else {
+        console.log("Generate directory already exists:", generateDir);
       }
 
       let list = testPrompt.steps;
 
-      if (baseYaml && fs.existsSync(baseYaml)) {
-        list.unshift({
-          step: {
-            command: "run",
-            file: baseYaml,
-          },
-        });
-      }
       let contents = yaml.dump({
         version: packageJson.version,
         steps: list,
       });
+
+      this.emitter.emit(events.log.debug, `writing file ${path1} ${contents}`);
+
       fs.writeFileSync(path1, contents);
     }
+
+    await this.runLifecycle("postrun");
 
     this.exit(false);
   }
@@ -1139,21 +1156,8 @@ ${yml}
 
     // Create diff if file exists and content has changed
     let diffResult = null;
-    console.log("Checking for diff. File exists:", fileExists);
-    console.log(
-      "Content changed:",
-      fileExists && existingContent !== regression,
-    );
-    if (fileExists) {
-      console.log(
-        "Existing content preview:",
-        existingContent.substring(0, 100),
-      );
-      console.log("New content preview:", regression.substring(0, 100));
-    }
 
     if (fileExists && existingContent !== regression) {
-      console.log("Creating diff - content has changed");
       const patches = diff.structuredPatch(
         filepath,
         filepath,
@@ -1241,8 +1245,6 @@ ${yml}
           diff: diffResult,
           timestamp: endTime,
         });
-      } else {
-        console.log("No diff result to emit");
       }
 
       // Emit file save completion event
@@ -1519,6 +1521,8 @@ ${regression}
   }
 
   async embed(file, depth, pushToHistory) {
+    let inputFile = JSON.parse(JSON.stringify(file));
+
     this.analytics.track("embed", { file });
 
     this.emitter.emit(
@@ -1528,7 +1532,7 @@ ${regression}
 
     depth = depth + 1;
 
-    this.emitter.emit(events.log.log, `${file} (start)`);
+    this.emitter.emit(events.log.log, `${inputFile} (start)`);
 
     // Use the new helper method to resolve file paths relative to testdriver directory
     const currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
@@ -1581,7 +1585,7 @@ ${regression}
       this.sourceMapper.restoreContext(previousContext);
     }
 
-    this.emitter.emit(events.log.log, `${file} (end)`);
+    this.emitter.emit(events.log.log, `${inputFile} (end)`);
   }
 
   // Returns sandboxId to use (either from file if recent, or null)
@@ -1706,7 +1710,20 @@ ${regression}
     const recentId = createNew ? null : this.getRecentSandboxId();
 
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
-    if (!createNew && recentId) {
+    if (this.ip) {
+      let instance = await this.sandbox.send({
+        type: "direct",
+        resolution: this.config.TD_RESOLUTION,
+        ci: this.config.CI,
+        ip: this.ip,
+      });
+
+      await this.renderSandbox(instance.instance, headless);
+      await this.newSession();
+      await this.runLifecycle("provision");
+
+      return;
+    } else if (!createNew && recentId) {
       this.emitter.emit(
         events.log.narration,
         theme.dim(`using recent sandbox: ${recentId}`),
@@ -1717,10 +1734,8 @@ ${regression}
         events.log.narration,
         theme.dim(`no recent sandbox found, creating a new one.`),
       );
-    }
-
-    // Only attempt to connect to existing sandbox if not in CI mode and not creating new
-    if (this.sandboxId && !this.config.CI && !createNew) {
+    } else if (this.sandboxId && !this.config.CI) {
+      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
         events.log.narration,
@@ -1787,13 +1802,16 @@ ${regression}
         events.log.log,
         theme.green(`Howdy! I'm TestDriver v${packageJson.version}`),
       );
+
+      // Emit test start event for the entire test execution
+      this.emitter.emit(events.test.start, {
+        filePath: this.thisFile,
+        timestamp: Date.now(),
+      });
+
       // Start the debugger server as early as possible to ensure event listeners are attached
       if (!debuggerStarted) {
         debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
-        this.emitter.emit(
-          events.log.narration,
-          theme.green(`Starting debugger server...`),
-        );
         debuggerProcess = await createDebuggerProcess(
           this.config,
           this.emitter,
@@ -1801,6 +1819,7 @@ ${regression}
       }
       this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
       this.emitter.emit(events.log.log, `This is beta software!`);
+      this.emitter.emit(events.log.log, ``);
       this.emitter.emit(
         events.log.log,
         theme.yellow(`Join our Discord for help`),
@@ -1809,6 +1828,7 @@ ${regression}
         events.log.log,
         `https://discord.com/invite/cWDFW8DzPm`,
       );
+      this.emitter.emit(events.log.log, ``);
 
       // make testdriver directory if it doesn't exist
       let testdriverFolder = path.join(this.workingDir);
@@ -1822,7 +1842,10 @@ ${regression}
       }
 
       // if the directory for thisFile doesn't exist, create it
-      if (this.cliArgs.command !== "sandbox") {
+      if (
+        this.cliArgs.command !== "sandbox" &&
+        this.cliArgs.command !== "generate"
+      ) {
         const dir = path.dirname(this.thisFile);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
@@ -1847,7 +1870,10 @@ ${regression}
         await this.sdk.auth();
       }
 
-      if (this.cliArgs.command !== "sandbox") {
+      if (
+        this.cliArgs.command !== "sandbox" &&
+        this.cliArgs.command !== "generate"
+      ) {
         this.emitter.emit(
           events.log.log,
           theme.dim(`Working on ${this.thisFile}`),
@@ -2050,6 +2076,20 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     // Use the current file path from sourceMapper to find the lifecycle directory
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
+
+    this.emitter.emit(events.log.log, ``);
+    this.emitter.emit(events.log.log, "Running lifecycle: " + lifecycleName);
+
+    // If we still don't have a currentFilePath, fall back to the default testdriver directory
+    if (!currentFilePath) {
+      currentFilePath = path.join(
+        this.workingDir,
+        "testdriver",
+        "testdriver.yaml",
+      );
+      console.log("No currentFilePath found, using fallback:", currentFilePath);
+    }
+
     // Ensure we have an absolute path
     if (currentFilePath && !path.isAbsolute(currentFilePath)) {
       currentFilePath = path.resolve(this.workingDir, currentFilePath);
@@ -2086,6 +2126,9 @@ Please check your network connection, TD_API_KEY, or the service status.`,
         }
       }
     }
+
+    this.emitter.emit(events.log.log, lifecycleFile);
+
     if (lifecycleFile) {
       // Store current source mapping state before running lifecycle file
       const previousContext = this.sourceMapper.saveContext();
@@ -2155,7 +2198,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
 
     // Move environment setup and special handling here
-    if (["edit", "run"].includes(commandName)) {
+    if (["edit", "run", "generate"].includes(commandName)) {
       await this.buildEnv(options);
     }
 

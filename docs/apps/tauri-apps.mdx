@@ -1,0 +1,361 @@
+---
+title: "Tauri Apps"
+sidebarTitle: "Tauri Apps"
+description: "Testing Tauri Apps with TestDriver"
+icon: "https://tauri.app/favicon.svg"
+---
+
+> [Tauri](https://tauri.app/) is a framework for building tiny, fast binaries for all major desktop and mobile platforms. Developers can integrate any frontend framework that compiles to HTML, JavaScript, and CSS for building their user experience while leveraging languages such as Rust, Swift, and Kotlin for backend logic when needed.
+>
+> \
+> – [https://tauri.app/start](https://tauri.app/start/)
+
+## Testing Tauri apps with TestDriver
+
+In this guide, we'll leverage [Playwright](https://playwright.dev/) and the [TestDriver Playwright SDK](/getting-started/playwright) to convert the [Tauri Quick Start](https://tauri.app/start/create-project/) to TestDriver's selectorless, Vision AI.
+
+<Info>View Source: https://github.com/testdriverai/demo-tauri-app</Info>
+
+### Requirements
+
+To start testing your Tauri app with TestDriver, you need the following:
+
+<AccordionGroup>
+  <Accordion title="Create a TestDriver account">
+    <Steps>
+      <Step title="Create a TestDriver Account">
+        You will need a [Free TestDriver Account](https://app.testdriver.ai/team) to get an API key.
+
+        <Card title="Sign Up for TestDriver" icon="user-plus" horizontal href="https://app.testdriver.ai/team">
+
+        </Card>
+      </Step>
+      <Step title="Set up your environment">
+        Copy your API key from [your TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
+
+        <Tabs>
+          <Tab title="macOS / Linux">
+            Export an environment variable on macOS or Linux systems:
+
+            ```bash
+            export TD_API_KEY="your_api_key_here"
+            ```
+          </Tab>
+          <Tab title="Windows">
+            Export an environment variable in PowerShell:
+
+            ```powershell
+            setx TD_API_KEY "your_api_key_here"
+            ```
+          </Tab>
+        </Tabs>
+      </Step>
+    </Steps>
+
+  </Accordion>
+  <Accordion title="Create a Tauri project">
+    <Note>
+      Follow Tauri's [Create a Project](https://tauri.app/start/create-project/)
+      guide.
+    </Note>
+  </Accordion>
+  <Accordion title="Create a Playwright project">
+    <Info>
+      This is a condensed version of [Playwright's Installation Instructions](https://playwright.dev/docs/intro).
+
+      **If you're new to Playwright, you should follow their guide first.**
+    </Info>
+    In your Tauri project, run:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm init playwright@latest
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn create playwright
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm create playwright
+        ```
+      </Tab>
+    </Tabs>
+    Select the following options when prompted:
+
+    ```console
+    ✔ Do you want to use TypeScript or JavaScript?
+    > TypeScript
+    ✔ Where to put your end-to-end tests?
+    > tests
+    ✔ Add a GitHub Actions workflow? (y/N)
+    > N
+    ✔ Install Playwright browsers (can be done manually via 'npx playwright install')? (Y/n)
+    > Y
+    ```
+
+  </Accordion>
+  <Accordion title="Install the TestDriver Playwright SDK">
+    `@testdriver.ai/playwright` is an AI-powered extension of `@playwright/test`.
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm install @testdriver.ai/playwright
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn add @testdriver.ai/playwright
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm add @testdriver.ai/playwright
+        ```
+      </Tab>
+    </Tabs>
+
+  </Accordion>
+</AccordionGroup>
+
+## Testing the Tauri Web App
+
+### Setup
+
+First, we need to modify the default Playwright configuration and our Tauri project to work together:
+
+<Steps>
+  <Step title="Configure Playwright to start the Tauri frontend">
+    In the `playwright.config.ts` file, we'll configure the [`webServer`](https://playwright.dev/docs/test-webserver)
+    to start the Tauri frontend for Playwright to test against:
+
+    ```typescript playwright.config.ts
+      /* Run your local dev server before starting the tests */
+      // [!code ++:8]
+      webServer: {
+        command: "npm run dev",
+        url: "http://localhost:1420",
+        reuseExistingServer: !process.env.CI,
+        env: {
+          VITE_PLAYWRIGHT: "true",
+        },
+      },
+    });
+    ```
+
+  </Step>
+  <Step title="Mock Tauri APIs">
+    Since we're testing the Tauri frontend, we need to [mock IPC Requests](https://tauri.app/develop/tests/mocking/)
+    to simulate `invoke` calls to the Rust backend:
+
+    ```html src/index.html
+    <body>
+      <div id="root"></div>
+      <!-- [!code ++:7] -->
+      <script type="module">
+        // This is set in playwright.config.ts to allow our tests to mock Tauri IPC `invoke` calls
+        if (import.meta.env.VITE_PLAYWRIGHT) {
+          const { mockIPC } = await import("@tauri-apps/api/mocks");
+          window.mockIPC = mockIPC;
+        }
+      </script>
+      <script type="module" src="/src/main.tsx"></script>
+    </body>
+    ```
+
+    We only need to do this once, as we'll be accessing `window.mockIPC` in our tests.
+
+  </Step>
+  <Step title="Create a new test file">
+    Create a new file (e.g. `tests/testdriver.spec.ts`) with:
+
+    ```typescript tests/testdriver.spec.ts
+    import type { mockIPC } from "@tauri-apps/api/mocks";
+    import { expect, test } from "@playwright/test";
+
+    test.beforeEach(async ({ page }) => {
+      await page.goto("http://localhost:1420");
+    });
+
+    test("should have title", async ({ page }) => {
+      await expect(page).toHaveTitle("Tauri + React + TypeScript");
+    });
+    ```
+
+  </Step>
+  <Step title="Run Playwright in UI Mode">
+    Now we're ready to run Playwright and start working on our tests:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npx playwright test --ui
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn playwright test --ui
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm exec playwright test --ui
+        ```
+      </Tab>
+    </Tabs>
+    ![Playwright UI Mode](https://playwright.dev/assets/ideal-img/ui-mode.4e54d6b.3598.png)
+
+    Click the <Icon icon="play" /> button to successfully run the tests in the UI.
+
+    <Tip>
+      Click the <Icon icon="eye" /> button to automatically re-run tests on save.
+    </Tip>
+
+  </Step>
+</Steps>
+
+### Usage
+
+#### Import the TestDriver Playwright SDK
+
+By changing **1 line**, we can add TestDriver's AI capabilities to Playwright:
+
+```typescript tests/testdriver.spec.ts
+import type { mockIPC } from "@tauri-apps/api/mocks";
+// [!code --]
+import { expect, test } from "@playwright/test";
+// [!code ++]
+import { expect, test } from "@testdriver.ai/playwright";
+
+// For type-safety of the mockIPC function
+declare global {
+  interface Window {
+    mockIPC: typeof mockIPC;
+  }
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.goto("http://localhost:1420");
+});
+
+test("should have title", async ({ page }) => {
+  await expect(page).toHaveTitle("Tauri + React + TypeScript");
+});
+```
+
+Notice how we're able to continue using Playwright's API (`toHaveTitle`)
+with `@testdriver.ai/playwright`.
+
+The test continues to pass as before, so now we can update our test to use natural language instead of selectors.
+
+#### Assertions with `expect.toMatchPrompt`
+
+With Playwright, we would normally use a `getByRole` selector to assert the heading text:
+
+```typescript tests/example.spec.ts
+test("should have heading", async ({ page }) => {
+  await expect(
+    page.getByRole("heading", { name: "Installation" }),
+  ).toBeVisible();
+});
+```
+
+With TestDriver, we can use natural language with `toMatchPrompt` instead:
+
+```typescript tests/testdriver.spec.ts
+test("should have heading", async ({ page }) => {
+  // [!code --:3]
+  await expect(
+    page.getByRole("heading", { name: "Installation" }),
+  ).toBeVisible();
+  // [!code ++:1]
+  await expect(page).toMatchPrompt("Heading says 'Welcome to Tauri + React'");
+});
+```
+
+#### Agentic tests with `test.agent`
+
+With TestDriver, we can skip the test implementation **entirely** and let AI perform the test for us:
+
+<Steps>
+  <Step title="Mock the `greet` call">
+    First, we need to [`mock our invoke calls`](https://tauri.app/develop/tests/mocking/#ipc-requests),
+    since we're testing the frontend behavior and not our Tauri backend:
+
+    ```typescript tests/testdriver.spec.ts
+    test.beforeEach(async ({ page }) => {
+      await page.goto("http://localhost:1420");
+      // [!code ++:12]
+      await page.evaluate(() => {
+        // https://tauri.app/develop/tests/mocking/#mocking-commands-for-invoke
+        window.mockIPC((cmd, args) => {
+          switch (cmd) {
+            case "greet":
+              args = args as { name: string };
+              return `Hello, ${args.name}! You've been greeted from Rust!`;
+            default:
+              throw new Error(`Unsupported command: ${cmd}`);
+          }
+        });
+      });
+    });
+    ```
+
+  </Step>
+  <Step title="Add an Agentic Test">
+    Next, wrap a _prompt_ in `test.agent` to perform the test:
+
+    ```typescript tests/testdriver.spec.ts
+    test.describe("should greet with name", () => {
+      test.agent(`
+        - Enter the name "Tauri"
+        - Click the "Greet" button
+        - You should see the text "Hello, Tauri! You've been greeted from Rust!"
+      `);
+    });
+    ```
+
+  </Step>
+</Steps>
+
+#### Continued Reading
+
+[Learn more about TestDriver's Playwright SDK](/getting-started/playwright)
+
+## Testing the Tauri Desktop App
+
+We can use TestDriver and natural language to test our Tauri desktop app:
+
+<Steps>
+  <Step title="Run the Desktop App">
+    <Tabs>
+      <Tab title="npm">```bash npm run tauri dev ```</Tab>
+      <Tab title="yarn">```bash yarn tauri dev ```</Tab>
+      <Tab title="pnpm">```bash pnpm tauri dev ```</Tab>
+    </Tabs>
+  </Step>
+  <Step title="Continued Reading">
+    <Note>See [Desktop Apps](/apps/desktop-apps) for more information.</Note>
+  </Step>
+</Steps>
+
+## Testing the Tauri Mobile App
+
+We can use TestDriver and natural language to test our Tauri iOS app:
+
+<Steps>
+  <Step title="Run the Mobile App">
+    <Tabs>
+      <Tab title="npm">```bash npm run tauri ios dev ```</Tab>
+      <Tab title="yarn">```bash yarn tauri ios dev ```</Tab>
+      <Tab title="pnpm">```bash pnpm tauri ios dev ```</Tab>
+    </Tabs>
+  </Step>
+  <Step title="Continued Reading">
+    <Note>See [Mobile Apps](/apps/mobile-apps) for more information.</Note>
+  </Step>
+</Steps>

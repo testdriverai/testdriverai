@@ -24,6 +24,7 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 | `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.                                                                                                                        |
 |   `action`    | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging text](/commands/hover-image#drag-functionality). |
 |   `method`    |  `enum`  | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                                                                                                                              |
+|   `timeout`   | `number` | **(Optional)** The duration in milliseconds to wait for the text to appear. Default is `5000` (5 seconds).                                                                                                                  |
 
 ## Example usage
 
@@ -32,11 +33,12 @@ command: hover-text
 text: Sign Up
 description: link in the header
 action: click
+timeout: 10000 # 10 seconds
 ```
 
 ## Gotchas
 
-- If the text can't be located, the command will fail. Ensure the text is visible on the screen and matches exactly.
+- If the text can't be located, it will internally call the [wait-for-text](/commands/wait-for-text) command and wait for the text to appear. The wait `timeout` is 5 seconds by default, and the command fails if the text is not found.
 - Variations in font size, style, or screen resolution may affect detection accuracy.
 
 ## Notes

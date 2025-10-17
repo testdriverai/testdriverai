@@ -55,6 +55,10 @@ function createCommandDefinitions(agent) {
         "sandbox-instance": Flags.string({
           description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
+        ip: Flags.string({
+          description:
+            "Connect directly to a sandbox at the specified IP address",
+        }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
         }),
@@ -67,12 +71,6 @@ function createCommandDefinitions(agent) {
         // Use --path flag if provided, otherwise fall back to args.file
         const file = normalizeFilePath(args.file);
         const testStartTime = Date.now();
-
-        // Emit test start event for the entire test execution
-        agent.emitter.emit(events.test.start, {
-          filePath: file,
-          timestamp: testStartTime,
-        });
 
         try {
           await agent.runLifecycle("prerun");
@@ -134,6 +132,10 @@ function createCommandDefinitions(agent) {
         }),
         "sandbox-instance": Flags.string({
           description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
+        }),
+        ip: Flags.string({
+          description:
+            "Connect directly to a sandbox at the specified IP address",
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
@@ -200,6 +202,41 @@ function createCommandDefinitions(agent) {
       handler: async () => {
         const packageJson = require("../package.json");
         console.log(`TestDriver.ai v${packageJson.version}`);
+      },
+    },
+
+    generate: {
+      description: "Generate test files based on current screen state",
+      args: {
+        prompt: Args.string({
+          description: "Multi-line text prompt describing what to generate",
+          required: false,
+        }),
+      },
+      flags: {
+        count: Flags.integer({
+          description: "Number of test files to generate",
+          default: 3,
+        }),
+        headless: Flags.boolean({
+          description: "Run in headless mode (no GUI)",
+          default: false,
+        }),
+        new: Flags.boolean({
+          description:
+            "Create a new sandbox instead of reconnecting to an existing one",
+          default: false,
+        }),
+        "sandbox-ami": Flags.string({
+          description: "Specify AMI ID for sandbox instance (e.g., ami-1234)",
+        }),
+        "sandbox-instance": Flags.string({
+          description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
+        }),
+      },
+      handler: async (args, flags) => {
+        // Call generate with the count and prompt
+        await agent.generate(flags.count || 3, args.prompt);
       },
     },
   };

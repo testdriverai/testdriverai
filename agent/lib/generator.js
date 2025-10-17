@@ -1,6 +1,6 @@
 // parses markdown content to find code blocks, and then extracts yaml from those code blocks
 const yaml = require("js-yaml");
-const package = require("../../package.json");
+const pkg = require("../../package.json");
 const session = require("./session");
 const theme = require("./theme");
 // do the actual parsing
@@ -56,7 +56,7 @@ const jsonToManual = function (json, colors = true) {
 const dumpToYML = async function (inputArray, sessionInstance = null) {
   // use yml dump to convert json to yml
   let yml = await yaml.dump({
-    version: package.version,
+    version: pkg.version,
     session: sessionInstance ? sessionInstance.get() : session.get(),
     steps: inputArray,
   });
