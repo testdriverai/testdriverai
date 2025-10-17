@@ -340,7 +340,7 @@
       let parsedData;
       if (data) {
         try {
-          parsedData = JSON.parse(decodeURIComponent(data));
+          parsedData = JSON.parse(atob(data));
           console.log("Data from URL:", parsedData);
           // You can use parsedData here if needed
         } catch (error) {

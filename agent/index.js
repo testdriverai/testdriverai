@@ -1768,7 +1768,7 @@ ${regression}
       url: newSandbox.url,
     };
 
-    const encodedData = encodeURIComponent(JSON.stringify(data));
+    const encodedData = Buffer.from(JSON.stringify(data)).toString('base64');
 
     // Use the debugger URL instead of the VNC URL
     const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
