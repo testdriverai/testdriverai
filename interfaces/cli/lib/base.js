@@ -37,10 +37,18 @@ class BaseCommand extends Command {
   }
 
   sendToSandbox(message) {
+
+    if (!message) return;
+
+    console.log("Sending to sandbox:", message);
+
     // ensure message is a string
     if (typeof message !== "string") {
       message = JSON.stringify(message);
     }
+
+    console.log('Sending log 2 message to sandbox:', message);
+
     this.agent.sandbox.send({
       os: "linux",
       type: "output",
@@ -95,7 +103,7 @@ class BaseCommand extends Command {
     });
 
     // Handle sandbox connection with pattern matching for subsequent events
-    this.agent.emitter.on("sandbox:connected", () => {
+    this.agent.emitter.once("sandbox:connected", () => {
       isConnected = true;
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {

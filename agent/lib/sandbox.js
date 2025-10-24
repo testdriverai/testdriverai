@@ -70,6 +70,8 @@ const createSandbox = (emitter, analytics) => {
         sandboxId,
       });
 
+      console.log("Sandbox connect reply:", reply);
+
       if (reply.success) {
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);

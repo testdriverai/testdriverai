@@ -1778,6 +1778,8 @@ ${regression}
 
     console.log("New sandbox created:", newSandbox);
 
+    this.emitter.emit(events.sandbox.connected);
+
     let data = {
       resolution: this.config.TD_RESOLUTION,
       url: newSandbox.url,
@@ -1984,8 +1986,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     if (this.sandboxInstance) {
       sandboxConfig.instanceType = this.sandboxInstance;
     }
-
-    console.log("sending create");
 
     let instance = await this.sandbox.send(sandboxConfig);
 

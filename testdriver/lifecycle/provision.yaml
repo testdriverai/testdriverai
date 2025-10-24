@@ -13,8 +13,5 @@ steps:
             --no-default-browser-check \
             --no-first-run \
             --guest \
-            "${TD_WEBSITE}" \
+            "https://testdriver-sandbox.vercel.app/" \
             >/dev/null 2>&1 &
-      - command: wait-for-text
-        text: ${TD_WEBSITE}
-        timeout: 60000
