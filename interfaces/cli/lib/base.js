@@ -47,7 +47,7 @@ class BaseCommand extends Command {
       message = JSON.stringify(message);
     }
 
-    console.log('Sending log 2 message to sandbox:', message);
+    console.log('Sending log 2 message to sandbox:', message, message.length);
 
     this.agent.sandbox.send({
       os: "linux",

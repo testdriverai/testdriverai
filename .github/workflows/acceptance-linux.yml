@@ -1,4 +1,4 @@
-name: v6 Acceptance [disabled]
+name: v6 Linux
 
 on:
   workflow_dispatch:
@@ -97,6 +97,7 @@ jobs:
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
           TD_THIS_FILE: ${{ matrix.test }}
+          TD_API_ROOT: "https://replayable-dev-ian-mac-m1-16.ngrok.io"
       - run: ls
       - name: Upload JUnit report to Testmo
         if: always()
