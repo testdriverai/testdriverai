@@ -18,6 +18,7 @@ jobs:
   # Job to gather all test files
   test-setup:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       testmo-run-id: ${{ steps.run-tests.outputs.testmo-run-id }}
     steps:
@@ -53,6 +54,7 @@ jobs:
   gather:
     name: Gather Test Files
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
     steps:
@@ -71,6 +73,7 @@ jobs:
       - gather
       - test-setup
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         test: ${{ fromJson(needs.gather.outputs.test_files) }}
@@ -121,6 +124,7 @@ jobs:
     needs: [test-setup, test]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v3

@@ -10,6 +10,7 @@ jobs:
   gather:
     name: Gather Test Files
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       test_files: ${{ steps.test_list.outputs.files }}
     steps:
@@ -27,6 +28,7 @@ jobs:
   test:
     needs: gather
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         test: ${{ fromJson(needs.gather.outputs.test_files) }}

@@ -16,6 +16,7 @@ jobs:
   gather-test-files:
     name: Gather Test Files
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: >
       (github.event_name == 'workflow_dispatch') ||
       (github.ref == 'refs/heads/main') ||

@@ -13,6 +13,7 @@ jobs:
     name: "Bump Version"
     if: ${{ github.event.workflow_run.conclusion == 'success' && !contains(github.event.workflow_run.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,6 +39,7 @@ jobs:
     name: Publish testdriverai@latest
     needs: bump_version
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,6 +53,7 @@ jobs:
 
   trigger-vscode-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: publish-latest
     steps:
       - name: Trigger VSCode Build + Publish
