@@ -45,7 +45,6 @@ jobs:
   test:
     needs:
       - gather
-      - test-setup
     runs-on: ubuntu-latest
     strategy:
       matrix:
