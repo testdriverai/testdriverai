@@ -157,7 +157,7 @@ class BaseCommand extends Command {
         
           u = JSON.parse(u.searchParams.get("data"));
           console.log(`${u.url}&view_only=true`); 
-          } this.catch (e) {
+          } catch (e) {
             console.log(url);
           }
       } else {
