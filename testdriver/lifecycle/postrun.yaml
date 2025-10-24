@@ -4,7 +4,7 @@ steps:
     commands:
       - command: exec
         lang: sh
-        timeout: 60000
+        timeout: 120000
         code: dashcam -t 'Linux' -p
 
 

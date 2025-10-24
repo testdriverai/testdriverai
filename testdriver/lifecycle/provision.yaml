@@ -15,3 +15,6 @@ steps:
             --guest \
             "https://testdriver-sandbox.vercel.app/" \
             >/dev/null 2>&1 &
+      - command: wait-for-text
+        text: testdriver-sandbox
+        timeout: 60000

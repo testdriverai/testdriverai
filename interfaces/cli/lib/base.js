@@ -153,8 +153,13 @@ class BaseCommand extends Command {
       console.log(`Live test execution: `);
       if (this.agent.config.CI) {
         let u = new URL(url);
-        u = JSON.parse(u.searchParams.get("data"));
-        console.log(`${u.url}&view_only=true`);
+        try {
+        
+          u = JSON.parse(u.searchParams.get("data"));
+          console.log(`${u.url}&view_only=true`); 
+          } this.catch (e) {
+            console.log(url);
+          }
       } else {
         console.log(url);
         await openBrowser(url);
