@@ -43,9 +43,10 @@ The setup process involves three main steps:
 - AWS account with permissions to run CloudFormation.
 - [AWS CLI](https://aws.amazon.com/cli/) installed locally.
 
-  <Tip>Be sure to run `aws configure` with your credentials</Tip>
-
-- Access to the TestDriver AMI (Golden Image)\
+  <Tip>
+    Be sure to run `aws configure` with your credentials
+  </Tip>
+- Access to the TestDriver AMI (Golden Image is `ami-055cd47506a2f39bb`)\
   [Contact us with your preferred AWS Region for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
 - A GitHub repository for committing your tests & workflow.
 
@@ -76,8 +77,7 @@ aws cloudformation deploy \
 ```
 
 <Danger>
-  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP
-  ranges to lock down access to your VPC.
+  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to lock down access to your VPC.
 </Danger>
 
 ### Get Launch Template ID
@@ -91,7 +91,9 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-<Tip>**Save this ID** – you'll need it for the next step.</Tip>
+<Tip>
+  **Save this ID** – you'll need it for the next step.
+</Tip>
 
 ## Step 2: Spawn a New TestDriver Runner
 
@@ -127,10 +129,7 @@ AWS_REGION=us-east-2
 ```
 
 <Note>
-  **Instance Lifecycle**: Instances spawned by this script will continue running
-  until you manually terminate them. They are automatically tagged with
-  `Name=TestDriverRunner` and `Project=[your ProjectTag value]` for easy
-  identification in the AWS console.
+  **Instance Lifecycle**: Instances spawned by this script will continue running until you manually terminate them. They are automatically tagged with `Name=TestDriverRunner` and `Project=[your ProjectTag value]` for easy identification in the AWS console.
 </Note>
 
 #### Changing Resolution in Lifecycle Files
