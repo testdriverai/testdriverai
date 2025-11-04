@@ -54,6 +54,7 @@ jobs:
       - name: Setup AWS Instance
         id: aws-setup
         run: |
+          chmod +x ./setup/aws/spawn-runner.sh
           OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr) # Capture and display output
           echo "$OUTPUT"
           PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
