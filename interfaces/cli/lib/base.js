@@ -40,14 +40,10 @@ class BaseCommand extends Command {
 
     if (!message) return;
 
-    console.log("Sending to sandbox:", message);
-
     // ensure message is a string
     if (typeof message !== "string") {
       message = JSON.stringify(message);
     }
-
-    console.log('Sending log 2 message to sandbox:', message, message.length);
 
     this.agent.sandbox.send({
       os: "linux",

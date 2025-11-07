@@ -75,9 +75,12 @@ const createSandbox = (emitter, analytics) => {
       if (reply.success) {
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
+        // Return the full reply (includes url and sandbox)
+        return reply;
+      } else {
+        // Throw error to trigger fallback to creating new sandbox
+        throw new Error(reply.errorMessage || 'Failed to connect to sandbox');
       }
-
-      return reply.sandbox;
     }
 
     async boot(apiRoot) {

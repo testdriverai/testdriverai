@@ -4,7 +4,12 @@ steps:
     commands:
       - command: exec
         lang: sh
-        code: dashcam start
+        code: |
+          dashcam --version
+          dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d
       - command: exec
         lang: sh
-        code: dashcam track --name=TestDriver --type=application --pattern="/tmp/testdriver.log"
+        code: dashcam record >> ~/Desktop/dashcam.log 2>&1 &
+      - command: exec
+        lang: sh
+        code: dashcam logs --add --name=TestDriver --type=file --file="/tmp/testdriver.log"

@@ -30,8 +30,6 @@ class CustomTransport extends Transport {
           return;
         }
 
-        console.log('Sending log message to sandbox:', message, message.length);
-
         this.sandbox.send({
           os: "linux",
           type: "output",
