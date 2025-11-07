@@ -272,12 +272,50 @@ Our TestDriver Golden Image (AMI) comes pre-configured with everything you need 
 
 ### Modifying the AMI
 
-You can customize the AMI for your specific needs:
+<Danger>
+  **Change Default Password First**: The TestDriver AMI includes a default password for initial access. You MUST change this password before saving a new AMI. Never use the default password in production environments.
+</Danger>
 
-1. **Launch an instance** from our base AMI
-2. **Make your changes** (install software, configure settings)
-3. **Create a new AMI** from your modified instance
-4. **Update your workflow** to use the new AMI ID
+You can customize the AMI for your specific needs. Follow these steps carefully:
+
+#### Step 1: Initial Access
+
+Connect to your instance via RDP using the default credentials:
+
+- **Username**: `testdriver`
+- **Default Password**: `changemeABC123`
+
+#### Step 2: Change the Password
+
+Before doing anything else, change the default password:
+
+1. Open PowerShell on the instance
+2. Run the password rotation script:
+   ```powershell
+   C:\testdriver\RotateLocalPasswords.ps1
+   ```
+3. **Save the new password securely** - you'll need it for all future access to this instance
+
+<Note>
+  The password rotation script will generate a secure password for the `testdriver` account. Make sure to save this password in a secure location (password manager, secrets vault, etc.) before proceeding.
+</Note>
+
+#### Step 3: Make Your Customizations
+
+Now that you've secured the instance with a new password:
+
+1. **Make your changes** using the `testdriver` account with your new password
+2. Install additional software as needed
+3. Configure settings specific to your environment
+
+<Tip>
+  **Need to make further customizations or debug issues?** RDP back into the instance using the `testdriver` account with the new password you set in Step 2. This gives you full desktop access to install software, modify configurations, or troubleshoot problems before saving your custom AMI.
+</Tip>
+
+#### Step 4: Save Your Custom AMI
+
+1. **Create a new AMI** from your modified instance using the AWS console or CLI
+2. **Update your workflow** to use the new AMI ID
 
 ### Amazon Image Builder
 
