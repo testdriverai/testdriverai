@@ -15,6 +15,15 @@
  * await client.click();
  */
 
+/**
+ * @typedef {'click' | 'right-click' | 'double-click' | 'hover' | 'drag-start' | 'drag-end'} ClickAction
+ * @typedef {'up' | 'down' | 'left' | 'right'} ScrollDirection
+ * @typedef {'keyboard' | 'mouse'} ScrollMethod
+ * @typedef {'ai' | 'turbo'} TextMatchMethod
+ * @typedef {'js' | 'pwsh'} ExecLanguage
+ * @typedef {'\\t' | '\n' | '\r' | ' ' | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '{' | '|' | '}' | '~' | 'accept' | 'add' | 'alt' | 'altleft' | 'altright' | 'apps' | 'backspace' | 'browserback' | 'browserfavorites' | 'browserforward' | 'browserhome' | 'browserrefresh' | 'browsersearch' | 'browserstop' | 'capslock' | 'clear' | 'convert' | 'ctrl' | 'ctrlleft' | 'ctrlright' | 'decimal' | 'del' | 'delete' | 'divide' | 'down' | 'end' | 'enter' | 'esc' | 'escape' | 'execute' | 'f1' | 'f10' | 'f11' | 'f12' | 'f13' | 'f14' | 'f15' | 'f16' | 'f17' | 'f18' | 'f19' | 'f2' | 'f20' | 'f21' | 'f22' | 'f23' | 'f24' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8' | 'f9' | 'final' | 'fn' | 'hanguel' | 'hangul' | 'hanja' | 'help' | 'home' | 'insert' | 'junja' | 'kana' | 'kanji' | 'launchapp1' | 'launchapp2' | 'launchmail' | 'launchmediaselect' | 'left' | 'modechange' | 'multiply' | 'nexttrack' | 'nonconvert' | 'num0' | 'num1' | 'num2' | 'num3' | 'num4' | 'num5' | 'num6' | 'num7' | 'num8' | 'num9' | 'numlock' | 'pagedown' | 'pageup' | 'pause' | 'pgdn' | 'pgup' | 'playpause' | 'prevtrack' | 'print' | 'printscreen' | 'prntscrn' | 'prtsc' | 'prtscr' | 'return' | 'right' | 'scrolllock' | 'select' | 'separator' | 'shift' | 'shiftleft' | 'shiftright' | 'sleep' | 'space' | 'stop' | 'subtract' | 'tab' | 'up' | 'volumedown' | 'volumemute' | 'volumeup' | 'win' | 'winleft' | 'winright' | 'yen' | 'command' | 'option' | 'optionleft' | 'optionright'} KeyboardKey
+ */
+
 const { createConfig } = require("./agent/lib/config.js");
 const { createSession } = require("./agent/lib/session.js");
 const { createSDK } = require("./agent/lib/sdk.js");
@@ -24,7 +33,7 @@ const { createCommands } = require("./agent/lib/commands.js");
 const { createAnalytics } = require("./agent/lib/analytics.js");
 const { createEmitter, events } = require("./agent/events.js");
 const { createOutputs } = require("./agent/lib/outputs.js");
-const { logger, createMarkdownLogger } = require("./interfaces/logger.js");
+const { createMarkdownLogger } = require("./interfaces/logger.js");
 
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
@@ -78,6 +87,9 @@ class TestDriverSDK {
 
     // Instance reference
     this.instance = null;
+
+    // Commands will be set up dynamically after connection
+    this.commands = null;
   }
 
   /**
@@ -169,6 +181,9 @@ class TestDriverSDK {
     );
     this.commands = commandsResult.commands;
 
+    // Dynamically create command methods based on available commands
+    this._setupCommandMethods();
+
     // Start a new session
     const sessionRes = await this.apiClient.req("session/start", {
       systemInformationOsInfo: await this.system.getSystemInformationOsInfo(),
@@ -200,193 +215,229 @@ class TestDriverSDK {
   }
 
   // ====================================
-  // Command Methods
+  // Command Methods Setup
   // ====================================
 
   /**
-   * Hover over text on screen
-   * @param {string} text - Text to find and hover over
-   * @param {string} description - Optional description
-   * @param {string} action - Action to perform (default: 'click')
-   * @param {string} method - Match method (default: 'turbo')
-   * @param {number} timeout - Timeout in ms (default: 5000)
+   * Dynamically set up command methods based on available commands
+   * This creates camelCase methods that wrap the underlying command functions
+   * @private
    */
-  async hoverText(text, description = null, action = "click", method = "turbo", timeout = 5000) {
-    this._ensureConnected();
-    return await this.commands["hover-text"](text, description, action, method, timeout);
-  }
+  _setupCommandMethods() {
+    // Mapping from command names to SDK method names with type definitions
+    const commandMapping = {
+      'hover-text': { 
+        name: 'hoverText',
+        /**
+         * Hover over text on screen
+         * @param {string} text - Text to find and hover over
+         * @param {string | null} [description] - Optional description of the element
+         * @param {ClickAction} [action='click'] - Action to perform
+         * @param {TextMatchMethod} [method='turbo'] - Text matching method
+         * @param {number} [timeout=5000] - Timeout in milliseconds
+         * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
+         */
+        doc: 'Hover over text on screen'
+      },
+      'hover-image': { 
+        name: 'hoverImage',
+        /**
+         * Hover over an image on screen
+         * @param {string} description - Description of the image to find
+         * @param {ClickAction} [action='click'] - Action to perform
+         * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
+         */
+        doc: 'Hover over an image on screen'
+      },
+      'match-image': { 
+        name: 'matchImage',
+        /**
+         * Match and interact with an image template
+         * @param {string} imagePath - Path to the image template
+         * @param {ClickAction} [action='click'] - Action to perform
+         * @param {boolean} [invert=false] - Invert the match
+         * @returns {Promise<boolean>}
+         */
+        doc: 'Match and interact with an image template'
+      },
+      'type': { 
+        name: 'type',
+        /**
+         * Type text
+         * @param {string | number} text - Text to type
+         * @param {number} [delay=250] - Delay between keystrokes in milliseconds
+         * @returns {Promise<void>}
+         */
+        doc: 'Type text'
+      },
+      'press-keys': { 
+        name: 'pressKeys',
+        /**
+         * Press keyboard keys
+         * @param {KeyboardKey[]} keys - Array of keys to press
+         * @returns {Promise<void>}
+         */
+        doc: 'Press keyboard keys'
+      },
+      'click': { 
+        name: 'click',
+        /**
+         * Click at coordinates
+         * @param {number} x - X coordinate
+         * @param {number} y - Y coordinate
+         * @param {ClickAction} [action='click'] - Type of click action
+         * @returns {Promise<void>}
+         */
+        doc: 'Click at coordinates'
+      },
+      'hover': { 
+        name: 'hover',
+        /**
+         * Hover at coordinates
+         * @param {number} x - X coordinate
+         * @param {number} y - Y coordinate
+         * @returns {Promise<void>}
+         */
+        doc: 'Hover at coordinates'
+      },
+      'scroll': { 
+        name: 'scroll',
+        /**
+         * Scroll the page
+         * @param {ScrollDirection} [direction='down'] - Direction to scroll
+         * @param {number} [amount=300] - Amount to scroll in pixels
+         * @param {ScrollMethod} [method='mouse'] - Scroll method
+         * @returns {Promise<void>}
+         */
+        doc: 'Scroll the page'
+      },
+      'wait': { 
+        name: 'wait',
+        /**
+         * Wait for specified time
+         * @param {number} [timeout=3000] - Time to wait in milliseconds
+         * @returns {Promise<void>}
+         */
+        doc: 'Wait for specified time'
+      },
+      'wait-for-text': { 
+        name: 'waitForText',
+        /**
+         * Wait for text to appear on screen
+         * @param {string} text - Text to wait for
+         * @param {number} [timeout=5000] - Timeout in milliseconds
+         * @param {TextMatchMethod} [method='turbo'] - Text matching method
+         * @param {boolean} [invert=false] - Invert the match (wait for text to disappear)
+         * @returns {Promise<void>}
+         */
+        doc: 'Wait for text to appear on screen'
+      },
+      'wait-for-image': { 
+        name: 'waitForImage',
+        /**
+         * Wait for image to appear on screen
+         * @param {string} description - Description of the image
+         * @param {number} [timeout=10000] - Timeout in milliseconds
+         * @param {boolean} [invert=false] - Invert the match (wait for image to disappear)
+         * @returns {Promise<void>}
+         */
+        doc: 'Wait for image to appear on screen'
+      },
+      'scroll-until-text': { 
+        name: 'scrollUntilText',
+        /**
+         * Scroll until text is found
+         * @param {string} text - Text to find
+         * @param {ScrollDirection} [direction='down'] - Scroll direction
+         * @param {number} [maxDistance=10000] - Maximum distance to scroll in pixels
+         * @param {TextMatchMethod} [textMatchMethod='turbo'] - Text matching method
+         * @param {ScrollMethod} [method='keyboard'] - Scroll method
+         * @param {boolean} [invert=false] - Invert the match
+         * @returns {Promise<void>}
+         */
+        doc: 'Scroll until text is found'
+      },
+      'scroll-until-image': { 
+        name: 'scrollUntilImage',
+        /**
+         * Scroll until image is found
+         * @param {string} description - Description of the image (or use path parameter)
+         * @param {ScrollDirection} [direction='down'] - Scroll direction
+         * @param {number} [maxDistance=10000] - Maximum distance to scroll in pixels
+         * @param {ScrollMethod} [method='keyboard'] - Scroll method
+         * @param {string | null} [path=null] - Path to image template
+         * @param {boolean} [invert=false] - Invert the match
+         * @returns {Promise<void>}
+         */
+        doc: 'Scroll until image is found'
+      },
+      'focus-application': { 
+        name: 'focusApplication',
+        /**
+         * Focus an application by name
+         * @param {string} name - Application name
+         * @returns {Promise<string>}
+         */
+        doc: 'Focus an application by name'
+      },
+      'remember': { 
+        name: 'remember',
+        /**
+         * Extract and remember information from the screen using AI
+         * @param {string} description - What to remember
+         * @returns {Promise<string>}
+         */
+        doc: 'Extract and remember information from the screen'
+      },
+      'assert': { 
+        name: 'assert',
+        /**
+         * Make an AI-powered assertion
+         * @param {string} assertion - Assertion to check
+         * @param {boolean} [async=false] - Run asynchronously
+         * @param {boolean} [invert=false] - Invert the assertion
+         * @returns {Promise<boolean>}
+         */
+        doc: 'Make an AI-powered assertion'
+      },
+      'exec': { 
+        name: 'exec',
+        /**
+         * Execute code in the sandbox
+         * @param {ExecLanguage} language - Language ('js' or 'pwsh')
+         * @param {string} code - Code to execute
+         * @param {number} timeout - Timeout in milliseconds
+         * @param {boolean} [silent=false] - Suppress output
+         * @returns {Promise<string>}
+         */
+        doc: 'Execute code in the sandbox'
+      },
+    };
 
-  /**
-   * Hover over an image on screen
-   * @param {string} description - Description of the image to find
-   * @param {string} action - Action to perform (default: 'click')
-   */
-  async hoverImage(description, action = "click") {
-    this._ensureConnected();
-    return await this.commands["hover-image"](description, action);
-  }
+    // Create SDK methods dynamically from commands
+    Object.keys(this.commands).forEach(commandName => {
+      const command = this.commands[commandName];
+      const methodInfo = commandMapping[commandName];
+      
+      if (!methodInfo) {
+        // Skip commands not in mapping
+        return;
+      }
 
-  /**
-   * Match and interact with an image template
-   * @param {string} imagePath - Path to the image template
-   * @param {string} action - Action to perform (default: 'click')
-   * @param {boolean} invert - Invert the match (default: false)
-   */
-  async matchImage(imagePath, action = "click", invert = false) {
-    this._ensureConnected();
-    return await this.commands["match-image"](imagePath, action, invert);
-  }
+      const methodName = methodInfo.name;
 
-  /**
-   * Type text
-   * @param {string} text - Text to type
-   * @param {number} delay - Delay between keystrokes in ms (default: 250)
-   */
-  async type(text, delay = 250) {
-    this._ensureConnected();
-    return await this.commands.type(text, delay);
-  }
+      // Create the wrapper method
+      this[methodName] = async (...args) => {
+        this._ensureConnected();
+        return await command(...args);
+      };
 
-  /**
-   * Press keyboard keys
-   * @param {Array<string>} keys - Array of keys to press
-   */
-  async pressKeys(keys) {
-    this._ensureConnected();
-    return await this.commands["press-keys"](keys);
-  }
-
-  /**
-   * Click at coordinates or last hover position
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   * @param {string} action - Type of click (default: 'click')
-   */
-  async click(x, y, action = "click") {
-    this._ensureConnected();
-    return await this.commands.click(x, y, action);
-  }
-
-  /**
-   * Hover at coordinates
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   */
-  async hover(x, y) {
-    this._ensureConnected();
-    return await this.commands.hover(x, y);
-  }
-
-  /**
-   * Scroll the page
-   * @param {string} direction - Direction to scroll ('up' or 'down')
-   * @param {number} amount - Amount to scroll in pixels (default: 300)
-   * @param {string} method - Scroll method ('mouse' or 'keyboard')
-   */
-  async scroll(direction = "down", amount = 300, method = "mouse") {
-    this._ensureConnected();
-    return await this.commands.scroll(direction, amount, method);
-  }
-
-  /**
-   * Wait for specified time
-   * @param {number} timeout - Time to wait in ms (default: 3000)
-   */
-  async wait(timeout = 3000) {
-    this._ensureConnected();
-    return await this.commands.wait(timeout);
-  }
-
-  /**
-   * Wait for text to appear on screen
-   * @param {string} text - Text to wait for
-   * @param {number} timeout - Timeout in ms (default: 5000)
-   * @param {string} method - Match method (default: 'turbo')
-   * @param {boolean} invert - Invert the match (default: false)
-   */
-  async waitForText(text, timeout = 5000, method = "turbo", invert = false) {
-    this._ensureConnected();
-    return await this.commands["wait-for-text"](text, timeout, method, invert);
-  }
-
-  /**
-   * Wait for image to appear on screen
-   * @param {string} description - Description of the image
-   * @param {number} timeout - Timeout in ms (default: 10000)
-   * @param {boolean} invert - Invert the match (default: false)
-   */
-  async waitForImage(description, timeout = 10000, invert = false) {
-    this._ensureConnected();
-    return await this.commands["wait-for-image"](description, timeout, invert);
-  }
-
-  /**
-   * Scroll until text is found
-   * @param {string} text - Text to find
-   * @param {string} direction - Scroll direction (default: 'down')
-   * @param {number} maxDistance - Max pixels to scroll (default: 10000)
-   * @param {string} textMatchMethod - Match method (default: 'turbo')
-   * @param {string} method - Scroll method (default: 'keyboard')
-   * @param {boolean} invert - Invert the match (default: false)
-   */
-  async scrollUntilText(text, direction = "down", maxDistance = 10000, textMatchMethod = "turbo", method = "keyboard", invert = false) {
-    this._ensureConnected();
-    return await this.commands["scroll-until-text"](text, direction, maxDistance, textMatchMethod, method, invert);
-  }
-
-  /**
-   * Scroll until image is found
-   * @param {string} description - Description of the image (or use path parameter)
-   * @param {string} direction - Scroll direction (default: 'down')
-   * @param {number} maxDistance - Max pixels to scroll (default: 10000)
-   * @param {string} method - Scroll method (default: 'keyboard')
-   * @param {string} path - Path to image template
-   * @param {boolean} invert - Invert the match (default: false)
-   */
-  async scrollUntilImage(description, direction = "down", maxDistance = 10000, method = "keyboard", path = null, invert = false) {
-    this._ensureConnected();
-    return await this.commands["scroll-until-image"](description, direction, maxDistance, method, path, invert);
-  }
-
-  /**
-   * Focus an application by name
-   * @param {string} name - Application name
-   */
-  async focusApplication(name) {
-    this._ensureConnected();
-    return await this.commands["focus-application"](name);
-  }
-
-  /**
-   * Remember information from the screen
-   * @param {string} description - What to remember
-   */
-  async remember(description) {
-    this._ensureConnected();
-    return await this.commands.remember(description);
-  }
-
-  /**
-   * Assert a condition
-   * @param {string} assertion - Assertion to check
-   * @param {boolean} async - Run asynchronously (default: false)
-   * @param {boolean} invert - Invert the assertion (default: false)
-   */
-  async assert(assertion, async = false, invert = false) {
-    this._ensureConnected();
-    return await this.commands.assert(assertion, async, invert);
-  }
-
-  /**
-   * Execute code
-   * @param {string} language - Language ('js' or 'pwsh')
-   * @param {string} code - Code to execute
-   * @param {number} timeout - Timeout in ms
-   * @param {boolean} silent - Suppress output (default: false)
-   */
-  async exec(language, code, timeout, silent = false) {
-    this._ensureConnected();
-    return await this.commands.exec(language, code, timeout, silent);
+      // Preserve the original function's name for better debugging
+      Object.defineProperty(this[methodName], 'name', {
+        value: methodName,
+        writable: false
+      });
+    });
   }
 
   // ====================================
