@@ -9,6 +9,11 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - ready_for_review
+  pull_request_review:
+    types:
+      - submitted
 
 jobs:
   gather:
