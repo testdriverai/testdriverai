@@ -1,10 +1,9 @@
 name: Acceptance SDK Tests
 
 on:
-  # So that we do a final check before publishing
-  pull_request_review:
-    types: [submitted]
-  # So that we don't do expensive tests until approved
+  pull_request:
+    branches:
+      - main
   push:
     branches: [main]
     paths-ignore:
@@ -17,12 +16,6 @@ jobs:
     name: Run SDK Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: >
-      (github.event_name == 'workflow_dispatch') ||
-      (github.ref == 'refs/heads/main') ||
-      (github.event_name == 'pull_request_review' && 
-       (github.event.review.state == 'approved' || github.event.review.state == 'changes_requested'))
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,7 +32,7 @@ jobs:
         run: NODE_ENV=production npm ci
 
       - name: Run SDK tests with Vitest
-        run: npx vitest run testdriver/acceptance-sdk/**/*.test.mjs
+        run: npx vitest run testdriver/acceptance-sdk/*.test.mjs
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
