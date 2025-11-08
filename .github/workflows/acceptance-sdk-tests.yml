@@ -1,0 +1,81 @@
+name: Acceptance SDK Tests
+
+on:
+  # So that we do a final check before publishing
+  pull_request_review:
+    types: [submitted]
+  # So that we don't do expensive tests until approved
+  push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+  # So that we can manually trigger tests when there's flake
+  workflow_dispatch:
+
+jobs:
+  gather-test-files:
+    name: Gather SDK Test Files
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'workflow_dispatch') ||
+      (github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request_review' && 
+       (github.event.review.state == 'approved' || github.event.review.state == 'changes_requested'))
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Find all SDK test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/acceptance-sdk/*.test.mjs)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+
+  test-workflow:
+    name: Run SDK Test
+    needs:
+      - gather-test-files
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather-test-files.outputs.test_files) }}
+      max-parallel: 8
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+
+      - name: Run SDK test with Vitest
+        run: npx vitest run testdriver/acceptance-sdk/${{ matrix.test }}
+        env:
+          FORCE_COLOR: 3
+          TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
+          VERBOSE: true
+          LOGGING: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test }}
+          path: test-results/junit.xml
+          retention-days: 7
+          if-no-files-found: ignore

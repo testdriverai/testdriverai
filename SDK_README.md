@@ -84,13 +84,17 @@ Connects to a sandbox environment.
   - `ip` (string): Direct IP connection
   - `sandboxAmi` (string): Custom AMI for sandbox
   - `sandboxInstance` (string): Instance type
+  - `headless` (boolean): Disable browser window rendering (default: false)
 
 **Returns:** `Promise<Object>` - Sandbox instance details
 
 **Examples:**
 ```javascript
-// Create new sandbox
+// Create new sandbox (opens browser window by default)
 await client.connect({ newSandbox: true });
+
+// Create sandbox without opening browser window
+await client.connect({ newSandbox: true, headless: true });
 
 // Reconnect to existing sandbox
 await client.connect({ sandboxId: 'i-1234567890abcdef0' });
@@ -98,6 +102,8 @@ await client.connect({ sandboxId: 'i-1234567890abcdef0' });
 // Direct IP connection
 await client.connect({ ip: '192.168.1.100' });
 ```
+
+**Note:** By default, the SDK will automatically open a browser window showing the live sandbox environment, similar to the CLI behavior. This allows you to watch test execution in real-time. Set `headless: true` to disable this feature.
 
 #### `disconnect()`
 

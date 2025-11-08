@@ -34,6 +34,7 @@ const { createAnalytics } = require("./agent/lib/analytics.js");
 const { createEmitter, events } = require("./agent/events.js");
 const { createOutputs } = require("./agent/lib/outputs.js");
 const { createMarkdownLogger } = require("./interfaces/logger.js");
+const { createDebuggerProcess } = require("./agent/lib/debugger.js");
 
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
@@ -88,6 +89,10 @@ class TestDriverSDK {
     // Instance reference
     this.instance = null;
 
+    // Debugger process reference
+    this.debuggerProcess = null;
+    this.debuggerUrl = null;
+
     // Commands will be set up dynamically after connection
     this.commands = null;
   }
@@ -119,6 +124,20 @@ class TestDriverSDK {
   async connect(connectOptions = {}) {
     if (this.connected) {
       return this.instance;
+    }
+
+    // Start debugger if not in headless mode and not already started
+    if (!connectOptions.headless && !this.debuggerProcess) {
+      try {
+        this.debuggerProcess = await createDebuggerProcess(this.config, this.emitter);
+        this.debuggerUrl = this.debuggerProcess.url || null;
+        if (this.loggingEnabled && this.debuggerUrl) {
+          // console.log(`Debugger started at: ${this.debuggerUrl}`);
+        }
+      } catch (error) {
+        console.warn("Failed to start debugger:", error.message);
+        // Continue without debugger
+      }
     }
 
     // Authenticate first if not already authenticated
@@ -197,6 +216,11 @@ class TestDriverSDK {
 
     this.connected = true;
     this.analytics.track("sdk.connect", { sandboxId: this.instance?.instanceId });
+
+    // Emit showWindow event to render the sandbox (unless explicitly disabled or in headless mode)
+    if (!connectOptions.headless) {
+      this._renderSandbox(this.instance);
+    }
 
     return this.instance;
   }
@@ -521,7 +545,77 @@ class TestDriverSDK {
         console.log(`- ${message}`);
       }
     });
+
+    // Handle show window events for sandbox visualization
+    this.emitter.on("show-window", async (url) => {
+      if (this.loggingEnabled) {
+        console.log("");
+        console.log("Live test execution:");
+        if (this.config.CI) {
+          // In CI mode, just print the view-only URL
+          const u = new URL(url);
+          const data = JSON.parse(u.searchParams.get("data"));
+          console.log(`${data.url}&view_only=true`);
+        } else {
+          // In local mode, print the URL and open it in the browser
+          console.log(url);
+          await this._openBrowser(url);
+        }
+      }
+    });
+  }
+
+  /**
+   * Open URL in default browser
+   * @private
+   * @param {string} url - URL to open
+   */
+  async _openBrowser(url) {
+    try {
+      // Use dynamic import for the 'open' package (ES module)
+      const { default: open } = await import("open");
+
+      // Open the browser
+      await open(url, {
+        wait: false,
+      });
+    } catch (error) {
+      console.error("Failed to open browser automatically:", error);
+      console.log(`Please manually open: ${url}`);
+    }
+  }
+
+  /**
+   * Render the sandbox in a browser window
+   * @private
+   * @param {Object} instance - Sandbox instance with connection details
+   */
+  _renderSandbox(instance) {
+    if (!instance || !instance.ip || !instance.vncPort) {
+      console.warn("Cannot render sandbox: missing instance connection details");
+      return;
+    }
+
+    // Construct the VNC URL
+    const url = `http://${instance.ip}:${instance.vncPort}/vnc_lite.html?token=V3b8wG9`;
+
+    // Create data payload for the debugger
+    const data = {
+      resolution: this.config.TD_RESOLUTION,
+      url: url,
+      token: "V3b8wG9",
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+
+    // Use the debugger URL if available, otherwise fall back to default port
+    const debuggerBaseUrl = this.debuggerUrl || "http://localhost:3000";
+    const urlToOpen = `${debuggerBaseUrl}?data=${encodedData}`;
+
+    // Emit the showWindow event
+    this.emitter.emit(events.showWindow, urlToOpen);
   }
 }
 
 module.exports = TestDriverSDK;
+
