@@ -1,5 +1,4 @@
 name: AWS
-
 on:
   workflow_dispatch:
   push:
@@ -10,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
   gather:
     name: Gather Test Files
