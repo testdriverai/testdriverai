@@ -18,13 +18,13 @@ The `hover-text` command is used to locate text on the screen based on a descrip
 
 ## Arguments
 
-|   Argument    |   Type   | Description                                             |
-| :-----------: | :------: | :------------------------------------------------------ |
-|    `text`     | `string` | The text to find on the screen. Longer and unique is better.   |
-| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here. |
+|   Argument    |   Type   | Description                                                                                                                                                                                                                 |
+| :-----------: | :------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    `text`     | `string` | The text to find on the screen. Longer and unique is better.                                                                                                                                                                |
+| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.                                                                                                                        |
 |   `action`    | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging text](/commands/hover-image#drag-functionality). |
-|   `method`    |  `enum`  | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.|
-| `timeout`     | `number` | **(Optional)** The duration in milliseconds to wait for the text to appear. Default is `5000` (5 seconds).|
+|   `method`    |  `enum`  | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                                                                                                                              |
+|   `timeout`   | `number` | **(Optional)** The duration in milliseconds to wait for the text to appear. Default is `5000` (5 seconds).                                                                                                                  |
 
 ## Example usage
 

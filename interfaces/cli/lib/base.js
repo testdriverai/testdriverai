@@ -55,7 +55,8 @@ class BaseCommand extends Command {
         `testdriverai-cli-${process.pid}.log`,
       );
 
-      console.log(`Log file created at: ${this.logFilePath}`);
+      console.log(`Log file: ${this.logFilePath}`);
+      console.log("");
       fs.writeFileSync(this.logFilePath, ""); // Initialize the log file
     }
 
@@ -68,11 +69,15 @@ class BaseCommand extends Command {
       );
     };
 
+    let isConnected = false;
+
     // Use pattern matching for log events, but skip log:Debug
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
 
       if (event === events.log.debug) return;
+
+      if (event === events.log.narration && isConnected) return;
       console.log(message);
     });
 
@@ -90,6 +95,7 @@ class BaseCommand extends Command {
 
     // Handle sandbox connection with pattern matching for subsequent events
     this.agent.emitter.on("sandbox:connected", () => {
+      isConnected = true;
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {
         this.sendToSandbox(message);
@@ -134,6 +140,7 @@ class BaseCommand extends Command {
 
     // Handle show window events
     this.agent.emitter.on("show-window", async (url) => {
+      console.log("");
       console.log(`Live test execution: `);
       if (this.agent.config.CI) {
         let u = new URL(url);
@@ -165,20 +172,27 @@ class BaseCommand extends Command {
     return file;
   }
 
-  async setupAgent(file, flags) {
+  async setupAgent(firstArg, flags) {
     // Load .env file into process.env for CLI usage
     require("dotenv").config();
 
     // Create the agent only when actually needed
     const TestDriverAgent = require("../../../agent/index.js");
 
-    // Use --path flag if provided, otherwise use the file argument
-    const filePath = this.id === "run" && flags.path ? flags.path : file;
+    let args;
+    if (this.id === "generate") {
+      // For generate command, the first parameter is a prompt, not a file
+      args = firstArg ? [firstArg] : [];
+    } else {
+      // For run and other commands, handle file path
+      const filePath = this.id === "run" && flags.path ? flags.path : firstArg;
+      args = filePath ? [filePath] : [];
+    }
 
     // Prepare CLI args for the agent with all derived options
     const cliArgs = {
       command: this.id,
-      args: [filePath], // Pass the resolved file path as the first argument
+      args,
       options: {
         ...flags,
         resultFile:

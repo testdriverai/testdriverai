@@ -50,6 +50,8 @@
               }
             ]
           },
+          "/getting-started/self-hosting",
+          "/getting-started/playwright",
           "/getting-started/vscode"
         ]
       },
@@ -63,7 +65,8 @@
               "apps/static-websites",
               "apps/desktop-apps",
               "apps/chrome-extensions",
-              "apps/mobile-apps"
+              "apps/mobile-apps",
+              "apps/tauri-apps"
             ]
           },
           {
@@ -100,6 +103,7 @@
               "/guide/authentication",
               "/guide/variables",
               "/guide/lifecycle",
+              "/guide/dashcam",
               "/guide/environment-variables",
               "/action/ami"
             ]
@@ -153,30 +157,32 @@
       {
         "group": "Reference",
         "pages": [
-          "/commands/assert",
-          "/commands/exec",
-          "/commands/focus-application",
-          "/commands/hover-image",
-          "/commands/hover-text",
-          "/commands/if",
-          "/commands/match-image",
-          "/commands/press-keys",
-          "/commands/remember",
-          "/commands/run",
-          "/commands/scroll",
-          "/commands/scroll-until-image",
-          "/commands/scroll-until-text",
-          "/commands/type",
-          "/commands/wait",
-          "/commands/wait-for-image",
-          "/commands/wait-for-text"
+          {
+            "group": "YAML",
+            "icon": "file-code",
+            "pages": [
+              "/commands/assert",
+              "/commands/exec",
+              "/commands/focus-application",
+              "/commands/hover-image",
+              "/commands/hover-text",
+              "/commands/if",
+              "/commands/match-image",
+              "/commands/press-keys",
+              "/commands/remember",
+              "/commands/run",
+              "/commands/scroll",
+              "/commands/scroll-until-image",
+              "/commands/scroll-until-text",
+              "/commands/type",
+              "/commands/wait",
+              "/commands/wait-for-image",
+              "/commands/wait-for-text"
+            ]
+          }
         ]
       }
     ]
-  },
-  "modeToggle": {
-    "enabled": false,
-    "default": "dark"
   },
   "logo": {
     "light": "/images/template/light.png",
@@ -189,16 +195,17 @@
         "label": "Discord",
         "icon": "discord",
         "href": "https://discord.com/invite/cWDFW8DzPm"
-      }, 
+      },
       {
         "label": "Book a Demo",
         "href": "https://form.typeform.com/to/UECf9rDx?typeform-source=docs.testdriver.ai",
         "icon": "calendar"
-      }, {
-      "icon": "gauge-high",
-      "label": "Dashboard",
-      "href": "https://app.testdriver.ai"
-    }
+      },
+      {
+        "icon": "gauge-high",
+        "label": "Dashboard",
+        "href": "https://app.testdriver.ai"
+      }
     ]
   },
   "footer": {
