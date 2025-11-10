@@ -1718,6 +1718,8 @@ ${regression}
         ip: this.ip,
       });
 
+      this.emitter.emit(events.sandbox.connected);
+
       await this.renderSandbox(instance.instance, headless);
       await this.newSession();
       await this.runLifecycle("provision");

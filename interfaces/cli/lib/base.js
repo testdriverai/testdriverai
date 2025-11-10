@@ -37,6 +37,7 @@ class BaseCommand extends Command {
   }
 
   sendToSandbox(message) {
+
     // ensure message is a string
     if (typeof message !== "string") {
       message = JSON.stringify(message);
@@ -95,6 +96,7 @@ class BaseCommand extends Command {
 
     // Handle sandbox connection with pattern matching for subsequent events
     this.agent.emitter.on("sandbox:connected", () => {
+
       isConnected = true;
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {
