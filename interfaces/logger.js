@@ -14,9 +14,7 @@ class CustomTransport extends Transport {
   }
 
   log(info, callback) {
-
     try {
-
       const { message } = info;
 
       if (!this.sandbox) {
