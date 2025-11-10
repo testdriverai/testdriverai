@@ -1,14 +1,12 @@
 ```yaml testdriver/hover-text.yaml highlight={7-10}
 version: 6.0.0
 steps:
-  - prompt: click on sign in
+  - prompt: click on recycle bin
     commands:
       - command: focus-application
         name: Google Chrome
       - command: hover-text
-        text: Sign In
-        description: black button below the password field
+        text: Recycle Bin
+        description: recycle bin icon
         action: click
-      - command: assert
-        expect: an error shows that fields are required
 ```

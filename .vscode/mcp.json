@@ -3,7 +3,10 @@
     "testdriverai": {
       "type": "stdio",
       "command": "node",
-      "args": ["/Users/ianjennings/.mcp/testdriver/src/index.js"]
+      "args": ["/Users/ianjennings/Development/cli/mcp-server/index.js"],
+      "env": {
+        "TD_API_KEY": "4e93d8bf-3886-4d26-a144-116c4063522d"
+      }
     }
   }
 }

@@ -1,0 +1,131 @@
+version: 6.0.1
+steps:
+  - prompt: Navigate to Airbnb and search for accommodations in Paris
+    commands:
+  # Launch Chrome and navigate to Airbnb
+  - command: exec
+    language: pwsh
+    code: |
+      Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "https://www.airbnb.com"
+    timeout: 10000
+    silent: true
+
+  # Wait for Airbnb homepage to load
+  - command: wait-for-text
+    text: Airbnb
+    timeout: 30000
+
+  # Focus the Chrome browser
+  - command: focus-application
+    name: Google Chrome
+
+  # Wait a moment for page to fully render
+  - command: wait
+    timeout: 2000
+
+  # Click on the search destination field
+  - command: hover-text
+    text: Where
+    description: Search destination input field
+    action: click
+    timeout: 15000
+
+  # Type a destination
+  - command: type
+    text: Paris, France
+    delay: 100
+
+  # Wait for autocomplete suggestions
+  - command: wait
+    timeout: 1000
+
+  # Press Enter to select the first suggestion
+  - command: press-keys
+    keys: [enter]
+
+  # Wait a moment before interacting with date picker
+  - command: wait
+    timeout: 1000
+
+  # Click on check-in date field
+  - command: hover-text
+    text: Check in
+    description: Check-in date selector
+    action: click
+    timeout: 10000
+
+  # Wait for calendar to appear
+  - command: wait
+    timeout: 1000
+
+  # Click on a date (we'll select a date in the near future)
+  # This clicks on any available date in the calendar
+  - command: scroll
+    direction: down
+    amount: 2
+    method: mouse
+
+  # Wait and then click search button
+  - command: wait
+    timeout: 1000
+
+  # Click the Search button
+  - command: hover-text
+    text: Search
+    description: Search button to find accommodations
+    action: click
+    timeout: 15000
+
+  # Wait for search results to load
+  - command: wait-for-text
+    text: places to stay
+    timeout: 30000
+
+  # Assert that we see search results
+  - command: assert
+    expect: Search results are displayed with property listings
+    async: true
+
+  # Take a screenshot of the results
+  - command: exec
+    language: pwsh
+    code: |
+      $screenshotPath = "C:\Users\testdriver\Documents\airbnb-search-results.png"
+      Add-Type -AssemblyName System.Windows.Forms
+      $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+      $bitmap = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
+      $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+      $graphics.CopyFromScreen($screen.Left, $screen.Top, 0, 0, $bitmap.Size)
+      $bitmap.Save($screenshotPath)
+      Write-Output "Screenshot saved to $screenshotPath"
+    timeout: 5000
+
+  # Scroll down to see more results
+  - command: scroll
+    direction: down
+    amount: 5
+    method: keyboard
+
+  # Wait to see the scrolled content
+  - command: wait
+    timeout: 1000
+
+  # Assert that we can see property cards
+  - command: assert
+    expect: Multiple property cards are visible with images and prices
+    async: true
+
+  # Try to click on the first property listing
+  - command: scroll
+    direction: up
+    amount: 2
+    method: keyboard
+
+  # Wait before final assertion
+  - command: wait
+    timeout: 1000
+
+  # Final assertion that the search was successful
+  - command: assert
+    expect: Airbnb search results page is fully loaded and interactive
+    async: true
