@@ -7,6 +7,8 @@ on:
   # So that we don't do expensive tests until approved
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
   # So that we can manually trigger tests when there's flake
   workflow_dispatch:
 

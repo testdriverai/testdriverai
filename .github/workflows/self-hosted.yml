@@ -3,6 +3,8 @@ name: AWS
 on:
   workflow_dispatch:
   push:
+    paths-ignore:
+      - "docs/**"
 
 jobs:
   gather:
@@ -52,6 +54,7 @@ jobs:
       - name: Setup AWS Instance
         id: aws-setup
         run: |
+          chmod +x ./setup/aws/spawn-runner.sh
           OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr) # Capture and display output
           echo "$OUTPUT"
           PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
@@ -66,7 +69,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-2
           AWS_LAUNCH_TEMPLATE_ID: lt-00d02f31cfc602f27
-          AMI_ID: ami-085f872ca0cd80fed
+          AMI_ID: ami-055cd47506a2f39bb
+          RESOLUTION: 1920x1080
       - name: Run TestDriver
         run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --ip="${{ steps.aws-setup.outputs.public-ip }}" --junit=out.xml
         env:
