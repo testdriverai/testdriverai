@@ -2,7 +2,7 @@
   "name": "testdriverai",
   "version": "6.1.10",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
-  "main": "index.js",
+  "main": "sdk.js",
   "bin": {
     "testdriverai": "bin/testdriverai.js"
   },
@@ -16,6 +16,11 @@
     "docs:links": "node docs/_scripts/link-replacer.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
+    "test:sdk": "vitest run",
+    "test:sdk:watch": "vitest",
+    "test:sdk:ui": "vitest --ui",
+    "test:sdk:coverage": "vitest run --coverage",
+    "test:sdk:single": "vitest run --reporter=verbose",
     "docs-lint": "cd docs && vale **/*.mdx",
     "docs-upload": "node upload-docs-to-openai.js",
     "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'",
@@ -65,6 +70,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
+    "@vitest/ui": "^4.0.8",
     "chai": "^5.1.2",
     "esbuild": "0.20.2",
     "esbuild-plugin-fileloc": "^0.0.6",
@@ -75,7 +81,8 @@
     "mint": "^4.2.67",
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
-    "prettier": "3.3.3"
+    "prettier": "3.3.3",
+    "vitest": "^4.0.8"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5"
