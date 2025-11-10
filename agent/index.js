@@ -327,7 +327,7 @@ class TestDriverAgent extends EventEmitter2 {
       "error",
       {
         error: eMessage,
-        description: `The current task is:\n" + ${this.lastPrompt} + "\n and the error context is:\n\n${errorContext}`,
+        description: `The current task is:\n${this.lastPrompt}\n and the error context is:\n\n${errorContext}`,
         markdown,
         image,
       },
