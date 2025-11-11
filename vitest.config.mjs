@@ -17,9 +17,14 @@ export default defineConfig({
     
     // Global setup and teardown
     globalSetup: './testdriver/acceptance-sdk/setup/globalSetup.mjs',
+    globalTeardown: './testdriver/acceptance-sdk/setup/globalTeardown.mjs',
     
     // Reporter configuration
-    reporters: ['verbose', 'junit'],
+    reporters: [
+      'verbose',
+      'junit',
+      './testdriver/acceptance-sdk/setup/testResultsReporter.mjs'
+    ],
     outputFile: {
       junit: './test-results/junit.xml',
     },

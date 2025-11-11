@@ -4,7 +4,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
+import { createTestClient, setupTest, storeTestResult, teardownTest } from './setup/testHelpers.mjs';
 
 describe('Dashcam Test', () => {
   let client;
@@ -15,7 +15,20 @@ describe('Dashcam Test', () => {
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    const sessionInfo = await teardownTest(client);
+    
+    // Store test result with dashcam URL for reporting
+    storeTestResult(
+      'Dashcam Test',
+      import.meta.url,
+      sessionInfo.dashcamUrl,
+      sessionInfo
+    );
+    
+    // Log dashcam URL if available
+    if (sessionInfo.dashcamUrl) {
+      console.log(`\n🎥 Dashcam recording: ${sessionInfo.dashcamUrl}\n`);
+    }
   });
 
   it('should click on Sign In button for dashcam recording', async () => {

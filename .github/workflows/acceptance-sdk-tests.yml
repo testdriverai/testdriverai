@@ -39,6 +39,12 @@ jobs:
           VERBOSE: true
           LOGGING: true
 
+      - name: Test Summary
+        uses: test-summary/action@v2
+        with:
+          paths: "test-results/junit.xml"
+        if: always()
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

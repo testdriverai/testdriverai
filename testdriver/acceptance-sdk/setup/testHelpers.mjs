@@ -3,7 +3,72 @@
  * Shared functions for SDK tests
  */
 
+import fs from 'fs';
+import path from 'path';
 import TestDriver from '../../../sdk.js';
+
+// Global test results storage
+const testResults = {
+  tests: [],
+  startTime: Date.now(),
+};
+
+/**
+ * Store test result with dashcam URL
+ * @param {string} testName - Name of the test
+ * @param {string} testFile - Test file path
+ * @param {string|null} dashcamUrl - Dashcam URL if available
+ * @param {Object} sessionInfo - Session information
+ */
+export function storeTestResult(testName, testFile, dashcamUrl, sessionInfo = {}) {
+  testResults.tests.push({
+    name: testName,
+    file: testFile,
+    dashcamUrl,
+    sessionId: sessionInfo.sessionId,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * Get all test results
+ * @returns {Object} All collected test results
+ */
+export function getTestResults() {
+  return {
+    ...testResults,
+    endTime: Date.now(),
+    duration: Date.now() - testResults.startTime,
+  };
+}
+
+/**
+ * Save test results to a JSON file
+ * @param {string} outputPath - Path to save the results
+ */
+export function saveTestResults(outputPath = 'test-results/sdk-summary.json') {
+  const results = getTestResults();
+  const dir = path.dirname(outputPath);
+  
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  
+  fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
+  console.log(`\n📊 Test results saved to: ${outputPath}`);
+  
+  // Also print dashcam URLs to console
+  console.log('\n🎥 Dashcam URLs:');
+  results.tests.forEach(test => {
+    if (test.dashcamUrl) {
+      console.log(`  ${test.name}: ${test.dashcamUrl}`);
+    }
+  });
+  
+  return results;
+}
+
 
 /**
  * Create a configured TestDriver client
@@ -102,18 +167,27 @@ export async function setupTest(client, options = {}) {
  * Teardown function to run after each test
  * @param {TestDriver} client - TestDriver client
  * @param {Object} options - Teardown options
+ * @returns {Promise<Object>} Session info including dashcam URL
  */
 export async function teardownTest(client, options = {}) {
+  let dashcamUrl = null;
+  
   try {
     // Run postrun lifecycle if enabled
     if (options.postrun !== false) {
-      await runPostrun(client);
+      dashcamUrl = await runPostrun(client);
     }
   } catch (error) {
     console.error('Error in postrun:', error);
   } finally {
     await client.disconnect();
   }
+  
+  return {
+    sessionId: client.getSessionId(),
+    dashcamUrl: dashcamUrl,
+    instance: client.getInstance(),
+  };
 }
 
 /**
@@ -148,15 +222,28 @@ export async function runPrerun(client) {
  * Run postrun lifecycle hooks
  * Implements lifecycle/postrun.yaml functionality
  * @param {TestDriver} client - TestDriver client
+ * @returns {Promise<string|null>} Dashcam URL if available
  */
 export async function runPostrun(client) {
   try {
-    // Stop dashcam with title and push
-    await client.exec('pwsh', 
+    // Stop dashcam with title and push - this returns the URL
+    const output = await client.exec('pwsh', 
       'dashcam -t \'Web Test Recording\' -p',
-      10000, true);
+      10000, false); // Don't silence output so we can capture it
+    
+    // Extract URL from output - dashcam typically outputs the URL in the response
+    // The URL is usually in the format: https://dashcam.testdriver.ai/...
+    if (output) {
+      const urlMatch = output.match(/https?:\/\/[^\s]+/);
+      if (urlMatch) {
+        return urlMatch[0];
+      }
+    }
+    
+    return null;
   } catch (error) {
     console.warn('⚠️  Postrun hook failed (non-fatal):', error.message);
+    return null;
   }
 }
 
