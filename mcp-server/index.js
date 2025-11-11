@@ -10,6 +10,14 @@
  *   1. Set TD_API_KEY environment variable
  *   2. Add this server to your MCP configuration
  *   3. Claude can now use TestDriver tools to interact with applications
+ * 
+ * Best Practices for AI Agents:
+ *   - Always start with testdriver_connect before any other operations
+ *   - Screenshots are automatically captured after most actions for verification
+ *   - Use testdriver_getScreenshot when you need to check state before proceeding
+ *   - Use assertions (testdriver_assert) to verify expected outcomes
+ *   - Wait for elements to appear with testdriver_waitForText/waitForImage before interacting
+ *   - The debugger URL shows a live view of the VM - share it with users for transparency
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -34,7 +42,7 @@ let actionHistory = []; // Track all actions for test generation
 const TOOLS = [
   {
     name: 'testdriver_connect',
-    description: 'Connect to TestDriver sandbox environment. Must be called before using other TestDriver tools. Can optionally start debugger UI.',
+    description: 'Connect to TestDriver sandbox environment. Must be called FIRST before using any other TestDriver tools. Can optionally start debugger UI. After connecting, you will receive a debugger URL where you can watch the VM screen in real-time.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -323,7 +331,7 @@ const TOOLS = [
   },
   {
     name: 'testdriver_assert',
-    description: 'Assert that a condition is true on screen (text or visual state).',
+    description: 'Assert that a condition is true on screen (text or visual state). Use assertions after actions to verify expected outcomes. Be specific in your expectations, e.g., "the login button is visible" or "the error message says Invalid password".',
     inputSchema: {
       type: 'object',
       properties: {
