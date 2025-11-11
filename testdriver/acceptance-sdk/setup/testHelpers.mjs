@@ -174,12 +174,7 @@ export async function performLogin(client, username = 'standard_user', password 
     password = await client.remember('the password');
   }
   
-  // Enter username
-  
-    // AI-fixed (2025-11-07T23:55:59.427Z, attempt 1)
-    
-    // AI-fixed (2025-11-08T00:03:20.150Z, attempt 1)
-    await healingClient.hoverText('Username', 'label above the username input field on the login form', 'click');
+  await client.hoverText('Username', 'label above the username input field on the login form', 'click');
   await client.type(username);
   
   // Enter password
