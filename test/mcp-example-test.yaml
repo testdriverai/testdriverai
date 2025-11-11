@@ -1,0 +1,27 @@
+name: MCP Example Test
+description: Test created using TestDriver MCP to navigate example.com
+
+steps:
+  # Open Chrome browser and navigate to example.com
+  - exec:
+      code: Start-Process chrome "https://example.com"
+      language: pwsh
+      timeout: 5000
+  
+  # Wait for the page to load
+  - wait-for-text:
+      text: Example Domain
+      timeout: 10000
+  
+  # Assert that the Example Domain heading is visible
+  - assert:
+      expect: The text "Example Domain" is visible on the page
+  
+  # Click on the "Learn more" link
+  - hover-text:
+      text: Learn more
+      action: click
+  
+  # Wait for navigation to complete
+  - wait:
+      timeout: 2000

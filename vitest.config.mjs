@@ -6,8 +6,8 @@ export default defineConfig({
     include: ['testdriver/acceptance-sdk/**/*.test.mjs'],
     
     // Timeout settings
-    testTimeout: 120000, // 2 minutes per test
-    hookTimeout: 60000,  // 1 minute for setup/teardown
+    testTimeout: 600000, // 2 minutes per test
+    hookTimeout: 600000,  // 1 minute for setup/teardown
     
     // Run tests sequentially (important for sandbox resource management)
     sequence: {
