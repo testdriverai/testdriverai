@@ -21,6 +21,9 @@ const testResults = {
  * @param {Object} sessionInfo - Session information
  */
 export function storeTestResult(testName, testFile, dashcamUrl, sessionInfo = {}) {
+  console.log(`📝 Storing test result: ${testName}`);
+  console.log(`   Dashcam URL: ${dashcamUrl || 'none'}`);
+  
   testResults.tests.push({
     name: testName,
     file: testFile,
@@ -172,22 +175,30 @@ export async function setupTest(client, options = {}) {
 export async function teardownTest(client, options = {}) {
   let dashcamUrl = null;
   
+  console.log('🧹 Running teardown...');
+  
   try {
     // Run postrun lifecycle if enabled
     if (options.postrun !== false) {
       dashcamUrl = await runPostrun(client);
+    } else {
+      console.log('⏭️  Postrun skipped (disabled in options)');
     }
   } catch (error) {
-    console.error('Error in postrun:', error);
+    console.error('❌ Error in postrun:', error);
   } finally {
     await client.disconnect();
   }
   
-  return {
+  const sessionInfo = {
     sessionId: client.getSessionId(),
     dashcamUrl: dashcamUrl,
     instance: client.getInstance(),
   };
+  
+  console.log('📊 Session info:', JSON.stringify(sessionInfo, null, 2));
+  
+  return sessionInfo;
 }
 
 /**
@@ -226,18 +237,28 @@ export async function runPrerun(client) {
  */
 export async function runPostrun(client) {
   try {
+    console.log('🎬 Stopping dashcam and retrieving URL...');
+    
     // Stop dashcam with title and push - this returns the URL
     const output = await client.exec('pwsh', 
       'dashcam -t \'Web Test Recording\' -p',
       10000, false); // Don't silence output so we can capture it
+    
+    console.log('📤 Dashcam command output:', output);
     
     // Extract URL from output - dashcam typically outputs the URL in the response
     // The URL is usually in the format: https://dashcam.testdriver.ai/...
     if (output) {
       const urlMatch = output.match(/https?:\/\/[^\s]+/);
       if (urlMatch) {
-        return urlMatch[0];
+        const url = urlMatch[0];
+        console.log('✅ Found dashcam URL:', url);
+        return url;
+      } else {
+        console.warn('⚠️  No URL found in dashcam output');
       }
+    } else {
+      console.warn('⚠️  Dashcam command returned no output');
     }
     
     return null;
