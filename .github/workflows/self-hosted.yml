@@ -72,7 +72,7 @@ jobs:
       #     AMI_ID: ami-055cd47506a2f39bb
       #     RESOLUTION: 1920x1080
       - name: Run TestDriver
-        run: node bin/testdriverai.js run testdriver/acceptance/assert.yaml --ip="18.191.158.178" --junit=out.xml
+        run: node bin/testdriverai.js run testdriver/acceptance/match-image.yaml --ip="18.191.158.178" --junit=out.xml
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_WEBSITE: https://testdriver-sandbox.vercel.app
