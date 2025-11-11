@@ -2,6 +2,8 @@
 const { createSDK } = require("./sdk.js");
 const vm = require("vm");
 const theme = require("./theme.js");
+const yaml = require("js-yaml");
+const { findCodeBlocks, getYAMLFromCodeBlock } = require("./parser.js");
 
 const fs = require("fs").promises; // Using the promises version for async operations
 const { findTemplateImage } = require("./subimage/index");
@@ -73,6 +75,45 @@ const createCommands = (
     return Math.round(ms / 1000);
   };
   const delay = (t) => new Promise((resolve) => setTimeout(resolve, t));
+  
+  // Helper to execute YAML commands returned from API responses
+  const executeYamlCommands = async (responseData, commands) => {
+    if (typeof responseData === 'string' && responseData.includes('commands:')) {
+      // Use the parser's findCodeBlocks to find YAML code blocks
+      const codeblocks = await findCodeBlocks(responseData);
+      
+      if (codeblocks.length > 0) {
+        // Extract YAML from code block and parse it
+        const yamlContent = getYAMLFromCodeBlock(codeblocks[0]);
+        const parsedYaml = yaml.load(yamlContent);
+        
+        // Get commands array (handle both direct commands and steps format)
+        let parsedCommands = parsedYaml?.commands;
+        if (!parsedCommands && parsedYaml?.steps) {
+          parsedCommands = [];
+          parsedYaml.steps.forEach((s) => {
+            parsedCommands = parsedCommands.concat(s.commands);
+          });
+        }
+        
+        if (parsedCommands && Array.isArray(parsedCommands)) {
+          // Execute each command in the response
+          for (const cmd of parsedCommands) {
+            if (cmd.command && commands[cmd.command]) {
+              // Extract command parameters
+              const { command: cmdName, ...params } = cmd;
+              // Execute the command with its parameters
+              await commands[cmdName](...Object.values(params));
+            }
+          }
+        }
+        // Return the first command's data if available
+        return parsedCommands?.[0] || responseData;
+      }
+    }
+    return responseData;
+  };
+  
   const findImageOnScreen = async (
     relativePath,
     haystack,
@@ -381,10 +422,19 @@ const createCommands = (
         },
       );
 
+      console.log(response.data)
+
       if (!response.data) {
         throw new MatchError("No text on screen matches description");
       } else {
-        return response.data;
+        // Execute YAML commands if present, otherwise handle legacy format
+        const result = await executeYamlCommands(response.data, commands);
+        
+        // Legacy: if response.data has coordinates directly, handle old format
+        if (result && action && action !== "hover" && result.centerX !== undefined && result.centerY !== undefined) {
+          await click(result.centerX, result.centerY, action);
+        }
+        return result || response.data;
       }
     },
     // uses our api to find all images on screen
@@ -410,7 +460,14 @@ const createCommands = (
       if (!response?.data) {
         throw new MatchError("No image or icon on screen matches description");
       } else {
-        return response.data;
+        // Execute YAML commands if present, otherwise handle legacy format
+        const result = await executeYamlCommands(response.data, commands);
+        
+        // Legacy: if response.data has coordinates directly, handle old format
+        if (result && action && action !== "hover" && result.centerX !== undefined && result.centerY !== undefined) {
+          await click(result.centerX, result.centerY, action);
+        }
+        return result || response.data;
       }
     },
     "match-image": async (relativePath, action = "click", invert = false) => {

@@ -119,12 +119,16 @@ class TestDriverSDK {
    * @param {string} options.ip - Direct IP address to connect to
    * @param {string} options.sandboxAmi - AMI to use for the sandbox
    * @param {string} options.sandboxInstance - Instance type for the sandbox
+   * @param {boolean} options.reuseConnection - Reuse recent connection if available (default: true)
    * @returns {Promise<Object>} Sandbox instance details
    */
   async connect(connectOptions = {}) {
     if (this.connected) {
       return this.instance;
     }
+
+    // Default to reusing connections unless explicitly disabled or newSandbox is true
+    const reuseConnection = connectOptions.reuseConnection !== false && !connectOptions.newSandbox;
 
     // Start debugger if not in headless mode and not already started
     if (!connectOptions.headless && !this.debuggerProcess) {
@@ -149,6 +153,11 @@ class TestDriverSDK {
     await this.sandbox.boot(this.config.TD_API_ROOT);
     await this.sandbox.auth(this.config.TD_API_KEY);
 
+    // If newSandbox is explicitly true, clear recent sandbox
+    if (connectOptions.newSandbox) {
+      this._clearRecentSandboxId();
+    }
+
     // Determine connection strategy
     if (connectOptions.ip) {
       // Direct connection to IP
@@ -159,33 +168,38 @@ class TestDriverSDK {
         ip: connectOptions.ip,
       });
     } else if (connectOptions.sandboxId) {
-      // Connect to existing sandbox
+      // Connect to specific sandbox ID
       this.instance = await this.sandbox.connect(connectOptions.sandboxId, true);
-    } else if (connectOptions.newSandbox) {
-      // Create new sandbox
-      const sandboxConfig = {
-        type: "create",
-        resolution: this.config.TD_RESOLUTION,
-        ci: this.config.CI,
-      };
-
-      if (connectOptions.sandboxAmi) {
-        sandboxConfig.ami = connectOptions.sandboxAmi;
+    } else if (reuseConnection) {
+      // Try to reuse recent sandbox
+      const recentId = this._getRecentSandboxId();
+      
+      if (recentId) {
+        if (this.loggingEnabled) {
+          console.log(`Reusing recent sandbox: ${recentId}`);
+        }
+        try {
+          this.instance = await this.sandbox.connect(recentId, true);
+        } catch {
+          // If connection fails, fall through to create new sandbox
+          if (this.loggingEnabled) {
+            console.log(`Failed to reconnect to recent sandbox, creating new one...`);
+          }
+          const newSandbox = await this._createNewSandbox(connectOptions);
+          this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
+          this._saveLastSandboxId(newSandbox.sandbox.instanceId);
+        }
+      } else {
+        // No recent sandbox, create new one
+        const newSandbox = await this._createNewSandbox(connectOptions);
+        this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
+        this._saveLastSandboxId(newSandbox.sandbox.instanceId);
       }
-      if (connectOptions.sandboxInstance) {
-        sandboxConfig.instanceType = connectOptions.sandboxInstance;
-      }
-
-      const newSandbox = await this.sandbox.send(sandboxConfig);
-      this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
     } else {
-      // Default: create new sandbox
-      const newSandbox = await this.sandbox.send({
-        type: "create",
-        resolution: this.config.TD_RESOLUTION,
-        ci: this.config.CI,
-      });
+      // Create new sandbox (no reuse)
+      const newSandbox = await this._createNewSandbox(connectOptions);
       this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
+      this._saveLastSandboxId(newSandbox.sandbox.instanceId);
     }
 
     // Initialize commands after sandbox is connected
@@ -614,6 +628,125 @@ class TestDriverSDK {
 
     // Emit the showWindow event
     this.emitter.emit(events.showWindow, urlToOpen);
+  }
+
+  /**
+   * Create a new sandbox with the given options
+   * @private
+   * @param {Object} options - Sandbox creation options
+   * @returns {Promise<Object>} New sandbox response
+   */
+  async _createNewSandbox(options = {}) {
+    const sandboxConfig = {
+      type: "create",
+      resolution: this.config.TD_RESOLUTION,
+      ci: this.config.CI,
+    };
+
+    if (options.sandboxAmi) {
+      sandboxConfig.ami = options.sandboxAmi;
+    }
+    if (options.sandboxInstance) {
+      sandboxConfig.instanceType = options.sandboxInstance;
+    }
+
+    return await this.sandbox.send(sandboxConfig);
+  }
+
+  /**
+   * Get recent sandbox ID if it exists and was created within the last 10 minutes
+   * @private
+   * @returns {string|null} Sandbox ID or null
+   */
+  _getRecentSandboxId() {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    
+    const lastSandboxFile = path.join(
+      os.homedir(),
+      ".testdriverai-last-sandbox",
+    );
+
+    if (!fs.existsSync(lastSandboxFile)) {
+      return null;
+    }
+
+    try {
+      const stats = fs.statSync(lastSandboxFile);
+      const mtime = new Date(stats.mtime);
+      const now = new Date();
+      const diffMinutes = (now - mtime) / (1000 * 60);
+      
+      if (diffMinutes < 10) {
+        const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+
+        // Parse sandbox info (supports both old format and new format)
+        let sandboxInfo;
+        try {
+          sandboxInfo = JSON.parse(fileContent);
+        } catch {
+          return fileContent || null;
+        }
+
+        return sandboxInfo.instanceId;
+      }
+    } catch {
+      // Ignore errors
+    }
+    
+    return null;
+  }
+
+  /**
+   * Save sandbox ID to file for reuse
+   * @private
+   * @param {string} instanceId - Sandbox instance ID
+   */
+  _saveLastSandboxId(instanceId) {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    
+    const lastSandboxFile = path.join(
+      os.homedir(),
+      ".testdriverai-last-sandbox",
+    );
+    
+    try {
+      const sandboxInfo = {
+        instanceId: instanceId,
+        timestamp: new Date().toISOString(),
+      };
+      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
+        encoding: "utf-8",
+      });
+    } catch {
+      // Ignore errors
+    }
+  }
+
+  /**
+   * Clear the recent sandbox ID file
+   * @private
+   */
+  _clearRecentSandboxId() {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    
+    const lastSandboxFile = path.join(
+      os.homedir(),
+      ".testdriverai-last-sandbox",
+    );
+    
+    try {
+      if (fs.existsSync(lastSandboxFile)) {
+        fs.unlinkSync(lastSandboxFile);
+      }
+    } catch {
+      // Ignore errors
+    }
   }
 }
 

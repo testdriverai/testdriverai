@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="2" failures="0" errors="0" time="103.33238875">
+    <testsuite name="testdriver/acceptance-sdk/example-with-logging.test.mjs" timestamp="2025-11-11T21:51:02.204Z" hostname="MacBookPro.lan" tests="2" failures="0" errors="0" skipped="0" time="103.33238875">
+        <testcase classname="testdriver/acceptance-sdk/example-with-logging.test.mjs" name="Example Test with Logging &gt; should demonstrate logging during test execution" time="4.515175166">
+            <system-out>
+
+📝 Test: Checking if login page is visible...
+thinking...
+
+The task passed. The screenshot clearly shows the TestDriver.ai Sandbox login page with its URL and login form.
+
+📊 Assertion result: [33mtrue[39m
+
+            </system-out>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/example-with-logging.test.mjs" name="Example Test with Logging &gt; should show logs for hover and type operations" time="26.095681166">
+            <system-out>
+
+📝 Test: Interacting with username field...
+
+  ✓ Focused Chrome
+
+[2mwaiting for text: &quot;Username&quot;...[22m
+
+[2m&quot;Username&quot; found![22m
+
+[2mthinking...[22m
+
+```yaml
+commands:
+  - command: click # Move and click the mouse and perform a click
+    x: 491
+    y: 249
+    action: click
+```
+
+[2mclick left clicking at 491, 249...[22m
+
+  ✓ Clicked username field
+
+  ✓ Typed username
+thinking...
+
+The task passed. The username input shows the text “test_user” inside the field.
+
+            </system-out>
+        </testcase>
+    </testsuite>
+</testsuites>
