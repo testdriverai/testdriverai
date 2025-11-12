@@ -544,6 +544,8 @@ class TestDriverSDK {
       if (event === events.log.debug) return;
       if (this.loggingEnabled && message) {
         console.log(message);
+        // Forward logs to sandbox for debugger display
+        this._forwardLogToSandbox(message);
       }
     });
 
@@ -551,12 +553,17 @@ class TestDriverSDK {
       if (this.loggingEnabled) {
         const event = this.emitter.event;
         console.error(event, ":", data);
+        // Forward errors to sandbox
+        const errorMessage = typeof data === 'object' ? JSON.stringify(data) : String(data);
+        this._forwardLogToSandbox(`ERROR: ${errorMessage}`);
       }
     });
 
     this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
         console.log(`- ${message}`);
+        // Forward status to sandbox
+        this._forwardLogToSandbox(`- ${message}`);
       }
     });
 
@@ -577,6 +584,31 @@ class TestDriverSDK {
         }
       }
     });
+  }
+
+  /**
+   * Forward log message to sandbox for debugger display
+   * @private
+   * @param {string} message - Log message to forward
+   */
+  _forwardLogToSandbox(message) {
+    try {
+      // Only forward if sandbox is connected
+      if (this.sandbox && this.sandbox.instanceSocketConnected) {
+        // Don't send objects as they cause base64 encoding errors
+        if (typeof message === "object") {
+          return;
+        }
+
+        this.sandbox.send({
+          type: "output",
+          output: Buffer.from(message).toString("base64"),
+        });
+      }
+    } catch {
+      // Silently fail to avoid breaking the log flow
+      // console.error("Error forwarding log to sandbox:", error);
+    }
   }
 
   /**
