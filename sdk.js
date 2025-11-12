@@ -464,11 +464,27 @@ class TestDriverSDK {
 
       const methodName = methodInfo.name;
 
-      // Create the wrapper method
-      this[methodName] = async (...args) => {
+      // Create the wrapper method with proper stack trace handling
+      this[methodName] = async function(...args) {
         this._ensureConnected();
-        return await command(...args);
-      };
+        
+        // Capture the call site for better error reporting
+        const callSite = {};
+        Error.captureStackTrace(callSite, this[methodName]);
+        
+        try {
+          return await command(...args);
+        } catch (error) {
+          // Replace the stack trace to point to the actual caller instead of SDK internals
+          if (Error.captureStackTrace && callSite.stack) {
+            // Preserve the error message but use the captured call site stack
+            const errorMessage = error.stack.split('\n')[0];
+            const callerStack = callSite.stack.split('\n').slice(1); // Skip "Error" line
+            error.stack = errorMessage + '\n' + callerStack.join('\n');
+          }
+          throw error;
+        }
+      }.bind(this);
 
       // Preserve the original function's name for better debugging
       Object.defineProperty(this[methodName], 'name', {
