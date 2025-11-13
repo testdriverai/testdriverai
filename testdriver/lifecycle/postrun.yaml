@@ -4,6 +4,4 @@ steps:
     commands:
       - command: exec
         lang: pwsh
-        code: |
-          npm install dashcam@beta -g
-          dashcam -t 'Web Test Recording' -p
+        code: dashcam -t 'Web Test Recording' -p
