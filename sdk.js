@@ -24,31 +24,12 @@
  * @typedef {'\\t' | '\n' | '\r' | ' ' | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '{' | '|' | '}' | '~' | 'accept' | 'add' | 'alt' | 'altleft' | 'altright' | 'apps' | 'backspace' | 'browserback' | 'browserfavorites' | 'browserforward' | 'browserhome' | 'browserrefresh' | 'browsersearch' | 'browserstop' | 'capslock' | 'clear' | 'convert' | 'ctrl' | 'ctrlleft' | 'ctrlright' | 'decimal' | 'del' | 'delete' | 'divide' | 'down' | 'end' | 'enter' | 'esc' | 'escape' | 'execute' | 'f1' | 'f10' | 'f11' | 'f12' | 'f13' | 'f14' | 'f15' | 'f16' | 'f17' | 'f18' | 'f19' | 'f2' | 'f20' | 'f21' | 'f22' | 'f23' | 'f24' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8' | 'f9' | 'final' | 'fn' | 'hanguel' | 'hangul' | 'hanja' | 'help' | 'home' | 'insert' | 'junja' | 'kana' | 'kanji' | 'launchapp1' | 'launchapp2' | 'launchmail' | 'launchmediaselect' | 'left' | 'modechange' | 'multiply' | 'nexttrack' | 'nonconvert' | 'num0' | 'num1' | 'num2' | 'num3' | 'num4' | 'num5' | 'num6' | 'num7' | 'num8' | 'num9' | 'numlock' | 'pagedown' | 'pageup' | 'pause' | 'pgdn' | 'pgup' | 'playpause' | 'prevtrack' | 'print' | 'printscreen' | 'prntscrn' | 'prtsc' | 'prtscr' | 'return' | 'right' | 'scrolllock' | 'select' | 'separator' | 'shift' | 'shiftleft' | 'shiftright' | 'sleep' | 'space' | 'stop' | 'subtract' | 'tab' | 'up' | 'volumedown' | 'volumemute' | 'volumeup' | 'win' | 'winleft' | 'winright' | 'yen' | 'command' | 'option' | 'optionleft' | 'optionright'} KeyboardKey
  */
 
-const { createConfig } = require("./agent/lib/config.js");
-const { createSession } = require("./agent/lib/session.js");
-const { createSDK } = require("./agent/lib/sdk.js");
-const { createSandbox } = require("./agent/lib/sandbox.js");
-const { createSystem } = require("./agent/lib/system.js");
-const { createCommands } = require("./agent/lib/commands.js");
-const { createAnalytics } = require("./agent/lib/analytics.js");
-const { createEmitter, events } = require("./agent/events.js");
-const { createOutputs } = require("./agent/lib/outputs.js");
+const TestDriverAgent = require("./agent/index.js");
+const { events } = require("./agent/events.js");
 const { createMarkdownLogger } = require("./interfaces/logger.js");
-const { createDebuggerProcess } = require("./agent/lib/debugger.js");
 
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
-    // Create event emitter for internal communication
-    this.emitter = createEmitter();
-    
-    // Set up logging if enabled
-    this.loggingEnabled = options.logging !== false;
-    
-    // Initialize logger for markdown and regular logs
-    if (this.loggingEnabled) {
-      this._setupLogging();
-    }
-    
     // Set up environment with API key
     const environment = {
       TD_API_KEY: apiKey,
@@ -58,26 +39,20 @@ class TestDriverSDK {
       ...options.environment
     };
 
-    // Create config instance
-    this.config = createConfig(environment);
+    // Create the underlying agent with minimal CLI args
+    this.agent = new TestDriverAgent(environment, {
+      command: 'sdk',
+      args: [],
+      options: {}
+    });
 
-    // Create session instance
-    this.session = createSession();
-
-    // Create outputs instance
-    this.outputs = createOutputs();
-
-    // Create SDK API client
-    this.apiClient = createSDK(this.emitter, this.config, this.session);
-
-    // Create analytics instance
-    this.analytics = createAnalytics(this.emitter, this.config, this.session);
-
-    // Create sandbox instance
-    this.sandbox = createSandbox(this.emitter, this.analytics);
-
-    // Create system instance
-    this.system = createSystem(this.emitter, this.sandbox, this.config);
+    // Set up logging if enabled
+    this.loggingEnabled = options.logging !== false;
+    
+    // Initialize logger for markdown and regular logs
+    if (this.loggingEnabled) {
+      this._setupLogging();
+    }
 
     // Store options for later use
     this.options = options;
@@ -86,12 +61,15 @@ class TestDriverSDK {
     this.connected = false;
     this.authenticated = false;
 
-    // Instance reference
+    // Expose commonly used agent properties
+    this.emitter = this.agent.emitter;
+    this.config = this.agent.config;
+    this.session = this.agent.session;
+    this.apiClient = this.agent.sdk;
+    this.analytics = this.agent.analytics;
+    this.sandbox = this.agent.sandbox;
+    this.system = this.agent.system;
     this.instance = null;
-
-    // Debugger process reference
-    this.debuggerProcess = null;
-    this.debuggerUrl = null;
 
     // Commands will be set up dynamically after connection
     this.commands = null;
@@ -127,114 +105,45 @@ class TestDriverSDK {
       return this.instance;
     }
 
-    // Default to reusing connections unless explicitly disabled or newSandbox is true
-    const reuseConnection = connectOptions.reuseConnection !== false && !connectOptions.newSandbox;
-
-    // Start debugger if not in headless mode and not already started
-    if (!connectOptions.headless && !this.debuggerProcess) {
-      try {
-        this.debuggerProcess = await createDebuggerProcess(this.config, this.emitter);
-        this.debuggerUrl = this.debuggerProcess.url || null;
-        if (this.loggingEnabled && this.debuggerUrl) {
-          // console.log(`Debugger started at: ${this.debuggerUrl}`);
-        }
-      } catch (error) {
-        console.warn("Failed to start debugger:", error.message);
-        // Continue without debugger
-      }
-    }
-
     // Authenticate first if not already authenticated
     if (!this.authenticated) {
       await this.auth();
     }
 
-    // Connect to sandbox service
-    await this.sandbox.boot(this.config.TD_API_ROOT);
-    await this.sandbox.auth(this.config.TD_API_KEY);
+    // Map SDK connect options to agent buildEnv options
+    const buildEnvOptions = {
+      headless: connectOptions.headless || false,
+      new: connectOptions.newSandbox || false,
+    };
 
-    // If newSandbox is explicitly true, clear recent sandbox
-    if (connectOptions.newSandbox) {
-      this._clearRecentSandboxId();
+    // Set agent properties for buildEnv to use
+    if (connectOptions.sandboxId) {
+      this.agent.sandboxId = connectOptions.sandboxId;
     }
-
-    // Determine connection strategy
     if (connectOptions.ip) {
-      // Direct connection to IP
-      this.instance = await this.sandbox.send({
-        type: "direct",
-        resolution: this.config.TD_RESOLUTION,
-        ci: this.config.CI,
-        ip: connectOptions.ip,
-      });
-    } else if (connectOptions.sandboxId) {
-      // Connect to specific sandbox ID
-      this.instance = await this.sandbox.connect(connectOptions.sandboxId, true);
-    } else if (reuseConnection) {
-      // Try to reuse recent sandbox
-      const recentId = this._getRecentSandboxId();
-      
-      if (recentId) {
-        if (this.loggingEnabled) {
-          console.log(`Reusing recent sandbox: ${recentId}`);
-        }
-        try {
-          this.instance = await this.sandbox.connect(recentId, true);
-        } catch {
-          // If connection fails, fall through to create new sandbox
-          if (this.loggingEnabled) {
-            console.log(`Failed to reconnect to recent sandbox, creating new one...`);
-          }
-          const newSandbox = await this._createNewSandbox(connectOptions);
-          this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
-          this._saveLastSandboxId(newSandbox.sandbox.instanceId);
-        }
-      } else {
-        // No recent sandbox, create new one
-        const newSandbox = await this._createNewSandbox(connectOptions);
-        this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
-        this._saveLastSandboxId(newSandbox.sandbox.instanceId);
-      }
-    } else {
-      // Create new sandbox (no reuse)
-      const newSandbox = await this._createNewSandbox(connectOptions);
-      this.instance = await this.sandbox.connect(newSandbox.sandbox.instanceId, true);
-      this._saveLastSandboxId(newSandbox.sandbox.instanceId);
+      this.agent.ip = connectOptions.ip;
+    }
+    if (connectOptions.sandboxAmi) {
+      this.agent.sandboxAmi = connectOptions.sandboxAmi;
+    }
+    if (connectOptions.sandboxInstance) {
+      this.agent.sandboxInstance = connectOptions.sandboxInstance;
     }
 
-    // Initialize commands after sandbox is connected
-    const getCurrentFilePath = () => null; // SDK doesn't use file paths
-    const commandsResult = createCommands(
-      this.emitter,
-      this.system,
-      this.sandbox,
-      this.config,
-      this.session,
-      getCurrentFilePath
-    );
-    this.commands = commandsResult.commands;
+    // Use the agent's buildEnv method which handles all the connection logic
+    await this.agent.buildEnv(buildEnvOptions);
+
+    // Get the instance from the agent
+    this.instance = this.agent.instance;
+
+    // Expose the agent's commands, parser, and commander
+    this.commands = this.agent.commands;
 
     // Dynamically create command methods based on available commands
     this._setupCommandMethods();
 
-    // Start a new session
-    const sessionRes = await this.apiClient.req("session/start", {
-      systemInformationOsInfo: await this.system.getSystemInformationOsInfo(),
-      mousePosition: await this.system.getMousePosition(),
-      activeWindow: await this.system.activeWin(),
-    });
-
-    if (sessionRes?.data?.id) {
-      this.session.set(sessionRes.data.id);
-    }
-
     this.connected = true;
     this.analytics.track("sdk.connect", { sandboxId: this.instance?.instanceId });
-
-    // Emit showWindow event to render the sandbox (unless explicitly disabled or in headless mode)
-    if (!connectOptions.headless) {
-      this._renderSandbox(this.instance);
-    }
 
     return this.instance;
   }
@@ -678,123 +587,37 @@ class TestDriverSDK {
     this.emitter.emit(events.showWindow, urlToOpen);
   }
 
-  /**
-   * Create a new sandbox with the given options
-   * @private
-   * @param {Object} options - Sandbox creation options
-   * @returns {Promise<Object>} New sandbox response
-   */
-  async _createNewSandbox(options = {}) {
-    const sandboxConfig = {
-      type: "create",
-      resolution: this.config.TD_RESOLUTION,
-      ci: this.config.CI,
-    };
-
-    if (options.sandboxAmi) {
-      sandboxConfig.ami = options.sandboxAmi;
-    }
-    if (options.sandboxInstance) {
-      sandboxConfig.instanceType = options.sandboxInstance;
-    }
-
-    return await this.sandbox.send(sandboxConfig);
-  }
+  // ====================================
+  // AI Methods (Exploratory Loop)
+  // ====================================
 
   /**
-   * Get recent sandbox ID if it exists and was created within the last 10 minutes
-   * @private
-   * @returns {string|null} Sandbox ID or null
+   * Execute a natural language task using AI
+   * This is the SDK equivalent of the CLI's exploratory loop
+   * 
+   * @param {string} task - Natural language description of what to do
+   * @param {Object} options - Execution options
+   * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
+   * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
+   * 
+   * @example
+   * // Simple execution
+   * await client.ai('Click the submit button');
+   * 
+   * @example
+   * // With validation loop
+   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
+   * console.log(result); // AI's final assessment
    */
-  _getRecentSandboxId() {
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-    
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+  async ai(task, options = {}) {
+    this._ensureConnected();
 
-    if (!fs.existsSync(lastSandboxFile)) {
-      return null;
-    }
+    const validateAndLoop = options.validateAndLoop || false;
 
-    try {
-      const stats = fs.statSync(lastSandboxFile);
-      const mtime = new Date(stats.mtime);
-      const now = new Date();
-      const diffMinutes = (now - mtime) / (1000 * 60);
-      
-      if (diffMinutes < 10) {
-        const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+    this.analytics.track("sdk.ai", { task, validateAndLoop });
 
-        // Parse sandbox info (supports both old format and new format)
-        let sandboxInfo;
-        try {
-          sandboxInfo = JSON.parse(fileContent);
-        } catch {
-          return fileContent || null;
-        }
-
-        return sandboxInfo.instanceId;
-      }
-    } catch {
-      // Ignore errors
-    }
-    
-    return null;
-  }
-
-  /**
-   * Save sandbox ID to file for reuse
-   * @private
-   * @param {string} instanceId - Sandbox instance ID
-   */
-  _saveLastSandboxId(instanceId) {
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-    
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
-    
-    try {
-      const sandboxInfo = {
-        instanceId: instanceId,
-        timestamp: new Date().toISOString(),
-      };
-      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
-        encoding: "utf-8",
-      });
-    } catch {
-      // Ignore errors
-    }
-  }
-
-  /**
-   * Clear the recent sandbox ID file
-   * @private
-   */
-  _clearRecentSandboxId() {
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-    
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
-    
-    try {
-      if (fs.existsSync(lastSandboxFile)) {
-        fs.unlinkSync(lastSandboxFile);
-      }
-    } catch {
-      // Ignore errors
-    }
+    // Use the agent's exploratoryLoop method directly
+    return await this.agent.exploratoryLoop(task, false, validateAndLoop, false);
   }
 }
 

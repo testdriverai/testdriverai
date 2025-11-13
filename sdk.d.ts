@@ -297,4 +297,25 @@ export default class TestDriverSDK {
    * Get the event emitter for custom event handling
    */
   getEmitter(): any; // EventEmitter2 type
+
+  // AI Methods (Exploratory Loop)
+
+  /**
+   * Execute a natural language task using AI
+   * This is the SDK equivalent of the CLI's exploratory loop
+   * 
+   * @param task - Natural language description of what to do
+   * @param options - Execution options
+   * @returns Final AI response if validateAndLoop is true
+   * 
+   * @example
+   * // Simple execution
+   * await client.ai('Click the submit button');
+   * 
+   * @example
+   * // With validation loop
+   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
+   * console.log(result); // AI's final assessment
+   */
+  ai(task: string, options?: { validateAndLoop?: boolean }): Promise<string | void>;
 }
