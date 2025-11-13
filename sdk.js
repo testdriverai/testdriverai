@@ -46,14 +46,6 @@ class TestDriverSDK {
       options: {}
     });
 
-    // Set up logging if enabled
-    this.loggingEnabled = options.logging !== false;
-    
-    // Initialize logger for markdown and regular logs
-    if (this.loggingEnabled) {
-      this._setupLogging();
-    }
-
     // Store options for later use
     this.options = options;
     
@@ -73,6 +65,14 @@ class TestDriverSDK {
 
     // Commands will be set up dynamically after connection
     this.commands = null;
+
+    // Set up logging if enabled (after emitter is exposed)
+    this.loggingEnabled = options.logging !== false;
+    
+    // Initialize logger for markdown and regular logs
+    if (this.loggingEnabled) {
+      this._setupLogging();
+    }
   }
 
   /**

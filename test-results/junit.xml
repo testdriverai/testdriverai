@@ -1,32 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="2" failures="1" errors="0" time="600.018156541">
-    <testsuite name="testdriver/acceptance-sdk/hover-text.test.mjs" timestamp="2025-11-12T23:54:13.733Z" hostname="MacBookPro.lan" tests="2" failures="1" errors="0" skipped="1" time="600.018156541">
-        <testcase classname="testdriver/acceptance-sdk/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="0">
-            <skipped/>
-        </testcase>
-        <testcase classname="testdriver/acceptance-sdk/hover-text.test.mjs" name="Hover Text Test" time="600.017750667">
+<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="73.467304125">
+    <testsuite name="testdriver/acceptance-sdk/hover-text.test.mjs" timestamp="2025-11-13T00:36:58.575Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="73.467304125">
+        <testcase classname="testdriver/acceptance-sdk/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="26.892530291">
             <system-out>
-🧹 Running teardown...
-🎬 Stopping dashcam and retrieving URL...
+[2mwaiting for text: &quot;Sign In&quot;...[22m
 
-📊 Session info: {
-  &quot;sessionId&quot;: null,
-  &quot;dashcamUrl&quot;: null,
-  &quot;instance&quot;: null
-}
+[2m&quot;Sign In&quot; found![22m
+
+[2mthinking...[22m
+
+```yaml
+commands:
+  - command: click # Move and click the mouse and perform a click
+    x: 682
+    y: 444
+    action: click
+```
+
+[2mclick left clicking at 682, 444...[22m
+
+thinking...
+
+The task passed. A “Please fill out this field.” tooltip confirms that a required-fields error is shown.
 
             </system-out>
-            <system-err>
-⚠️  Postrun hook failed (non-fatal): client.exec is not a function
-
-            </system-err>
-            <failure message="Hook timed out in 600000ms.
-If this is a long-running hook, pass a timeout value as the last argument or configure it globally with &quot;hookTimeout&quot;." type="Error">
-Error: Hook timed out in 600000ms.
-If this is a long-running hook, pass a timeout value as the last argument or configure it globally with &quot;hookTimeout&quot;.
- ❯ testdriver/acceptance-sdk/hover-text.test.mjs:12:12
-
-            </failure>
         </testcase>
     </testsuite>
 </testsuites>

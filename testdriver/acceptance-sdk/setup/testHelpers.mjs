@@ -82,7 +82,7 @@ export function createTestClient(options = {}) {
   const client = new TestDriver(process.env.TD_API_KEY, {
     resolution: '1366x768',
     analytics: true,
-    apiRoot: 'https://replayable-dev-ian-mac-m1-16.ngrok.io',
+    // apiRoot: 'https://replayable-dev-ian-mac-m1-16.ngrok.io',
     logging: process.env.LOGGING === 'false' ? false : true, // Enabled by default, disable with LOGGING=false
     ...options
   });
