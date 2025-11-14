@@ -217,7 +217,7 @@ export async function runPrerun(client) {
 
     // Start dashcam tracking
     await client.exec('pwsh', 
-      'dashcam track --name=TestDriver --type=application --pattern="C:\\Users\\testdriver\\Documents\\testdriver.log"',
+      'dashcam track --name=TestDriver --type=app --pattern="C:\\Users\\testdriver\\Documents\\testdriver.log"',
       10000, true);
     
     // Start dashcam recording

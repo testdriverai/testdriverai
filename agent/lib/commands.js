@@ -809,6 +809,17 @@ const createCommands = (
 
       let plat = system.platform();
 
+      // Warn if trying to use pwsh on Linux
+      if (language === "pwsh" && sandbox.os === "linux") {
+        emitter.emit(
+          events.log.log,
+          theme.yellow(
+            `⚠️  Warning: You are using 'pwsh' exec command on a Linux sandbox. This may fail. Consider using 'bash' or 'sh' for Linux environments.`
+          ),
+          true
+        );
+      }
+
       if (language == "pwsh") {
         let result = null;
 

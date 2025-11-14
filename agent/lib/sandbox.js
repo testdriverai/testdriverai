@@ -14,6 +14,7 @@ const createSandbox = (emitter, analytics) => {
       this.instance = null;
       this.messageId = 0;
       this.uniqueId = Math.random().toString(36).substring(7);
+      this.os = null; // Store OS value to send with every message
     }
 
     send(message) {
@@ -23,7 +24,16 @@ const createSandbox = (emitter, analytics) => {
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
-        message.os = process.env.TD_OS || 'windows';
+        
+        // If os is set in the message, store it for future messages
+        if (message.os) {
+          this.os = message.os;
+        }
+        
+        // Add os to every message if it's been set
+        if (this.os && !message.os) {
+          message.os = this.os;
+        }
 
         // Start timing for this message
         const timingKey = `sandbox-${message.type}`;

@@ -1779,9 +1779,12 @@ ${regression}
       return this.createNewSandbox();
     });
 
-    this.saveLastSandboxId(newSandbox.sandbox.instanceId);
+    // For Linux sandboxes, use sandboxId; for Windows, use instanceId
+    const sandboxIdentifier = newSandbox.sandbox.sandboxId || newSandbox.sandbox.instanceId;
+    
+    this.saveLastSandboxId(sandboxIdentifier);
     let instance = await this.connectToSandboxDirect(
-      newSandbox.sandbox.instanceId,
+      sandboxIdentifier,
       true, // always persist by default
     );
     this.instance = instance;
@@ -1964,6 +1967,9 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   }
 
   async createNewSandbox() {
+
+    console.log(this.sandboxOs)
+
     const sandboxConfig = {
       type: "create",
       resolution: this.config.TD_RESOLUTION,

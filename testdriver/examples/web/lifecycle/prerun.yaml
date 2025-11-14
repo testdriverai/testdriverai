@@ -4,7 +4,12 @@ steps:
     commands:
       - command: exec
         lang: pwsh
-        code: dashcam track --name=TestDriver --type=application --pattern="C:\Users\testdriver\Documents\testdriver.log"
+        code: |
+          npm install dashcam@beta -g
+          npm list -g dashcam
+      - command: exec
+        lang: pwsh
+        code: dashcam track --name=TestDriver --type=app --pattern="C:\Users\testdriver\Documents\testdriver.log"
       - command: exec
         lang: pwsh
         code: dashcam start
