@@ -31,7 +31,8 @@ describe('Exec JS Test', () => {
     expect(userEmail).toContain('@');
     
     // Enter email in username field
-    await client.hoverText('Username', 'input field for username', 'click');
+    const usernameField = await client.find('Username, input field for username');
+    await usernameField.click();
     await client.type(userEmail);
     
     // Assert email is in the field

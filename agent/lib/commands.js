@@ -214,21 +214,11 @@ const createCommands = (
   const assert = async (
     assertion,
     shouldThrow = false,
-    async = false,
-    invert = false,
   ) => {
-    if (async) {
-      shouldThrow = true;
-    }
-
     const handleAssertResponse = (response) => {
       emitter.emit(events.log.log, response);
 
       let valid = response.indexOf("The task passed") > -1;
-
-      if (invert) {
-        valid = !valid;
-      }
 
       if (valid) {
         return true;
@@ -247,24 +237,11 @@ const createCommands = (
 
     emitter.emit(events.log.narration, `thinking...`);
 
-    if (async) {
-      await sdk
-        .req("assert", {
-          expect: assertion,
-          image: await system.captureScreenBase64(),
-        })
-        .then((response) => {
-          return handleAssertResponse(response.data);
-        });
-
-      return true;
-    } else {
-      let response = await sdk.req("assert", {
-        expect: assertion,
-        image: await system.captureScreenBase64(),
-      });
-      return handleAssertResponse(response.data);
-    }
+    let response = await sdk.req("assert", {
+      expect: assertion,
+      image: await system.captureScreenBase64(),
+    });
+    return handleAssertResponse(response.data);
   };
   const scroll = async (direction = "down", amount = 300, method = "mouse") => {
     await redraw.start();
@@ -289,7 +266,7 @@ const createCommands = (
             direction,
           });
         } else {
-          await sandbox.send({ os: "linux", type: "press", keys: ["pageup"] });
+          await sandbox.send({ type: "press", keys: ["pageup"] });
         }
         await redraw.wait(2500);
         break;
@@ -353,7 +330,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ os: "linux", type: "moveMouse", x, y });
+    await sandbox.send({ type: "moveMouse", x, y });
 
     emitter.emit(events.mouseMove, { x, y });
 
@@ -361,16 +338,16 @@ const createCommands = (
 
     if (action !== "hover") {
       if (action === "click" || action === "left-click") {
-        await sandbox.send({ os: "linux", type: "leftClick" });
+        await sandbox.send({ type: "leftClick" });
       } else if (action === "right-click") {
-        await sandbox.send({ os: "linux", type: "rightClick" });
+        await sandbox.send({ type: "rightClick" });
       } else if (action === "middle-click") {
-        await sandbox.send({ os: "linux", type: "middleClick" });
+        await sandbox.send({ type: "middleClick" });
       } else if (action === "double-click") {
-        await sandbox.send({ os: "linux", type: "doubleClick" });
-      } else if (action === "drag-start") {
-        await sandbox.send({ os: "linux", type: "mousePress", button: "left" });
-      } else if (action === "drag-end") {
+        await sandbox.send({ type: "doubleClick" });
+      } else if (action === "mouseDown") {
+        await sandbox.send({ type: "mousePress", button: "left" });
+      } else if (action === "mouseUp") {
         await sandbox.send({
           os: "linux",
           type: "mouseRelease",
@@ -392,7 +369,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ os: "linux", type: "moveMouse", x, y });
+    await sandbox.send({ type: "moveMouse", x, y });
 
     await redraw.wait(2500);
 
@@ -507,7 +484,7 @@ const createCommands = (
 
       string = string.toString();
 
-      await sandbox.send({ os: "linux", type: "write", text: string, delay });
+      await sandbox.send({ type: "write", text: string, delay });
       await redraw.wait(5000);
       return;
     },
@@ -517,7 +494,7 @@ const createCommands = (
       await redraw.start();
 
       // finally, press the keys
-      await sandbox.send({ os: "linux", type: "press", keys: inputKeys });
+      await sandbox.send({ type: "press", keys: inputKeys });
 
       await redraw.wait(5000);
 
@@ -544,8 +521,6 @@ const createCommands = (
         passed = await assert(
           `An image matching the description "${description}" appears on screen.`,
           false,
-          false,
-          invert,
         );
 
         durationPassed = new Date().getTime() - startTime;
@@ -656,9 +631,9 @@ const createCommands = (
             keys: ["f", "ctrl"],
           });
           await delay(1000);
-          await sandbox.send({ os: "linux", type: "write", text });
+          await sandbox.send({ type: "write", text });
           await redraw.wait(5000);
-          await sandbox.send({ os: "linux", type: "press", keys: ["escape"] });
+          await sandbox.send({ type: "press", keys: ["escape"] });
         } catch {
           throw new MatchError(
             "Could not find element using browser text search",
@@ -797,8 +772,8 @@ const createCommands = (
       });
       return result.data;
     },
-    assert: async (assertion, async = false, invert = false) => {
-      let response = await assert(assertion, true, async, invert);
+    assert: async (assertion) => {
+      let response = await assert(assertion, true);
 
       return response;
     },

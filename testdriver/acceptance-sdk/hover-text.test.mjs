@@ -19,9 +19,11 @@ describe('Hover Text Test', () => {
   });
 
   it('should click Sign In and verify error message', async () => {
-    // Click on Sign In button
+    // Click on Sign In button using new find() API
     await client.focusApplication('Google Chrome');
-    await client.hoverText('Sign In', 'black button below the password field', 'click', undefined, 5000);
+    
+    const signInButton = await client.find('Sign In, black button below the password field');
+    await signInButton.click();
 
     // Assert that an error shows that fields are required
     const result = await client.assert('an error shows that fields are required');

@@ -42,7 +42,8 @@ Write-Output "$email"
     `, 10000);
 
     // Enter the email in username field
-    await client.hoverText('Username', 'input field for username', 'click');
+    const usernameField = await client.find('Username, input field for username');
+    await usernameField.click();
     await client.type(randomEmail);
 
     // Assert that the username field shows a valid email address

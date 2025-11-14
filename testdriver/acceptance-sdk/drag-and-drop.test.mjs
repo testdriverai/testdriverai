@@ -26,17 +26,22 @@ describe('Drag and Drop Test', () => {
     await client.pressKeys(['shift', 'f10']);
 
     // Hover over "New" in the context menu
-    await client.hoverText('New', 'new option in the open context menu on the desktop', 'hover');
+    const newOption = await client.find('New, new option in the open context menu on the desktop');
+    await newOption.hover();
 
     // Click "Text Document" in the context menu
-    await client.hoverText('Text Document', 'text document option in the new submenu of the desktop context menu', 'click');
+    const textDocOption = await client.find('Text Document, text document option in the new submenu of the desktop context menu');
+    await textDocOption.click();
 
     // Unfocus the "Text Document" text field
     await client.pressKeys(['esc']);
 
     // Drag the "New Text Document" icon to the "Recycle Bin"
-    await client.hoverText('New Text Document', 'new text document icon in the center of the desktop', 'drag-start');
-    await client.hoverText('Recycle Bin', 'recycle bin icon in the top left corner of the desktop', 'drag-end');
+    const textDoc = await client.find('New Text Document, new text document icon in the center of the desktop');
+    await textDoc.mouseDown();
+    
+    const recycleBin = await client.find('Recycle Bin, recycle bin icon in the top left corner of the desktop');
+    await recycleBin.mouseUp();
 
     // Assert "New Text Document" icon is not on the Desktop
     const result = await client.assert('the "New Text Document" icon is not visible on the Desktop');

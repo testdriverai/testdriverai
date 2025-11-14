@@ -24,11 +24,13 @@ describe('Hover Text With Description Test', () => {
 
     // Click on "Add to Cart" under TestDriver Hat
     await client.focusApplication('Google Chrome');
-    await client.hoverText('Add to Cart', 'add to cart button under TestDriver Hat', 'click');
+    const addToCartButton = await client.find('Add to Cart, add to cart button under TestDriver Hat');
+    await addToCartButton.click();
 
     // Click on the cart
     await client.focusApplication('Google Chrome');
-    await client.hoverText('Cart', 'cart button in the top right corner', 'click');
+    const cartButton = await client.find('Cart, cart button in the top right corner');
+    await cartButton.click();
 
     // Assert the TestDriver Hat is in the cart
     await client.focusApplication('Google Chrome');

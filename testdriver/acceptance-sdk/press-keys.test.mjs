@@ -20,15 +20,30 @@ describe('Press Keys Test', () => {
 
   it('should create tabs and navigate using keyboard shortcuts', async () => {
     await client.focusApplication('Google Chrome');
-    await client.hoverText('Sign In', 'black button below the password field', 'click');
+    const signInButton = await client.find('Sign In, black button below the password field');
+    await signInButton.click();
     
     // Open new tab
     await client.pressKeys(['ctrl', 't']);
-    await client.waitForText('Learn more');
+    
+    // Poll for "Learn more" to appear
+    let learnMore = client.find('Learn more');
+    for (let i = 0; i < 10; i++) {
+      learnMore = await learnMore.find();
+      if (learnMore.found()) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
     // Open DevTools
     await client.pressKeys(['ctrl', 'shift', 'i']);
-    await client.waitForText('Elements');
+    
+    // Poll for "Elements" to appear
+    let elements = client.find('Elements');
+    for (let i = 0; i < 10; i++) {
+      elements = await elements.find();
+      if (elements.found()) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
     // Open another tab and navigate
     await client.pressKeys(['ctrl', 't']);

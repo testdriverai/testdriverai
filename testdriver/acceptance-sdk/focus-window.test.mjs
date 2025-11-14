@@ -23,7 +23,8 @@ describe('Focus Window Test', () => {
     await client.pressKeys(['winleft', 'd']);
     
     // Click on the Microsoft Edge icon
-    await client.hoverImage('a blue and green swirl icon on the taskbar representing Microsoft Edge', 'click');
+    const edgeIcon = await client.find('a blue and green swirl icon on the taskbar representing Microsoft Edge');
+    await edgeIcon.click();
 
     // Focus Google Chrome
     await client.focusApplication('Google Chrome');

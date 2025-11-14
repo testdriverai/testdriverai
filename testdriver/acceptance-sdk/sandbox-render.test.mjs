@@ -60,7 +60,8 @@ describe('Sandbox Rendering', () => {
 
   it('should allow interaction with the sandbox UI', async () => {
     // Interact with the login page
-    await client.hoverText('Username', 'username input field', 'click');
+    const usernameField = await client.find('Username, username input field');
+    await usernameField.click();
     await client.type('test_user');
     
     const result = await client.assert('text has been entered in the username field');

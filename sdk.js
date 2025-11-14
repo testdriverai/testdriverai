@@ -1,6 +1,232 @@
 #!/usr/bin/env node
 
 /**
+ * Element class representing a located or to-be-located element
+ */
+class Element {
+  constructor(description, sdk, system, commands) {
+    this.description = description;
+    this.sdk = sdk;
+    this.system = system;
+    this.commands = commands;
+    this.coordinates = null;
+    /* The above code is a JavaScript comment block that sets the `_found` property of an object to
+    `false`. The code snippet does not contain any executable code, it is just a comment. */
+    this._found = false;
+    this._response = null;
+  }
+
+  /**
+   * Check if element was found
+   * @returns {boolean} True if element coordinates were located
+   */
+  found() {
+    return this._found;
+  }
+
+  /**
+   * Find the element on screen
+   * @param {string} [newDescription] - Optional new description to search for
+   * @returns {Promise<Element>} This element instance
+   */
+  async find(newDescription) {
+    const description = newDescription || this.description;
+    if (newDescription) {
+      this.description = newDescription;
+    }
+
+    try {
+      const response = await this.sdk.req(
+        "locate",
+        {
+          element: description,
+          image: await this.system.captureScreenBase64(),
+        }
+      );
+
+      if (response && response.coordinates) {
+        this._response = response;
+        this.coordinates = response.coordinates;
+        this._found = true;
+      } else {
+        this._response = null;
+        this._found = false;
+      }
+    } catch {
+      this._response = null;
+      this._found = false;
+    }
+
+    return this;
+  }
+
+  /**
+   * Click on the element
+   * @param {ClickAction} [action='click'] - Type of click action
+   * @returns {Promise<void>}
+   */
+  async click(action = 'click') {
+    if (!this._found || !this.coordinates) {
+      throw new Error(`Element "${this.description}" not found. Call find() first.`);
+    }
+
+    if (action === 'hover') {
+      await this.commands.hover(this.coordinates.x, this.coordinates.y);
+    } else {
+      await this.commands.click(this.coordinates.x, this.coordinates.y, action);
+    }
+  }
+
+  /**
+   * Hover over the element
+   * @returns {Promise<void>}
+   */
+  async hover() {
+    if (!this._found || !this.coordinates) {
+      throw new Error(`Element "${this.description}" not found. Call find() first.`);
+    }
+
+    await this.commands.hover(this.coordinates.x, this.coordinates.y);
+  }
+
+  /**
+   * Double-click on the element
+   * @returns {Promise<void>}
+   */
+  async doubleClick() {
+    return this.click('double-click');
+  }
+
+  /**
+   * Right-click on the element
+   * @returns {Promise<void>}
+   */
+  async rightClick() {
+    return this.click('right-click');
+  }
+
+  /**
+   * Press mouse button down on this element
+   * @returns {Promise<void>}
+   */
+  async mouseDown() {
+    return this.click('mouseDown');
+  }
+
+  /**
+   * Release mouse button on this element
+   * @returns {Promise<void>}
+   */
+  async mouseUp() {
+    return this.click('mouseUp');
+  }
+
+  /**
+   * Get the coordinates of the element
+   * @returns {{x: number, y: number, centerX: number, centerY: number}|null}
+   */
+  getCoordinates() {
+    return this.coordinates;
+  }
+
+  /**
+   * Get the x coordinate (top-left)
+   * @returns {number|null}
+   */
+  get x() {
+    return this.coordinates?.x ?? null;
+  }
+
+  /**
+   * Get the y coordinate (top-left)
+   * @returns {number|null}
+   */
+  get y() {
+    return this.coordinates?.y ?? null;
+  }
+
+  /**
+   * Get the center x coordinate
+   * @returns {number|null}
+   */
+  get centerX() {
+    return this.coordinates?.centerX ?? null;
+  }
+
+  /**
+   * Get the center y coordinate
+   * @returns {number|null}
+   */
+  get centerY() {
+    return this.coordinates?.centerY ?? null;
+  }
+
+  /**
+   * Get the full API response data
+   * @returns {Object|null}
+   */
+  getResponse() {
+    return this._response;
+  }
+
+  /**
+   * Get element screenshot if available
+   * @returns {string|null} Base64 encoded screenshot
+   */
+  get screenshot() {
+    return this._response?.screenshot ?? null;
+  }
+
+  /**
+   * Get element confidence score if available
+   * @returns {number|null}
+   */
+  get confidence() {
+    return this._response?.confidence ?? null;
+  }
+
+  /**
+   * Get element width if available
+   * @returns {number|null}
+   */
+  get width() {
+    return this._response?.width ?? null;
+  }
+
+  /**
+   * Get element height if available
+   * @returns {number|null}
+   */
+  get height() {
+    return this._response?.height ?? null;
+  }
+
+  /**
+   * Get element bounding box if available
+   * @returns {Object|null}
+   */
+  get boundingBox() {
+    return this._response?.boundingBox ?? null;
+  }
+
+  /**
+   * Get element text content if available
+   * @returns {string|null}
+   */
+  get text() {
+    return this._response?.text ?? null;
+  }
+
+  /**
+   * Get element label if available
+   * @returns {string|null}
+   */
+  get label() {
+    return this._response?.label ?? null;
+  }
+}
+
+/**
  * TestDriver SDK
  * 
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
@@ -11,12 +237,17 @@
  * const client = new TestDriver(process.env.TD_API_KEY);
  * await client.connect();
  * 
+ * // New API
+ * const element = await client.find('Submit button');
+ * await element.click();
+ * 
+ * // Legacy API (deprecated)
  * await client.hoverText('Submit');
  * await client.click();
  */
 
 /**
- * @typedef {'click' | 'right-click' | 'double-click' | 'hover' | 'drag-start' | 'drag-end'} ClickAction
+ * @typedef {'click' | 'right-click' | 'double-click' | 'hover' | 'mouseDown' | 'mouseUp'} ClickAction
  * @typedef {'up' | 'down' | 'left' | 'right'} ScrollDirection
  * @typedef {'keyboard' | 'mouse'} ScrollMethod
  * @typedef {'ai' | 'turbo'} TextMatchMethod
@@ -113,6 +344,10 @@ class TestDriverSDK {
       await this.auth();
     }
 
+    // Initialize debugger server before connecting to sandbox
+    // This ensures the debuggerUrl is available for renderSandbox
+    await this._initializeDebugger();
+
     // Map SDK connect options to agent buildEnv options
     const buildEnvOptions = {
       headless: connectOptions.headless || false,
@@ -168,6 +403,44 @@ class TestDriverSDK {
   }
 
   // ====================================
+  // Element Finding API
+  // ====================================
+
+  /**
+   * Find an element by description
+   * Automatically locates the element and returns it
+   * 
+   * @param {string} description - Description of the element to find
+   * @returns {Promise<Element>} Element instance that has been located
+   * 
+   * @example
+   * // Find and click immediately
+   * const element = await client.find('the sign in button');
+   * await element.click();
+   * 
+   * @example
+   * // Poll until element is found
+   * let element;
+   * while (!element?.found()) {
+   *   element = await client.find('login button');
+   *   if (!element.found()) {
+   *     await new Promise(resolve => setTimeout(resolve, 1000));
+   *   }
+   * }
+   * await element.click();
+   */
+  async find(description) {
+    this._ensureConnected();
+    const element = new Element(
+      description,
+      this.apiClient,
+      this.system,
+      this.commands
+    );
+    return await element.find();
+  }
+
+  // ====================================
   // Command Methods Setup
   // ====================================
 
@@ -183,6 +456,7 @@ class TestDriverSDK {
         name: 'hoverText',
         /**
          * Hover over text on screen
+         * @deprecated Use find() and element.click() instead
          * @param {string} text - Text to find and hover over
          * @param {string | null} [description] - Optional description of the element
          * @param {ClickAction} [action='click'] - Action to perform
@@ -190,17 +464,18 @@ class TestDriverSDK {
          * @param {number} [timeout=5000] - Timeout in milliseconds
          * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
          */
-        doc: 'Hover over text on screen'
+        doc: 'Hover over text on screen (deprecated - use find() instead)'
       },
       'hover-image': { 
         name: 'hoverImage',
         /**
          * Hover over an image on screen
+         * @deprecated Use find() and element.click() instead
          * @param {string} description - Description of the image to find
          * @param {ClickAction} [action='click'] - Action to perform
          * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
          */
-        doc: 'Hover over an image on screen'
+        doc: 'Hover over an image on screen (deprecated - use find() instead)'
       },
       'match-image': { 
         name: 'matchImage',
@@ -268,33 +543,36 @@ class TestDriverSDK {
         name: 'wait',
         /**
          * Wait for specified time
+         * @deprecated Consider using element polling with find() instead of arbitrary waits
          * @param {number} [timeout=3000] - Time to wait in milliseconds
          * @returns {Promise<void>}
          */
-        doc: 'Wait for specified time'
+        doc: 'Wait for specified time (deprecated - consider element polling instead)'
       },
       'wait-for-text': { 
         name: 'waitForText',
         /**
          * Wait for text to appear on screen
+         * @deprecated Use find() in a polling loop instead
          * @param {string} text - Text to wait for
          * @param {number} [timeout=5000] - Timeout in milliseconds
          * @param {TextMatchMethod} [method='turbo'] - Text matching method
          * @param {boolean} [invert=false] - Invert the match (wait for text to disappear)
          * @returns {Promise<void>}
          */
-        doc: 'Wait for text to appear on screen'
+        doc: 'Wait for text to appear on screen (deprecated - use find() in a loop instead)'
       },
       'wait-for-image': { 
         name: 'waitForImage',
         /**
          * Wait for image to appear on screen
+         * @deprecated Use find() in a polling loop instead
          * @param {string} description - Description of the image
          * @param {number} [timeout=10000] - Timeout in milliseconds
          * @param {boolean} [invert=false] - Invert the match (wait for image to disappear)
          * @returns {Promise<void>}
          */
-        doc: 'Wait for image to appear on screen'
+        doc: 'Wait for image to appear on screen (deprecated - use find() in a loop instead)'
       },
       'scroll-until-text': { 
         name: 'scrollUntilText',
@@ -347,8 +625,6 @@ class TestDriverSDK {
         /**
          * Make an AI-powered assertion
          * @param {string} assertion - Assertion to check
-         * @param {boolean} [async=false] - Run asynchronously
-         * @param {boolean} [invert=false] - Invert the assertion
          * @returns {Promise<boolean>}
          */
         doc: 'Make an AI-powered assertion'
@@ -563,6 +839,24 @@ class TestDriverSDK {
   }
 
   /**
+   * Initialize debugger server
+   * @private
+   */
+  async _initializeDebugger() {
+    // Import createDebuggerProcess at the module level if not already done
+    const { createDebuggerProcess } = require("./agent/lib/debugger.js");
+
+    // Only initialize once
+    if (!this.agent.debuggerUrl) {
+      const debuggerProcess = await createDebuggerProcess(
+        this.config,
+        this.emitter,
+      );
+      this.agent.debuggerUrl = debuggerProcess.url || null;
+    }
+  }
+
+  /**
    * Render the sandbox in a browser window
    * @private
    * @param {Object} instance - Sandbox instance with connection details
@@ -586,7 +880,7 @@ class TestDriverSDK {
     const encodedData = encodeURIComponent(JSON.stringify(data));
 
     // Use the debugger URL if available, otherwise fall back to default port
-    const debuggerBaseUrl = this.debuggerUrl || "http://localhost:3000";
+    const debuggerBaseUrl = this.agent.debuggerUrl || "http://localhost:3000";
     const urlToOpen = `${debuggerBaseUrl}?data=${encodedData}`;
 
     // Emit the showWindow event
@@ -615,16 +909,15 @@ class TestDriverSDK {
    * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
    * console.log(result); // AI's final assessment
    */
-  async ai(task, options = {}) {
+  async ai(task) {
     this._ensureConnected();
 
-    const validateAndLoop = options.validateAndLoop || false;
-
-    this.analytics.track("sdk.ai", { task, validateAndLoop });
+    this.analytics.track("sdk.ai", { task });
 
     // Use the agent's exploratoryLoop method directly
-    return await this.agent.exploratoryLoop(task, false, validateAndLoop, false);
+    return await this.agent.exploratoryLoop(task, false, true, false);
   }
 }
 
 module.exports = TestDriverSDK;
+module.exports.Element = Element;

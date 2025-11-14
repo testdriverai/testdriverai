@@ -79,14 +79,16 @@ export function saveTestResults(outputPath = 'test-results/sdk-summary.json') {
  * @returns {TestDriver} Configured client
  */
 export function createTestClient(options = {}) {
-  const os = process.env.TD_OS || 'windows';
+  const os = process.env.TD_OS || 'linux';
   
   const client = new TestDriver(process.env.TD_API_KEY, {
     resolution: '1366x768',
     analytics: true,
     os: os, // Use OS from environment variable (windows or linux)
-    // apiRoot: 'https://replayable-dev-ian-mac-m1-16.ngrok.io',
+    apiKey: process.env.TD_API_KEY,
+    apiRoot: 'https://replayable-dev-ian-mac-m1-16.ngrok.io',
     logging: process.env.LOGGING === 'false' ? false : true, // Enabled by default, disable with LOGGING=false
+    newSandbox: true, // Always create a new sandbox for each test
     ...options
   });
 
@@ -213,23 +215,29 @@ export async function teardownTest(client, options = {}) {
 export async function runPrerun(client) {
   try {
 
-    await client.exec('pwsh', 'npm install dashcam@beta -g', 10000, true);
+    await client.exec('sh', 'dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d');
 
     // Start dashcam tracking
-    await client.exec('pwsh', 
-      'dashcam track --name=TestDriver --type=app --pattern="C:\\Users\\testdriver\\Documents\\testdriver.log"',
+    await client.exec('sh', 
+      'dashcam logs --add --type=file --file="/tmp/testdriver.log" --name="TestDriver Log"',
       10000, true);
     
     // Start dashcam recording
-    await client.exec('pwsh', 'dashcam start', 10000, true);
+    await client.exec('sh', 'dashcam record >/dev/null 2>&1 &', 30000);
+
+    await client.exec('sh', 'dashcam status');
     
     // Launch Chrome with guest mode
-    await client.exec('pwsh', `
-      Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "https://testdriver-sandbox.vercel.app/login"
-    `, 10000, true);
+    await client.exec('sh', `jumpapp google-chrome --no-startup-window --disable-fre --no-default-browser-check --no-first-run "http://testdriver-sandbox.vercel.app/" $@`, 10000, true);
     
-    // Wait for the login page to load
-    await client.waitForText('TestDriver.ai Sandbox', 60000);
+    // Wait for the login page to load - poll for text to appear
+    let loginPage = await client.find('TestDriver.ai Sandbox');
+    const maxAttempts = 60;
+    for (let i = 0; i < maxAttempts; i++) {
+      loginPage = await loginPage.find();
+      if (loginPage.found()) break;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
     
   } catch (error) {
     console.warn('⚠️  Prerun hook failed (non-fatal):', error.message);
@@ -248,8 +256,8 @@ export async function runPostrun(client) {
     
     // Stop dashcam with title and push - this returns the URL
     const output = await client.exec('pwsh', 
-      'dashcam -t \'Web Test Recording\' -p',
-      10000, false); // Don't silence output so we can capture it
+      'dashcam stop',
+      30000, false); // Don't silence output so we can capture it
     
     console.log('📤 Dashcam command output:', output);
     
@@ -289,7 +297,8 @@ export async function performLogin(client, username = 'standard_user', password 
     password = await client.remember('the password');
   }
   
-  await client.hoverText('Username', 'label above the username input field on the login form', 'click');
+  const usernameField = await client.find('Username, label above the username input field on the login form');
+  await usernameField.click();
   await client.type(username);
   
   // Enter password
@@ -358,7 +367,8 @@ export async function conditionalExec(client, condition, thenFn, elseFn = null) 
  * });
  * 
  * await tracker.step('Enter credentials', async () => {
- *   await client.hoverText('Username');
+ *   const usernameField = await client.find('Username');
+ *   await usernameField.click();
  *   await client.type('user@example.com');
  * });
  */

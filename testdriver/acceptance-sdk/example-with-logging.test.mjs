@@ -68,7 +68,8 @@ describe('Example Test with Logging', () => {
     await client.focusApplication('Google Chrome');
     console.log('  ✓ Focused Chrome');
     
-    await client.hoverText('Username', 'username input field', 'click');
+    const usernameField = await client.find('Username, username input field');
+    await usernameField.click();
     console.log('  ✓ Clicked username field');
     
     await client.type('test_user');

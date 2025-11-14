@@ -1,0 +1,316 @@
+---
+title: "find()"
+sidebarTitle: "find"
+description: "Locate UI elements using natural language"
+icon: "magnifying-glass"
+---
+
+## Overview
+
+Locate UI elements on screen using AI-powered natural language descriptions. Returns an `Element` object that can be interacted with.
+
+## Syntax
+
+```javascript
+const element = await testdriver.find(description)
+```
+
+## Parameters
+
+<ParamField path="description" type="string" required>
+  Natural language description of the element to find
+</ParamField>
+
+## Returns
+
+`Promise<Element>` - Element instance that has been automatically located
+
+## Examples
+
+### Basic Element Finding
+
+```javascript
+// Find by role
+const button = await testdriver.find('submit button');
+const input = await testdriver.find('email input field');
+
+// Find by text content
+const link = await testdriver.find('Contact Us link');
+const heading = await testdriver.find('Welcome heading');
+
+// Find by visual appearance
+const icon = await testdriver.find('red warning icon');
+const image = await testdriver.find('company logo image');
+```
+
+### Finding with Context
+
+```javascript
+// Provide location context
+const field = await testdriver.find('username input in the login form');
+const button = await testdriver.find('delete button in the top right corner');
+
+// Describe nearby elements
+const input = await testdriver.find('input field below the email label');
+const checkbox = await testdriver.find('checkbox next to "Remember me"');
+
+// Describe visual position
+const menu = await testdriver.find('hamburger menu icon in the top left');
+```
+
+### Interacting with Found Elements
+
+```javascript
+// Find and click
+const submitBtn = await testdriver.find('submit button');
+await submitBtn.click();
+
+// Find and verify
+const message = await testdriver.find('success message');
+if (message.found()) {
+  console.log('Success message appeared');
+}
+
+// Find and extract info
+const price = await testdriver.find('product price');
+console.log('Price location:', price.coordinates);
+console.log('Price text:', price.text);
+```
+
+## Element Object
+
+The returned `Element` object provides:
+
+### Methods
+
+- `found()` - Check if element was located
+- `click(action)` - Click the element
+- `hover()` - Hover over the element
+- `doubleClick()` - Double-click the element
+- `rightClick()` - Right-click the element
+- `find(newDescription)` - Re-locate with optional new description
+
+### Properties
+
+- `coordinates` - Element position `{x, y, centerX, centerY}`
+- `x`, `y` - Top-left coordinates
+- `centerX`, `centerY` - Center coordinates
+- `text` - Text content (if available)
+- `screenshot` - Base64 screenshot (if available)
+- `confidence` - AI confidence score
+- `width`, `height` - Element dimensions
+- `boundingBox` - Complete bounding box
+
+See [Elements Reference](/v7/api/elements) for complete details.
+
+## Best Practices
+
+<Check>
+  **Be specific in descriptions**
+  
+  More specific descriptions improve accuracy:
+  
+  ```javascript
+  // ✅ Good
+  await testdriver.find('blue submit button below the email field');
+  
+  // ❌ Too vague
+  await testdriver.find('button');
+  ```
+</Check>
+
+<Check>
+  **Always check if found**
+  
+  Verify elements were located before interacting:
+  
+  ```javascript
+  const element = await testdriver.find('login button');
+  if (!element.found()) {
+    throw new Error('Login button not found');
+  }
+  await element.click();
+  ```
+</Check>
+
+<Check>
+  **Include visual or positional context**
+  
+  ```javascript
+  // Include color
+  await testdriver.find('red error icon');
+  
+  // Include position
+  await testdriver.find('search button in the top navigation bar');
+  
+  // Include nearby text
+  await testdriver.find('checkbox next to "I agree to terms"');
+  ```
+</Check>
+
+## Polling for Dynamic Elements
+
+For elements that may not be immediately visible:
+
+```javascript
+// Poll until element appears
+let loginButton;
+const maxAttempts = 30;
+
+for (let i = 0; i < maxAttempts; i++) {
+  loginButton = await testdriver.find('login button');
+  if (loginButton.found()) break;
+  await new Promise(r => setTimeout(r, 1000));
+}
+
+if (!loginButton.found()) {
+  throw new Error('Login button never appeared');
+}
+
+await loginButton.click();
+```
+
+### Helper Function
+
+```javascript
+async function waitForElement(testdriver, description, timeout = 30000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeout) {
+    const element = await testdriver.find(description);
+    if (element.found()) return element;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  throw new Error(`Element "${description}" not found after ${timeout}ms`);
+}
+
+// Usage
+const button = await waitForElement(testdriver, 'submit button', 10000);
+await button.click();
+```
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Form Fields">
+    ```javascript
+    const emailField = await testdriver.find('email input field');
+    await emailField.click();
+    await testdriver.type('user@example.com');
+    
+    const passwordField = await testdriver.find('password input');
+    await passwordField.click();
+    await testdriver.type('MyP@ssw0rd');
+    ```
+  </Accordion>
+  
+  <Accordion title="Buttons and Links">
+    ```javascript
+    const submitBtn = await testdriver.find('submit button');
+    await submitBtn.click();
+    
+    const cancelLink = await testdriver.find('cancel link');
+    await cancelLink.click();
+    
+    const menuIcon = await testdriver.find('hamburger menu icon');
+    await menuIcon.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Dynamic Content">
+    ```javascript
+    // Wait for loading to complete
+    let content;
+    for (let i = 0; i < 30; i++) {
+      content = await testdriver.find('results table');
+      if (content.found()) break;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    // Interact with loaded content
+    const firstRow = await testdriver.find('first row in the results table');
+    await firstRow.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Complex UI Elements">
+    ```javascript
+    // Modals and dialogs
+    const modal = await testdriver.find('confirmation dialog');
+    if (modal.found()) {
+      const confirmBtn = await testdriver.find('confirm button in the dialog');
+      await confirmBtn.click();
+    }
+    
+    // Dropdown menus
+    const dropdown = await testdriver.find('country dropdown');
+    await dropdown.click();
+    
+    const option = await testdriver.find('United States option');
+    await option.click();
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Complete Example
+
+```javascript
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import TestDriver from 'testdriverai';
+
+describe('Element Finding', () => {
+  let testdriver;
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY);
+    await testdriver.auth();
+    await testdriver.connect({ newSandbox: true });
+  });
+
+  afterAll(async () => {
+    await testdriver.disconnect();
+  });
+
+  it('should find and interact with elements', async () => {
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Find login form elements
+    const usernameField = await testdriver.find('username input field');
+    expect(usernameField.found()).toBe(true);
+    
+    await usernameField.click();
+    await testdriver.type('testuser');
+    
+    // Find with context
+    const passwordField = await testdriver.find('password input below username');
+    await passwordField.click();
+    await testdriver.type('password123');
+    
+    // Find button
+    const submitBtn = await testdriver.find('green submit button');
+    expect(submitBtn.found()).toBe(true);
+    
+    console.log('Button location:', submitBtn.centerX, submitBtn.centerY);
+    
+    await submitBtn.click();
+    
+    // Wait for success message
+    let successMsg;
+    for (let i = 0; i < 10; i++) {
+      successMsg = await testdriver.find('success notification');
+      if (successMsg.found()) break;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    expect(successMsg.found()).toBe(true);
+  });
+});
+```
+
+## Related Methods
+
+- [`click()`](/v7/api/click) - Click on found elements
+- [`hover()`](/v7/api/hover) - Hover over elements
+- [`assert()`](/v7/api/assert) - Verify element states
+- [Elements Reference](/v7/api/elements) - Complete Element API

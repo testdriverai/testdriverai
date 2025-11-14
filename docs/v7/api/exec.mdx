@@ -1,0 +1,346 @@
+---
+title: "exec()"
+sidebarTitle: "exec"
+description: "Execute code or shell commands in the sandbox"
+icon: "terminal"
+---
+
+## Overview
+
+Execute JavaScript code in the browser or PowerShell commands in the Windows sandbox environment.
+
+## Syntax
+
+```javascript
+await testdriver.exec(language, code, timeout, silent)
+```
+
+## Parameters
+
+<ParamField path="language" type="string" required>
+  Language to execute: `'js'` (JavaScript) or `'pwsh'` (PowerShell)
+</ParamField>
+
+<ParamField path="code" type="string" required>
+  Code or command to execute
+</ParamField>
+
+<ParamField path="timeout" type="number" required>
+  Timeout in milliseconds
+</ParamField>
+
+<ParamField path="silent" type="boolean" default="false">
+  Suppress output if `true`
+</ParamField>
+
+## Returns
+
+`Promise<string>` - Command output
+
+## JavaScript Execution
+
+Execute JavaScript in the browser context (Windows sandbox only).
+
+### DOM Manipulation
+
+```javascript
+// Click an element via JavaScript
+await testdriver.exec('js', `
+  document.querySelector('#submit-button').click();
+`, 5000);
+
+// Fill a form
+await testdriver.exec('js', `
+  document.querySelector('#username').value = 'testuser';
+  document.querySelector('#password').value = 'password123';
+  document.querySelector('#login-form').submit();
+`, 5000);
+
+// Scroll to element
+await testdriver.exec('js', `
+  document.querySelector('#footer').scrollIntoView();
+`, 5000);
+```
+
+### Reading Page Data
+
+```javascript
+// Get page title
+const title = await testdriver.exec('js', 'document.title', 5000);
+console.log('Page title:', title);
+
+// Get all links
+const links = await testdriver.exec('js', `
+  Array.from(document.querySelectorAll('a'))
+    .map(a => a.href)
+    .join('\\n')
+`, 5000);
+
+// Check if element exists
+const exists = await testdriver.exec('js', `
+  document.querySelector('.error-message') !== null
+`, 5000);
+
+// Get element text
+const text = await testdriver.exec('js', `
+  document.querySelector('.notification').textContent
+`, 5000);
+```
+
+## PowerShell Execution
+
+Execute PowerShell commands in the Windows sandbox.
+
+### Software Installation
+
+```javascript
+// Install npm package globally
+await testdriver.exec('pwsh', 'npm install -g http-server', 30000);
+
+// Install via Chocolatey
+await testdriver.exec('pwsh', 'choco install firefox -y', 60000);
+
+// Download and run installer
+await testdriver.exec('pwsh', `
+  Invoke-WebRequest -Uri "https://example.com/setup.exe" -OutFile "C:\\setup.exe"
+  Start-Process -FilePath "C:\\setup.exe" -ArgumentList "/S" -Wait
+`, 120000);
+```
+
+### File Operations
+
+```javascript
+// Create a file
+await testdriver.exec('pwsh', `
+  Set-Content -Path "C:\\test.txt" -Value "Hello World"
+`, 5000);
+
+// Read a file
+const content = await testdriver.exec('pwsh', 
+  'Get-Content -Path "C:\\test.txt"', 
+  5000
+);
+
+// Copy files
+await testdriver.exec('pwsh', 
+  'Copy-Item -Path "C:\\source.txt" -Destination "C:\\dest.txt"', 
+  5000
+);
+
+// Delete files
+await testdriver.exec('pwsh', 
+  'Remove-Item -Path "C:\\test.txt"', 
+  5000
+);
+
+// List directory
+const files = await testdriver.exec('pwsh', 
+  'Get-ChildItem -Path "C:\\Users\\testdriver\\Documents"', 
+  5000
+);
+```
+
+### Process Management
+
+```javascript
+// List running processes
+const processes = await testdriver.exec('pwsh', 'Get-Process', 5000);
+
+// Start application
+await testdriver.exec('pwsh', `
+  Start-Process "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" -ArgumentList "--start-maximized", "https://example.com"
+`, 5000);
+
+// Kill a process
+await testdriver.exec('pwsh', 'Stop-Process -Name "chrome" -Force', 5000);
+
+// Wait for process
+await testdriver.exec('pwsh', 'Start-Process notepad -Wait', 30000);
+```
+
+### Environment Variables
+
+```javascript
+// Set environment variable (session)
+await testdriver.exec('pwsh', '$env:MY_VAR = "value"', 5000);
+
+// Get environment variable
+const value = await testdriver.exec('pwsh', '$env:MY_VAR', 5000);
+
+// Set persistent environment variable
+await testdriver.exec('pwsh', `
+  [Environment]::SetEnvironmentVariable("MY_VAR", "value", "User")
+`, 5000);
+```
+
+### Network Operations
+
+```javascript
+// Test connectivity
+const pingResult = await testdriver.exec('pwsh', 
+  'Test-NetConnection google.com', 
+  10000
+);
+
+// Download file
+await testdriver.exec('pwsh', `
+  Invoke-WebRequest -Uri "https://example.com/file.zip" -OutFile "C:\\Downloads\\file.zip"
+`, 30000);
+
+// Check if port is open
+const portOpen = await testdriver.exec('pwsh', 
+  'Test-NetConnection -ComputerName localhost -Port 3000', 
+  5000
+);
+```
+
+## Silent Execution
+
+Suppress output for background operations:
+
+```javascript
+// Silent installation
+await testdriver.exec('pwsh', 'npm install -g some-package', 30000, true);
+
+// Start background process
+await testdriver.exec('pwsh', 'Start-Process notepad', 5000, true);
+
+// Run setup script silently
+await testdriver.exec('pwsh', '.\\setup.ps1', 60000, true);
+```
+
+## Best Practices
+
+<Check>
+  **Use appropriate timeouts**
+  
+  ```javascript
+  // Quick operations: 5000ms
+  await testdriver.exec('js', 'document.title', 5000);
+  
+  // Installations: 30000-60000ms
+  await testdriver.exec('pwsh', 'npm install -g package', 30000);
+  
+  // Downloads or complex operations: 60000-120000ms
+  await testdriver.exec('pwsh', 'Install-Module Something', 120000);
+  ```
+</Check>
+
+<Check>
+  **Handle errors gracefully**
+  
+  ```javascript
+  try {
+    await testdriver.exec('pwsh', 'Some-Command', 5000);
+  } catch (error) {
+    console.error('Command failed:', error.message);
+    // Fallback or retry logic
+  }
+  ```
+</Check>
+
+<Check>
+  **Use silent mode for background tasks**
+  
+  ```javascript
+  // Silent install
+  await testdriver.exec('pwsh', 'npm install -g tool', 30000, true);
+  
+  // Background service
+  await testdriver.exec('pwsh', 'Start-Service MyService', 5000, true);
+  ```
+</Check>
+
+<Warning>
+  **Escape strings properly in PowerShell**
+  
+  Use proper escaping for special characters:
+  
+  ```javascript
+  // Use backticks for newlines
+  await testdriver.exec('pwsh', `
+    Write-Host "Line 1\`nLine 2"
+  `, 5000);
+  
+  // Use single quotes to avoid variable expansion
+  await testdriver.exec('pwsh', 
+    "Write-Host 'Text with $special chars'", 
+    5000
+  );
+  ```
+</Warning>
+
+## Complete Example
+
+```javascript
+import { beforeAll, afterAll, describe, it } from 'vitest';
+import TestDriver from 'testdriverai';
+
+describe('Code Execution', () => {
+  let testdriver;
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY);
+    await testdriver.auth();
+    await testdriver.connect({ newSandbox: true });
+  });
+
+  afterAll(async () => {
+    await testdriver.disconnect();
+  });
+
+  it('should execute JavaScript in browser', async () => {
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Get page info via JavaScript
+    const title = await testdriver.exec('js', 'document.title', 5000);
+    console.log('Page title:', title);
+    
+    // Manipulate DOM
+    await testdriver.exec('js', `
+      document.querySelector('#username').value = 'testuser';
+    `, 5000);
+    
+    // Verify
+    const value = await testdriver.exec('js', `
+      document.querySelector('#username').value
+    `, 5000);
+    
+    expect(value).toBe('testuser');
+  });
+
+  it('should install and use tools', async () => {
+    // Install tool
+    await testdriver.exec('pwsh', 'npm install -g http-server', 30000, true);
+    
+    // Create HTML file
+    await testdriver.exec('pwsh', `
+      Set-Content -Path "C:\\index.html" -Value "<h1>Test Page</h1>"
+    `, 5000);
+    
+    // Start server in background
+    await testdriver.exec('pwsh', `
+      Start-Process pwsh -ArgumentList "-Command", "http-server C:\\ -p 8080"
+    `, 5000, true);
+    
+    await new Promise(r => setTimeout(r, 3000));
+    
+    // Launch browser
+    await testdriver.exec('pwsh', `
+      Start-Process chrome -ArgumentList "http://localhost:8080"
+    `, 5000);
+    
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Verify page loaded
+    const content = await testdriver.exec('js', 'document.body.textContent', 5000);
+    expect(content).toContain('Test Page');
+  });
+});
+```
+
+## Related Methods
+
+- [`focusApplication()`](/v7/api/focusApplication) - Focus apps before exec
+- [`find()`](/v7/api/find) - Locate elements (alternative to DOM manipulation)
+- [`type()`](/v7/api/type) - Type text (alternative to JS form filling)

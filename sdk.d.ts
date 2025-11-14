@@ -3,7 +3,7 @@
  */
 
 // Type Definitions
-export type ClickAction = 'click' | 'right-click' | 'double-click' | 'hover' | 'drag-start' | 'drag-end';
+export type ClickAction = 'click' | 'right-click' | 'double-click' | 'hover' | 'mouseDown' | 'mouseUp';
 export type ScrollDirection = 'up' | 'down' | 'left' | 'right';
 export type ScrollMethod = 'keyboard' | 'mouse';
 export type TextMatchMethod = 'ai' | 'turbo';
@@ -58,12 +58,153 @@ export interface SandboxInstance {
   [key: string]: any;
 }
 
+export interface ElementCoordinates {
+  x: number;
+  y: number;
+  centerX: number;
+  centerY: number;
+}
+
+export interface ElementBoundingBox {
+  top: number;
+  left: number;
+  bottom: number;
+  right: number;
+  [key: string]: any;
+}
+
+export interface ElementResponse {
+  coordinates: ElementCoordinates;
+  confidence?: number;
+  screenshot?: string;
+  width?: number;
+  height?: number;
+  boundingBox?: ElementBoundingBox;
+  text?: string;
+  label?: string;
+  [key: string]: any;
+}
+
 export interface HoverResult {
   x: number;
   y: number;
   centerX: number;
   centerY: number;
   [key: string]: any;
+}
+
+/**
+ * Element class representing a located or to-be-located element on screen
+ */
+export class Element {
+  constructor(description: string);
+  
+  /**
+   * Check if element was found
+   */
+  found(): boolean;
+  
+  /**
+   * Find the element on screen
+   * @param newDescription - Optional new description to search for
+   */
+  find(newDescription?: string): Promise<Element>;
+  
+  /**
+   * Click on the element
+   * @param action - Type of click action (default: 'click')
+   */
+  click(action?: ClickAction): Promise<void>;
+  
+  /**
+   * Hover over the element
+   */
+  hover(): Promise<void>;
+  
+  /**
+   * Double-click on the element
+   */
+  doubleClick(): Promise<void>;
+  
+  /**
+   * Right-click on the element
+   */
+  rightClick(): Promise<void>;
+  
+  /**
+   * Press mouse button down on this element
+   */
+  mouseDown(): Promise<void>;
+  
+  /**
+   * Release mouse button on this element
+   */
+  mouseUp(): Promise<void>;
+  
+  /**
+   * Get the coordinates of the element
+   */
+  getCoordinates(): ElementCoordinates | null;
+  
+  /**
+   * Get the x coordinate (top-left)
+   */
+  readonly x: number | null;
+  
+  /**
+   * Get the y coordinate (top-left)
+   */
+  readonly y: number | null;
+  
+  /**
+   * Get the center x coordinate
+   */
+  readonly centerX: number | null;
+  
+  /**
+   * Get the center y coordinate
+   */
+  readonly centerY: number | null;
+  
+  /**
+   * Get the full API response data
+   */
+  getResponse(): ElementResponse | null;
+  
+  /**
+   * Get element screenshot if available (base64 encoded)
+   */
+  readonly screenshot: string | null;
+  
+  /**
+   * Get element confidence score if available
+   */
+  readonly confidence: number | null;
+  
+  /**
+   * Get element width if available
+   */
+  readonly width: number | null;
+  
+  /**
+   * Get element height if available
+   */
+  readonly height: number | null;
+  
+  /**
+   * Get element bounding box if available
+   */
+  readonly boundingBox: ElementBoundingBox | null;
+  
+  /**
+   * Get element text content if available
+   */
+  readonly text: string | null;
+  
+  /**
+   * Get element label if available
+   */
+  readonly label: string | null;
 }
 
 export default class TestDriverSDK {
@@ -84,10 +225,38 @@ export default class TestDriverSDK {
    */
   disconnect(): Promise<void>;
 
+  // Element Finding API
+
+  /**
+   * Find an element by description
+   * Automatically locates the element and returns it
+   * 
+   * @param description - Description of the element to find
+   * @returns Element instance that has been located
+   * 
+   * @example
+   * // Find and click immediately
+   * const element = await client.find('the sign in button');
+   * await element.click();
+   * 
+   * @example
+   * // Poll until element is found
+   * let element;
+   * while (!element?.found()) {
+   *   element = await client.find('login button');
+   *   if (!element.found()) {
+   *     await new Promise(resolve => setTimeout(resolve, 1000));
+   *   }
+   * }
+   * await element.click();
+   */
+  find(description: string): Promise<Element>;
+
   // Text Interaction Methods
   
   /**
    * Hover over text on screen
+   * @deprecated Use find() and element.click() instead
    * @param text - Text to find and hover over
    * @param description - Optional description of the element
    * @param action - Action to perform (default: 'click')
@@ -111,6 +280,7 @@ export default class TestDriverSDK {
 
   /**
    * Wait for text to appear on screen
+   * @deprecated Use find() in a polling loop instead
    * @param text - Text to wait for
    * @param timeout - Timeout in milliseconds (default: 5000)
    * @param method - Text matching method (default: 'turbo')
@@ -145,6 +315,7 @@ export default class TestDriverSDK {
 
   /**
    * Hover over an image on screen
+   * @deprecated Use find() and element.click() instead
    * @param description - Description of the image to find
    * @param action - Action to perform (default: 'click')
    */
@@ -164,6 +335,7 @@ export default class TestDriverSDK {
 
   /**
    * Wait for image to appear on screen
+   * @deprecated Use find() in a polling loop instead
    * @param description - Description of the image
    * @param timeout - Timeout in milliseconds (default: 10000)
    * @param invert - Invert the match (wait for image to disappear) (default: false)
@@ -275,6 +447,7 @@ export default class TestDriverSDK {
 
   /**
    * Wait for specified time
+   * @deprecated Consider using element polling with find() instead of arbitrary waits
    */
   wait(timeout?: number): Promise<void>;
 

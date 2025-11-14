@@ -353,8 +353,8 @@
               "right-click",
               "double-click",
               "hover",
-              "drag-start",
-              "drag-end"
+              "mouseDown",
+              "mouseUp"
             ]
           }
         }
@@ -405,8 +405,8 @@
               "right-click",
               "double-click",
               "hover",
-              "drag-start",
-              "drag-end"
+              "mouseDown",
+              "mouseUp"
             ]
           },
           "method": {
@@ -443,8 +443,8 @@
               "right-click",
               "double-click",
               "hover",
-              "drag-start",
-              "drag-end"
+              "mouseDown",
+              "mouseUp"
             ]
           }
         }
@@ -471,8 +471,8 @@
               "right-click",
               "double-click",
               "hover",
-              "drag-start",
-              "drag-end"
+              "mouseDown",
+              "mouseUp"
             ]
           },
           "invert": {

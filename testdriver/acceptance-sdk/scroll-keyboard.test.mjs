@@ -21,13 +21,15 @@ describe('Scroll Keyboard Test', () => {
   it('should navigate to webhamster.com and scroll with keyboard', async () => {
     // Navigate to https://www.webhamster.com/
     await client.focusApplication('Google Chrome');
-    await client.hoverText('testdriver-sandbox.vercel.app/login', 'the URL in the omnibox showing the current page', 'click');
+    const urlBar = await client.find('testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page');
+    await urlBar.click();
     await client.pressKeys(['ctrl', 'a']);
     await client.type('https://www.webhamster.com/');
     await client.pressKeys(['enter']);
 
     // Scroll down with keyboard 1000 pixels
-    await client.hoverText('The Hamster Dance', 'large heading at top of page', 'click');
+    const heading = await client.find('The Hamster Dance, large heading at top of page');
+    await heading.click();
     await client.scroll('down', 1000, 'keyboard');
 
     // Assert the page is scrolled down

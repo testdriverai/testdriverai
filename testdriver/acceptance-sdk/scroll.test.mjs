@@ -21,13 +21,15 @@ describe('Scroll Test', () => {
   it('should navigate and scroll down the page', async () => {
     // Navigate to webhamster.com
     await client.focusApplication('Google Chrome');
-    await client.hoverText('testdriver-sandbox.vercel.app/login', 'the URL in the omnibox showing the current page', 'click');
+    const urlBar = await client.find('testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page');
+    await urlBar.click();
     await client.pressKeys(['ctrl', 'a']);
     await client.type('https://www.webhamster.com/');
     await client.pressKeys(['enter']);
     
     // Wait for page to load and click heading
-    await client.hoverText('The Hamster Dance', 'large heading at top of page', 'click');
+    const heading = await client.find('The Hamster Dance, large heading at top of page');
+    await heading.click();
     
     // Scroll down
     await client.scroll('down', 1000);

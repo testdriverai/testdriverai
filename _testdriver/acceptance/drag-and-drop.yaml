@@ -37,11 +37,11 @@ steps:
       - command: hover-text
         text: New Text Document
         description: new text document icon in the center of the desktop
-        action: drag-start
+        action: mouseDown
       - command: hover-text
         text: Recycle Bin
         description: recycle bin icon in the top left corner of the desktop
-        action: drag-end
+        action: mouseUp
 
   - prompt: '"New Text Document" icon is not on the Desktop'
     commands:

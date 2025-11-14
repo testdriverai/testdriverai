@@ -100,7 +100,8 @@ describe('Error Recovery Example', () => {
     // 1. Suggest a fix
     // 2. Rewrite this test file with the corrected code
     // 3. Create a backup (.backup timestamp file)
-    await healingClient.hoverText('Username', 'username input field', 'click');
+    const usernameField = await healingClient.find('Username, username input field');
+    await usernameField.click();
     
     await healingClient.type('test_user');
   });

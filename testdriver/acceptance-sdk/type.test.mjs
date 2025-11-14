@@ -20,7 +20,8 @@ describe('Type Test', () => {
 
   it('should enter standard_user in username field', async () => {
     await client.focusApplication('Google Chrome');
-    await client.hoverText('Username', 'input field for username', 'click');
+    const usernameField = await client.find('Username, input field for username');
+    await usernameField.click();
     await client.type('standard_user');
     
     // Assert username field contains "standard_user"
@@ -29,7 +30,8 @@ describe('Type Test', () => {
   });
 
   it('should show validation message when clicking Sign In without password', async () => {
-    await client.hoverText('Sign in', 'black button below the password field', 'click');
+    const signInButton = await client.find('Sign in, black button below the password field');
+    await signInButton.click();
     
     // Assert validation message appears
     await client.focusApplication('Google Chrome');

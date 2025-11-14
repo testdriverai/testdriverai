@@ -21,11 +21,20 @@ async function runTest() {
   await client.auth();
   await client.connect();
   
-  // Run commands
+  // Use the new find() API
   await client.focusApplication('Google Chrome');
+  
+  const searchBox = await client.find('search box').find();
+  await searchBox.click();
   await client.type('testdriver.ai');
   await client.pressKeys(['enter']);
-  await client.waitForText('TestDriver');
+  
+  // Poll for element to appear
+  let result = client.find('TestDriver heading');
+  while (!result.found()) {
+    result = await result.find();
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
   
   // Clean up
   await client.disconnect();
@@ -34,7 +43,271 @@ async function runTest() {
 runTest();
 ```
 
+## New Element Finding API ✨
+
+We've introduced a new `find()` API that provides better control over element finding and interaction. See [SDK_MIGRATION.md](./SDK_MIGRATION.md) for full migration guide.
+
+### Basic Usage
+
+```javascript
+// Find and click an element
+const button = await client.find('the sign in button, black button below password');
+await button.click();
+
+// Check if element exists
+if (button.found()) {
+  console.log('Button coordinates:', button.getCoordinates());
+}
+```
+
+### Polling Pattern
+
+```javascript
+// Wait for element to appear
+let element;
+while (!element?.found()) {
+  console.log('waiting for element...');
+  element = await client.find('login button');
+  if (!element.found()) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
+await element.click();
+```
+
+### Different Actions
+
+```javascript
+const menu = await client.find('File menu').find();
+await menu.hover();
+await menu.rightClick();
+await menu.doubleClick();
+
+// Or use the generic click() method with action parameter
+await menu.click('right-click');
+```
+
+### Drag and Drop
+
+```javascript
+const source = await client.find('draggable item');
+await source.mouseDown();
+
+const target = await client.find('drop zone');
+await target.mouseUp();
+```
+
 ## API Reference
+
+### Element Class
+
+The `Element` class represents an element found on screen and provides methods for interacting with it.
+
+#### Creating Elements
+
+##### `client.find(description)`
+
+Creates a new Element instance and immediately attempts to locate it.
+
+**Parameters:**
+- `description` (string): Natural language description of the element
+
+**Returns:** `Promise<Element>` - Element instance (already located)
+
+**Example:**
+```javascript
+const button = await client.find('the sign in button');
+// Element is automatically located
+if (button.found()) {
+  await button.click();
+}
+```
+
+#### Element Methods
+
+##### `element.find([newDescription])`
+
+Locates (or relocates) the element on screen.
+
+**Parameters:**
+- `newDescription` (string, optional): New description to search for
+
+**Returns:** `Promise<Element>` - The same Element instance
+
+**Example:**
+```javascript
+// Re-find the same element
+await element.find();
+
+// Find with a new description
+await element.find('submit button');
+```
+
+##### `element.found()`
+
+Check if the element was successfully located.
+
+**Returns:** `boolean` - true if element was found
+
+**Example:**
+```javascript
+if (element.found()) {
+  console.log('Element located!');
+}
+```
+
+##### `element.click([action])`
+
+Click on the element.
+
+**Parameters:**
+- `action` (string, optional): Click type - `'click'`, `'right-click'`, `'double-click'`, `'mouseDown'`, `'mouseUp'` (default: `'click'`)
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+await element.click();
+await element.click('right-click');
+```
+
+##### `element.hover()`
+
+Hover the mouse over the element.
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+await element.hover();
+```
+
+##### `element.doubleClick()`
+
+Double-click on the element. Convenience method for `element.click('double-click')`.
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+await element.doubleClick();
+```
+
+##### `element.rightClick()`
+
+Right-click on the element. Convenience method for `element.click('right-click')`.
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+await element.rightClick();
+```
+
+##### `element.mouseDown()`
+
+Press the mouse button down on the element (useful for drag operations).
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const draggable = await client.find('item to drag');
+await draggable.mouseDown();
+```
+
+##### `element.mouseUp()`
+
+Release the mouse button on the element (useful for drag operations).
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const dropZone = await client.find('drop target');
+await dropZone.mouseUp();
+```
+
+##### `element.getCoordinates()`
+
+Get the screen coordinates of the element.
+
+**Returns:** `{x, y, centerX, centerY} | null` - Coordinates object or null if not found
+
+**Example:**
+```javascript
+const coords = element.getCoordinates();
+if (coords) {
+  console.log(`Position: ${coords.x}, ${coords.y}`);
+  console.log(`Center: ${coords.centerX}, ${coords.centerY}`);
+}
+```
+
+##### `element.getResponse()`
+
+Get the full API response data from the locate operation.
+
+**Returns:** `Object | null` - Full response with all available data
+
+**Example:**
+```javascript
+const response = element.getResponse();
+console.log('Full response:', response);
+```
+
+#### Element Properties
+
+Elements expose many read-only properties from the API response:
+
+##### Coordinate Properties
+- `element.x` - X coordinate (top-left corner) or null
+- `element.y` - Y coordinate (top-left corner) or null
+- `element.centerX` - X coordinate of element center or null
+- `element.centerY` - Y coordinate of element center or null
+
+##### Dimension Properties
+- `element.width` - Width of the element or null
+- `element.height` - Height of the element or null
+- `element.boundingBox` - Bounding box object or null
+
+##### Match Quality Properties
+- `element.confidence` - Confidence score (0-1) or null
+- `element.screenshot` - Base64 encoded screenshot or null
+- `element.text` - Text content of the element or null
+- `element.label` - Label/aria-label of the element or null
+
+**Example:**
+```javascript
+const button = await client.find('login button');
+
+if (button.found()) {
+  console.log({
+    position: { x: button.x, y: button.y },
+    center: { x: button.centerX, y: button.centerY },
+    size: { width: button.width, height: button.height },
+    confidence: button.confidence,
+    text: button.text,
+    label: button.label
+  });
+  
+  // Save screenshot for debugging
+  if (button.screenshot) {
+    require('fs').writeFileSync(
+      'element.png',
+      Buffer.from(button.screenshot, 'base64')
+    );
+  }
+  
+  // Conditional actions based on properties
+  if (button.confidence > 0.8) {
+    await button.click();
+  } else {
+    console.log('Low confidence, skipping click');
+  }
+}
+```
+
+For more examples, see `examples/sdk-element-properties.js`.
 
 ### Initialization
 

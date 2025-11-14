@@ -25,7 +25,8 @@ describe('Scroll Until Image Test', () => {
     await client.pressKeys(['enter']);
 
     // Click on heading
-    await client.hoverText('Leonardo Da Vinci', 'the page heazding', 'click');
+    const heading = await client.find('Leonardo Da Vinci, the page heazding');
+    await heading.click();
     
     // Scroll until image appears
     await client.scrollUntilImage('a brown colored house', 'down');

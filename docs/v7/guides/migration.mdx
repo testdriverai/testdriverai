@@ -1,0 +1,562 @@
+---
+title: "Migration Guide"
+sidebarTitle: "YAML to SDK"
+description: "Migrate from YAML tests to the JavaScript SDK"
+icon: "right-left"
+---
+
+## Overview
+
+TestDriver v7 introduces a JavaScript SDK that provides programmatic access to all TestDriver capabilities. This guide helps you migrate from YAML-based tests to the SDK.
+
+## Why Migrate?
+
+The SDK offers several advantages over YAML:
+
+- **Type Safety**: Full TypeScript support with autocomplete
+- **Programmatic Control**: Use variables, loops, functions, and conditional logic
+- **Better Debugging**: Stack traces point to your actual code
+- **IDE Integration**: Better editor support and refactoring
+- **Test Framework Integration**: Works with Vitest, Jest, Mocha, and more
+- **Flexibility**: Combine with other testing libraries and tools
+
+## Basic Structure Comparison
+
+### YAML Test
+
+```yaml
+version: 6.0.0
+steps:
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  
+  - prompt: enter username
+    commands:
+      - command: hover-text
+        text: Username
+        description: username input field
+        action: click
+      - command: type
+        text: standard_user
+  
+  - prompt: verify login page
+    commands:
+      - command: assert
+        assertion: the login page is displayed
+```
+
+### SDK Equivalent
+
+```javascript
+import { beforeAll, afterAll, describe, it } from 'vitest';
+import TestDriver from 'testdriverai';
+
+describe('Login Test', () => {
+  let testdriver;
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY, {
+      os: 'windows'
+    });
+    await testdriver.auth();
+    await testdriver.connect({ newSandbox: true });
+  });
+
+  afterAll(async () => {
+    await testdriver.disconnect();
+  });
+
+  it('should display login page and accept credentials', async () => {
+    // Focus chrome
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Enter username
+    const usernameField = await testdriver.find('username input field');
+    await usernameField.click();
+    await testdriver.type('standard_user');
+    
+    // Verify login page
+    await testdriver.assert('the login page is displayed');
+  });
+});
+```
+
+## Command Mapping
+
+### Element Location
+
+<CodeGroup>
+```yaml YAML
+- command: hover-text
+  text: Submit
+  description: submit button
+  action: click
+```
+
+```javascript SDK
+const button = await testdriver.find('submit button');
+await button.click();
+```
+</CodeGroup>
+
+### Typing
+
+<CodeGroup>
+```yaml YAML
+- command: type
+  text: hello world
+  delay: 250
+```
+
+```javascript SDK
+await testdriver.type('hello world', 250);
+```
+</CodeGroup>
+
+### Keyboard Keys
+
+<CodeGroup>
+```yaml YAML
+- command: press-keys
+  keys:
+    - ctrl
+    - a
+```
+
+```javascript SDK
+await testdriver.pressKeys(['ctrl', 'a']);
+```
+</CodeGroup>
+
+### Scrolling
+
+<CodeGroup>
+```yaml YAML
+- command: scroll
+  direction: down
+  amount: 300
+  method: mouse
+```
+
+```javascript SDK
+await testdriver.scroll('down', 300, 'mouse');
+```
+</CodeGroup>
+
+### Assertions
+
+<CodeGroup>
+```yaml YAML
+- command: assert
+  assertion: the form is valid
+```
+
+```javascript SDK
+await testdriver.assert('the form is valid');
+```
+</CodeGroup>
+
+### Wait for Element
+
+<CodeGroup>
+```yaml YAML
+- command: wait-for-text
+  text: Success
+  timeout: 10000
+```
+
+```javascript SDK
+// Use polling pattern
+let element;
+for (let i = 0; i < 10; i++) {
+  element = await testdriver.find('Success');
+  if (element.found()) break;
+  await new Promise(r => setTimeout(r, 1000));
+}
+```
+</CodeGroup>
+
+### Code Execution
+
+<CodeGroup>
+```yaml YAML
+- command: exec
+  language: pwsh
+  code: |
+    npm install -g package
+  timeout: 30000
+```
+
+```javascript SDK
+await testdriver.exec('pwsh', 'npm install -g package', 30000);
+```
+</CodeGroup>
+
+### Focus Application
+
+<CodeGroup>
+```yaml YAML
+- command: focus-application
+  name: Google Chrome
+```
+
+```javascript SDK
+await testdriver.focusApplication('Google Chrome');
+```
+</CodeGroup>
+
+### Remember
+
+<CodeGroup>
+```yaml YAML
+- command: remember
+  description: the order number
+```
+
+```javascript SDK
+const orderNumber = await testdriver.remember('the order number');
+```
+</CodeGroup>
+
+## Advanced Patterns
+
+### Variables & Data Reuse
+
+**YAML** uses template variables:
+```yaml
+variables:
+  username: john.doe
+  password: secret123
+
+steps:
+  - command: type
+    text: ${username}
+```
+
+**SDK** uses JavaScript variables:
+```javascript
+const username = 'john.doe';
+const password = 'secret123';
+
+await testdriver.type(username);
+```
+
+### Conditional Logic
+
+**YAML** uses if command:
+```yaml
+- command: if
+  condition: error message is visible
+  then:
+    - command: assert
+      assertion: error message is correct
+  else:
+    - command: assert
+      assertion: form submitted successfully
+```
+
+**SDK** uses native JavaScript:
+```javascript
+const errorElement = await testdriver.find('error message');
+
+if (errorElement.found()) {
+  await testdriver.assert('error message is correct');
+} else {
+  await testdriver.assert('form submitted successfully');
+}
+```
+
+### Loops
+
+**YAML** requires workarounds or snippets for repetition.
+
+**SDK** uses native JavaScript loops:
+```javascript
+// Fill multiple similar fields
+const fields = ['First Name', 'Last Name', 'Email'];
+const values = ['John', 'Doe', 'john@example.com'];
+
+for (let i = 0; i < fields.length; i++) {
+  const field = await testdriver.find(`${fields[i]} input field`);
+  await field.click();
+  await testdriver.type(values[i]);
+}
+```
+
+### Data-Driven Tests
+
+**YAML** requires external tools or CSV imports.
+
+**SDK** uses test framework features:
+```javascript
+const testCases = [
+  { username: 'user1', password: 'pass1', expected: true },
+  { username: 'user2', password: 'wrong', expected: false },
+  { username: '', password: '', expected: false },
+];
+
+testCases.forEach(({ username, password, expected }) => {
+  it(`should handle login for ${username}`, async () => {
+    const usernameField = await testdriver.find('username field');
+    await usernameField.click();
+    await testdriver.type(username);
+    
+    const passwordField = await testdriver.find('password field');
+    await passwordField.click();
+    await testdriver.type(password);
+    
+    const submitButton = await testdriver.find('submit button');
+    await submitButton.click();
+    
+    if (expected) {
+      await testdriver.assert('login successful');
+    } else {
+      await testdriver.assert('error message is shown');
+    }
+  });
+});
+```
+
+## Lifecycle Hooks
+
+### YAML Lifecycle
+
+```yaml
+prerun: lifecycle/prerun.yaml
+postrun: lifecycle/postrun.yaml
+
+steps:
+  # test steps
+```
+
+### SDK Lifecycle
+
+```javascript
+describe('My Tests', () => {
+  let testdriver;
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY);
+    await testdriver.auth();
+    await testdriver.connect();
+    
+    // Prerun logic
+    await testdriver.exec('pwsh', 'npm ls dashcam -g', 30000);
+    await testdriver.exec('pwsh', 'dashcam start', 5000);
+  });
+
+  afterAll(async () => {
+    // Postrun logic
+    const dashcamUrl = await testdriver.exec('pwsh', 'dashcam -p', 10000);
+    console.log('Recording:', dashcamUrl);
+    
+    await testdriver.disconnect();
+  });
+
+  // Tests here
+});
+```
+
+## Migration Checklist
+
+<Steps>
+  <Step title="Set up project">
+    ```bash
+    npm install testdriverai vitest
+    ```
+  </Step>
+  
+  <Step title="Create test file">
+    Create a new `.test.mjs` or `.test.js` file for each YAML test file.
+  </Step>
+  
+  <Step title="Initialize client">
+    Add `beforeAll` and `afterAll` hooks to set up the TestDriver testdriver.
+  </Step>
+  
+  <Step title="Convert commands">
+    Use the command mapping above to convert each YAML command to SDK calls.
+  </Step>
+  
+  <Step title="Add assertions">
+    Use your test framework's assertions (`expect()`) along with TestDriver's AI assertions.
+  </Step>
+  
+  <Step title="Test incrementally">
+    Run tests frequently during migration to catch issues early.
+  </Step>
+</Steps>
+
+## Common Pitfalls
+
+<Warning>
+  **Element must be found before interaction**
+  
+  The `find()` method automatically locates elements, but you should check if it was found:
+  
+  ```javascript
+  const element = await testdriver.find('button');
+  if (!element.found()) {
+    throw new Error('Element not found');
+  }
+  await element.click();
+  ```
+</Warning>
+
+<Warning>
+  **Always call disconnect()**
+  
+  Use `afterAll` to ensure sandboxes are cleaned up:
+  
+  ```javascript
+  afterAll(async () => {
+    await testdriver.disconnect();
+  });
+  ```
+</Warning>
+
+<Warning>
+  **Async/await is required**
+  
+  All SDK methods return Promises and must be awaited:
+  
+  ```javascript
+  // ❌ Wrong
+  testdriver.type('hello');
+  
+  // ✅ Correct
+  await testdriver.type('hello');
+  ```
+</Warning>
+
+## Example: Complete Migration
+
+### Before (YAML)
+
+```yaml
+version: 6.0.0
+
+variables:
+  username: standard_user
+
+prerun: lifecycle/prerun.yaml
+postrun: lifecycle/postrun.yaml
+
+steps:
+  - prompt: focus chrome
+    commands:
+      - command: focus-application
+        name: Google Chrome
+  
+  - prompt: fill login form
+    commands:
+      - command: hover-text
+        text: Username
+        action: click
+      - command: type
+        text: ${username}
+      - command: press-keys
+        keys: [tab]
+      - command: type
+        text: secret_sauce
+  
+  - prompt: submit form
+    commands:
+      - command: press-keys
+        keys: [enter]
+  
+  - prompt: verify success
+    commands:
+      - command: assert
+        assertion: products page is displayed
+```
+
+### After (SDK)
+
+```javascript
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import TestDriver from 'testdriverai';
+
+describe('Login Flow', () => {
+  let testdriver;
+  const username = 'standard_user';
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY, {
+      os: 'windows'
+    });
+    
+    await testdriver.auth();
+    await testdriver.connect({ newSandbox: true });
+    
+    // Prerun
+    await testdriver.exec('pwsh', 'dashcam start', 5000, true);
+  });
+
+  afterAll(async () => {
+    // Postrun
+    const url = await testdriver.exec('pwsh', 'dashcam -p', 10000);
+    console.log('Recording:', url);
+    
+    await testdriver.disconnect();
+  });
+
+  it('should login successfully', async () => {
+    // Focus chrome
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Fill login form
+    const usernameField = await testdriver.find('Username input field');
+    await usernameField.click();
+    await testdriver.type(username);
+    
+    await testdriver.pressKeys(['tab']);
+    await testdriver.type('secret_sauce');
+    
+    // Submit form
+    await testdriver.pressKeys(['enter']);
+    
+    // Verify success
+    const result = await testdriver.assert('products page is displayed');
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/v7/api/client"
+  >
+    Explore all available SDK methods
+  </Card>
+  
+  <Card
+    title="Examples"
+    icon="code"
+    href="/v7/guides/examples"
+  >
+    See complete test examples
+  </Card>
+  
+  <Card
+    title="Best Practices"
+    icon="star"
+    href="/v7/guides/best-practices"
+  >
+    Learn SDK best practices
+  </Card>
+  
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/v7/getting-started/quickstart"
+  >
+    Get started with the SDK
+  </Card>
+</CardGroup>

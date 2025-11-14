@@ -12,175 +12,255 @@
   },
   "favicon": "/images/template/icon.png",
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "Overview",
-        "pages": [
-          "/overview/what-is-testdriver",
+        "tab": "Computer-Use SDK",
+        "versions": [
           {
-            "group": "Concepts",
-            "icon": "book",
-            "pages": [
-              "/features/selectorless",
-              "/overview/comparison",
-              "/overview/performance",
-              "/overview/faq"
-            ]
-          },
-          "/account/enterprise"
-        ]
-      },
-      {
-        "group": "Get Started",
-        "pages": [
-          "/overview/quickstart",
-          {
-            "group": "CLI",
-            "icon": "terminal",
-            "pages": [
-              "/cli/overview",
+            "version": "7.0.0 (SDK)",
+            "groups": [
               {
-                "group": "Commands",
-                "icon": "command",
+                "group": "Getting Started",
                 "pages": [
-                  "/interactive/explore",
-                  "/interactive/run",
-                  "/interactive/save"
+                  "/v7/getting-started/quickstart"
+                ]
+              },
+              {
+                "group": "API Reference",
+                "pages": [
+                  {
+                    "group": "Setup",
+                    "icon": "gear",
+                    "pages": [
+                      "/v7/api/client",
+                      "/v7/api/sandbox"
+                    ]
+                  },
+                  {
+                    "group": "Actions",
+                    "icon": "wand-magic-sparkles",
+                    "pages": [
+                      "/v7/api/ai"
+                    ]
+                  },
+                  {
+                    "group": "Methods",
+                    "icon": "code",
+                    "pages": [
+                      "/v7/api/find",
+                      "/v7/api/click",
+                      "/v7/api/type",
+                      "/v7/api/pressKeys",
+                      "/v7/api/scroll",
+                      "/v7/api/hover",
+                      "/v7/api/exec",
+                      "/v7/api/focusApplication",
+                      "/v7/api/assert"
+                    ]
+                  },
+                  {
+                    "group": "Reference",
+                    "icon": "book",
+                    "pages": [
+                      "/v7/api/elements",
+                      "/v7/api/assertions"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "/v7/guides/migration"
                 ]
               }
             ]
           },
-          "/getting-started/self-hosting",
-          "/getting-started/playwright",
-          "/getting-started/vscode"
-        ]
-      },
-      {
-        "group": "Examples",
-        "pages": [
           {
-            "group": "Apps",
-            "icon": "laptop",
-            "pages": [
-              "apps/static-websites",
-              "apps/desktop-apps",
-              "apps/chrome-extensions",
-              "apps/mobile-apps",
-              "apps/tauri-apps"
-            ]
-          },
-          {
-            "group": "Scenarios",
-            "icon": "computer-mouse",
-            "pages": [
-              "scenarios/ai-chatbot",
-              "scenarios/cookie-banner",
-              "scenarios/file-upload",
-              "scenarios/form-filling",
-              "scenarios/log-in",
-              "scenarios/pdf-generation",
-              "scenarios/spell-check"
-            ]
-          },
-          {
-            "group": "Build Systems",
-            "icon": "helmet-safety",
-            "pages": [
-              "/integrations/electron",
-              "/integrations/netlify",
-              "/integrations/vercel"
+            "version": "6.X.X (YAML)",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "/v6/overview/what-is-testdriver",
+                  {
+                    "group": "Concepts",
+                    "icon": "book",
+                    "pages": [
+                      "/v6/features/selectorless",
+                      "/v6/overview/comparison",
+                      "/v6/overview/performance",
+                      "/v6/overview/faq"
+                    ]
+                  },
+                  "/v6/account/enterprise"
+                ]
+              },
+              {
+                "group": "Get Started",
+                "pages": [
+                  "/v6/overview/quickstart",
+                  {
+                    "group": "CLI",
+                    "icon": "terminal",
+                    "pages": [
+                      "/v6/cli/overview",
+                      {
+                        "group": "Commands",
+                        "icon": "command",
+                        "pages": [
+                          "/v6/interactive/explore",
+                          "/v6/interactive/run",
+                          "/v6/interactive/save"
+                        ]
+                      }
+                    ]
+                  },
+                  "/v6/getting-started/self-hosting",
+                  "/v6/getting-started/playwright",
+                  "/v6/getting-started/vscode"
+                ]
+              },
+              {
+                "group": "Examples",
+                "pages": [
+                  {
+                    "group": "Apps",
+                    "icon": "laptop",
+                    "pages": [
+                      "apps/static-websites",
+                      "apps/desktop-apps",
+                      "apps/chrome-extensions",
+                      "apps/mobile-apps",
+                      "apps/tauri-apps"
+                    ]
+                  },
+                  {
+                    "group": "Scenarios",
+                    "icon": "computer-mouse",
+                    "pages": [
+                      "scenarios/ai-chatbot",
+                      "scenarios/cookie-banner",
+                      "scenarios/file-upload",
+                      "scenarios/form-filling",
+                      "scenarios/log-in",
+                      "scenarios/pdf-generation",
+                      "scenarios/spell-check"
+                    ]
+                  },
+                  {
+                    "group": "Build Systems",
+                    "icon": "helmet-safety",
+                    "pages": [
+                      "/v6/integrations/electron",
+                      "/v6/integrations/netlify",
+                      "/v6/integrations/vercel"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Guide",
+                "pages": [
+                  {
+                    "group": "Configuration",
+                    "icon": "desktop",
+                    "pages": [
+                      "/v6/guide/authentication",
+                      "/v6/guide/variables",
+                      "/v6/guide/lifecycle",
+                      "/v6/guide/dashcam",
+                      "/v6/guide/environment-variables",
+                      "/v6/action/ami"
+                    ]
+                  },
+                  {
+                    "group": "Writing",
+                    "icon": "pencil",
+                    "pages": [
+                      "/v6/features/generation",
+                      "/v6/guide/locating",
+                      "/v6/guide/waiting",
+                      "/v6/guide/assertions",
+                      "/v6/guide/code",
+                      "/v6/features/reusable-snippets",
+                      "/v6/guide/protips"
+                    ]
+                  },
+                  {
+                    "group": "Importing",
+                    "icon": "file-import",
+                    "pages": [
+                      "/v6/importing/csv",
+                      "/v6/importing/gherkin",
+                      "/v6/importing/jira",
+                      "/v6/importing/testrail"
+                    ]
+                  },
+                  {
+                    "group": "Running",
+                    "icon": "play",
+                    "pages": [
+                      "/v6/getting-started/running",
+                      "/v6/getting-started/ci",
+                      "/v6/features/parallel-testing",
+                      "/v6/action/performance",
+                      "/v6/action/secrets"
+                    ]
+                  },
+                  {
+                    "group": "Maintaining",
+                    "icon": "wrench",
+                    "pages": ["/v6/getting-started/editing", "/v6/features/auto-healing"]
+                  },
+                  {
+                    "group": "Reporting",
+                    "icon": "chart-simple",
+                    "pages": ["exporting/junit", "/v6/bugs/jira"]
+                  }
+                ]
+              },
+              {
+                "group": "Reference",
+                "pages": [
+                  {
+                    "group": "YAML",
+                    "icon": "file-code",
+                    "pages": [
+                      "/v6/commands/assert",
+                      "/v6/commands/exec",
+                      "/v6/commands/focus-application",
+                      "/v6/commands/hover-image",
+                      "/v6/commands/hover-text",
+                      "/v6/commands/if",
+                      "/v6/commands/match-image",
+                      "/v6/commands/press-keys",
+                      "/v6/commands/remember",
+                      "/v6/commands/run",
+                      "/v6/commands/scroll",
+                      "/v6/commands/scroll-until-image",
+                      "/v6/commands/scroll-until-text",
+                      "/v6/commands/type",
+                      "/v6/commands/wait",
+                      "/v6/commands/wait-for-image",
+                      "/v6/commands/wait-for-text"
+                    ]
+                  }
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "group": "Guide",
-        "pages": [
-          {
-            "group": "Configuration",
-            "icon": "desktop",
-            "pages": [
-              "/guide/authentication",
-              "/guide/variables",
-              "/guide/lifecycle",
-              "/guide/dashcam",
-              "/guide/environment-variables",
-              "/action/ami"
-            ]
-          },
-          {
-            "group": "Writing",
-            "icon": "pencil",
-            "pages": [
-              "/features/generation",
-              "/guide/locating",
-              "/guide/waiting",
-              "/guide/assertions",
-              "/guide/code",
-              "/features/reusable-snippets",
-              "/guide/protips"
-            ]
-          },
-          {
-            "group": "Importing",
-            "icon": "file-import",
-            "pages": [
-              "/importing/csv",
-              "/importing/gherkin",
-              "/importing/jira",
-              "/importing/testrail"
-            ]
-          },
-          {
-            "group": "Running",
-            "icon": "play",
-            "pages": [
-              "/getting-started/running",
-              "/getting-started/ci",
-              "/features/parallel-testing",
-              "/action/performance",
-              "/action/secrets"
-            ]
-          },
-          {
-            "group": "Maintaining",
-            "icon": "wrench",
-            "pages": ["/getting-started/editing", "/features/auto-healing"]
-          },
-          {
-            "group": "Reporting",
-            "icon": "chart-simple",
-            "pages": ["exporting/junit", "/bugs/jira"]
-          }
-        ]
+        "tab": "Playwright SDK",
+        "pages": ["v7/playwright"]
       },
       {
-        "group": "Reference",
-        "pages": [
-          {
-            "group": "YAML",
-            "icon": "file-code",
-            "pages": [
-              "/commands/assert",
-              "/commands/exec",
-              "/commands/focus-application",
-              "/commands/hover-image",
-              "/commands/hover-text",
-              "/commands/if",
-              "/commands/match-image",
-              "/commands/press-keys",
-              "/commands/remember",
-              "/commands/run",
-              "/commands/scroll",
-              "/commands/scroll-until-image",
-              "/commands/scroll-until-text",
-              "/commands/type",
-              "/commands/wait",
-              "/commands/wait-for-image",
-              "/commands/wait-for-text"
-            ]
-          }
-        ]
+        "tab": "Playwright Studio"
+      },
+      {
+        "tab": "Dashcam CLI"
       }
     ]
   },

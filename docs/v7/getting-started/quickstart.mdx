@@ -1,0 +1,199 @@
+---
+title: "SDK Quickstart"
+sidebarTitle: "Quickstart"
+description: "Get started with the TestDriver JavaScript SDK in minutes."
+icon: "gauge-high"
+mode: "wide"
+---
+
+TestDriver v7 introduces a powerful JavaScript SDK that lets you write tests in JavaScript/TypeScript instead of YAML. This gives you full programmatic control over your tests with IDE autocomplete, type safety, and all the benefits of modern development tooling.
+
+<Steps>
+  <Step title="Create a TestDriver Account">
+      
+  You will need a [TestDriver Pro](https://app.testdriver.ai/team) account ($20/month) to get an API key. 
+    
+    <Card
+      title="Sign Up for TestDriver"
+      icon="user-plus"
+      href="https://app.testdriver.ai/team"
+    />
+
+  </Step>
+  
+  <Step title="Install TestDriver SDK">
+      
+    Install the TestDriver SDK package in your project:
+    
+    ```bash
+    npm install testdriverai
+    ```
+    
+    Or using other package managers:
+    
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm install testdriverai
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn add testdriverai
+        ```
+      </Tab>
+      <Tab title="pnpm">
+        ```bash
+        pnpm add testdriverai
+        ```
+      </Tab>
+    </Tabs>
+
+  </Step>
+  
+  <Step title="Set up your environment">
+      
+    Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
+    
+    <Tabs>
+      <Tab title="macOS / Linux">
+        ```bash
+        export TD_API_KEY="your_api_key_here"
+        ```
+      </Tab>
+      <Tab title="Windows (PowerShell)">
+        ```powershell
+        $env:TD_API_KEY="your_api_key_here"
+        ```
+      </Tab>
+      <Tab title="Windows (CMD)">
+        ```cmd
+        set TD_API_KEY=your_api_key_here
+        ```
+      </Tab>
+    </Tabs>
+
+  </Step>
+  
+  <Step title="Write your first test">
+      
+    Create a new test file (e.g., `login.test.mjs`):
+
+    ```javascript login.test.mjs
+    import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+    import TestDriver from 'testdriverai';
+
+    describe('Login Test', () => {
+      let testdriver;
+
+      beforeAll(async () => {
+        // Create a new TestDriver client
+        client = new TestDriver(process.env.TD_API_KEY, {
+          os: 'windows',        // 'windows' or 'linux'
+          resolution: '1366x768'
+        });
+        
+        // Authenticate and connect to a sandbox
+        await testdriver.auth();
+        await testdriver.connect({ newSandbox: true });
+      });
+
+      afterAll(async () => {
+        // Clean up after tests
+        await testdriver.disconnect();
+      });
+
+      it('should verify the login page is displayed', async () => {
+        // Use AI to assert the login page is visible
+        const result = await testdriver.assert('the TestDriver.ai Sandbox login page is displayed');
+        expect(result).toBeTruthy();
+      });
+
+      it('should enter username and password', async () => {
+        // Focus the browser
+        await testdriver.focusApplication('Google Chrome');
+        
+        // Find and click the username field
+        const usernameField = await testdriver.find('Username input field');
+        await usernameField.click();
+        await testdriver.type('standard_user');
+        
+        // Tab to password field and enter password
+        await testdriver.pressKeys(['tab']);
+        await testdriver.type('secret_sauce');
+        
+        // Verify the credentials were entered
+        const result = await testdriver.assert('username field contains "standard_user"');
+        expect(result).toBeTruthy();
+      });
+    });
+    ```
+
+  </Step>
+  
+  <Step title="Run your test">
+    
+    Run your test using Vitest (or your preferred test runner):
+
+    ```bash
+    npx vitest run login.test.mjs
+    ```
+    
+    TestDriver will:
+    1. Authenticate with the API
+    2. Spin up a virtual machine sandbox
+    3. Execute your test steps
+    4. Return results to your test runner
+    
+    <Tip>
+      The SDK automatically connects to TestDriver's cloud infrastructure. You can also [self-host](/getting-started/self-hosting) the sandbox environment.
+    </Tip>
+
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/v7/api/client"
+  >
+    Explore all available SDK methods and options
+  </Card>
+  
+  <Card
+    title="Element Finding"
+    icon="search"
+    href="/v7/api/elements"
+  >
+    Learn how to locate and interact with UI elements
+  </Card>
+  
+  <Card
+    title="Sandbox Management"
+    icon="server"
+    href="/v7/api/sandbox"
+  >
+    Manage sandbox lifecycle and connections
+  </Card>
+  
+  <Card
+    title="Assertions & Testing"
+    icon="check"
+    href="/v7/api/assertions"
+  >
+    Use AI-powered assertions in your tests
+  </Card>
+</CardGroup>
+
+## Key Differences from v6
+
+The v7 SDK offers several advantages over the YAML-based approach:
+
+- **Type Safety**: Full TypeScript support with IntelliSense
+- **Programmatic Control**: Use variables, loops, and functions
+- **Better Debugging**: Stack traces point to your actual code
+- **Integration**: Works with any JavaScript test framework (Vitest, Jest, Mocha, etc.)
+- **Flexibility**: Combine TestDriver with other testing tools seamlessly

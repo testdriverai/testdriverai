@@ -1,0 +1,479 @@
+---
+title: "Element Finding"
+sidebarTitle: "Elements"
+description: "Locate and interact with UI elements using AI"
+icon: "mouse-pointer"
+---
+
+## Overview
+
+TestDriver's element finding system uses AI to locate elements on screen using natural language descriptions. The `find()` method returns an `Element` object that you can interact with.
+
+## Finding Elements
+
+### find()
+
+Locate an element on screen using a natural language description.
+
+```javascript
+const element = await testdriver.find(description)
+```
+
+**Parameters:**
+- `description` (string) - Natural language description of the element to find
+
+**Returns:** `Promise<Element>` - Element instance that has been located
+
+**Example:**
+```javascript
+// Find a button
+const submitButton = await testdriver.find('the submit button');
+
+// Find an input field with context
+const emailField = await testdriver.find('email input field in the login form');
+
+// Find an element by visual characteristics
+const redButton = await testdriver.find('red button in the top right corner');
+```
+
+<Tip>
+  Be specific in your descriptions. Include visual details, location context, or nearby text to improve accuracy.
+</Tip>
+
+## Element Class
+
+The `Element` class represents a located (or to-be-located) UI element. It provides methods for interaction and properties for element information.
+
+### Methods
+
+#### found()
+
+Check if the element was successfully located.
+
+```javascript
+element.found()
+```
+
+**Returns:** `boolean` - True if element coordinates were found
+
+**Example:**
+```javascript
+const element = await testdriver.find('login button');
+if (element.found()) {
+  await element.click();
+} else {
+  console.log('Element not found');
+}
+```
+
+#### find()
+
+Re-locate the element, optionally with a new description.
+
+```javascript
+await element.find(newDescription)
+```
+
+**Parameters:**
+- `newDescription` (string, optional) - New description to search for
+
+**Returns:** `Promise<Element>` - This element instance
+
+**Example:**
+```javascript
+// Re-locate if the UI changed
+const element = await testdriver.find('submit button');
+// ... page updates ...
+await element.find(); // Re-locate with same description
+
+// Or update the description
+await element.find('blue submit button'); // Now looking for blue button
+```
+
+#### click()
+
+Click on the element.
+
+```javascript
+await element.click(action)
+```
+
+**Parameters:**
+- `action` (string, optional) - Type of click: `'click'` (default), `'double-click'`, `'right-click'`, `'hover'`, `'mouseDown'`, `'mouseUp'`
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+await button.click(); // Regular click
+
+const file = await testdriver.find('document.txt');
+await file.click('double-click'); // Double-click
+
+const menu = await testdriver.find('settings icon');
+await menu.click('right-click'); // Right-click
+```
+
+<Note>
+  The element must be found before clicking. The `find()` method automatically locates the element.
+</Note>
+
+#### hover()
+
+Hover over the element without clicking.
+
+```javascript
+await element.hover()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const tooltip = await testdriver.find('info icon');
+await tooltip.hover();
+// Wait to see tooltip
+await new Promise(resolve => setTimeout(resolve, 1000));
+```
+
+#### doubleClick()
+
+Double-click on the element.
+
+```javascript
+await element.doubleClick()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const file = await testdriver.find('README.txt file icon');
+await file.doubleClick();
+```
+
+#### rightClick()
+
+Right-click on the element to open context menu.
+
+```javascript
+await element.rightClick()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const folder = await testdriver.find('Documents folder');
+await folder.rightClick();
+```
+
+#### mouseDown() / mouseUp()
+
+Press or release mouse button on the element (for drag operations).
+
+```javascript
+await element.mouseDown()
+await element.mouseUp()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+// Drag and drop
+const item = await testdriver.find('draggable item');
+await item.mouseDown();
+
+// Move to drop target (using coordinates or another element)
+const target = await testdriver.find('drop zone');
+await target.hover();
+await target.mouseUp();
+```
+
+### Properties
+
+Element properties provide additional information about located elements:
+
+#### coordinates
+
+Get the element's coordinates object.
+
+```javascript
+const coords = element.getCoordinates()
+// or access directly
+element.coordinates
+```
+
+**Returns:** Object with `{ x, y, centerX, centerY }` or `null`
+
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+const coords = button.coordinates;
+console.log(`Top-left: (${coords.x}, ${coords.y})`);
+console.log(`Center: (${coords.centerX}, ${coords.centerY})`);
+```
+
+#### x, y, centerX, centerY
+
+Direct access to coordinate values.
+
+```javascript
+element.x        // Top-left X coordinate
+element.y        // Top-left Y coordinate  
+element.centerX  // Center X coordinate
+element.centerY  // Center Y coordinate
+```
+
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+console.log(`Button center: (${button.centerX}, ${button.centerY})`);
+```
+
+#### screenshot
+
+Get a base64-encoded screenshot of the element (if available).
+
+```javascript
+element.screenshot
+```
+
+**Returns:** `string | null` - Base64-encoded image
+
+**Example:**
+```javascript
+const element = await testdriver.find('error message');
+if (element.screenshot) {
+  console.log('Element screenshot:', element.screenshot);
+}
+```
+
+#### text
+
+Get text content from the element (if available).
+
+```javascript
+element.text
+```
+
+**Returns:** `string | null`
+
+**Example:**
+```javascript
+const message = await testdriver.find('notification message');
+console.log('Message text:', message.text);
+```
+
+#### confidence
+
+Get the AI's confidence score for the element match.
+
+```javascript
+element.confidence
+```
+
+**Returns:** `number | null` - Confidence score (0-1)
+
+**Example:**
+```javascript
+const element = await testdriver.find('submit button');
+if (element.confidence < 0.8) {
+  console.warn('Low confidence match:', element.confidence);
+}
+```
+
+#### width, height
+
+Get element dimensions (if available).
+
+```javascript
+element.width
+element.height
+```
+
+**Returns:** `number | null`
+
+#### boundingBox
+
+Get the complete bounding box information.
+
+```javascript
+element.boundingBox
+```
+
+**Returns:** `Object | null` - Bounding box with coordinates and dimensions
+
+#### label
+
+Get the element's label or accessible name (if available).
+
+```javascript
+element.label
+```
+
+**Returns:** `string | null`
+
+## Polling for Elements
+
+Use polling to wait for elements that may not be immediately visible:
+
+```javascript
+// Poll until element appears
+let loginButton;
+const maxAttempts = 30;
+
+for (let i = 0; i < maxAttempts; i++) {
+  loginButton = await testdriver.find('login button');
+  if (loginButton.found()) break;
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
+if (loginButton.found()) {
+  await loginButton.click();
+} else {
+  throw new Error('Login button never appeared');
+}
+```
+
+**Helper function for polling:**
+```javascript
+async function waitForElement(testdriver, description, timeout = 30000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeout) {
+    const element = await testdriver.find(description);
+    if (element.found()) return element;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  
+  throw new Error(`Element "${description}" not found after ${timeout}ms`);
+}
+
+// Usage
+const button = await waitForElement(testdriver, 'submit button', 10000);
+await button.click();
+```
+
+## Examples
+
+### Basic Element Interaction
+
+```javascript
+// Find and click
+const submitButton = await testdriver.find('submit button');
+await submitButton.click();
+
+// Find, verify, then interact
+const emailInput = await testdriver.find('email input field');
+if (emailInput.found()) {
+  await emailInput.click();
+  await testdriver.type('user@example.com');
+}
+```
+
+### Working with Forms
+
+```javascript
+// Fill out a multi-field form
+const nameField = await testdriver.find('name input field');
+await nameField.click();
+await testdriver.type('John Doe');
+
+const emailField = await testdriver.find('email input field');
+await emailField.click();
+await testdriver.type('john@example.com');
+
+const submitButton = await testdriver.find('submit button');
+await submitButton.click();
+```
+
+### Conditional Interactions
+
+```javascript
+// Check if element exists before interacting
+const closeButton = await testdriver.find('close popup button');
+
+if (closeButton.found()) {
+  await closeButton.click();
+  console.log('Popup closed');
+} else {
+  console.log('No popup to close');
+}
+```
+
+### Re-locating Dynamic Elements
+
+```javascript
+// Element that moves or changes
+const notification = await testdriver.find('success notification');
+
+// Do something that might cause it to move
+await testdriver.scroll('down', 300);
+
+// Re-locate the element
+await notification.find();
+
+if (notification.found()) {
+  await notification.click();
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Be specific with descriptions">
+    Include visual details, position context, and nearby text:
+    
+    ```javascript
+    // ❌ Too vague
+    await testdriver.find('button');
+    
+    // ✅ Specific
+    await testdriver.find('blue submit button below the email field');
+    ```
+  </Accordion>
+  
+  <Accordion title="Check if element was found">
+    Always verify elements were located before interacting:
+    
+    ```javascript
+    const element = await testdriver.find('submit button');
+    if (!element.found()) {
+      throw new Error('Submit button not found');
+    }
+    await element.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Use polling for dynamic content">
+    Don't assume elements are immediately visible:
+    
+    ```javascript
+    let element;
+    for (let i = 0; i < 30; i++) {
+      element = await testdriver.find('loading complete message');
+      if (element.found()) break;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Reuse element references when possible">
+    If you need to interact with the same element multiple times, reuse the reference:
+    
+    ```javascript
+    const input = await testdriver.find('search input');
+    await input.click();
+    await testdriver.type('first search');
+    await testdriver.pressKeys(['enter']);
+    
+    // Re-use the same element reference
+    await input.click();
+    await testdriver.pressKeys(['ctrl', 'a']); // Select all
+    await testdriver.type('second search');
+    ```
+  </Accordion>
+</AccordionGroup>

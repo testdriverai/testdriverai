@@ -33,7 +33,8 @@ describe('Dashcam Test', () => {
 
   it('should click on Sign In button for dashcam recording', async () => {
     // Simple click test for dashcam recording
-    await client.hoverText('Sign In', 'black button below the password field', 'click');
+    const signInButton = await client.find('Sign In, black button below the password field');
+    await signInButton.click();
     
     // Basic assertion to verify the action
     const result = await client.assert('an error shows that fields are required');
