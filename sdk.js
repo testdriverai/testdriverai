@@ -33,7 +33,7 @@ class TestDriverSDK {
     // Set up environment with API key
     const environment = {
       TD_API_KEY: apiKey,
-      TD_API_ROOT: options.apiRoot || "https://v6.testdriver.ai",
+      TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
       ...options.environment
@@ -43,7 +43,9 @@ class TestDriverSDK {
     this.agent = new TestDriverAgent(environment, {
       command: 'sdk',
       args: [],
-      options: {}
+      options: {
+        os: options.os || 'windows'
+      }
     });
 
     // Store options for later use
@@ -97,6 +99,7 @@ class TestDriverSDK {
    * @param {string} options.ip - Direct IP address to connect to
    * @param {string} options.sandboxAmi - AMI to use for the sandbox
    * @param {string} options.sandboxInstance - Instance type for the sandbox
+   * @param {string} options.os - Operating system for the sandbox (windows or linux)
    * @param {boolean} options.reuseConnection - Reuse recent connection if available (default: true)
    * @returns {Promise<Object>} Sandbox instance details
    */
@@ -128,6 +131,9 @@ class TestDriverSDK {
     }
     if (connectOptions.sandboxInstance) {
       this.agent.sandboxInstance = connectOptions.sandboxInstance;
+    }
+    if (connectOptions.os) {
+      this.agent.sandboxOs = connectOptions.os;
     }
 
     // Use the agent's buildEnv method which handles all the connection logic

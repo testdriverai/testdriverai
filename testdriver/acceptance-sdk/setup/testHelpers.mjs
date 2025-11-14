@@ -79,9 +79,12 @@ export function saveTestResults(outputPath = 'test-results/sdk-summary.json') {
  * @returns {TestDriver} Configured client
  */
 export function createTestClient(options = {}) {
+  const os = process.env.TD_OS || 'windows';
+  
   const client = new TestDriver(process.env.TD_API_KEY, {
     resolution: '1366x768',
     analytics: true,
+    os: os, // Use OS from environment variable (windows or linux)
     // apiRoot: 'https://replayable-dev-ian-mac-m1-16.ngrok.io',
     logging: process.env.LOGGING === 'false' ? false : true, // Enabled by default, disable with LOGGING=false
     ...options
@@ -209,6 +212,9 @@ export async function teardownTest(client, options = {}) {
  */
 export async function runPrerun(client) {
   try {
+
+    await client.exec('pwsh', 'npm install dashcam@beta -g', 10000, true);
+
     // Start dashcam tracking
     await client.exec('pwsh', 
       'dashcam track --name=TestDriver --type=application --pattern="C:\\Users\\testdriver\\Documents\\testdriver.log"',

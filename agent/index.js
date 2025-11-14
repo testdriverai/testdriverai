@@ -74,6 +74,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.sandboxId = flags["sandbox-id"] || null;
     this.sandboxAmi = flags["sandbox-ami"] || null;
     this.sandboxInstance = flags["sandbox-instance"] || null;
+    this.sandboxOs = flags.os || "windows";
     this.ip = flags.ip || null;
     this.workingDir = flags.workingDir || process.cwd();
 
@@ -1734,7 +1735,9 @@ ${regression}
         events.log.narration,
         theme.dim(`no recent sandbox found, creating a new one.`),
       );
-    } else if (this.sandboxId && !this.config.CI) {
+    } 
+    
+    if (this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
@@ -1965,6 +1968,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       type: "create",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
+      os: this.sandboxOs || 'windows'
     };
 
     // Add AMI and instance type if specified
@@ -1974,6 +1978,8 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     if (this.sandboxInstance) {
       sandboxConfig.instanceType = this.sandboxInstance;
     }
+
+    console.log("Creating sandbox with config:", sandboxConfig);
 
     let instance = await this.sandbox.send(sandboxConfig);
     return instance;

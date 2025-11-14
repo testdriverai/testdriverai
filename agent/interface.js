@@ -66,6 +66,11 @@ function createCommandDefinitions(agent) {
           description: "Generate JUnit XML test report to specified file",
           default: false,
         }),
+        os: Flags.string({
+          description: "Operating system for the sandbox (windows or linux)",
+          options: ["windows", "linux"],
+          default: "windows",
+        }),
       },
       handler: async (args, flags) => {
         // Use --path flag if provided, otherwise fall back to args.file
@@ -139,6 +144,11 @@ function createCommandDefinitions(agent) {
         }),
         summary: Flags.string({
           description: "Specify output file for summarize results",
+        }),
+        os: Flags.string({
+          description: "Operating system for the sandbox (windows or linux)",
+          options: ["windows", "linux"],
+          default: "windows",
         }),
       },
       handler: async () => {
@@ -232,6 +242,11 @@ function createCommandDefinitions(agent) {
         }),
         "sandbox-instance": Flags.string({
           description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
+        }),
+        os: Flags.string({
+          description: "Operating system for the sandbox (windows or linux)",
+          options: ["windows", "linux"],
+          default: "windows",
         }),
       },
       handler: async (args, flags) => {

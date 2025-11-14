@@ -1,29 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="73.467304125">
-    <testsuite name="testdriver/acceptance-sdk/hover-text.test.mjs" timestamp="2025-11-13T00:36:58.575Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="73.467304125">
-        <testcase classname="testdriver/acceptance-sdk/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="26.892530291">
+<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="394.814126709">
+    <testsuite name="testdriver/acceptance-sdk/hover-text.test.mjs" timestamp="2025-11-13T07:57:28.604Z" hostname="MacBookPro.lan" tests="1" failures="1" errors="0" skipped="0" time="394.814126709">
+        <testcase classname="testdriver/acceptance-sdk/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="13.495237208">
             <system-out>
 [2mwaiting for text: &quot;Sign In&quot;...[22m
 
-[2m&quot;Sign In&quot; found![22m
+[2m2 seconds have passed without finding &quot;Sign In&quot;[22m
 
-[2mthinking...[22m
-
-```yaml
-commands:
-  - command: click # Move and click the mouse and perform a click
-    x: 682
-    y: 444
-    action: click
-```
-
-[2mclick left clicking at 682, 444...[22m
-
-thinking...
-
-The task passed. A “Please fill out this field.” tooltip confirms that a required-fields error is shown.
+[2m6 seconds have passed without finding &quot;Sign In&quot;[22m
 
             </system-out>
+            <failure message="Timed out (5 seconds) while searching for &quot;Sign In&quot;" type="Error">
+Error: Timed out (5 seconds) while searching for &quot;Sign In&quot;
+ ❯ TestDriverSDK.&lt;anonymous&gt; sdk.js:382:15
+ ❯ testdriver/acceptance-sdk/hover-text.test.mjs:24:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { fatal: false, attachScreenshot: true }
+            </failure>
         </testcase>
     </testsuite>
 </testsuites>

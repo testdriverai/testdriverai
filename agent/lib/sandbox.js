@@ -23,6 +23,7 @@ const createSandbox = (emitter, analytics) => {
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
+        message.os = process.env.TD_OS || 'windows';
 
         // Start timing for this message
         const timingKey = `sandbox-${message.type}`;
