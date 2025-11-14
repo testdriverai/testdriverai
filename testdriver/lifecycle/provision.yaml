@@ -1,0 +1,25 @@
+version: 5.1.1
+session: 67f00511acbd9ccac373edf7
+steps:
+  - prompt: launch chrome
+    commands:
+      - command: exec
+        lang: sh
+        code: |
+          npm install dashcam@beta -g
+          npm list -g dashcam
+      - command: exec
+        lang: sh
+        code: |
+          google-chrome \
+            --start-maximized \
+            --disable-infobars \
+            --disable-fre \
+            --no-default-browser-check \
+            --no-first-run \
+            --guest \
+            "https://testdriver-sandbox.vercel.app/" \
+            >/dev/null 2>&1 &
+      - command: wait-for-text
+        text: testdriver-sandbox
+        timeout: 60000

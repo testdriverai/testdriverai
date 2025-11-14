@@ -1,0 +1,75 @@
+name: v6 Linux
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+  pull_request:
+    branches:
+      - main
+
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  # Job to gather all test files
+  test-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+  gather:
+    name: Gather Test Files
+    runs-on: ubuntu-latest
+    outputs:
+      test_files: ${{ steps.test_list.outputs.files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Find all test files
+        id: test_list
+        run: |
+          FILES=$(ls ./testdriver/acceptance/*.yaml)
+          FILENAMES=$(basename -a $FILES)
+          FILES_JSON=$(echo "$FILENAMES" | jq -R -s -c 'split("\n")[:-1]')
+          echo "files=$FILES_JSON" >> $GITHUB_OUTPUT
+  test:
+    needs:
+      - gather
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test: ${{ fromJson(needs.gather.outputs.test_files) }}
+      max-parallel: 8
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: NODE_ENV=production npm ci
+      - name: Run test in headless mode
+        run: node bin/testdriverai.js run testdriver/acceptance/${{ matrix.test }} --junit=out.xml
+        env:
+          FORCE_COLOR: 3
+          TD_API_KEY: 49c2996c-0687-40bf-9f2c-5d2e55b2a2c6
+          TD_WEBSITE: https://testdriver-sandbox.vercel.app
+          TD_THIS_FILE: ${{ matrix.test }}
+          TD_API_ROOT: "https://replayable-dev-ian-mac-m1-16.ngrok.io"

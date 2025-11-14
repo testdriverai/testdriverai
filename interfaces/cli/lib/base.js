@@ -37,11 +37,16 @@ class BaseCommand extends Command {
   }
 
   sendToSandbox(message) {
+
+    if (!message) return;
+
     // ensure message is a string
     if (typeof message !== "string") {
       message = JSON.stringify(message);
     }
+
     this.agent.sandbox.send({
+      os: "linux",
       type: "output",
       output: Buffer.from(message).toString("base64"),
     });
@@ -94,7 +99,7 @@ class BaseCommand extends Command {
     });
 
     // Handle sandbox connection with pattern matching for subsequent events
-    this.agent.emitter.on("sandbox:connected", () => {
+    this.agent.emitter.once("sandbox:connected", () => {
       isConnected = true;
       // Once sandbox is connected, send all log and error events to sandbox
       this.agent.emitter.on("log:*", (message) => {
@@ -144,8 +149,13 @@ class BaseCommand extends Command {
       console.log(`Live test execution: `);
       if (this.agent.config.CI) {
         let u = new URL(url);
-        u = JSON.parse(u.searchParams.get("data"));
-        console.log(`${u.url}&view_only=true`);
+        try {
+        
+          u = JSON.parse(u.searchParams.get("data"));
+          console.log(`${u.url}&view_only=true`); 
+          } catch (e) {
+            console.log(url);
+          }
       } else {
         console.log(url);
         await openBrowser(url);

@@ -330,7 +330,7 @@
           <div class="message">Click to interact with VM</div>
         </div>
       </div>
-      <iframe id="vm-iframe" src=""></iframe>
+      <iframe id="vm-iframe" src="" credentialless></iframe>
     </div>
 
     <script>
@@ -340,7 +340,7 @@
       let parsedData;
       if (data) {
         try {
-          parsedData = JSON.parse(decodeURIComponent(data));
+          parsedData = JSON.parse(atob(data));
           console.log("Data from URL:", parsedData);
           // You can use parsedData here if needed
         } catch (error) {

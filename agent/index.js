@@ -1620,7 +1620,8 @@ ${regression}
           const storedInstance = sandboxInfo.instanceType || null;
 
           if (currentAmi === storedAmi && currentInstance === storedInstance) {
-            return sandboxInfo.instanceId;
+            // Return sandboxId (new format) or instanceId (old format for backwards compatibility)
+            return sandboxInfo.sandboxId || sandboxInfo.instanceId;
           } else {
             this.emitter.emit(
               events.log.log,
@@ -1638,14 +1639,15 @@ ${regression}
     return null;
   }
 
-  saveLastSandboxId(instanceId) {
+  saveLastSandboxId(sandboxId, osType = "linux") {
     const lastSandboxFile = path.join(
       os.homedir(),
       ".testdriverai-last-sandbox",
     );
     try {
       const sandboxInfo = {
-        instanceId: instanceId,
+        sandboxId: sandboxId,
+        os: osType,
         ami: this.sandboxAmi || null,
         instanceType: this.sandboxInstance || null,
         timestamp: new Date().toISOString(),
@@ -1725,6 +1727,7 @@ ${regression}
 
       return;
     } else if (!createNew && recentId) {
+      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       this.emitter.emit(
         events.log.narration,
         theme.dim(`using recent sandbox: ${recentId}`),
@@ -1757,11 +1760,18 @@ ${regression}
         await this.newSession();
         return;
       } catch (error) {
-        // But if it fails because the machine 404s, fall-through to `createNewSandbox()`
-        if (error?.name !== "InvalidInstanceID.NotFound") {
-          throw error;
-        }
+        // If connection fails, fall through to creating a new sandbox
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`failed to connect to recent sandbox, creating new one...`),
+        );
+        console.error('Failed to reconnect to sandbox:', error);
       }
+    } else if (!createNew) {
+      this.emitter.emit(
+        events.log.narration,
+        theme.dim(`no recent sandbox found, creating a new one.`),
+      );
     }
 
     this.emitter.emit(
@@ -1791,6 +1801,8 @@ ${regression}
     await this.renderSandbox(instance, headless);
     await this.newSession();
     await this.runLifecycle("provision");
+
+    console.log("provision run");
   }
 
   async start() {
@@ -1911,12 +1923,20 @@ ${regression}
 
   async renderSandbox(instance, headless = false) {
     if (!headless) {
-      let url =
-        "http://" +
-        instance.ip +
-        ":" +
-        instance.vncPort +
-        "/vnc_lite.html?token=V3b8wG9";
+      let url;
+      
+      // If the instance already has a URL (from reconnection), use it
+      if (instance.url) {
+        url = instance.url;
+      } else {
+        // Otherwise construct it from IP and port (for Windows sandboxes)
+        url =
+          "http://" +
+          instance.ip +
+          ":" +
+          instance.vncPort +
+          "/vnc_lite.html?token=V3b8wG9";
+      }
 
       let data = {
         resolution: this.config.TD_RESOLUTION,
@@ -1924,7 +1944,8 @@ ${regression}
         token: "V3b8wG9",
       };
 
-      const encodedData = encodeURIComponent(JSON.stringify(data));
+      // Base64 encode the data (the debugger expects base64, not URL encoding)
+      const encodedData = Buffer.from(JSON.stringify(data)).toString('base64');
 
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
@@ -1972,6 +1993,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 
     const sandboxConfig = {
       type: "create",
+      os: "linux",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
       os: this.sandboxOs || 'windows'
@@ -1988,6 +2010,17 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     console.log("Creating sandbox with config:", sandboxConfig);
 
     let instance = await this.sandbox.send(sandboxConfig);
+
+    console.log("instance created", instance);
+
+    // Save the sandbox ID for reconnection
+    if (instance.sandbox && instance.sandbox.sandboxId) {
+      this.saveLastSandboxId(instance.sandbox.sandboxId, "linux");
+    } else if (instance.sandbox && instance.sandbox.instanceId) {
+      // Windows sandbox
+      this.saveLastSandboxId(instance.sandbox.instanceId, "windows");
+    }
+
     return instance;
   }
 

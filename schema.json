@@ -697,7 +697,8 @@
             "type": "string",
             "enum": [
               "js",
-              "pwsh"
+              "pwsh",
+              "sh"
             ]
           },
           "code": {

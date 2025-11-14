@@ -3,5 +3,8 @@ steps:
   - prompt: stop dashcam
     commands:
       - command: exec
-        lang: pwsh
+        lang: sh
+        timeout: 120000
         code: dashcam stop
+
+

@@ -282,17 +282,31 @@ const createCommands = (
     switch (direction) {
       case "up":
         if (method === "mouse") {
-          await sandbox.send({ type: "scroll", amount, direction });
+          await sandbox.send({
+            os: "linux",
+            type: "scroll",
+            amount,
+            direction,
+          });
         } else {
-          await sandbox.send({ type: "press", keys: ["pageup"] });
+          await sandbox.send({ os: "linux", type: "press", keys: ["pageup"] });
         }
         await redraw.wait(2500);
         break;
       case "down":
         if (method === "mouse") {
-          await sandbox.send({ type: "scroll", amount, direction });
+          await sandbox.send({
+            os: "linux",
+            type: "scroll",
+            amount,
+            direction,
+          });
         } else {
-          await sandbox.send({ type: "press", keys: ["pagedown"] });
+          await sandbox.send({
+            os: "linux",
+            type: "press",
+            keys: ["pagedown"],
+          });
         }
         await redraw.wait(2500);
         break;
@@ -339,7 +353,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ type: "moveMouse", x, y });
+    await sandbox.send({ os: "linux", type: "moveMouse", x, y });
 
     emitter.emit(events.mouseMove, { x, y });
 
@@ -347,17 +361,21 @@ const createCommands = (
 
     if (action !== "hover") {
       if (action === "click" || action === "left-click") {
-        await sandbox.send({ type: "leftClick" });
+        await sandbox.send({ os: "linux", type: "leftClick" });
       } else if (action === "right-click") {
-        await sandbox.send({ type: "rightClick" });
+        await sandbox.send({ os: "linux", type: "rightClick" });
       } else if (action === "middle-click") {
-        await sandbox.send({ type: "middleClick" });
+        await sandbox.send({ os: "linux", type: "middleClick" });
       } else if (action === "double-click") {
-        await sandbox.send({ type: "doubleClick" });
+        await sandbox.send({ os: "linux", type: "doubleClick" });
       } else if (action === "drag-start") {
-        await sandbox.send({ type: "mousePress", button: "left" });
+        await sandbox.send({ os: "linux", type: "mousePress", button: "left" });
       } else if (action === "drag-end") {
-        await sandbox.send({ type: "mouseRelease", button: "left" });
+        await sandbox.send({
+          os: "linux",
+          type: "mouseRelease",
+          button: "left",
+        });
       }
 
       emitter.emit(events.mouseClick, { x, y, button, click, double });
@@ -374,7 +392,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ type: "moveMouse", x, y });
+    await sandbox.send({ os: "linux", type: "moveMouse", x, y });
 
     await redraw.wait(2500);
 
@@ -405,37 +423,32 @@ const createCommands = (
 
       emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
+      // Combine text and description into element parameter
+      let element = text;
+      if (description) {
+        element = `"${text}" with description ${description}`;
+      }
+
       let response = await sdk.req(
-        "hover/text",
+        "locate",
         {
-          needle: text,
-          method,
+          element,
           image: await system.captureScreenBase64(),
-          intent: action,
-          description,
-          displayMultiple: 1,
-        },
-        (chunk) => {
-          if (chunk.type === "closeMatches") {
-            emitter.emit(events.matches.show, chunk.data);
-          }
-        },
+        }
       );
 
-      console.log(response.data)
-
-      if (!response.data) {
+      if (!response || !response.coordinates) {
         throw new MatchError("No text on screen matches description");
-      } else {
-        // Execute YAML commands if present, otherwise handle legacy format
-        const result = await executeYamlCommands(response.data, commands);
-        
-        // Legacy: if response.data has coordinates directly, handle old format
-        if (result && action && action !== "hover" && result.centerX !== undefined && result.centerY !== undefined) {
-          await click(result.centerX, result.centerY, action);
-        }
-        return result || response.data;
       }
+
+      // Perform the action using the located coordinates
+      if (action === "hover") {
+        await commands.hover(response.coordinates.x, response.coordinates.y);
+      } else {
+        await click(response.coordinates.x, response.coordinates.y, action);
+      }
+      
+      return response;
     },
     // uses our api to find all images on screen
     "hover-image": async (description, action = "click") => {
@@ -443,32 +456,25 @@ const createCommands = (
       emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
       let response = await sdk.req(
-        "hover/image",
+        "locate",
         {
-          needle: description,
+          element: description,
           image: await system.captureScreenBase64(),
-          intent: action,
-          displayMultiple: 1,
-        },
-        (chunk) => {
-          if (chunk.type === "closeMatches") {
-            emitter.emit(events.matches.show, chunk.data);
-          }
-        },
+        }
       );
 
-      if (!response?.data) {
+      if (!response || !response.coordinates) {
         throw new MatchError("No image or icon on screen matches description");
-      } else {
-        // Execute YAML commands if present, otherwise handle legacy format
-        const result = await executeYamlCommands(response.data, commands);
-        
-        // Legacy: if response.data has coordinates directly, handle old format
-        if (result && action && action !== "hover" && result.centerX !== undefined && result.centerY !== undefined) {
-          await click(result.centerX, result.centerY, action);
-        }
-        return result || response.data;
       }
+
+      // Perform the action using the located coordinates
+      if (action === "hover") {
+        await commands.hover(response.coordinates.x, response.coordinates.y);
+      } else {
+        await click(response.coordinates.x, response.coordinates.y, action);
+      }
+      
+      return response;
     },
     "match-image": async (relativePath, action = "click", invert = false) => {
       // Resolve the image path relative to the current file
@@ -495,12 +501,13 @@ const createCommands = (
       return true;
     },
     // type a string
+    os: "linux",
     type: async (string, delay = 250) => {
       await redraw.start();
 
       string = string.toString();
 
-      await sandbox.send({ type: "write", text: string, delay });
+      await sandbox.send({ os: "linux", type: "write", text: string, delay });
       await redraw.wait(5000);
       return;
     },
@@ -510,7 +517,7 @@ const createCommands = (
       await redraw.start();
 
       // finally, press the keys
-      await sandbox.send({ type: "press", keys: inputKeys });
+      await sandbox.send({ os: "linux", type: "press", keys: inputKeys });
 
       await redraw.wait(5000);
 
@@ -590,20 +597,14 @@ const createCommands = (
 
       while (durationPassed < timeout && !passed) {
         const response = await sdk.req(
-          "assert/text",
+          "locate",
           {
-            needle: text,
-            method: method,
+            element: text,
             image: await system.captureScreenBase64(),
-          },
-          (chunk) => {
-            if (chunk.type === "closeMatches") {
-              emitter.emit(events.matches.show, chunk.data);
-            }
-          },
+          }
         );
 
-        passed = response.data;
+        passed = !!(response && response.coordinates);
 
         if (invert) {
           passed = !passed;
@@ -649,11 +650,15 @@ const createCommands = (
 
       if (method === "keyboard") {
         try {
-          await sandbox.send({ type: "press", keys: ["f", "ctrl"] });
+          await sandbox.send({
+            os: "linux",
+            type: "press",
+            keys: ["f", "ctrl"],
+          });
           await delay(1000);
-          await sandbox.send({ type: "write", text });
+          await sandbox.send({ os: "linux", type: "write", text });
           await redraw.wait(5000);
-          await sandbox.send({ type: "press", keys: ["escape"] });
+          await sandbox.send({ os: "linux", type: "press", keys: ["escape"] });
         } catch {
           throw new MatchError(
             "Could not find element using browser text search",
@@ -667,20 +672,14 @@ const createCommands = (
 
       while (scrollDistance <= maxDistance && !passed) {
         const response = await sdk.req(
-          "assert/text",
+          "locate",
           {
-            needle: text,
-            method: textMatchMethod,
+            element: text,
             image: await system.captureScreenBase64(),
-          },
-          (chunk) => {
-            if (chunk.type === "closeMatches") {
-              emitter.emit(events.matches.show, chunk.data);
-            }
-          },
+          }
         );
 
-        passed = response.data;
+        passed = !!(response && response.coordinates);
 
         if (invert) {
           passed = !passed;
@@ -784,6 +783,7 @@ const createCommands = (
       await redraw.start();
 
       await sandbox.send({
+        os: "linux",
         type: "commands.focus-application",
         name,
       });
@@ -802,32 +802,37 @@ const createCommands = (
 
       return response;
     },
-    exec: async (language, code, timeout, silent = false) => {
+    exec: async (language = "pwsh", code, timeout, silent = false) => {
       emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);
 
       emitter.emit(events.log.log, code);
 
       let plat = system.platform();
 
-      // Warn if trying to use pwsh on Linux
-      if (language === "pwsh" && sandbox.os === "linux") {
-        emitter.emit(
-          events.log.log,
-          theme.yellow(
-            `⚠️  Warning: You are using 'pwsh' exec command on a Linux sandbox. This may fail. Consider using 'bash' or 'sh' for Linux environments.`
-          ),
-          true
-        );
-      }
+      if (language == "pwsh" || language == "sh") {
 
-      if (language == "pwsh") {
+
+        if (language === "pwsh" && sandbox.os === "linux") {
+          emitter.emit(
+            events.log.log,
+            theme.yellow(
+              `⚠️  Warning: You are using 'pwsh' exec command on a Linux sandbox. This may fail. Consider using 'bash' or 'sh' for Linux environments.`
+            ),
+            true
+          );
+        }
+
+
         let result = null;
 
         result = await sandbox.send({
+          os: "linux",
           type: "commands.run",
           command: code,
           timeout,
         });
+
+        console.log("Exec result:", result);
 
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(
