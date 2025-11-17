@@ -226,7 +226,7 @@ const createCommands = (
         if (shouldThrow) {
           // Is fatal, othewise it just changes the assertion to be true
           throw new MatchError(
-            `AI Assertion failed ${invert && "(Inverted)"}`,
+            `AI Assertion failed"}`,
             true,
           );
         } else {
@@ -504,7 +504,7 @@ const createCommands = (
     wait: async (timeout = 3000) => {
       return await delay(timeout);
     },
-    "wait-for-image": async (description, timeout = 10000, invert = false) => {
+    "wait-for-image": async (description, timeout = 10000) => {
       emitter.emit(
         events.log.narration,
         theme.dim(
@@ -553,9 +553,7 @@ const createCommands = (
     },
     "wait-for-text": async (
       text,
-      timeout = 5000,
-      method = "turbo",
-      invert = false,
+      timeout = 5000
     ) => {
       await redraw.start();
 
@@ -581,9 +579,6 @@ const createCommands = (
 
         passed = !!(response && response.coordinates);
 
-        if (invert) {
-          passed = !passed;
-        }
         durationPassed = new Date().getTime() - startTime;
 
         if (!passed) {
@@ -806,8 +801,6 @@ const createCommands = (
           command: code,
           timeout,
         });
-
-        console.log("Exec result:", result);
 
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(

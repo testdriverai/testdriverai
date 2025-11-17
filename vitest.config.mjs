@@ -19,30 +19,20 @@ export default defineConfig({
       shuffle: false,
     },
     
-    // Global setup and teardown
-    globalSetup: './testdriver/acceptance-sdk/setup/globalSetup.mjs',
     globalTeardown: './testdriver/acceptance-sdk/setup/globalTeardown.mjs',
     
     // Reporter configuration
     reporters: [
-      'verbose',
-      'junit',
-      './testdriver/acceptance-sdk/setup/testResultsReporter.mjs'
+      'default',
+      ['junit', { outputFile: 'test-results/junit.xml' }]
     ],
-    
-    // Coverage configuration (optional)
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['sdk.js', 'agent/**/*.js'],
-    },
     
     // Use forks for isolation, allow multiple test files
     pool: 'forks',
     poolOptions: {
       forks: {
         singleFork: false,
-        maxForks: 3, // Run up to 3 test files in parallel
+        maxForks: 20, // Run up to X test files in parallel
       },
     },
   },

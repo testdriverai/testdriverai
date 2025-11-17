@@ -86,8 +86,7 @@ export function createTestClient(options = {}) {
     analytics: true,
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
-    apiRoot: 'https://replayable-dev-ian-mac-m1-16.ngrok.io',
-    logging: process.env.LOGGING === 'false' ? false : true, // Enabled by default, disable with LOGGING=false
+    apiRoot: process.env.TD_API_ROOT,
     newSandbox: true, // Always create a new sandbox for each test
     ...options
   });
@@ -215,7 +214,7 @@ export async function teardownTest(client, options = {}) {
 export async function runPrerun(client) {
   try {
 
-    await client.exec('sh', 'dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d');
+    await client.exec('sh', `dashcam auth ${process.env.TD_API_KEY}`, 10000, true);
 
     // Start dashcam tracking
     await client.exec('sh', 
@@ -228,7 +227,7 @@ export async function runPrerun(client) {
     await client.exec('sh', 'dashcam status');
     
     // Launch Chrome with guest mode
-    await client.exec('sh', `jumpapp google-chrome --no-startup-window --disable-fre --no-default-browser-check --no-first-run "http://testdriver-sandbox.vercel.app/" $@`, 10000, true);
+    await client.exec('sh', `jumpapp google-chrome --disable-features=ChromeWhatsNewUI,SignInProfileCreation,ProfilePickerOnStartup --disable-fre --no-default-browser-check --no-first-run "http://testdriver-sandbox.vercel.app/"`, 10000, true);
     
     // Wait for the login page to load - poll for text to appear
     let loginPage = await client.find('TestDriver.ai Sandbox');
@@ -236,7 +235,7 @@ export async function runPrerun(client) {
     for (let i = 0; i < maxAttempts; i++) {
       loginPage = await loginPage.find();
       if (loginPage.found()) break;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
     
   } catch (error) {
@@ -255,7 +254,7 @@ export async function runPostrun(client) {
     console.log('🎬 Stopping dashcam and retrieving URL...');
     
     // Stop dashcam with title and push - this returns the URL
-    const output = await client.exec('pwsh', 
+    const output = await client.exec('sh', 
       'dashcam stop',
       30000, false); // Don't silence output so we can capture it
     
@@ -332,112 +331,4 @@ export async function retryAsync(fn, retries = 3, delay = 1000) {
   }
   
   throw lastError;
-}
-
-/**
- * Conditional execution helper
- * Simulates if-else logic by trying an assertion
- * @param {TestDriver} client - TestDriver client
- * @param {string} condition - Condition to check
- * @param {Function} thenFn - Function to run if condition is true
- * @param {Function} elseFn - Function to run if condition is false
- */
-export async function conditionalExec(client, condition, thenFn, elseFn = null) {
-  try {
-    await client.assert(condition);
-    if (thenFn) {
-      await thenFn();
-    }
-  } catch {
-    if (elseFn) {
-      await elseFn();
-    }
-  }
-}
-
-/**
- * Create a test step tracker for better debugging
- * Provides visibility into which step failed, similar to YAML runner
- * 
- * @example
- * const tracker = createStepTracker('Login Test');
- * 
- * await tracker.step('Navigate to login', async () => {
- *   await client.assert('login page is visible');
- * });
- * 
- * await tracker.step('Enter credentials', async () => {
- *   const usernameField = await client.find('Username');
- *   await usernameField.click();
- *   await client.type('user@example.com');
- * });
- */
-export function createStepTracker(testName) {
-  let currentStep = 0;
-  const steps = [];
-
-  return {
-    /**
-     * Execute a test step with tracking
-     * @param {string} description - Step description
-     * @param {Function} fn - Step function to execute
-     */
-    async step(description, fn) {
-      currentStep++;
-      const stepNumber = currentStep;
-      
-      console.log(`\n📍 Step ${stepNumber}: ${description}`);
-      
-      const startTime = Date.now();
-      
-      try {
-        const result = await fn();
-        const duration = Date.now() - startTime;
-        
-        steps.push({
-          step: stepNumber,
-          description,
-          status: 'passed',
-          duration,
-        });
-        
-        console.log(`   ✅ Passed (${duration}ms)`);
-        
-        return result;
-      } catch (error) {
-        const duration = Date.now() - startTime;
-        
-        steps.push({
-          step: stepNumber,
-          description,
-          status: 'failed',
-          duration,
-          error: error.message,
-        });
-        
-        console.error(`   ❌ Failed at step ${stepNumber}: ${description}`);
-        console.error(`   Error: ${error.message}`);
-        console.error(`\n📊 Test Progress (${testName}):`);
-        steps.forEach(s => {
-          const icon = s.status === 'passed' ? '✅' : '❌';
-          console.error(`   ${icon} Step ${s.step}: ${s.description} (${s.duration}ms)`);
-        });
-        
-        throw error;
-      }
-    },
-    
-    /**
-     * Get execution summary
-     */
-    getSummary() {
-      return {
-        testName,
-        totalSteps: steps.length,
-        passed: steps.filter(s => s.status === 'passed').length,
-        failed: steps.filter(s => s.status === 'failed').length,
-        steps: [...steps],
-      };
-    }
-  };
 }

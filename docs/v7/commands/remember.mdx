@@ -1,0 +1,49 @@
+---
+title: "remember"
+sidebarTitle: "remember"
+description: "Save a variable to use later."
+icon: "brain"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/remember-replay.mdx";
+import Example from "/snippets/tests/remember-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `remember` command is used to save a variable for later use. This is useful for storing values that you want to reference in subsequent commands or steps, **especially for things that are dynamic or change frequently from run to run**.
+
+## Arguments
+
+|   Argument    |   Type   | Description                                               |
+| :-----------: | :------: | :-------------------------------------------------------- |
+|   `output`    | `string` | The variable name you will use to recall the value later. |
+| `description` | `string` | A prompt describing the value you want to store.          |
+
+---
+
+## Example usage
+
+```yaml
+- command: remember
+  description: The date value shown to the right of 'Order Date'
+  output: my_variable
+```
+
+## Protips
+
+- Use the output later with this syntax `${OUTPUT.my_variable}`.
+- The `remember` command does not persist variables across different test runs. If you need to store values for later use in different test runs, consider using external storage solutions or environment variables.
+- For now, the `remember` command only supports string values. If you need to store complex data types, you may use `remember` multiple times for the values. This may change in a later version.
+
+## Gotchas
+
+- Ensure the variable name is unique to avoid overwriting existing variables.
+- The variable name is case-sensitive, so `my_variable` and `My_Variable` would be treated as different variables.
+
+## Notes
+
+- The `remember` command is ideal for storing values that are generated during the test run, such as timestamps, IDs, the text value of a link you might click later, or any other dynamic data.

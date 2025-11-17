@@ -1,0 +1,54 @@
+---
+title: "wait-for-image"
+sidebarTitle: "wait-for-image"
+description: "Wait until an image matching the description is detected on the screen."
+icon: "clock-three-thirty"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/wait-for-image-replay.mdx";
+import Example from "/snippets/tests/wait-for-image-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `wait-for-image` command waits until the specified image is detected on the screen. This is useful for ensuring that visual elements are present before proceeding with the next steps in a test.
+
+## Arguments
+
+|   Argument    |   Type    | Description                                                                                                       |
+| :-----------: | :-------: | :---------------------------------------------------------------------------------------------------------------- |
+| `description` | `string`  | A description of the image.                                                                                       |
+|   `timeout`   | `number`  | (Optional) The duration in milliseconds to wait for the image to appear. Default is `10000` (10 seconds).         |
+|   `invert`    | `boolean` | (Optional) If set to `true`, the command will wait until the specified image is NOT detected. Default is `false`. |
+
+## Example usage
+
+```yaml
+command: wait-for-image
+description: trash icon
+timeout: 5000
+```
+
+## Protips
+
+- Use clear and concise descriptions for the image to improve detection accuracy.
+- Adjust the `timeout` value based on the expected load time of the image to avoid unnecessary delays.
+
+<Tip>
+  If you are unable to land on an accurate description or experiencing flaky
+  results, try to upload the image to [chatgpt](https://chatgpt.com) and ask it
+  to describe the image and use the generated `description` to get better
+  accuracy and determinism.
+</Tip>
+
+## Gotchas
+
+- If the image doesn't appear within the specified `timeout`, the command will fail.
+- Ensure the description accurately represents the image to avoid detection issues.
+
+---
+
+The `wait-for-image` command is ideal for synchronizing tests with visual elements that may take time to load.

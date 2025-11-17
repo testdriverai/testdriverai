@@ -30,8 +30,8 @@ class TestSDK {
       } catch (error) {
         // Replace the stack trace to point to the actual caller
         if (Error.captureStackTrace && callSite.stack) {
-          const errorMessage = error.stack.split('\n')[0];
-          const callerStack = callSite.stack.split('\n').slice(1);
+          const errorMessage = error.stack?.split('\n')[0];
+          const callerStack = callSite.stack?.split('\n').slice(1);
           error.stack = errorMessage + '\n' + callerStack.join('\n');
         }
         throw error;

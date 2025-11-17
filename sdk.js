@@ -1,5 +1,109 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+/**
+ * Custom error class for element operation failures
+ * Includes debugging information like screenshots and AI responses
+ */
+class ElementNotFoundError extends Error {
+  constructor(message, debugInfo = {}) {
+    super(message);
+    this.name = 'ElementNotFoundError';
+    this.screenshot = debugInfo.screenshot;
+    this.aiResponse = debugInfo.aiResponse;
+    this.description = debugInfo.description;
+    this.timestamp = new Date().toISOString();
+    this.screenshotPath = null;
+    
+    // Capture stack trace but skip internal frames
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ElementNotFoundError);
+    }
+    
+    // Write screenshot to temp directory
+    if (this.screenshot) {
+      try {
+        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const filename = `screenshot-${Date.now()}.png`;
+        this.screenshotPath = path.join(tempDir, filename);
+        
+        // Remove data:image/png;base64, prefix if present
+        const base64Data = this.screenshot.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        fs.writeFileSync(this.screenshotPath, buffer);
+      } catch (err) {
+        // If screenshot save fails, don't break the error
+        console.error('Failed to save debug screenshot:', err.message);
+      }
+    }
+    
+    // Extract similarity and input text from AI response
+    const similarity = this.aiResponse?.similarity ?? null;
+    const inputText = this.aiResponse?.input_text ?? this.aiResponse?.element ?? null;
+    
+    // Enhance error message with debugging hints
+    this.message += `\n\n=== Debug Information ===`;
+    this.message += `\nElement searched for: "${this.description}"`;
+    
+    if (inputText) {
+      this.message += `\nInput text: "${inputText}"`;
+    }
+    
+    if (similarity !== null) {
+      this.message += `\nSimilarity score: ${similarity}`;
+    }
+    
+    if (this.screenshotPath) {
+      this.message += `\nScreenshot saved to: ${this.screenshotPath}`;
+    }
+    
+    if (this.aiResponse) {
+      const responseText = this.aiResponse.response?.content?.[0]?.text || 
+                          this.aiResponse.content?.[0]?.text || 
+                          'No detailed response available';
+      this.message += `\n\nAI Response:\n${responseText}`;
+    }
+    
+    // Clean up stack trace to only show userland code
+    if (this.stack) {
+      const lines = this.stack.split('\n');
+      const filteredLines = [lines[0]]; // Keep error message line
+      
+      // Skip frames until we find userland code (not sdk.js internals)
+      let foundUserland = false;
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Skip internal Element method frames (click, hover, etc.)
+        if (line.includes('Element.click') || 
+            line.includes('Element.hover') ||
+            line.includes('Element.doubleClick') ||
+            line.includes('Element.rightClick') ||
+            line.includes('Element.mouseDown') ||
+            line.includes('Element.mouseUp')) {
+          continue;
+        }
+        
+        // Once we hit userland code, include everything from there
+        if (!line.includes('sdk.js') || foundUserland) {
+          foundUserland = true;
+          filteredLines.push(line);
+        }
+      }
+      
+      this.stack = filteredLines.join('\n');
+    }
+  }
+}
+
 /**
  * Element class representing a located or to-be-located element
  */
@@ -14,6 +118,7 @@ class Element {
     `false`. The code snippet does not contain any executable code, it is just a comment. */
     this._found = false;
     this._response = null;
+    this._screenshot = null;
   }
 
   /**
@@ -35,29 +140,133 @@ class Element {
       this.description = newDescription;
     }
 
+    const startTime = Date.now();
+    
     try {
+      const screenshot = await this.system.captureScreenBase64();
+      // Only store screenshot in DEBUG mode to prevent memory leaks
+      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      if (debugMode) {
+        this._screenshot = screenshot;
+      }
+      
       const response = await this.sdk.req(
         "locate",
         {
           element: description,
-          image: await this.system.captureScreenBase64(),
+          image: screenshot,
         }
       );
 
+      const duration = Date.now() - startTime;
+
       if (response && response.coordinates) {
-        this._response = response;
+        // Store response but clear large base64 data to prevent memory leaks
+        this._response = this._sanitizeResponse(response);
         this.coordinates = response.coordinates;
         this._found = true;
+        
+        // Log debug information when element is found
+        this._logFoundDebug(response, duration);
       } else {
-        this._response = null;
+        this._response = this._sanitizeResponse(response);
         this._found = false;
       }
-    } catch {
-      this._response = null;
+    } catch (error) {
+      this._response = error.response ? this._sanitizeResponse(error.response) : null;
       this._found = false;
     }
 
     return this;
+  }
+
+  /**
+   * Sanitize response by removing large base64 data to prevent memory leaks
+   * @private
+   * @param {Object} response - API response
+   * @returns {Object} Sanitized response
+   */
+  _sanitizeResponse(response) {
+    if (!response) return null;
+    
+    // Only keep base64 data in DEBUG mode
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    if (debugMode) {
+      return response;
+    }
+    
+    // Create shallow copy and remove large base64 fields
+    const sanitized = { ...response };
+    delete sanitized.croppedImage;
+    delete sanitized.screenshot;
+    
+    return sanitized;
+  }
+
+  /**
+   * Log debug information when element is successfully found
+   * @private
+   */
+  async _logFoundDebug(response, duration) {
+    const debugInfo = {
+      description: this.description,
+      coordinates: this.coordinates,
+      duration: `${duration}ms`,
+      cacheHit: response.cache_hit || response.cached || false,
+      similarity: response.similarity ?? null,
+      confidence: response.confidence ?? null,
+    };
+
+    // Save cropped image with red circle if available
+    let croppedImagePath = null;
+    if (response.croppedImage) {
+      try {
+        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const filename = `element-found-${Date.now()}.png`;
+        croppedImagePath = path.join(tempDir, filename);
+        
+        // Remove data:image/png;base64, prefix if present
+        const base64Data = response.croppedImage.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        fs.writeFileSync(croppedImagePath, buffer);
+      } catch (err) {
+        console.error('Failed to save cropped debug image:', err.message);
+      }
+    }
+
+    // Build debug message
+    let message = `✓ Element found: "${this.description}"`;
+    message += `\n  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`;
+    
+    if (debugInfo.cacheHit) {
+      message += `\n  Cache: HIT`;
+    } else {
+      message += `\n  Cache: MISS`;
+    }
+    
+    if (debugInfo.similarity !== null) {
+      message += `\n  Similarity: ${debugInfo.similarity}`;
+    }
+    
+    if (debugInfo.confidence !== null) {
+      message += `\n  Confidence: ${debugInfo.confidence}`;
+    }
+    
+    message += `\n  Time: ${debugInfo.duration}`;
+    
+    if (croppedImagePath) {
+      message += `\n  Debug image: ${croppedImagePath}`;
+    }
+    
+    // Check for VERBOSE environment variable or debug mode
+    if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
+      console.log(message);
+    }
   }
 
   /**
@@ -67,7 +276,14 @@ class Element {
    */
   async click(action = 'click') {
     if (!this._found || !this.coordinates) {
-      throw new Error(`Element "${this.description}" not found. Call find() first.`);
+      throw new ElementNotFoundError(
+        `Element "${this.description}" not found.`,
+        {
+          description: this.description,
+          screenshot: this._screenshot,
+          aiResponse: this._response,
+        }
+      );
     }
 
     if (action === 'hover') {
@@ -83,7 +299,14 @@ class Element {
    */
   async hover() {
     if (!this._found || !this.coordinates) {
-      throw new Error(`Element "${this.description}" not found. Call find() first.`);
+      throw new ElementNotFoundError(
+        `Element "${this.description}" not found.`,
+        {
+          description: this.description,
+          screenshot: this._screenshot,
+          aiResponse: this._response,
+        }
+      );
     }
 
     await this.commands.hover(this.coordinates.x, this.coordinates.y);
@@ -224,6 +447,58 @@ class Element {
   get label() {
     return this._response?.label ?? null;
   }
+
+  /**
+   * Save the debug screenshot to a file for manual inspection
+   * @param {string} [filepath] - Path to save the screenshot (defaults to ./debug-screenshot-{timestamp}.png)
+   * @returns {Promise<string>} Path to the saved screenshot
+   */
+  async saveDebugScreenshot(filepath) {
+    if (!this._screenshot) {
+      throw new Error('No screenshot available.');
+    }
+
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    const defaultPath = `./debug-screenshot-${Date.now()}.png`;
+    const savePath = filepath || defaultPath;
+    
+    // Remove data:image/png;base64, prefix if present
+    const base64Data = this._screenshot.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    await fs.writeFile(savePath, buffer);
+    return path.resolve(savePath);
+  }
+
+  /**
+   * Get debug information about the last find operation
+   * @returns {Object} Debug information including AI response and screenshot metadata
+   */
+  getDebugInfo() {
+    return {
+      description: this.description,
+      found: this._found,
+      coordinates: this.coordinates,
+      aiResponse: this._response,
+      hasScreenshot: !!this._screenshot,
+      screenshotSize: this._screenshot ? this._screenshot.length : 0,
+    };
+  }
+
+  /**
+   * Clean up element resources to prevent memory leaks
+   * Call this when you're done with the element
+   */
+  destroy() {
+    this._screenshot = null;
+    this._response = null;
+    this.coordinates = null;
+    this.sdk = null;
+    this.system = null;
+    this.commands = null;
+  }
 }
 
 /**
@@ -301,6 +576,9 @@ class TestDriverSDK {
 
     // Set up logging if enabled (after emitter is exposed)
     this.loggingEnabled = options.logging !== false;
+    
+    // Track event listeners for cleanup
+    this._eventListeners = [];
     
     // Initialize logger for markdown and regular logs
     if (this.loggingEnabled) {
@@ -395,8 +673,12 @@ class TestDriverSDK {
    */
   async disconnect() {
     if (this.connected && this.instance) {
-      // Could add cleanup logic here if needed
+      // Track disconnect event
       this.analytics.track("sdk.disconnect");
+      
+      // Clean up event listeners to prevent memory leaks
+      this._removeEventListeners();
+      
       this.connected = false;
       this.instance = null;
     }
@@ -669,8 +951,8 @@ class TestDriverSDK {
           // Replace the stack trace to point to the actual caller instead of SDK internals
           if (Error.captureStackTrace && callSite.stack) {
             // Preserve the error message but use the captured call site stack
-            const errorMessage = error.stack.split('\n')[0];
-            const callerStack = callSite.stack.split('\n').slice(1); // Skip "Error" line
+            const errorMessage = error.stack?.split('\n')[0];
+            const callerStack = callSite.stack?.split('\n').slice(1); // Skip "Error" line
             error.stack = errorMessage + '\n' + callerStack.join('\n');
           }
           throw error;
@@ -745,8 +1027,8 @@ class TestDriverSDK {
     // Set up markdown logger
     createMarkdownLogger(this.emitter);
 
-    // Set up basic event logging
-    this.emitter.on("log:*", (message) => {
+    // Set up basic event logging and track listeners for cleanup
+    const logListener = (message) => {
       const event = this.emitter.event;
       if (event === events.log.debug) return;
       if (this.loggingEnabled && message) {
@@ -754,9 +1036,11 @@ class TestDriverSDK {
         // Forward logs to sandbox for debugger display
         this._forwardLogToSandbox(message);
       }
-    });
+    };
+    this.emitter.on("log:*", logListener);
+    this._eventListeners.push({ event: "log:*", listener: logListener });
 
-    this.emitter.on("error:*", (data) => {
+    const errorListener = (data) => {
       if (this.loggingEnabled) {
         const event = this.emitter.event;
         console.error(event, ":", data);
@@ -764,18 +1048,22 @@ class TestDriverSDK {
         const errorMessage = typeof data === 'object' ? JSON.stringify(data) : String(data);
         this._forwardLogToSandbox(`ERROR: ${errorMessage}`);
       }
-    });
+    };
+    this.emitter.on("error:*", errorListener);
+    this._eventListeners.push({ event: "error:*", listener: errorListener });
 
-    this.emitter.on("status", (message) => {
+    const statusListener = (message) => {
       if (this.loggingEnabled) {
         console.log(`- ${message}`);
         // Forward status to sandbox
         this._forwardLogToSandbox(`- ${message}`);
       }
-    });
+    };
+    this.emitter.on("status", statusListener);
+    this._eventListeners.push({ event: "status", listener: statusListener });
 
     // Handle show window events for sandbox visualization
-    this.emitter.on("show-window", async (url) => {
+    const showWindowListener = async (url) => {
       if (this.loggingEnabled) {
         console.log("");
         console.log("Live test execution:");
@@ -790,7 +1078,22 @@ class TestDriverSDK {
           await this._openBrowser(url);
         }
       }
-    });
+    };
+    this.emitter.on("show-window", showWindowListener);
+    this._eventListeners.push({ event: "show-window", listener: showWindowListener });
+  }
+
+  /**
+   * Remove all event listeners to prevent memory leaks
+   * @private
+   */
+  _removeEventListeners() {
+    if (this._eventListeners) {
+      this._eventListeners.forEach(({ event, listener }) => {
+        this.emitter.off(event, listener);
+      });
+      this._eventListeners = [];
+    }
   }
 
   /**
@@ -921,3 +1224,4 @@ class TestDriverSDK {
 
 module.exports = TestDriverSDK;
 module.exports.Element = Element;
+module.exports.ElementNotFoundError = ElementNotFoundError;

@@ -25,6 +25,7 @@ describe('Hover Image Test', () => {
     // Click on the shopping cart icon
     await client.focusApplication('Google Chrome');
     const cartIcon = await client.find('shopping cart icon next to the Cart text in the top right corner');
+
     await cartIcon.click();
 
     // Assert that you see an empty shopping cart

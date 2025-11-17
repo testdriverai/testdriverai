@@ -1,0 +1,45 @@
+---
+title: "type"
+sidebarTitle: "type"
+description: "Simulate typing a string using keyboard emulation."
+icon: "typewriter"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/type-replay.mdx";
+import Example from "/snippets/tests/type-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `type` command is used to simulate typing a string using keyboard emulation. This is useful for entering text into input fields or performing text-based interactions.
+
+## Arguments
+
+| Argument |   Type   | Description              |
+| :------: | :------: | :----------------------- |
+|  `text`  | `string` | The text string to type. |
+
+## Example usage
+
+```yaml
+command: type
+text: Hello World
+```
+
+## Protips
+
+- Use this command to input text into fields, such as search bars or forms.
+- Ensure the target application or input field is in focus before using the `type` command to avoid unexpected behavior.
+- It can also be used to insert values from variables, refer our [variable's guide](/guide/variables) for more information.
+
+## Gotchas
+
+- If the input field isn't active or in focus, the text may not be typed correctly.
+- Special characters in the `text` string may require additional handling depending on the application.
+
+---
+
+The `type` command is ideal for automating text input in tests.

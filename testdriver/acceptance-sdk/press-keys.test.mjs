@@ -27,7 +27,7 @@ describe('Press Keys Test', () => {
     await client.pressKeys(['ctrl', 't']);
     
     // Poll for "Learn more" to appear
-    let learnMore = client.find('Learn more');
+    let learnMore = await client.find('Learn more');
     for (let i = 0; i < 10; i++) {
       learnMore = await learnMore.find();
       if (learnMore.found()) break;
@@ -38,7 +38,7 @@ describe('Press Keys Test', () => {
     await client.pressKeys(['ctrl', 'shift', 'i']);
     
     // Poll for "Elements" to appear
-    let elements = client.find('Elements');
+    let elements = await client.find('Elements');
     for (let i = 0; i < 10; i++) {
       elements = await elements.find();
       if (elements.found()) break;

@@ -29,7 +29,7 @@ describe('Scroll Until Image Test', () => {
     await heading.click();
     
     // Scroll until image appears
-    await client.scrollUntilImage('a brown colored house', 'down');
+    await client.scrollUntilImage('a brown colored house', 'down', 10000);
 
     // Assert image of brown colored house appears on screen
     const result = await client.assert('image of brown colored house appears on screen');

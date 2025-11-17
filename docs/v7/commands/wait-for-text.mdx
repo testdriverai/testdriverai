@@ -1,0 +1,48 @@
+---
+title: "wait-for-text"
+sidebarTitle: "wait-for-text"
+description: "Wait until the specified text is detected on the screen."
+icon: "clock-nine"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/wait-for-text-replay.mdx";
+import Example from "/snippets/tests/wait-for-text-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `wait-for-text` command waits until the specified text is detected on the screen. This is useful for ensuring that textual elements are present before proceeding with the next steps in a test.
+
+## Arguments
+
+| Argument  |   Type    | Description                                                                                                      |
+| :-------: | :-------: | :--------------------------------------------------------------------------------------------------------------- |
+|  `text`   | `string`  | The text to find on the screen.                                                                                  |
+| `timeout` | `number`  | (Optional) The duration in milliseconds to wait for the text to appear. Default is `5000` (5 seconds).           |
+| `method`  |  `enum`   | (Optional) The matching algorithm to use. Possible values are `ai` and `turbo`. Default is `turbo`               |
+| `invert`  | `boolean` | (Optional) If set to `true`, the command will wait until the specified text is NOT detected. Default is `false`. |
+
+## Example usage
+
+```yaml
+command: wait-for-text
+text: Copyright 2024
+timeout: 5000
+```
+
+## Protips
+
+- Use unique and specific text to improve detection accuracy.
+- Adjust the `timeout` value based on the expected load time of the text to avoid unnecessary delays.
+
+## Gotchas
+
+- If the text doesn't appear within the specified `timeout`, the command will fail.
+- Ensure the text matches exactly, as variations in font size, style, or screen resolution may affect detection accuracy.
+
+---
+
+The `wait-for-text` command is ideal for synchronizing tests with textual elements that may take time to load.
