@@ -14,7 +14,9 @@ describe("Scroll Keyboard Test", () => {
   let testdriver;
 
   beforeAll(async () => {
-    testdriver = createTestClient();
+    testdriver = createTestClient({
+      redrawThreshold: 0.5, // Higher threshold for scroll test
+    });
     await setupTest(testdriver);
   });
 

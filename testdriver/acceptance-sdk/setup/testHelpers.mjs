@@ -102,6 +102,7 @@ export function saveTestResults(outputPath = "test-results/sdk-summary.json") {
 /**
  * Create a configured TestDriver client
  * @param {Object} options - Additional options
+ * @param {Object} options.task - Vitest task context (from beforeAll/it context)
  * @returns {TestDriver} Configured client
  */
 export function createTestClient(options = {}) {
@@ -121,6 +122,13 @@ export function createTestClient(options = {}) {
 
   const os = process.env.TD_OS || "linux";
 
+  // Extract task context if provided
+  const taskId = options.task?.id || options.task?.name || null;
+  
+  // Remove task from options before passing to TestDriver
+  // eslint-disable-next-line no-unused-vars
+  const { task, ...clientOptions } = options;
+
   const client = new TestDriver(process.env.TD_API_KEY, {
     resolution: "1366x768",
     analytics: true,
@@ -129,7 +137,7 @@ export function createTestClient(options = {}) {
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
     headless: true,
     newSandbox: true, // Always create a new sandbox for each test
-    ...options,
+    ...clientOptions, // This will include signal if passed in
     cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
   });
 
@@ -137,6 +145,11 @@ export function createTestClient(options = {}) {
     "🔧 createTestClient: SDK created, cacheThresholds =",
     client.cacheThresholds,
   );
+
+  // Set Vitest task ID if available (for log filtering in parallel tests)
+  if (taskId) {
+    client.setVitestTaskId(taskId);
+  }
 
   // Enable detailed event logging if requested
   if (process.env.DEBUG_EVENTS === "true") {
@@ -258,7 +271,7 @@ export async function teardownTest(client, options = {}) {
  * @param {TestDriver} client - TestDriver client
  */
 export async function runPrerun(client) {
-  try {
+
     await client.exec(
       "sh",
       `dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d`,
@@ -292,9 +305,6 @@ export async function runPrerun(client) {
       if (loginPage.found()) break;
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
-  } catch (error) {
-    console.warn("⚠️  Prerun hook failed (non-fatal):", error.message);
-  }
 }
 
 /**
@@ -304,11 +314,10 @@ export async function runPrerun(client) {
  * @returns {Promise<string|null>} Dashcam URL if available
  */
 export async function runPostrun(client) {
-  try {
     console.log("🎬 Stopping dashcam and retrieving URL...");
 
     // Stop dashcam with title and push - this returns the URL
-    const output = await client.exec("sh", "dashcam stop", 30000, false); // Don't silence output so we can capture it
+    const output = await client.exec("sh", "dashcam stop", 60000, false); // Don't silence output so we can capture it
 
     console.log("📤 Dashcam command output:", output);
 
@@ -328,10 +337,6 @@ export async function runPostrun(client) {
     }
 
     return null;
-  } catch (error) {
-    console.warn("⚠️  Postrun hook failed (non-fatal):", error.message);
-    return null;
-  }
 }
 
 /**

@@ -44,11 +44,12 @@ const createCommands = (
   config,
   sessionInstance,
   getCurrentFilePath,
+  redrawThreshold = 0.1,
 ) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
   // Create redraw instance with the system
-  const redraw = createRedraw(emitter, system, sandbox);
+  const redraw = createRedraw(emitter, system, sandbox, redrawThreshold);
 
   // Helper method to resolve file paths relative to the current file
   const resolveRelativePath = (relativePath) => {
@@ -181,8 +182,9 @@ const createCommands = (
         return true;
       } else {
         if (shouldThrow) {
-          // Is fatal, othewise it just changes the assertion to be true
-          throw new MatchError(`AI Assertion failed"}`, true);
+          // Is fatal, otherwise it just changes the assertion to be true
+          const errorMessage = `AI Assertion failed: ${assertion}\n${response}`;
+          throw new MatchError(errorMessage, true);
         } else {
           return false;
         }
@@ -198,6 +200,12 @@ const createCommands = (
     return handleAssertResponse(response.data);
   };
   const scroll = async (direction = "down", amount = 300) => {
+
+    emitter.emit(
+      events.log.narration,
+      theme.dim(`scrolling ${direction} ${amount}px...`),
+    );
+
     await redraw.start();
 
     amount = parseInt(amount, 10);
@@ -206,7 +214,6 @@ const createCommands = (
     switch (direction) {
       case "up":
         await sandbox.send({
-          os: "linux",
           type: "scroll",
           amount,
           direction,
@@ -215,7 +222,6 @@ const createCommands = (
         break;
       case "down":
         await sandbox.send({
-          os: "linux",
           type: "scroll",
           amount,
           direction,
@@ -284,7 +290,7 @@ const createCommands = (
         await sandbox.send({ type: "mousePress", button: "left" });
       } else if (action === "mouseUp") {
         await sandbox.send({
-          os: "linux",
+          
           type: "mouseRelease",
           button: "left",
         });
@@ -299,6 +305,11 @@ const createCommands = (
   };
 
   const hover = async (x, y) => {
+    emitter.emit(
+      events.log.narration,
+      theme.dim(`hovering at ${x}, ${y}...`),
+    );
+
     await redraw.start();
 
     x = parseInt(x);
@@ -325,6 +336,11 @@ const createCommands = (
       action = "click",
       timeout = 5000, // we pass this to the subsequent wait-for-text block
     ) => {
+      emitter.emit(
+        events.log.narration,
+        theme.dim(`searching for "${text}"${description ? ` (${description})` : ""}...`),
+      );
+
       text = text ? text.toString() : null;
 
       // wait for the text to appear on screen
@@ -360,8 +376,10 @@ const createCommands = (
     },
     // uses our api to find all images on screen
     "hover-image": async (description, action = "click") => {
-      // take a screenshot
-      emitter.emit(events.log.narration, theme.dim("thinking..."), true);
+      emitter.emit(
+        events.log.narration,
+        theme.dim(`searching for image: "${description}"...`),
+      );
 
       let response = await sdk.req("find", {
         element: description,
@@ -382,6 +400,11 @@ const createCommands = (
       return response;
     },
     "match-image": async (relativePath, action = "click", invert = false) => {
+      emitter.emit(
+        events.log.narration,
+        theme.dim(`${action} on image template "${relativePath}"...`),
+      );
+
       // Resolve the image path relative to the current file
       const resolvedPath = resolveRelativePath(relativePath);
 
@@ -406,8 +429,13 @@ const createCommands = (
       return true;
     },
     // type a string
-    os: "linux",
+    
     type: async (string, delay = 250) => {
+      emitter.emit(
+        events.log.narration,
+        theme.dim(`typing "${string}"...`),
+      );
+
       await redraw.start();
 
       string = string.toString();
@@ -419,6 +447,11 @@ const createCommands = (
     // press keys
     // different than `type`, becasue it can press multiple keys at once
     "press-keys": async (inputKeys) => {
+      emitter.emit(
+        events.log.narration,
+        theme.dim(`pressing keys: ${Array.isArray(inputKeys) ? inputKeys.join(", ") : inputKeys}...`),
+      );
+
       await redraw.start();
 
       // finally, press the keys
@@ -430,6 +463,10 @@ const createCommands = (
     },
     // simple delay, usually to let ui render or webpage to load
     wait: async (timeout = 3000) => {
+      emitter.emit(
+        events.log.narration,
+        theme.dim(`waiting ${timeout}ms...`),
+      );
       return await delay(timeout);
     },
     "wait-for-image": async (description, timeout = 10000) => {
@@ -652,7 +689,7 @@ const createCommands = (
       await redraw.start();
 
       await sandbox.send({
-        os: "linux",
+        
         type: "commands.focus-application",
         name,
       });
@@ -692,7 +729,7 @@ const createCommands = (
         let result = null;
 
         result = await sandbox.send({
-          os: "linux",
+          
           type: "commands.run",
           command: code,
           timeout,

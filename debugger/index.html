@@ -360,6 +360,10 @@
 
       const iframe = document.querySelector("#vm-iframe");
 
+      // Detect if OS is Linux
+      const isLinux = parsedData.os === "linux";
+      const topBarOffset = isLinux ? 14 : 0;
+
       // set overlay width and height to match the given resolution
       const overlayWidth = parsedData.resolution[0];
       const overlayHeight = parsedData.resolution[1];
@@ -367,7 +371,8 @@
       iframe.style.display = "block";
       iframe.src = parsedData.url;
       iframe.style.width = overlayWidth + "px";
-      iframe.style.height = overlayHeight + "px";
+      // Increase iframe height by 14px for Linux to account for top bar
+      iframe.style.height = (overlayHeight + topBarOffset) + "px";
 
       // Calculate scale factor to fit within window if needed
       const windowWidth = window.innerWidth;
@@ -519,7 +524,7 @@
           const boxElement = document.createElement("div");
           boxElement.className = "bounding-box";
           boxElement.style.left = toCss(box.x);
-          boxElement.style.top = toCss(box.y);
+          boxElement.style.top = toCss(box.y + topBarOffset);
           boxElement.style.width = toCss(box.width);
           boxElement.style.height = toCss(box.height);
           effects.appendChild(boxElement);
@@ -547,14 +552,14 @@
       // Mouse event handlers
       addEventHandler(events.mouseMove, (event, { x, y } = {}) => {
         mouse.style.marginLeft = toCss(x);
-        mouse.style.marginTop = toCss(y);
+        mouse.style.marginTop = toCss(y + topBarOffset);
       });
 
       addEventHandler(
         events.mouseClick,
         (event, { x, y, click = "single" } = {}) => {
           mouse.style.marginLeft = toCss(x);
-          mouse.style.marginTop = toCss(y);
+          mouse.style.marginTop = toCss(y + topBarOffset);
           // Reset class so animation can restart
           mouse.setAttribute("class", "mouse");
           // Force reflow

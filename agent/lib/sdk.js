@@ -6,7 +6,7 @@ const axios = require("axios");
 
 // Factory function that creates SDK with the provided emitter, config, and session
 let token = null;
-const createSDK = (emitter, config, sessionInstance) => {
+const createSDK = (emitter, config, sessionInstance, abortSignal = null) => {
   // Config is required - no fallback to avoid process.env usage
   if (!config) {
     throw new Error("Config must be provided to createSDK");
@@ -15,6 +15,14 @@ const createSDK = (emitter, config, sessionInstance) => {
   // Session is required
   if (!sessionInstance) {
     throw new Error("Session instance must be provided to createSDK");
+  }
+
+  // Track if aborted
+  let isAborted = false;
+  if (abortSignal) {
+    abortSignal.addEventListener('abort', () => {
+      isAborted = true;
+    });
   }
 
   const outputError = (error) => {
@@ -101,6 +109,11 @@ const createSDK = (emitter, config, sessionInstance) => {
   };
 
   const req = async (path, data, onChunk) => {
+    // Check if aborted before starting request
+    if (isAborted) {
+      throw new Error('Request aborted');
+    }
+
     // for each value of data, if it is empty remove it
     for (let key in data) {
       if (!data[key]) {
@@ -130,6 +143,11 @@ const createSDK = (emitter, config, sessionInstance) => {
         stream: typeof onChunk === "function",
       },
     };
+
+    // Add abort signal support to axios if available
+    if (abortSignal) {
+      c.signal = abortSignal;
+    }
 
     try {
       let response;

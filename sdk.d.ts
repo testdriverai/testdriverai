@@ -662,6 +662,24 @@ export default class TestDriverSDK {
   // Utility Methods
 
   /**
+   * Capture a screenshot of the current screen
+   * @param scale - Scale factor for the screenshot (default: 1 = original size)
+   * @param silent - Whether to suppress logging (default: false)
+   * @param mouse - Whether to include mouse cursor (default: false)
+   * @returns Base64 encoded PNG screenshot
+   * 
+   * @example
+   * // Capture a screenshot
+   * const screenshot = await client.screenshot();
+   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * 
+   * @example
+   * // Capture with mouse cursor visible
+   * const screenshot = await client.screenshot(1, false, true);
+   */
+  screenshot(scale?: number, silent?: boolean, mouse?: boolean): Promise<string>;
+
+  /**
    * Wait for specified time
    * @deprecated Consider using element polling with find() instead of arbitrary waits
    */

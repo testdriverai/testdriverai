@@ -714,6 +714,33 @@ const output = await client.exec(
 
 ### Utility Methods
 
+#### `screenshot([scale], [silent], [mouse])`
+
+Captures a screenshot of the current screen in the sandbox.
+
+**Parameters:**
+
+- `scale` (number, optional): Scale factor for the screenshot (default: 1 = original size)
+- `silent` (boolean, optional): Whether to suppress logging (default: false)
+- `mouse` (boolean, optional): Whether to include mouse cursor (default: false)
+
+**Returns:** `Promise<string>` - Base64 encoded PNG screenshot
+
+**Example:**
+
+```javascript
+// Capture a screenshot
+const screenshot = await client.screenshot();
+
+// Save to file
+const fs = require('fs');
+fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+
+// Capture with mouse cursor visible
+const screenshotWithMouse = await client.screenshot(1, false, true);
+fs.writeFileSync('screenshot-with-mouse.png', Buffer.from(screenshotWithMouse, 'base64'));
+```
+
 #### `wait(timeout)`
 
 Waits for specified time.

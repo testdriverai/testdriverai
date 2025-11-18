@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const { formatter } = require("./sdk-log-formatter");
 
 /**
  * Custom error class for element operation failures
@@ -42,9 +43,9 @@ class ElementNotFoundError extends Error {
         const buffer = Buffer.from(base64Data, "base64");
 
         fs.writeFileSync(this.screenshotPath, buffer);
-      } catch (err) {
+      } catch {
         // If screenshot save fails, don't break the error
-        console.error("Failed to save debug screenshot:", err.message);
+        // Can't emit from constructor, just skip logging
       }
     }
 
@@ -73,8 +74,8 @@ class ElementNotFoundError extends Error {
         const buffer = Buffer.from(base64Data, "base64");
 
         fs.writeFileSync(this.pixelDiffPath, buffer);
-      } catch (err) {
-        console.error("Failed to save pixel diff image:", err.message);
+      } catch {
+        // Silently skip logging error from constructor
       }
     }
 
@@ -216,6 +217,7 @@ class Element {
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, cacheThreshold) {
+    this.sdk._checkAborted();
     const description = newDescription || this.description;
     if (newDescription) {
       this.description = newDescription;
@@ -242,8 +244,9 @@ class Element {
 
       // Debug log threshold
       if (debugMode) {
-        console.log(
-          `🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"})`,
+        const { events } = require("./agent/events.js");
+        this.sdk.emitter.emit(events.log.debug,
+          `🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"})`
         );
       }
 
@@ -251,6 +254,8 @@ class Element {
         element: description,
         image: screenshot,
         threshold: threshold,
+        os: this.sdk.os,
+        resolution: this.sdk.resolution,
       });
 
       const duration = Date.now() - startTime;
@@ -317,53 +322,63 @@ class Element {
       confidence: response.confidence ?? null,
     };
 
+    // Emit element found as log:log event
+    const { events } = require("./agent/events.js");
+    const formattedMessage = formatter.formatElementFound(this.description, {
+      x: this.coordinates.x,
+      y: this.coordinates.y,
+      duration: debugInfo.duration,
+      cacheHit: debugInfo.cacheHit,
+    });
+    this.sdk.emitter.emit(events.log.log, formattedMessage);
+
     // Log cache information in debug mode
     const debugMode =
       process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
     if (debugMode) {
-      console.log("\n🔍 Element Found:");
-      console.log(`  Description: ${debugInfo.description}`);
-      console.log(
-        `  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`,
+      const { events } = require("./agent/events.js");
+      this.sdk.emitter.emit(events.log.debug, "Element Found:");
+      this.sdk.emitter.emit(events.log.debug, `  Description: ${debugInfo.description}`);
+      this.sdk.emitter.emit(events.log.debug,
+        `  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`
       );
-      console.log(`  Duration: ${debugInfo.duration}`);
-      console.log(`  Cache Hit: ${debugInfo.cacheHit ? "✅ YES" : "❌ NO"}`);
+      this.sdk.emitter.emit(events.log.debug, `  Duration: ${debugInfo.duration}`);
+      this.sdk.emitter.emit(events.log.debug, `  Cache Hit: ${debugInfo.cacheHit ? "✅ YES" : "❌ NO"}`);
       if (debugInfo.cacheHit) {
-        console.log(
-          `  Cache Strategy: ${debugInfo.cacheStrategy || "unknown"}`,
+        this.sdk.emitter.emit(events.log.debug,
+          `  Cache Strategy: ${debugInfo.cacheStrategy || "unknown"}`
         );
-        console.log(
-          `  Similarity: ${debugInfo.similarity !== null ? (debugInfo.similarity * 100).toFixed(2) + "%" : "N/A"}`,
+        this.sdk.emitter.emit(events.log.debug,
+          `  Similarity: ${debugInfo.similarity !== null ? (debugInfo.similarity * 100).toFixed(2) + "%" : "N/A"}`
         );
         if (response.cacheCreatedAt) {
           const cacheAge = Math.round(
             (Date.now() - new Date(response.cacheCreatedAt).getTime()) / 1000,
           );
-          console.log(
-            `  Cache Age: ${cacheAge}s (created: ${new Date(response.cacheCreatedAt).toISOString()})`,
+          this.sdk.emitter.emit(events.log.debug,
+            `  Cache Age: ${cacheAge}s (created: ${new Date(response.cacheCreatedAt).toISOString()})`
           );
         }
         if (response.cachedImageUrl) {
-          console.log(`  Cached Image URL: ${response.cachedImageUrl}`);
+          this.sdk.emitter.emit(events.log.debug, `  Cached Image URL: ${response.cachedImageUrl}`);
         }
         if (response.cacheDiffPercent !== undefined) {
-          console.log(
-            `  Pixel Diff: ${(response.cacheDiffPercent * 100).toFixed(2)}%`,
+          this.sdk.emitter.emit(events.log.debug,
+            `  Pixel Diff: ${(response.cacheDiffPercent * 100).toFixed(2)}%`
           );
         }
       }
       if (debugInfo.confidence !== null) {
-        console.log(
-          `  Confidence: ${(debugInfo.confidence * 100).toFixed(2)}%`,
+        this.sdk.emitter.emit(events.log.debug,
+          `  Confidence: ${(debugInfo.confidence * 100).toFixed(2)}%`
         );
       }
 
       // Log available response fields for debugging
-      console.log(`  Response fields: ${Object.keys(response).join(", ")}`);
-      console.log(`  Has croppedImage: ${!!response.croppedImage}`);
-      console.log(`  Has screenshot: ${!!response.screenshot}`);
-      console.log(`  Has cachedImageUrl: ${!!response.cachedImageUrl}`);
-      console.log(`  Has pixelDiffImage: ${!!response.pixelDiffImage}`);
+      this.sdk.emitter.emit(events.log.debug, `  Has croppedImage: ${!!response.croppedImage}`);
+      this.sdk.emitter.emit(events.log.debug, `  Has screenshot: ${!!response.screenshot}`);
+      this.sdk.emitter.emit(events.log.debug, `  Has cachedImageUrl: ${!!response.cachedImageUrl}`);
+      this.sdk.emitter.emit(events.log.debug, `  Has pixelDiffImage: ${!!response.pixelDiffImage}`)
     }
 
     // Save cropped image with red circle if available
@@ -388,10 +403,13 @@ class Element {
         fs.writeFileSync(croppedImagePath, buffer);
 
         if (debugMode) {
-          console.log(`  Debug Image: ${croppedImagePath}`);
+          const { events } = require("./agent/events.js");
+          this.sdk.emitter.emit(events.log.debug, `  Debug Image: ${croppedImagePath}`);
         }
       } catch (err) {
-        console.error("Failed to save cropped debug image:", err.message);
+        const { events } = require("./agent/events.js");
+        const errorMsg = formatter.formatError('Failed to save debug image', err);
+        this.sdk.emitter.emit(events.log.log, errorMsg);
       }
     }
 
@@ -417,10 +435,13 @@ class Element {
         fs.writeFileSync(cachedScreenshotPath, buffer);
 
         if (debugMode) {
-          console.log(`  Cached Screenshot: ${cachedScreenshotPath}`);
+          const { events } = require("./agent/events.js");
+          this.sdk.emitter.emit(events.log.debug, `  Cached Screenshot: ${cachedScreenshotPath}`);
         }
       } catch (err) {
-        console.error("Failed to save cached screenshot:", err.message);
+        const { events } = require("./agent/events.js");
+        const errorMsg = formatter.formatError('Failed to save cached screenshot', err);
+        this.sdk.emitter.emit(events.log.log, errorMsg);
       }
     }
 
@@ -446,10 +467,13 @@ class Element {
         fs.writeFileSync(pixelDiffPath, buffer);
 
         if (debugMode) {
-          console.log(`  Pixel Diff Image: ${pixelDiffPath}`);
+          const { events } = require("./agent/events.js");
+          this.sdk.emitter.emit(events.log.debug, `  Pixel Diff Image: ${pixelDiffPath}`);
         }
       } catch (err) {
-        console.error("Failed to save pixel diff image:", err.message);
+        const { events } = require("./agent/events.js");
+        const errorMsg = formatter.formatError('Failed to save pixel diff image', err);
+        this.sdk.emitter.emit(events.log.log, errorMsg);
       }
     }
   }
@@ -460,6 +484,7 @@ class Element {
    * @returns {Promise<void>}
    */
   async click(action = "click") {
+    this.sdk._checkAborted();
     if (!this._found || !this.coordinates) {
       throw new ElementNotFoundError(
         `Element "${this.description}" not found.`,
@@ -473,6 +498,12 @@ class Element {
         },
       );
     }
+
+    // Log the action
+    const { events } = require("./agent/events.js");
+    const actionName = action === "click" ? "click" : action.replace("-", " ");
+    const formattedMessage = formatter.formatAction(actionName, this.description);
+    this.sdk.emitter.emit(events.log.log, formattedMessage);
 
     if (action === "hover") {
       await this.commands.hover(this.coordinates.x, this.coordinates.y);
@@ -486,6 +517,7 @@ class Element {
    * @returns {Promise<void>}
    */
   async hover() {
+    this.sdk._checkAborted();
     if (!this._found || !this.coordinates) {
       throw new ElementNotFoundError(
         `Element "${this.description}" not found.`,
@@ -499,6 +531,11 @@ class Element {
         },
       );
     }
+
+    // Log the hover action
+    const { events } = require("./agent/events.js");
+    const formattedMessage = formatter.formatAction('hover', this.description);
+    this.sdk.emitter.emit(events.log.log, formattedMessage);
 
     await this.commands.hover(this.coordinates.x, this.coordinates.y);
   }
@@ -742,15 +779,34 @@ class TestDriverSDK {
       args: [],
       options: {
         os: options.os || "windows",
+        signal: options.signal || null,
       },
     });
 
     // Store options for later use
     this.options = options;
 
+    // Store os and resolution for API requests
+    this.os = options.os || "windows";
+    this.resolution = options.resolution || "1366x768";
+
+    // Set up abort signal if provided
+    this.signal = options.signal || null;
+    this._aborted = false;
+    if (this.signal) {
+      this.signal.addEventListener('abort', () => {
+        this._aborted = true;
+        this._handleAbort();
+      });
+    }
+
     // Store newSandbox preference from options
     this.newSandbox =
       options.newSandbox !== undefined ? options.newSandbox : false;
+
+    // Store headless preference from options
+    this.headless =
+      options.headless !== undefined ? options.headless : false;
 
     // Cache threshold configuration
     // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
@@ -759,9 +815,8 @@ class TestDriverSDK {
     const useCache =
       options.cache !== false && process.env.TD_NO_CACHE !== "true";
 
-    console.log(
-      `🔧 SDK Constructor: cache option = ${options.cache}, useCache = ${useCache}`,
-    );
+    // Note: Cannot emit events here as emitter is not yet available
+    // Logging will be done after connection
 
     if (!useCache) {
       // If cache is disabled, use -1 to bypass cache entirely
@@ -769,17 +824,17 @@ class TestDriverSDK {
         find: -1,
         findAll: -1,
       };
-      console.log("🚫 Cache DISABLED: thresholds set to -1");
     } else {
       // Use configured thresholds or defaults
       this.cacheThresholds = {
         find: options.cacheThreshold?.find ?? 0.05,
         findAll: options.cacheThreshold?.findAll ?? 0.05,
       };
-      console.log(
-        `✅ Cache ENABLED: thresholds = ${JSON.stringify(this.cacheThresholds)}`,
-      );
     }
+
+    // Redraw threshold configuration
+    // threshold = percentage of pixels that must change to consider screen redrawn (0.1 = 0.1%)
+    this.redrawThreshold = options.redrawThreshold ?? 0.1;
 
     // Track connection state
     this.connected = false;
@@ -801,12 +856,34 @@ class TestDriverSDK {
     // Set up logging if enabled (after emitter is exposed)
     this.loggingEnabled = options.logging !== false;
 
-    // Track event listeners for cleanup
-    this._eventListeners = [];
+    // Set up event listeners once (they live for the lifetime of the SDK instance)
+    this._setupLogging();
+  }
 
-    // Initialize logger for markdown and regular logs
-    if (this.loggingEnabled) {
-      this._setupLogging();
+  /**
+   * Check if operation has been aborted
+   * @private
+   * @throws {Error} If aborted
+   */
+  _checkAborted() {
+    if (this._aborted) {
+      throw new Error('Operation aborted');
+    }
+  }
+
+  /**
+   * Handle abort signal
+   * @private
+   */
+  async _handleAbort() {
+    const { events } = require("./agent/events.js");
+    this.emitter.emit(events.log.log, '⚠️  TestDriver SDK: Abort signal received, cleaning up...');
+    try {
+      if (this.connected) {
+        await this.disconnect();
+      }
+    } catch (error) {
+      this.emitter.emit(events.log.log, `Error during abort cleanup: ${error.message}`);
     }
   }
 
@@ -815,6 +892,7 @@ class TestDriverSDK {
    * @returns {Promise<string>} Authentication token
    */
   async auth() {
+    this._checkAborted();
     if (this.authenticated) {
       return;
     }
@@ -837,8 +915,9 @@ class TestDriverSDK {
    * @returns {Promise<Object>} Sandbox instance details
    */
   async connect(connectOptions = {}) {
+    this._checkAborted();
     if (this.connected) {
-      return this.instance;
+      throw new Error('Already connected. Create a new TestDriver instance to connect again.');
     }
 
     // Authenticate first if not already authenticated
@@ -852,8 +931,12 @@ class TestDriverSDK {
 
     // Map SDK connect options to agent buildEnv options
     // Use connectOptions.newSandbox if provided, otherwise fall back to this.newSandbox
+    // Use connectOptions.headless if provided, otherwise fall back to this.headless
     const buildEnvOptions = {
-      headless: connectOptions.headless || false,
+      headless:
+        connectOptions.headless !== undefined
+          ? connectOptions.headless
+          : this.headless,
       new:
         connectOptions.newSandbox !== undefined
           ? connectOptions.newSandbox
@@ -877,6 +960,9 @@ class TestDriverSDK {
       this.agent.sandboxOs = connectOptions.os;
     }
 
+    // Set redrawThreshold on agent's cliArgs.options
+    this.agent.cliArgs.options.redrawThreshold = this.redrawThreshold;
+
     // Use the agent's buildEnv method which handles all the connection logic
     await this.agent.buildEnv(buildEnvOptions);
 
@@ -899,15 +985,14 @@ class TestDriverSDK {
 
   /**
    * Disconnect from the sandbox
+   * Note: After disconnecting, you cannot reconnect with the same SDK instance.
+   * Create a new TestDriver instance if you need to connect again.
    * @returns {Promise<void>}
    */
   async disconnect() {
     if (this.connected && this.instance) {
       // Track disconnect event
       this.analytics.track("sdk.disconnect");
-
-      // Clean up event listeners to prevent memory leaks
-      this._removeEventListeners();
 
       this.connected = false;
       this.instance = null;
@@ -947,6 +1032,7 @@ class TestDriverSDK {
    * await element.click();
    */
   async find(description, cacheThreshold) {
+    this._checkAborted();
     this._ensureConnected();
     const element = new Element(description, this, this.system, this.commands);
     return await element.find(null, cacheThreshold);
@@ -975,6 +1061,7 @@ class TestDriverSDK {
    * }
    */
   async findAll(description, cacheThreshold) {
+    this._checkAborted();
     this._ensureConnected();
 
     const startTime = Date.now();
@@ -991,6 +1078,8 @@ class TestDriverSDK {
           element: description,
           image: screenshot,
           threshold: threshold,
+          os: this.os,
+          resolution: this.resolution,
         },
       );
 
@@ -1026,11 +1115,12 @@ class TestDriverSDK {
 
         // Log debug information when elements are found
         if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
-          console.log(
-            `✓ Found ${elements.length} element(s): "${description}"`,
+          const { events } = require("./agent/events.js");
+          this.emitter.emit(events.log.debug,
+            `✓ Found ${elements.length} element(s): "${description}"`
           );
-          console.log(`  Cache: ${response.cached ? "HIT" : "MISS"}`);
-          console.log(`  Time: ${duration}ms`);
+          this.emitter.emit(events.log.debug, `  Cache: ${response.cached ? "HIT" : "MISS"}`);
+          this.emitter.emit(events.log.debug, `  Time: ${duration}ms`);
         }
 
         return elements;
@@ -1039,7 +1129,8 @@ class TestDriverSDK {
         return [];
       }
     } catch (error) {
-      console.error("Error in findAll:", error);
+      const { events } = require("./agent/events.js");
+      this.emitter.emit(events.log.log, `Error in findAll: ${error.message}`);
       return [];
     }
   }
@@ -1173,7 +1264,6 @@ class TestDriverSDK {
          * Scroll the page
          * @param {ScrollDirection} [direction='down'] - Direction to scroll
          * @param {number} [amount=300] - Amount to scroll in pixels
-         * @param {ScrollMethod} [method='mouse'] - Scroll method
          * @returns {Promise<void>}
          */
         doc: "Scroll the page",
@@ -1305,14 +1395,25 @@ class TestDriverSDK {
         try {
           return await command(...args);
         } catch (error) {
+          // Ensure we have a proper Error object with a message
+          let properError = error;
+          if (!(error instanceof Error)) {
+            // If it's not an Error object, create one with a proper message
+            const errorMessage = error?.message || error?.reason || JSON.stringify(error);
+            properError = new Error(errorMessage);
+            // Preserve additional properties
+            if (error?.code) properError.code = error.code;
+            if (error?.fullError) properError.fullError = error.fullError;
+          }
+          
           // Replace the stack trace to point to the actual caller instead of SDK internals
           if (Error.captureStackTrace && callSite.stack) {
             // Preserve the error message but use the captured call site stack
-            const errorMessage = error.stack?.split("\n")[0];
+            const errorMessage = properError.stack?.split("\n")[0];
             const callerStack = callSite.stack?.split("\n").slice(1); // Skip "Error" line
-            error.stack = errorMessage + "\n" + callerStack.join("\n");
+            properError.stack = errorMessage + "\n" + callerStack.join("\n");
           }
-          throw error;
+          throw properError;
         }
       }.bind(this);
 
@@ -1327,6 +1428,28 @@ class TestDriverSDK {
   // ====================================
   // Helper Methods
   // ====================================
+
+  /**
+   * Capture a screenshot of the current screen
+   * @param {number} [scale=1] - Scale factor for the screenshot (1 = original size)
+   * @param {boolean} [silent=false] - Whether to suppress logging
+   * @param {boolean} [mouse=false] - Whether to include mouse cursor
+   * @returns {Promise<string>} Base64 encoded PNG screenshot
+   * 
+   * @example
+   * // Capture a screenshot
+   * const screenshot = await client.screenshot();
+   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * 
+   * @example
+   * // Capture with mouse cursor visible
+   * const screenshot = await client.screenshot(1, false, true);
+   */
+  async screenshot(scale = 1, silent = false, mouse = false) {
+    this._checkAborted();
+    this._ensureConnected();
+    return await this.system.captureScreenBase64(scale, silent, mouse);
+  }
 
   /**
    * Ensure the SDK is connected before running commands
@@ -1374,18 +1497,26 @@ class TestDriverSDK {
   }
 
   /**
+   * Set test context for enhanced logging (integrates with Vitest)
+   * @param {Object} context - Test context with file, test name, start time
+   * @param {string} [context.file] - Current test file name
+   * @param {string} [context.test] - Current test name
+   * @param {number} [context.startTime] - Test start timestamp
+   */
+  setTestContext(context) {
+    formatter.setTestContext(context);
+  }
+
+  /**
    * Set up logging for the SDK
    * @private
    */
   _setupLogging() {
-    if (this._loggingSetup) return;
-    this._loggingSetup = true;
-
     // Set up markdown logger
     createMarkdownLogger(this.emitter);
 
-    // Set up basic event logging and track listeners for cleanup
-    const logListener = (message) => {
+    // Set up basic event logging
+    this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
       if (event === events.log.debug) return;
       if (this.loggingEnabled && message) {
@@ -1393,11 +1524,9 @@ class TestDriverSDK {
         // Forward logs to sandbox for debugger display
         this._forwardLogToSandbox(message);
       }
-    };
-    this.emitter.on("log:*", logListener);
-    this._eventListeners.push({ event: "log:*", listener: logListener });
+    });
 
-    const errorListener = (data) => {
+    this.emitter.on("error:**", (data) => {
       if (this.loggingEnabled) {
         const event = this.emitter.event;
         console.error(event, ":", data);
@@ -1406,22 +1535,35 @@ class TestDriverSDK {
           typeof data === "object" ? JSON.stringify(data) : String(data);
         this._forwardLogToSandbox(`ERROR: ${errorMessage}`);
       }
-    };
-    this.emitter.on("error:*", errorListener);
-    this._eventListeners.push({ event: "error:*", listener: errorListener });
+    });
 
-    const statusListener = (message) => {
+    this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
         console.log(`- ${message}`);
         // Forward status to sandbox
         this._forwardLogToSandbox(`- ${message}`);
       }
-    };
-    this.emitter.on("status", statusListener);
-    this._eventListeners.push({ event: "status", listener: statusListener });
+    });
+
+    // Handle redraw status for debugging scroll and other async operations
+    this.emitter.on("redraw:status", (status) => {
+      if (this.loggingEnabled) {
+        console.log(
+          `[redraw] screen:${status.redraw.text} network:${status.network.text} timeout:${status.timeout.text}`
+        );
+      }
+    });
+
+    this.emitter.on("redraw:complete", (info) => {
+      if (this.loggingEnabled) {
+        console.log(
+          `[redraw complete] screen:${info.screenHasRedrawn} network:${info.networkSettled} timeout:${info.isTimeout} elapsed:${info.timeElapsed}ms`
+        );
+      }
+    });
 
     // Handle show window events for sandbox visualization
-    const showWindowListener = async (url) => {
+    this.emitter.on("show-window", async (url) => {
       if (this.loggingEnabled) {
         console.log("");
         console.log("Live test execution:");
@@ -1436,25 +1578,7 @@ class TestDriverSDK {
           await this._openBrowser(url);
         }
       }
-    };
-    this.emitter.on("show-window", showWindowListener);
-    this._eventListeners.push({
-      event: "show-window",
-      listener: showWindowListener,
     });
-  }
-
-  /**
-   * Remove all event listeners to prevent memory leaks
-   * @private
-   */
-  _removeEventListeners() {
-    if (this._eventListeners) {
-      this._eventListeners.forEach(({ event, listener }) => {
-        this.emitter.off(event, listener);
-      });
-      this._eventListeners = [];
-    }
   }
 
   /**
@@ -1497,8 +1621,9 @@ class TestDriverSDK {
         wait: false,
       });
     } catch (error) {
-      console.error("Failed to open browser automatically:", error);
-      console.log(`Please manually open: ${url}`);
+      const { events } = require("./agent/events.js");
+      this.emitter.emit(events.log.log, `Failed to open browser automatically: ${error.message}`);
+      this.emitter.emit(events.log.log, `Please manually open: ${url}`);
     }
   }
 
@@ -1527,8 +1652,9 @@ class TestDriverSDK {
    */
   _renderSandbox(instance) {
     if (!instance || !instance.ip || !instance.vncPort) {
-      console.warn(
-        "Cannot render sandbox: missing instance connection details",
+      const { events } = require("./agent/events.js");
+      this.emitter.emit(events.log.warn,
+        "Cannot render sandbox: missing instance connection details"
       );
       return;
     }

@@ -64,6 +64,9 @@ class TestDriverAgent extends EventEmitter2 {
     const flags = cliArgs.options || {};
     const firstArg = cliArgs.args && cliArgs.args[0];
 
+    // Store abort signal if provided
+    this.abortSignal = flags.signal || null;
+
     // All commands (run, edit, generate) use the same pattern:
     // first argument is the main file to work with
     this.thisFile = firstArg || this.config.TD_DEFAULT_TEST_FILE;
@@ -102,8 +105,8 @@ class TestDriverAgent extends EventEmitter2 {
     // Create outputs instance for this agent
     this.outputs = createOutputs();
 
-    // Create SDK instance with this agent's emitter, config, and session
-    this.sdk = createSDK(this.emitter, this.config, this.session);
+    // Create SDK instance with this agent's emitter, config, session, and abort signal
+    this.sdk = createSDK(this.emitter, this.config, this.session, this.abortSignal);
 
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
@@ -122,6 +125,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.config,
       this.session,
       () => this.sourceMapper.currentFilePath || this.thisFile,
+      this.cliArgs.options.redrawThreshold,
     );
     this.commands = commandsResult.commands;
     this.redraw = commandsResult.redraw;
@@ -272,6 +276,13 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Get error message
     let eMessage = error.message ? error.message : error;
+    
+    // Truncate error message if too long to prevent 400 errors from API
+    // Keep first 5000 characters as a reasonable limit for API payloads
+    const MAX_ERROR_LENGTH = 5000;
+    if (typeof eMessage === 'string' && eMessage.length > MAX_ERROR_LENGTH) {
+      eMessage = eMessage.substring(0, MAX_ERROR_LENGTH) + '\n\n[Error message truncated - message was too long]';
+    }
 
     // we sanitize the error message to use it as a key in the errorCounts object
     let safeKey = JSON.stringify(error.message ? error.message : error);
@@ -324,19 +335,41 @@ class TestDriverAgent extends EventEmitter2 {
     const streamId = `error-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let response = await this.sdk.req(
-      "error",
-      {
-        description: eMessage,
-        markdown,
-        image,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
-    );
+    // Truncate markdown if too long to prevent 400 errors
+    const MAX_MARKDOWN_LENGTH = 10000;
+    let truncatedMarkdown = markdown;
+    if (typeof markdown === 'string' && markdown.length > MAX_MARKDOWN_LENGTH) {
+      truncatedMarkdown = markdown.substring(0, MAX_MARKDOWN_LENGTH) + '\n\n[Markdown truncated - content was too long]';
+    }
+
+    let response;
+    try {
+      response = await this.sdk.req(
+        "error",
+        {
+          description: eMessage,
+          markdown: truncatedMarkdown,
+          image,
+        },
+        (chunk) => {
+          if (chunk.type === "data") {
+            this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
+          }
+        },
+      );
+    } catch (apiError) {
+      // If the error API call itself fails, prevent infinite loop
+      // by not retrying and instead treating as fatal
+      this.emitter.emit(
+        events.log.error,
+        theme.red(`Failed to get AI error resolution: ${apiError.message}`),
+      );
+      this.emitter.emit(
+        events.log.log,
+        "Original error: " + eMessage,
+      );
+      return await this.dieOnFatal(error);
+    }
 
     this.emitter.emit(events.log.markdown.end, streamId);
 
@@ -1991,7 +2024,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   }
 
   async createNewSandbox() {
-    console.log(this.sandboxOs);
 
     const sandboxConfig = {
       type: "create",
@@ -2008,11 +2040,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       sandboxConfig.instanceType = this.sandboxInstance;
     }
 
-    console.log("Creating sandbox with config:", sandboxConfig);
-
     let instance = await this.sandbox.send(sandboxConfig);
-
-    console.log("instance created", instance);
 
     // Save the sandbox ID for reconnection
     if (instance.sandbox && instance.sandbox.sandboxId) {

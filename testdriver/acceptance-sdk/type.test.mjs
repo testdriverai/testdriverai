@@ -1,8 +1,3 @@
-/**
- * TestDriver SDK - Type Test (Vitest)
- * Converted from: testdriver/acceptance/type.yaml
- */
-
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   createTestClient,
@@ -10,7 +5,7 @@ import {
   teardownTest,
 } from "./setup/testHelpers.mjs";
 
-describe("Type Test", () => {
+describe.sequential("Type Test", () => {
   let testdriver;
 
   beforeAll(async () => {
@@ -30,7 +25,6 @@ describe("Type Test", () => {
     await usernameField.click();
     await testdriver.type("standard_user");
 
-    // Assert username field contains "standard_user"
     const result = await testdriver.assert(
       'the username field contains "standard_user"',
     );
@@ -43,7 +37,6 @@ describe("Type Test", () => {
     );
     await signInButton.click();
 
-    // Assert validation message appears
     await testdriver.focusApplication("Google Chrome");
     const result = await testdriver.assert(
       "Please fill out this field is visible near the password field",

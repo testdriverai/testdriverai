@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="2" failures="0" errors="0" time="74.878390125">
+    <testsuite name="testdriver/acceptance-sdk/type.test.mjs" timestamp="2025-11-18T21:22:58.687Z" hostname="MacBookPro.lan" tests="2" failures="0" errors="0" skipped="0" time="74.878390125">
+        <testcase classname="testdriver/acceptance-sdk/type.test.mjs" name="Type Test &gt; should enter standard_user in username field" time="20.791731125">
+            <system-out>
+[redraw] screen:[2mfalse/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m0/1s[22m
+
+[redraw] screen:[2mfalse/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
+[redraw complete] screen:false network:true timeout:true elapsed:1846ms
+
+[35m🔍[39m  [1mFound[22m  [36m&quot;Username, input field for username&quot;[39m  [2mat (683, 310)[22m [2m2064ms[22m [33m⚡ cached[39m
+
+[36m👆[39m  [1mClick[22m  [36m&quot;Username, input field for username&quot;[39m
+
+[2mclick left clicking at 683, 310...[22m
+
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:669ms
+
+[2mtyping &quot;standard_user&quot;...[22m
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m1/5s[22m
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m2/5s[22m
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m4/5s[22m
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
+[redraw complete] screen:false network:true timeout:true elapsed:5252ms
+
+thinking...
+
+The task passed. The username input field visibly contains “standard_user.”
+
+            </system-out>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/type.test.mjs" name="Type Test &gt; should show validation message when clicking Sign In without password" time="16.277848167">
+            <system-out>
+[35m🔍[39m  [1mFound[22m  [36m&quot;Sign in, black button below the password field&quot;[39m  [2mat (682, 479)[22m [2m2108ms[22m [33m⚡ cached[39m
+
+[36m👆[39m  [1mClick[22m  [36m&quot;Sign in, black button below the password field&quot;[39m
+
+[2mclick left clicking at 682, 479...[22m
+
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:840ms
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m0/1s[22m
+
+[redraw] screen:[2m0.0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
+[redraw complete] screen:false network:true timeout:true elapsed:1875ms
+
+thinking...
+
+The task passed. The tooltip saying “Please fill out this field.” is visible directly under the password input.
+
+            </system-out>
+        </testcase>
+    </testsuite>
+</testsuites>
