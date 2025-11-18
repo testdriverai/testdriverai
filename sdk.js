@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
 
 /**
  * Custom error class for element operation failures
@@ -11,92 +11,102 @@ const os = require('os');
 class ElementNotFoundError extends Error {
   constructor(message, debugInfo = {}) {
     super(message);
-    this.name = 'ElementNotFoundError';
+    this.name = "ElementNotFoundError";
     this.screenshot = debugInfo.screenshot;
     this.aiResponse = debugInfo.aiResponse;
     this.description = debugInfo.description;
     this.timestamp = new Date().toISOString();
     this.screenshotPath = null;
-    
+
     // Capture stack trace but skip internal frames
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ElementNotFoundError);
     }
-    
+
     // Write screenshot to temp directory
     if (this.screenshot) {
       try {
-        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        const tempDir = path.join(os.tmpdir(), "testdriver-debug");
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir, { recursive: true });
         }
-        
+
         const filename = `screenshot-${Date.now()}.png`;
         this.screenshotPath = path.join(tempDir, filename);
-        
+
         // Remove data:image/png;base64, prefix if present
-        const base64Data = this.screenshot.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        
+        const base64Data = this.screenshot.replace(
+          /^data:image\/\w+;base64,/,
+          "",
+        );
+        const buffer = Buffer.from(base64Data, "base64");
+
         fs.writeFileSync(this.screenshotPath, buffer);
       } catch (err) {
         // If screenshot save fails, don't break the error
-        console.error('Failed to save debug screenshot:', err.message);
+        console.error("Failed to save debug screenshot:", err.message);
       }
     }
-    
+
     // Save cached image if available
     this.cachedImagePath = null;
     if (debugInfo.cachedImageUrl) {
       this.cachedImagePath = debugInfo.cachedImageUrl;
     }
-    
+
     // Save pixel diff image if available
     this.pixelDiffPath = null;
     if (debugInfo.pixelDiffImage) {
       try {
-        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        const tempDir = path.join(os.tmpdir(), "testdriver-debug");
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir, { recursive: true });
         }
-        
+
         const filename = `pixel-diff-error-${Date.now()}.png`;
         this.pixelDiffPath = path.join(tempDir, filename);
-        
-        const base64Data = debugInfo.pixelDiffImage.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        
+
+        const base64Data = debugInfo.pixelDiffImage.replace(
+          /^data:image\/\w+;base64,/,
+          "",
+        );
+        const buffer = Buffer.from(base64Data, "base64");
+
         fs.writeFileSync(this.pixelDiffPath, buffer);
       } catch (err) {
-        console.error('Failed to save pixel diff image:', err.message);
+        console.error("Failed to save pixel diff image:", err.message);
       }
     }
-    
+
     // Extract similarity and input text from AI response
     const similarity = this.aiResponse?.similarity ?? null;
-    const cacheHit = this.aiResponse?.cacheHit ?? this.aiResponse?.cached ?? false;
+    const cacheHit =
+      this.aiResponse?.cacheHit ?? this.aiResponse?.cached ?? false;
     const cacheStrategy = this.aiResponse?.cacheStrategy ?? null;
     const cacheCreatedAt = this.aiResponse?.cacheCreatedAt ?? null;
     const cacheDiffPercent = this.aiResponse?.cacheDiffPercent ?? null;
     const threshold = debugInfo.threshold ?? null;
-    const inputText = this.aiResponse?.input_text ?? this.aiResponse?.element ?? null;
-    
+    const inputText =
+      this.aiResponse?.input_text ?? this.aiResponse?.element ?? null;
+
     // Enhance error message with debugging hints
     this.message += `\n\n=== Debug Information ===`;
     this.message += `\nElement searched for: "${this.description}"`;
-    
+
     if (threshold !== null) {
       const similarityRequired = ((1 - threshold) * 100).toFixed(1);
       this.message += `\nCache threshold: ${threshold} (${similarityRequired}% similarity required)`;
     }
-    
+
     if (cacheHit) {
       this.message += `\nCache: HIT`;
       if (cacheStrategy) {
         this.message += ` (${cacheStrategy} strategy)`;
       }
       if (cacheCreatedAt) {
-        const cacheAge = Math.round((Date.now() - new Date(cacheCreatedAt).getTime()) / 1000);
+        const cacheAge = Math.round(
+          (Date.now() - new Date(cacheCreatedAt).getTime()) / 1000,
+        );
         this.message += `\nCache created: ${new Date(cacheCreatedAt).toISOString()} (${cacheAge}s ago)`;
       }
       if (cacheDiffPercent !== null) {
@@ -105,67 +115,70 @@ class ElementNotFoundError extends Error {
     } else {
       this.message += `\nCache: MISS`;
     }
-    
+
     if (similarity !== null) {
       const similarityPercent = (similarity * 100).toFixed(2);
       this.message += `\nSimilarity score: ${similarityPercent}%`;
-      
-      if (threshold !== null && similarity < (1 - threshold)) {
+
+      if (threshold !== null && similarity < 1 - threshold) {
         this.message += ` (below threshold)`;
       }
     }
-    
+
     if (inputText) {
       this.message += `\nInput text: "${inputText}"`;
     }
-    
+
     if (this.screenshotPath) {
       this.message += `\nCurrent screenshot: ${this.screenshotPath}`;
     }
-    
+
     if (this.cachedImagePath) {
       this.message += `\nCached image URL: ${this.cachedImagePath}`;
     }
-    
+
     if (this.pixelDiffPath) {
       this.message += `\nPixel diff image: ${this.pixelDiffPath}`;
     }
-    
+
     if (this.aiResponse) {
-      const responseText = this.aiResponse.response?.content?.[0]?.text || 
-                          this.aiResponse.content?.[0]?.text || 
-                          'No detailed response available';
+      const responseText =
+        this.aiResponse.response?.content?.[0]?.text ||
+        this.aiResponse.content?.[0]?.text ||
+        "No detailed response available";
       this.message += `\n\nAI Response:\n${responseText}`;
     }
-    
+
     // Clean up stack trace to only show userland code
     if (this.stack) {
-      const lines = this.stack.split('\n');
+      const lines = this.stack.split("\n");
       const filteredLines = [lines[0]]; // Keep error message line
-      
+
       // Skip frames until we find userland code (not sdk.js internals)
       let foundUserland = false;
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
-        
+
         // Skip internal Element method frames (click, hover, etc.)
-        if (line.includes('Element.click') || 
-            line.includes('Element.hover') ||
-            line.includes('Element.doubleClick') ||
-            line.includes('Element.rightClick') ||
-            line.includes('Element.mouseDown') ||
-            line.includes('Element.mouseUp')) {
+        if (
+          line.includes("Element.click") ||
+          line.includes("Element.hover") ||
+          line.includes("Element.doubleClick") ||
+          line.includes("Element.rightClick") ||
+          line.includes("Element.mouseDown") ||
+          line.includes("Element.mouseUp")
+        ) {
           continue;
         }
-        
+
         // Once we hit userland code, include everything from there
-        if (!line.includes('sdk.js') || foundUserland) {
+        if (!line.includes("sdk.js") || foundUserland) {
           foundUserland = true;
           filteredLines.push(line);
         }
       }
-      
-      this.stack = filteredLines.join('\n');
+
+      this.stack = filteredLines.join("\n");
     }
   }
 }
@@ -209,35 +222,36 @@ class Element {
     }
 
     const startTime = Date.now();
-    
-    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-    
+
+    const debugMode =
+      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+
     try {
       const screenshot = await this.system.captureScreenBase64();
       // Only store screenshot in DEBUG mode to prevent memory leaks
       if (debugMode) {
         this._screenshot = screenshot;
       }
-      
+
       // Use per-command threshold if provided, otherwise fall back to global threshold
-      const threshold = cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.05;
-      
+      const threshold =
+        cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.05;
+
       // Store the threshold for debugging
       this._threshold = threshold;
-      
+
       // Debug log threshold
       if (debugMode) {
-        console.log(`🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? 'DISABLED' : 'ENABLED'})`);
+        console.log(
+          `🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"})`,
+        );
       }
-      
-      const response = await this.sdk.apiClient.req(
-        "find",
-        {
-          element: description,
-          image: screenshot,
-          threshold: threshold,
-        }
-      );
+
+      const response = await this.sdk.apiClient.req("find", {
+        element: description,
+        image: screenshot,
+        threshold: threshold,
+      });
 
       const duration = Date.now() - startTime;
 
@@ -246,7 +260,7 @@ class Element {
         this._response = this._sanitizeResponse(response);
         this.coordinates = response.coordinates;
         this._found = true;
-        
+
         // Log debug information when element is found
         this._logFoundDebug(response, duration);
       } else {
@@ -254,7 +268,9 @@ class Element {
         this._found = false;
       }
     } catch (error) {
-      this._response = error.response ? this._sanitizeResponse(error.response) : null;
+      this._response = error.response
+        ? this._sanitizeResponse(error.response)
+        : null;
       this._found = false;
     }
 
@@ -269,18 +285,19 @@ class Element {
    */
   _sanitizeResponse(response) {
     if (!response) return null;
-    
+
     // Only keep base64 data in DEBUG mode
-    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    const debugMode =
+      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
     if (debugMode) {
       return response;
     }
-    
+
     // Create shallow copy and remove large base64 fields
     const sanitized = { ...response };
     delete sanitized.croppedImage;
     delete sanitized.screenshot;
-    
+
     return sanitized;
   }
 
@@ -293,40 +310,56 @@ class Element {
       description: this.description,
       coordinates: this.coordinates,
       duration: `${duration}ms`,
-      cacheHit: response.cacheHit || response.cache_hit || response.cached || false,
+      cacheHit:
+        response.cacheHit || response.cache_hit || response.cached || false,
       cacheStrategy: response.cacheStrategy || null,
       similarity: response.similarity ?? null,
       confidence: response.confidence ?? null,
     };
 
     // Log cache information in debug mode
-    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    const debugMode =
+      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
     if (debugMode) {
-      console.log('\n🔍 Element Found:');
+      console.log("\n🔍 Element Found:");
       console.log(`  Description: ${debugInfo.description}`);
-      console.log(`  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`);
+      console.log(
+        `  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`,
+      );
       console.log(`  Duration: ${debugInfo.duration}`);
-      console.log(`  Cache Hit: ${debugInfo.cacheHit ? '✅ YES' : '❌ NO'}`);
+      console.log(`  Cache Hit: ${debugInfo.cacheHit ? "✅ YES" : "❌ NO"}`);
       if (debugInfo.cacheHit) {
-        console.log(`  Cache Strategy: ${debugInfo.cacheStrategy || 'unknown'}`);
-        console.log(`  Similarity: ${debugInfo.similarity !== null ? (debugInfo.similarity * 100).toFixed(2) + '%' : 'N/A'}`);
+        console.log(
+          `  Cache Strategy: ${debugInfo.cacheStrategy || "unknown"}`,
+        );
+        console.log(
+          `  Similarity: ${debugInfo.similarity !== null ? (debugInfo.similarity * 100).toFixed(2) + "%" : "N/A"}`,
+        );
         if (response.cacheCreatedAt) {
-          const cacheAge = Math.round((Date.now() - new Date(response.cacheCreatedAt).getTime()) / 1000);
-          console.log(`  Cache Age: ${cacheAge}s (created: ${new Date(response.cacheCreatedAt).toISOString()})`);
+          const cacheAge = Math.round(
+            (Date.now() - new Date(response.cacheCreatedAt).getTime()) / 1000,
+          );
+          console.log(
+            `  Cache Age: ${cacheAge}s (created: ${new Date(response.cacheCreatedAt).toISOString()})`,
+          );
         }
         if (response.cachedImageUrl) {
           console.log(`  Cached Image URL: ${response.cachedImageUrl}`);
         }
         if (response.cacheDiffPercent !== undefined) {
-          console.log(`  Pixel Diff: ${(response.cacheDiffPercent * 100).toFixed(2)}%`);
+          console.log(
+            `  Pixel Diff: ${(response.cacheDiffPercent * 100).toFixed(2)}%`,
+          );
         }
       }
       if (debugInfo.confidence !== null) {
-        console.log(`  Confidence: ${(debugInfo.confidence * 100).toFixed(2)}%`);
+        console.log(
+          `  Confidence: ${(debugInfo.confidence * 100).toFixed(2)}%`,
+        );
       }
-      
+
       // Log available response fields for debugging
-      console.log(`  Response fields: ${Object.keys(response).join(', ')}`);
+      console.log(`  Response fields: ${Object.keys(response).join(", ")}`);
       console.log(`  Has croppedImage: ${!!response.croppedImage}`);
       console.log(`  Has screenshot: ${!!response.screenshot}`);
       console.log(`  Has cachedImageUrl: ${!!response.cachedImageUrl}`);
@@ -337,25 +370,28 @@ class Element {
     let croppedImagePath = null;
     if (response.croppedImage) {
       try {
-        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        const tempDir = path.join(os.tmpdir(), "testdriver-debug");
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir, { recursive: true });
         }
-        
+
         const filename = `element-found-${Date.now()}.png`;
         croppedImagePath = path.join(tempDir, filename);
-        
+
         // Remove data:image/png;base64, prefix if present
-        const base64Data = response.croppedImage.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        
+        const base64Data = response.croppedImage.replace(
+          /^data:image\/\w+;base64,/,
+          "",
+        );
+        const buffer = Buffer.from(base64Data, "base64");
+
         fs.writeFileSync(croppedImagePath, buffer);
-        
+
         if (debugMode) {
           console.log(`  Debug Image: ${croppedImagePath}`);
         }
       } catch (err) {
-        console.error('Failed to save cropped debug image:', err.message);
+        console.error("Failed to save cropped debug image:", err.message);
       }
     }
 
@@ -363,51 +399,57 @@ class Element {
     let cachedScreenshotPath = null;
     if (debugInfo.cacheHit && response.screenshot) {
       try {
-        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        const tempDir = path.join(os.tmpdir(), "testdriver-debug");
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir, { recursive: true });
         }
-        
+
         const filename = `cached-screenshot-${Date.now()}.png`;
         cachedScreenshotPath = path.join(tempDir, filename);
-        
+
         // Remove data:image/png;base64, prefix if present
-        const base64Data = response.screenshot.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        
+        const base64Data = response.screenshot.replace(
+          /^data:image\/\w+;base64,/,
+          "",
+        );
+        const buffer = Buffer.from(base64Data, "base64");
+
         fs.writeFileSync(cachedScreenshotPath, buffer);
-        
+
         if (debugMode) {
           console.log(`  Cached Screenshot: ${cachedScreenshotPath}`);
         }
       } catch (err) {
-        console.error('Failed to save cached screenshot:', err.message);
+        console.error("Failed to save cached screenshot:", err.message);
       }
     }
-    
+
     // Save pixel diff image if available and this was a cache hit
     let pixelDiffPath = null;
     if (debugInfo.cacheHit && response.pixelDiffImage) {
       try {
-        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        const tempDir = path.join(os.tmpdir(), "testdriver-debug");
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir, { recursive: true });
         }
-        
+
         const filename = `pixel-diff-${Date.now()}.png`;
         pixelDiffPath = path.join(tempDir, filename);
-        
+
         // Remove data:image/png;base64, prefix if present
-        const base64Data = response.pixelDiffImage.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-        
+        const base64Data = response.pixelDiffImage.replace(
+          /^data:image\/\w+;base64,/,
+          "",
+        );
+        const buffer = Buffer.from(base64Data, "base64");
+
         fs.writeFileSync(pixelDiffPath, buffer);
-        
+
         if (debugMode) {
           console.log(`  Pixel Diff Image: ${pixelDiffPath}`);
         }
       } catch (err) {
-        console.error('Failed to save pixel diff image:', err.message);
+        console.error("Failed to save pixel diff image:", err.message);
       }
     }
   }
@@ -417,7 +459,7 @@ class Element {
    * @param {ClickAction} [action='click'] - Type of click action
    * @returns {Promise<void>}
    */
-  async click(action = 'click') {
+  async click(action = "click") {
     if (!this._found || !this.coordinates) {
       throw new ElementNotFoundError(
         `Element "${this.description}" not found.`,
@@ -428,11 +470,11 @@ class Element {
           threshold: this._threshold,
           cachedImageUrl: this._response?.cachedImageUrl,
           pixelDiffImage: this._response?.pixelDiffImage,
-        }
+        },
       );
     }
 
-    if (action === 'hover') {
+    if (action === "hover") {
       await this.commands.hover(this.coordinates.x, this.coordinates.y);
     } else {
       await this.commands.click(this.coordinates.x, this.coordinates.y, action);
@@ -454,7 +496,7 @@ class Element {
           threshold: this._threshold,
           cachedImageUrl: this._response?.cachedImageUrl,
           pixelDiffImage: this._response?.pixelDiffImage,
-        }
+        },
       );
     }
 
@@ -466,7 +508,7 @@ class Element {
    * @returns {Promise<void>}
    */
   async doubleClick() {
-    return this.click('double-click');
+    return this.click("double-click");
   }
 
   /**
@@ -474,7 +516,7 @@ class Element {
    * @returns {Promise<void>}
    */
   async rightClick() {
-    return this.click('right-click');
+    return this.click("right-click");
   }
 
   /**
@@ -482,7 +524,7 @@ class Element {
    * @returns {Promise<void>}
    */
   async mouseDown() {
-    return this.click('mouseDown');
+    return this.click("mouseDown");
   }
 
   /**
@@ -490,7 +532,7 @@ class Element {
    * @returns {Promise<void>}
    */
   async mouseUp() {
-    return this.click('mouseUp');
+    return this.click("mouseUp");
   }
 
   /**
@@ -604,19 +646,19 @@ class Element {
    */
   async saveDebugScreenshot(filepath) {
     if (!this._screenshot) {
-      throw new Error('No screenshot available.');
+      throw new Error("No screenshot available.");
     }
 
-    const fs = require('fs').promises;
-    const path = require('path');
-    
+    const fs = require("fs").promises;
+    const path = require("path");
+
     const defaultPath = `./debug-screenshot-${Date.now()}.png`;
     const savePath = filepath || defaultPath;
-    
+
     // Remove data:image/png;base64, prefix if present
-    const base64Data = this._screenshot.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
-    
+    const base64Data = this._screenshot.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+
     await fs.writeFile(savePath, buffer);
     return path.resolve(savePath);
   }
@@ -652,19 +694,19 @@ class Element {
 
 /**
  * TestDriver SDK
- * 
+ *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
- * 
+ *
  * @example
  * const TestDriver = require('testdriverai');
- * 
+ *
  * const client = new TestDriver(process.env.TD_API_KEY);
  * await client.connect();
- * 
+ *
  * // New API
  * const element = await client.find('Submit button');
  * await element.click();
- * 
+ *
  * // Legacy API (deprecated)
  * await client.hoverText('Submit');
  * await client.click();
@@ -691,48 +733,54 @@ class TestDriverSDK {
       TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
-      ...options.environment
+      ...options.environment,
     };
 
     // Create the underlying agent with minimal CLI args
     this.agent = new TestDriverAgent(environment, {
-      command: 'sdk',
+      command: "sdk",
       args: [],
       options: {
-        os: options.os || 'windows'
-      }
+        os: options.os || "windows",
+      },
     });
 
     // Store options for later use
     this.options = options;
-    
+
     // Store newSandbox preference from options
-    this.newSandbox = options.newSandbox !== undefined ? options.newSandbox : false;
-    
+    this.newSandbox =
+      options.newSandbox !== undefined ? options.newSandbox : false;
+
     // Cache threshold configuration
     // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
     // cache: false option disables cache completely by setting threshold to -1
     // Also support TD_NO_CACHE environment variable
-    const useCache = options.cache !== false && process.env.TD_NO_CACHE !== 'true';
-    
-    console.log(`🔧 SDK Constructor: cache option = ${options.cache}, useCache = ${useCache}`);
-    
+    const useCache =
+      options.cache !== false && process.env.TD_NO_CACHE !== "true";
+
+    console.log(
+      `🔧 SDK Constructor: cache option = ${options.cache}, useCache = ${useCache}`,
+    );
+
     if (!useCache) {
       // If cache is disabled, use -1 to bypass cache entirely
       this.cacheThresholds = {
         find: -1,
         findAll: -1,
       };
-      console.log('🚫 Cache DISABLED: thresholds set to -1');
+      console.log("🚫 Cache DISABLED: thresholds set to -1");
     } else {
       // Use configured thresholds or defaults
       this.cacheThresholds = {
         find: options.cacheThreshold?.find ?? 0.05,
         findAll: options.cacheThreshold?.findAll ?? 0.05,
       };
-      console.log(`✅ Cache ENABLED: thresholds = ${JSON.stringify(this.cacheThresholds)}`);
+      console.log(
+        `✅ Cache ENABLED: thresholds = ${JSON.stringify(this.cacheThresholds)}`,
+      );
     }
-    
+
     // Track connection state
     this.connected = false;
     this.authenticated = false;
@@ -752,10 +800,10 @@ class TestDriverSDK {
 
     // Set up logging if enabled (after emitter is exposed)
     this.loggingEnabled = options.logging !== false;
-    
+
     // Track event listeners for cleanup
     this._eventListeners = [];
-    
+
     // Initialize logger for markdown and regular logs
     if (this.loggingEnabled) {
       this._setupLogging();
@@ -806,7 +854,10 @@ class TestDriverSDK {
     // Use connectOptions.newSandbox if provided, otherwise fall back to this.newSandbox
     const buildEnvOptions = {
       headless: connectOptions.headless || false,
-      new: connectOptions.newSandbox !== undefined ? connectOptions.newSandbox : this.newSandbox,
+      new:
+        connectOptions.newSandbox !== undefined
+          ? connectOptions.newSandbox
+          : this.newSandbox,
     };
 
     // Set agent properties for buildEnv to use
@@ -839,7 +890,9 @@ class TestDriverSDK {
     this._setupCommandMethods();
 
     this.connected = true;
-    this.analytics.track("sdk.connect", { sandboxId: this.instance?.instanceId });
+    this.analytics.track("sdk.connect", {
+      sandboxId: this.instance?.instanceId,
+    });
 
     return this.instance;
   }
@@ -852,10 +905,10 @@ class TestDriverSDK {
     if (this.connected && this.instance) {
       // Track disconnect event
       this.analytics.track("sdk.disconnect");
-      
+
       // Clean up event listeners to prevent memory leaks
       this._removeEventListeners();
-      
+
       this.connected = false;
       this.instance = null;
     }
@@ -868,20 +921,20 @@ class TestDriverSDK {
   /**
    * Find an element by description
    * Automatically locates the element and returns it
-   * 
+   *
    * @param {string} description - Description of the element to find
    * @param {number} [cacheThreshold] - Cache threshold for this specific find (overrides global setting)
    * @returns {Promise<Element>} Element instance that has been located
-   * 
+   *
    * @example
    * // Find and click immediately
    * const element = await client.find('the sign in button');
    * await element.click();
-   * 
+   *
    * @example
    * // Find with custom cache threshold
    * const element = await client.find('login button', 0.01);
-   * 
+   *
    * @example
    * // Poll until element is found
    * let element;
@@ -895,30 +948,25 @@ class TestDriverSDK {
    */
   async find(description, cacheThreshold) {
     this._ensureConnected();
-    const element = new Element(
-      description,
-      this,
-      this.system,
-      this.commands
-    );
+    const element = new Element(description, this, this.system, this.commands);
     return await element.find(null, cacheThreshold);
   }
 
   /**
    * Find all elements matching a description
    * Automatically locates all matching elements and returns them as an array
-   * 
+   *
    * @param {string} description - Description of the elements to find
    * @param {number} [cacheThreshold] - Cache threshold for this specific findAll (overrides global setting)
    * @returns {Promise<Element[]>} Array of Element instances that have been located
-   * 
+   *
    * @example
    * // Find all buttons and click the first one
    * const buttons = await client.findAll('button');
    * if (buttons.length > 0) {
    *   await buttons[0].click();
    * }
-   * 
+   *
    * @example
    * // Find all list items with custom cache threshold
    * const items = await client.findAll('list item', 0.01);
@@ -930,52 +978,58 @@ class TestDriverSDK {
     this._ensureConnected();
 
     const startTime = Date.now();
-    
+
     try {
       const screenshot = await this.system.captureScreenBase64();
-      
+
       // Use per-command threshold if provided, otherwise fall back to global threshold
       const threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.05;
-      
+
       const response = await this.apiClient.req(
         "/api/v7.0.0/testdriver-agent/testdriver-find-all",
         {
           element: description,
           image: screenshot,
           threshold: threshold,
-        }
+        },
       );
 
       const duration = Date.now() - startTime;
 
       if (response && response.elements && response.elements.length > 0) {
         // Create Element instances for each found element
-        const elements = response.elements.map(elementData => {
+        const elements = response.elements.map((elementData) => {
           const element = new Element(
             description,
             this,
             this.system,
-            this.commands
+            this.commands,
           );
-          
+
           // Set element as found with its coordinates
           element.coordinates = elementData.coordinates;
           element._found = true;
-          element._response = this._sanitizeResponseForElement(response, elementData);
-          
+          element._response = this._sanitizeResponseForElement(
+            response,
+            elementData,
+          );
+
           // Only store screenshot in DEBUG mode
-          const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+          const debugMode =
+            process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
           if (debugMode) {
             element._screenshot = screenshot;
           }
-          
+
           return element;
         });
 
         // Log debug information when elements are found
         if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
-          console.log(`✓ Found ${elements.length} element(s): "${description}"`);
-          console.log(`  Cache: ${response.cached ? 'HIT' : 'MISS'}`);
+          console.log(
+            `✓ Found ${elements.length} element(s): "${description}"`,
+          );
+          console.log(`  Cache: ${response.cached ? "HIT" : "MISS"}`);
           console.log(`  Time: ${duration}ms`);
         }
 
@@ -985,7 +1039,7 @@ class TestDriverSDK {
         return [];
       }
     } catch (error) {
-      console.error('Error in findAll:', error);
+      console.error("Error in findAll:", error);
       return [];
     }
   }
@@ -998,8 +1052,9 @@ class TestDriverSDK {
    * @returns {Object} Sanitized response for this element
    */
   _sanitizeResponseForElement(response, elementData) {
-    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-    
+    const debugMode =
+      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+
     // Combine global response data with element-specific data
     const sanitized = {
       coordinates: elementData.coordinates,
@@ -1014,13 +1069,13 @@ class TestDriverSDK {
       text: elementData.text,
       label: elementData.label,
     };
-    
+
     // Only keep large data in debug mode
     if (debugMode) {
       sanitized.croppedImage = elementData.croppedImage;
       sanitized.screenshot = response.screenshot;
     }
-    
+
     return sanitized;
   }
 
@@ -1036,8 +1091,8 @@ class TestDriverSDK {
   _setupCommandMethods() {
     // Mapping from command names to SDK method names with type definitions
     const commandMapping = {
-      'hover-text': { 
-        name: 'hoverText',
+      "hover-text": {
+        name: "hoverText",
         /**
          * Hover over text on screen
          * @deprecated Use find() and element.click() instead
@@ -1048,10 +1103,10 @@ class TestDriverSDK {
          * @param {number} [timeout=5000] - Timeout in milliseconds
          * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
          */
-        doc: 'Hover over text on screen (deprecated - use find() instead)'
+        doc: "Hover over text on screen (deprecated - use find() instead)",
       },
-      'hover-image': { 
-        name: 'hoverImage',
+      "hover-image": {
+        name: "hoverImage",
         /**
          * Hover over an image on screen
          * @deprecated Use find() and element.click() instead
@@ -1059,10 +1114,10 @@ class TestDriverSDK {
          * @param {ClickAction} [action='click'] - Action to perform
          * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
          */
-        doc: 'Hover over an image on screen (deprecated - use find() instead)'
+        doc: "Hover over an image on screen (deprecated - use find() instead)",
       },
-      'match-image': { 
-        name: 'matchImage',
+      "match-image": {
+        name: "matchImage",
         /**
          * Match and interact with an image template
          * @param {string} imagePath - Path to the image template
@@ -1070,29 +1125,29 @@ class TestDriverSDK {
          * @param {boolean} [invert=false] - Invert the match
          * @returns {Promise<boolean>}
          */
-        doc: 'Match and interact with an image template'
+        doc: "Match and interact with an image template",
       },
-      'type': { 
-        name: 'type',
+      type: {
+        name: "type",
         /**
          * Type text
          * @param {string | number} text - Text to type
          * @param {number} [delay=250] - Delay between keystrokes in milliseconds
          * @returns {Promise<void>}
          */
-        doc: 'Type text'
+        doc: "Type text",
       },
-      'press-keys': { 
-        name: 'pressKeys',
+      "press-keys": {
+        name: "pressKeys",
         /**
          * Press keyboard keys
          * @param {KeyboardKey[]} keys - Array of keys to press
          * @returns {Promise<void>}
          */
-        doc: 'Press keyboard keys'
+        doc: "Press keyboard keys",
       },
-      'click': { 
-        name: 'click',
+      click: {
+        name: "click",
         /**
          * Click at coordinates
          * @param {number} x - X coordinate
@@ -1100,20 +1155,20 @@ class TestDriverSDK {
          * @param {ClickAction} [action='click'] - Type of click action
          * @returns {Promise<void>}
          */
-        doc: 'Click at coordinates'
+        doc: "Click at coordinates",
       },
-      'hover': { 
-        name: 'hover',
+      hover: {
+        name: "hover",
         /**
          * Hover at coordinates
          * @param {number} x - X coordinate
          * @param {number} y - Y coordinate
          * @returns {Promise<void>}
          */
-        doc: 'Hover at coordinates'
+        doc: "Hover at coordinates",
       },
-      'scroll': { 
-        name: 'scroll',
+      scroll: {
+        name: "scroll",
         /**
          * Scroll the page
          * @param {ScrollDirection} [direction='down'] - Direction to scroll
@@ -1121,20 +1176,20 @@ class TestDriverSDK {
          * @param {ScrollMethod} [method='mouse'] - Scroll method
          * @returns {Promise<void>}
          */
-        doc: 'Scroll the page'
+        doc: "Scroll the page",
       },
-      'wait': { 
-        name: 'wait',
+      wait: {
+        name: "wait",
         /**
          * Wait for specified time
          * @deprecated Consider using element polling with find() instead of arbitrary waits
          * @param {number} [timeout=3000] - Time to wait in milliseconds
          * @returns {Promise<void>}
          */
-        doc: 'Wait for specified time (deprecated - consider element polling instead)'
+        doc: "Wait for specified time (deprecated - consider element polling instead)",
       },
-      'wait-for-text': { 
-        name: 'waitForText',
+      "wait-for-text": {
+        name: "waitForText",
         /**
          * Wait for text to appear on screen
          * @deprecated Use find() in a polling loop instead
@@ -1144,10 +1199,10 @@ class TestDriverSDK {
          * @param {boolean} [invert=false] - Invert the match (wait for text to disappear)
          * @returns {Promise<void>}
          */
-        doc: 'Wait for text to appear on screen (deprecated - use find() in a loop instead)'
+        doc: "Wait for text to appear on screen (deprecated - use find() in a loop instead)",
       },
-      'wait-for-image': { 
-        name: 'waitForImage',
+      "wait-for-image": {
+        name: "waitForImage",
         /**
          * Wait for image to appear on screen
          * @deprecated Use find() in a polling loop instead
@@ -1156,10 +1211,10 @@ class TestDriverSDK {
          * @param {boolean} [invert=false] - Invert the match (wait for image to disappear)
          * @returns {Promise<void>}
          */
-        doc: 'Wait for image to appear on screen (deprecated - use find() in a loop instead)'
+        doc: "Wait for image to appear on screen (deprecated - use find() in a loop instead)",
       },
-      'scroll-until-text': { 
-        name: 'scrollUntilText',
+      "scroll-until-text": {
+        name: "scrollUntilText",
         /**
          * Scroll until text is found
          * @param {string} text - Text to find
@@ -1170,10 +1225,10 @@ class TestDriverSDK {
          * @param {boolean} [invert=false] - Invert the match
          * @returns {Promise<void>}
          */
-        doc: 'Scroll until text is found'
+        doc: "Scroll until text is found",
       },
-      'scroll-until-image': { 
-        name: 'scrollUntilImage',
+      "scroll-until-image": {
+        name: "scrollUntilImage",
         /**
          * Scroll until image is found
          * @param {string} description - Description of the image (or use path parameter)
@@ -1184,37 +1239,37 @@ class TestDriverSDK {
          * @param {boolean} [invert=false] - Invert the match
          * @returns {Promise<void>}
          */
-        doc: 'Scroll until image is found'
+        doc: "Scroll until image is found",
       },
-      'focus-application': { 
-        name: 'focusApplication',
+      "focus-application": {
+        name: "focusApplication",
         /**
          * Focus an application by name
          * @param {string} name - Application name
          * @returns {Promise<string>}
          */
-        doc: 'Focus an application by name'
+        doc: "Focus an application by name",
       },
-      'remember': { 
-        name: 'remember',
+      remember: {
+        name: "remember",
         /**
          * Extract and remember information from the screen using AI
          * @param {string} description - What to remember
          * @returns {Promise<string>}
          */
-        doc: 'Extract and remember information from the screen'
+        doc: "Extract and remember information from the screen",
       },
-      'assert': { 
-        name: 'assert',
+      assert: {
+        name: "assert",
         /**
          * Make an AI-powered assertion
          * @param {string} assertion - Assertion to check
          * @returns {Promise<boolean>}
          */
-        doc: 'Make an AI-powered assertion'
+        doc: "Make an AI-powered assertion",
       },
-      'exec': { 
-        name: 'exec',
+      exec: {
+        name: "exec",
         /**
          * Execute code in the sandbox
          * @param {ExecLanguage} language - Language ('js' or 'pwsh')
@@ -1223,15 +1278,15 @@ class TestDriverSDK {
          * @param {boolean} [silent=false] - Suppress output
          * @returns {Promise<string>}
          */
-        doc: 'Execute code in the sandbox'
+        doc: "Execute code in the sandbox",
       },
     };
 
     // Create SDK methods dynamically from commands
-    Object.keys(this.commands).forEach(commandName => {
+    Object.keys(this.commands).forEach((commandName) => {
       const command = this.commands[commandName];
       const methodInfo = commandMapping[commandName];
-      
+
       if (!methodInfo) {
         // Skip commands not in mapping
         return;
@@ -1240,31 +1295,31 @@ class TestDriverSDK {
       const methodName = methodInfo.name;
 
       // Create the wrapper method with proper stack trace handling
-      this[methodName] = async function(...args) {
+      this[methodName] = async function (...args) {
         this._ensureConnected();
-        
+
         // Capture the call site for better error reporting
         const callSite = {};
         Error.captureStackTrace(callSite, this[methodName]);
-        
+
         try {
           return await command(...args);
         } catch (error) {
           // Replace the stack trace to point to the actual caller instead of SDK internals
           if (Error.captureStackTrace && callSite.stack) {
             // Preserve the error message but use the captured call site stack
-            const errorMessage = error.stack?.split('\n')[0];
-            const callerStack = callSite.stack?.split('\n').slice(1); // Skip "Error" line
-            error.stack = errorMessage + '\n' + callerStack.join('\n');
+            const errorMessage = error.stack?.split("\n")[0];
+            const callerStack = callSite.stack?.split("\n").slice(1); // Skip "Error" line
+            error.stack = errorMessage + "\n" + callerStack.join("\n");
           }
           throw error;
         }
       }.bind(this);
 
       // Preserve the original function's name for better debugging
-      Object.defineProperty(this[methodName], 'name', {
+      Object.defineProperty(this[methodName], "name", {
         value: methodName,
-        writable: false
+        writable: false,
       });
     });
   }
@@ -1347,7 +1402,8 @@ class TestDriverSDK {
         const event = this.emitter.event;
         console.error(event, ":", data);
         // Forward errors to sandbox
-        const errorMessage = typeof data === 'object' ? JSON.stringify(data) : String(data);
+        const errorMessage =
+          typeof data === "object" ? JSON.stringify(data) : String(data);
         this._forwardLogToSandbox(`ERROR: ${errorMessage}`);
       }
     };
@@ -1382,7 +1438,10 @@ class TestDriverSDK {
       }
     };
     this.emitter.on("show-window", showWindowListener);
-    this._eventListeners.push({ event: "show-window", listener: showWindowListener });
+    this._eventListeners.push({
+      event: "show-window",
+      listener: showWindowListener,
+    });
   }
 
   /**
@@ -1468,7 +1527,9 @@ class TestDriverSDK {
    */
   _renderSandbox(instance) {
     if (!instance || !instance.ip || !instance.vncPort) {
-      console.warn("Cannot render sandbox: missing instance connection details");
+      console.warn(
+        "Cannot render sandbox: missing instance connection details",
+      );
       return;
     }
 
@@ -1499,16 +1560,16 @@ class TestDriverSDK {
   /**
    * Execute a natural language task using AI
    * This is the SDK equivalent of the CLI's exploratory loop
-   * 
+   *
    * @param {string} task - Natural language description of what to do
    * @param {Object} options - Execution options
    * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
    * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
-   * 
+   *
    * @example
    * // Simple execution
    * await client.ai('Click the submit button');
-   * 
+   *
    * @example
    * // With validation loop
    * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });

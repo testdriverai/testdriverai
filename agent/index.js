@@ -1738,8 +1738,8 @@ ${regression}
         events.log.narration,
         theme.dim(`no recent sandbox found, creating a new one.`),
       );
-    } 
-    
+    }
+
     if (this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
@@ -1765,7 +1765,7 @@ ${regression}
           events.log.narration,
           theme.dim(`failed to connect to recent sandbox, creating new one...`),
         );
-        console.error('Failed to reconnect to sandbox:', error);
+        console.error("Failed to reconnect to sandbox:", error);
       }
     } else if (!createNew) {
       this.emitter.emit(
@@ -1790,8 +1790,9 @@ ${regression}
     });
 
     // For Linux sandboxes, use sandboxId; for Windows, use instanceId
-    const sandboxIdentifier = newSandbox.sandbox.sandboxId || newSandbox.sandbox.instanceId;
-    
+    const sandboxIdentifier =
+      newSandbox.sandbox.sandboxId || newSandbox.sandbox.instanceId;
+
     this.saveLastSandboxId(sandboxIdentifier);
     let instance = await this.connectToSandboxDirect(
       sandboxIdentifier,
@@ -1924,7 +1925,7 @@ ${regression}
   async renderSandbox(instance, headless = false) {
     if (!headless) {
       let url;
-      
+
       // If the instance already has a URL (from reconnection), use it
       if (instance.url) {
         url = instance.url;
@@ -1945,7 +1946,7 @@ ${regression}
       };
 
       // Base64 encode the data (the debugger expects base64, not URL encoding)
-      const encodedData = Buffer.from(JSON.stringify(data)).toString('base64');
+      const encodedData = Buffer.from(JSON.stringify(data)).toString("base64");
 
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
@@ -1988,15 +1989,13 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   }
 
   async createNewSandbox() {
-
-    console.log(this.sandboxOs)
+    console.log(this.sandboxOs);
 
     const sandboxConfig = {
       type: "create",
-      os: "linux",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
-      os: this.sandboxOs || 'windows'
+      os: this.sandboxOs || "windows",
     };
 
     // Add AMI and instance type if specified

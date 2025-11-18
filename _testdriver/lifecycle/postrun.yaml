@@ -6,5 +6,3 @@ steps:
         lang: sh
         timeout: 120000
         code: dashcam stop
-
-

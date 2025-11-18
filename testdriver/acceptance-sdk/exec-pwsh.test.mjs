@@ -3,12 +3,16 @@
  * Converted from: testdriver/acceptance/exec-shell.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  createTestClient,
+  setupTest,
+  teardownTest,
+} from "./setup/testHelpers.mjs";
 
-const isLinux = process.platform === 'linux';
+const isLinux = process.platform === "linux";
 
-describe.skipIf(isLinux)('Exec Shell Test', () => {
+describe.skipIf(isLinux)("Exec Shell Test", () => {
   let client;
 
   beforeAll(async () => {
@@ -20,9 +24,11 @@ describe.skipIf(isLinux)('Exec Shell Test', () => {
     await teardownTest(client);
   });
 
-  it('should generate random email using PowerShell and enter it', async () => {
+  it("should generate random email using PowerShell and enter it", async () => {
     // Generate random email using PowerShell
-    const randomEmail = await client.exec('pwsh', `
+    const randomEmail = await client.exec(
+      "pwsh",
+      `
 # Random email generator in PowerShell
 
 # Arrays of possible names and domains
@@ -41,15 +47,21 @@ $email = "$first.$last$number@$domain".ToLower()
 
 # Output
 Write-Output "$email"
-    `, 10000);
+    `,
+      10000,
+    );
 
     // Enter the email in username field
-    const usernameField = await client.find('Username, input field for username');
+    const usernameField = await client.find(
+      "Username, input field for username",
+    );
     await usernameField.click();
     await client.type(randomEmail);
 
     // Assert that the username field shows a valid email address
-    const result = await client.assert(`the username field contains ${randomEmail} which is a valid email address`);
+    const result = await client.assert(
+      `the username field contains ${randomEmail} which is a valid email address`,
+    );
     expect(result).toBeTruthy();
   });
 });

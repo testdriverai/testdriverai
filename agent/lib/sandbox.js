@@ -24,12 +24,12 @@ const createSandbox = (emitter, analytics) => {
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
-        
+
         // If os is set in the message, store it for future messages
         if (message.os) {
           this.os = message.os;
         }
-        
+
         // Add os to every message if it's been set
         if (this.os && !message.os) {
           message.os = this.os;
@@ -90,7 +90,7 @@ const createSandbox = (emitter, analytics) => {
         return reply;
       } else {
         // Throw error to trigger fallback to creating new sandbox
-        throw new Error(reply.errorMessage || 'Failed to connect to sandbox');
+        throw new Error(reply.errorMessage || "Failed to connect to sandbox");
       }
     }
 
@@ -140,7 +140,7 @@ const createSandbox = (emitter, analytics) => {
 
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
-            const error = new Error(message.errorMessage || 'Sandbox error');
+            const error = new Error(message.errorMessage || "Sandbox error");
             error.responseData = message;
             this.ps[message.requestId].reject(error);
           } else {

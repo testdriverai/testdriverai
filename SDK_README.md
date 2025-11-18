@@ -11,31 +11,31 @@ npm install testdriverai
 ## Quick Start
 
 ```javascript
-const TestDriver = require('testdriverai');
+const TestDriver = require("testdriverai");
 
 async function runTest() {
   // Initialize SDK with your API key
   const client = new TestDriver(process.env.TD_API_KEY);
-  
+
   // Authenticate and connect to a sandbox
   await client.auth();
   await client.connect();
-  
+
   // Use the new find() API
-  await client.focusApplication('Google Chrome');
-  
-  const searchBox = await client.find('search box').find();
+  await client.focusApplication("Google Chrome");
+
+  const searchBox = await client.find("search box").find();
   await searchBox.click();
-  await client.type('testdriver.ai');
-  await client.pressKeys(['enter']);
-  
+  await client.type("testdriver.ai");
+  await client.pressKeys(["enter"]);
+
   // Poll for element to appear
-  let result = client.find('TestDriver heading');
+  let result = client.find("TestDriver heading");
   while (!result.found()) {
     result = await result.find();
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  
+
   // Clean up
   await client.disconnect();
 }
@@ -51,12 +51,14 @@ We've introduced a new `find()` API that provides better control over element fi
 
 ```javascript
 // Find and click an element
-const button = await client.find('the sign in button, black button below password');
+const button = await client.find(
+  "the sign in button, black button below password",
+);
 await button.click();
 
 // Check if element exists
 if (button.found()) {
-  console.log('Button coordinates:', button.getCoordinates());
+  console.log("Button coordinates:", button.getCoordinates());
 }
 ```
 
@@ -66,10 +68,10 @@ if (button.found()) {
 // Wait for element to appear
 let element;
 while (!element?.found()) {
-  console.log('waiting for element...');
-  element = await client.find('login button');
+  console.log("waiting for element...");
+  element = await client.find("login button");
   if (!element.found()) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 await element.click();
@@ -78,22 +80,22 @@ await element.click();
 ### Different Actions
 
 ```javascript
-const menu = await client.find('File menu').find();
+const menu = await client.find("File menu").find();
 await menu.hover();
 await menu.rightClick();
 await menu.doubleClick();
 
 // Or use the generic click() method with action parameter
-await menu.click('right-click');
+await menu.click("right-click");
 ```
 
 ### Drag and Drop
 
 ```javascript
-const source = await client.find('draggable item');
+const source = await client.find("draggable item");
 await source.mouseDown();
 
-const target = await client.find('drop zone');
+const target = await client.find("drop zone");
 await target.mouseUp();
 ```
 
@@ -110,13 +112,15 @@ The `Element` class represents an element found on screen and provides methods f
 Creates a new Element instance and immediately attempts to locate it.
 
 **Parameters:**
+
 - `description` (string): Natural language description of the element
 
 **Returns:** `Promise<Element>` - Element instance (already located)
 
 **Example:**
+
 ```javascript
-const button = await client.find('the sign in button');
+const button = await client.find("the sign in button");
 // Element is automatically located
 if (button.found()) {
   await button.click();
@@ -130,17 +134,19 @@ if (button.found()) {
 Locates (or relocates) the element on screen.
 
 **Parameters:**
+
 - `newDescription` (string, optional): New description to search for
 
 **Returns:** `Promise<Element>` - The same Element instance
 
 **Example:**
+
 ```javascript
 // Re-find the same element
 await element.find();
 
 // Find with a new description
-await element.find('submit button');
+await element.find("submit button");
 ```
 
 ##### `element.found()`
@@ -150,9 +156,10 @@ Check if the element was successfully located.
 **Returns:** `boolean` - true if element was found
 
 **Example:**
+
 ```javascript
 if (element.found()) {
-  console.log('Element located!');
+  console.log("Element located!");
 }
 ```
 
@@ -161,14 +168,16 @@ if (element.found()) {
 Click on the element.
 
 **Parameters:**
+
 - `action` (string, optional): Click type - `'click'`, `'right-click'`, `'double-click'`, `'mouseDown'`, `'mouseUp'` (default: `'click'`)
 
 **Returns:** `Promise<void>`
 
 **Example:**
+
 ```javascript
 await element.click();
-await element.click('right-click');
+await element.click("right-click");
 ```
 
 ##### `element.hover()`
@@ -178,6 +187,7 @@ Hover the mouse over the element.
 **Returns:** `Promise<void>`
 
 **Example:**
+
 ```javascript
 await element.hover();
 ```
@@ -189,6 +199,7 @@ Double-click on the element. Convenience method for `element.click('double-click
 **Returns:** `Promise<void>`
 
 **Example:**
+
 ```javascript
 await element.doubleClick();
 ```
@@ -200,6 +211,7 @@ Right-click on the element. Convenience method for `element.click('right-click')
 **Returns:** `Promise<void>`
 
 **Example:**
+
 ```javascript
 await element.rightClick();
 ```
@@ -211,8 +223,9 @@ Press the mouse button down on the element (useful for drag operations).
 **Returns:** `Promise<void>`
 
 **Example:**
+
 ```javascript
-const draggable = await client.find('item to drag');
+const draggable = await client.find("item to drag");
 await draggable.mouseDown();
 ```
 
@@ -223,8 +236,9 @@ Release the mouse button on the element (useful for drag operations).
 **Returns:** `Promise<void>`
 
 **Example:**
+
 ```javascript
-const dropZone = await client.find('drop target');
+const dropZone = await client.find("drop target");
 await dropZone.mouseUp();
 ```
 
@@ -235,6 +249,7 @@ Get the screen coordinates of the element.
 **Returns:** `{x, y, centerX, centerY} | null` - Coordinates object or null if not found
 
 **Example:**
+
 ```javascript
 const coords = element.getCoordinates();
 if (coords) {
@@ -250,9 +265,10 @@ Get the full API response data from the locate operation.
 **Returns:** `Object | null` - Full response with all available data
 
 **Example:**
+
 ```javascript
 const response = element.getResponse();
-console.log('Full response:', response);
+console.log("Full response:", response);
 ```
 
 #### Element Properties
@@ -260,25 +276,29 @@ console.log('Full response:', response);
 Elements expose many read-only properties from the API response:
 
 ##### Coordinate Properties
+
 - `element.x` - X coordinate (top-left corner) or null
 - `element.y` - Y coordinate (top-left corner) or null
 - `element.centerX` - X coordinate of element center or null
 - `element.centerY` - Y coordinate of element center or null
 
 ##### Dimension Properties
+
 - `element.width` - Width of the element or null
 - `element.height` - Height of the element or null
 - `element.boundingBox` - Bounding box object or null
 
 ##### Match Quality Properties
+
 - `element.confidence` - Confidence score (0-1) or null
 - `element.screenshot` - Base64 encoded screenshot or null
 - `element.text` - Text content of the element or null
 - `element.label` - Label/aria-label of the element or null
 
 **Example:**
+
 ```javascript
-const button = await client.find('login button');
+const button = await client.find("login button");
 
 if (button.found()) {
   console.log({
@@ -287,22 +307,22 @@ if (button.found()) {
     size: { width: button.width, height: button.height },
     confidence: button.confidence,
     text: button.text,
-    label: button.label
+    label: button.label,
   });
-  
+
   // Save screenshot for debugging
   if (button.screenshot) {
-    require('fs').writeFileSync(
-      'element.png',
-      Buffer.from(button.screenshot, 'base64')
+    require("fs").writeFileSync(
+      "element.png",
+      Buffer.from(button.screenshot, "base64"),
     );
   }
-  
+
   // Conditional actions based on properties
   if (button.confidence > 0.8) {
     await button.click();
   } else {
-    console.log('Low confidence, skipping click');
+    console.log("Low confidence, skipping click");
   }
 }
 ```
@@ -316,6 +336,7 @@ For more examples, see `examples/sdk-element-properties.js`.
 Creates a new TestDriver SDK instance.
 
 **Parameters:**
+
 - `apiKey` (string): Your TestDriver API key
 - `options` (object, optional):
   - `apiRoot` (string): API endpoint (default: 'https://v6.testdriver.ai')
@@ -325,11 +346,12 @@ Creates a new TestDriver SDK instance.
   - `environment` (object): Additional environment variables
 
 **Example:**
+
 ```javascript
 const client = new TestDriver(process.env.TD_API_KEY, {
-  resolution: '1920x1080',
+  resolution: "1920x1080",
   analytics: false,
-  logging: true  // See detailed logs
+  logging: true, // See detailed logs
 });
 ```
 
@@ -342,6 +364,7 @@ Authenticates with the TestDriver API.
 **Returns:** `Promise<string>` - Authentication token
 
 **Example:**
+
 ```javascript
 await client.auth();
 ```
@@ -351,6 +374,7 @@ await client.auth();
 Connects to a sandbox environment.
 
 **Parameters:**
+
 - `options` (object, optional):
   - `sandboxId` (string): Reconnect to existing sandbox
   - `newSandbox` (boolean): Force creation of new sandbox
@@ -362,6 +386,7 @@ Connects to a sandbox environment.
 **Returns:** `Promise<Object>` - Sandbox instance details
 
 **Examples:**
+
 ```javascript
 // Create new sandbox (opens browser window by default)
 await client.connect({ newSandbox: true });
@@ -370,10 +395,10 @@ await client.connect({ newSandbox: true });
 await client.connect({ newSandbox: true, headless: true });
 
 // Reconnect to existing sandbox
-await client.connect({ sandboxId: 'i-1234567890abcdef0' });
+await client.connect({ sandboxId: "i-1234567890abcdef0" });
 
 // Direct IP connection
-await client.connect({ ip: '192.168.1.100' });
+await client.connect({ ip: "192.168.1.100" });
 ```
 
 **Note:** By default, the SDK will automatically open a browser window showing the live sandbox environment, similar to the CLI behavior. This allows you to watch test execution in real-time. Set `headless: true` to disable this feature.
@@ -391,6 +416,7 @@ Disconnects from the sandbox.
 Finds and hovers over text on screen.
 
 **Parameters:**
+
 - `text` (string): Text to find
 - `description` (string, optional): Additional context
 - `action` (string): Action type (default: 'click')
@@ -400,8 +426,9 @@ Finds and hovers over text on screen.
 **Returns:** `Promise<Object>` - Match result with coordinates
 
 **Example:**
+
 ```javascript
-const result = await client.hoverText('Submit', 'the submit button');
+const result = await client.hoverText("Submit", "the submit button");
 console.log(result); // { x: 150, y: 200, ... }
 ```
 
@@ -410,12 +437,14 @@ console.log(result); // { x: 150, y: 200, ... }
 Types text with optional delay between keystrokes.
 
 **Parameters:**
+
 - `text` (string): Text to type
 - `delay` (number): Delay in ms between keystrokes (default: 250)
 
 **Example:**
+
 ```javascript
-await client.type('hello@example.com', 100);
+await client.type("hello@example.com", 100);
 ```
 
 #### `waitForText(text, timeout, method, invert)`
@@ -423,14 +452,16 @@ await client.type('hello@example.com', 100);
 Waits for text to appear on screen.
 
 **Parameters:**
+
 - `text` (string): Text to wait for
 - `timeout` (number): Timeout in ms (default: 5000)
 - `method` (string): Match method (default: 'turbo')
 - `invert` (boolean): Wait for text to disappear (default: false)
 
 **Example:**
+
 ```javascript
-await client.waitForText('Success!', 10000);
+await client.waitForText("Success!", 10000);
 ```
 
 #### `scrollUntilText(text, direction, maxDistance, textMatchMethod, method, invert)`
@@ -438,6 +469,7 @@ await client.waitForText('Success!', 10000);
 Scrolls until text is found.
 
 **Parameters:**
+
 - `text` (string): Text to find
 - `direction` (string): 'up' or 'down' (default: 'down')
 - `maxDistance` (number): Max pixels to scroll (default: 10000)
@@ -446,8 +478,9 @@ Scrolls until text is found.
 - `invert` (boolean): Invert match (default: false)
 
 **Example:**
+
 ```javascript
-await client.scrollUntilText('Terms of Service', 'down', 5000);
+await client.scrollUntilText("Terms of Service", "down", 5000);
 ```
 
 ### Image Interaction Methods
@@ -457,14 +490,16 @@ await client.scrollUntilText('Terms of Service', 'down', 5000);
 Finds and hovers over an image matching the description.
 
 **Parameters:**
+
 - `description` (string): Description of the image
 - `action` (string): Action type (default: 'click')
 
 **Returns:** `Promise<Object>` - Match result
 
 **Example:**
+
 ```javascript
-await client.hoverImage('the red submit button');
+await client.hoverImage("the red submit button");
 ```
 
 #### `matchImage(imagePath, action, invert)`
@@ -472,13 +507,15 @@ await client.hoverImage('the red submit button');
 Finds and interacts with an image using template matching.
 
 **Parameters:**
+
 - `imagePath` (string): Path to template image
 - `action` (string): 'click' or 'hover' (default: 'click')
 - `invert` (boolean): Invert match (default: false)
 
 **Example:**
+
 ```javascript
-await client.matchImage('./templates/login-button.png', 'click');
+await client.matchImage("./templates/login-button.png", "click");
 ```
 
 #### `waitForImage(description, timeout, invert)`
@@ -486,13 +523,15 @@ await client.matchImage('./templates/login-button.png', 'click');
 Waits for an image to appear on screen.
 
 **Parameters:**
+
 - `description` (string): Description of the image
 - `timeout` (number): Timeout in ms (default: 10000)
 - `invert` (boolean): Wait for image to disappear (default: false)
 
 **Example:**
+
 ```javascript
-await client.waitForImage('loading spinner', 5000, true); // Wait for spinner to disappear
+await client.waitForImage("loading spinner", 5000, true); // Wait for spinner to disappear
 ```
 
 #### `scrollUntilImage(description, direction, maxDistance, method, path, invert)`
@@ -500,6 +539,7 @@ await client.waitForImage('loading spinner', 5000, true); // Wait for spinner to
 Scrolls until an image is found.
 
 **Parameters:**
+
 - `description` (string): Description of image (use either this or path)
 - `direction` (string): 'up' or 'down' (default: 'down')
 - `maxDistance` (number): Max pixels to scroll (default: 10000)
@@ -508,8 +548,9 @@ Scrolls until an image is found.
 - `invert` (boolean): Invert match (default: false)
 
 **Example:**
+
 ```javascript
-await client.scrollUntilImage('footer logo', 'down', 10000);
+await client.scrollUntilImage("footer logo", "down", 10000);
 ```
 
 ### Mouse & Keyboard Methods
@@ -519,13 +560,15 @@ await client.scrollUntilImage('footer logo', 'down', 10000);
 Clicks at specific coordinates.
 
 **Parameters:**
+
 - `x` (number): X coordinate
 - `y` (number): Y coordinate
 - `action` (string): Click type - 'click', 'right-click', 'double-click', 'middle-click', 'drag-start', 'drag-end' (default: 'click')
 
 **Example:**
+
 ```javascript
-await client.click(500, 300, 'double-click');
+await client.click(500, 300, "double-click");
 ```
 
 #### `hover(x, y)`
@@ -533,10 +576,12 @@ await client.click(500, 300, 'double-click');
 Moves mouse to coordinates.
 
 **Parameters:**
+
 - `x` (number): X coordinate
 - `y` (number): Y coordinate
 
 **Example:**
+
 ```javascript
 await client.hover(200, 150);
 ```
@@ -546,18 +591,20 @@ await client.hover(200, 150);
 Presses keyboard keys (supports combinations).
 
 **Parameters:**
+
 - `keys` (Array<string>): Array of keys to press
 
 **Example:**
+
 ```javascript
 // Single key
-await client.pressKeys(['enter']);
+await client.pressKeys(["enter"]);
 
 // Key combination
-await client.pressKeys(['ctrl', 'c']);
+await client.pressKeys(["ctrl", "c"]);
 
 // Multiple keys in sequence
-await client.pressKeys(['tab', 'tab', 'enter']);
+await client.pressKeys(["tab", "tab", "enter"]);
 ```
 
 #### `scroll(direction, amount, method)`
@@ -565,13 +612,15 @@ await client.pressKeys(['tab', 'tab', 'enter']);
 Scrolls the page.
 
 **Parameters:**
+
 - `direction` (string): 'up' or 'down' (default: 'down')
 - `amount` (number): Pixels to scroll (default: 300)
 - `method` (string): 'mouse' or 'keyboard' (default: 'mouse')
 
 **Example:**
+
 ```javascript
-await client.scroll('down', 500, 'mouse');
+await client.scroll("down", 500, "mouse");
 ```
 
 ### Application Control
@@ -581,11 +630,13 @@ await client.scroll('down', 500, 'mouse');
 Focuses an application by name.
 
 **Parameters:**
+
 - `name` (string): Application name
 
 **Example:**
+
 ```javascript
-await client.focusApplication('Google Chrome');
+await client.focusApplication("Google Chrome");
 ```
 
 ### AI-Powered Methods
@@ -595,14 +646,16 @@ await client.focusApplication('Google Chrome');
 Makes an AI-powered assertion about the screen state.
 
 **Parameters:**
+
 - `assertion` (string): Natural language assertion
 - `async` (boolean): Run asynchronously (default: false)
 - `invert` (boolean): Invert the assertion (default: false)
 
 **Example:**
+
 ```javascript
-await client.assert('The login form is visible');
-await client.assert('The page is showing an error message');
+await client.assert("The login form is visible");
+await client.assert("The page is showing an error message");
 ```
 
 #### `remember(description)`
@@ -610,13 +663,17 @@ await client.assert('The page is showing an error message');
 Extracts and remembers information from the screen.
 
 **Parameters:**
+
 - `description` (string): What to remember
 
 **Returns:** `Promise<string>` - Extracted information
 
 **Example:**
+
 ```javascript
-const email = await client.remember('What is the user email shown on the profile page?');
+const email = await client.remember(
+  "What is the user email shown on the profile page?",
+);
 console.log(email); // "user@example.com"
 ```
 
@@ -627,6 +684,7 @@ console.log(email); // "user@example.com"
 Executes code in the sandbox.
 
 **Parameters:**
+
 - `language` (string): 'js' or 'pwsh'
 - `code` (string): Code to execute
 - `timeout` (number): Timeout in ms
@@ -635,14 +693,23 @@ Executes code in the sandbox.
 **Returns:** `Promise<string>` - Execution result
 
 **Example:**
+
 ```javascript
 // JavaScript
-const result = await client.exec('js', `
+const result = await client.exec(
+  "js",
+  `
   result = { timestamp: Date.now(), platform: process.platform };
-`, 5000);
+`,
+  5000,
+);
 
 // PowerShell
-const output = await client.exec('pwsh', 'Get-Process | Select-Object -First 5', 10000);
+const output = await client.exec(
+  "pwsh",
+  "Get-Process | Select-Object -First 5",
+  10000,
+);
 ```
 
 ### Utility Methods
@@ -652,9 +719,11 @@ const output = await client.exec('pwsh', 'Get-Process | Select-Object -First 5',
 Waits for specified time.
 
 **Parameters:**
+
 - `timeout` (number): Time in ms (default: 3000)
 
 **Example:**
+
 ```javascript
 await client.wait(2000); // Wait 2 seconds
 ```
@@ -676,9 +745,11 @@ Gets the current session ID.
 Enable or disable console logging output.
 
 **Parameters:**
+
 - `enabled` (boolean): Whether to enable logging
 
 **Example:**
+
 ```javascript
 // Disable logging
 client.setLogging(false);
@@ -694,26 +765,33 @@ Gets the event emitter for custom event handling.
 **Returns:** `EventEmitter2` - Event emitter instance
 
 **Example:**
+
 ```javascript
 const emitter = client.getEmitter();
 
 // Listen to all log events
-emitter.on('log:*', (message) => {
-  console.log('Log:', message);
+emitter.on("log:*", (message) => {
+  console.log("Log:", message);
 });
 
 // Listen to error events
-emitter.on('error:*', (data) => {
-  console.error('Error:', data);
+emitter.on("error:*", (data) => {
+  console.error("Error:", data);
 });
 
 // Listen to command events
-emitter.on('command:start', (data) => {
-  console.log('Command started:', data.command);
+emitter.on("command:start", (data) => {
+  console.log("Command started:", data.command);
 });
 
-emitter.on('command:success', (data) => {
-  console.log('Command succeeded:', data.command, 'Duration:', data.duration, 'ms');
+emitter.on("command:success", (data) => {
+  console.log(
+    "Command succeeded:",
+    data.command,
+    "Duration:",
+    data.duration,
+    "ms",
+  );
 });
 ```
 
@@ -722,6 +800,7 @@ emitter.on('command:success', (data) => {
 The SDK emits various events that you can listen to for detailed execution information:
 
 ### Log Events
+
 - `log:log` - General log messages
 - `log:warn` - Warning messages
 - `log:debug` - Debug messages
@@ -732,106 +811,112 @@ The SDK emits various events that you can listen to for detailed execution infor
 - `log:markdown` - Static markdown content
 
 ### Command Events
+
 - `command:start` - Command execution started
 - `command:success` - Command completed successfully
 - `command:error` - Command failed
 
 ### Error Events
+
 - `error:fatal` - Fatal error occurred
 - `error:general` - General error
 - `error:sdk` - SDK-related error
 - `error:sandbox` - Sandbox-related error
 
 ### Sandbox Events
+
 - `sandbox:connected` - Connected to sandbox
 - `sandbox:authenticated` - Authenticated with sandbox
 - `sandbox:error` - Sandbox error
 - `sandbox:disconnected` - Disconnected from sandbox
 
 ### Other Events
+
 - `status` - Status update
 - `mouse-click` - Mouse click occurred
 - `mouse-move` - Mouse moved
 - `matches:show` - Match results available
 
 **Example: Custom Event Handling**
+
 ```javascript
-const TestDriver = require('testdriverai');
+const TestDriver = require("testdriverai");
 
 const client = new TestDriver(process.env.TD_API_KEY, {
-  logging: false  // Disable default logging
+  logging: false, // Disable default logging
 });
 
 const emitter = client.getEmitter();
 
 // Custom logging
-emitter.on('log:*', (message) => {
+emitter.on("log:*", (message) => {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${message}`);
 });
 
 // Track command performance
 const commandTimes = {};
-emitter.on('command:start', (data) => {
+emitter.on("command:start", (data) => {
   commandTimes[data.command] = Date.now();
 });
 
-emitter.on('command:success', (data) => {
+emitter.on("command:success", (data) => {
   const duration = Date.now() - commandTimes[data.command];
   console.log(`✓ ${data.command} completed in ${duration}ms`);
 });
 
-emitter.on('command:error', (data) => {
+emitter.on("command:error", (data) => {
   console.error(`✗ ${data.command} failed: ${data.error}`);
 });
 
 await client.auth();
 await client.connect();
-await client.hoverText('Submit');
+await client.hoverText("Submit");
 ```
 
 ## Complete Example
 
 ```javascript
-const TestDriver = require('testdriverai');
+const TestDriver = require("testdriverai");
 
 async function testLoginFlow() {
   const client = new TestDriver(process.env.TD_API_KEY);
-  
+
   try {
     // Setup
     await client.auth();
     await client.connect({ newSandbox: true });
-    
+
     // Open browser and navigate
-    await client.focusApplication('Google Chrome');
+    await client.focusApplication("Google Chrome");
     await client.wait(1000);
-    
+
     // Type URL and navigate
-    await client.type('https://example.com/login');
-    await client.pressKeys(['enter']);
-    await client.waitForText('Login', 5000);
-    
+    await client.type("https://example.com/login");
+    await client.pressKeys(["enter"]);
+    await client.waitForText("Login", 5000);
+
     // Fill login form
-    await client.hoverText('Email');
-    await client.type('test@example.com');
-    await client.pressKeys(['tab']);
-    await client.type('password123');
-    
+    await client.hoverText("Email");
+    await client.type("test@example.com");
+    await client.pressKeys(["tab"]);
+    await client.type("password123");
+
     // Submit form
-    await client.hoverText('Sign In');
-    await client.pressKeys(['enter']);
-    
+    await client.hoverText("Sign In");
+    await client.pressKeys(["enter"]);
+
     // Verify login
-    await client.waitForText('Dashboard', 10000);
-    await client.assert('User is logged in successfully');
-    
+    await client.waitForText("Dashboard", 10000);
+    await client.assert("User is logged in successfully");
+
     // Get user info
-    const username = await client.remember('What is the username displayed in the header?');
-    console.log('Logged in as:', username);
-    
+    const username = await client.remember(
+      "What is the username displayed in the header?",
+    );
+    console.log("Logged in as:", username);
   } catch (error) {
-    console.error('Test failed:', error);
+    console.error("Test failed:", error);
     throw error;
   } finally {
     await client.disconnect();
@@ -860,9 +945,9 @@ Configure cache sensitivity for element finding operations. Lower thresholds req
 ```javascript
 const client = new TestDriver(process.env.TD_API_KEY, {
   cacheThreshold: {
-    find: 0.03,     // 3% difference = 97% similarity required (stricter)
-    findAll: 0.05   // 5% difference = 95% similarity required (default)
-  }
+    find: 0.03, // 3% difference = 97% similarity required (stricter)
+    findAll: 0.05, // 5% difference = 95% similarity required (default)
+  },
 });
 ```
 
@@ -871,7 +956,7 @@ const client = new TestDriver(process.env.TD_API_KEY, {
 ```javascript
 // Force all find operations to regenerate (never use cache)
 const client = new TestDriver(process.env.TD_API_KEY, {
-  cache: false
+  cache: false,
 });
 ```
 
@@ -879,16 +964,17 @@ const client = new TestDriver(process.env.TD_API_KEY, {
 
 ```javascript
 // Override cache threshold for a specific find
-const element = await client.find('login button', 0.01); // 99% similarity required
+const element = await client.find("login button", 0.01); // 99% similarity required
 
 // Override cache threshold for a specific findAll
-const items = await client.findAll('list items', 0.10); // 90% similarity required
+const items = await client.findAll("list items", 0.1); // 90% similarity required
 
 // Disable cache for a specific find (always regenerate)
-const element = await client.find('login button', -1);
+const element = await client.find("login button", -1);
 ```
 
 **Cache Threshold Values:**
+
 - `0.01` - Very strict (99% similarity required)
 - `0.03` - Strict (97% similarity required)
 - `0.05` - Default (95% similarity required)
@@ -903,6 +989,7 @@ VERBOSE=true node your-test.js
 ```
 
 Debug output includes:
+
 - Cache hit/miss status
 - Cache strategy used (image/text)
 - Similarity scores for cache matches
@@ -910,6 +997,7 @@ Debug output includes:
 - Debug images with element highlights
 
 Example debug output:
+
 ```
 🔍 Element Found:
   Description: login button
@@ -928,9 +1016,9 @@ The SDK throws errors when operations fail. Always wrap your code in try-catch b
 
 ```javascript
 try {
-  await client.hoverText('Submit');
+  await client.hoverText("Submit");
 } catch (error) {
-  console.error('Failed to find Submit button:', error.message);
+  console.error("Failed to find Submit button:", error.message);
   // Handle error appropriately
 }
 ```
@@ -938,17 +1026,20 @@ try {
 ## Best Practices
 
 1. **Always authenticate and connect before running commands**
+
    ```javascript
    await client.auth();
    await client.connect();
    ```
 
 2. **Use appropriate timeouts for slow operations**
+
    ```javascript
-   await client.waitForText('Loading...', 30000); // 30 second timeout
+   await client.waitForText("Loading...", 30000); // 30 second timeout
    ```
 
 3. **Clean up after tests**
+
    ```javascript
    try {
      // Your test code
@@ -958,8 +1049,9 @@ try {
    ```
 
 4. **Use natural language assertions for validation**
+
    ```javascript
-   await client.assert('The form was submitted successfully');
+   await client.assert("The form was submitted successfully");
    ```
 
 5. **Add waits between actions to let UI settle**

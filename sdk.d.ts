@@ -3,27 +3,212 @@
  */
 
 // Type Definitions
-export type ClickAction = 'click' | 'right-click' | 'double-click' | 'hover' | 'mouseDown' | 'mouseUp';
-export type ScrollDirection = 'up' | 'down' | 'left' | 'right';
-export type ScrollMethod = 'keyboard' | 'mouse';
-export type TextMatchMethod = 'ai' | 'turbo';
-export type ExecLanguage = 'js' | 'pwsh';
-export type KeyboardKey = 
-  | '\t' | '\n' | '\r' | ' ' | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/'
-  | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-  | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '_' | '`'
-  | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'
-  | '{' | '|' | '}' | '~'
-  | 'accept' | 'add' | 'alt' | 'altleft' | 'altright' | 'apps' | 'backspace'
-  | 'browserback' | 'browserfavorites' | 'browserforward' | 'browserhome' | 'browserrefresh' | 'browsersearch' | 'browserstop'
-  | 'capslock' | 'clear' | 'convert' | 'ctrl' | 'ctrlleft' | 'ctrlright' | 'decimal' | 'del' | 'delete' | 'divide' | 'down' | 'end' | 'enter' | 'esc' | 'escape' | 'execute'
-  | 'f1' | 'f2' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8' | 'f9' | 'f10' | 'f11' | 'f12' | 'f13' | 'f14' | 'f15' | 'f16' | 'f17' | 'f18' | 'f19' | 'f20' | 'f21' | 'f22' | 'f23' | 'f24'
-  | 'final' | 'fn' | 'hanguel' | 'hangul' | 'hanja' | 'help' | 'home' | 'insert' | 'junja' | 'kana' | 'kanji'
-  | 'launchapp1' | 'launchapp2' | 'launchmail' | 'launchmediaselect' | 'left' | 'modechange' | 'multiply' | 'nexttrack' | 'nonconvert'
-  | 'num0' | 'num1' | 'num2' | 'num3' | 'num4' | 'num5' | 'num6' | 'num7' | 'num8' | 'num9' | 'numlock'
-  | 'pagedown' | 'pageup' | 'pause' | 'pgdn' | 'pgup' | 'playpause' | 'prevtrack' | 'print' | 'printscreen' | 'prntscrn' | 'prtsc' | 'prtscr'
-  | 'return' | 'right' | 'scrolllock' | 'select' | 'separator' | 'shift' | 'shiftleft' | 'shiftright' | 'sleep' | 'space' | 'stop' | 'subtract' | 'tab' | 'up'
-  | 'volumedown' | 'volumemute' | 'volumeup' | 'win' | 'winleft' | 'winright' | 'yen' | 'command' | 'option' | 'optionleft' | 'optionright';
+export type ClickAction =
+  | "click"
+  | "right-click"
+  | "double-click"
+  | "hover"
+  | "mouseDown"
+  | "mouseUp";
+export type ScrollDirection = "up" | "down" | "left" | "right";
+export type ScrollMethod = "keyboard" | "mouse";
+export type TextMatchMethod = "ai" | "turbo";
+export type ExecLanguage = "js" | "pwsh";
+export type KeyboardKey =
+  | "\t"
+  | "\n"
+  | "\r"
+  | " "
+  | "!"
+  | '"'
+  | "#"
+  | "$"
+  | "%"
+  | "&"
+  | "'"
+  | "("
+  | ")"
+  | "*"
+  | "+"
+  | ","
+  | "-"
+  | "."
+  | "/"
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9"
+  | ":"
+  | ";"
+  | "<"
+  | "="
+  | ">"
+  | "?"
+  | "@"
+  | "["
+  | "\\"
+  | "]"
+  | "^"
+  | "_"
+  | "`"
+  | "a"
+  | "b"
+  | "c"
+  | "d"
+  | "e"
+  | "f"
+  | "g"
+  | "h"
+  | "i"
+  | "j"
+  | "k"
+  | "l"
+  | "m"
+  | "n"
+  | "o"
+  | "p"
+  | "q"
+  | "r"
+  | "s"
+  | "t"
+  | "u"
+  | "v"
+  | "w"
+  | "x"
+  | "y"
+  | "z"
+  | "{"
+  | "|"
+  | "}"
+  | "~"
+  | "accept"
+  | "add"
+  | "alt"
+  | "altleft"
+  | "altright"
+  | "apps"
+  | "backspace"
+  | "browserback"
+  | "browserfavorites"
+  | "browserforward"
+  | "browserhome"
+  | "browserrefresh"
+  | "browsersearch"
+  | "browserstop"
+  | "capslock"
+  | "clear"
+  | "convert"
+  | "ctrl"
+  | "ctrlleft"
+  | "ctrlright"
+  | "decimal"
+  | "del"
+  | "delete"
+  | "divide"
+  | "down"
+  | "end"
+  | "enter"
+  | "esc"
+  | "escape"
+  | "execute"
+  | "f1"
+  | "f2"
+  | "f3"
+  | "f4"
+  | "f5"
+  | "f6"
+  | "f7"
+  | "f8"
+  | "f9"
+  | "f10"
+  | "f11"
+  | "f12"
+  | "f13"
+  | "f14"
+  | "f15"
+  | "f16"
+  | "f17"
+  | "f18"
+  | "f19"
+  | "f20"
+  | "f21"
+  | "f22"
+  | "f23"
+  | "f24"
+  | "final"
+  | "fn"
+  | "hanguel"
+  | "hangul"
+  | "hanja"
+  | "help"
+  | "home"
+  | "insert"
+  | "junja"
+  | "kana"
+  | "kanji"
+  | "launchapp1"
+  | "launchapp2"
+  | "launchmail"
+  | "launchmediaselect"
+  | "left"
+  | "modechange"
+  | "multiply"
+  | "nexttrack"
+  | "nonconvert"
+  | "num0"
+  | "num1"
+  | "num2"
+  | "num3"
+  | "num4"
+  | "num5"
+  | "num6"
+  | "num7"
+  | "num8"
+  | "num9"
+  | "numlock"
+  | "pagedown"
+  | "pageup"
+  | "pause"
+  | "pgdn"
+  | "pgup"
+  | "playpause"
+  | "prevtrack"
+  | "print"
+  | "printscreen"
+  | "prntscrn"
+  | "prtsc"
+  | "prtscr"
+  | "return"
+  | "right"
+  | "scrolllock"
+  | "select"
+  | "separator"
+  | "shift"
+  | "shiftleft"
+  | "shiftright"
+  | "sleep"
+  | "space"
+  | "stop"
+  | "subtract"
+  | "tab"
+  | "up"
+  | "volumedown"
+  | "volumemute"
+  | "volumeup"
+  | "win"
+  | "winleft"
+  | "winright"
+  | "yen"
+  | "command"
+  | "option"
+  | "optionleft"
+  | "optionright";
 
 export interface TestDriverOptions {
   /** API endpoint URL (default: 'https://v6.testdriver.ai') */
@@ -107,110 +292,110 @@ export interface HoverResult {
  */
 export class Element {
   constructor(description: string);
-  
+
   /**
    * Check if element was found
    */
   found(): boolean;
-  
+
   /**
    * Find the element on screen
    * @param newDescription - Optional new description to search for
    * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
    */
   find(newDescription?: string, cacheThreshold?: number): Promise<Element>;
-  
+
   /**
    * Click on the element
    * @param action - Type of click action (default: 'click')
    */
   click(action?: ClickAction): Promise<void>;
-  
+
   /**
    * Hover over the element
    */
   hover(): Promise<void>;
-  
+
   /**
    * Double-click on the element
    */
   doubleClick(): Promise<void>;
-  
+
   /**
    * Right-click on the element
    */
   rightClick(): Promise<void>;
-  
+
   /**
    * Press mouse button down on this element
    */
   mouseDown(): Promise<void>;
-  
+
   /**
    * Release mouse button on this element
    */
   mouseUp(): Promise<void>;
-  
+
   /**
    * Get the coordinates of the element
    */
   getCoordinates(): ElementCoordinates | null;
-  
+
   /**
    * Get the x coordinate (top-left)
    */
   readonly x: number | null;
-  
+
   /**
    * Get the y coordinate (top-left)
    */
   readonly y: number | null;
-  
+
   /**
    * Get the center x coordinate
    */
   readonly centerX: number | null;
-  
+
   /**
    * Get the center y coordinate
    */
   readonly centerY: number | null;
-  
+
   /**
    * Get the full API response data
    */
   getResponse(): ElementResponse | null;
-  
+
   /**
    * Get element screenshot if available (base64 encoded)
    */
   readonly screenshot: string | null;
-  
+
   /**
    * Get element confidence score if available
    */
   readonly confidence: number | null;
-  
+
   /**
    * Get element width if available
    */
   readonly width: number | null;
-  
+
   /**
    * Get element height if available
    */
   readonly height: number | null;
-  
+
   /**
    * Get element bounding box if available
    */
   readonly boundingBox: ElementBoundingBox | null;
-  
+
   /**
    * Get element text content if available
    */
   readonly text: string | null;
-  
+
   /**
    * Get element label if available
    */
@@ -240,20 +425,20 @@ export default class TestDriverSDK {
   /**
    * Find an element by description
    * Automatically locates the element and returns it
-   * 
+   *
    * @param description - Description of the element to find
    * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
    * @returns Element instance that has been located
-   * 
+   *
    * @example
    * // Find and click immediately
    * const element = await client.find('the sign in button');
    * await element.click();
-   * 
+   *
    * @example
    * // Find with custom cache threshold
    * const element = await client.find('login button', 0.01);
-   * 
+   *
    * @example
    * // Poll until element is found
    * let element;
@@ -272,11 +457,11 @@ export default class TestDriverSDK {
    * @param description - Description of the elements to find
    * @param cacheThreshold - Cache threshold for this specific findAll (overrides global setting)
    * @returns Array of Element instances
-   * 
+   *
    * @example
    * // Find all buttons
    * const buttons = await client.findAll('button');
-   * 
+   *
    * @example
    * // Find with custom cache threshold
    * const items = await client.findAll('list item', 0.01);
@@ -284,7 +469,7 @@ export default class TestDriverSDK {
   findAll(description: string, cacheThreshold?: number): Promise<Element[]>;
 
   // Text Interaction Methods
-  
+
   /**
    * Hover over text on screen
    * @deprecated Use find() and element.click() instead
@@ -299,7 +484,7 @@ export default class TestDriverSDK {
     description?: string | null,
     action?: ClickAction,
     method?: TextMatchMethod,
-    timeout?: number
+    timeout?: number,
   ): Promise<HoverResult>;
 
   /**
@@ -321,7 +506,7 @@ export default class TestDriverSDK {
     text: string,
     timeout?: number,
     method?: TextMatchMethod,
-    invert?: boolean
+    invert?: boolean,
   ): Promise<void>;
 
   /**
@@ -339,7 +524,7 @@ export default class TestDriverSDK {
     maxDistance?: number,
     textMatchMethod?: TextMatchMethod,
     method?: ScrollMethod,
-    invert?: boolean
+    invert?: boolean,
   ): Promise<void>;
 
   // Image Interaction Methods
@@ -361,7 +546,7 @@ export default class TestDriverSDK {
   matchImage(
     imagePath: string,
     action?: ClickAction,
-    invert?: boolean
+    invert?: boolean,
   ): Promise<boolean>;
 
   /**
@@ -374,7 +559,7 @@ export default class TestDriverSDK {
   waitForImage(
     description: string,
     timeout?: number,
-    invert?: boolean
+    invert?: boolean,
   ): Promise<void>;
 
   /**
@@ -392,7 +577,7 @@ export default class TestDriverSDK {
     maxDistance?: number,
     method?: ScrollMethod,
     path?: string | null,
-    invert?: boolean
+    invert?: boolean,
   ): Promise<void>;
 
   // Mouse & Keyboard Methods
@@ -403,11 +588,7 @@ export default class TestDriverSDK {
    * @param y - Y coordinate
    * @param action - Type of click action (default: 'click')
    */
-  click(
-    x: number,
-    y: number,
-    action?: ClickAction
-  ): Promise<void>;
+  click(x: number, y: number, action?: ClickAction): Promise<void>;
 
   /**
    * Hover at coordinates
@@ -431,7 +612,7 @@ export default class TestDriverSDK {
   scroll(
     direction?: ScrollDirection,
     amount?: number,
-    method?: ScrollMethod
+    method?: ScrollMethod,
   ): Promise<void>;
 
   // Application Control
@@ -450,7 +631,11 @@ export default class TestDriverSDK {
    * @param async - Run asynchronously (default: false)
    * @param invert - Invert the assertion (default: false)
    */
-  assert(assertion: string, async?: boolean, invert?: boolean): Promise<boolean>;
+  assert(
+    assertion: string,
+    async?: boolean,
+    invert?: boolean,
+  ): Promise<boolean>;
 
   /**
    * Extract and remember information from the screen using AI
@@ -471,7 +656,7 @@ export default class TestDriverSDK {
     language: ExecLanguage,
     code: string,
     timeout: number,
-    silent?: boolean
+    silent?: boolean,
   ): Promise<string>;
 
   // Utility Methods
@@ -507,19 +692,22 @@ export default class TestDriverSDK {
   /**
    * Execute a natural language task using AI
    * This is the SDK equivalent of the CLI's exploratory loop
-   * 
+   *
    * @param task - Natural language description of what to do
    * @param options - Execution options
    * @returns Final AI response if validateAndLoop is true
-   * 
+   *
    * @example
    * // Simple execution
    * await client.ai('Click the submit button');
-   * 
+   *
    * @example
    * // With validation loop
    * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
    * console.log(result); // AI's final assessment
    */
-  ai(task: string, options?: { validateAndLoop?: boolean }): Promise<string | void>;
+  ai(
+    task: string,
+    options?: { validateAndLoop?: boolean },
+  ): Promise<string | void>;
 }

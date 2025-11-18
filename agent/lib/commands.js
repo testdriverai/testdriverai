@@ -2,8 +2,6 @@
 const { createSDK } = require("./sdk.js");
 const vm = require("vm");
 const theme = require("./theme.js");
-const yaml = require("js-yaml");
-const { findCodeBlocks, getYAMLFromCodeBlock } = require("./parser.js");
 
 const fs = require("fs").promises; // Using the promises version for async operations
 const { findTemplateImage } = require("./subimage/index");
@@ -75,45 +73,7 @@ const createCommands = (
     return Math.round(ms / 1000);
   };
   const delay = (t) => new Promise((resolve) => setTimeout(resolve, t));
-  
-  // Helper to execute YAML commands returned from API responses
-  const executeYamlCommands = async (responseData, commands) => {
-    if (typeof responseData === 'string' && responseData.includes('commands:')) {
-      // Use the parser's findCodeBlocks to find YAML code blocks
-      const codeblocks = await findCodeBlocks(responseData);
-      
-      if (codeblocks.length > 0) {
-        // Extract YAML from code block and parse it
-        const yamlContent = getYAMLFromCodeBlock(codeblocks[0]);
-        const parsedYaml = yaml.load(yamlContent);
-        
-        // Get commands array (handle both direct commands and steps format)
-        let parsedCommands = parsedYaml?.commands;
-        if (!parsedCommands && parsedYaml?.steps) {
-          parsedCommands = [];
-          parsedYaml.steps.forEach((s) => {
-            parsedCommands = parsedCommands.concat(s.commands);
-          });
-        }
-        
-        if (parsedCommands && Array.isArray(parsedCommands)) {
-          // Execute each command in the response
-          for (const cmd of parsedCommands) {
-            if (cmd.command && commands[cmd.command]) {
-              // Extract command parameters
-              const { command: cmdName, ...params } = cmd;
-              // Execute the command with its parameters
-              await commands[cmdName](...Object.values(params));
-            }
-          }
-        }
-        // Return the first command's data if available
-        return parsedCommands?.[0] || responseData;
-      }
-    }
-    return responseData;
-  };
-  
+
   const findImageOnScreen = async (
     relativePath,
     haystack,
@@ -211,10 +171,7 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (
-    assertion,
-    shouldThrow = false,
-  ) => {
+  const assert = async (assertion, shouldThrow = false) => {
     const handleAssertResponse = (response) => {
       emitter.emit(events.log.log, response);
 
@@ -225,10 +182,7 @@ const createCommands = (
       } else {
         if (shouldThrow) {
           // Is fatal, othewise it just changes the assertion to be true
-          throw new MatchError(
-            `AI Assertion failed"}`,
-            true,
-          );
+          throw new MatchError(`AI Assertion failed"}`, true);
         } else {
           return false;
         }
@@ -243,7 +197,7 @@ const createCommands = (
     });
     return handleAssertResponse(response.data);
   };
-  const scroll = async (direction = "down", amount = 300, method = "mouse") => {
+  const scroll = async (direction = "down", amount = 300) => {
     await redraw.start();
 
     amount = parseInt(amount, 10);
@@ -369,7 +323,6 @@ const createCommands = (
       text,
       description = null,
       action = "click",
-      method = "turbo",
       timeout = 5000, // we pass this to the subsequent wait-for-text block
     ) => {
       text = text ? text.toString() : null;
@@ -387,13 +340,10 @@ const createCommands = (
         element = `"${text}" with description ${description}`;
       }
 
-      let response = await sdk.req(
-        "locate",
-        {
-          element,
-          image: await system.captureScreenBase64(),
-        }
-      );
+      let response = await sdk.req("locate", {
+        element,
+        image: await system.captureScreenBase64(),
+      });
 
       if (!response || !response.coordinates) {
         throw new MatchError("No text on screen matches description");
@@ -405,7 +355,7 @@ const createCommands = (
       } else {
         await click(response.coordinates.x, response.coordinates.y, action);
       }
-      
+
       return response;
     },
     // uses our api to find all images on screen
@@ -413,13 +363,10 @@ const createCommands = (
       // take a screenshot
       emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-      let response = await sdk.req(
-        "locate",
-        {
-          element: description,
-          image: await system.captureScreenBase64(),
-        }
-      );
+      let response = await sdk.req("locate", {
+        element: description,
+        image: await system.captureScreenBase64(),
+      });
 
       if (!response || !response.coordinates) {
         throw new MatchError("No image or icon on screen matches description");
@@ -431,7 +378,7 @@ const createCommands = (
       } else {
         await click(response.coordinates.x, response.coordinates.y, action);
       }
-      
+
       return response;
     },
     "match-image": async (relativePath, action = "click", invert = false) => {
@@ -532,10 +479,7 @@ const createCommands = (
         );
       }
     },
-    "wait-for-text": async (
-      text,
-      timeout = 5000
-    ) => {
+    "wait-for-text": async (text, timeout = 5000) => {
       await redraw.start();
 
       emitter.emit(
@@ -550,13 +494,10 @@ const createCommands = (
       let passed = false;
 
       while (durationPassed < timeout && !passed) {
-        const response = await sdk.req(
-          "locate",
-          {
-            element: text,
-            image: await system.captureScreenBase64(),
-          }
-        );
+        const response = await sdk.req("locate", {
+          element: text,
+          image: await system.captureScreenBase64(),
+        });
 
         passed = !!(response && response.coordinates);
 
@@ -587,8 +528,6 @@ const createCommands = (
       text,
       direction = "down",
       maxDistance = 10000,
-      textMatchMethod = "turbo",
-      method = "mouse",
       invert = false,
     ) => {
       await redraw.start();
@@ -604,13 +543,10 @@ const createCommands = (
       let passed = false;
 
       while (scrollDistance <= maxDistance && !passed) {
-        const response = await sdk.req(
-          "locate",
-          {
-            element: text,
-            image: await system.captureScreenBase64(),
-          }
-        );
+        const response = await sdk.req("locate", {
+          element: text,
+          image: await system.captureScreenBase64(),
+        });
 
         passed = !!(response && response.coordinates);
 
@@ -626,7 +562,7 @@ const createCommands = (
             ),
             true,
           );
-          await scroll(direction, incrementDistance, method);
+          await scroll(direction, incrementDistance);
           scrollDistance = scrollDistance + incrementDistance;
         }
       }
@@ -743,18 +679,15 @@ const createCommands = (
       let plat = system.platform();
 
       if (language == "pwsh" || language == "sh") {
-
-
         if (language === "pwsh" && sandbox.os === "linux") {
           emitter.emit(
             events.log.log,
             theme.yellow(
-              `⚠️  Warning: You are using 'pwsh' exec command on a Linux sandbox. This may fail. Consider using 'bash' or 'sh' for Linux environments.`
+              `⚠️  Warning: You are using 'pwsh' exec command on a Linux sandbox. This may fail. Consider using 'bash' or 'sh' for Linux environments.`,
             ),
-            true
+            true,
           );
         }
-
 
         let result = null;
 

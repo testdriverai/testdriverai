@@ -3,10 +3,14 @@
  * Converted from: testdriver/acceptance/hover-text.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  createTestClient,
+  setupTest,
+  teardownTest,
+} from "./setup/testHelpers.mjs";
 
-describe('Hover Text Test', () => {
+describe("Hover Text Test", () => {
   let client;
 
   beforeAll(async () => {
@@ -18,15 +22,19 @@ describe('Hover Text Test', () => {
     await teardownTest(client);
   });
 
-  it('should click Sign In and verify error message', async () => {
+  it("should click Sign In and verify error message", async () => {
     // Click on Sign In button using new find() API
-    await client.focusApplication('Google Chrome');
-    
-    const signInButton = await client.find('Sign In, black button below the password field');
+    await client.focusApplication("Google Chrome");
+
+    const signInButton = await client.find(
+      "Sign In, black button below the password field",
+    );
     await signInButton.click();
 
     // Assert that an error shows that fields are required
-    const result = await client.assert('an error shows that fields are required');
+    const result = await client.assert(
+      "an error shows that fields are required",
+    );
     expect(result).toBeTruthy();
   });
 });

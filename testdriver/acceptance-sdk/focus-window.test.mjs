@@ -3,10 +3,14 @@
  * Converted from: testdriver/acceptance/focus-window.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  createTestClient,
+  setupTest,
+  teardownTest,
+} from "./setup/testHelpers.mjs";
 
-describe('Focus Window Test', () => {
+describe("Focus Window Test", () => {
   let client;
 
   beforeAll(async () => {
@@ -18,19 +22,23 @@ describe('Focus Window Test', () => {
     await teardownTest(client);
   });
 
-  it('should click Microsoft Edge icon and focus Google Chrome', async () => {
+  it("should click Microsoft Edge icon and focus Google Chrome", async () => {
     // Show desktop
-    await client.pressKeys(['winleft', 'd']);
-    
+    await client.pressKeys(["winleft", "d"]);
+
     // Click on the Microsoft Edge icon
-    const edgeIcon = await client.find('a blue and green swirl icon on the taskbar representing Microsoft Edge');
+    const edgeIcon = await client.find(
+      "a blue and green swirl icon on the taskbar representing Microsoft Edge",
+    );
     await edgeIcon.click();
 
     // Focus Google Chrome
-    await client.focusApplication('Google Chrome');
+    await client.focusApplication("Google Chrome");
 
     // Assert Chrome is focused (implicit through successful focus)
-    const result = await client.assert('Google Chrome is the focused application');
+    const result = await client.assert(
+      "Google Chrome is the focused application",
+    );
     expect(result).toBeTruthy();
   });
 });

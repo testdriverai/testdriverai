@@ -11,6 +11,7 @@
 ## Common Patterns
 
 ### Login Flow
+
 ```
 1. connect() - start sandbox
 2. getScreenshot() - see initial state
@@ -25,6 +26,7 @@
 ```
 
 ### Form Testing
+
 ```
 1. Always wait for form elements before interacting
 2. Take screenshots before and after form submission

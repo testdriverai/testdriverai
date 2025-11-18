@@ -3,12 +3,16 @@
  * Converted from: testdriver/acceptance/drag-and-drop.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  createTestClient,
+  setupTest,
+  teardownTest,
+} from "./setup/testHelpers.mjs";
 
-const isLinux = (process.env.TD_OS || 'linux') === 'linux';
+const isLinux = (process.env.TD_OS || "linux") === "linux";
 
-describe('Drag and Drop Test', () => {
+describe("Drag and Drop Test", () => {
   let client;
 
   beforeAll(async () => {
@@ -20,33 +24,46 @@ describe('Drag and Drop Test', () => {
     await teardownTest(client);
   });
 
-  it.skipIf(!isLinux)('should drag "New Text Document" to "Recycle Bin"', async () => {
-    // Show the desktop
-    await client.pressKeys(['win', 'd']);
+  it.skipIf(!isLinux)(
+    'should drag "New Text Document" to "Recycle Bin"',
+    async () => {
+      // Show the desktop
+      await client.pressKeys(["win", "d"]);
 
-    // Open the context menu
-    await client.pressKeys(['shift', 'f10']);
+      // Open the context menu
+      await client.pressKeys(["shift", "f10"]);
 
-    // Hover over "New" in the context menu
-    const newOption = await client.find('New, new option in the open context menu on the desktop');
-    await newOption.hover();
+      // Hover over "New" in the context menu
+      const newOption = await client.find(
+        "New, new option in the open context menu on the desktop",
+      );
+      await newOption.hover();
 
-    // Click "Text Document" in the context menu
-    const textDocOption = await client.find('Text Document, text document option in the new submenu of the desktop context menu');
-    await textDocOption.click();
+      // Click "Text Document" in the context menu
+      const textDocOption = await client.find(
+        "Text Document, text document option in the new submenu of the desktop context menu",
+      );
+      await textDocOption.click();
 
-    // Unfocus the "Text Document" text field
-    await client.pressKeys(['esc']);
+      // Unfocus the "Text Document" text field
+      await client.pressKeys(["esc"]);
 
-    // Drag the "New Text Document" icon to the "Recycle Bin"
-    const textDoc = await client.find('New Text Document, new text document icon in the center of the desktop');
-    await textDoc.mouseDown();
-    
-    const recycleBin = await client.find('Recycle Bin, recycle bin icon in the top left corner of the desktop');
-    await recycleBin.mouseUp();
+      // Drag the "New Text Document" icon to the "Recycle Bin"
+      const textDoc = await client.find(
+        "New Text Document, new text document icon in the center of the desktop",
+      );
+      await textDoc.mouseDown();
 
-    // Assert "New Text Document" icon is not on the Desktop
-    const result = await client.assert('the "New Text Document" icon is not visible on the Desktop');
-    expect(result).toBeTruthy();
-  });
+      const recycleBin = await client.find(
+        "Recycle Bin, recycle bin icon in the top left corner of the desktop",
+      );
+      await recycleBin.mouseUp();
+
+      // Assert "New Text Document" icon is not on the Desktop
+      const result = await client.assert(
+        'the "New Text Document" icon is not visible on the Desktop',
+      );
+      expect(result).toBeTruthy();
+    },
+  );
 });

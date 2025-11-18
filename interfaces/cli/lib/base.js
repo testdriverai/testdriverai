@@ -37,7 +37,6 @@ class BaseCommand extends Command {
   }
 
   sendToSandbox(message) {
-
     if (!message) return;
 
     // ensure message is a string
@@ -150,12 +149,11 @@ class BaseCommand extends Command {
       if (this.agent.config.CI) {
         let u = new URL(url);
         try {
-        
           u = JSON.parse(u.searchParams.get("data"));
-          console.log(`${u.url}&view_only=true`); 
-          } catch (e) {
-            console.log(url);
-          }
+          console.log(`${u.url}&view_only=true`);
+        } catch {
+          console.log(url);
+        }
       } else {
         console.log(url);
         await openBrowser(url);
