@@ -11,32 +11,32 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Focus Window Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should click Microsoft Edge icon and focus Google Chrome", async () => {
     // Show desktop
-    await client.pressKeys(["winleft", "d"]);
+    await testdriver.pressKeys(["winleft", "d"]);
 
     // Click on the Microsoft Edge icon
-    const edgeIcon = await client.find(
+    const edgeIcon = await testdriver.find(
       "a blue and green swirl icon on the taskbar representing Microsoft Edge",
     );
     await edgeIcon.click();
 
     // Focus Google Chrome
-    await client.focusApplication("Google Chrome");
+    await testdriver.focusApplication("Google Chrome");
 
     // Assert Chrome is focused (implicit through successful focus)
-    const result = await client.assert(
+    const result = await testdriver.assert(
       "Google Chrome is the focused application",
     );
     expect(result).toBeTruthy();

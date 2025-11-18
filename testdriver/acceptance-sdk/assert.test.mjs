@@ -11,20 +11,20 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Assert Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should assert the testdriver login page shows", async () => {
     // Assert the TestDriver.ai Sandbox login page is displayed
-    const result = await client.assert(
+    const result = await testdriver.assert(
       "the TestDriver.ai Sandbox login page is displayed",
     );
 

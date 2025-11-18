@@ -340,7 +340,7 @@ const createCommands = (
         element = `"${text}" with description ${description}`;
       }
 
-      let response = await sdk.req("locate", {
+      let response = await sdk.req("find", {
         element,
         image: await system.captureScreenBase64(),
       });
@@ -363,7 +363,7 @@ const createCommands = (
       // take a screenshot
       emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-      let response = await sdk.req("locate", {
+      let response = await sdk.req("find", {
         element: description,
         image: await system.captureScreenBase64(),
       });
@@ -494,7 +494,7 @@ const createCommands = (
       let passed = false;
 
       while (durationPassed < timeout && !passed) {
-        const response = await sdk.req("locate", {
+        const response = await sdk.req("find", {
           element: text,
           image: await system.captureScreenBase64(),
         });
@@ -543,7 +543,7 @@ const createCommands = (
       let passed = false;
 
       while (scrollDistance <= maxDistance && !passed) {
-        const response = await sdk.req("locate", {
+        const response = await sdk.req("find", {
           element: text,
           image: await system.captureScreenBase64(),
         });

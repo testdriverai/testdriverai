@@ -11,22 +11,22 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Element Not Found Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should handle non-existent element gracefully without timing out", async () => {
-    await client.focusApplication("Google Chrome");
+    await testdriver.focusApplication("Google Chrome");
 
     // Try to find an element that definitely doesn't exist
-    const element = await client.find("a purple unicorn dancing on the moon");
+    const element = await testdriver.find("a purple unicorn dancing on the moon");
 
     // Should return an element that is not found
     expect(element.found()).toBe(false);

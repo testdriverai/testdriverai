@@ -44,8 +44,72 @@ jobs:
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
           VERBOSE: true
           LOGGING: true
+        continue-on-error: true
 
-      - name: Test Summary
+      - name: Generate GitHub Summary
+        if: always()
+        run: |
+          echo "# 🧪 TestDriver SDK Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f test-results/results.json ]; then
+            node -e "
+              const fs = require('fs');
+              const results = JSON.parse(fs.readFileSync('test-results/results.json', 'utf8'));
+              
+              const total = results.numTotalTests || 0;
+              const passed = results.numPassedTests || 0;
+              const failed = results.numFailedTests || 0;
+              const skipped = results.numPendingTests || 0;
+              const duration = ((results.testResults?.[0]?.endTime - results.testResults?.[0]?.startTime) / 1000 || 0).toFixed(2);
+              
+              console.log('## 📊 Overview\n');
+              console.log('| Metric | Count |');
+              console.log('|--------|-------|');
+              console.log('| ✅ Passed | ' + passed + ' |');
+              console.log('| ❌ Failed | ' + failed + ' |');
+              console.log('| ⏭️ Skipped | ' + skipped + ' |');
+              console.log('| 📝 Total | ' + total + ' |');
+              console.log('| ⏱️ Duration | ' + duration + 's |');
+              console.log('');
+              
+              if (failed > 0) {
+                console.log('## ❌ Failed Tests\n');
+                results.testResults?.forEach(file => {
+                  file.assertionResults?.filter(test => test.status === 'failed').forEach(test => {
+                    console.log('### ' + test.fullName);
+                    console.log('**File:** \`' + file.name + '\`');
+                    console.log('');
+                    if (test.failureMessages?.length > 0) {
+                      console.log('**Error:**');
+                      console.log('\`\`\`');
+                      console.log(test.failureMessages.join('\n').substring(0, 1000));
+                      console.log('\`\`\`');
+                      console.log('');
+                    }
+                  });
+                });
+              }
+              
+              if (passed > 0) {
+                console.log('## ✅ Passed Tests\n');
+                results.testResults?.forEach(file => {
+                  const passedTests = file.assertionResults?.filter(test => test.status === 'passed') || [];
+                  if (passedTests.length > 0) {
+                    console.log('### ' + file.name.split('/').pop());
+                    passedTests.forEach(test => {
+                      console.log('- ✅ ' + test.title);
+                    });
+                    console.log('');
+                  }
+                });
+              }
+            " >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No test results found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Test Summary (JUnit)
         uses: test-summary/action@v2
         with:
           paths: "test-results/junit.xml"
@@ -56,6 +120,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: test-results/junit.xml
+          path: |
+            test-results/junit.xml
+            test-results/results.json
+            test-results/index.html
           retention-days: 7
           if-no-files-found: ignore

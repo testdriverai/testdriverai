@@ -11,28 +11,28 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Hover Text Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should click Sign In and verify error message", async () => {
     // Click on Sign In button using new find() API
-    await client.focusApplication("Google Chrome");
+    await testdriver.focusApplication("Google Chrome");
 
-    const signInButton = await client.find(
+    const signInButton = await testdriver.find(
       "Sign In, black button below the password field",
     );
     await signInButton.click();
 
     // Assert that an error shows that fields are required
-    const result = await client.assert(
+    const result = await testdriver.assert(
       "an error shows that fields are required",
     );
     expect(result).toBeTruthy();

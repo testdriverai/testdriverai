@@ -13,54 +13,54 @@ import {
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 
 describe("Drag and Drop Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
-  it.skipIf(!isLinux)(
+  it.skipIf(isLinux)(
     'should drag "New Text Document" to "Recycle Bin"',
     async () => {
       // Show the desktop
-      await client.pressKeys(["win", "d"]);
+      await testdriver.pressKeys(["win", "d"]);
 
       // Open the context menu
-      await client.pressKeys(["shift", "f10"]);
+      await testdriver.pressKeys(["shift", "f10"]);
 
       // Hover over "New" in the context menu
-      const newOption = await client.find(
+      const newOption = await testdriver.find(
         "New, new option in the open context menu on the desktop",
       );
       await newOption.hover();
 
       // Click "Text Document" in the context menu
-      const textDocOption = await client.find(
+      const textDocOption = await testdriver.find(
         "Text Document, text document option in the new submenu of the desktop context menu",
       );
       await textDocOption.click();
 
       // Unfocus the "Text Document" text field
-      await client.pressKeys(["esc"]);
+      await testdriver.pressKeys(["esc"]);
 
       // Drag the "New Text Document" icon to the "Recycle Bin"
-      const textDoc = await client.find(
+      const textDoc = await testdriver.find(
         "New Text Document, new text document icon in the center of the desktop",
       );
       await textDoc.mouseDown();
 
-      const recycleBin = await client.find(
+      const recycleBin = await testdriver.find(
         "Recycle Bin, recycle bin icon in the top left corner of the desktop",
       );
       await recycleBin.mouseUp();
 
       // Assert "New Text Document" icon is not on the Desktop
-      const result = await client.assert(
+      const result = await testdriver.assert(
         'the "New Text Document" icon is not visible on the Desktop',
       );
       expect(result).toBeTruthy();

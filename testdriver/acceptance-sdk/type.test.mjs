@@ -11,41 +11,41 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Type Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should enter standard_user in username field", async () => {
-    await client.focusApplication("Google Chrome");
-    const usernameField = await client.find(
+    await testdriver.focusApplication("Google Chrome");
+    const usernameField = await testdriver.find(
       "Username, input field for username",
     );
     await usernameField.click();
-    await client.type("standard_user");
+    await testdriver.type("standard_user");
 
     // Assert username field contains "standard_user"
-    const result = await client.assert(
+    const result = await testdriver.assert(
       'the username field contains "standard_user"',
     );
     expect(result).toBeTruthy();
   });
 
   it("should show validation message when clicking Sign In without password", async () => {
-    const signInButton = await client.find(
+    const signInButton = await testdriver.find(
       "Sign in, black button below the password field",
     );
     await signInButton.click();
 
     // Assert validation message appears
-    await client.focusApplication("Google Chrome");
-    const result = await client.assert(
+    await testdriver.focusApplication("Google Chrome");
+    const result = await testdriver.assert(
       "Please fill out this field is visible near the password field",
     );
     expect(result).toBeTruthy();

@@ -11,39 +11,39 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Scroll Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should navigate and scroll down the page", async () => {
     // Navigate to webhamster.com
-    await client.focusApplication("Google Chrome");
-    const urlBar = await client.find(
+    await testdriver.focusApplication("Google Chrome");
+    const urlBar = await testdriver.find(
       "testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page",
     );
     await urlBar.click();
-    await client.pressKeys(["ctrl", "a"]);
-    await client.type("https://www.webhamster.com/");
-    await client.pressKeys(["enter"]);
+    await testdriver.pressKeys(["ctrl", "a"]);
+    await testdriver.type("https://www.webhamster.com/");
+    await testdriver.pressKeys(["enter"]);
 
     // Wait for page to load and click heading
-    const heading = await client.find(
+    const heading = await testdriver.find(
       "The Hamster Dance, large heading at top of page",
     );
     await heading.click();
 
     // Scroll down
-    await client.scroll("down", 1000);
+    await testdriver.scroll("down", 1000);
 
     // Assert page is scrolled
-    const result = await client.assert("the page is scrolled down");
+    const result = await testdriver.assert("the page is scrolled down");
     expect(result).toBeTruthy();
   });
 });

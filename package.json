@@ -21,6 +21,8 @@
     "test:sdk:ui": "vitest --ui",
     "test:sdk:coverage": "vitest run --coverage",
     "test:sdk:single": "vitest run --reporter=verbose",
+    "test:sdk:report": "open test-results/index.html",
+    "test:sdk:results": "node scripts/view-test-results.mjs",
     "docs-lint": "cd docs && vale **/*.mdx",
     "docs-upload": "node upload-docs-to-openai.js",
     "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'",

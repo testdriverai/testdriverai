@@ -13,20 +13,20 @@ import {
 const isLinux = process.platform === "linux";
 
 describe.skipIf(isLinux)("Exec Shell Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should generate random email using PowerShell and enter it", async () => {
     // Generate random email using PowerShell
-    const randomEmail = await client.exec(
+    const randomEmail = await testdriver.exec(
       "pwsh",
       `
 # Random email generator in PowerShell
@@ -52,14 +52,14 @@ Write-Output "$email"
     );
 
     // Enter the email in username field
-    const usernameField = await client.find(
+    const usernameField = await testdriver.find(
       "Username, input field for username",
     );
     await usernameField.click();
-    await client.type(randomEmail);
+    await testdriver.type(randomEmail);
 
     // Assert that the username field shows a valid email address
-    const result = await client.assert(
+    const result = await testdriver.assert(
       `the username field contains ${randomEmail} which is a valid email address`,
     );
     expect(result).toBeTruthy();

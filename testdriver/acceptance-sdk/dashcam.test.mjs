@@ -12,15 +12,15 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Dashcam Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    const sessionInfo = await teardownTest(client);
+    const sessionInfo = await teardownTest(testdriver);
 
     // Store test result with dashcam URL for reporting
     storeTestResult(
@@ -38,13 +38,13 @@ describe("Dashcam Test", () => {
 
   it("should click on Sign In button for dashcam recording", async () => {
     // Simple click test for dashcam recording
-    const signInButton = await client.find(
+    const signInButton = await testdriver.find(
       "Sign In, black button below the password field",
     );
     await signInButton.click();
 
     // Basic assertion to verify the action
-    const result = await client.assert(
+    const result = await testdriver.assert(
       "an error shows that fields are required",
     );
     expect(result).toBeTruthy();

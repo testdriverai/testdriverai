@@ -19,26 +19,26 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Sandbox Rendering", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
     console.log("📋 Setting up test with sandbox rendering...\n");
 
     // Create client with logging enabled
-    client = createTestClient({
+    testdriver = createTestClient({
       logging: true,
     });
 
     // Set up event listener to verify showWindow event is emitted
     let showWindowEmitted = false;
-    const emitter = client.getEmitter();
+    const emitter = testdriver.getEmitter();
 
     emitter.on("show-window", (url) => {
       showWindowEmitted = true;
       console.log("✅ showWindow event emitted with URL:", url);
     });
 
-    await setupTest(client);
+    await setupTest(testdriver);
 
     // Give it a moment for the event to propagate
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -49,26 +49,26 @@ describe("Sandbox Rendering", () => {
 
   afterAll(async () => {
     console.log("\n🧹 Cleaning up...");
-    await teardownTest(client);
+    await teardownTest(testdriver);
     console.log("✅ Cleanup complete\n");
   });
 
   it("should have opened the sandbox in a browser window", async () => {
     // The sandbox should be visible at this point
     // Let's verify by checking if we can interact with it
-    await client.focusApplication("Google Chrome");
+    await testdriver.focusApplication("Google Chrome");
 
-    const result = await client.assert("the TestDriver.ai Sandbox is visible");
+    const result = await testdriver.assert("the TestDriver.ai Sandbox is visible");
     expect(result).toBeTruthy();
   });
 
   it("should allow interaction with the sandbox UI", async () => {
     // Interact with the login page
-    const usernameField = await client.find("Username, username input field");
+    const usernameField = await testdriver.find("Username, username input field");
     await usernameField.click();
-    await client.type("test_user");
+    await testdriver.type("test_user");
 
-    const result = await client.assert(
+    const result = await testdriver.assert(
       "text has been entered in the username field",
     );
     expect(result).toBeTruthy();

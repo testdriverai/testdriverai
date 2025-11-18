@@ -11,15 +11,15 @@ import {
 } from "./setup/testHelpers.mjs";
 
 describe("Prompt Test", () => {
-  let client;
+  let testdriver;
 
   beforeAll(async () => {
-    client = createTestClient();
-    await setupTest(client);
+    testdriver = createTestClient();
+    await setupTest(testdriver);
   });
 
   afterAll(async () => {
-    await teardownTest(client);
+    await teardownTest(testdriver);
   });
 
   it("should execute AI-driven prompts", async () => {
@@ -36,9 +36,9 @@ describe("Prompt Test", () => {
     // This test is skipped as it requires explicit SDK implementation
     // You would need to implement these as explicit SDK calls
 
-    await client.ai("log in");
+    await testdriver.ai("log in");
 
-    const result = await client.assert("the testdriver sandbox is visible");
+    const result = await testdriver.assert("the testdriver sandbox is visible");
     expect(result).toBeTruthy();
   });
 });

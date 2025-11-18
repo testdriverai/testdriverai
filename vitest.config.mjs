@@ -16,7 +16,12 @@ export default defineConfig({
     globalTeardown: "./testdriver/acceptance-sdk/setup/globalTeardown.mjs",
 
     // Reporter configuration
-    reporters: ["default", ["junit", { outputFile: "test-results/junit.xml" }]],
+    reporters: [
+      "verbose", // Detailed console output with full logs
+      ["junit", { outputFile: "test-results/junit.xml" }],
+      ["json", { outputFile: "test-results/results.json" }],
+      ["html", { outputFile: "test-results/index.html" }],
+    ],
 
     // Use forks for isolation, run tests in parallel
     pool: "forks",
