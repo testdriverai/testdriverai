@@ -3,9 +3,28 @@
  * Shared functions for SDK tests
  */
 
+import { config } from 'dotenv';
 import fs from 'fs';
-import path from 'path';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import TestDriver from '../../../sdk.js';
+
+// Get the directory of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from .env file in the project root
+// Go up 3 levels from setup/ to reach the project root
+const envPath = path.resolve(__dirname, '../../../.env');
+config({ path: envPath });
+
+// Log loaded env vars for debugging
+if (process.env.DEBUG_ENV === 'true') {
+  console.log('🔧 Environment variables loaded from:', envPath);
+  console.log('   TD_API_KEY:', process.env.TD_API_KEY ? '✓ Set' : '✗ Not set');
+  console.log('   TD_API_ROOT:', process.env.TD_API_ROOT || 'Not set');
+  console.log('   TD_OS:', process.env.TD_OS || 'Not set (will default to linux)');
+}
 
 // Global test results storage
 const testResults = {
@@ -79,17 +98,31 @@ export function saveTestResults(outputPath = 'test-results/sdk-summary.json') {
  * @returns {TestDriver} Configured client
  */
 export function createTestClient(options = {}) {
+  // Check if API key is set
+  if (!process.env.TD_API_KEY) {
+    console.error('\n❌ Error: TD_API_KEY is not set!');
+    console.error('Please set it in one of the following ways:');
+    console.error('  1. Create a .env file in the project root with: TD_API_KEY=your_key');
+    console.error('  2. Pass it as an environment variable: TD_API_KEY=your_key npm run test:sdk');
+    console.error('  3. Export it in your shell: export TD_API_KEY=your_key\n');
+    throw new Error('TD_API_KEY environment variable is required');
+  }
+
   const os = process.env.TD_OS || 'linux';
-  
+    
   const client = new TestDriver(process.env.TD_API_KEY, {
     resolution: '1366x768',
     analytics: true,
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
-    apiRoot: process.env.TD_API_ROOT,
+    apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
+    headless: true,
     newSandbox: true, // Always create a new sandbox for each test
-    ...options
+    ...options,
+    cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
   });
+
+  console.log('🔧 createTestClient: SDK created, cacheThresholds =', client.cacheThresholds);
 
   // Enable detailed event logging if requested
   if (process.env.DEBUG_EVENTS === 'true') {
@@ -159,7 +192,6 @@ export function setupEventLogging(client) {
 export async function setupTest(client, options = {}) {
   await client.auth();
   const instance = await client.connect({ 
-    newSandbox: true,
     ...options 
   });
   
@@ -214,7 +246,7 @@ export async function teardownTest(client, options = {}) {
 export async function runPrerun(client) {
   try {
 
-    await client.exec('sh', `dashcam auth ${process.env.TD_API_KEY}`, 10000, true);
+    await client.exec('sh', `dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d`, 10000, true);
 
     // Start dashcam tracking
     await client.exec('sh', 
@@ -222,12 +254,12 @@ export async function runPrerun(client) {
       10000, true);
     
     // Start dashcam recording
-    await client.exec('sh', 'dashcam record >/dev/null 2>&1 &', 30000);
-
-    await client.exec('sh', 'dashcam status');
+    await client.exec('sh', 'dashcam record >/dev/null 2>&1 &');
     
-    // Launch Chrome with guest mode
-    await client.exec('sh', `jumpapp google-chrome --disable-features=ChromeWhatsNewUI,SignInProfileCreation,ProfilePickerOnStartup --disable-fre --no-default-browser-check --no-first-run "http://testdriver-sandbox.vercel.app/"`, 10000, true);
+    // Launch Chrome with guest mode directly (not jumpapp to avoid focus issues)
+    await client.exec('sh', 
+      'google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "http://testdriver-sandbox.vercel.app/" >/dev/null 2>&1 &', 
+      30000);
     
     // Wait for the login page to load - poll for text to appear
     let loginPage = await client.find('TestDriver.ai Sandbox');

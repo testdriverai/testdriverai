@@ -45,24 +45,90 @@ class ElementNotFoundError extends Error {
       }
     }
     
+    // Save cached image if available
+    this.cachedImagePath = null;
+    if (debugInfo.cachedImageUrl) {
+      this.cachedImagePath = debugInfo.cachedImageUrl;
+    }
+    
+    // Save pixel diff image if available
+    this.pixelDiffPath = null;
+    if (debugInfo.pixelDiffImage) {
+      try {
+        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const filename = `pixel-diff-error-${Date.now()}.png`;
+        this.pixelDiffPath = path.join(tempDir, filename);
+        
+        const base64Data = debugInfo.pixelDiffImage.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        fs.writeFileSync(this.pixelDiffPath, buffer);
+      } catch (err) {
+        console.error('Failed to save pixel diff image:', err.message);
+      }
+    }
+    
     // Extract similarity and input text from AI response
     const similarity = this.aiResponse?.similarity ?? null;
+    const cacheHit = this.aiResponse?.cacheHit ?? this.aiResponse?.cached ?? false;
+    const cacheStrategy = this.aiResponse?.cacheStrategy ?? null;
+    const cacheCreatedAt = this.aiResponse?.cacheCreatedAt ?? null;
+    const cacheDiffPercent = this.aiResponse?.cacheDiffPercent ?? null;
+    const threshold = debugInfo.threshold ?? null;
     const inputText = this.aiResponse?.input_text ?? this.aiResponse?.element ?? null;
     
     // Enhance error message with debugging hints
     this.message += `\n\n=== Debug Information ===`;
     this.message += `\nElement searched for: "${this.description}"`;
     
+    if (threshold !== null) {
+      const similarityRequired = ((1 - threshold) * 100).toFixed(1);
+      this.message += `\nCache threshold: ${threshold} (${similarityRequired}% similarity required)`;
+    }
+    
+    if (cacheHit) {
+      this.message += `\nCache: HIT`;
+      if (cacheStrategy) {
+        this.message += ` (${cacheStrategy} strategy)`;
+      }
+      if (cacheCreatedAt) {
+        const cacheAge = Math.round((Date.now() - new Date(cacheCreatedAt).getTime()) / 1000);
+        this.message += `\nCache created: ${new Date(cacheCreatedAt).toISOString()} (${cacheAge}s ago)`;
+      }
+      if (cacheDiffPercent !== null) {
+        this.message += `\nCache pixel diff: ${(cacheDiffPercent * 100).toFixed(2)}%`;
+      }
+    } else {
+      this.message += `\nCache: MISS`;
+    }
+    
+    if (similarity !== null) {
+      const similarityPercent = (similarity * 100).toFixed(2);
+      this.message += `\nSimilarity score: ${similarityPercent}%`;
+      
+      if (threshold !== null && similarity < (1 - threshold)) {
+        this.message += ` (below threshold)`;
+      }
+    }
+    
     if (inputText) {
       this.message += `\nInput text: "${inputText}"`;
     }
     
-    if (similarity !== null) {
-      this.message += `\nSimilarity score: ${similarity}`;
+    if (this.screenshotPath) {
+      this.message += `\nCurrent screenshot: ${this.screenshotPath}`;
     }
     
-    if (this.screenshotPath) {
-      this.message += `\nScreenshot saved to: ${this.screenshotPath}`;
+    if (this.cachedImagePath) {
+      this.message += `\nCached image URL: ${this.cachedImagePath}`;
+    }
+    
+    if (this.pixelDiffPath) {
+      this.message += `\nPixel diff image: ${this.pixelDiffPath}`;
     }
     
     if (this.aiResponse) {
@@ -119,6 +185,7 @@ class Element {
     this._found = false;
     this._response = null;
     this._screenshot = null;
+    this._threshold = null; // Store the threshold used for this find
   }
 
   /**
@@ -132,9 +199,10 @@ class Element {
   /**
    * Find the element on screen
    * @param {string} [newDescription] - Optional new description to search for
+   * @param {number} [cacheThreshold] - Cache threshold for this specific find (overrides global setting)
    * @returns {Promise<Element>} This element instance
    */
-  async find(newDescription) {
+  async find(newDescription, cacheThreshold) {
     const description = newDescription || this.description;
     if (newDescription) {
       this.description = newDescription;
@@ -142,19 +210,32 @@ class Element {
 
     const startTime = Date.now();
     
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    
     try {
       const screenshot = await this.system.captureScreenBase64();
       // Only store screenshot in DEBUG mode to prevent memory leaks
-      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
       if (debugMode) {
         this._screenshot = screenshot;
       }
       
-      const response = await this.sdk.req(
-        "locate",
+      // Use per-command threshold if provided, otherwise fall back to global threshold
+      const threshold = cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.05;
+      
+      // Store the threshold for debugging
+      this._threshold = threshold;
+      
+      // Debug log threshold
+      if (debugMode) {
+        console.log(`🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? 'DISABLED' : 'ENABLED'})`);
+      }
+      
+      const response = await this.sdk.apiClient.req(
+        "find",
         {
           element: description,
           image: screenshot,
+          threshold: threshold,
         }
       );
 
@@ -212,10 +293,45 @@ class Element {
       description: this.description,
       coordinates: this.coordinates,
       duration: `${duration}ms`,
-      cacheHit: response.cache_hit || response.cached || false,
+      cacheHit: response.cacheHit || response.cache_hit || response.cached || false,
+      cacheStrategy: response.cacheStrategy || null,
       similarity: response.similarity ?? null,
       confidence: response.confidence ?? null,
     };
+
+    // Log cache information in debug mode
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    if (debugMode) {
+      console.log('\n🔍 Element Found:');
+      console.log(`  Description: ${debugInfo.description}`);
+      console.log(`  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`);
+      console.log(`  Duration: ${debugInfo.duration}`);
+      console.log(`  Cache Hit: ${debugInfo.cacheHit ? '✅ YES' : '❌ NO'}`);
+      if (debugInfo.cacheHit) {
+        console.log(`  Cache Strategy: ${debugInfo.cacheStrategy || 'unknown'}`);
+        console.log(`  Similarity: ${debugInfo.similarity !== null ? (debugInfo.similarity * 100).toFixed(2) + '%' : 'N/A'}`);
+        if (response.cacheCreatedAt) {
+          const cacheAge = Math.round((Date.now() - new Date(response.cacheCreatedAt).getTime()) / 1000);
+          console.log(`  Cache Age: ${cacheAge}s (created: ${new Date(response.cacheCreatedAt).toISOString()})`);
+        }
+        if (response.cachedImageUrl) {
+          console.log(`  Cached Image URL: ${response.cachedImageUrl}`);
+        }
+        if (response.cacheDiffPercent !== undefined) {
+          console.log(`  Pixel Diff: ${(response.cacheDiffPercent * 100).toFixed(2)}%`);
+        }
+      }
+      if (debugInfo.confidence !== null) {
+        console.log(`  Confidence: ${(debugInfo.confidence * 100).toFixed(2)}%`);
+      }
+      
+      // Log available response fields for debugging
+      console.log(`  Response fields: ${Object.keys(response).join(', ')}`);
+      console.log(`  Has croppedImage: ${!!response.croppedImage}`);
+      console.log(`  Has screenshot: ${!!response.screenshot}`);
+      console.log(`  Has cachedImageUrl: ${!!response.cachedImageUrl}`);
+      console.log(`  Has pixelDiffImage: ${!!response.pixelDiffImage}`);
+    }
 
     // Save cropped image with red circle if available
     let croppedImagePath = null;
@@ -234,38 +350,65 @@ class Element {
         const buffer = Buffer.from(base64Data, 'base64');
         
         fs.writeFileSync(croppedImagePath, buffer);
+        
+        if (debugMode) {
+          console.log(`  Debug Image: ${croppedImagePath}`);
+        }
       } catch (err) {
         console.error('Failed to save cropped debug image:', err.message);
       }
     }
 
-    // Build debug message
-    let message = `✓ Element found: "${this.description}"`;
-    message += `\n  Coordinates: (${this.coordinates.x}, ${this.coordinates.y})`;
-    
-    if (debugInfo.cacheHit) {
-      message += `\n  Cache: HIT`;
-    } else {
-      message += `\n  Cache: MISS`;
+    // Save cached screenshot if available and this was a cache hit
+    let cachedScreenshotPath = null;
+    if (debugInfo.cacheHit && response.screenshot) {
+      try {
+        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const filename = `cached-screenshot-${Date.now()}.png`;
+        cachedScreenshotPath = path.join(tempDir, filename);
+        
+        // Remove data:image/png;base64, prefix if present
+        const base64Data = response.screenshot.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        fs.writeFileSync(cachedScreenshotPath, buffer);
+        
+        if (debugMode) {
+          console.log(`  Cached Screenshot: ${cachedScreenshotPath}`);
+        }
+      } catch (err) {
+        console.error('Failed to save cached screenshot:', err.message);
+      }
     }
     
-    if (debugInfo.similarity !== null) {
-      message += `\n  Similarity: ${debugInfo.similarity}`;
-    }
-    
-    if (debugInfo.confidence !== null) {
-      message += `\n  Confidence: ${debugInfo.confidence}`;
-    }
-    
-    message += `\n  Time: ${debugInfo.duration}`;
-    
-    if (croppedImagePath) {
-      message += `\n  Debug image: ${croppedImagePath}`;
-    }
-    
-    // Check for VERBOSE environment variable or debug mode
-    if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
-      console.log(message);
+    // Save pixel diff image if available and this was a cache hit
+    let pixelDiffPath = null;
+    if (debugInfo.cacheHit && response.pixelDiffImage) {
+      try {
+        const tempDir = path.join(os.tmpdir(), 'testdriver-debug');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const filename = `pixel-diff-${Date.now()}.png`;
+        pixelDiffPath = path.join(tempDir, filename);
+        
+        // Remove data:image/png;base64, prefix if present
+        const base64Data = response.pixelDiffImage.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        fs.writeFileSync(pixelDiffPath, buffer);
+        
+        if (debugMode) {
+          console.log(`  Pixel Diff Image: ${pixelDiffPath}`);
+        }
+      } catch (err) {
+        console.error('Failed to save pixel diff image:', err.message);
+      }
     }
   }
 
@@ -282,6 +425,9 @@ class Element {
           description: this.description,
           screenshot: this._screenshot,
           aiResponse: this._response,
+          threshold: this._threshold,
+          cachedImageUrl: this._response?.cachedImageUrl,
+          pixelDiffImage: this._response?.pixelDiffImage,
         }
       );
     }
@@ -305,6 +451,9 @@ class Element {
           description: this.description,
           screenshot: this._screenshot,
           aiResponse: this._response,
+          threshold: this._threshold,
+          cachedImageUrl: this._response?.cachedImageUrl,
+          pixelDiffImage: this._response?.pixelDiffImage,
         }
       );
     }
@@ -557,6 +706,33 @@ class TestDriverSDK {
     // Store options for later use
     this.options = options;
     
+    // Store newSandbox preference from options
+    this.newSandbox = options.newSandbox !== undefined ? options.newSandbox : false;
+    
+    // Cache threshold configuration
+    // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
+    // cache: false option disables cache completely by setting threshold to -1
+    // Also support TD_NO_CACHE environment variable
+    const useCache = options.cache !== false && process.env.TD_NO_CACHE !== 'true';
+    
+    console.log(`🔧 SDK Constructor: cache option = ${options.cache}, useCache = ${useCache}`);
+    
+    if (!useCache) {
+      // If cache is disabled, use -1 to bypass cache entirely
+      this.cacheThresholds = {
+        find: -1,
+        findAll: -1,
+      };
+      console.log('🚫 Cache DISABLED: thresholds set to -1');
+    } else {
+      // Use configured thresholds or defaults
+      this.cacheThresholds = {
+        find: options.cacheThreshold?.find ?? 0.05,
+        findAll: options.cacheThreshold?.findAll ?? 0.05,
+      };
+      console.log(`✅ Cache ENABLED: thresholds = ${JSON.stringify(this.cacheThresholds)}`);
+    }
+    
     // Track connection state
     this.connected = false;
     this.authenticated = false;
@@ -627,9 +803,10 @@ class TestDriverSDK {
     await this._initializeDebugger();
 
     // Map SDK connect options to agent buildEnv options
+    // Use connectOptions.newSandbox if provided, otherwise fall back to this.newSandbox
     const buildEnvOptions = {
       headless: connectOptions.headless || false,
-      new: connectOptions.newSandbox || false,
+      new: connectOptions.newSandbox !== undefined ? connectOptions.newSandbox : this.newSandbox,
     };
 
     // Set agent properties for buildEnv to use
@@ -693,12 +870,17 @@ class TestDriverSDK {
    * Automatically locates the element and returns it
    * 
    * @param {string} description - Description of the element to find
+   * @param {number} [cacheThreshold] - Cache threshold for this specific find (overrides global setting)
    * @returns {Promise<Element>} Element instance that has been located
    * 
    * @example
    * // Find and click immediately
    * const element = await client.find('the sign in button');
    * await element.click();
+   * 
+   * @example
+   * // Find with custom cache threshold
+   * const element = await client.find('login button', 0.01);
    * 
    * @example
    * // Poll until element is found
@@ -711,15 +893,135 @@ class TestDriverSDK {
    * }
    * await element.click();
    */
-  async find(description) {
+  async find(description, cacheThreshold) {
     this._ensureConnected();
     const element = new Element(
       description,
-      this.apiClient,
+      this,
       this.system,
       this.commands
     );
-    return await element.find();
+    return await element.find(null, cacheThreshold);
+  }
+
+  /**
+   * Find all elements matching a description
+   * Automatically locates all matching elements and returns them as an array
+   * 
+   * @param {string} description - Description of the elements to find
+   * @param {number} [cacheThreshold] - Cache threshold for this specific findAll (overrides global setting)
+   * @returns {Promise<Element[]>} Array of Element instances that have been located
+   * 
+   * @example
+   * // Find all buttons and click the first one
+   * const buttons = await client.findAll('button');
+   * if (buttons.length > 0) {
+   *   await buttons[0].click();
+   * }
+   * 
+   * @example
+   * // Find all list items with custom cache threshold
+   * const items = await client.findAll('list item', 0.01);
+   * for (const item of items) {
+   *   console.log(`Found item at (${item.x}, ${item.y})`);
+   * }
+   */
+  async findAll(description, cacheThreshold) {
+    this._ensureConnected();
+
+    const startTime = Date.now();
+    
+    try {
+      const screenshot = await this.system.captureScreenBase64();
+      
+      // Use per-command threshold if provided, otherwise fall back to global threshold
+      const threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.05;
+      
+      const response = await this.apiClient.req(
+        "/api/v7.0.0/testdriver-agent/testdriver-find-all",
+        {
+          element: description,
+          image: screenshot,
+          threshold: threshold,
+        }
+      );
+
+      const duration = Date.now() - startTime;
+
+      if (response && response.elements && response.elements.length > 0) {
+        // Create Element instances for each found element
+        const elements = response.elements.map(elementData => {
+          const element = new Element(
+            description,
+            this,
+            this.system,
+            this.commands
+          );
+          
+          // Set element as found with its coordinates
+          element.coordinates = elementData.coordinates;
+          element._found = true;
+          element._response = this._sanitizeResponseForElement(response, elementData);
+          
+          // Only store screenshot in DEBUG mode
+          const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+          if (debugMode) {
+            element._screenshot = screenshot;
+          }
+          
+          return element;
+        });
+
+        // Log debug information when elements are found
+        if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
+          console.log(`✓ Found ${elements.length} element(s): "${description}"`);
+          console.log(`  Cache: ${response.cached ? 'HIT' : 'MISS'}`);
+          console.log(`  Time: ${duration}ms`);
+        }
+
+        return elements;
+      } else {
+        // No elements found - return empty array
+        return [];
+      }
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Sanitize response for individual element in findAll results
+   * @private
+   * @param {Object} response - Full API response
+   * @param {Object} elementData - Individual element data
+   * @returns {Object} Sanitized response for this element
+   */
+  _sanitizeResponseForElement(response, elementData) {
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    
+    // Combine global response data with element-specific data
+    const sanitized = {
+      coordinates: elementData.coordinates,
+      cached: response.cached || false,
+      elementType: response.elementType,
+      extractedText: response.extractedText,
+      confidence: elementData.confidence,
+      similarity: elementData.similarity,
+      boundingBox: elementData.boundingBox,
+      width: elementData.width,
+      height: elementData.height,
+      text: elementData.text,
+      label: elementData.label,
+    };
+    
+    // Only keep large data in debug mode
+    if (debugMode) {
+      sanitized.croppedImage = elementData.croppedImage;
+      sanitized.screenshot = response.screenshot;
+    }
+    
+    return sanitized;
   }
 
   // ====================================

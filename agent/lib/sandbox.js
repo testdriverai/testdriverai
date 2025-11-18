@@ -140,7 +140,9 @@ const createSandbox = (emitter, analytics) => {
 
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
-            this.ps[message.requestId].reject(JSON.stringify(message));
+            const error = new Error(message.errorMessage || 'Sandbox error');
+            error.responseData = message;
+            this.ps[message.requestId].reject(error);
           } else {
             emitter.emit(events.sandbox.received);
 

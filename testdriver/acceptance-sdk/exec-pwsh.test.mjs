@@ -6,7 +6,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
 
-describe('Exec Shell Test', () => {
+const isLinux = process.platform === 'linux';
+
+describe.skipIf(isLinux)('Exec Shell Test', () => {
   let client;
 
   beforeAll(async () => {

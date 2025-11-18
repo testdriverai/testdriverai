@@ -6,6 +6,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTestClient, setupTest, teardownTest } from './setup/testHelpers.mjs';
 
+const isLinux = (process.env.TD_OS || 'linux') === 'linux';
+
 describe('Drag and Drop Test', () => {
   let client;
 
@@ -18,7 +20,7 @@ describe('Drag and Drop Test', () => {
     await teardownTest(client);
   });
 
-  it('should drag "New Text Document" to "Recycle Bin"', async () => {
+  it.skipIf(!isLinux)('should drag "New Text Document" to "Recycle Bin"', async () => {
     // Show the desktop
     await client.pressKeys(['win', 'd']);
 

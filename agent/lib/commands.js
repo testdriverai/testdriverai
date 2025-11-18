@@ -248,43 +248,24 @@ const createCommands = (
 
     amount = parseInt(amount, 10);
 
-    // if direction is down, amount should be negative
-    if (direction === "down") {
-      amount = -Math.abs(amount);
-    } else if (direction === "up") {
-      amount = Math.abs(amount);
-    }
-
     const before = await system.captureScreenBase64();
     switch (direction) {
       case "up":
-        if (method === "mouse") {
-          await sandbox.send({
-            os: "linux",
-            type: "scroll",
-            amount,
-            direction,
-          });
-        } else {
-          await sandbox.send({ type: "press", keys: ["pageup"] });
-        }
+        await sandbox.send({
+          os: "linux",
+          type: "scroll",
+          amount,
+          direction,
+        });
         await redraw.wait(2500);
         break;
       case "down":
-        if (method === "mouse") {
-          await sandbox.send({
-            os: "linux",
-            type: "scroll",
-            amount,
-            direction,
-          });
-        } else {
-          await sandbox.send({
-            os: "linux",
-            type: "press",
-            keys: ["pagedown"],
-          });
-        }
+        await sandbox.send({
+          os: "linux",
+          type: "scroll",
+          amount,
+          direction,
+        });
         await redraw.wait(2500);
         break;
       case "left":
@@ -607,7 +588,7 @@ const createCommands = (
       direction = "down",
       maxDistance = 10000,
       textMatchMethod = "turbo",
-      method = "keyboard",
+      method = "mouse",
       invert = false,
     ) => {
       await redraw.start();
@@ -617,24 +598,6 @@ const createCommands = (
         theme.dim(`scrolling for text: "${text}"...`),
         true,
       );
-
-      if (method === "keyboard") {
-        try {
-          await sandbox.send({
-            os: "linux",
-            type: "press",
-            keys: ["f", "ctrl"],
-          });
-          await delay(1000);
-          await sandbox.send({ type: "write", text });
-          await redraw.wait(5000);
-          await sandbox.send({ type: "press", keys: ["escape"] });
-        } catch {
-          throw new MatchError(
-            "Could not find element using browser text search",
-          );
-        }
-      }
 
       let scrollDistance = 0;
       let incrementDistance = 500;
@@ -681,7 +644,7 @@ const createCommands = (
       description,
       direction = "down",
       maxDistance = 10000,
-      method = "keyboard",
+      method = "mouse",
       path,
       invert = false,
     ) => {

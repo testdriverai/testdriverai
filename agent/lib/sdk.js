@@ -123,6 +123,7 @@ const createSDK = (emitter, config, sessionInstance) => {
         ...(token && { Authorization: `Bearer ${token}` }), // Add the authorization bearer token only if token is set
       },
       responseType: typeof onChunk === "function" ? "stream" : "json",
+      timeout: 60000, // 60 second timeout to prevent hanging requests
       data: {
         ...data,
         session: sessionInstance.get(),

@@ -13,12 +13,6 @@ export default defineConfig({
     testTimeout: 600000, // 2 minutes per test
     hookTimeout: 600000,  // 1 minute for setup/teardown
     
-    // Run tests sequentially (important for sandbox resource management)
-    sequence: {
-      concurrent: false,
-      shuffle: false,
-    },
-    
     globalTeardown: './testdriver/acceptance-sdk/setup/globalTeardown.mjs',
     
     // Reporter configuration
@@ -27,13 +21,22 @@ export default defineConfig({
       ['junit', { outputFile: 'test-results/junit.xml' }]
     ],
     
-    // Use forks for isolation, allow multiple test files
+    // Use forks for isolation, run tests in parallel
     pool: 'forks',
     poolOptions: {
       forks: {
         singleFork: false,
-        maxForks: 20, // Run up to X test files in parallel
+        maxForks: 10, // Run up to 10 tests in parallel
       },
     },
+    
+    // Enable parallel execution
+    sequence: {
+      concurrent: true,
+      shuffle: false,
+    },
+    
+    fileParallelism: true,
+    maxConcurrency: 10,
   },
 });

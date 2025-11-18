@@ -301,13 +301,6 @@
           },
           "amount": {
             "type": "integer"
-          },
-          "method": {
-            "type": "string",
-            "enum": [
-              "keyboard",
-              "mouse"
-            ]
           }
         }
       },
@@ -558,13 +551,6 @@
           "distance": {
             "type": "integer"
           },
-          "method": {
-            "type": "string",
-            "enum": [
-              "keyboard",
-              "mouse"
-            ]
-          },
           "invert": {
             "type": "boolean"
           }
@@ -598,13 +584,6 @@
           },
           "distance": {
             "type": "integer"
-          }, 
-          "method" : {
-            "type": "string",
-            "enum": [
-              "keyboard",
-              "mouse"
-            ]
           },
           "invert": {
             "type": "boolean"

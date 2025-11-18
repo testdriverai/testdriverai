@@ -847,6 +847,80 @@ testLoginFlow();
 - `TD_API_ROOT`: API endpoint (optional, default: https://v6.testdriver.ai)
 - `TD_RESOLUTION`: Sandbox resolution (optional, default: 1366x768)
 - `TD_ANALYTICS`: Enable analytics (optional, default: true)
+- `VERBOSE` / `DEBUG` / `TD_DEBUG`: Enable verbose debug output including cache information
+
+## Configuration Options
+
+### Cache Thresholds
+
+Configure cache sensitivity for element finding operations. Lower thresholds require higher similarity for cache hits.
+
+**Global Configuration:**
+
+```javascript
+const client = new TestDriver(process.env.TD_API_KEY, {
+  cacheThreshold: {
+    find: 0.03,     // 3% difference = 97% similarity required (stricter)
+    findAll: 0.05   // 5% difference = 95% similarity required (default)
+  }
+});
+```
+
+**Disable Cache Globally:**
+
+```javascript
+// Force all find operations to regenerate (never use cache)
+const client = new TestDriver(process.env.TD_API_KEY, {
+  cache: false
+});
+```
+
+**Per-Command Configuration:**
+
+```javascript
+// Override cache threshold for a specific find
+const element = await client.find('login button', 0.01); // 99% similarity required
+
+// Override cache threshold for a specific findAll
+const items = await client.findAll('list items', 0.10); // 90% similarity required
+
+// Disable cache for a specific find (always regenerate)
+const element = await client.find('login button', -1);
+```
+
+**Cache Threshold Values:**
+- `0.01` - Very strict (99% similarity required)
+- `0.03` - Strict (97% similarity required)
+- `0.05` - Default (95% similarity required)
+- `0.10` - Relaxed (90% similarity required)
+
+### Debugging Cache Behavior
+
+Enable verbose output to see cache hit/miss information:
+
+```bash
+VERBOSE=true node your-test.js
+```
+
+Debug output includes:
+- Cache hit/miss status
+- Cache strategy used (image/text)
+- Similarity scores for cache matches
+- Response times
+- Debug images with element highlights
+
+Example debug output:
+```
+🔍 Element Found:
+  Description: login button
+  Coordinates: (523, 345)
+  Duration: 1234ms
+  Cache Hit: ✅ YES
+  Cache Strategy: text
+  Similarity: 98.50%
+  Confidence: 95.20%
+  Debug Image: /tmp/testdriver-debug/element-found-1234567890.png
+```
 
 ## Error Handling
 

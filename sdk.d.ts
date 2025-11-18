@@ -34,6 +34,15 @@ export interface TestDriverOptions {
   analytics?: boolean;
   /** Enable console logging output (default: true) */
   logging?: boolean;
+  /** Enable/disable cache (default: true). Set to false to force regeneration on all find operations */
+  cache?: boolean;
+  /** Cache threshold configuration for different methods */
+  cacheThreshold?: {
+    /** Threshold for find operations (default: 0.05 = 5% difference, 95% similarity) */
+    find?: number;
+    /** Threshold for findAll operations (default: 0.05 = 5% difference, 95% similarity) */
+    findAll?: number;
+  };
   /** Additional environment variables */
   environment?: Record<string, any>;
 }
@@ -107,8 +116,9 @@ export class Element {
   /**
    * Find the element on screen
    * @param newDescription - Optional new description to search for
+   * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
    */
-  find(newDescription?: string): Promise<Element>;
+  find(newDescription?: string, cacheThreshold?: number): Promise<Element>;
   
   /**
    * Click on the element
@@ -232,12 +242,17 @@ export default class TestDriverSDK {
    * Automatically locates the element and returns it
    * 
    * @param description - Description of the element to find
+   * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
    * @returns Element instance that has been located
    * 
    * @example
    * // Find and click immediately
    * const element = await client.find('the sign in button');
    * await element.click();
+   * 
+   * @example
+   * // Find with custom cache threshold
+   * const element = await client.find('login button', 0.01);
    * 
    * @example
    * // Poll until element is found
@@ -250,7 +265,23 @@ export default class TestDriverSDK {
    * }
    * await element.click();
    */
-  find(description: string): Promise<Element>;
+  find(description: string, cacheThreshold?: number): Promise<Element>;
+
+  /**
+   * Find all elements matching a description
+   * @param description - Description of the elements to find
+   * @param cacheThreshold - Cache threshold for this specific findAll (overrides global setting)
+   * @returns Array of Element instances
+   * 
+   * @example
+   * // Find all buttons
+   * const buttons = await client.findAll('button');
+   * 
+   * @example
+   * // Find with custom cache threshold
+   * const items = await client.findAll('list item', 0.01);
+   */
+  findAll(description: string, cacheThreshold?: number): Promise<Element[]>;
 
   // Text Interaction Methods
   

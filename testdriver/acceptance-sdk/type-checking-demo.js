@@ -26,7 +26,7 @@ async function typeCheckingDemo() {
   await client.hoverText('Submit', null, 'click');
   
   // 2. Scroll direction - should autocomplete: 'up', 'down', 'left', 'right'
-  await client.scroll('asdf', 300, 'keyboard');
+  await client.scroll('asdf', 300);
   
   // 3. Text match method - should autocomplete: 'ai', 'turbo'
   await client.waitForText('Welcome', 5000, 'turbo');
@@ -38,7 +38,7 @@ async function typeCheckingDemo() {
   await client.exec('js', 'console.log("Hello")', 5000);
   
   // 6. Scroll method - should autocomplete: 'keyboard', 'mouse'
-  await client.scrollUntilText('Contact', 'down', 10000, 'turbo', 'keyboard');
+  await client.scrollUntilText('Contact', 'down', 10000);
 
   await client.disconnect();
 }

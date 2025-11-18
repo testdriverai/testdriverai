@@ -30,7 +30,7 @@ describe('Scroll Keyboard Test', () => {
     // Scroll down with keyboard 1000 pixels
     const heading = await client.find('The Hamster Dance, large heading at top of page');
     await heading.click();
-    await client.scroll('down', 1000, 'keyboard');
+    await client.scroll('down', 1000);
 
     // Assert the page is scrolled down
     const result = await client.assert('the page is scrolled down');

@@ -62,33 +62,27 @@ const types = () =>
       },
       // - command: scroll # Scroll up or down. Make sure the correct portion of the page is focused before scrolling.
       //   direction: down # Available directions are: up, down, left, right
-      //   method: keyboard # Optional. Available methods are: keyboard (default), mouse. Use mouse only if the prompt explicitly asks for it.
-      //   amount: 300 # Optional. The amount of pixels to scroll. Defaults to 300 for keyboard and 200 for mouse.
+      //   amount: 300 # Optional. The amount of pixels to scroll. Defaults to 300.
       ScrollCommand: {
         command: '"scroll"',
         direction: '"up" | "down" | "left" | "right"',
-        "method?": '"keyboard" | "mouse"',
         "amount?": "number",
       },
       // - command: scroll-until-text # Scroll until text is found
       //   text: Sign Up # The text to find on screen. The longer and more unique the better.
       //   direction: down # Available directions are: up, down, left, right
-      //   method: keyboard # Optional. Available methods are: keyboard (default), mouse. Use mouse only if the prompt explicitly asks for it.
       ScrollUntilTextCommand: {
         command: '"scroll-until-text"',
         text: "string",
         direction: '"up" | "down" | "left" | "right"',
-        "method?": '"keyboard" | "mouse"',
       },
       // - command: scroll-until-image # Scroll until icon or image is found
       //   description: Submit at the bottom of the form
       //   direction: down # Available directions are: up, down, left, rights
-      //   method: keyboard # Optional. Available methods are: keyboard (default), mouse. Use mouse only if the prompt explicitly asks for it.
       ScrollUntilImageCommand: {
         command: '"scroll-until-image"',
         description: "string",
         direction: '"up" | "down" | "left" | "right"',
-        "method?": '"keyboard" | "mouse"',
       },
       // - command: wait-for-text # Wait until text is seen on screen. Not recommended unless explicitly requested by user.
       //   text: Copyright 2024 # The text to find on screen.
