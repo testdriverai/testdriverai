@@ -280,6 +280,26 @@ export async function teardownTest(client, options = {}) {
       if (dashcamUrl) {
         client._lastDashcamUrl = dashcamUrl;
         console.log(`🎥 Stored dashcam URL in client: ${dashcamUrl}`);
+        
+        // Also store in Vitest test meta if available
+        if (typeof expect !== 'undefined') {
+          try {
+            const vitestState = expect.getState();
+            if (vitestState.currentTestName) {
+              console.log(`[TestHelpers] Storing dashcam URL in Vitest meta for: ${vitestState.currentTestName}`);
+              // Store it globally for reporter to access
+              if (!globalThis.__testdriverMeta) {
+                globalThis.__testdriverMeta = {};
+              }
+              globalThis.__testdriverMeta[vitestState.currentTestName] = {
+                dashcamUrl,
+                platform: client.os
+              };
+            }
+          } catch (e) {
+            console.log(`[TestHelpers] Could not access Vitest state:`, e.message);
+          }
+        }
       }
     } else {
       console.log("⏭️  Postrun skipped (disabled in options)");

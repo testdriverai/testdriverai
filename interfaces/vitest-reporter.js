@@ -332,6 +332,21 @@ class TestDriverReporter {
       return process.env.DASHCAM_REPLAY_URL;
     }
 
+    // Check global meta storage (set during teardown)
+    if (globalThis.__testdriverMeta && globalThis.__testdriverMeta[test.name]) {
+      const meta = globalThis.__testdriverMeta[test.name];
+      console.log(`[TestDriver Reporter] ✓ Found test meta in global storage`);
+      console.log(`[TestDriver Reporter]   Dashcam URL: ${meta.dashcamUrl}`);
+      console.log(`[TestDriver Reporter]   Platform: ${meta.platform}`);
+      
+      // Also update detected platform
+      if (meta.platform && !this.detectedPlatform) {
+        this.detectedPlatform = meta.platform;
+      }
+      
+      return meta.dashcamUrl;
+    }
+
     // Try to get client from global registry
     let client = null;
     if (globalThis.__testdriverRegistry) {
