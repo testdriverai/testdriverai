@@ -110,6 +110,93 @@ export function saveTestResults(outputPath = "test-results/sdk-summary.json") {
 }
 
 /**
+ * Intercept console logs and forward to TestDriver sandbox
+ * @param {TestDriver} client - TestDriver client instance
+ * @param {string} taskId - Unique task identifier for this test
+ */
+function setupConsoleInterceptor(client, taskId) {
+  // Store original console methods
+  const originalConsole = {
+    log: console.log,
+    error: console.error,
+    warn: console.warn,
+    info: console.info,
+  };
+
+  // Create wrapper that forwards to sandbox
+  const createInterceptor = (level, originalMethod) => {
+    return function (...args) {
+      // Call original console method first
+      originalMethod.apply(console, args);
+
+      // Forward to sandbox if connected
+      if (client.sandbox && client.sandbox.instanceSocketConnected) {
+        try {
+          // Format the log message
+          const message = args
+            .map((arg) =>
+              typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+            )
+            .join(" ");
+
+          // Preserve ANSI color codes and emojis for rich sandbox output
+          const logOutput = `[${level.toUpperCase()}] ${message}`;
+
+          client.sandbox.send({
+            type: "output",
+            output: Buffer.from(logOutput, 'utf8').toString("base64"),
+          });
+        } catch (error) {
+          // Silently fail to avoid breaking the test
+          // Use original console to avoid infinite loop
+          originalConsole.error(
+            `[TestHelpers] Failed to forward log to sandbox:`,
+            error.message
+          );
+        }
+      }
+    };
+  };
+
+  // Replace console methods with interceptors
+  console.log = createInterceptor("log", originalConsole.log);
+  console.error = createInterceptor("error", originalConsole.error);
+  console.warn = createInterceptor("warn", originalConsole.warn);
+  console.info = createInterceptor("info", originalConsole.info);
+
+  // Store original methods and taskId on client for cleanup
+  client._consoleInterceptor = {
+    taskId,
+    original: originalConsole,
+  };
+
+  // Use original console for this message
+  originalConsole.log(`[TestHelpers] Console interceptor enabled for task: ${taskId}`);
+}
+
+/**
+ * Remove console interceptor and restore original console methods
+ * @param {TestDriver} client - TestDriver client instance
+ */
+function removeConsoleInterceptor(client) {
+  if (client._consoleInterceptor) {
+    const { original, taskId } = client._consoleInterceptor;
+
+    // Restore original console methods
+    console.log = original.log;
+    console.error = original.error;
+    console.warn = original.warn;
+    console.info = original.info;
+
+    // Use original console for cleanup message
+    original.log(`[TestHelpers] Console interceptor removed for task: ${taskId}`);
+
+    // Clean up reference
+    delete client._consoleInterceptor;
+  }
+}
+
+/**
  * Create a configured TestDriver client
  * @param {Object} options - Additional options
  * @param {Object} options.task - Vitest task context (from beforeAll/it context)
@@ -146,7 +233,7 @@ export function createTestClient(options = {}) {
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
-    headless: true,
+    headless: false,
     newSandbox: false, // Always create a new sandbox for each test
     ...clientOptions, // This will include signal if passed in
     cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
@@ -240,6 +327,11 @@ export async function setupTest(client, options = {}) {
   const instance = await client.connect({
     ...options,
   });
+
+  // Set up console interceptor after connection (needs sandbox to be connected)
+  if (client.vitestTaskId) {
+    setupConsoleInterceptor(client, client.vitestTaskId);
+  }
 
   // Run prerun lifecycle if enabled
   if (options.prerun !== false) {
@@ -362,6 +454,9 @@ export async function teardownTest(client, options = {}) {
   } catch (error) {
     console.error("❌ Error in postrun:", error);
   } finally {
+    // Remove console interceptor before disconnecting
+    removeConsoleInterceptor(client);
+    
     await client.disconnect();
   }
 

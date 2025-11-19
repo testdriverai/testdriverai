@@ -14,17 +14,17 @@ describe("Assert Test", () => {
   let testdriver;
   let testContext; // Store test context to access from afterAll
 
-  beforeAll(async (context) => {
-    // Pass the task context so the client can be registered in the global registry
+  beforeAll(async (suiteContext) => {
+    // In beforeAll, the context IS the suite task
+    // We'll use the suite's ID to track logs for all tests in this suite
     testdriver = createTestClient({
-      signal: context.signal,
-      task: context.task,
+      signal: suiteContext.signal,
+      task: suiteContext, // The suite context is the task in beforeAll
     });
 
     // Store platform in task metadata immediately for reporter access
-    if (context.task?.meta) {
-      context.task.meta.testdriverPlatform = testdriver.os;
-      console.log(`[Test] Stored platform in task.meta: ${testdriver.os}`);
+    if (suiteContext.meta) {
+      suiteContext.meta.testdriverPlatform = testdriver.os;
     }
 
     await setupTest(testdriver);
@@ -46,10 +46,6 @@ describe("Assert Test", () => {
 
     // Store platform in task.meta synchronously (must be done before any awaits)
     context.task.meta.testdriverPlatform = testdriver.os;
-    console.log(
-      `[Test] Stored platform in task.meta for test: ${context.task.name}`,
-    );
-    console.log(`[Test] task.meta after setting:`, context.task.meta);
 
     // The abort signal is automatically passed through via createTestClient
     // and will cancel all TestDriver operations if the test is stopped

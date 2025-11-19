@@ -1589,8 +1589,6 @@ class TestDriverSDK {
           ? `[${this.testContext}] ${message}`
           : message;
         console.log(prefixedMessage);
-        // Forward logs to sandbox for debugger display
-        this._forwardLogToSandbox(message);
       }
     });
 
@@ -1598,18 +1596,12 @@ class TestDriverSDK {
       if (this.loggingEnabled) {
         const event = this.emitter.event;
         console.error(event, ":", data);
-        // Forward errors to sandbox
-        const errorMessage =
-          typeof data === "object" ? JSON.stringify(data) : String(data);
-        this._forwardLogToSandbox(`ERROR: ${errorMessage}`);
       }
     });
 
     this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
         console.log(`- ${message}`);
-        // Forward status to sandbox
-        this._forwardLogToSandbox(`- ${message}`);
       }
     });
 
