@@ -463,27 +463,6 @@ async function createTestRun(data) {
   return await response.json();
 }
 
-async function recordTestCase(data) {
-  const url = `${pluginState.apiRoot}/api/v1/testdriver/test-case-create`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${pluginState.token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `API error: ${response.status} ${response.statusText} - ${errorText}`,
-    );
-  }
-
-  return await response.json();
-}
-
 async function completeTestRun(data) {
   const url = `${pluginState.apiRoot}/api/v1/testdriver/test-run-complete`;
   const response = await fetch(url, {
