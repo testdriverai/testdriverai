@@ -5,16 +5,17 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-    createTestClient,
-    setupTest,
-    teardownTest,
+  createTestClient,
+  setupTest,
+  teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe("Assert Test", () => {
   let testdriver;
 
-  beforeAll(async ({ signal }) => {
-    testdriver = createTestClient({ signal });
+  beforeAll(async (context) => {
+    // Pass the task context so the client can be registered in the global registry
+    testdriver = createTestClient({ signal: context.signal, task: context.task });
     await setupTest(testdriver);
   });
 

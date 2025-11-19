@@ -1,5 +1,4 @@
 const crypto = require("crypto");
-const os = require("os");
 const path = require("path");
 
 /**
@@ -53,10 +52,10 @@ class TestDriverReporter {
       this.startTime = Date.now();
 
       // Create test run via direct API call
+      // Note: platform will be set during completion once we detect it from the client
       const testRunData = {
         runId: this.testRunId,
         suiteName: this._getSuiteName(),
-        platform: this._getPlatform(),
         ...this.gitInfo
       };
       
@@ -111,7 +110,7 @@ class TestDriverReporter {
       // Complete test run via API
       console.log(`[TestDriver Reporter] Completing test run ${this.testRunId} with status: ${status}`);
       
-      await this._completeTestRun({
+      const completeData = {
         runId: this.testRunId,
         status,
         totalTests: stats.totalTests,
@@ -119,7 +118,15 @@ class TestDriverReporter {
         failedTests: stats.failedTests,
         skippedTests: stats.skippedTests,
         duration: Date.now() - this.startTime,
-      });
+      };
+      
+      // Add platform if detected from client
+      const platform = this._getPlatform();
+      if (platform) {
+        completeData.platform = platform;
+      }
+      
+      await this._completeTestRun(completeData);
 
       console.log(`[TestDriver Reporter] Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
 
@@ -234,16 +241,25 @@ class TestDriverReporter {
   }
 
   _getPlatform() {
-    // Use detected platform from test execution if available
+    // First try to get platform from SDK client detected during test execution
     if (this.detectedPlatform) {
+      console.log(`[TestDriver Reporter] Using platform from SDK client: ${this.detectedPlatform}`);
       return this.detectedPlatform;
     }
     
-    // Fallback to local platform as last resort
-    const platform = os.platform();
-    if (platform === 'darwin') return 'mac';
-    if (platform === 'win32') return 'windows';
-    return 'linux';
+    // Try to detect from global registry (check any registered client)
+    if (globalThis.__testdriverRegistry && globalThis.__testdriverRegistry.clients.size > 0) {
+      const firstClient = globalThis.__testdriverRegistry.clients.values().next().value;
+      if (firstClient && firstClient.os) {
+        const platform = firstClient.os.toLowerCase();
+        console.log(`[TestDriver Reporter] Using platform from global registry client: ${platform}`);
+        this.detectedPlatform = platform; // Cache it
+        return platform;
+      }
+    }
+    
+    console.log(`[TestDriver Reporter] Platform not yet detected from client`);
+    return null;
   }
   
   /**
@@ -264,7 +280,7 @@ class TestDriverReporter {
       else if (platform === 'linux') platform = 'linux';
       
       this.detectedPlatform = platform;
-      console.log(`[TestDriver Reporter] Detected platform from test: ${platform}`);
+      console.log(`[TestDriver Reporter] Detected platform from test context: ${platform}`);
     }
   }
 
@@ -307,41 +323,136 @@ class TestDriverReporter {
   }
 
   async _findReplayForTest(test) {
+    console.log(`[TestDriver Reporter] ===== Finding replay URL for test: ${test.name} =====`);
+    console.log(`[TestDriver Reporter] Test ID: ${test.id}`);
+    
     // Check environment variable first
     if (process.env.DASHCAM_REPLAY_URL) {
       console.log(`[TestDriver Reporter] Using DASHCAM_REPLAY_URL from env: ${process.env.DASHCAM_REPLAY_URL}`);
       return process.env.DASHCAM_REPLAY_URL;
     }
 
+    // Try to get client from global registry
+    let client = null;
+    if (globalThis.__testdriverRegistry) {
+      client = globalThis.__testdriverRegistry.getClient(test.id);
+      if (client) {
+        console.log(`[TestDriver Reporter] ✓ Found TestDriver client in global registry`);
+        console.log(`[TestDriver Reporter]   Client OS: ${client.os}`);
+        console.log(`[TestDriver Reporter]   Client session: ${client.getSessionId?.() || 'unknown'}`);
+      } else {
+        console.log(`[TestDriver Reporter] ✗ No client found in global registry for test ID: ${test.id}`);
+        
+        // List all registered test IDs for debugging
+        const registeredIds = Array.from(globalThis.__testdriverRegistry.clients.keys());
+        console.log(`[TestDriver Reporter]   Registered test IDs (${registeredIds.length}):`, registeredIds);
+      }
+    } else {
+      console.log(`[TestDriver Reporter] ✗ Global __testdriverRegistry not available`);
+    }
+
     // Check if testdriver client stored dashcamUrl
-    if (test.context?.testdriver) {
-      const client = test.context.testdriver;
+    if (client) {
       // Try to get dashcamUrl from client's last session
       if (client._lastDashcamUrl) {
-        console.log(`[TestDriver Reporter] Using dashcamUrl from client: ${client._lastDashcamUrl}`);
+        console.log(`[TestDriver Reporter] ✓ Using dashcamUrl from client: ${client._lastDashcamUrl}`);
         return client._lastDashcamUrl;
+      }
+      
+      // Try dashcamUrl property
+      if (client.dashcamUrl) {
+        console.log(`[TestDriver Reporter] ✓ Using client.dashcamUrl: ${client.dashcamUrl}`);
+        return client.dashcamUrl;
+      }
+      
+      console.log(`[TestDriver Reporter] Client found but no dashcam URL properties set yet`);
+    }
+
+    // Fallback: Check legacy test.context (in case it's still available)
+    if (test.context?.testdriver) {
+      const contextClient = test.context.testdriver;
+      console.log(`[TestDriver Reporter] Found testdriver client in test.context (legacy path)`);
+      
+      if (contextClient._lastDashcamUrl) {
+        console.log(`[TestDriver Reporter] Using dashcamUrl from context client: ${contextClient._lastDashcamUrl}`);
+        return contextClient._lastDashcamUrl;
+      }
+      
+      if (contextClient.dashcamUrl) {
+        console.log(`[TestDriver Reporter] Using context client.dashcamUrl: ${contextClient.dashcamUrl}`);
+        return contextClient.dashcamUrl;
       }
     }
 
     // Parse test output for dashcam replay URLs
-    const urlPattern = /https:\/\/[^\s]+\/replay\/([a-f0-9]{24})/i;
+    // Match: https://app.dashcam.io/replay/691cf130c2fc02f59ae66fc1 or similar domains
+    // Capture the full URL including query params
+    const urlPattern = /(https?:\/\/(?:app\.)?(?:dashcam\.io|testdriver\.ai|replayable\.io)\/replay\/[a-f0-9]{24}(?:\?[^\s]*)?)/i;
     
-    // Check test console output (Vitest captures console.log)
+    // Debug what's available in the test result
+    const result = test.result();
+    console.log(`[TestDriver Reporter] Test result properties:`, {
+      state: result?.state,
+      hasStdout: !!result?.stdout,
+      hasStderr: !!result?.stderr,
+      hasLogs: !!result?.logs,
+      logsLength: result?.logs?.length || 0,
+      hasErrors: !!result?.errors,
+      errorsLength: result?.errors?.length || 0
+    });
+    
+    // Check test console output (Vitest may or may not capture this)
     const allOutput = [
-      test.result?.stdout,
-      test.result?.stderr,
-      ...(test.result?.logs || []),
+      result?.stdout,
+      result?.stderr,
+      ...(result?.logs || []),
     ].filter(Boolean).join('\n');
     
-    if (allOutput) {
+    console.log(`[TestDriver Reporter] Searching for replay URL in test output (${allOutput.length} chars)`);
+    
+    if (allOutput && allOutput.length > 0) {
+      // Show a sample of what we're searching
+      if (allOutput.length < 200) {
+        console.log(`[TestDriver Reporter] Full output: ${allOutput}`);
+      } else {
+        console.log(`[TestDriver Reporter] Output sample (first 200 chars): ${allOutput.substring(0, 200)}...`);
+      }
+      
       const match = allOutput.match(urlPattern);
       if (match) {
-        console.log(`[TestDriver Reporter] Found dashcam URL in test output: ${match[0]}`);
-        return match[0];
+        const replayUrl = match[1];
+        console.log(`[TestDriver Reporter] ✓ Found replay URL in test output: ${replayUrl}`);
+        
+        // Validate the replay ID format
+        const replayIdMatch = replayUrl.match(/\/replay\/([a-f0-9]{24})/i);
+        if (replayIdMatch) {
+          console.log(`[TestDriver Reporter] ✓ Validated replay ID: ${replayIdMatch[1]}`);
+        } else {
+          console.warn(`[TestDriver Reporter] ⚠ WARNING: Found URL but couldn't validate replay ID format: ${replayUrl}`);
+        }
+        
+        return replayUrl;
+      } else {
+        console.log(`[TestDriver Reporter] ✗ No replay URL pattern match in output`);
+      }
+    } else {
+      console.log(`[TestDriver Reporter] ✗ No test output available to search`);
+    }
+    
+    // Also check test.meta for any stored URLs
+    if (test.meta) {
+      console.log(`[TestDriver Reporter] Checking test.meta:`, Object.keys(test.meta));
+      if (test.meta.replayUrl) {
+        console.log(`[TestDriver Reporter] Found replayUrl in test.meta: ${test.meta.replayUrl}`);
+        return test.meta.replayUrl;
+      }
+      if (test.meta.dashcamUrl) {
+        console.log(`[TestDriver Reporter] Found dashcamUrl in test.meta: ${test.meta.dashcamUrl}`);
+        return test.meta.dashcamUrl;
       }
     }
 
-    console.log(`[TestDriver Reporter] No replay URL found for test: ${test.name}`);
+    console.log(`[TestDriver Reporter] ===== No replay URL found for test: ${test.name} =====`);
     return null;
   }
 

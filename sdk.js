@@ -1573,7 +1573,9 @@ class TestDriverSDK {
         if (this.config.CI) {
           // In CI mode, just print the view-only URL
           const u = new URL(url);
-          const data = JSON.parse(u.searchParams.get("data"));
+          const encodedData = u.searchParams.get("data");
+          // Data is base64 encoded, not URL encoded
+          const data = JSON.parse(Buffer.from(encodedData, "base64").toString());
           console.log(`${data.url}&view_only=true`);
         } else {
           // In local mode, print the URL and open it in the browser
@@ -1651,51 +1653,6 @@ class TestDriverSDK {
       );
       this.agent.debuggerUrl = debuggerProcess.url || null;
     }
-  }
-
-  /**
-   * Render the sandbox in a browser window
-   * @private
-   * @param {Object} instance - Sandbox instance with connection details
-   */
-  _renderSandbox(instance) {
-    if (!instance) {
-      const { events } = require("./agent/events.js");
-      this.emitter.emit(events.log.warn,
-        "Cannot render sandbox: missing instance connection details"
-      );
-      return;
-    }
-
-    // Construct the VNC URL
-    let url;
-    // If the instance already has a URL (from reconnection), use it
-    if (instance.url) {
-      url = instance.url;
-    } else {
-      // Otherwise construct it from IP and port (for Windows sandboxes)
-      url = "http://" +
-        (instance.ip || instance.publicIp) +
-        ":" +
-        (instance.vncPort || "5800") +
-        "/vnc_lite.html?token=V3b8wG9";
-    }
-
-    // Create data payload for the debugger
-    const data = {
-      resolution: this.config.TD_RESOLUTION,
-      url: url,
-      token: "V3b8wG9",
-    };
-
-    const encodedData = encodeURIComponent(JSON.stringify(data));
-
-    // Use the debugger URL if available, otherwise fall back to default port
-    const debuggerBaseUrl = this.agent.debuggerUrl || "http://localhost:3000";
-    const urlToOpen = `${debuggerBaseUrl}?data=${encodedData}`;
-
-    // Emit the showWindow event
-    this.emitter.emit(events.showWindow, urlToOpen);
   }
 
   // ====================================
@@ -1849,28 +1806,26 @@ class TestDriverSDK {
    * This is the SDK equivalent of the CLI's exploratory loop
    *
    * @param {string} task - Natural language description of what to do
-   * @param {boolean} [cache=true] - Whether to use cached responses for this prompt
-   * @returns {Promise<string|void>} Final AI response
+   * @param {Object} options - Execution options
+   * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
+   * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
    *
    * @example
-   * // Simple execution (with caching enabled by default)
+   * // Simple execution
    * await client.ai('Click the submit button');
    *
    * @example
-   * // Disable cache for this specific call
-   * await client.ai('Click the submit button', false);
-   *
-   * @example
-   * // Explicitly enable cache
-   * await client.ai('Fill out the contact form', true);
+   * // With validation loop
+   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
+   * console.log(result); // AI's final assessment
    */
-  async ai(task, cache = true) {
+  async ai(task) {
     this._ensureConnected();
 
-    this.analytics.track("sdk.ai", { task, cache });
+    this.analytics.track("sdk.ai", { task });
 
     // Use the agent's exploratoryLoop method directly
-    return await this.agent.exploratoryLoop(task, false, true, false, cache);
+    return await this.agent.exploratoryLoop(task, false, true, false);
   }
 }
 

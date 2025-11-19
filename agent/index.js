@@ -2033,20 +2033,27 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
+
+    console.log("renderSandbox", instance);
+
     if (!headless) {
       let url;
 
       // If the instance already has a URL (from reconnection), use it
       if (instance.url) {
         url = instance.url;
-      } else {
-        // Otherwise construct it from IP and port (for Windows sandboxes)
+      } else if (instance.ip || instance.publicIp) {
+        // Otherwise construct it from IP and port
         url =
           "http://" +
           (instance.ip || instance.publicIp) +
           ":" +
           (instance.vncPort || "5800") +
           "/vnc_lite.html?token=V3b8wG9";
+      } else {
+        // If we don't have URL or IP, we can't render
+        console.warn("renderSandbox: Missing URL and IP in instance", instance);
+        return;
       }
 
       let data = {
@@ -2095,8 +2102,17 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   async connectToSandboxDirect(sandboxId, persist = false) {
     this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
     let reply = await this.sandbox.connect(sandboxId, persist);
-    // Return the sandbox data from the reply
-    return reply.sandbox || reply;
+    
+    // reply includes { success, url, sandbox: {...} }
+    // For renderSandbox, we need the sandbox object with url merged in
+    const sandbox = reply.sandbox || {};
+    
+    // If reply has a URL at top level, merge it into the sandbox object
+    if (reply.url && !sandbox.url) {
+      sandbox.url = reply.url;
+    }
+    
+    return sandbox;
   }
 
   async createNewSandbox() {

@@ -18,6 +18,25 @@ const __dirname = dirname(__filename);
 const envPath = path.resolve(__dirname, "../../../.env");
 config({ path: envPath });
 
+// Global registry to link test contexts with SDK clients
+// This allows the reporter to access SDK client info for each test
+if (!globalThis.__testdriverRegistry) {
+  globalThis.__testdriverRegistry = {
+    clients: new Map(), // testId -> client instance
+    getClient: function(testId) {
+      return this.clients.get(testId);
+    },
+    setClient: function(testId, client) {
+      console.log(`[TestDriver Registry] Registered client for test: ${testId}`);
+      this.clients.set(testId, client);
+    },
+    clearClient: function(testId) {
+      console.log(`[TestDriver Registry] Cleared client for test: ${testId}`);
+      this.clients.delete(testId);
+    }
+  };
+}
+
 // Log loaded env vars for debugging
 if (process.env.DEBUG_ENV === "true") {
   console.log("🔧 Environment variables loaded from:", envPath);
@@ -121,14 +140,13 @@ export function createTestClient(options = {}) {
   }
 
   // Determine OS from TEST_PLATFORM or TD_OS
-  const os = process.env.TEST_PLATFORM || process.env.TD_OS || "linux";
+  const os = process.env.TEST_PLATFORM || "linux";
   
-  console.log(`🖥️  Using sandbox OS: ${os} (from ${process.env.TEST_PLATFORM ? 'TEST_PLATFORM' : process.env.TD_OS ? 'TD_OS' : 'default'})`);
-
-  // Extract task context if provided
+  // Extract task context if provided - we use taskId but remove task from clientOptions
   const taskId = options.task?.id || options.task?.name || null;
   
-  // Remove task from options before passing to TestDriver
+  // Remove task from options before passing to TestDriver (eslint wants us to use 'task')
+  // eslint-disable-next-line no-unused-vars
   const { task, ...clientOptions } = options;
 
   const client = new TestDriver(process.env.TD_API_KEY, {
@@ -150,13 +168,18 @@ export function createTestClient(options = {}) {
 
   // Set Vitest task ID if available (for log filtering in parallel tests)
   if (taskId) {
+    console.log(`[TestHelpers] Registering client with task ID: ${taskId}`);
     client.setVitestTaskId(taskId);
+    
+    // Register client in global registry for reporter access
+    globalThis.__testdriverRegistry.setClient(taskId, client);
+  } else {
+    console.log(`[TestHelpers] No task ID available, client not registered in global registry`);
   }
-
-  // Store testdriver client in task context for reporter access
-  if (task?.context) {
-    task.context.testdriver = client;
-  }
+  
+  // Also register with a generic 'current' key as fallback
+  globalThis.__testdriverRegistry.setClient('__current__', client);
+  console.log(`[TestHelpers] Registered client as '__current__' (fallback)`);
 
   // Enable detailed event logging if requested
   if (process.env.DEBUG_EVENTS === "true") {

@@ -1,33 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="56.899709">
-    <testsuite name="testdriver/acceptance-sdk/prompt.test.mjs" timestamp="2025-11-19T02:18:03.262Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="56.899709">
-        <testcase classname="testdriver/acceptance-sdk/prompt.test.mjs" name="Prompt Test &gt; should execute AI-driven prompts" time="20.628354458">
+<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="43.979519417">
+    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-19T03:28:20.267Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="43.979519417">
+        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="3.7363335">
             <system-out>
-[2m(using cached response)[22m
-
-[38;2;52;211;211mcommand[39m=[38;2;179;211;52m&apos;focus-application&apos;[39m [38;2;52;211;211mname[39m=[38;2;179;211;52m&apos;Google Chrome&apos;[39m
-
-[redraw] screen:[2mfalse/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
-[redraw complete] screen:false network:true timeout:true elapsed:7036ms
-
-[38;2;52;211;211mcommand[39m=[38;2;179;211;52m&apos;hover-text&apos;[39m [38;2;52;211;211mtext[39m=[38;2;179;211;52m&apos;Username&apos;[39m [38;2;52;211;211mdescription[39m=[38;2;179;211;52m&apos;Username label above the username input field on the login form&apos;[39m [38;2;52;211;211maction[39m=[38;2;179;211;52m&apos;click&apos;[39m
-[2msearching for &quot;Username&quot; (Username label above the username input field on the login form)...[22m
-
-[2mwaiting for text: &quot;Username&quot;...[22m
-
-[2m&quot;Username&quot; found![22m
-
-[2mthinking...[22m
-
-[2mclick left clicking at 490, 283...[22m
-
-[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
-[redraw complete] screen:true network:true timeout:false elapsed:660ms
-
 thinking...
 
-The task passed  
-The TestDriver.ai Sandbox login page is clearly visible in the Chrome window.
+The task passed. The screenshot clearly shows the TestDriver.ai Sandbox login page with the username and password fields.
 
             </system-out>
         </testcase>
