@@ -55,7 +55,7 @@ module.exports = [
       ".git",
       "test-results/**",
       "examples/test-recording-example.test.js",
-      "vitest.config.example.js"
+      "vitest.config.example.js",
     ],
   },
 ];

@@ -20,7 +20,7 @@ const createSDK = (emitter, config, sessionInstance, abortSignal = null) => {
   // Track if aborted
   let isAborted = false;
   if (abortSignal) {
-    abortSignal.addEventListener('abort', () => {
+    abortSignal.addEventListener("abort", () => {
       isAborted = true;
     });
   }
@@ -111,7 +111,7 @@ const createSDK = (emitter, config, sessionInstance, abortSignal = null) => {
   const req = async (path, data, onChunk) => {
     // Check if aborted before starting request
     if (isAborted) {
-      throw new Error('Request aborted');
+      throw new Error("Request aborted");
     }
 
     // for each value of data, if it is empty remove it

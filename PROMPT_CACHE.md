@@ -9,11 +9,13 @@ The TestDriver SDK includes automatic caching of `.ai()` responses. When you use
 ## How It Works
 
 1. **First Call**: When you call `.ai('click the submit button')` for the first time:
+
    - The SDK sends the prompt and screenshot to the API
    - The API returns YAML commands in markdown format
    - The response is cached to `.testdriver/.cache/{prompt-hash}.yaml`
 
 2. **Subsequent Calls**: When you call `.ai('click the submit button')` again:
+
    - The SDK checks the cache first
    - If found, it uses the cached YAML instead of calling the API
    - You'll see `(using cached response)` in the output
@@ -25,15 +27,18 @@ The TestDriver SDK includes automatic caching of `.ai()` responses. When you use
 ## Cache Location
 
 Cached responses are stored in:
+
 ```
 .testdriver/.cache/
 ```
 
 Files are named using a combination of:
+
 - Sanitized prompt (first 50 chars, alphanumeric only)
 - MD5 hash of the full prompt for uniqueness
 
 Example:
+
 ```
 .testdriver/.cache/click-the-submit-button-a1b2c3d4e5f6.yaml
 ```
@@ -51,15 +56,15 @@ To disable caching for a specific `.ai()` call, pass `false` as the second param
 
 ```javascript
 // Force fresh API call, bypass cache
-await client.ai('click the submit button', false);
+await client.ai("click the submit button", false);
 ```
 
 Caching is **enabled by default** (equivalent to passing `true`):
 
 ```javascript
 // These are equivalent
-await client.ai('click the submit button');
-await client.ai('click the submit button', true);
+await client.ai("click the submit button");
+await client.ai("click the submit button", true);
 ```
 
 ## Clearing Cache
@@ -71,37 +76,40 @@ rm -rf .testdriver/.cache/*.yaml
 ```
 
 Or programmatically:
+
 ```javascript
-const promptCache = require('testdriverai/agent/lib/cache.js');
+const promptCache = require("testdriverai/agent/lib/cache.js");
 promptCache.clearCache();
 ```
 
 ## Usage Examples
 
 ### Basic Usage (Automatic Caching)
+
 ```javascript
-const TestDriver = require('testdriverai');
+const TestDriver = require("testdriverai");
 
 const client = new TestDriver(process.env.TD_API_KEY);
 await client.connect();
 
 // First call - makes API request and caches
-await client.ai('click the login button');
+await client.ai("click the login button");
 
 // Second call - uses cache (instant)
-await client.ai('click the login button');
+await client.ai("click the login button");
 
 // Force fresh API call, bypass cache
-await client.ai('click the login button', false);
+await client.ai("click the login button", false);
 ```
 
 ### Check Cache Status
+
 ```javascript
-const promptCache = require('testdriverai/agent/lib/cache.js');
+const promptCache = require("testdriverai/agent/lib/cache.js");
 
 // Check if a prompt is cached
-if (promptCache.hasCache('click the login button')) {
-  console.log('This prompt is cached');
+if (promptCache.hasCache("click the login button")) {
+  console.log("This prompt is cached");
 }
 
 // Get cache statistics
@@ -111,42 +119,47 @@ console.log(`Files: ${stats.files}`);
 ```
 
 ### Read Cached YAML
-```javascript
-const promptCache = require('testdriverai/agent/lib/cache.js');
 
-const yaml = promptCache.readCache('click the login button');
+```javascript
+const promptCache = require("testdriverai/agent/lib/cache.js");
+
+const yaml = promptCache.readCache("click the login button");
 if (yaml) {
-  console.log('Cached YAML:', yaml);
+  console.log("Cached YAML:", yaml);
 }
 ```
 
 ### Manual Cache Control
+
 ```javascript
-const promptCache = require('testdriverai/agent/lib/cache.js');
+const promptCache = require("testdriverai/agent/lib/cache.js");
 
 // Write to cache manually
-promptCache.writeCache('custom prompt', yamlContent);
+promptCache.writeCache("custom prompt", yamlContent);
 
 // Clear entire cache
 promptCache.clearCache();
 
 // Get cache path for a prompt
-const path = promptCache.getCachePath('my prompt');
+const path = promptCache.getCachePath("my prompt");
 console.log(`Cache file: ${path}`);
 ```
 
 ## Important Notes
 
 1. **Prompt Matching**: Cache keys are based on the exact prompt text (case-insensitive, trimmed)
+
    - `'Click the button'` and `'click the button'` will match
    - `'Click the button'` and `'Click the button '` will match (trailing space trimmed)
    - `'Click button'` and `'Click the button'` will NOT match
 
 2. **No Screenshot Comparison**: The cache does NOT compare screenshots
+
    - Cached responses assume the UI state is similar
    - Use different prompts if the UI state has changed significantly
 
 3. **Manual Cache Management**: The cache never expires automatically
+
    - Clear it periodically if needed
    - Delete specific files if a prompt's behavior should change
 
@@ -163,6 +176,7 @@ node test-prompt-cache.js
 ```
 
 This will:
+
 - Make an initial `.ai()` call that caches the response
 - Make a second `.ai()` call that uses the cache
 - Show cache statistics and file locations
@@ -170,14 +184,17 @@ This will:
 ## Troubleshooting
 
 ### Cache not being used
+
 - Check that prompts match exactly (case-insensitive)
 - Verify `TD_NO_PROMPT_CACHE` is not set
 - Check `.testdriver/.cache/` directory exists and is writable
 
 ### Stale cache data
+
 - Clear the cache directory
 - Or delete specific cached prompt files
 
 ### Permission errors
+
 - Ensure `.testdriver/.cache/` is writable
 - Check file system permissions

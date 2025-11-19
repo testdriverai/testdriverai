@@ -26,7 +26,9 @@ describe("Element Not Found Test", () => {
     await testdriver.focusApplication("Google Chrome");
 
     // Try to find an element that definitely doesn't exist
-    const element = await testdriver.find("a purple unicorn dancing on the moon");
+    const element = await testdriver.find(
+      "a purple unicorn dancing on the moon",
+    );
 
     // Should return an element that is not found
     expect(element.found()).toBe(false);

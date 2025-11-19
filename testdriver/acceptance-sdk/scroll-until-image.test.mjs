@@ -32,7 +32,10 @@ describe("Scroll Until Image Test", () => {
     await new Promise((r) => setTimeout(r, 5000));
 
     // Click on heading
-    const heading = await testdriver.find("Leonardo Da Vinci, the page heading", 0);
+    const heading = await testdriver.find(
+      "Leonardo Da Vinci, the page heading",
+      0,
+    );
     await heading.click();
 
     // Scroll until image appears

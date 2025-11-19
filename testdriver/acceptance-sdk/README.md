@@ -37,6 +37,7 @@ TEST_PLATFORM=mac npm run test:sdk
 ### Cross-Platform Tests
 
 Tests without a platform suffix run on all platforms:
+
 - `hover-text.test.mjs` - Runs everywhere
 - `scroll.test.mjs` - Runs everywhere
 - `screenshot.test.mjs` - Runs everywhere
@@ -54,9 +55,12 @@ Platform-specific tests use naming conventions:
 Some tests use `skipIf` to conditionally skip based on the platform:
 
 ```javascript
-it.skipIf(() => testdriver.os === "linux")("should run on Windows/Mac", async () => {
-  // This test will be skipped on Linux
-});
+it.skipIf(() => testdriver.os === "linux")(
+  "should run on Windows/Mac",
+  async () => {
+    // This test will be skipped on Linux
+  },
+);
 ```
 
 ## Environment Variables
@@ -93,7 +97,11 @@ Each test follows this pattern:
 
 ```javascript
 import { afterAll, beforeAll, describe, it } from "vitest";
-import { createTestClient, setupTest, teardownTest } from "./setup/testHelpers.mjs";
+import {
+  createTestClient,
+  setupTest,
+  teardownTest,
+} from "./setup/testHelpers.mjs";
 
 describe("My Test", () => {
   let testdriver;

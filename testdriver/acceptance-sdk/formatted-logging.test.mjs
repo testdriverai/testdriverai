@@ -5,9 +5,9 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-    createTestClient,
-    setupTest,
-    teardownTest,
+  createTestClient,
+  setupTest,
+  teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe("Formatted Logging Demo", () => {
@@ -15,14 +15,14 @@ describe("Formatted Logging Demo", () => {
 
   beforeAll(async () => {
     testdriver = createTestClient();
-    
+
     // Set test context for enhanced logging
     testdriver.setTestContext({
       file: "formatted-logging.test.mjs",
       test: "Formatted Logging Demo",
       startTime: Date.now(),
     });
-    
+
     await setupTest(testdriver);
   });
 

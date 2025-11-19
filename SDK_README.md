@@ -2,7 +2,7 @@
 
 The TestDriver SDK provides programmatic access to TestDriver's AI-powered testing capabilities. Use it to automate UI testing for web and desktop applications with natural language commands.
 
-## ✨ New: AWESOME Logs with Great DX! 
+## ✨ New: AWESOME Logs with Great DX!
 
 Your SDK now has **beautiful, emoji-rich logging** that makes test output a joy to read! 🎨
 
@@ -14,6 +14,7 @@ Your SDK now has **beautiful, emoji-rich logging** that makes test output a joy 
 ```
 
 **Features:**
+
 - 🎨 Rich emojis for all actions (find, click, type, scroll, etc.)
 - ⚡ Cache hit/miss indicators
 - ⏱️ Color-coded performance timing (green < 100ms, yellow < 500ms, red > 500ms)
@@ -753,12 +754,15 @@ Captures a screenshot of the current screen in the sandbox.
 const screenshot = await client.screenshot();
 
 // Save to file
-const fs = require('fs');
-fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+const fs = require("fs");
+fs.writeFileSync("screenshot.png", Buffer.from(screenshot, "base64"));
 
 // Capture with mouse cursor visible
 const screenshotWithMouse = await client.screenshot(1, false, true);
-fs.writeFileSync('screenshot-with-mouse.png', Buffer.from(screenshotWithMouse, 'base64'));
+fs.writeFileSync(
+  "screenshot-with-mouse.png",
+  Buffer.from(screenshotWithMouse, "base64"),
+);
 ```
 
 #### `wait(timeout)`

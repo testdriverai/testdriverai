@@ -667,17 +667,21 @@ export default class TestDriverSDK {
    * @param silent - Whether to suppress logging (default: false)
    * @param mouse - Whether to include mouse cursor (default: false)
    * @returns Base64 encoded PNG screenshot
-   * 
+   *
    * @example
    * // Capture a screenshot
    * const screenshot = await client.screenshot();
    * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
-   * 
+   *
    * @example
    * // Capture with mouse cursor visible
    * const screenshot = await client.screenshot(1, false, true);
    */
-  screenshot(scale?: number, silent?: boolean, mouse?: boolean): Promise<string>;
+  screenshot(
+    scale?: number,
+    silent?: boolean,
+    mouse?: boolean,
+  ): Promise<string>;
 
   /**
    * Wait for specified time

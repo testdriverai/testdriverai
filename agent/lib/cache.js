@@ -9,16 +9,16 @@ const crypto = require("crypto");
 function getCacheKey(prompt) {
   // Normalize the prompt by trimming and converting to lowercase
   const normalized = prompt.trim().toLowerCase();
-  
+
   // Create a hash for the filename
   const hash = crypto.createHash("md5").update(normalized).digest("hex");
-  
+
   // Also create a sanitized version of the prompt for readability
   const sanitized = normalized
     .replace(/[^a-z0-9\s]/g, "") // Remove special chars
     .replace(/\s+/g, "-") // Replace spaces with hyphens
     .substring(0, 50); // Limit length
-  
+
   // Combine sanitized prompt with hash for uniqueness
   return `${sanitized}-${hash}.yaml`;
 }
@@ -29,11 +29,11 @@ function getCacheKey(prompt) {
  */
 function getCacheDir() {
   const cacheDir = path.join(process.cwd(), ".testdriver", ".cache");
-  
+
   if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(cacheDir, { recursive: true });
   }
-  
+
   return cacheDir;
 }
 
@@ -62,7 +62,7 @@ function readCache(prompt) {
   if (!hasCache(prompt)) {
     return null;
   }
-  
+
   try {
     const cachePath = getCachePath(prompt);
     const yaml = fs.readFileSync(cachePath, "utf8");
@@ -92,16 +92,16 @@ function writeCache(prompt, yaml) {
  */
 function clearCache() {
   const cacheDir = getCacheDir();
-  
+
   try {
     const files = fs.readdirSync(cacheDir);
-    
+
     for (const file of files) {
       if (file.endsWith(".yaml")) {
         fs.unlinkSync(path.join(cacheDir, file));
       }
     }
-    
+
     return true;
   } catch {
     return false;
@@ -113,11 +113,11 @@ function clearCache() {
  */
 function getCacheStats() {
   const cacheDir = getCacheDir();
-  
+
   try {
     const files = fs.readdirSync(cacheDir);
     const yamlFiles = files.filter((f) => f.endsWith(".yaml"));
-    
+
     return {
       count: yamlFiles.length,
       files: yamlFiles,

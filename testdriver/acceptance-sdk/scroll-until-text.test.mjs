@@ -33,7 +33,9 @@ describe("Scroll Until Text Test", () => {
 
     // Assert testdriver socks appears on screen
     await testdriver.focusApplication("Google Chrome");
-    const result = await testdriver.assert("TestDriver Socks appears on screen");
+    const result = await testdriver.assert(
+      "TestDriver Socks appears on screen",
+    );
     expect(result).toBeTruthy();
   });
 });

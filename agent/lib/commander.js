@@ -89,10 +89,7 @@ commands:
           break;
         case "scroll":
           emitter.emit(events.log.log, generator.jsonToManual(object));
-          response = await commands.scroll(
-            object.direction,
-            object.amount
-          );
+          response = await commands.scroll(object.direction, object.amount);
           break;
         case "wait":
           emitter.emit(events.log.log, generator.jsonToManual(object));

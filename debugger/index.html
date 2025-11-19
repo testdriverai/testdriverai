@@ -372,7 +372,7 @@
       iframe.src = parsedData.url;
       iframe.style.width = overlayWidth + "px";
       // Increase iframe height by 14px for Linux to account for top bar
-      iframe.style.height = (overlayHeight + topBarOffset) + "px";
+      iframe.style.height = overlayHeight + topBarOffset + "px";
 
       // Calculate scale factor to fit within window if needed
       const windowWidth = window.innerWidth;

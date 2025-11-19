@@ -24,28 +24,30 @@ config({ path: envPath });
 if (!globalThis.__testdriverRegistry) {
   globalThis.__testdriverRegistry = {
     clients: new Map(), // testId -> client instance
-    getClient: function(testId) {
+    getClient: function (testId) {
       return this.clients.get(testId);
     },
-    setClient: function(testId, client) {
-      console.log(`[TestDriver Registry] Registered client for test: ${testId}`);
+    setClient: function (testId, client) {
+      console.log(
+        `[TestDriver Registry] Registered client for test: ${testId}`,
+      );
       this.clients.set(testId, client);
     },
-    clearClient: function(testId) {
+    clearClient: function (testId) {
       console.log(`[TestDriver Registry] Cleared client for test: ${testId}`);
       this.clients.delete(testId);
-    }
+    },
   };
 }
 
 // Log loaded env vars for debugging
-  console.log("🔧 Environment variables loaded from:", envPath);
-  console.log("   TD_API_KEY:", process.env.TD_API_KEY ? "✓ Set" : "✗ Not set");
-  console.log("   TD_API_ROOT:", process.env.TD_API_ROOT || "Not set");
-  console.log(
-    "   TD_OS:",
-    process.env.TD_OS || "Not set (will default to linux)",
-  );
+console.log("🔧 Environment variables loaded from:", envPath);
+console.log("   TD_API_KEY:", process.env.TD_API_KEY ? "✓ Set" : "✗ Not set");
+console.log("   TD_API_ROOT:", process.env.TD_API_ROOT || "Not set");
+console.log(
+  "   TD_OS:",
+  process.env.TD_OS || "Not set (will default to linux)",
+);
 
 // Global test results storage
 const testResults = {
@@ -151,10 +153,10 @@ export function createTestClient(options = {}) {
 
   // Determine OS from TEST_PLATFORM or TD_OS
   const os = process.env.TEST_PLATFORM || "linux";
-  
+
   // Extract task context if provided - we use taskId but remove task from clientOptions
   const taskId = options.task?.id || options.task?.name || null;
-  
+
   // Remove task from options before passing to TestDriver (eslint wants us to use 'task')
   // eslint-disable-next-line no-unused-vars
   const { task, ...clientOptions } = options;
@@ -175,14 +177,14 @@ export function createTestClient(options = {}) {
     "🔧 createTestClient: SDK created, cacheThresholds =",
     client.cacheThresholds,
   );
-  
+
   console.log(`[TestHelpers] Client OS configured as: ${client.os}`);
 
   // Initialize global metadata storage immediately
   if (!globalThis.__testdriverMeta) {
     globalThis.__testdriverMeta = {};
   }
-  
+
   // Store platform immediately (we can update dashcam URL later)
   // This ensures reporter can get platform even before test completes
   globalThis.__testdriverMeta.__platform__ = client.os;
@@ -192,17 +194,21 @@ export function createTestClient(options = {}) {
   if (taskId) {
     console.log(`[TestHelpers] Registering client with task ID: ${taskId}`);
     client.setVitestTaskId(taskId);
-    
+
     // Register client in global registry for reporter access
     globalThis.__testdriverRegistry.setClient(taskId, client);
   } else {
-    console.log(`[TestHelpers] No task ID available, client not registered in global registry`);
+    console.log(
+      `[TestHelpers] No task ID available, client not registered in global registry`,
+    );
   }
-  
+
   // Also register with a generic 'current' key as fallback
-  globalThis.__testdriverRegistry.setClient('__current__', client);
+  globalThis.__testdriverRegistry.setClient("__current__", client);
   console.log(`[TestHelpers] Registered client as '__current__' (fallback)`);
-  console.log(`[TestHelpers] Registry now has ${globalThis.__testdriverRegistry.clients.size} clients`);
+  console.log(
+    `[TestHelpers] Registry now has ${globalThis.__testdriverRegistry.clients.size} clients`,
+  );
 
   // Enable detailed event logging if requested
   if (process.env.DEBUG_EVENTS === "true") {
@@ -299,47 +305,52 @@ export async function teardownTest(client, options = {}) {
     // Run postrun lifecycle if enabled
     if (options.postrun !== false) {
       dashcamUrl = await runPostrun(client);
-      
+
       // Store dashcamUrl in client for reporter access
       if (dashcamUrl) {
         // Extract replay object ID from URL
         // URL format: https://app.testdriver.ai/replay/{replayObjectId}?share={shareToken}
         const replayIdMatch = dashcamUrl.match(/\/replay\/([^?]+)/);
         const replayObjectId = replayIdMatch ? replayIdMatch[1] : null;
-        
+
         client._lastDashcamUrl = dashcamUrl;
         console.log(`🎥 Stored dashcam URL in client: ${dashcamUrl}`);
         if (replayObjectId) {
           console.log(`📝 Replay Object ID: ${replayObjectId}`);
         }
-        
+
         // Store in Vitest task.meta if task context was provided
         if (options.task?.meta) {
           options.task.meta.testdriverDashcamUrl = dashcamUrl;
           options.task.meta.testdriverReplayId = replayObjectId;
           console.log(`[TestHelpers] Stored dashcam URL in task.meta`);
         }
-        
+
         // Write dashcam URL to a temp file that the reporter can read
         // This is necessary because Vitest runs reporters in a separate process
         // Use a unique filename per session and task to support parallel tests
         const sessionId = client.getSessionId();
         const rawTaskId = options.task?.id || options.task?.name || process.pid;
-        const safeTaskId = String(rawTaskId).replace(/[^a-z0-9-_]/gi, '_');
+        const safeTaskId = String(rawTaskId).replace(/[^a-z0-9-_]/gi, "_");
         const tempFile = path.join(
           os.tmpdir(),
-          `testdriver-dashcam-${sessionId}-${safeTaskId}-${Date.now()}.json`
+          `testdriver-dashcam-${sessionId}-${safeTaskId}-${Date.now()}.json`,
         );
-        fs.writeFileSync(tempFile, JSON.stringify({
-          dashcamUrl,
-          replayObjectId,
-          platform: client.os,
-          timestamp: Date.now(),
-          pid: process.pid,
-          sessionId
-        }));
-        console.log(`[TestHelpers] Wrote dashcam URL to temp file: ${tempFile}`);
-        
+        fs.writeFileSync(
+          tempFile,
+          JSON.stringify({
+            dashcamUrl,
+            replayObjectId,
+            platform: client.os,
+            timestamp: Date.now(),
+            pid: process.pid,
+            sessionId,
+          }),
+        );
+        console.log(
+          `[TestHelpers] Wrote dashcam URL to temp file: ${tempFile}`,
+        );
+
         // Also store globally as fallback
         if (!globalThis.__testdriverMeta) {
           globalThis.__testdriverMeta = {};
@@ -380,58 +391,62 @@ export async function teardownTest(client, options = {}) {
  * @param {TestDriver} client - TestDriver client
  */
 export async function runPrerun(client) {
-    // Determine shell command based on OS
-    const shell = client.os === "windows" ? "pwsh" : "sh";
-    const logPath = client.os === "windows" 
-      ? "C:\\Users\\testdriver\\Documents\\testdriver.log" 
+  // Determine shell command based on OS
+  const shell = client.os === "windows" ? "pwsh" : "sh";
+  const logPath =
+    client.os === "windows"
+      ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
       : "/tmp/testdriver.log";
 
+  await client.exec(
+    shell,
+    `dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d`,
+    30000,
+    true,
+  );
+
+  // Start dashcam tracking
+  await client.exec(
+    shell,
+    `dashcam logs --add --type=file --file="${logPath}" --name="TestDriver Log"`,
+    10000,
+    true,
+  );
+
+  // Start dashcam recording
+  if (client.os === "windows") {
+    // Use cmd.exe to run dashcam record in background on Windows
     await client.exec(
-      shell,
-      `dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d`,
-      30000,
-      true,
+      "pwsh",
+      "Start-Process cmd.exe -ArgumentList '/c', 'dashcam record' -WindowStyle Hidden",
     );
+  } else {
+    await client.exec(shell, "dashcam record >/dev/null 2>&1 &");
+  }
 
-    // Start dashcam tracking
+  // Launch Chrome with guest mode directly (not jumpapp to avoid focus issues)
+  if (client.os === "windows") {
     await client.exec(
-      shell,
-      `dashcam logs --add --type=file --file="${logPath}" --name="TestDriver Log"`,
-      10000,
-      true,
-    );
-
-    // Start dashcam recording
-    if (client.os === "windows") {
-      // Use cmd.exe to run dashcam record in background on Windows
-      await client.exec("pwsh", "Start-Process cmd.exe -ArgumentList '/c', 'dashcam record' -WindowStyle Hidden");
-    } else {
-      await client.exec(shell, "dashcam record >/dev/null 2>&1 &");
-    }
-
-    // Launch Chrome with guest mode directly (not jumpapp to avoid focus issues)
-    if (client.os === "windows") {
-      await client.exec(
       "pwsh",
       'Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "https://testdriver-sandbox.vercel.app/login"',
       30000,
-      );
-    } else {
-      await client.exec(
+    );
+  } else {
+    await client.exec(
       shell,
       'google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "http://testdriver-sandbox.vercel.app/" >/dev/null 2>&1 &',
       30000,
-      );
-    }
+    );
+  }
 
-    // Wait for the login page to load - poll for text to appear
-    let loginPage = await client.find("TestDriver.ai Sandbox");
-    const maxAttempts = 60;
-    for (let i = 0; i < maxAttempts; i++) {
-      loginPage = await loginPage.find();
-      if (loginPage.found()) break;
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
+  // Wait for the login page to load - poll for text to appear
+  let loginPage = await client.find("TestDriver.ai Sandbox");
+  const maxAttempts = 60;
+  for (let i = 0; i < maxAttempts; i++) {
+    loginPage = await loginPage.find();
+    if (loginPage.found()) break;
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
 }
 
 /**
@@ -441,33 +456,33 @@ export async function runPrerun(client) {
  * @returns {Promise<string|null>} Dashcam URL if available
  */
 export async function runPostrun(client) {
-    console.log("🎬 Stopping dashcam and retrieving URL...");
+  console.log("🎬 Stopping dashcam and retrieving URL...");
 
-    // Determine shell command based on OS
-    const shell = client.os === "windows" ? "pwsh" : "sh";
+  // Determine shell command based on OS
+  const shell = client.os === "windows" ? "pwsh" : "sh";
 
-    // Stop dashcam with title and push - this returns the URL
-    const output = await client.exec(shell, "dashcam stop", 60000, false); // Don't silence output so we can capture it
+  // Stop dashcam with title and push - this returns the URL
+  const output = await client.exec(shell, "dashcam stop", 60000, false); // Don't silence output so we can capture it
 
-    console.log("📤 Dashcam command output:", output);
+  console.log("📤 Dashcam command output:", output);
 
-    // Extract URL from output - dashcam typically outputs the URL in the response
-    // The URL is usually in the format: https://dashcam.testdriver.ai/...
-    if (output) {
-      // Match URL but stop at whitespace or quotes
-      const urlMatch = output.match(/https?:\/\/[^\s"']+/);
-      if (urlMatch) {
-        const url = urlMatch[0];
-        console.log("✅ Found dashcam URL:", url);
-        return url;
-      } else {
-        console.warn("⚠️  No URL found in dashcam output");
-      }
+  // Extract URL from output - dashcam typically outputs the URL in the response
+  // The URL is usually in the format: https://dashcam.testdriver.ai/...
+  if (output) {
+    // Match URL but stop at whitespace or quotes
+    const urlMatch = output.match(/https?:\/\/[^\s"']+/);
+    if (urlMatch) {
+      const url = urlMatch[0];
+      console.log("✅ Found dashcam URL:", url);
+      return url;
     } else {
-      console.warn("⚠️  Dashcam command returned no output");
+      console.warn("⚠️  No URL found in dashcam output");
     }
+  } else {
+    console.warn("⚠️  Dashcam command returned no output");
+  }
 
-    return null;
+  return null;
 }
 
 /**

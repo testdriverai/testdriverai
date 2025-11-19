@@ -200,7 +200,6 @@ const createCommands = (
     return handleAssertResponse(response.data);
   };
   const scroll = async (direction = "down", amount = 300) => {
-
     emitter.emit(
       events.log.narration,
       theme.dim(`scrolling ${direction} ${amount}px...`),
@@ -290,7 +289,6 @@ const createCommands = (
         await sandbox.send({ type: "mousePress", button: "left" });
       } else if (action === "mouseUp") {
         await sandbox.send({
-          
           type: "mouseRelease",
           button: "left",
         });
@@ -305,10 +303,7 @@ const createCommands = (
   };
 
   const hover = async (x, y) => {
-    emitter.emit(
-      events.log.narration,
-      theme.dim(`hovering at ${x}, ${y}...`),
-    );
+    emitter.emit(events.log.narration, theme.dim(`hovering at ${x}, ${y}...`));
 
     await redraw.start();
 
@@ -338,7 +333,9 @@ const createCommands = (
     ) => {
       emitter.emit(
         events.log.narration,
-        theme.dim(`searching for "${text}"${description ? ` (${description})` : ""}...`),
+        theme.dim(
+          `searching for "${text}"${description ? ` (${description})` : ""}...`,
+        ),
       );
 
       text = text ? text.toString() : null;
@@ -429,12 +426,9 @@ const createCommands = (
       return true;
     },
     // type a string
-    
+
     type: async (string, delay = 250) => {
-      emitter.emit(
-        events.log.narration,
-        theme.dim(`typing "${string}"...`),
-      );
+      emitter.emit(events.log.narration, theme.dim(`typing "${string}"...`));
 
       await redraw.start();
 
@@ -449,7 +443,9 @@ const createCommands = (
     "press-keys": async (inputKeys) => {
       emitter.emit(
         events.log.narration,
-        theme.dim(`pressing keys: ${Array.isArray(inputKeys) ? inputKeys.join(", ") : inputKeys}...`),
+        theme.dim(
+          `pressing keys: ${Array.isArray(inputKeys) ? inputKeys.join(", ") : inputKeys}...`,
+        ),
       );
 
       await redraw.start();
@@ -463,10 +459,7 @@ const createCommands = (
     },
     // simple delay, usually to let ui render or webpage to load
     wait: async (timeout = 3000) => {
-      emitter.emit(
-        events.log.narration,
-        theme.dim(`waiting ${timeout}ms...`),
-      );
+      emitter.emit(events.log.narration, theme.dim(`waiting ${timeout}ms...`));
       return await delay(timeout);
     },
     "wait-for-image": async (description, timeout = 10000) => {
@@ -689,7 +682,6 @@ const createCommands = (
       await redraw.start();
 
       await sandbox.send({
-        
         type: "commands.focus-application",
         name,
       });
@@ -741,7 +733,6 @@ const createCommands = (
         let result = null;
 
         result = await sandbox.send({
-          
           type: "commands.run",
           command: code,
           timeout,

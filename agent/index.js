@@ -107,14 +107,19 @@ class TestDriverAgent extends EventEmitter2 {
     this.outputs = createOutputs();
 
     // Create SDK instance with this agent's emitter, config, session, and abort signal
-    this.sdk = createSDK(this.emitter, this.config, this.session, this.abortSignal);
+    this.sdk = createSDK(
+      this.emitter,
+      this.config,
+      this.session,
+      this.abortSignal,
+    );
 
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
     // Create sandbox instance with this agent's emitter and analytics
     this.sandbox = createSandbox(this.emitter, this.analytics);
-    
+
     // Set the OS for the sandbox to use
     this.sandbox.os = this.sandboxOs;
 
@@ -280,12 +285,14 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Get error message
     let eMessage = error.message ? error.message : error;
-    
+
     // Truncate error message if too long to prevent 400 errors from API
     // Keep first 5000 characters as a reasonable limit for API payloads
     const MAX_ERROR_LENGTH = 5000;
-    if (typeof eMessage === 'string' && eMessage.length > MAX_ERROR_LENGTH) {
-      eMessage = eMessage.substring(0, MAX_ERROR_LENGTH) + '\n\n[Error message truncated - message was too long]';
+    if (typeof eMessage === "string" && eMessage.length > MAX_ERROR_LENGTH) {
+      eMessage =
+        eMessage.substring(0, MAX_ERROR_LENGTH) +
+        "\n\n[Error message truncated - message was too long]";
     }
 
     // we sanitize the error message to use it as a key in the errorCounts object
@@ -342,8 +349,10 @@ class TestDriverAgent extends EventEmitter2 {
     // Truncate markdown if too long to prevent 400 errors
     const MAX_MARKDOWN_LENGTH = 10000;
     let truncatedMarkdown = markdown;
-    if (typeof markdown === 'string' && markdown.length > MAX_MARKDOWN_LENGTH) {
-      truncatedMarkdown = markdown.substring(0, MAX_MARKDOWN_LENGTH) + '\n\n[Markdown truncated - content was too long]';
+    if (typeof markdown === "string" && markdown.length > MAX_MARKDOWN_LENGTH) {
+      truncatedMarkdown =
+        markdown.substring(0, MAX_MARKDOWN_LENGTH) +
+        "\n\n[Markdown truncated - content was too long]";
     }
 
     let response;
@@ -368,10 +377,7 @@ class TestDriverAgent extends EventEmitter2 {
         events.log.error,
         theme.red(`Failed to get AI error resolution: ${apiError.message}`),
       );
-      this.emitter.emit(
-        events.log.log,
-        "Original error: " + eMessage,
-      );
+      this.emitter.emit(events.log.log, "Original error: " + eMessage);
       return await this.dieOnFatal(error);
     }
 
@@ -894,37 +900,43 @@ commands:
 
     // Check cache first (if enabled via parameter)
     const cachedYaml = useCache ? promptCache.readCache(currentTask) : null;
-    
+
     if (cachedYaml) {
       // Cache hit - load and execute the cached YAML file
       this.emitter.emit(
-        events.log.debug, 
-        `Using cached response for prompt: "${currentTask}"`
+        events.log.debug,
+        `Using cached response for prompt: "${currentTask}"`,
       );
-      this.emitter.emit(
-        events.log.log,
-        theme.dim("(using cached response)")
-      );
-      
+      this.emitter.emit(events.log.log, theme.dim("(using cached response)"));
+
       try {
         // Load the YAML using hydrateFromYML
-        const parsed = await generator.hydrateFromYML(cachedYaml, this.sessionInstance);
-        
+        const parsed = await generator.hydrateFromYML(
+          cachedYaml,
+          this.sessionInstance,
+        );
+
         // Execute the commands from the first step
         if (parsed.steps && parsed.steps.length > 0) {
           const step = parsed.steps[0];
           if (step.commands) {
-            await this.executeCommands(step.commands, 0, false, dry, shouldSave);
+            await this.executeCommands(
+              step.commands,
+              0,
+              false,
+              dry,
+              shouldSave,
+            );
           }
         }
       } catch (err) {
         this.emitter.emit(
           events.log.debug,
-          `Error loading cached YAML: ${err.message}, falling back to API`
+          `Error loading cached YAML: ${err.message}, falling back to API`,
         );
         // Fall through to make API call if cache is invalid
       }
-      
+
       return;
     }
 
@@ -966,21 +978,24 @@ commands:
               const commands = await this.parser.getCommands(block);
               allCommands.push(...commands);
             }
-            
+
             // Create a proper step with prompt
             const step = {
               prompt: currentTask,
-              commands: allCommands
+              commands: allCommands,
             };
-            
+
             // Use dumpToYML to create a valid testdriver yaml file
-            const yamlContent = await generator.dumpToYML([step], this.sessionInstance);
-            
+            const yamlContent = await generator.dumpToYML(
+              [step],
+              this.sessionInstance,
+            );
+
             const cachePath = promptCache.writeCache(currentTask, yamlContent);
             if (cachePath) {
               this.emitter.emit(
                 events.log.debug,
-                `Cached YAML saved to: ${cachePath}`
+                `Cached YAML saved to: ${cachePath}`,
               );
             }
           }
@@ -988,11 +1003,11 @@ commands:
           // If we can't extract YAML, just skip caching
           this.emitter.emit(
             events.log.debug,
-            `Could not cache response: ${err.message}`
+            `Could not cache response: ${err.message}`,
           );
         }
       }
-      
+
       await this.aiExecute(message.data, validateAndLoop, dry, shouldSave);
       this.emitter.emit(
         events.log.debug,
@@ -2033,7 +2048,6 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
-
     console.log("renderSandbox", instance);
 
     if (!headless) {
@@ -2102,21 +2116,20 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   async connectToSandboxDirect(sandboxId, persist = false) {
     this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
     let reply = await this.sandbox.connect(sandboxId, persist);
-    
+
     // reply includes { success, url, sandbox: {...} }
     // For renderSandbox, we need the sandbox object with url merged in
     const sandbox = reply.sandbox || {};
-    
+
     // If reply has a URL at top level, merge it into the sandbox object
     if (reply.url && !sandbox.url) {
       sandbox.url = reply.url;
     }
-    
+
     return sandbox;
   }
 
   async createNewSandbox() {
-
     const sandboxConfig = {
       type: "create",
       resolution: this.config.TD_RESOLUTION,

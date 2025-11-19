@@ -78,9 +78,7 @@ function displayResults() {
       if (passedTests.length > 0) {
         console.log(`📁 ${path.relative(process.cwd(), file.name)}`);
         passedTests.forEach((test) => {
-          console.log(
-            `   ✅ ${test.title} (${formatDuration(test.duration)})`,
-          );
+          console.log(`   ✅ ${test.title} (${formatDuration(test.duration)})`);
         });
         console.log();
       }
