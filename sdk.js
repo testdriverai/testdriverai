@@ -1479,14 +1479,6 @@ class TestDriverSDK {
   }
 
   /**
-   * Get the session ID
-   * @returns {string|null} Session ID
-   */
-  getSessionId() {
-    return this.session.get();
-  }
-
-  /**
    * Enable or disable logging output
    * @param {boolean} enabled - Whether to enable logging
    */

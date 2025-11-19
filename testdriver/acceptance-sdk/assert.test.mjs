@@ -3,11 +3,11 @@
  * Converted from: testdriver/acceptance/assert.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it, onTestFinished } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  createTestClient,
-  setupTest,
-  teardownTest,
+    createTestClient,
+    setupTest,
+    teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe("Assert Test", () => {

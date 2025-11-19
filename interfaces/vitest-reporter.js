@@ -159,8 +159,8 @@ class TestDriverReporter {
             if (data.sessionId) dashcamMap.bySession.set(String(data.sessionId), data);
             if (data.pid) dashcamMap.byPid.set(String(data.pid), data);
             if (data.replayObjectId) dashcamMap.byReplayId.set(String(data.replayObjectId), data);
-          } catch (err) {
-            console.log(`[TestDriver Reporter] Failed to parse dashcam temp file ${f}:`, err.message);
+          } catch {
+            console.log(`[TestDriver Reporter] Failed to parse dashcam temp file ${f}`);
           }
         }
 
@@ -172,7 +172,7 @@ class TestDriverReporter {
           for (const e of dashcamMap.entries) {
             try {
               fs.unlinkSync(e.path);
-            } catch (err) {
+            } catch {
               // ignore cleanup errors
             }
           }
