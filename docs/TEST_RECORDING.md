@@ -12,19 +12,22 @@ The TestDriver test recording system tracks:
 
 ## Setup
 
-### 1. Install Vitest Reporter
+### 1. Install Vitest Plugin
 
-The TestDriver Vitest reporter automatically records your test runs:
+The TestDriver Vitest plugin automatically records your test runs:
 
 ```javascript
-// vitest.config.js
+// vitest.config.mjs
 import { defineConfig } from 'vitest/config';
-import { TestDriverReporter } from './interfaces/vitest-reporter.js';
+import testDriverPlugin from './interfaces/vitest-plugin.mjs';
 
 export default defineConfig({
-  test: {
-    reporters: ['default', new TestDriverReporter()],
-  },
+  plugins: [
+    testDriverPlugin({
+      apiKey: process.env.TD_API_KEY,
+      apiRoot: process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com',
+    }),
+  ],
 });
 ```
 

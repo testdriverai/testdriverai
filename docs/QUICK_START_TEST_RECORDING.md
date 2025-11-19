@@ -10,17 +10,20 @@
 
 ## Setup (5 minutes)
 
-### 1. Add Vitest Reporter
+### 1. Add Vitest Plugin
 
 ```javascript
-// vitest.config.js
+// vitest.config.mjs
 import { defineConfig } from 'vitest/config';
-import { TestDriverReporter } from './interfaces/vitest-reporter.js';
+import testDriverPlugin from './interfaces/vitest-plugin.mjs';
 
 export default defineConfig({
-  test: {
-    reporters: ['default', new TestDriverReporter()],
-  },
+  plugins: [
+    testDriverPlugin({
+      apiKey: process.env.TD_API_KEY,
+      apiRoot: process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com',
+    }),
+  ],
 });
 ```
 
@@ -43,30 +46,35 @@ https://app.testdriver.ai/dashboard/test-runs
 
 ## With Dashcam (Optional)
 
-To link screen recordings, dashcam needs to output the replay URL where the reporter can see it:
+To link screen recordings with tests, simply register the dashcam URL after your test completes:
 
-```bash
-# Start dashcam
-dashcam start
+```javascript
+import { test } from 'vitest';
+import TestDriver from '@testdriverai/sdk';
 
-# Run tests
-npx vitest run
-
-# Stop and publish (outputs replay URL)
-dashcam stop
-REPLAY_URL=$(dashcam publish -p YOUR_PROJECT_ID --json | jq -r '.replayUrl')
-echo "Replay: $REPLAY_URL"
-
-# Re-run tests with the replay URL in logs
-# Or manually associate via SDK
+test('my test', async () => {
+  const client = await TestDriver({ apiKey: 'your-api-key' });
+  
+  // Run your test...
+  await client.get('https://example.com');
+  
+  // Get dashcam URL and register it
+  const dashcamUrl = await client.dashcam.publish();
+  
+  // Register with the plugin - it will automatically associate with this test
+  if (globalThis.__testdriverPlugin) {
+    globalThis.__testdriverPlugin.registerDashcamUrl(
+      'my-test-id', // Or use task.id in Vitest context
+      dashcamUrl,
+      client.os
+    );
+  }
+  
+  await client.disconnect();
+});
 ```
 
-The reporter automatically parses replay URLs like:
-```
-https://app.dashcam.io/replay/691cf130c2fc02f59ae66fc1
-```
-
-From test output and links them to the tests.
+The plugin automatically tracks all dashcam URLs in memory (no temp files needed!) and associates them with test results.
 
 ## CI/CD Integration
 
@@ -183,7 +191,7 @@ await client.completeTestRun({
 - `api/controllers/testdriver/testdriver-test-case-create.js` - Record test case endpoint
 
 **CLI/SDK**
-- `cli/interfaces/vitest-reporter.js` - Vitest reporter plugin
+- `cli/interfaces/vitest-plugin.mjs` - Vitest plugin for test recording
 - `cli/sdk.js` - Added createTestRun(), recordTestCase(), completeTestRun() methods
 
 **Documentation**

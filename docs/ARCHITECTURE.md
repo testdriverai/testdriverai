@@ -13,7 +13,7 @@ This system provides comprehensive test execution tracking, linking test runs wi
 │                                                               │
 │  ┌──────────────┐         ┌──────────────┐                  │
 │  │   Vitest     │────────▶│  TD Vitest   │                  │
-│  │  Test Runner │         │   Reporter   │                  │
+│  │  Test Runner │         │   Plugin     │                  │
 │  └──────────────┘         └──────┬───────┘                  │
 │                                   │                           │
 │  ┌──────────────┐                 │                          │
@@ -218,7 +218,7 @@ Record a test case result (create or update).
 
 ## Components
 
-### Vitest Reporter (`interfaces/vitest-reporter.js`)
+### Vitest Plugin (`interfaces/vitest-plugin.mjs`)
 Automatically integrates with Vitest test runs.
 
 **Features:**
@@ -228,16 +228,20 @@ Automatically integrates with Vitest test runs.
 - Records each test case result
 - Associates with dashcam session if `DASHCAM_SESSION_ID` is set
 - Completes test run with statistics
+- Uses plugin architecture for better global state management
 
 **Usage:**
 ```javascript
-// vitest.config.js
-import { TestDriverReporter } from './interfaces/vitest-reporter.js';
+// vitest.config.mjs
+import testDriverPlugin from './interfaces/vitest-plugin.mjs';
 
 export default {
-  test: {
-    reporters: ['default', new TestDriverReporter()]
-  }
+  plugins: [
+    testDriverPlugin({
+      apiKey: process.env.TD_API_KEY,
+      apiRoot: process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com',
+    }),
+  ],
 }
 ```
 

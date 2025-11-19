@@ -3,9 +3,9 @@
  * Shared functions for SDK tests
  */
 
+import crypto from "crypto";
 import { config } from "dotenv";
 import fs from "fs";
-import os from "os";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";
@@ -18,27 +18,6 @@ const __dirname = dirname(__filename);
 // Go up 3 levels from setup/ to reach the project root
 const envPath = path.resolve(__dirname, "../../../.env");
 config({ path: envPath });
-
-// Global registry to link test contexts with SDK clients
-// This allows the reporter to access SDK client info for each test
-if (!globalThis.__testdriverRegistry) {
-  globalThis.__testdriverRegistry = {
-    clients: new Map(), // testId -> client instance
-    getClient: function (testId) {
-      return this.clients.get(testId);
-    },
-    setClient: function (testId, client) {
-      console.log(
-        `[TestDriver Registry] Registered client for test: ${testId}`,
-      );
-      this.clients.set(testId, client);
-    },
-    clearClient: function (testId) {
-      console.log(`[TestDriver Registry] Cleared client for test: ${testId}`);
-      this.clients.delete(testId);
-    },
-  };
-}
 
 // Log loaded env vars for debugging
 console.log("🔧 Environment variables loaded from:", envPath);
@@ -155,7 +134,7 @@ export function createTestClient(options = {}) {
   const os = process.env.TEST_PLATFORM || "linux";
 
   // Extract task context if provided - we use taskId but remove task from clientOptions
-  const taskId = options.task?.id || options.task?.name || null;
+  let taskId = options.task?.id || options.task?.name || null;
 
   // Remove task from options before passing to TestDriver (eslint wants us to use 'task')
   // eslint-disable-next-line no-unused-vars
@@ -167,7 +146,7 @@ export function createTestClient(options = {}) {
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
-    headless: false,
+    headless: true,
     newSandbox: false, // Always create a new sandbox for each test
     ...clientOptions, // This will include signal if passed in
     cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
@@ -180,35 +159,16 @@ export function createTestClient(options = {}) {
 
   console.log(`[TestHelpers] Client OS configured as: ${client.os}`);
 
-  // Initialize global metadata storage immediately
-  if (!globalThis.__testdriverMeta) {
-    globalThis.__testdriverMeta = {};
-  }
-
-  // Store platform immediately (we can update dashcam URL later)
-  // This ensures reporter can get platform even before test completes
-  globalThis.__testdriverMeta.__platform__ = client.os;
-  console.log(`[TestHelpers] Stored platform in global meta: ${client.os}`);
-
   // Set Vitest task ID if available (for log filtering in parallel tests)
   if (taskId) {
-    console.log(`[TestHelpers] Registering client with task ID: ${taskId}`);
-    client.setVitestTaskId(taskId);
-
-    // Register client in global registry for reporter access
-    globalThis.__testdriverRegistry.setClient(taskId, client);
+    console.log(`[TestHelpers] Storing task ID on client: ${taskId}`);
+    // Store task ID directly on client for later use in teardown
+    client.vitestTaskId = taskId;
   } else {
     console.log(
-      `[TestHelpers] No task ID available, client not registered in global registry`,
+      `[TestHelpers] No task ID available`,
     );
   }
-
-  // Also register with a generic 'current' key as fallback
-  globalThis.__testdriverRegistry.setClient("__current__", client);
-  console.log(`[TestHelpers] Registered client as '__current__' (fallback)`);
-  console.log(
-    `[TestHelpers] Registry now has ${globalThis.__testdriverRegistry.clients.size} clients`,
-  );
 
   // Enable detailed event logging if requested
   if (process.env.DEBUG_EVENTS === "true") {
@@ -313,49 +273,88 @@ export async function teardownTest(client, options = {}) {
         const replayIdMatch = dashcamUrl.match(/\/replay\/([^?]+)/);
         const replayObjectId = replayIdMatch ? replayIdMatch[1] : null;
 
-        client._lastDashcamUrl = dashcamUrl;
-        console.log(`🎥 Stored dashcam URL in client: ${dashcamUrl}`);
+        console.log(`🎥 Dashcam URL: ${dashcamUrl}`);
         if (replayObjectId) {
           console.log(`📝 Replay Object ID: ${replayObjectId}`);
         }
 
-        // Store in Vitest task.meta if task context was provided
-        if (options.task?.meta) {
+        // Store dashcam URL in task meta
+        if (options.task) {
           options.task.meta.testdriverDashcamUrl = dashcamUrl;
-          options.task.meta.testdriverReplayId = replayObjectId;
-          console.log(`[TestHelpers] Stored dashcam URL in task.meta`);
-        }
+          options.task.meta.testdriverReplayObjectId = replayObjectId;
+          console.log(`[TestHelpers] ✅ Stored dashcam URL in task.meta for test: ${options.task.name}`);
+          
+          // Report the test case directly if API key is available
+          const apiKey = process.env.TD_API_KEY;
+          const apiRoot = process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
+          
+          if (apiKey && globalThis.__testdriverPlugin) {
+            try {
+              // Get result
+              const result = typeof options.task.result === 'function' 
+                ? options.task.result() 
+                : options.task.result;
+                
+              let status = "passed";
+              let errorMessage = null;
+              let errorStack = null;
 
-        // Write dashcam URL to a temp file that the reporter can read
-        // This is necessary because Vitest runs reporters in a separate process
-        // Use a unique filename per session and task to support parallel tests
-        const sessionId = client.getSessionId();
-        const rawTaskId = options.task?.id || options.task?.name || process.pid;
-        const safeTaskId = String(rawTaskId).replace(/[^a-z0-9-_]/gi, "_");
-        const tempFile = path.join(
-          os.tmpdir(),
-          `testdriver-dashcam-${sessionId}-${safeTaskId}-${Date.now()}.json`,
-        );
-        fs.writeFileSync(
-          tempFile,
-          JSON.stringify({
-            dashcamUrl,
-            replayObjectId,
-            platform: client.os,
-            timestamp: Date.now(),
-            pid: process.pid,
-            sessionId,
-          }),
-        );
-        console.log(
-          `[TestHelpers] Wrote dashcam URL to temp file: ${tempFile}`,
-        );
+              if (result?.state === "failed") {
+                status = "failed";
+                if (result.errors && result.errors.length > 0) {
+                  const error = result.errors[0];
+                  errorMessage = error.message;
+                  errorStack = error.stack;
+                }
+              } else if (result?.state === "skipped") {
+                status = "skipped";
+              }
 
-        // Also store globally as fallback
-        if (!globalThis.__testdriverMeta) {
-          globalThis.__testdriverMeta = {};
+              const testFile = options.task.file?.name || "unknown";
+              const suiteName = options.task.suite?.name;
+
+              // Authenticate and create a test run for this specific test
+              const token = await globalThis.__testdriverPlugin.authenticateWithApiKey(apiKey, apiRoot);
+              
+              // Create test run
+              const runId = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+              const testRunData = {
+                runId,
+                suiteName: suiteName || testFile,
+              };
+              
+              const testRunResponse = await globalThis.__testdriverPlugin.createTestRunDirect(token, apiRoot, testRunData);
+              const testRunDbId = testRunResponse.data?.id;
+              console.log(`[TestHelpers] ✅ Created test run: ${runId} (DB ID: ${testRunDbId})`);
+
+              // Record test case with dashcam URL
+              const testCaseData = {
+                runId,
+                testName: options.task.name,
+                testFile,
+                status,
+                startTime: Date.now() - (result?.duration || 0),
+                endTime: Date.now(),
+                duration: result?.duration || 0,
+                retries: result?.retryCount || 0,
+                replayUrl: dashcamUrl,
+              };
+
+              if (suiteName) testCaseData.suiteName = suiteName;
+              if (errorMessage) testCaseData.errorMessage = errorMessage;
+              if (errorStack) testCaseData.errorStack = errorStack;
+
+              const testCaseResponse = await globalThis.__testdriverPlugin.recordTestCaseDirect(token, apiRoot, testCaseData);
+              const testCaseDbId = testCaseResponse.data?.id;
+              console.log(`[TestHelpers] ✅ Reported test case to API with dashcam URL`);
+              console.log(`[TestHelpers] 🔗 View test run: ${apiRoot.replace('testdriver-api.onrender.com', 'app.testdriver.ai')}/test-runs/${testRunDbId}/${testCaseDbId}`);
+            } catch (error) {
+              console.error(`[TestHelpers] ❌ Failed to report test case:`, error.message);
+            }
+          }
+        } else {
+          console.warn(`[TestHelpers] ⚠️  No task available, dashcam URL not stored in meta`);
         }
-        globalThis.__testdriverMeta.__lastDashcamUrl__ = dashcamUrl;
       }
     } else {
       console.log("⏭️  Postrun skipped (disabled in options)");

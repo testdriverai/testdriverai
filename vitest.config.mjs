@@ -1,13 +1,26 @@
 import { config } from "dotenv";
 import { defineConfig } from "vitest/config";
+import testDriverPlugin from "./interfaces/vitest-plugin.mjs";
 
 // Load environment variables from .env file
 config();
 
 export default defineConfig({
+  plugins: [
+    testDriverPlugin({
+      apiKey: process.env.TD_API_KEY,
+      apiRoot:
+        process.env.TD_API_KEY_ROOT ||
+        "https://testdriver-api.onrender.com",
+    }),
+  ],
+
   test: {
     // Test file patterns
     include: ["**/testdriver/acceptance-sdk/*.test.mjs"],
+
+    // Setup file to initialize plugin in worker processes
+    setupFiles: ["./testdriver/acceptance-sdk/setup/vitestSetup.mjs"],
 
     // Timeout settings
     testTimeout: 600000, // 2 minutes per test
@@ -22,14 +35,14 @@ export default defineConfig({
       ["json", { outputFile: "test-results/results.json" }],
       ["html", { outputFile: "test-results/index.html" }],
       [
-        "./interfaces/vitest-reporter.js",
+        "./interfaces/vitest-plugin.mjs",
         {
           apiKey: process.env.TD_API_KEY,
           apiRoot:
             process.env.TD_API_KEY_ROOT ||
             "https://testdriver-api.onrender.com",
         },
-      ], // TestDriver test recording (CommonJS)
+      ], // TestDriver test recording
     ],
 
     // Use forks for isolation, run tests in parallel

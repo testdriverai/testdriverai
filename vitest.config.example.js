@@ -1,11 +1,15 @@
 import { defineConfig } from "vitest/config";
-import { TestDriverReporter } from "./interfaces/vitest-reporter.js";
+import testDriverPlugin from "./interfaces/vitest-plugin.mjs";
 
 export default defineConfig({
-  test: {
-    // Add TestDriver reporter alongside default reporter
-    reporters: ["default", new TestDriverReporter()],
+  plugins: [
+    testDriverPlugin({
+      apiKey: process.env.TD_API_KEY,
+      apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
+    }),
+  ],
 
+  test: {
     // Optional: Configure test timeout
     testTimeout: 30000,
 
