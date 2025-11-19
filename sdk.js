@@ -999,6 +999,15 @@ class TestDriverSDK {
     }
   }
 
+  /**
+   * Get the current session ID
+   * Used for tracking and associating dashcam recordings with test results
+   * @returns {string|null} The session ID or null if not connected
+   */
+  getSessionId() {
+    return this.session?.get() || null;
+  }
+
   // ====================================
   // Element Finding API
   // ====================================

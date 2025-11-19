@@ -23,7 +23,7 @@ export default defineConfig({
       ["html", { outputFile: "test-results/index.html" }],
       ["./interfaces/vitest-reporter.js", { 
         apiKey: process.env.TD_API_KEY,
-        apiRoot: "https://replayable-dev-ian-mac-m1-16.ngrok.io"
+        apiRoot: process.env.TD_API_KEY_ROOT || 'https://testdriver-api.onrender.com'
       }], // TestDriver test recording (CommonJS)
     ],
 

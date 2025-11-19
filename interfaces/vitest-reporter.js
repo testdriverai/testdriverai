@@ -1,5 +1,7 @@
 const crypto = require("crypto");
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
 
 /**
  * Vitest Reporter for TestDriver
@@ -124,6 +126,202 @@ class TestDriverReporter {
       const platform = this._getPlatform();
       if (platform) {
         completeData.platform = platform;
+      }
+      
+      // At this point, afterAll has completed. Check if we can find dashcam URLs now.
+      console.log(`[TestDriver Reporter] Checking for dashcam URLs after test completion...`);
+      
+      // Check all possible sources for dashcam URL
+      let dashcamUrl = null;
+      
+      // Read all dashcam temp files and index them by sessionId/pid/replayId
+      // This supports parallel tests and avoids picking a single "most recent" file
+      let dashcamMap = {
+        bySession: new Map(),
+        byPid: new Map(),
+        byReplayId: new Map(),
+        entries: []
+      };
+
+      try {
+        const tempDir = os.tmpdir();
+        const files = fs.readdirSync(tempDir);
+        const dashcamFiles = files.filter(f => f.startsWith('testdriver-dashcam-') && f.endsWith('.json'));
+
+        console.log(`[TestDriver Reporter] Found ${dashcamFiles.length} dashcam temp files in ${tempDir}`);
+
+        for (const f of dashcamFiles) {
+          const p = path.join(tempDir, f);
+          try {
+            const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+            dashcamMap.entries.push({ path: p, file: f, data });
+
+            if (data.sessionId) dashcamMap.bySession.set(String(data.sessionId), data);
+            if (data.pid) dashcamMap.byPid.set(String(data.pid), data);
+            if (data.replayObjectId) dashcamMap.byReplayId.set(String(data.replayObjectId), data);
+          } catch (err) {
+            console.log(`[TestDriver Reporter] Failed to parse dashcam temp file ${f}:`, err.message);
+          }
+        }
+
+        if (dashcamMap.entries.length === 0) {
+          console.log(`[TestDriver Reporter] No readable dashcam temp files found`);
+        } else {
+          console.log(`[TestDriver Reporter] Indexed ${dashcamMap.entries.length} dashcam temp files`);
+          // Optionally clean up files after indexing to avoid reuse
+          for (const e of dashcamMap.entries) {
+            try {
+              fs.unlinkSync(e.path);
+            } catch (err) {
+              // ignore cleanup errors
+            }
+          }
+        }
+      } catch (error) {
+        console.log(`[TestDriver Reporter] Could not read temp files:`, error.message);
+      }
+      
+      // Fallback: Check task.meta (if it was stored during teardown)
+      if (!dashcamUrl) {
+        for (const [, testData] of this.testCases.entries()) {
+          const test = testData.test;
+          const meta = typeof test.meta === 'function' ? test.meta() : test.meta;
+          if (meta?.testdriverDashcamUrl) {
+            dashcamUrl = meta.testdriverDashcamUrl;
+            console.log(`[TestDriver Reporter] ✓ Found dashcam URL in task.meta: ${dashcamUrl}`);
+            break;
+          }
+        }
+      }
+      
+      // Fallback: Check global storage
+      if (!dashcamUrl && globalThis.__testdriverMeta?.__lastDashcamUrl__) {
+        dashcamUrl = globalThis.__testdriverMeta.__lastDashcamUrl__;
+        console.log(`[TestDriver Reporter] ✓ Found dashcam URL in global meta: ${dashcamUrl}`);
+      }
+      
+      // If we indexed dashcam files, try to associate each test with the correct replay
+      const anyIndexed = typeof dashcamMap !== 'undefined' && (dashcamMap.entries.length > 0);
+      if (anyIndexed || globalThis.__testdriverMeta?.__lastDashcamUrl__) {
+        console.log(`[TestDriver Reporter] Sending test cases with dashcam data now available...`);
+
+        for (const [, testData] of this.testCases.entries()) {
+          const test = testData.test;
+          const result = test.result();
+
+          // Build test case data
+          const testFile = test.module?.relativeModuleId || test.file?.name || 'unknown';
+          const suiteName = test.suite?.name;
+
+          let status = "passed";
+          let errorMessage = null;
+          let errorStack = null;
+
+          if (result.state === "failed") {
+            status = "failed";
+            if (result.errors && result.errors.length > 0) {
+              const error = result.errors[0];
+              errorMessage = error.message;
+              errorStack = error.stack;
+            }
+          } else if (result.state === "skipped") {
+            status = "skipped";
+          }
+
+          // Determine best dashcam URL for this specific test
+          let replayUrlForTest = null;
+
+          console.log(`[TestDriver Reporter] Matching replay for test: ${test.name}`);
+
+          // 1) Check task metadata first (preserves existing behavior)
+          const meta = typeof test.meta === 'function' ? test.meta() : test.meta;
+          console.log(`[TestDriver Reporter]   meta type:`, typeof test.meta, 'keys:', meta ? Object.keys(meta) : 'none');
+          if (meta?.testdriverDashcamUrl) {
+            replayUrlForTest = meta.testdriverDashcamUrl;
+            console.log(`[TestDriver Reporter]   ✓ Found in meta:`, replayUrlForTest);
+          }
+
+          // 2) Try to find a client registered for this test and match by sessionId
+          if (!replayUrlForTest) {
+            try {
+              if (globalThis.__testdriverRegistry) {
+                console.log(`[TestDriver Reporter]   Checking registry, clients:`, globalThis.__testdriverRegistry.clients?.size);
+                const client = globalThis.__testdriverRegistry.getClient?.(test.id) || globalThis.__testdriverRegistry.getClient?.('__current__');
+                console.log(`[TestDriver Reporter]   Client found:`, !!client);
+                if (client && typeof client.getSessionId === 'function') {
+                  const sid = String(client.getSessionId());
+                  console.log(`[TestDriver Reporter]   Session ID:`, sid);
+                  console.log(`[TestDriver Reporter]   dashcamMap.bySession has:`, Array.from(dashcamMap.bySession.keys()));
+                  if (dashcamMap.bySession.has(sid)) {
+                    replayUrlForTest = dashcamMap.bySession.get(sid).dashcamUrl;
+                    console.log(`[TestDriver Reporter]   ✓ Found by sessionId:`, replayUrlForTest);
+                  } else {
+                    console.log(`[TestDriver Reporter]   ✗ Session ID not in map`);
+                  }
+                } else {
+                  console.log(`[TestDriver Reporter]   ✗ Client has no getSessionId method`);
+                }
+              } else {
+                console.log(`[TestDriver Reporter]   ✗ No registry available`);
+              }
+            } catch (err) {
+              console.log(`[TestDriver Reporter]   ✗ Error accessing registry:`, err.message);
+            }
+          }
+
+          // 3) Fallback: match by test ID in temp file name
+          // The temp file is named: testdriver-dashcam-{sessionId}-{taskId}-{timestamp}.json
+          // where taskId is derived from test.id
+          if (!replayUrlForTest && dashcamMap.entries.length > 0) {
+            console.log(`[TestDriver Reporter]   Trying to match by test ID in filename, entries:`, dashcamMap.entries.length);
+            const rawTaskId = test.id || test.name;
+            const safeTaskId = String(rawTaskId).replace(/[^a-z0-9-_]/gi, '_');
+            console.log(`[TestDriver Reporter]   Looking for taskId:`, safeTaskId);
+            
+            for (const entry of dashcamMap.entries) {
+              if (entry.file.includes(safeTaskId)) {
+                replayUrlForTest = entry.data.dashcamUrl;
+                console.log(`[TestDriver Reporter]   ✓ Found by taskId in filename:`, entry.file);
+                break;
+              }
+            }
+            
+            if (!replayUrlForTest) {
+              console.log(`[TestDriver Reporter]   ✗ No filename match for taskId`);
+            }
+          }
+
+          // 4) Final fallback: if only one test and one replay, use it
+          if (!replayUrlForTest && dashcamMap.entries.length === 1 && this.testCases.size === 1) {
+            replayUrlForTest = dashcamMap.entries[0].data.dashcamUrl;
+            console.log(`[TestDriver Reporter]   ✓ Using single replay for single test:`, replayUrlForTest);
+          }
+
+          console.log(`[TestDriver Reporter]   Final replayUrlForTest:`, replayUrlForTest || 'NONE');
+
+          // If we found a replay URL for this test, send it
+          if (replayUrlForTest) {
+            const testCaseData = {
+              runId: this.testRunId,
+              testName: test.name,
+              testFile,
+              status,
+              startTime: testData.startTime,
+              endTime: testData.startTime + (result?.duration || 0),
+              duration: result?.duration || 0,
+              retries: result.retryCount || 0,
+              replayUrl: replayUrlForTest,
+            };
+
+            if (suiteName) testCaseData.suiteName = suiteName;
+            if (errorMessage) testCaseData.errorMessage = errorMessage;
+            if (errorStack) testCaseData.errorStack = errorStack;
+
+            await this._recordTestCase(testCaseData);
+          }
+        }
+      } else {
+        console.log(`[TestDriver Reporter] No dashcam data found after test completion`);
       }
       
       await this._completeTestRun(completeData);
@@ -332,70 +530,86 @@ class TestDriverReporter {
       return process.env.DASHCAM_REPLAY_URL;
     }
 
-    // Check global meta storage (set during teardown)
-    if (globalThis.__testdriverMeta && globalThis.__testdriverMeta[test.name]) {
-      const meta = globalThis.__testdriverMeta[test.name];
-      console.log(`[TestDriver Reporter] ✓ Found test meta in global storage`);
-      console.log(`[TestDriver Reporter]   Dashcam URL: ${meta.dashcamUrl}`);
-      console.log(`[TestDriver Reporter]   Platform: ${meta.platform}`);
+    // Check task metadata (Vitest 4.x recommended approach)
+    // Note: test.meta is a function in Vitest 4.x, need to call it
+    const meta = typeof test.meta === 'function' ? test.meta() : test.meta;
+    
+    if (meta && Object.keys(meta).length > 0) {
+      console.log(`[TestDriver Reporter] Task meta keys:`, Object.keys(meta));
       
-      // Also update detected platform
-      if (meta.platform && !this.detectedPlatform) {
-        this.detectedPlatform = meta.platform;
+      // Check for platform in metadata
+      if (meta.testdriverPlatform) {
+        console.log(`[TestDriver Reporter] ✓ Found platform in task.meta: ${meta.testdriverPlatform}`);
+        if (!this.detectedPlatform) {
+          this.detectedPlatform = meta.testdriverPlatform;
+        }
       }
       
-      return meta.dashcamUrl;
-    }
-
-    // Try to get client from global registry
-    let client = null;
-    if (globalThis.__testdriverRegistry) {
-      client = globalThis.__testdriverRegistry.getClient(test.id);
-      if (client) {
-        console.log(`[TestDriver Reporter] ✓ Found TestDriver client in global registry`);
-        console.log(`[TestDriver Reporter]   Client OS: ${client.os}`);
-        console.log(`[TestDriver Reporter]   Client session: ${client.getSessionId?.() || 'unknown'}`);
-      } else {
-        console.log(`[TestDriver Reporter] ✗ No client found in global registry for test ID: ${test.id}`);
-        
-        // List all registered test IDs for debugging
-        const registeredIds = Array.from(globalThis.__testdriverRegistry.clients.keys());
-        console.log(`[TestDriver Reporter]   Registered test IDs (${registeredIds.length}):`, registeredIds);
+      // Check for dashcam URL in metadata
+      if (meta.testdriverDashcamUrl) {
+        console.log(`[TestDriver Reporter] ✓ Found dashcam URL in task.meta: ${meta.testdriverDashcamUrl}`);
+        return meta.testdriverDashcamUrl;
+      }
+      
+      // Legacy meta fields
+      if (meta.replayUrl) {
+        console.log(`[TestDriver Reporter] Found replayUrl in test.meta: ${meta.replayUrl}`);
+        return meta.replayUrl;
+      }
+      if (meta.dashcamUrl) {
+        console.log(`[TestDriver Reporter] Found dashcamUrl in test.meta: ${meta.dashcamUrl}`);
+        return meta.dashcamUrl;
       }
     } else {
-      console.log(`[TestDriver Reporter] ✗ Global __testdriverRegistry not available`);
+      console.log(`[TestDriver Reporter] ⚠️ No task metadata available (meta is empty)`);
     }
 
-    // Check if testdriver client stored dashcamUrl
-    if (client) {
-      // Try to get dashcamUrl from client's last session
-      if (client._lastDashcamUrl) {
-        console.log(`[TestDriver Reporter] ✓ Using dashcamUrl from client: ${client._lastDashcamUrl}`);
-        return client._lastDashcamUrl;
-      }
+    // Fallback: Check global client registry for dashcam URL
+    console.log(`[TestDriver Reporter] Checking client registry...`);
+    if (globalThis.__testdriverRegistry) {
+      console.log(`[TestDriver Reporter] Registry exists with ${globalThis.__testdriverRegistry.clients.size} clients`);
       
-      // Try dashcamUrl property
-      if (client.dashcamUrl) {
-        console.log(`[TestDriver Reporter] ✓ Using client.dashcamUrl: ${client.dashcamUrl}`);
-        return client.dashcamUrl;
-      }
+      // Try to find client by test ID or use the '__current__' fallback
+      const client = globalThis.__testdriverRegistry.getClient(test.id) || 
+                     globalThis.__testdriverRegistry.getClient('__current__');
       
-      console.log(`[TestDriver Reporter] Client found but no dashcam URL properties set yet`);
+      console.log(`[TestDriver Reporter] Client found in registry:`, !!client);
+      if (client) {
+        console.log(`[TestDriver Reporter] Client has _lastDashcamUrl:`, !!client._lastDashcamUrl);
+        if (client._lastDashcamUrl) {
+          console.log(`[TestDriver Reporter] ✓ Found dashcam URL from client registry: ${client._lastDashcamUrl}`);
+          return client._lastDashcamUrl;
+        }
+      }
+    } else {
+      console.log(`[TestDriver Reporter] No client registry available`);
     }
 
-    // Fallback: Check legacy test.context (in case it's still available)
-    if (test.context?.testdriver) {
-      const contextClient = test.context.testdriver;
-      console.log(`[TestDriver Reporter] Found testdriver client in test.context (legacy path)`);
-      
-      if (contextClient._lastDashcamUrl) {
-        console.log(`[TestDriver Reporter] Using dashcamUrl from context client: ${contextClient._lastDashcamUrl}`);
-        return contextClient._lastDashcamUrl;
+    // Fallback: Check global meta storage (set during teardown)
+    if (globalThis.__testdriverMeta) {
+      if (globalThis.__testdriverMeta[test.name]) {
+        const meta = globalThis.__testdriverMeta[test.name];
+        console.log(`[TestDriver Reporter] ✓ Found test meta in global storage`);
+        console.log(`[TestDriver Reporter]   Dashcam URL: ${meta.dashcamUrl}`);
+        console.log(`[TestDriver Reporter]   Platform: ${meta.platform}`);
+        
+        if (meta.platform && !this.detectedPlatform) {
+          this.detectedPlatform = meta.platform;
+        }
+        
+        return meta.dashcamUrl;
       }
       
-      if (contextClient.dashcamUrl) {
-        console.log(`[TestDriver Reporter] Using context client.dashcamUrl: ${contextClient.dashcamUrl}`);
-        return contextClient.dashcamUrl;
+      // Check for global dashcam URL (set by teardownTest)
+      if (globalThis.__testdriverMeta.__lastDashcamUrl__) {
+        console.log(`[TestDriver Reporter] ✓ Found dashcam URL in global meta: ${globalThis.__testdriverMeta.__lastDashcamUrl__}`);
+        return globalThis.__testdriverMeta.__lastDashcamUrl__;
+      }
+      
+      // Check for global platform storage
+      if (globalThis.__testdriverMeta.__platform__ && !this.detectedPlatform) {
+        this.detectedPlatform = globalThis.__testdriverMeta.__platform__;
+        console.log(`[TestDriver Reporter] Found platform in global meta: ${this.detectedPlatform}`);
       }
     }
 

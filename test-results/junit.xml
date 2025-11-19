@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="43.979519417">
-    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-19T03:28:20.267Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="43.979519417">
-        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="3.7363335">
+<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="42.328395125">
+    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-19T06:58:58.732Z" hostname="MacBookPro.lan" tests="1" failures="1" errors="0" skipped="0" time="42.328395125">
+        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="3.916287875">
             <system-out>
+[Test] Stored platform in task.meta for test: should assert the testdriver login page shows
+[Test] task.meta after setting: [Object: null prototype] { testdriverPlatform: [32m&apos;linux&apos;[39m }
 thinking...
 
-The task passed. The screenshot clearly shows the TestDriver.ai Sandbox login page with the username and password fields.
+The task failed. The screenshot shows a Linux desktop, not the TestDriver.ai Sandbox login page.
 
             </system-out>
+            <failure message="AI Assertion failed: the TestDriver.ai Sandbox login page is displayed
+The task failed. The screenshot shows a Linux desktop, not the TestDriver.ai Sandbox login page." type="Error">
+Error: AI Assertion failed: the TestDriver.ai Sandbox login page is displayed
+The task failed. The screenshot shows a Linux desktop, not the TestDriver.ai Sandbox login page.
+ ❯ TestDriverSDK.&lt;anonymous&gt; sdk.js:1402:15
+ ❯ testdriver/acceptance-sdk/assert.test.mjs:49:37
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { fatal: true, attachScreenshot: true }
+            </failure>
         </testcase>
     </testsuite>
 </testsuites>

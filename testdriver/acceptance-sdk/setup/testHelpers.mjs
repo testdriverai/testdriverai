@@ -5,6 +5,7 @@
 
 import { config } from "dotenv";
 import fs from "fs";
+import os from "os";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";
@@ -38,7 +39,6 @@ if (!globalThis.__testdriverRegistry) {
 }
 
 // Log loaded env vars for debugging
-if (process.env.DEBUG_ENV === "true") {
   console.log("🔧 Environment variables loaded from:", envPath);
   console.log("   TD_API_KEY:", process.env.TD_API_KEY ? "✓ Set" : "✗ Not set");
   console.log("   TD_API_ROOT:", process.env.TD_API_ROOT || "Not set");
@@ -46,7 +46,6 @@ if (process.env.DEBUG_ENV === "true") {
     "   TD_OS:",
     process.env.TD_OS || "Not set (will default to linux)",
   );
-}
 
 // Global test results storage
 const testResults = {
@@ -70,10 +69,21 @@ export function storeTestResult(
   console.log(`📝 Storing test result: ${testName}`);
   console.log(`   Dashcam URL: ${dashcamUrl || "none"}`);
 
+  // Extract replay object ID from dashcam URL
+  let replayObjectId = null;
+  if (dashcamUrl) {
+    const replayIdMatch = dashcamUrl.match(/\/replay\/([^?]+)/);
+    replayObjectId = replayIdMatch ? replayIdMatch[1] : null;
+    if (replayObjectId) {
+      console.log(`   Replay Object ID: ${replayObjectId}`);
+    }
+  }
+
   testResults.tests.push({
     name: testName,
     file: testFile,
     dashcamUrl,
+    replayObjectId,
     sessionId: sessionInfo.sessionId,
     timestamp: new Date().toISOString(),
   });
@@ -165,6 +175,18 @@ export function createTestClient(options = {}) {
     "🔧 createTestClient: SDK created, cacheThresholds =",
     client.cacheThresholds,
   );
+  
+  console.log(`[TestHelpers] Client OS configured as: ${client.os}`);
+
+  // Initialize global metadata storage immediately
+  if (!globalThis.__testdriverMeta) {
+    globalThis.__testdriverMeta = {};
+  }
+  
+  // Store platform immediately (we can update dashcam URL later)
+  // This ensures reporter can get platform even before test completes
+  globalThis.__testdriverMeta.__platform__ = client.os;
+  console.log(`[TestHelpers] Stored platform in global meta: ${client.os}`);
 
   // Set Vitest task ID if available (for log filtering in parallel tests)
   if (taskId) {
@@ -180,6 +202,7 @@ export function createTestClient(options = {}) {
   // Also register with a generic 'current' key as fallback
   globalThis.__testdriverRegistry.setClient('__current__', client);
   console.log(`[TestHelpers] Registered client as '__current__' (fallback)`);
+  console.log(`[TestHelpers] Registry now has ${globalThis.__testdriverRegistry.clients.size} clients`);
 
   // Enable detailed event logging if requested
   if (process.env.DEBUG_EVENTS === "true") {
@@ -264,6 +287,7 @@ export async function setupTest(client, options = {}) {
  * Teardown function to run after each test
  * @param {TestDriver} client - TestDriver client
  * @param {Object} options - Teardown options
+ * @param {Object} options.task - Vitest task context (optional, for storing in task.meta)
  * @returns {Promise<Object>} Session info including dashcam URL
  */
 export async function teardownTest(client, options = {}) {
@@ -278,28 +302,49 @@ export async function teardownTest(client, options = {}) {
       
       // Store dashcamUrl in client for reporter access
       if (dashcamUrl) {
+        // Extract replay object ID from URL
+        // URL format: https://app.testdriver.ai/replay/{replayObjectId}?share={shareToken}
+        const replayIdMatch = dashcamUrl.match(/\/replay\/([^?]+)/);
+        const replayObjectId = replayIdMatch ? replayIdMatch[1] : null;
+        
         client._lastDashcamUrl = dashcamUrl;
         console.log(`🎥 Stored dashcam URL in client: ${dashcamUrl}`);
-        
-        // Also store in Vitest test meta if available
-        if (typeof expect !== 'undefined') {
-          try {
-            const vitestState = expect.getState();
-            if (vitestState.currentTestName) {
-              console.log(`[TestHelpers] Storing dashcam URL in Vitest meta for: ${vitestState.currentTestName}`);
-              // Store it globally for reporter to access
-              if (!globalThis.__testdriverMeta) {
-                globalThis.__testdriverMeta = {};
-              }
-              globalThis.__testdriverMeta[vitestState.currentTestName] = {
-                dashcamUrl,
-                platform: client.os
-              };
-            }
-          } catch (e) {
-            console.log(`[TestHelpers] Could not access Vitest state:`, e.message);
-          }
+        if (replayObjectId) {
+          console.log(`📝 Replay Object ID: ${replayObjectId}`);
         }
+        
+        // Store in Vitest task.meta if task context was provided
+        if (options.task?.meta) {
+          options.task.meta.testdriverDashcamUrl = dashcamUrl;
+          options.task.meta.testdriverReplayId = replayObjectId;
+          console.log(`[TestHelpers] Stored dashcam URL in task.meta`);
+        }
+        
+        // Write dashcam URL to a temp file that the reporter can read
+        // This is necessary because Vitest runs reporters in a separate process
+        // Use a unique filename per session and task to support parallel tests
+        const sessionId = client.getSessionId();
+        const rawTaskId = options.task?.id || options.task?.name || process.pid;
+        const safeTaskId = String(rawTaskId).replace(/[^a-z0-9-_]/gi, '_');
+        const tempFile = path.join(
+          os.tmpdir(),
+          `testdriver-dashcam-${sessionId}-${safeTaskId}-${Date.now()}.json`
+        );
+        fs.writeFileSync(tempFile, JSON.stringify({
+          dashcamUrl,
+          replayObjectId,
+          platform: client.os,
+          timestamp: Date.now(),
+          pid: process.pid,
+          sessionId
+        }));
+        console.log(`[TestHelpers] Wrote dashcam URL to temp file: ${tempFile}`);
+        
+        // Also store globally as fallback
+        if (!globalThis.__testdriverMeta) {
+          globalThis.__testdriverMeta = {};
+        }
+        globalThis.__testdriverMeta.__lastDashcamUrl__ = dashcamUrl;
       }
     } else {
       console.log("⏭️  Postrun skipped (disabled in options)");
@@ -310,9 +355,17 @@ export async function teardownTest(client, options = {}) {
     await client.disconnect();
   }
 
+  // Extract replay object ID from dashcam URL
+  let replayObjectId = null;
+  if (dashcamUrl) {
+    const replayIdMatch = dashcamUrl.match(/\/replay\/([^?]+)/);
+    replayObjectId = replayIdMatch ? replayIdMatch[1] : null;
+  }
+
   const sessionInfo = {
     sessionId: client.getSessionId(),
     dashcamUrl: dashcamUrl,
+    replayObjectId: replayObjectId,
     instance: client.getInstance(),
   };
 
@@ -401,7 +454,8 @@ export async function runPostrun(client) {
     // Extract URL from output - dashcam typically outputs the URL in the response
     // The URL is usually in the format: https://dashcam.testdriver.ai/...
     if (output) {
-      const urlMatch = output.match(/https?:\/\/[^\s]+/);
+      // Match URL but stop at whitespace or quotes
+      const urlMatch = output.match(/https?:\/\/[^\s"']+/);
       if (urlMatch) {
         const url = urlMatch[0];
         console.log("✅ Found dashcam URL:", url);
