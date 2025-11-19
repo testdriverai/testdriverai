@@ -54,24 +54,28 @@ const TestDriver = require("../sdk.js");
 
     // Example 2: Second find - should be a cache HIT (same element, same screen)
     console.log("\n--- Second find (cache HIT expected) ---");
-    const heading2 = await client.find("heading that says Example Domain");
+    // eslint-disable-next-line no-unused-vars
+    const _heading2 = await client.find("heading that says Example Domain");
 
     // Example 3: Find with custom threshold override
     console.log("\n--- Find with strict threshold (0.01 = 99% similarity) ---");
-    const heading3 = await client.find(
+    // eslint-disable-next-line no-unused-vars
+    const _heading3 = await client.find(
       "heading that says Example Domain",
       0.01,
     );
 
     // Example 4: Find a different element - cache MISS
     console.log("\n--- Finding different element (cache MISS expected) ---");
-    const paragraph = await client.find(
+    // eslint-disable-next-line no-unused-vars
+    const _paragraph = await client.find(
       "paragraph with text about illustrative examples",
     );
 
     // Example 5: Find the same paragraph again - cache HIT
     console.log("\n--- Finding same paragraph again (cache HIT expected) ---");
-    const paragraph2 = await client.find(
+    // eslint-disable-next-line no-unused-vars
+    const _paragraph2 = await client.find(
       "paragraph with text about illustrative examples",
     );
 

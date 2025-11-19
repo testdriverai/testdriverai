@@ -5,9 +5,9 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  createTestClient,
-  setupTest,
-  teardownTest,
+    createTestClient,
+    setupTest,
+    teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe("Assert Test", () => {
@@ -22,7 +22,7 @@ describe("Assert Test", () => {
     await teardownTest(testdriver);
   });
 
-  it("should assert the testdriver login page shows", async ({ signal }) => {
+  it("should assert the testdriver login page shows", async () => {
     // The abort signal is automatically passed through via createTestClient
     // and will cancel all TestDriver operations if the test is stopped
     

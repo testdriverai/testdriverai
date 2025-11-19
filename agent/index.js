@@ -1881,11 +1881,6 @@ ${regression}
         );
         console.error("Failed to reconnect to sandbox:", error);
       }
-    } else if (!createNew) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`no recent sandbox found, creating a new one.`),
-      );
     }
 
     this.emitter.emit(

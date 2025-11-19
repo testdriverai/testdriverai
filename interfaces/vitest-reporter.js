@@ -309,31 +309,39 @@ class TestDriverReporter {
   async _findReplayForTest(test) {
     // Check environment variable first
     if (process.env.DASHCAM_REPLAY_URL) {
+      console.log(`[TestDriver Reporter] Using DASHCAM_REPLAY_URL from env: ${process.env.DASHCAM_REPLAY_URL}`);
       return process.env.DASHCAM_REPLAY_URL;
     }
 
-    // Parse test output for dashcam replay URLs
-    const urlPattern = /https:\/\/app\.dashcam\.io\/replay\/([a-f0-9]{24})/i;
-    
-    // Check test result logs
-    if (test.result?.logs) {
-      for (const log of test.result.logs) {
-        const match = log.match(urlPattern);
-        if (match) return match[0];
+    // Check if testdriver client stored dashcamUrl
+    if (test.context?.testdriver) {
+      const client = test.context.testdriver;
+      // Try to get dashcamUrl from client's last session
+      if (client._lastDashcamUrl) {
+        console.log(`[TestDriver Reporter] Using dashcamUrl from client: ${client._lastDashcamUrl}`);
+        return client._lastDashcamUrl;
       }
     }
 
-    // Check stdout/stderr
-    if (test.result?.stdout) {
-      const match = test.result.stdout.match(urlPattern);
-      if (match) return match[0];
+    // Parse test output for dashcam replay URLs
+    const urlPattern = /https:\/\/[^\s]+\/replay\/([a-f0-9]{24})/i;
+    
+    // Check test console output (Vitest captures console.log)
+    const allOutput = [
+      test.result?.stdout,
+      test.result?.stderr,
+      ...(test.result?.logs || []),
+    ].filter(Boolean).join('\n');
+    
+    if (allOutput) {
+      const match = allOutput.match(urlPattern);
+      if (match) {
+        console.log(`[TestDriver Reporter] Found dashcam URL in test output: ${match[0]}`);
+        return match[0];
+      }
     }
 
-    if (test.result?.stderr) {
-      const match = test.result.stderr.match(urlPattern);
-      if (match) return match[0];
-    }
-
+    console.log(`[TestDriver Reporter] No replay URL found for test: ${test.name}`);
     return null;
   }
 

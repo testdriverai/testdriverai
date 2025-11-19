@@ -129,7 +129,6 @@ export function createTestClient(options = {}) {
   const taskId = options.task?.id || options.task?.name || null;
   
   // Remove task from options before passing to TestDriver
-  // eslint-disable-next-line no-unused-vars
   const { task, ...clientOptions } = options;
 
   const client = new TestDriver(process.env.TD_API_KEY, {
@@ -253,6 +252,12 @@ export async function teardownTest(client, options = {}) {
     // Run postrun lifecycle if enabled
     if (options.postrun !== false) {
       dashcamUrl = await runPostrun(client);
+      
+      // Store dashcamUrl in client for reporter access
+      if (dashcamUrl) {
+        client._lastDashcamUrl = dashcamUrl;
+        console.log(`🎥 Stored dashcam URL in client: ${dashcamUrl}`);
+      }
     } else {
       console.log("⏭️  Postrun skipped (disabled in options)");
     }

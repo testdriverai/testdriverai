@@ -13,9 +13,13 @@ on:
 
 jobs:
   test-workflow:
-    name: Run SDK Tests
+    name: Run SDK Tests - ${{ matrix.platform }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, windows]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,11 +41,12 @@ jobs:
       - name: Run Prettier
         run: npx prettier --check .
 
-      - name: Run SDK tests with Vitest
+      - name: Run SDK tests with Vitest - ${{ matrix.platform }}
         run: npx vitest run testdriver/acceptance-sdk/*.test.mjs
         env:
           FORCE_COLOR: 3
           TD_API_KEY: ${{ secrets.TESTDRIVER_API_KEY }}
+          TEST_PLATFORM: ${{ matrix.platform }}
           VERBOSE: true
           LOGGING: true
         continue-on-error: true
@@ -119,7 +124,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-${{ matrix.platform }}
           path: |
             test-results/junit.xml
             test-results/results.json
