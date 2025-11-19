@@ -10,8 +10,7 @@ export default defineConfig({
     testDriverPlugin({
       apiKey: process.env.TD_API_KEY,
       apiRoot:
-        process.env.TD_API_KEY_ROOT ||
-        "https://testdriver-api.onrender.com",
+        process.env.TD_API_KEY_ROOT || "https://testdriver-api.onrender.com",
     }),
   ],
 

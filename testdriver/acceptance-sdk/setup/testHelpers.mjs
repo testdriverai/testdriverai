@@ -135,7 +135,9 @@ function setupConsoleInterceptor(client, taskId) {
           // Format the log message
           const message = args
             .map((arg) =>
-              typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+              typeof arg === "object"
+                ? JSON.stringify(arg, null, 2)
+                : String(arg),
             )
             .join(" ");
 
@@ -144,14 +146,14 @@ function setupConsoleInterceptor(client, taskId) {
 
           client.sandbox.send({
             type: "output",
-            output: Buffer.from(logOutput, 'utf8').toString("base64"),
+            output: Buffer.from(logOutput, "utf8").toString("base64"),
           });
         } catch (error) {
           // Silently fail to avoid breaking the test
           // Use original console to avoid infinite loop
           originalConsole.error(
             `[TestHelpers] Failed to forward log to sandbox:`,
-            error.message
+            error.message,
           );
         }
       }
@@ -171,7 +173,9 @@ function setupConsoleInterceptor(client, taskId) {
   };
 
   // Use original console for this message
-  originalConsole.log(`[TestHelpers] Console interceptor enabled for task: ${taskId}`);
+  originalConsole.log(
+    `[TestHelpers] Console interceptor enabled for task: ${taskId}`,
+  );
 }
 
 /**
@@ -189,7 +193,9 @@ function removeConsoleInterceptor(client) {
     console.info = original.info;
 
     // Use original console for cleanup message
-    original.log(`[TestHelpers] Console interceptor removed for task: ${taskId}`);
+    original.log(
+      `[TestHelpers] Console interceptor removed for task: ${taskId}`,
+    );
 
     // Clean up reference
     delete client._consoleInterceptor;
@@ -252,9 +258,7 @@ export function createTestClient(options = {}) {
     // Store task ID directly on client for later use in teardown
     client.vitestTaskId = taskId;
   } else {
-    console.log(
-      `[TestHelpers] No task ID available`,
-    );
+    console.log(`[TestHelpers] No task ID available`);
   }
 
   // Enable detailed event logging if requested
@@ -374,19 +378,23 @@ export async function teardownTest(client, options = {}) {
         if (options.task) {
           options.task.meta.testdriverDashcamUrl = dashcamUrl;
           options.task.meta.testdriverReplayObjectId = replayObjectId;
-          console.log(`[TestHelpers] ✅ Stored dashcam URL in task.meta for test: ${options.task.name}`);
-          
+          console.log(
+            `[TestHelpers] ✅ Stored dashcam URL in task.meta for test: ${options.task.name}`,
+          );
+
           // Report the test case directly if API key is available
           const apiKey = process.env.TD_API_KEY;
-          const apiRoot = process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
-          
+          const apiRoot =
+            process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
+
           if (apiKey && globalThis.__testdriverPlugin) {
             try {
               // Get result
-              const result = typeof options.task.result === 'function' 
-                ? options.task.result() 
-                : options.task.result;
-                
+              const result =
+                typeof options.task.result === "function"
+                  ? options.task.result()
+                  : options.task.result;
+
               let status = "passed";
               let errorMessage = null;
               let errorStack = null;
@@ -406,18 +414,29 @@ export async function teardownTest(client, options = {}) {
               const suiteName = options.task.suite?.name;
 
               // Authenticate and create a test run for this specific test
-              const token = await globalThis.__testdriverPlugin.authenticateWithApiKey(apiKey, apiRoot);
-              
+              const token =
+                await globalThis.__testdriverPlugin.authenticateWithApiKey(
+                  apiKey,
+                  apiRoot,
+                );
+
               // Create test run
               const runId = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
               const testRunData = {
                 runId,
                 suiteName: suiteName || testFile,
               };
-              
-              const testRunResponse = await globalThis.__testdriverPlugin.createTestRunDirect(token, apiRoot, testRunData);
+
+              const testRunResponse =
+                await globalThis.__testdriverPlugin.createTestRunDirect(
+                  token,
+                  apiRoot,
+                  testRunData,
+                );
               const testRunDbId = testRunResponse.data?.id;
-              console.log(`[TestHelpers] ✅ Created test run: ${runId} (DB ID: ${testRunDbId})`);
+              console.log(
+                `[TestHelpers] ✅ Created test run: ${runId} (DB ID: ${testRunDbId})`,
+              );
 
               // Record test case with dashcam URL
               const testCaseData = {
@@ -436,16 +455,30 @@ export async function teardownTest(client, options = {}) {
               if (errorMessage) testCaseData.errorMessage = errorMessage;
               if (errorStack) testCaseData.errorStack = errorStack;
 
-              const testCaseResponse = await globalThis.__testdriverPlugin.recordTestCaseDirect(token, apiRoot, testCaseData);
+              const testCaseResponse =
+                await globalThis.__testdriverPlugin.recordTestCaseDirect(
+                  token,
+                  apiRoot,
+                  testCaseData,
+                );
               const testCaseDbId = testCaseResponse.data?.id;
-              console.log(`[TestHelpers] ✅ Reported test case to API with dashcam URL`);
-              console.log(`[TestHelpers] 🔗 View test run: ${apiRoot.replace('testdriver-api.onrender.com', 'app.testdriver.ai')}/test-runs/${testRunDbId}/${testCaseDbId}`);
+              console.log(
+                `[TestHelpers] ✅ Reported test case to API with dashcam URL`,
+              );
+              console.log(
+                `[TestHelpers] 🔗 View test run: ${apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/test-runs/${testRunDbId}/${testCaseDbId}`,
+              );
             } catch (error) {
-              console.error(`[TestHelpers] ❌ Failed to report test case:`, error.message);
+              console.error(
+                `[TestHelpers] ❌ Failed to report test case:`,
+                error.message,
+              );
             }
           }
         } else {
-          console.warn(`[TestHelpers] ⚠️  No task available, dashcam URL not stored in meta`);
+          console.warn(
+            `[TestHelpers] ⚠️  No task available, dashcam URL not stored in meta`,
+          );
         }
       }
     } else {
@@ -456,7 +489,7 @@ export async function teardownTest(client, options = {}) {
   } finally {
     // Remove console interceptor before disconnecting
     removeConsoleInterceptor(client);
-    
+
     await client.disconnect();
   }
 

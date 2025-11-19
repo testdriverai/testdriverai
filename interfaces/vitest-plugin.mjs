@@ -6,26 +6,26 @@ import path from "path";
  *
  * Records test runs, test cases, and associates them with dashcam recordings.
  * Uses plugin architecture for better global state management.
- * 
+ *
  * ## How it works:
- * 
+ *
  * 1. **Plugin State**: All state is managed in a single `pluginState` object
  *    - No class instances or complex scoping
  *    - Easy to access from anywhere in the plugin
  *    - Dashcam URLs tracked in memory (no temp files!)
- * 
+ *
  * 2. **Dashcam URL Registration**: Tests register dashcam URLs via simple API
  *    - `globalThis.__testdriverPlugin.registerDashcamUrl(testId, url, platform)`
  *    - No file system operations
  *    - No complex matching logic
  *    - Direct association via test ID
- * 
+ *
  * 3. **Test Recording Flow**:
  *    - `onTestRunStart`: Create test run record
  *    - `onTestCaseReady`: Track test start time
  *    - `onTestCaseResult`: Record individual test result (immediate)
  *    - `onTestRunEnd`: Complete test run with final stats
- * 
+ *
  * 4. **Platform Detection**: Automatically detects platform from SDK client
  *    - No manual configuration needed
  *    - Stored when dashcam URL is registered
@@ -142,7 +142,10 @@ export default function testDriverPlugin(options = {}) {
   pluginState.gitInfo = getGitInfo();
 
   // Note: globalThis setup happens in vitestSetup.mjs for worker processes
-  console.log("[TestDriver Plugin] Initialized with API root:", pluginState.apiRoot);
+  console.log(
+    "[TestDriver Plugin] Initialized with API root:",
+    pluginState.apiRoot,
+  );
 
   return new TestDriverReporter(options);
 }
@@ -209,10 +212,7 @@ class TestDriverReporter {
   }
 
   async onTestRunEnd(testModules, unhandledErrors, reason) {
-    console.log(
-      "[TestDriver Reporter] Test run ending with reason:",
-      reason,
-    );
+    console.log("[TestDriver Reporter] Test run ending with reason:", reason);
 
     if (!pluginState.apiKey) {
       console.log("[TestDriver Reporter] Skipping completion - no API key");
@@ -397,7 +397,8 @@ function getGitInfo() {
     if (process.env.GITHUB_ACTOR) info.author = process.env.GITHUB_ACTOR;
   } else if (process.env.GITLAB_CI) {
     if (process.env.CI_PROJECT_PATH) info.repo = process.env.CI_PROJECT_PATH;
-    if (process.env.CI_COMMIT_BRANCH) info.branch = process.env.CI_COMMIT_BRANCH;
+    if (process.env.CI_COMMIT_BRANCH)
+      info.branch = process.env.CI_COMMIT_BRANCH;
     if (process.env.CI_COMMIT_SHA) info.commit = process.env.CI_COMMIT_SHA;
     if (process.env.GITLAB_USER_LOGIN)
       info.author = process.env.GITLAB_USER_LOGIN;
@@ -486,4 +487,3 @@ async function completeTestRun(data) {
 
 // Global state setup moved to setup file (vitestSetup.mjs)
 // The setup file imports the exported functions and makes them available globally in worker processes
-

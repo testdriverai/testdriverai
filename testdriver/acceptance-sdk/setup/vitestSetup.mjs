@@ -13,10 +13,10 @@ import {
   pluginState,
   recordTestCaseDirect,
   registerDashcamUrl,
-} from '../../../interfaces/vitest-plugin.mjs';
+} from "../../../interfaces/vitest-plugin.mjs";
 
 // Make the plugin API available globally in the test worker process
-if (typeof globalThis !== 'undefined') {
+if (typeof globalThis !== "undefined") {
   globalThis.__testdriverPlugin = {
     registerDashcamUrl,
     getDashcamUrl,
@@ -26,5 +26,7 @@ if (typeof globalThis !== 'undefined') {
     recordTestCaseDirect,
     state: pluginState,
   };
-  console.log('[Vitest Setup] TestDriver plugin API initialized in worker process');
+  console.log(
+    "[Vitest Setup] TestDriver plugin API initialized in worker process",
+  );
 }

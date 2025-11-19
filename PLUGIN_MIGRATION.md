@@ -9,6 +9,7 @@ Converted the Vitest reporter to a plugin architecture with much simpler dashcam
 ### 1. Plugin Architecture ✅
 
 **Before (Reporter):**
+
 ```javascript
 class TestDriverReporter {
   constructor(options = {}) {
@@ -20,6 +21,7 @@ class TestDriverReporter {
 ```
 
 **After (Plugin):**
+
 ```javascript
 const pluginState = {
   testRun: null,
@@ -39,6 +41,7 @@ export default function testDriverPlugin(options = {}) {
 ### 2. Dashcam URL Tracking (MUCH SIMPLER) ✅
 
 **Before:**
+
 - ❌ Write JSON to temp files in `/tmp/`
 - ❌ Read temp files on test completion
 - ❌ Complex matching logic (sessionId, taskId, filename patterns)
@@ -47,6 +50,7 @@ export default function testDriverPlugin(options = {}) {
 - ❌ Multiple fallback mechanisms (globalThis, registry, meta)
 
 **After:**
+
 - ✅ Simple in-memory Map (testId → dashcamUrl)
 - ✅ Direct API: `registerDashcamUrl(testId, url, platform)`
 - ✅ No file system operations
@@ -57,20 +61,24 @@ export default function testDriverPlugin(options = {}) {
 ### 3. Usage in Tests
 
 **Before:**
+
 ```javascript
 // Tests had to write to temp files
 const tempFile = path.join(
   os.tmpdir(),
   `testdriver-dashcam-${sessionId}-${taskId}-${Date.now()}.json`,
 );
-fs.writeFileSync(tempFile, JSON.stringify({
-  dashcamUrl,
-  replayObjectId,
-  platform: client.os,
-  timestamp: Date.now(),
-  pid: process.pid,
-  sessionId,
-}));
+fs.writeFileSync(
+  tempFile,
+  JSON.stringify({
+    dashcamUrl,
+    replayObjectId,
+    platform: client.os,
+    timestamp: Date.now(),
+    pid: process.pid,
+    sessionId,
+  }),
+);
 
 // AND set global variables
 globalThis.__testdriverMeta.__lastDashcamUrl__ = dashcamUrl;
@@ -83,53 +91,57 @@ task.meta.testdriverDashcamUrl = dashcamUrl;
 ```
 
 **After:**
+
 ```javascript
 // Just one simple call
-globalThis.__testdriverPlugin.registerDashcamUrl(
-  taskId,
-  dashcamUrl,
-  client.os
-);
+globalThis.__testdriverPlugin.registerDashcamUrl(taskId, dashcamUrl, client.os);
 ```
 
 ### 4. Configuration
 
 **Before:**
+
 ```javascript
 export default defineConfig({
   test: {
     reporters: [
       "default",
-      ["./interfaces/vitest-reporter.js", {
-        apiKey: process.env.TD_API_KEY,
-        apiRoot: process.env.TD_API_ROOT
-      }]
-    ]
-  }
+      [
+        "./interfaces/vitest-reporter.js",
+        {
+          apiKey: process.env.TD_API_KEY,
+          apiRoot: process.env.TD_API_ROOT,
+        },
+      ],
+    ],
+  },
 });
 ```
 
 **After:**
+
 ```javascript
 export default defineConfig({
   plugins: [
     testDriverPlugin({
       apiKey: process.env.TD_API_KEY,
-      apiRoot: process.env.TD_API_ROOT
-    })
-  ]
+      apiRoot: process.env.TD_API_ROOT,
+    }),
+  ],
 });
 ```
 
 ## Files Modified
 
 ### Plugin
+
 - ✅ **Created**: `interfaces/vitest-plugin.mjs` (new plugin)
 - ✅ **Deleted**: `interfaces/vitest-reporter.js` (old reporter)
 - ✅ **Updated**: `vitest.config.mjs` (uses plugin)
 - ✅ **Updated**: `vitest.config.example.js` (uses plugin)
 
 ### Test Helpers
+
 - ✅ **Updated**: `testdriver/acceptance-sdk/setup/testHelpers.mjs`
   - Removed temp file writing
   - Removed `__testdriverRegistry` initialization
@@ -137,6 +149,7 @@ export default defineConfig({
   - Uses `globalThis.__testdriverPlugin.registerDashcamUrl()` instead
 
 ### Documentation
+
 - ✅ **Updated**: `docs/QUICK_START_TEST_RECORDING.md`
 - ✅ **Updated**: `docs/TEST_RECORDING.md`
 - ✅ **Updated**: `docs/ARCHITECTURE.md`
@@ -144,6 +157,7 @@ export default defineConfig({
 ## Code Removed
 
 ### From Plugin (vs old reporter)
+
 - ❌ ~200 lines of file system operations
 - ❌ `indexDashcamFiles()` - complex temp file reading
 - ❌ `findReplayForTest()` - complex sessionId matching
@@ -151,6 +165,7 @@ export default defineConfig({
 - ❌ Imports: `fs`, `os` (no longer needed!)
 
 ### From Test Helpers
+
 - ❌ ~60 lines of temp file writing
 - ❌ Global registry setup
 - ❌ Global meta initialization
@@ -181,19 +196,21 @@ TD_API_KEY=xxx npx vitest run
 If you're using the TestDriver SDK in your tests:
 
 **Old way (still works but deprecated):**
+
 ```javascript
 // Multiple places to set dashcam URL
 globalThis.__testdriverMeta.__lastDashcamUrl__ = dashcamUrl;
 ```
 
 **New way:**
+
 ```javascript
 // Single plugin API
 if (globalThis.__testdriverPlugin) {
   globalThis.__testdriverPlugin.registerDashcamUrl(
     testId,
     dashcamUrl,
-    platform
+    platform,
   );
 }
 ```
