@@ -726,6 +726,18 @@ const createCommands = (
           );
         }
 
+        if (language === "sh" && sandbox.os === "windows") {
+          emitter.emit(
+            events.log.log,
+            theme.yellow(
+              `⚠️  Warning: You are using 'sh' exec command on a Windows sandbox. This will fail. Automatically switching to 'pwsh' for Windows environments.`,
+            ),
+            true,
+          );
+          // Automatically switch to pwsh for Windows
+          language = "pwsh";
+        }
+
         let result = null;
 
         result = await sandbox.send({

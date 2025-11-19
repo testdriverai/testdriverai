@@ -62,7 +62,6 @@ const createSandbox = (emitter, analytics) => {
     async auth(apiKey) {
       let reply = await this.send({
         type: "authenticate",
-        os: "linux",
         apiKey,
       });
 
@@ -76,7 +75,6 @@ const createSandbox = (emitter, analytics) => {
     async connect(sandboxId, persist = false) {
       let reply = await this.send({
         type: "connect",
-        os: "linux",
         persist,
         sandboxId,
       });

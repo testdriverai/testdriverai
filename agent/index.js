@@ -19,6 +19,7 @@ const diff = require("diff");
 
 // global utilities
 const generator = require("./lib/generator.js");
+const promptCache = require("./lib/cache.js");
 const theme = require("./lib/theme.js");
 const SourceMapper = require("./lib/source-mapper.js");
 
@@ -77,7 +78,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.sandboxId = flags["sandbox-id"] || null;
     this.sandboxAmi = flags["sandbox-ami"] || null;
     this.sandboxInstance = flags["sandbox-instance"] || null;
-    this.sandboxOs = flags.os || "windows";
+    this.sandboxOs = flags.os || "linux";
     this.ip = flags.ip || null;
     this.workingDir = flags.workingDir || process.cwd();
 
@@ -113,6 +114,9 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Create sandbox instance with this agent's emitter and analytics
     this.sandbox = createSandbox(this.emitter, this.analytics);
+    
+    // Set the OS for the sandbox to use
+    this.sandbox.os = this.sandboxOs;
 
     // Create system instance with emitter, sandbox and config
     this.system = createSystem(this.emitter, this.sandbox, this.config);
@@ -869,6 +873,7 @@ commands:
     dry = false,
     validateAndLoop = false,
     shouldSave = true,
+    useCache = true,
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
@@ -887,6 +892,43 @@ commands:
 
     this.tasks.push(currentTask);
 
+    // Check cache first (if enabled via parameter)
+    const cachedYaml = useCache ? promptCache.readCache(currentTask) : null;
+    
+    if (cachedYaml) {
+      // Cache hit - load and execute the cached YAML file
+      this.emitter.emit(
+        events.log.debug, 
+        `Using cached response for prompt: "${currentTask}"`
+      );
+      this.emitter.emit(
+        events.log.log,
+        theme.dim("(using cached response)")
+      );
+      
+      try {
+        // Load the YAML using hydrateFromYML
+        const parsed = await generator.hydrateFromYML(cachedYaml, this.sessionInstance);
+        
+        // Execute the commands from the first step
+        if (parsed.steps && parsed.steps.length > 0) {
+          const step = parsed.steps[0];
+          if (step.commands) {
+            await this.executeCommands(step.commands, 0, false, dry, shouldSave);
+          }
+        }
+      } catch (err) {
+        this.emitter.emit(
+          events.log.debug,
+          `Error loading cached YAML: ${err.message}, falling back to API`
+        );
+        // Fall through to make API call if cache is invalid
+      }
+      
+      return;
+    }
+
+    // Cache miss - call the API
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     this.lastScreenshot = await this.system.captureScreenBase64();
@@ -911,7 +953,46 @@ commands:
 
     this.emitter.emit(events.log.markdown.end, streamId);
 
-    if (message) {
+    if (message && message.data) {
+      // Save the YAML to cache (if enabled)
+      if (useCache) {
+        try {
+          // Extract YAML code blocks from the markdown response
+          const codeblocks = await this.parser.findCodeBlocks(message.data);
+          if (codeblocks && codeblocks.length > 0) {
+            // Parse commands from all code blocks
+            const allCommands = [];
+            for (const block of codeblocks) {
+              const commands = await this.parser.getCommands(block);
+              allCommands.push(...commands);
+            }
+            
+            // Create a proper step with prompt
+            const step = {
+              prompt: currentTask,
+              commands: allCommands
+            };
+            
+            // Use dumpToYML to create a valid testdriver yaml file
+            const yamlContent = await generator.dumpToYML([step], this.sessionInstance);
+            
+            const cachePath = promptCache.writeCache(currentTask, yamlContent);
+            if (cachePath) {
+              this.emitter.emit(
+                events.log.debug,
+                `Cached YAML saved to: ${cachePath}`
+              );
+            }
+          }
+        } catch (err) {
+          // If we can't extract YAML, just skip caching
+          this.emitter.emit(
+            events.log.debug,
+            `Could not cache response: ${err.message}`
+          );
+        }
+      }
+      
       await this.aiExecute(message.data, validateAndLoop, dry, shouldSave);
       this.emitter.emit(
         events.log.debug,
@@ -1773,9 +1854,7 @@ ${regression}
         events.log.narration,
         theme.dim(`no recent sandbox found, creating a new one.`),
       );
-    }
-
-    if (this.sandboxId && !this.config.CI) {
+    } else if (this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
@@ -1828,7 +1907,8 @@ ${regression}
     const sandboxIdentifier =
       newSandbox.sandbox.sandboxId || newSandbox.sandbox.instanceId;
 
-    this.saveLastSandboxId(sandboxIdentifier);
+    // Use the configured sandbox OS type
+    this.saveLastSandboxId(sandboxIdentifier, this.sandboxOs);
     let instance = await this.connectToSandboxDirect(
       sandboxIdentifier,
       true, // always persist by default
@@ -1968,9 +2048,9 @@ ${regression}
         // Otherwise construct it from IP and port (for Windows sandboxes)
         url =
           "http://" +
-          instance.ip +
+          (instance.ip || instance.publicIp) +
           ":" +
-          instance.vncPort +
+          (instance.vncPort || "5800") +
           "/vnc_lite.html?token=V3b8wG9";
       }
 
@@ -2019,8 +2099,9 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 
   async connectToSandboxDirect(sandboxId, persist = false) {
     this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
-    let instance = await this.sandbox.connect(sandboxId, persist);
-    return instance;
+    let reply = await this.sandbox.connect(sandboxId, persist);
+    // Return the sandbox data from the reply
+    return reply.sandbox || reply;
   }
 
   async createNewSandbox() {
@@ -2042,12 +2123,11 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 
     let instance = await this.sandbox.send(sandboxConfig);
 
-    // Save the sandbox ID for reconnection
+    // Save the sandbox ID for reconnection with the correct OS type
     if (instance.sandbox && instance.sandbox.sandboxId) {
-      this.saveLastSandboxId(instance.sandbox.sandboxId, "linux");
+      this.saveLastSandboxId(instance.sandbox.sandboxId, this.sandboxOs);
     } else if (instance.sandbox && instance.sandbox.instanceId) {
-      // Windows sandbox
-      this.saveLastSandboxId(instance.sandbox.instanceId, "windows");
+      this.saveLastSandboxId(instance.sandbox.instanceId, this.sandboxOs);
     }
 
     return instance;

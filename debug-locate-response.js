@@ -8,9 +8,7 @@
 const TestDriverSDK = require("./sdk.js");
 
 async function debugLocateResponse() {
-  const client = new TestDriverSDK(process.env.TD_API_KEY, {
-    os: "linux",
-  });
+  const client = new TestDriverSDK(process.env.TD_API_KEY);
 
   try {
     console.log("Connecting to sandbox (Linux)...");

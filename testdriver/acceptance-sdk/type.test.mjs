@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  createTestClient,
-  setupTest,
-  teardownTest,
+    createTestClient,
+    setupTest,
+    teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe.sequential("Type Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeAll(async (context) => {
+    testdriver = createTestClient({ task: context.task });
     await setupTest(testdriver);
   });
 

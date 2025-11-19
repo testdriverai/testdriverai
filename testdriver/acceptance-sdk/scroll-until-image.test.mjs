@@ -28,8 +28,11 @@ describe("Scroll Until Image Test", () => {
     await testdriver.type("https://en.wikipedia.org/wiki/Leonardo_da_Vinci");
     await testdriver.pressKeys(["enter"]);
 
+    // sleep for 5 seconds
+    await new Promise((r) => setTimeout(r, 5000));
+
     // Click on heading
-    const heading = await testdriver.find("Leonardo Da Vinci, the page heazding");
+    const heading = await testdriver.find("Leonardo Da Vinci, the page heading", 0);
     await heading.click();
 
     // Scroll until image appears

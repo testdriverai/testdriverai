@@ -1,0 +1,207 @@
+# Quick Start: TestDriver Test Recording
+
+## What You Get
+
+- 📊 Track all test runs in the TestDriver dashboard
+- 🎥 Link dashcam screen recordings to specific tests  
+- 🔄 Integrate with CI/CD (GitHub Actions, GitLab, etc.)
+- 🐛 View exact replay of failed tests
+- 📈 Track test performance and flakiness over time
+
+## Setup (5 minutes)
+
+### 1. Add Vitest Reporter
+
+```javascript
+// vitest.config.js
+import { defineConfig } from 'vitest/config';
+import { TestDriverReporter } from './interfaces/vitest-reporter.js';
+
+export default defineConfig({
+  test: {
+    reporters: ['default', new TestDriverReporter()],
+  },
+});
+```
+
+### 2. Set API Key
+
+```bash
+export TD_API_KEY="your-api-key-here"
+```
+
+Get your API key from: https://app.testdriver.ai/settings/api-keys
+
+### 3. Run Tests
+
+```bash
+npx vitest run
+```
+
+That's it! Your tests are now being recorded. View results at:
+https://app.testdriver.ai/dashboard/test-runs
+
+## With Dashcam (Optional)
+
+To link screen recordings, dashcam needs to output the replay URL where the reporter can see it:
+
+```bash
+# Start dashcam
+dashcam start
+
+# Run tests
+npx vitest run
+
+# Stop and publish (outputs replay URL)
+dashcam stop
+REPLAY_URL=$(dashcam publish -p YOUR_PROJECT_ID --json | jq -r '.replayUrl')
+echo "Replay: $REPLAY_URL"
+
+# Re-run tests with the replay URL in logs
+# Or manually associate via SDK
+```
+
+The reporter automatically parses replay URLs like:
+```
+https://app.dashcam.io/replay/691cf130c2fc02f59ae66fc1
+```
+
+From test output and links them to the tests.
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/test.yml
+name: Tests
+on: [push]
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm install
+      - run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+```
+
+### GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+test:
+  script:
+    - npm install
+    - npx vitest run
+  variables:
+    TD_API_KEY: $CI_JOB_TOKEN
+```
+
+The reporter automatically detects CI environment and records:
+- Git repo, branch, commit
+- CI provider and run URL
+- Test results and timing
+
+## What Gets Recorded
+
+### Test Run
+- Suite name and platform
+- Total/passed/failed counts
+- Duration
+- CI/CD metadata
+- Git commit info
+
+### Each Test
+- Test name and file
+- Pass/fail status
+- Error messages (if failed)
+- Duration
+- Dashcam replay link (if available)
+
+## View Results
+
+Dashboard shows:
+- All test runs with filters
+- Drill down to individual tests
+- Embedded dashcam replay player
+- Link to CI/CD runs
+- Test history and trends
+
+## SDK Methods
+
+Use in your test code:
+
+```javascript
+// Create test run
+const testRun = await client.createTestRun({
+  runId: 'unique-id',
+  suiteName: 'My Tests',
+  platform: 'windows'
+});
+
+// Record test result
+await client.recordTestCase({
+  runId: 'unique-id',
+  testName: 'my test',
+  status: 'passed',
+  replayUrl: 'https://app.dashcam.io/replay/abc'
+});
+
+// Complete run
+await client.completeTestRun({
+  runId: 'unique-id',
+  status: 'passed'
+});
+```
+
+## Troubleshooting
+
+**Reporter not recording?**
+- Check `TD_API_KEY` is set
+- Verify network connectivity to TestDriver API
+- Look for reporter logs in test output
+
+**No dashcam link?**
+- Ensure dashcam publishes and outputs replay URL
+- Check test logs for replay URL output
+- Manually set `DASHCAM_REPLAY_URL` if needed
+
+**CI metadata missing?**
+- CI environment variables must be available
+- Supported: GitHub Actions, GitLab CI, CircleCI, Travis, Jenkins
+
+## Files Created
+
+**API (Backend)**
+- `api/models/TdTestRun.js` - Test run model
+- `api/models/TdTestCase.js` - Test case model
+- `api/models/TdSandbox.js` - Sandbox tracking model
+- `api/controllers/testdriver/testdriver-test-run-create.js` - Create test run endpoint
+- `api/controllers/testdriver/testdriver-test-run-complete.js` - Complete test run endpoint
+- `api/controllers/testdriver/testdriver-test-case-create.js` - Record test case endpoint
+
+**CLI/SDK**
+- `cli/interfaces/vitest-reporter.js` - Vitest reporter plugin
+- `cli/sdk.js` - Added createTestRun(), recordTestCase(), completeTestRun() methods
+
+**Documentation**
+- `cli/docs/TEST_RECORDING.md` - Complete guide
+- `cli/docs/ARCHITECTURE.md` - Technical architecture
+- `cli/vitest.config.example.js` - Example config
+- `cli/examples/test-recording-example.test.js` - Example test
+- `cli/examples/run-tests-with-recording.sh` - Example script
+
+## Next Steps
+
+1. **Try it out**: Run `npx vitest run` and check the dashboard
+2. **Add dashcam**: Record your tests with screen capture
+3. **Set up CI/CD**: Add to your pipeline for continuous tracking
+4. **Build dashboard UI**: Create Vue components to visualize test runs (next phase)
+
+## Support
+
+- Documentation: https://docs.testdriver.ai
+- Dashboard: https://app.testdriver.ai
+- API Reference: /cli/docs/TEST_RECORDING.md

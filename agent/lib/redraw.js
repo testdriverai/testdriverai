@@ -68,7 +68,6 @@ const createRedraw = (emitter, system, sandbox, redrawThresholdPercent = 0.1) =>
   async function updateNetwork() {
     if (sandbox && sandbox.instanceSocketConnected) {
       let network = await sandbox.send({
-        os: "linux",
         type: "system.network",
       });
       parseNetworkStats(

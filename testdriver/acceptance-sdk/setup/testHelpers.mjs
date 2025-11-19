@@ -120,7 +120,10 @@ export function createTestClient(options = {}) {
     throw new Error("TD_API_KEY environment variable is required");
   }
 
-  const os = process.env.TD_OS || "linux";
+  // Determine OS from TEST_PLATFORM or TD_OS
+  const os = process.env.TEST_PLATFORM || process.env.TD_OS || "linux";
+  
+  console.log(`🖥️  Using sandbox OS: ${os} (from ${process.env.TEST_PLATFORM ? 'TEST_PLATFORM' : process.env.TD_OS ? 'TD_OS' : 'default'})`);
 
   // Extract task context if provided
   const taskId = options.task?.id || options.task?.name || null;
@@ -135,8 +138,8 @@ export function createTestClient(options = {}) {
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
-    headless: true,
-    newSandbox: true, // Always create a new sandbox for each test
+    headless: false,
+    newSandbox: false, // Always create a new sandbox for each test
     ...clientOptions, // This will include signal if passed in
     cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
   });
@@ -149,6 +152,11 @@ export function createTestClient(options = {}) {
   // Set Vitest task ID if available (for log filtering in parallel tests)
   if (taskId) {
     client.setVitestTaskId(taskId);
+  }
+
+  // Store testdriver client in task context for reporter access
+  if (task?.context) {
+    task.context.testdriver = client;
   }
 
   // Enable detailed event logging if requested
@@ -271,31 +279,49 @@ export async function teardownTest(client, options = {}) {
  * @param {TestDriver} client - TestDriver client
  */
 export async function runPrerun(client) {
+    // Determine shell command based on OS
+    const shell = client.os === "windows" ? "pwsh" : "sh";
+    const logPath = client.os === "windows" 
+      ? "C:\\Users\\testdriver\\Documents\\testdriver.log" 
+      : "/tmp/testdriver.log";
 
     await client.exec(
-      "sh",
+      shell,
       `dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d`,
-      10000,
+      30000,
       true,
     );
 
     // Start dashcam tracking
     await client.exec(
-      "sh",
-      'dashcam logs --add --type=file --file="/tmp/testdriver.log" --name="TestDriver Log"',
+      shell,
+      `dashcam logs --add --type=file --file="${logPath}" --name="TestDriver Log"`,
       10000,
       true,
     );
 
     // Start dashcam recording
-    await client.exec("sh", "dashcam record >/dev/null 2>&1 &");
+    if (client.os === "windows") {
+      // Use cmd.exe to run dashcam record in background on Windows
+      await client.exec("pwsh", "Start-Process cmd.exe -ArgumentList '/c', 'dashcam record' -WindowStyle Hidden");
+    } else {
+      await client.exec(shell, "dashcam record >/dev/null 2>&1 &");
+    }
 
     // Launch Chrome with guest mode directly (not jumpapp to avoid focus issues)
-    await client.exec(
-      "sh",
+    if (client.os === "windows") {
+      await client.exec(
+      "pwsh",
+      'Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "https://testdriver-sandbox.vercel.app/login"',
+      30000,
+      );
+    } else {
+      await client.exec(
+      shell,
       'google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "http://testdriver-sandbox.vercel.app/" >/dev/null 2>&1 &',
       30000,
-    );
+      );
+    }
 
     // Wait for the login page to load - poll for text to appear
     let loginPage = await client.find("TestDriver.ai Sandbox");
@@ -316,8 +342,11 @@ export async function runPrerun(client) {
 export async function runPostrun(client) {
     console.log("🎬 Stopping dashcam and retrieving URL...");
 
+    // Determine shell command based on OS
+    const shell = client.os === "windows" ? "pwsh" : "sh";
+
     // Stop dashcam with title and push - this returns the URL
-    const output = await client.exec("sh", "dashcam stop", 60000, false); // Don't silence output so we can capture it
+    const output = await client.exec(shell, "dashcam stop", 60000, false); // Don't silence output so we can capture it
 
     console.log("📤 Dashcam command output:", output);
 

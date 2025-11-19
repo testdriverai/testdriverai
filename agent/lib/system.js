@@ -8,7 +8,6 @@ const { events } = require("../events.js");
 const createSystem = (emitter, sandbox, config) => {
   const screenshot = async (options) => {
     let { base64 } = await sandbox.send({
-      os: "linux",
       type: "system.screenshot",
     });
 
@@ -113,7 +112,6 @@ const createSystem = (emitter, sandbox, config) => {
   const activeWin = async () => {
     // Get Mouse Position from command line
     let result = await sandbox.send({
-      os: "linux",
       type: "system.get-active-window",
     });
 
@@ -123,7 +121,6 @@ const createSystem = (emitter, sandbox, config) => {
   const getMousePosition = async () => {
     // Get Mouse Position from command line
     let result = await sandbox.send({
-      os: "linux",
       type: "system.get-mouse-position",
     });
 

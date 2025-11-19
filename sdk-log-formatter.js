@@ -1,9 +1,11 @@
 const chalk = require('chalk');
 
 /**
- * Log formatter for TestDriver SDK
- * Provides clean, Vitest-style formatting for logs sent to dashcam
+ * AWESOME Log formatter for TestDriver SDK 🎨
+ * Provides beautiful, emoji-rich formatting with great DX for logs sent to dashcam
  * ANSI codes are preserved through the log pipeline: SDK → sandbox → /tmp/testdriver.log → dashcam
+ * 
+ * Now with full UTF-8 and emoji support! 🚀
  */
 
 class SDKLogFormatter {
@@ -15,6 +17,7 @@ class SDKLogFormatter {
     };
     this.eventCount = 0;
     this.useColors = options.colors !== false;
+    this.useEmojis = options.emojis !== false;
   }
 
   /**
@@ -70,23 +73,83 @@ class SDKLogFormatter {
   }
 
   /**
-   * Get prefix for log type with colors and emojis
+   * Get prefix for log type with AWESOME colors and emojis 🎨
    * @param {string} type - Log type
-   * @returns {string} Colored prefix
+   * @returns {string} Colored prefix with emoji
    */
   getPrefix(type) {
+    if (!this.useEmojis) {
+      // Fallback to simple symbols without emojis
+      const simplePrefixes = {
+        info: chalk.blue('ℹ'),
+        success: chalk.green('✓'),
+        error: chalk.red('✖'),
+        action: chalk.cyan('→'),
+        debug: chalk.gray('⚙'),
+        find: chalk.magenta('⌕'),
+        click: chalk.cyan('▸'),
+        type: chalk.yellow('⌨'),
+        assert: chalk.green('✓'),
+        scroll: chalk.blue('↕'),
+        hover: chalk.cyan('→'),
+        wait: chalk.yellow('⏱'),
+        connect: chalk.green('⚡'),
+        disconnect: chalk.red('⏹'),
+      };
+      return simplePrefixes[type] || chalk.gray('•');
+    }
+
     const prefixes = {
-      info: chalk.blue('ℹ'),
-      success: chalk.green('✓'),
-      error: chalk.red('✖'),
-      action: chalk.cyan('→'),
-      debug: chalk.gray('⚙'),
+      // Core actions - hand gestures
+      info: chalk.blue('ℹ️'),
+      success: chalk.green('✅'),
+      error: chalk.red('❌'),
+      warning: chalk.yellow('⚠️'),
+      
+      // Finding elements
       find: chalk.magenta('🔍'),
+      findAll: chalk.magenta('🔎'),
+      
+      // Mouse actions
       click: chalk.cyan('👆'),
-      type: chalk.yellow('⌨'),
-      assert: chalk.green('✓'),
-      scroll: chalk.blue('↕'),
+      doubleClick: chalk.cyan('👆👆'),
+      rightClick: chalk.cyan('🖱️'),
       hover: chalk.cyan('👉'),
+      drag: chalk.cyan('✊'),
+      
+      // Keyboard actions
+      type: chalk.yellow('⌨️'),
+      pressKeys: chalk.yellow('🎹'),
+      
+      // Navigation
+      scroll: chalk.blue('📜'),
+      scrollUp: chalk.blue('⬆️'),
+      scrollDown: chalk.blue('⬇️'),
+      navigate: chalk.blue('🧭'),
+      
+      // Validation
+      assert: chalk.green('✅'),
+      verify: chalk.green('🔍'),
+      remember: chalk.blue('🧠'),
+      
+      // System
+      connect: chalk.green('🔌'),
+      disconnect: chalk.red('🔌'),
+      screenshot: chalk.blue('📸'),
+      wait: chalk.yellow('⏳'),
+      
+      // Focus & Windows
+      focusApplication: chalk.cyan('🎯'),
+      
+      // Cache
+      cacheHit: chalk.yellow('⚡'),
+      cacheMiss: chalk.gray('💤'),
+      
+      // Debug
+      debug: chalk.gray('🔧'),
+      
+      // Default
+      action: chalk.cyan('▶️'),
     };
     return prefixes[type] || chalk.gray('•');
   }
@@ -110,7 +173,7 @@ class SDKLogFormatter {
   }
 
   /**
-   * Format an element found message
+   * Format an element found message with AWESOME styling 🎯
    * @param {string} description - Element description
    * @param {Object} meta - Element metadata (coordinates, duration, cache hit)
    * @returns {string} Formatted message
@@ -126,30 +189,33 @@ class SDKLogFormatter {
     parts.push(this.getPrefix('find'));
     
     // Main message with emphasis
-    parts.push(chalk.bold('Found'));
+    parts.push(chalk.bold.green('Found'));
     parts.push(chalk.cyan(`"${description}"`));
     
     // Metadata on same line with subtle styling
     const metaParts = [];
     if (meta.x !== undefined && meta.y !== undefined) {
-      metaParts.push(chalk.dim(`at (${meta.x}, ${meta.y})`));
+      metaParts.push(chalk.dim.gray(`📍 (${meta.x}, ${meta.y})`));
     }
     if (meta.duration) {
-      metaParts.push(chalk.dim(meta.duration));
+      const durationMs = parseInt(meta.duration);
+      const durationColor = durationMs < 100 ? chalk.green : durationMs < 500 ? chalk.yellow : chalk.red;
+      metaParts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
     }
     if (meta.cacheHit) {
-      metaParts.push(chalk.yellow('⚡ cached'));
+      metaParts.push(chalk.bold.yellow('⚡ cached'));
     }
     
     if (metaParts.length > 0) {
-      parts.push(metaParts.join(' '));
+      parts.push(chalk.dim('·'));
+      parts.push(metaParts.join(chalk.dim(' · ')));
     }
     
-    return parts.join('  ');
+    return parts.join(' ');
   }
 
   /**
-   * Format an action message (click, type, scroll, etc.)
+   * Format an action message with AWESOME emojis! 🎬
    * @param {string} action - Action type
    * @param {string} description - Description or target
    * @param {Object} meta - Action metadata
@@ -163,11 +229,23 @@ class SDKLogFormatter {
     if (timeStr) {
       parts.push(chalk.dim(timeStr));
     }
-    parts.push(this.getPrefix(action.toLowerCase()));
     
-    // Action text with emphasis
+    // Use action-specific prefix
+    const actionKey = action.toLowerCase().replace(/\s+/g, '');
+    parts.push(this.getPrefix(actionKey));
+    
+    // Action text with emphasis and color coding
     const actionText = action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
-    parts.push(chalk.bold(actionText));
+    const actionColors = {
+      click: chalk.bold.cyan,
+      hover: chalk.bold.blue,
+      type: chalk.bold.yellow,
+      scroll: chalk.bold.magenta,
+      assert: chalk.bold.green,
+      wait: chalk.bold.yellow,
+    };
+    const colorFn = actionColors[actionKey] || chalk.bold.white;
+    parts.push(colorFn(actionText));
     
     // Target with color
     if (description) {
@@ -177,21 +255,24 @@ class SDKLogFormatter {
     // Additional metadata
     const metaParts = [];
     if (meta.text) {
-      metaParts.push(chalk.gray(`→ ${meta.text}`));
+      metaParts.push(chalk.gray(`→ ${chalk.white(meta.text)}`));
     }
     if (meta.duration) {
-      metaParts.push(chalk.dim(meta.duration));
+      const durationMs = parseInt(meta.duration);
+      const durationColor = durationMs < 50 ? chalk.green : durationMs < 200 ? chalk.yellow : chalk.red;
+      metaParts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
     }
     
     if (metaParts.length > 0) {
-      parts.push(metaParts.join(' '));
+      parts.push(chalk.dim('·'));
+      parts.push(metaParts.join(chalk.dim(' · ')));
     }
     
-    return parts.join('  ');
+    return parts.join(' ');
   }
 
   /**
-   * Format an assertion message
+   * Format an assertion message with beautiful status indicators 🎯
    * @param {string} assertion - What is being asserted
    * @param {boolean} passed - Whether assertion passed
    * @param {Object} meta - Assertion metadata
@@ -207,26 +288,31 @@ class SDKLogFormatter {
     }
     
     if (passed) {
-      parts.push(chalk.green('✓'));
-      parts.push(chalk.bold('Assert'));
+      parts.push(this.getPrefix('success'));
+      parts.push(chalk.bold.green('Assert'));
       parts.push(chalk.cyan(`"${assertion}"`));
-      parts.push(chalk.green('PASSED'));
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.bold.green('✓ PASSED'));
     } else {
-      parts.push(chalk.red('✖'));
-      parts.push(chalk.bold('Assert'));
+      parts.push(this.getPrefix('error'));
+      parts.push(chalk.bold.red('Assert'));
       parts.push(chalk.cyan(`"${assertion}"`));
-      parts.push(chalk.red('FAILED'));
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.bold.red('✗ FAILED'));
     }
     
     if (meta.duration) {
-      parts.push(chalk.dim(meta.duration));
+      const durationMs = parseInt(meta.duration);
+      const durationColor = durationMs < 100 ? chalk.green : durationMs < 500 ? chalk.yellow : chalk.red;
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
     }
     
-    return parts.join('  ');
+    return parts.join(' ');
   }
 
   /**
-   * Format an error message
+   * Format an error message with clear visual indicators 🚨
    * @param {string} message - Error message
    * @param {Error} error - Error object
    * @returns {string} Formatted error
@@ -239,28 +325,134 @@ class SDKLogFormatter {
       parts.push(chalk.dim(timeStr));
     }
     
-    parts.push(chalk.red('✖'));
-    parts.push(chalk.red(chalk.bold(message)));
+    parts.push(this.getPrefix('error'));
+    parts.push(chalk.red.bold(message));
     
     if (error && error.message) {
-      parts.push(chalk.red(`→ ${error.message}`));
+      parts.push(chalk.dim('→'));
+      parts.push(chalk.red(error.message));
     }
     
-    return parts.join('  ');
+    return parts.join(' ');
   }
 
   /**
-   * Create a section header
+   * Format a connection/disconnection message 🔌
+   * @param {string} type - 'connect' or 'disconnect'
+   * @param {Object} meta - Connection metadata
+   * @returns {string} Formatted message
+   */
+  formatConnection(type, meta = {}) {
+    const parts = [];
+    
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+    
+    parts.push(this.getPrefix(type));
+    
+    if (type === 'connect') {
+      parts.push(chalk.bold.green('Connected'));
+      if (meta.sandboxId) {
+        parts.push(chalk.dim('·'));
+        parts.push(chalk.cyan(`Sandbox: ${meta.sandboxId}`));
+      }
+      if (meta.os) {
+        parts.push(chalk.dim('·'));
+        parts.push(chalk.gray(`OS: ${meta.os}`));
+      }
+    } else {
+      parts.push(chalk.bold.yellow('Disconnected'));
+    }
+    
+    return parts.join(' ');
+  }
+
+  /**
+   * Format a screenshot message 📸
+   * @param {Object} meta - Screenshot metadata
+   * @returns {string} Formatted message
+   */
+  formatScreenshot(meta = {}) {
+    const parts = [];
+    
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+    
+    parts.push(this.getPrefix('screenshot'));
+    parts.push(chalk.bold.blue('Screenshot'));
+    
+    if (meta.path) {
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.cyan(meta.path));
+    }
+    
+    if (meta.size) {
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.gray(`${meta.size}`));
+    }
+    
+    return parts.join(' ');
+  }
+
+  /**
+   * Format a cache status message ⚡
+   * @param {boolean} hit - Whether it was a cache hit
+   * @param {Object} meta - Cache metadata
+   * @returns {string} Formatted message
+   */
+  formatCacheStatus(hit, meta = {}) {
+    const parts = [];
+    
+    parts.push(this.getPrefix(hit ? 'cacheHit' : 'cacheMiss'));
+    
+    if (hit) {
+      parts.push(chalk.bold.yellow('Cache HIT'));
+      if (meta.similarity !== undefined) {
+        const similarity = (meta.similarity * 100).toFixed(1);
+        parts.push(chalk.dim('·'));
+        parts.push(chalk.green(`${similarity}% similar`));
+      }
+    } else {
+      parts.push(chalk.dim.gray('Cache MISS'));
+    }
+    
+    if (meta.strategy) {
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.gray(meta.strategy));
+    }
+    
+    return parts.join(' ');
+  }
+
+  /**
+   * Create a beautiful section header with box drawing 📦
    * @param {string} title - Section title
+   * @param {string} emoji - Optional emoji to prefix
    * @returns {string} Formatted header
    */
-  formatHeader(title) {
-    const line = chalk.dim('─'.repeat(Math.min(50, title.length + 4)));
-    return `\n${line}\n${chalk.bold(title)}\n${line}`;
+  formatHeader(title, emoji = '✨') {
+    const width = Math.min(60, Math.max(title.length + 4, 40));
+    const topLine = chalk.dim('╭' + '─'.repeat(width - 2) + '╮');
+    const titleLine = `${chalk.dim('│')} ${emoji} ${chalk.bold.white(title)}`.padEnd(width + 20) + chalk.dim('│');
+    const bottomLine = chalk.dim('╰' + '─'.repeat(width - 2) + '╯');
+    return `\n${topLine}\n${titleLine}\n${bottomLine}\n`;
   }
 
   /**
-   * Format a summary line
+   * Format a simple divider 
+   * @param {string} char - Character to use for divider
+   * @returns {string} Formatted divider
+   */
+  formatDivider(char = '─') {
+    return chalk.dim(char.repeat(60));
+  }
+
+  /**
+   * Format a beautiful summary line with stats 📊
    * @param {Object} stats - Test statistics
    * @returns {string} Formatted summary
    */
@@ -268,19 +460,113 @@ class SDKLogFormatter {
     const parts = [];
     
     if (stats.passed > 0) {
-      parts.push(chalk.green(`${stats.passed} passed`));
+      parts.push(chalk.bold.green(`✓ ${stats.passed} passed`));
     }
     if (stats.failed > 0) {
-      parts.push(chalk.red(`${stats.failed} failed`));
+      parts.push(chalk.bold.red(`✗ ${stats.failed} failed`));
+    }
+    if (stats.skipped > 0) {
+      parts.push(chalk.yellow(`⊘ ${stats.skipped} skipped`));
     }
     if (stats.total > 0) {
       parts.push(chalk.dim(`${stats.total} total`));
     }
     if (stats.duration) {
-      parts.push(chalk.dim(stats.duration));
+      parts.push(chalk.dim(`⏱️  ${stats.duration}`));
     }
     
-    return parts.join(chalk.dim(' | '));
+    const separator = chalk.dim(' │ ');
+    return `\n${chalk.dim('─'.repeat(60))}\n${parts.join(separator)}\n${chalk.dim('─'.repeat(60))}\n`;
+  }
+
+  /**
+   * Format a progress indicator 📈
+   * @param {number} current - Current step
+   * @param {number} total - Total steps
+   * @param {string} message - Progress message
+   * @returns {string} Formatted progress
+   */
+  formatProgress(current, total, message = '') {
+    const percentage = Math.round((current / total) * 100);
+    const barWidth = 20;
+    const filled = Math.round((current / total) * barWidth);
+    const empty = barWidth - filled;
+    
+    const bar = chalk.green('█'.repeat(filled)) + chalk.dim('░'.repeat(empty));
+    const stats = chalk.dim(`${current}/${total}`);
+    
+    const parts = [
+      chalk.bold('Progress'),
+      bar,
+      chalk.cyan(`${percentage}%`),
+      stats,
+    ];
+    
+    if (message) {
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.gray(message));
+    }
+    
+    return parts.join(' ');
+  }
+
+  /**
+   * Format a waiting/loading message ⏳
+   * @param {string} message - What we're waiting for
+   * @param {number} elapsed - Elapsed time in ms
+   * @returns {string} Formatted waiting message
+   */
+  formatWaiting(message, elapsed) {
+    const parts = [];
+    
+    parts.push(this.getPrefix('wait'));
+    parts.push(chalk.bold.yellow('Waiting'));
+    parts.push(chalk.cyan(message));
+    
+    if (elapsed) {
+      const seconds = (elapsed / 1000).toFixed(1);
+      parts.push(chalk.dim('·'));
+      parts.push(chalk.gray(`${seconds}s`));
+    }
+    
+    return parts.join(' ');
+  }
+
+  /**
+   * Format test start message 🚀
+   * @param {string} testName - Name of the test
+   * @returns {string} Formatted test start
+   */
+  formatTestStart(testName) {
+    return `\n${chalk.bold.cyan('▶️  Running:')} ${chalk.white(testName)}\n`;
+  }
+
+  /**
+   * Format test end message with result 🏁
+   * @param {string} testName - Name of the test
+   * @param {boolean} passed - Whether test passed
+   * @param {number} duration - Test duration in ms
+   * @returns {string} Formatted test end
+   */
+  formatTestEnd(testName, passed, duration) {
+    const parts = [];
+    
+    if (passed) {
+      parts.push(chalk.bold.green('✅ PASSED'));
+    } else {
+      parts.push(chalk.bold.red('❌ FAILED'));
+    }
+    
+    parts.push(chalk.white(testName));
+    
+    if (duration) {
+      const seconds = (duration / 1000).toFixed(2);
+      const durationColor = duration < 1000 ? chalk.green : duration < 5000 ? chalk.yellow : chalk.red;
+      parts.push(chalk.dim('·'));
+      parts.push(durationColor(`${seconds}s`));
+    }
+    
+    return `\n${parts.join(' ')}\n`;
   }
 }
 

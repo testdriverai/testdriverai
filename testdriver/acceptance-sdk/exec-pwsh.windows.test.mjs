@@ -1,16 +1,16 @@
 /**
- * TestDriver SDK - Exec Shell Test (Vitest)
- * Converted from: testdriver/acceptance/exec-shell.yaml
+ * TestDriver SDK - Windows PowerShell Test
+ * Windows-specific test for PowerShell execution
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  createTestClient,
-  setupTest,
-  teardownTest,
+    createTestClient,
+    setupTest,
+    teardownTest,
 } from "./setup/testHelpers.mjs";
 
-describe("Exec Shell Test", () => {
+describe("Windows PowerShell Test", () => {
   let testdriver;
 
   beforeAll(async () => {
@@ -22,7 +22,7 @@ describe("Exec Shell Test", () => {
     await teardownTest(testdriver);
   });
 
-  it.skipIf(() => testdriver.os === "linux")("should generate random email using PowerShell and enter it", async () => {
+  it("should generate random email using PowerShell and enter it", async () => {
     // Generate random email using PowerShell
     const randomEmail = await testdriver.exec(
       "pwsh",

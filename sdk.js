@@ -778,7 +778,7 @@ class TestDriverSDK {
       command: "sdk",
       args: [],
       options: {
-        os: options.os || "windows",
+        os: options.os || "linux",
         signal: options.signal || null,
       },
     });
@@ -787,7 +787,7 @@ class TestDriverSDK {
     this.options = options;
 
     // Store os and resolution for API requests
-    this.os = options.os || "windows";
+    this.os = options.os || "linux";
     this.resolution = options.resolution || "1366x768";
 
     // Set up abort signal if provided
@@ -1520,7 +1520,10 @@ class TestDriverSDK {
       const event = this.emitter.event;
       if (event === events.log.debug) return;
       if (this.loggingEnabled && message) {
-        console.log(message);
+        const prefixedMessage = this.testContext 
+          ? `[${this.testContext}] ${message}`
+          : message;
+        console.log(prefixedMessage);
         // Forward logs to sandbox for debugger display
         this._forwardLogToSandbox(message);
       }
@@ -1594,10 +1597,15 @@ class TestDriverSDK {
         if (typeof message === "object") {
           return;
         }
+        
+        // Add test context prefix if available
+        const prefixedMessage = this.testContext 
+          ? `[${this.testContext}] ${message}`
+          : message;
 
         this.sandbox.send({
           type: "output",
-          output: Buffer.from(message).toString("base64"),
+          output: Buffer.from(prefixedMessage).toString("base64"),
         });
       }
     } catch {
@@ -1651,7 +1659,7 @@ class TestDriverSDK {
    * @param {Object} instance - Sandbox instance with connection details
    */
   _renderSandbox(instance) {
-    if (!instance || !instance.ip || !instance.vncPort) {
+    if (!instance) {
       const { events } = require("./agent/events.js");
       this.emitter.emit(events.log.warn,
         "Cannot render sandbox: missing instance connection details"
@@ -1660,7 +1668,18 @@ class TestDriverSDK {
     }
 
     // Construct the VNC URL
-    const url = `http://${instance.ip}:${instance.vncPort}/vnc_lite.html?token=V3b8wG9`;
+    let url;
+    // If the instance already has a URL (from reconnection), use it
+    if (instance.url) {
+      url = instance.url;
+    } else {
+      // Otherwise construct it from IP and port (for Windows sandboxes)
+      url = "http://" +
+        (instance.ip || instance.publicIp) +
+        ":" +
+        (instance.vncPort || "5800") +
+        "/vnc_lite.html?token=V3b8wG9";
+    }
 
     // Create data payload for the debugger
     const data = {
@@ -1680,6 +1699,148 @@ class TestDriverSDK {
   }
 
   // ====================================
+  // Test Recording Methods
+  // ====================================
+
+  /**
+   * Create a new test run to track test execution
+   * 
+   * @param {Object} options - Test run configuration
+   * @param {string} options.runId - Unique identifier for this test run
+   * @param {string} options.suiteName - Name of the test suite
+   * @param {string} [options.platform] - Platform (windows/mac/linux)
+   * @param {string} [options.sandboxId] - Sandbox ID (auto-detected from session if not provided)
+   * @param {Object} [options.ci] - CI/CD metadata
+   * @param {Object} [options.git] - Git metadata
+   * @param {Object} [options.env] - Environment metadata
+   * @returns {Promise<Object>} Created test run
+   * 
+   * @example
+   * const testRun = await client.createTestRun({
+   *   runId: 'unique-run-id',
+   *   suiteName: 'My Test Suite',
+   *   platform: 'windows',
+   *   git: {
+   *     repo: 'myorg/myrepo',
+   *     branch: 'main',
+   *     commit: 'abc123'
+   *   }
+   * });
+   */
+  async createTestRun(options) {
+    this._ensureConnected();
+
+    const { createSDK } = require("./agent/lib/sdk.js");
+    const sdk = createSDK(this.emitter, this.config, this.agent.sessionInstance);
+    await sdk.auth();
+
+    const platform = options.platform || this.config.TD_PLATFORM || 'windows';
+    
+    // Auto-detect sandbox ID from the active sandbox if not provided
+    const sandboxId = options.sandboxId || this.agent?.sandbox?.id || null;
+    
+    // Get session ID from the agent's session instance
+    const sessionId = this.agent?.sessionInstance?.get() || null;
+    
+    const data = {
+      runId: options.runId,
+      suiteName: options.suiteName,
+      platform,
+      sandboxId: sandboxId,
+      sessionId: sessionId,
+      // CI/CD
+      ciProvider: options.ci?.provider,
+      ciRunId: options.ci?.runId,
+      ciJobId: options.ci?.jobId,
+      ciUrl: options.ci?.url,
+      // Git
+      repo: options.git?.repo,
+      branch: options.git?.branch,
+      commit: options.git?.commit,
+      commitMessage: options.git?.commitMessage,
+      author: options.git?.author,
+      // Environment
+      nodeVersion: options.env?.nodeVersion || process.version,
+      testDriverVersion: options.env?.testDriverVersion || require("./package.json").version,
+      vitestVersion: options.env?.vitestVersion,
+      environment: options.env?.additional
+    };
+
+    const result = await sdk.req("/api/v1/testdriver/test-run-create", data);
+    return result.data;
+  }
+
+  /**
+   * Complete a test run and update final statistics
+   * 
+   * @param {Object} options - Test run completion data
+   * @param {string} options.runId - Test run ID
+   * @param {string} options.status - Final status (passed/failed/cancelled)
+   * @param {number} [options.totalTests] - Total number of tests
+   * @param {number} [options.passedTests] - Number of passed tests
+   * @param {number} [options.failedTests] - Number of failed tests
+   * @param {number} [options.skippedTests] - Number of skipped tests
+   * @returns {Promise<Object>} Updated test run
+   * 
+   * @example
+   * await client.completeTestRun({
+   *   runId: 'unique-run-id',
+   *   status: 'passed',
+   *   totalTests: 10,
+   *   passedTests: 10,
+   *   failedTests: 0
+   * });
+   */
+  async completeTestRun(options) {
+    this._ensureConnected();
+
+    const { createSDK } = require("./agent/lib/sdk.js");
+    const sdk = createSDK(this.emitter, this.config, this.agent.sessionInstance);
+    await sdk.auth();
+
+    const result = await sdk.req("/api/v1/testdriver/test-run-complete", options);
+    return result.data;
+  }
+
+  /**
+   * Record a test case result
+   * 
+   * @param {Object} options - Test case data
+   * @param {string} options.runId - Test run ID
+   * @param {string} options.testName - Name of the test
+   * @param {string} options.testFile - Path to test file
+   * @param {string} options.status - Test status (passed/failed/skipped/pending)
+   * @param {string} [options.suiteName] - Test suite/describe block name
+   * @param {number} [options.duration] - Test duration in ms
+   * @param {string} [options.errorMessage] - Error message if failed
+   * @param {string} [options.errorStack] - Error stack trace if failed
+   * @param {string} [options.replayUrl] - Dashcam replay URL
+   * @param {number} [options.replayStartTime] - Start time in replay
+   * @param {number} [options.replayEndTime] - End time in replay
+   * @returns {Promise<Object>} Created/updated test case
+   * 
+   * @example
+   * await client.recordTestCase({
+   *   runId: 'unique-run-id',
+   *   testName: 'should login successfully',
+   *   testFile: 'tests/login.test.js',
+   *   status: 'passed',
+   *   duration: 1500,
+   *   replayUrl: 'https://app.dashcam.io/replay/abc123'
+   * });
+   */
+  async recordTestCase(options) {
+    this._ensureConnected();
+
+    const { createSDK } = require("./agent/lib/sdk.js");
+    const sdk = createSDK(this.emitter, this.config, this.agent.sessionInstance);
+    await sdk.auth();
+
+    const result = await sdk.req("/api/v1/testdriver/test-case-create", options);
+    return result.data;
+  }
+
+  // ====================================
   // AI Methods (Exploratory Loop)
   // ====================================
 
@@ -1688,26 +1849,28 @@ class TestDriverSDK {
    * This is the SDK equivalent of the CLI's exploratory loop
    *
    * @param {string} task - Natural language description of what to do
-   * @param {Object} options - Execution options
-   * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
-   * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
+   * @param {boolean} [cache=true] - Whether to use cached responses for this prompt
+   * @returns {Promise<string|void>} Final AI response
    *
    * @example
-   * // Simple execution
+   * // Simple execution (with caching enabled by default)
    * await client.ai('Click the submit button');
    *
    * @example
-   * // With validation loop
-   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
-   * console.log(result); // AI's final assessment
+   * // Disable cache for this specific call
+   * await client.ai('Click the submit button', false);
+   *
+   * @example
+   * // Explicitly enable cache
+   * await client.ai('Fill out the contact form', true);
    */
-  async ai(task) {
+  async ai(task, cache = true) {
     this._ensureConnected();
 
-    this.analytics.track("sdk.ai", { task });
+    this.analytics.track("sdk.ai", { task, cache });
 
     // Use the agent's exploratoryLoop method directly
-    return await this.agent.exploratoryLoop(task, false, true, false);
+    return await this.agent.exploratoryLoop(task, false, true, false, cache);
   }
 }
 

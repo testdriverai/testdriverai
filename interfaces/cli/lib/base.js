@@ -45,7 +45,6 @@ class BaseCommand extends Command {
     }
 
     this.agent.sandbox.send({
-      os: "linux",
       type: "output",
       output: Buffer.from(message).toString("base64"),
     });

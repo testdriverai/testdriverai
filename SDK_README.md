@@ -2,6 +2,26 @@
 
 The TestDriver SDK provides programmatic access to TestDriver's AI-powered testing capabilities. Use it to automate UI testing for web and desktop applications with natural language commands.
 
+## ✨ New: AWESOME Logs with Great DX! 
+
+Your SDK now has **beautiful, emoji-rich logging** that makes test output a joy to read! 🎨
+
+```
+[2.34s] 🔍 Found "submit button" · 📍 (682, 189) · ⏱️ 167ms · ⚡ cached
+[2.51s] 👆 Click "submit button"
+[2.89s] ⌨️ Type → hello world
+[3.12s] ✅ Assert "page correct" · ✓ PASSED · ⏱️ 45ms
+```
+
+**Features:**
+- 🎨 Rich emojis for all actions (find, click, type, scroll, etc.)
+- ⚡ Cache hit/miss indicators
+- ⏱️ Color-coded performance timing (green < 100ms, yellow < 500ms, red > 500ms)
+- 📍 Coordinate display for found elements
+- 📊 Beautiful progress bars and summaries
+
+See [docs/AWESOME_LOGS_QUICK_REF.md](./docs/AWESOME_LOGS_QUICK_REF.md) for quick reference or [docs/SDK_AWESOME_LOGS.md](./docs/SDK_AWESOME_LOGS.md) for complete documentation.
+
 ## Installation
 
 ```bash

@@ -56,10 +56,6 @@ const TestDriver = require("../sdk.js");
     console.log("\n--- Second find (cache HIT expected) ---");
     const heading2 = await client.find("heading that says Example Domain");
 
-    if (heading2.found()) {
-      console.log(`✓ Element found at (${heading2.x}, ${heading2.y})`);
-    }
-
     // Example 3: Find with custom threshold override
     console.log("\n--- Find with strict threshold (0.01 = 99% similarity) ---");
     const heading3 = await client.find(
@@ -67,33 +63,17 @@ const TestDriver = require("../sdk.js");
       0.01,
     );
 
-    if (heading3.found()) {
-      console.log(`✓ Element found at (${heading3.x}, ${heading3.y})`);
-    }
-
-    if (heading3.found()) {
-      console.log(`✓ Element found at (${heading3.x}, ${heading3.y})`);
-    }
-
     // Example 4: Find a different element - cache MISS
     console.log("\n--- Finding different element (cache MISS expected) ---");
     const paragraph = await client.find(
       "paragraph with text about illustrative examples",
     );
 
-    if (paragraph.found()) {
-      console.log(`✓ Element found at (${paragraph.x}, ${paragraph.y})`);
-    }
-
     // Example 5: Find the same paragraph again - cache HIT
     console.log("\n--- Finding same paragraph again (cache HIT expected) ---");
     const paragraph2 = await client.find(
       "paragraph with text about illustrative examples",
     );
-
-    if (paragraph2.found()) {
-      console.log(`✓ Element found at (${paragraph2.x}, ${paragraph2.y})`);
-    }
 
     console.log("\n=== Demo Complete ===");
     console.log(
