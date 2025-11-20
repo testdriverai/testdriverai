@@ -8,11 +8,15 @@
 import {
   authenticateWithApiKey,
   clearDashcamUrls,
+  clearSuiteTestRun,
   createTestRunDirect,
   getDashcamUrl,
+  getPluginState,
+  getSuiteTestRun,
   pluginState,
   recordTestCaseDirect,
   registerDashcamUrl,
+  setSuiteTestRun,
 } from "../../../interfaces/vitest-plugin.mjs";
 
 // Make the plugin API available globally in the test worker process
@@ -24,6 +28,10 @@ if (typeof globalThis !== "undefined") {
     authenticateWithApiKey,
     createTestRunDirect,
     recordTestCaseDirect,
+    getSuiteTestRun,
+    setSuiteTestRun,
+    clearSuiteTestRun,
+    getPluginState,
     state: pluginState,
   };
   console.log(

@@ -10,7 +10,7 @@ export default defineConfig({
     testDriverPlugin({
       apiKey: process.env.TD_API_KEY,
       apiRoot:
-        process.env.TD_API_KEY_ROOT || "https://testdriver-api.onrender.com",
+        process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
     }),
   ],
 
@@ -22,8 +22,9 @@ export default defineConfig({
     setupFiles: ["./testdriver/acceptance-sdk/setup/vitestSetup.mjs"],
 
     // Timeout settings
-    testTimeout: 600000, // 2 minutes per test
-    hookTimeout: 600000, // 1 minute for setup/teardown
+    testTimeout: 600000, // 10 minutes per test
+    hookTimeout: 120000, // 2 minutes for setup/teardown
+    teardownTimeout: 120000, // 2 minutes for teardown specifically
 
     globalTeardown: "./testdriver/acceptance-sdk/setup/globalTeardown.mjs",
 
@@ -38,7 +39,7 @@ export default defineConfig({
         {
           apiKey: process.env.TD_API_KEY,
           apiRoot:
-            process.env.TD_API_KEY_ROOT ||
+            process.env.TD_API_ROOT ||
             "https://testdriver-api.onrender.com",
         },
       ], // TestDriver test recording
@@ -49,7 +50,8 @@ export default defineConfig({
     poolOptions: {
       forks: {
         singleFork: false,
-        maxForks: 10, // Run up to 10 tests in parallel
+        maxForks: 5, // Reduced from 10 to prevent resource contention
+        minForks: 1,
       },
     },
 
@@ -60,6 +62,6 @@ export default defineConfig({
     },
 
     fileParallelism: true,
-    maxConcurrency: 10,
+    maxConcurrency: 5, // Reduced from 10 to match maxForks
   },
 });

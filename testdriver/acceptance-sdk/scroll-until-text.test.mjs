@@ -3,7 +3,7 @@
  * Converted from: testdriver/acceptance/scroll-until-text.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   performLogin,
@@ -14,13 +14,14 @@ import {
 describe("Scroll Until Text Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it('should scroll until "testdriver socks" appears', async () => {

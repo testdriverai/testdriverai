@@ -96,7 +96,7 @@ npm run test:sdk:coverage
 Each test follows this pattern:
 
 ```javascript
-import { afterAll, beforeAll, describe, it } from "vitest";
+import { afterEach, beforeEach, describe, it } from "vitest";
 import {
   createTestClient,
   setupTest,
@@ -106,12 +106,12 @@ import {
 describe("My Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     testdriver = createTestClient();
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await teardownTest(testdriver);
   });
 

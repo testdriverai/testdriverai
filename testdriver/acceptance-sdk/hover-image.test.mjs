@@ -3,7 +3,7 @@
  * Converted from: testdriver/acceptance/hover-image.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   performLogin,
@@ -14,13 +14,14 @@ import {
 describe("Hover Image Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it("should click on shopping cart icon and verify empty cart", async () => {

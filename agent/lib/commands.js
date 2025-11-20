@@ -191,6 +191,11 @@ const createCommands = (
       }
     };
 
+    // Log asserting action
+    const { formatter } = require("../../sdk-log-formatter.js");
+    const assertingMessage = formatter.formatAsserting(assertion);
+    emitter.emit(events.log.log, assertingMessage);
+
     emitter.emit(events.log.narration, `thinking...`);
 
     let response = await sdk.req("assert", {

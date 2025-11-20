@@ -3,23 +3,25 @@
  * Converted from: testdriver/acceptance/exec-js.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   setupTest,
   teardownTest,
 } from "./setup/testHelpers.mjs";
 
-describe("Exec JS Test", () => {
+describe("Exec JavaScript Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it("should fetch user data from API and enter email", async () => {

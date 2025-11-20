@@ -3,31 +3,25 @@
  * Demonstrates nice Vitest-style formatted logs for Dashcam replay
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   setupTest,
   teardownTest,
 } from "./setup/testHelpers.mjs";
 
-describe("Formatted Logging Demo", () => {
+describe("Formatted Logging Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
-
-    // Set test context for enhanced logging
-    testdriver.setTestContext({
-      file: "formatted-logging.test.mjs",
-      test: "Formatted Logging Demo",
-      startTime: Date.now(),
-    });
-
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it("should demonstrate formatted logs in dashcam replay", async () => {

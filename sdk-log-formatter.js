@@ -173,6 +173,28 @@ class SDKLogFormatter {
   }
 
   /**
+   * Format an element finding message (when search starts) 🔍
+   * @param {string} description - Element description
+   * @returns {string} Formatted message
+   */
+  formatElementFinding(description) {
+    const parts = [];
+
+    // Time and icon on same line
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+    parts.push(this.getPrefix("find"));
+
+    // Main message with emphasis
+    parts.push(chalk.bold.cyan("Finding"));
+    parts.push(chalk.cyan(`"${description}"`));
+
+    return parts.join(" ");
+  }
+
+  /**
    * Format an element found message with AWESOME styling 🎯
    * @param {string} description - Element description
    * @param {Object} meta - Element metadata (coordinates, duration, cache hit)
@@ -215,6 +237,95 @@ class SDKLogFormatter {
       parts.push(chalk.dim("·"));
       parts.push(metaParts.join(chalk.dim(" · ")));
     }
+
+    return parts.join(" ");
+  }
+
+  /**
+   * Format a finding all message (when search starts) 🔎
+   * @param {string} description - Element description
+   * @returns {string} Formatted message
+   */
+  formatElementsFinding(description) {
+    const parts = [];
+
+    // Time and icon on same line
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+    parts.push(this.getPrefix("findAll"));
+
+    // Main message with emphasis
+    parts.push(chalk.bold.cyan("Finding All"));
+    parts.push(chalk.cyan(`"${description}"`));
+
+    return parts.join(" ");
+  }
+
+  /**
+   * Format a found all message with AWESOME styling 🎯
+   * @param {string} description - Element description
+   * @param {number} count - Number of elements found
+   * @param {Object} meta - Metadata (duration, cache hit)
+   * @returns {string} Formatted message
+   */
+  formatElementsFound(description, count, meta = {}) {
+    const parts = [];
+
+    // Time and icon on same line
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+    parts.push(this.getPrefix("findAll"));
+
+    // Main message with emphasis
+    parts.push(chalk.bold.green("Found"));
+    parts.push(chalk.cyan(`${count}`));
+    parts.push(chalk.cyan(`"${description}"`));
+
+    // Metadata on same line with subtle styling
+    const metaParts = [];
+    if (meta.duration) {
+      const durationMs = parseInt(meta.duration);
+      const durationColor =
+        durationMs < 100
+          ? chalk.green
+          : durationMs < 500
+            ? chalk.yellow
+            : chalk.red;
+      metaParts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
+    }
+    if (meta.cacheHit) {
+      metaParts.push(chalk.bold.yellow("⚡ cached"));
+    }
+
+    if (metaParts.length > 0) {
+      parts.push(chalk.dim("·"));
+      parts.push(metaParts.join(chalk.dim(" · ")));
+    }
+
+    return parts.join(" ");
+  }
+
+  /**
+   * Format an asserting message (when assertion starts) ✓
+   * @param {string} assertion - What is being asserted
+   * @returns {string} Formatted message
+   */
+  formatAsserting(assertion) {
+    const parts = [];
+
+    // Time and icon
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+
+    parts.push(this.getPrefix("assert"));
+    parts.push(chalk.bold.cyan("Asserting"));
+    parts.push(chalk.cyan(`"${assertion}"`));
 
     return parts.join(" ");
   }

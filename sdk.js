@@ -228,6 +228,11 @@ class Element {
     const debugMode =
       process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
 
+    // Log finding action
+    const { events } = require("./agent/events.js");
+    const findingMessage = formatter.formatElementFinding(description);
+    this.sdk.emitter.emit(events.log.log, findingMessage);
+
     try {
       const screenshot = await this.system.captureScreenBase64();
       // Only store screenshot in DEBUG mode to prevent memory leaks
@@ -1134,6 +1139,11 @@ class TestDriverSDK {
 
     const startTime = Date.now();
 
+    // Log finding all action
+    const { events } = require("./agent/events.js");
+    const findingMessage = formatter.formatElementsFinding(description);
+    this.emitter.emit(events.log.log, findingMessage);
+
     try {
       const screenshot = await this.system.captureScreenBase64();
 
@@ -1154,6 +1164,17 @@ class TestDriverSDK {
       const duration = Date.now() - startTime;
 
       if (response && response.elements && response.elements.length > 0) {
+        // Log found elements
+        const foundMessage = formatter.formatElementsFound(
+          description,
+          response.elements.length,
+          {
+            duration: `${duration}ms`,
+            cacheHit: response.cached || false,
+          },
+        );
+        this.emitter.emit(events.log.log, foundMessage);
+
         // Create Element instances for each found element
         const elements = response.elements.map((elementData) => {
           const element = new Element(

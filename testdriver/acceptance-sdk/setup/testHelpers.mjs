@@ -6,6 +6,7 @@
 import crypto from "crypto";
 import { config } from "dotenv";
 import fs from "fs";
+import os from "os";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";
@@ -142,7 +143,8 @@ function setupConsoleInterceptor(client, taskId) {
             .join(" ");
 
           // Preserve ANSI color codes and emojis for rich sandbox output
-          const logOutput = `[${level.toUpperCase()}] ${message}`;
+          // (don't add level prefix - sdk-log-formatter handles styling)
+          const logOutput = message;
 
           client.sandbox.send({
             type: "output",
@@ -205,7 +207,7 @@ function removeConsoleInterceptor(client) {
 /**
  * Create a configured TestDriver client
  * @param {Object} options - Additional options
- * @param {Object} options.task - Vitest task context (from beforeAll/it context)
+ * @param {Object} options.task - Vitest task context (from beforeEach/it context)
  * @returns {TestDriver} Configured client
  */
 export function createTestClient(options = {}) {
@@ -239,7 +241,7 @@ export function createTestClient(options = {}) {
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
-    headless: false,
+    headless: true,
     newSandbox: false, // Always create a new sandbox for each test
     ...clientOptions, // This will include signal if passed in
     cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
@@ -346,6 +348,80 @@ export async function setupTest(client, options = {}) {
 }
 
 /**
+ * Initialize a test run for the entire suite
+ * Should be called once in beforeEach
+ * @param {Object} suiteTask - Vitest suite task context
+ * @returns {Promise<Object>} Test run info { runId, testRunDbId, token }
+ */
+export async function initializeSuiteTestRun(suiteTask) {
+  const apiKey = process.env.TD_API_KEY;
+  const apiRoot =
+    process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
+
+  if (!apiKey || !globalThis.__testdriverPlugin) {
+    console.log(
+      `[TestHelpers] Skipping suite test run initialization - no API key or plugin`,
+    );
+    return null;
+  }
+
+  // Check if test run already exists for this suite
+  const existingRun = globalThis.__testdriverPlugin.getSuiteTestRun(
+    suiteTask.id,
+  );
+  if (existingRun) {
+    console.log(
+      `[TestHelpers] Test run already exists for suite: ${existingRun.runId}`,
+    );
+    return existingRun;
+  }
+
+  try {
+    console.log(`[TestHelpers] Initializing test run for suite: ${suiteTask.name}`);
+
+    // Authenticate
+    const token = await globalThis.__testdriverPlugin.authenticateWithApiKey(
+      apiKey,
+      apiRoot,
+    );
+    console.log(`[TestHelpers] ✅ Authenticated for suite`);
+
+    // Create test run for the suite
+    const runId = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+    const testFile = suiteTask.file?.name || "unknown";
+    const testRunData = {
+      runId,
+      suiteName: suiteTask.name || testFile,
+    };
+
+    const testRunResponse =
+      await globalThis.__testdriverPlugin.createTestRunDirect(
+        token,
+        apiRoot,
+        testRunData,
+      );
+    const testRunDbId = testRunResponse.data?.id;
+
+    const runInfo = { runId, testRunDbId, token };
+
+    // Store in plugin state
+    globalThis.__testdriverPlugin.setSuiteTestRun(suiteTask.id, runInfo);
+
+    console.log(
+      `[TestHelpers] ✅ Created test run for suite: ${runId} (DB ID: ${testRunDbId})`,
+    );
+
+    return runInfo;
+  } catch (error) {
+    console.error(
+      `[TestHelpers] ❌ Failed to initialize suite test run:`,
+      error.message,
+    );
+    return null;
+  }
+}
+
+/**
  * Teardown function to run after each test
  * @param {TestDriver} client - TestDriver client
  * @param {Object} options - Teardown options
@@ -381,116 +457,73 @@ export async function teardownTest(client, options = {}) {
           console.log(
             `[TestHelpers] ✅ Stored dashcam URL in task.meta for test: ${options.task.name}`,
           );
-
-          // Report the test case directly if API key is available
-          const apiKey = process.env.TD_API_KEY;
-          const apiRoot =
-            process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
-
-          if (apiKey && globalThis.__testdriverPlugin) {
-            try {
-              // Get result
-              const result =
-                typeof options.task.result === "function"
-                  ? options.task.result()
-                  : options.task.result;
-
-              let status = "passed";
-              let errorMessage = null;
-              let errorStack = null;
-
-              if (result?.state === "failed") {
-                status = "failed";
-                if (result.errors && result.errors.length > 0) {
-                  const error = result.errors[0];
-                  errorMessage = error.message;
-                  errorStack = error.stack;
-                }
-              } else if (result?.state === "skipped") {
-                status = "skipped";
-              }
-
-              const testFile = options.task.file?.name || "unknown";
-              const suiteName = options.task.suite?.name;
-
-              // Authenticate and create a test run for this specific test
-              const token =
-                await globalThis.__testdriverPlugin.authenticateWithApiKey(
-                  apiKey,
-                  apiRoot,
-                );
-
-              // Create test run
-              const runId = `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
-              const testRunData = {
-                runId,
-                suiteName: suiteName || testFile,
-              };
-
-              const testRunResponse =
-                await globalThis.__testdriverPlugin.createTestRunDirect(
-                  token,
-                  apiRoot,
-                  testRunData,
-                );
-              const testRunDbId = testRunResponse.data?.id;
-              console.log(
-                `[TestHelpers] ✅ Created test run: ${runId} (DB ID: ${testRunDbId})`,
-              );
-
-              // Record test case with dashcam URL
-              const testCaseData = {
-                runId,
-                testName: options.task.name,
-                testFile,
-                status,
-                startTime: Date.now() - (result?.duration || 0),
-                endTime: Date.now(),
-                duration: result?.duration || 0,
-                retries: result?.retryCount || 0,
-                replayUrl: dashcamUrl,
-              };
-
-              if (suiteName) testCaseData.suiteName = suiteName;
-              if (errorMessage) testCaseData.errorMessage = errorMessage;
-              if (errorStack) testCaseData.errorStack = errorStack;
-
-              const testCaseResponse =
-                await globalThis.__testdriverPlugin.recordTestCaseDirect(
-                  token,
-                  apiRoot,
-                  testCaseData,
-                );
-              const testCaseDbId = testCaseResponse.data?.id;
-              console.log(
-                `[TestHelpers] ✅ Reported test case to API with dashcam URL`,
-              );
-              console.log(
-                `[TestHelpers] 🔗 View test run: ${apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/test-runs/${testRunDbId}/${testCaseDbId}`,
-              );
-            } catch (error) {
-              console.error(
-                `[TestHelpers] ❌ Failed to report test case:`,
-                error.message,
-              );
-            }
-          }
-        } else {
-          console.warn(
-            `[TestHelpers] ⚠️  No task available, dashcam URL not stored in meta`,
-          );
         }
       }
     } else {
       console.log("⏭️  Postrun skipped (disabled in options)");
     }
+
+    // Write test result to a file for the reporter to pick up (cross-process communication)
+    if (options.task) {
+      const testResultFile = path.join(
+        os.tmpdir(),
+        'testdriver-results',
+        `${options.task.id}.json`
+      );
+      
+      try {
+        // Ensure directory exists
+        const dir = path.dirname(testResultFile);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        
+        // Get test file path
+        const testFile = options.task.file?.filepath || options.task.file?.name || "unknown";
+        
+        // Calculate test order (index within parent suite)
+        let testOrder = 0;
+        if (options.task.suite && options.task.suite.tasks) {
+          testOrder = options.task.suite.tasks.indexOf(options.task);
+        }
+        
+        // Get duration from task result if available
+        const duration = options.task.result?.duration || 0;
+        
+        // Write test result with dashcam URL, platform, and metadata
+        const testResult = {
+          testId: options.task.id,
+          testName: options.task.name,
+          testFile: testFile,
+          testOrder: testOrder,
+          duration: duration,
+          dashcamUrl: dashcamUrl,
+          replayObjectId: dashcamUrl ? dashcamUrl.match(/\/replay\/([^?]+)/)?.[1] : null,
+          platform: client.os, // Include platform from SDK client (source of truth)
+          timestamp: Date.now(),
+        };
+        
+        fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
+        console.log(`[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms)`);
+      } catch (error) {
+        console.error(`[TestHelpers] ❌ Failed to write test result file:`, error.message);
+      }
+    }
   } catch (error) {
     console.error("❌ Error in postrun:", error);
+    console.error("❌ Error stack:", error.stack);
   } finally {
     // Remove console interceptor before disconnecting
     removeConsoleInterceptor(client);
 
-    await client.disconnect();
+    console.log("🔌 Disconnecting client...");
+    try {
+      await client.disconnect();
+      console.log("✅ Client disconnected");
+    } catch (disconnectError) {
+      console.error("❌ Error disconnecting:", disconnectError.message);
+      // Don't throw - we're already in cleanup
+    }
   }
 
   // Extract replay object ID from dashcam URL

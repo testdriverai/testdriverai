@@ -3,7 +3,7 @@
  * Tests that finding a non-existent element returns properly without timing out
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   setupTest,
@@ -13,13 +13,14 @@ import {
 describe("Element Not Found Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it("should handle non-existent element gracefully without timing out", async () => {

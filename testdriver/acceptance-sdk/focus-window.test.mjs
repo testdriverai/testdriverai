@@ -3,7 +3,7 @@
  * Converted from: testdriver/acceptance/focus-window.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   setupTest,
@@ -13,16 +13,18 @@ import {
 describe("Focus Window Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
-  it("should click Microsoft Edge icon and focus Google Chrome", async () => {
+  it.skipIf(() => testdriver.os === "linux")("should click Microsoft Edge icon and focus Google Chrome", async () => {
     // Show desktop
     await testdriver.pressKeys(["winleft", "d"]);
 

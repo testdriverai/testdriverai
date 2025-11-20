@@ -3,25 +3,26 @@
  * Converted from: testdriver/acceptance/scroll-keyboard.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  createTestClient,
-  setupTest,
-  teardownTest,
+    createTestClient,
+    setupTest,
+    teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe("Scroll Keyboard Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
+  beforeEach(async (context) => {
     testdriver = createTestClient({
+      task: context.task,
       redrawThreshold: 0.5, // Higher threshold for scroll test
     });
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it("should navigate to webhamster.com and scroll with keyboard", async () => {
@@ -43,7 +44,7 @@ describe("Scroll Keyboard Test", () => {
     await testdriver.scroll("down", 1000);
 
     // Assert the page is scrolled down
-    const result = await testdriver.assert("the page is scrolled down");
+    const result = await testdriver.assert("the hamster dance heading is not visible");
     expect(result).toBeTruthy();
   });
 });

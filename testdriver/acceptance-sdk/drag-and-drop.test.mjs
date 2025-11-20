@@ -3,7 +3,7 @@
  * Converted from: testdriver/acceptance/drag-and-drop.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   setupTest,
@@ -15,13 +15,15 @@ const isLinux = (process.env.TD_OS || "linux") === "linux";
 describe("Drag and Drop Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it.skipIf(isLinux)(

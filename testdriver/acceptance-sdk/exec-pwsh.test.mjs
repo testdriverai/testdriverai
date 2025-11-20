@@ -3,23 +3,24 @@
  * Converted from: testdriver/acceptance/exec-shell.yaml
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   setupTest,
   teardownTest,
 } from "./setup/testHelpers.mjs";
 
-describe("Exec Shell Test", () => {
+describe("Exec PowerShell Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it.skipIf(() => testdriver.os === "linux")(

@@ -5,7 +5,7 @@
 
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestClient,
   performLogin,
@@ -20,13 +20,15 @@ const __dirname = dirname(__filename);
 describe("Match Image Test", () => {
   let testdriver;
 
-  beforeAll(async () => {
-    testdriver = createTestClient();
+  beforeEach(async (context) => {
+    testdriver = createTestClient({ task: context.task });
+    
+    
     await setupTest(testdriver);
   });
 
-  afterAll(async () => {
-    await teardownTest(testdriver);
+  afterEach(async (context) => {
+    await teardownTest(testdriver, { task: context.task });
   });
 
   it("should match shopping cart image and verify empty cart", async () => {
