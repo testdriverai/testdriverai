@@ -153,7 +153,7 @@ const createRedraw = (emitter, system, sandbox) => {
     let nowImage = await system.captureScreenPNG(0.25, true);
     let timeElapsed = Date.now() - startTime;
     let diffPercent = 0;
-    let isTimeout = timeElapsed > timeoutMs -0.5;
+    let isTimeout = timeElapsed > timeoutMs - 0.5;
 
     if (!screenHasRedrawn) {
       diffPercent = await imageDiffPercent(startImage, nowImage);
