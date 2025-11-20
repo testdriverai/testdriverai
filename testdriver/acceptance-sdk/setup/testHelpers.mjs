@@ -532,12 +532,7 @@ export async function runPrerun(client) {
     true,
   );
   // Start dashcam tracking
-  await client.exec(
-    shell,
-    `touch ${logPath}`,
-    10000,
-    true,
-  );
+  await client.exec(shell, `touch ${logPath}`, 10000, true);
 
   // Start dashcam tracking
   await client.exec(
