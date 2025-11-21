@@ -27,7 +27,7 @@ describe.sequential("Type Test", () => {
 
   beforeEach(async () => {
     await startDashcam(testdriver);
-  });
+  }, 60000);
 
   afterEach(async (context) => {
     // Stop dashcam first to get the URL

@@ -65,9 +65,6 @@ class TestDriverAgent extends EventEmitter2 {
     const flags = cliArgs.options || {};
     const firstArg = cliArgs.args && cliArgs.args[0];
 
-    // Store abort signal if provided
-    this.abortSignal = flags.signal || null;
-
     // All commands (run, edit, generate) use the same pattern:
     // first argument is the main file to work with
     this.thisFile = firstArg || this.config.TD_DEFAULT_TEST_FILE;
@@ -110,8 +107,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.sdk = createSDK(
       this.emitter,
       this.config,
-      this.session,
-      this.abortSignal,
+      this.session
     );
 
     // Create analytics instance with this agent's emitter, config, and session

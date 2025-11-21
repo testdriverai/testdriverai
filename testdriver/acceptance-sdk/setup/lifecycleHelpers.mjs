@@ -26,7 +26,11 @@ export async function addDashcamLog(client, logName = "TestDriver Log") {
       : "/tmp/testdriver.log";
 
   // Create log file
-  await client.exec(shell, `touch ${logPath}`, 10000, true);
+  if (client.os === "windows") {
+    await client.exec(shell, `New-Item -ItemType File -Path "${logPath}" -Force`, 10000, true);
+  } else {
+    await client.exec(shell, `touch ${logPath}`, 10000, true);
+  }
 
   // Add log tracking
   await client.exec(
@@ -45,10 +49,22 @@ export async function startDashcam(client) {
   const shell = client.os === "windows" ? "pwsh" : "sh";
   
   if (client.os === "windows") {
+    
+    await client.exec(
+      "pwsh",
+      'npm install -g dashcam@beta', 60000 * 10
+    );
+    
     // Use cmd.exe to run dashcam record in background on Windows
     await client.exec(
       "pwsh",
-      "Start-Process cmd.exe -ArgumentList '/c', 'dashcam record' -WindowStyle Hidden",
+      'npm ls dashcam -g'
+    );
+    
+    // Use cmd.exe to run dashcam record in background on Windows
+    await client.exec(
+      "pwsh",
+      'dashcam start', 60000
     );
   } else {
     await client.exec(shell, "dashcam record >/dev/null 2>&1 &");

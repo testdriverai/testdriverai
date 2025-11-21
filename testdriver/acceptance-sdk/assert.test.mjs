@@ -14,14 +14,14 @@ describe("Assert Test", () => {
   let testdriver;
 
   beforeEach(async (context) => {
+
     // Create a new client for each test
     testdriver = createTestClient({
-      signal: context.signal,
       task: context.task,
     });
 
     await setupTest(testdriver);
-  });
+  }, 600000);
 
   afterEach(async (context) => {
     // Teardown after each test, passing the individual test context

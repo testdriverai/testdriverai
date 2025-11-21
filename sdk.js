@@ -217,7 +217,6 @@ class Element {
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, cacheThreshold) {
-    this.sdk._checkAborted();
     const description = newDescription || this.description;
     if (newDescription) {
       this.description = newDescription;
@@ -267,7 +266,7 @@ class Element {
       const duration = Date.now() - startTime;
 
       console.log('AI Response:', response);
-      console.log('AI Response Text:', response?.content?.text);
+      console.log('AI Response Text:', response?.content[0]?.text);
 
       if (response && response.coordinates) {
         // Store response but clear large base64 data to prevent memory leaks
@@ -541,7 +540,6 @@ class Element {
    * @returns {Promise<void>}
    */
   async click(action = "click") {
-    this.sdk._checkAborted();
     if (!this._found || !this.coordinates) {
       throw new ElementNotFoundError(
         `Element "${this.description}" not found.`,
@@ -577,7 +575,6 @@ class Element {
    * @returns {Promise<void>}
    */
   async hover() {
-    this.sdk._checkAborted();
     if (!this._found || !this.coordinates) {
       throw new ElementNotFoundError(
         `Element "${this.description}" not found.`,
@@ -838,8 +835,7 @@ class TestDriverSDK {
       command: "sdk",
       args: [],
       options: {
-        os: options.os || "linux",
-        signal: options.signal || null,
+        os: options.os || "linux"
       },
     });
 
@@ -849,16 +845,6 @@ class TestDriverSDK {
     // Store os and resolution for API requests
     this.os = options.os || "linux";
     this.resolution = options.resolution || "1366x768";
-
-    // Set up abort signal if provided
-    this.signal = options.signal || null;
-    this._aborted = false;
-    if (this.signal) {
-      this.signal.addEventListener("abort", () => {
-        this._aborted = true;
-        this._handleAbort();
-      });
-    }
 
     // Store newSandbox preference from options
     this.newSandbox =
@@ -920,44 +906,10 @@ class TestDriverSDK {
   }
 
   /**
-   * Check if operation has been aborted
-   * @private
-   * @throws {Error} If aborted
-   */
-  _checkAborted() {
-    if (this._aborted) {
-      throw new Error("Operation aborted");
-    }
-  }
-
-  /**
-   * Handle abort signal
-   * @private
-   */
-  async _handleAbort() {
-    const { events } = require("./agent/events.js");
-    this.emitter.emit(
-      events.log.log,
-      "⚠️  TestDriver SDK: Abort signal received, cleaning up...",
-    );
-    try {
-      if (this.connected) {
-        await this.disconnect();
-      }
-    } catch (error) {
-      this.emitter.emit(
-        events.log.log,
-        `Error during abort cleanup: ${error.message}`,
-      );
-    }
-  }
-
-  /**
    * Authenticate with TestDriver API
    * @returns {Promise<string>} Authentication token
    */
   async auth() {
-    this._checkAborted();
     if (this.authenticated) {
       return;
     }
@@ -980,7 +932,6 @@ class TestDriverSDK {
    * @returns {Promise<Object>} Sandbox instance details
    */
   async connect(connectOptions = {}) {
-    this._checkAborted();
     if (this.connected) {
       throw new Error(
         "Already connected. Create a new TestDriver instance to connect again.",
@@ -1108,7 +1059,6 @@ class TestDriverSDK {
    * await element.click();
    */
   async find(description, cacheThreshold) {
-    this._checkAborted();
     this._ensureConnected();
     const element = new Element(description, this, this.system, this.commands);
     return await element.find(null, cacheThreshold);
@@ -1137,7 +1087,6 @@ class TestDriverSDK {
    * }
    */
   async findAll(description, cacheThreshold) {
-    this._checkAborted();
     this._ensureConnected();
 
     const startTime = Date.now();
@@ -1543,7 +1492,6 @@ class TestDriverSDK {
    * const screenshot = await client.screenshot(1, false, true);
    */
   async screenshot(scale = 1, silent = false, mouse = false) {
-    this._checkAborted();
     this._ensureConnected();
     return await this.system.captureScreenBase64(scale, silent, mouse);
   }

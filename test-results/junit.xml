@@ -1,25 +1,32 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="49.614650042">
-    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-21T01:07:49.119Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="49.614650042">
-        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="49.613516">
+<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="125.28992975">
+    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-21T04:49:38.029Z" hostname="MacBookPro.lan" tests="1" failures="1" errors="0" skipped="0" time="125.28992975">
+        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="125.288890542">
             <system-out>
 🔧 createTestClient: SDK created, cacheThresholds = { find: [33m-1[39m, findAll: [33m-1[39m }
-[TestHelpers] Client OS configured as: linux
+[TestHelpers] Client OS configured as: windows
 [TestHelpers] Storing task ID on client: -1973333524_0_0
 
 [2mestablishing connection...[22m
 
 [2mauthenticating...[22m
 
-[2mno recent sandbox found, creating a new one.[22m
+[2musing recent sandbox: i-04b966341bb15a02e[22m
 [2mcreating new sandbox (can take up to 2 minutes)...[22m
 
 [2mconnecting...[22m
 
 renderSandbox {
-  sandboxId: [32m&apos;iljixteml3umebxspuo33&apos;[39m,
-  url: [32m&apos;https://6080-iljixteml3umebxspuo33.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
+  instanceId: [32m&apos;i-0c8444c76887e721d&apos;[39m,
+  ip: [32m&apos;18.117.125.182&apos;[39m,
+  vncPort: [33m8080[39m,
+  wsUrl: [32m&apos;ws://18.117.125.182:8765&apos;[39m,
+  vncUrl: [32m&apos;http://18.117.125.182:8080&apos;[39m,
+  wsPort: [33m8765[39m
 }
+
+Live test execution:
+http://localhost:60849?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwOi8vMTguMTE3LjEyNS4xODI6ODA4MC92bmNfbGl0ZS5odG1sP3Rva2VuPVYzYjh3RzkiLCJ0b2tlbiI6IlYzYjh3RzkifQ==
 
 Running lifecycle: provision
 No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml
@@ -31,195 +38,46 @@ provision run
 dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d
 
 [2mcalling exec...[22m
-touch /tmp/testdriver.log
+New-Item -ItemType File -Path &quot;C:\Users\testdriver\Documents\testdriver.log&quot; -Force
 
 [2mcalling exec...[22m
-dashcam logs --add --type=file --file=&quot;/tmp/testdriver.log&quot; --name=&quot;TestDriver Log&quot;
+dashcam logs --add --type=file --file=&quot;C:\Users\testdriver\Documents\testdriver.log&quot; --name=&quot;TestDriver Log&quot;
 
 [2mcalling exec...[22m
-dashcam record &gt;/dev/null 2&gt;&amp;1 &amp;
+npm install -g dashcam@beta
+
+[2mstdout:[22m
+
+added 387 packages in 1m
+
+71 packages are looking for funding
+  run `npm fund` for details
+
+[2mstderr:[22m
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated npmlog@5.0.1: This package is no longer supported.
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated are-we-there-yet@2.0.0: This package is no longer supported.
+npm warn deprecated gauge@3.0.2: This package is no longer supported.
+npm notice
+npm notice New major version of npm available! 10.7.0 -&gt; 11.6.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.3
+npm notice To update run: npm install -g npm@11.6.3
+npm notice
+
 
 [2mcalling exec...[22m
-google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest &quot;http://testdriver-sandbox.vercel.app/&quot; &gt;/dev/null 2&gt;&amp;1 &amp;
+npm ls dashcam -g
 
-Waiting for page to load, looking for text: TestDriver.ai Sandbox
-[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
+[2mstdout:[22m
+C:\Users\testdriver\AppData\Roaming\npm
+`-- dashcam@1.0.1-beta.25
 
-AI Response: {
-  response: {
-    model: [32m&apos;claude-sonnet-4-5-20250929&apos;[39m,
-    id: [32m&apos;msg_01RDpyKpQsvMRSnCaNnF219X&apos;[39m,
-    type: [32m&apos;message&apos;[39m,
-    role: [32m&apos;assistant&apos;[39m,
-    content: [ [36m[Object][39m ],
-    stop_reason: [32m&apos;end_turn&apos;[39m,
-    stop_sequence: [1mnull[22m,
-    usage: {
-      input_tokens: [33m2790[39m,
-      cache_creation_input_tokens: [33m0[39m,
-      cache_read_input_tokens: [33m0[39m,
-      cache_creation: [36m[Object][39m,
-      output_tokens: [33m148[39m,
-      service_tier: [32m&apos;standard&apos;[39m
-    }
-  },
-  croppedImage: [1mnull[22m,
-  coordinates: [1mnull[22m,
-  elementType: [32m&apos;unknown&apos;[39m,
-  error: [32m&apos;No click coordinates found in response&apos;[39m,
-  cacheHit: [33mfalse[39m,
-  similarity: [1mnull[22m,
-  cacheStrategy: [32m&apos;none&apos;[39m
-}
-AI Response Text: [90mundefined[39m
 
-foudn [33mfalse[39m
-Debug Info:
-{
-  description: [32m&apos;TestDriver.ai Sandbox&apos;[39m,
-  found: [33mfalse[39m,
-  coordinates: [1mnull[22m,
-  aiResponse: {
-    response: {
-      model: [32m&apos;claude-sonnet-4-5-20250929&apos;[39m,
-      id: [32m&apos;msg_01RDpyKpQsvMRSnCaNnF219X&apos;[39m,
-      type: [32m&apos;message&apos;[39m,
-      role: [32m&apos;assistant&apos;[39m,
-      content: [36m[Array][39m,
-      stop_reason: [32m&apos;end_turn&apos;[39m,
-      stop_sequence: [1mnull[22m,
-      usage: [36m[Object][39m
-    },
-    croppedImage: [1mnull[22m,
-    coordinates: [1mnull[22m,
-    elementType: [32m&apos;unknown&apos;[39m,
-    error: [32m&apos;No click coordinates found in response&apos;[39m,
-    cacheHit: [33mfalse[39m,
-    similarity: [1mnull[22m,
-    cacheStrategy: [32m&apos;none&apos;[39m
-  },
-  hasScreenshot: [33mtrue[39m,
-  screenshotSize: [33m262372[39m
-}
 
-[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
-
-AI Response: {
-  response: {
-    model: [32m&apos;claude-sonnet-4-5-20250929&apos;[39m,
-    id: [32m&apos;msg_01EsbswbaQ5wDNGBD5Y4VAgN&apos;[39m,
-    type: [32m&apos;message&apos;[39m,
-    role: [32m&apos;assistant&apos;[39m,
-    content: [ [36m[Object][39m, [36m[Object][39m ],
-    stop_reason: [32m&apos;tool_use&apos;[39m,
-    stop_sequence: [1mnull[22m,
-    usage: {
-      input_tokens: [33m2790[39m,
-      cache_creation_input_tokens: [33m0[39m,
-      cache_read_input_tokens: [33m0[39m,
-      cache_creation: [36m[Object][39m,
-      output_tokens: [33m141[39m,
-      service_tier: [32m&apos;standard&apos;[39m
-    }
-  },
-  croppedImage: [32m&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAcSUlEQVR4nO1dB7QURdZ+q+IajnpWj656DOvu+hv+3d+wZjEedUWCCUXFTM5IFERykiAgkpNEFRAlBwGRpOSk5CiCIjx4PEkzxfP+56tnDdU13TPz5s28ucKdc77DY7q7uvq797t161Z3T1Z2bpgEwoH4QNiXgywhRsQhPhAO5EAEIgIRgeSKQMQJJBBQMhzICCKOI8EjVwQiTiCBgGQEESeQQJCbWg4kxRJRiahyRSDiBBIISEYQcQIJBLmSYokTSCCgouJA5iDibBJwckUg4gQSCEhGEHECCQS5kmKJE0ggIJmDiBNIIMjNPAcySWdgBEGYLQciEAZGEITZcpBF8pGPfAI/IhD5yCfGRwQiH/nE+IhA5COfGB8RiHzkE+MjApGPfGJ8snbs3EEC4UB8YIcvB1mhsCKBcCA+oHw5EIGIOEQc4WAORCAiEBFIWAQiTiCBgJLhQEYQcRwJHmERiDiBBAKSEUScQAJBOLUcSIolohJRhUUg4gQSCEhGEHECCQRhSbHECSQQUFFxIHMQcTYJOGERiDiBBAKSEUScQAJBWFIscQIJBCRzEHECCQThzHMgk3QGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQDJpgJyDFP52EanhI0h160aqXbt84O/hI/Q27JNpJwmdwhCBFDXp69aTat6c8u6+h3474wyirKyYwD5599xLqmVLCq3fkHGHCZ1iEIEUEdHhKVMp78EH6bc4gogplqwsynvoIQpP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&apos;[39m,
-  coordinates: { x: [33m682[39m, y: [33m189[39m },
-  savedImagePath: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/crop-circle-691fbb395ef7467761228fed-1763687248796.png&apos;[39m,
-  elementType: [32m&apos;text&apos;[39m,
-  elementBounds: { left: [33m667[39m, top: [33m174[39m, width: [33m31[39m, height: [33m31[39m },
-  edgeCroppedBuffer: [1mnull[22m,
-  extractedText: {
-    words: [
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m, [36m[Object][39m,
-      [36m[Object][39m, [36m[Object][39m, [36m[Object][39m
-    ],
-    fullText: [32m&apos;¥ Applications = \\@ v0 App - Google Chrome a] [J A Fri21 Nov, 01:07 user\n&apos;[39m +
-      [32m&apos;v  @ vOApp x + - ® x\n&apos;[39m +
-      [32m&apos;C  % testdriver-sandbox.vercel.app/login (@ cuest ) i\n&apos;[39m +
-      [32m&apos;TestDriver.ai Sandbox\n&apos;[39m +
-      [32m&apos;Login with your username to shop our testing merchandise\n&apos;[39m +
-      [32m&apos;Username\n&apos;[39m +
-      [32m&apos;Password IY\n&apos;[39m +
-      [32m&apos;Available Test Users:\n&apos;[39m +
-      [32m&apos;standard _user: Normal functionality\n&apos;[39m +
-      [32m&apos;locked _out_user: Cannot log in (locked out)\n&apos;[39m +
-      [32m&apos;problem user: Has issues with product images and sorting\n&apos;[39m +
-      [32m&apos;error_user: Has issues during checkout\n&apos;[39m,
-    confidence: [33m70[39m
-  },
-  resizedImageBuffer: [1mnull[22m,
-  scaleFactor: [33m1.366[39m,
-  cacheHit: [33mfalse[39m,
-  similarity: [1mnull[22m,
-  cacheStrategy: [32m&apos;none&apos;[39m
-}
-AI Response Text: [90mundefined[39m
-[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m [2m·[22m [2m[90m📍 (682, 189)[39m[22m[2m · [22m[2m⏱️  [31m7458ms[39m[22m
-
-foudn [33mtrue[39m
-Debug Info:
-{
-  description: [32m&apos;TestDriver.ai Sandbox&apos;[39m,
-  found: [33mtrue[39m,
-  coordinates: { x: [33m682[39m, y: [33m189[39m },
-  aiResponse: {
-    response: {
-      model: [32m&apos;claude-sonnet-4-5-20250929&apos;[39m,
-      id: [32m&apos;msg_01EsbswbaQ5wDNGBD5Y4VAgN&apos;[39m,
-      type: [32m&apos;message&apos;[39m,
-      role: [32m&apos;assistant&apos;[39m,
-      content: [36m[Array][39m,
-      stop_reason: [32m&apos;tool_use&apos;[39m,
-      stop_sequence: [1mnull[22m,
-      usage: [36m[Object][39m
-    },
-    croppedImage: [32m&apos;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAcSUlEQVR4nO1dB7QURdZ+q+IajnpWj656DOvu+hv+3d+wZjEedUWCCUXFTM5IFERykiAgkpNEFRAlBwGRpOSk5CiCIjx4PEkzxfP+56tnDdU13TPz5s28ucKdc77DY7q7uvq797t161Z3T1Z2bpgEwoH4QNiXgywhRsQhPhAO5EAEIgIRgeSKQMQJJBBQMhzICCKOI8EjVwQiTiCBgGQEESeQQJCbWg4kxRJRiahyRSDiBBIISEYQcQIJBLmSYokTSCCgouJA5iDibBJwckUg4gQSCEhGEHECCQS5kmKJE0ggIJmDiBNIIMjNPAcySWdgBEGYLQciEAZGEITZcpBF8pGPfAI/IhD5yCfGRwQiH/nE+IhA5COfGB8RiHzkE+MjApGPfGJ8snbs3EEC4UB8YIcvB1mhsCKBcCA+oHw5EIGIOEQc4WAORCAiEBFIWAQiTiCBgJLhQEYQcRwJHmERiDiBBAKSEUScQAJBOLUcSIolohJRhUUg4gQSCEhGEHECCQRhSbHECSQQUFFxIHMQcTYJOGERiDiBBAKSEUScQAJBWFIscQIJBCRzEHECCQThzHMgk3QGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQBgYQaDYciACYWAEgWLLgQiEgREEii0HIhAGRhAothyIQDJpgJyDFP52EanhI0h160aqXbt84O/hI/Q27JNpJwmdwhCBFDXp69aTat6c8u6+h3474wyirKyYwD5599xLqmVLCq3fkHGHCZ1iEIEUEdHhKVMp78EH6bc4gogplqwsynvoIQpP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&apos;[39m,
-    coordinates: { x: [33m682[39m, y: [33m189[39m },
-    savedImagePath: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/crop-circle-691fbb395ef7467761228fed-1763687248796.png&apos;[39m,
-    elementType: [32m&apos;text&apos;[39m,
-    elementBounds: { left: [33m667[39m, top: [33m174[39m, width: [33m31[39m, height: [33m31[39m },
-    edgeCroppedBuffer: [1mnull[22m,
-    extractedText: {
-      words: [36m[Array][39m,
-      fullText: [32m&apos;¥ Applications = \\@ v0 App - Google Chrome a] [J A Fri21 Nov, 01:07 user\n&apos;[39m +
-        [32m&apos;v  @ vOApp x + - ® x\n&apos;[39m +
-        [32m&apos;C  % testdriver-sandbox.vercel.app/login (@ cuest ) i\n&apos;[39m +
-        [32m&apos;TestDriver.ai Sandbox\n&apos;[39m +
-        [32m&apos;Login with your username to shop our testing merchandise\n&apos;[39m +
-        [32m&apos;Username\n&apos;[39m +
-        [32m&apos;Password IY\n&apos;[39m +
-        [32m&apos;Available Test Users:\n&apos;[39m +
-        [32m&apos;standard _user: Normal functionality\n&apos;[39m +
-        [32m&apos;locked _out_user: Cannot log in (locked out)\n&apos;[39m +
-        [32m&apos;problem user: Has issues with product images and sorting\n&apos;[39m +
-        [32m&apos;error_user: Has issues during checkout\n&apos;[39m,
-      confidence: [33m70[39m
-    },
-    resizedImageBuffer: [1mnull[22m,
-    scaleFactor: [33m1.366[39m,
-    cacheHit: [33mfalse[39m,
-    similarity: [1mnull[22m,
-    cacheStrategy: [32m&apos;none&apos;[39m
-  },
-  hasScreenshot: [33mtrue[39m,
-  screenshotSize: [33m118640[39m
-}
-
-[32m✅[39m [1m[36mAsserting[39m[22m [36m&quot;the TestDriver.ai Sandbox login page is displayed&quot;[39m
-thinking...
-
-The task passed. The browser shows the “TestDriver.ai Sandbox” title and login form at the `/login` URL.
+[2mcalling exec...[22m
+dashcam record
 
 🧹 Running teardown...
 🎬 Stopping dashcam and retrieving URL...
@@ -227,64 +85,41 @@ The task passed. The browser shows the “TestDriver.ai Sandbox” title and log
 dashcam stop
 
 [2mstdout:[22m
-Stopping recording...
-01:07:35.840 [[32minfo[39m] Stopping active recording process
-  {
-    &quot;pid&quot;: 1252
-  }
-01:07:43.911 [[32minfo[39m] Background recording stopped, returning status
-  {
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-21T01-07-10-235Z.webm&quot;,
-    &quot;duration&quot;: 33632
-  }
-Recording stopped successfully
-01:07:43.915 [[34mdebug[39m] Waiting for background upload to complete...
-01:07:48.918 [[34mdebug[39m] Upload result read attempt
-  {
-    &quot;found&quot;: true,
-    &quot;shareLink&quot;: &quot;https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ&quot;
-  }
-📹 Watch your recording: https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ
+No active recording to stop
 
 
-📤 Dashcam command output: Stopping recording...
-01:07:35.840 [[32minfo[39m] Stopping active recording process
-  {
-    &quot;pid&quot;: 1252
-  }
-01:07:43.911 [[32minfo[39m] Background recording stopped, returning status
-  {
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-21T01-07-10-235Z.webm&quot;,
-    &quot;duration&quot;: 33632
-  }
-Recording stopped successfully
-01:07:43.915 [[34mdebug[39m] Waiting for background upload to complete...
-01:07:48.918 [[34mdebug[39m] Upload result read attempt
-  {
-    &quot;found&quot;: true,
-    &quot;shareLink&quot;: &quot;https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ&quot;
-  }
-📹 Watch your recording: https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ
-✅ Found dashcam URL: https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ
+📤 Dashcam command output: No active recording to stop
 
-🎥 Dashcam URL: https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ
-📝 Replay Object ID: 691fbb5d2896d65341437ace
-[TestHelpers] ✅ Stored dashcam URL in task.meta for test: should assert the testdriver login page shows
 [TestHelpers] ✅ Wrote test result to file: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/testdriver-results/-1973333524_0_0.json (testFile: /Users/ianjennings/Development/cli/testdriver/acceptance-sdk/assert.test.mjs, testOrder: 0)
 [TestHelpers] Console interceptor removed for task: -1973333524_0_0
 🔌 Disconnecting client...
 
 ✅ Client disconnected
 📊 Session info: {
-  &quot;sessionId&quot;: &quot;691fbb395ef7467761228fed&quot;,
-  &quot;dashcamUrl&quot;: &quot;https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ&quot;,
-  &quot;replayObjectId&quot;: &quot;691fbb5d2896d65341437ace&quot;,
+  &quot;sessionId&quot;: &quot;691feeea5c906c50fe393d0d&quot;,
+  &quot;dashcamUrl&quot;: null,
+  &quot;replayObjectId&quot;: null,
   &quot;instance&quot;: null
 }
 
-[Test] Teardown complete, dashcam URL: https://app.dashcam.io/replay/691fbb5d2896d65341437ace?share=mBfGSl5scAR1kdiqmHYPQ
+[Test] Teardown complete, dashcam URL: null
 
             </system-out>
+            <system-err>
+⚠️  No URL found in dashcam output
+
+            </system-err>
+            <failure message="Command failed with exit code -1: Command timed out" type="Error">
+Error: Command failed with exit code -1: Command timed out
+ ❯ TestDriverSDK.&lt;anonymous&gt; sdk.js:1438:15
+ ❯ startDashcam testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs:65:18
+ ❯ runPrerun testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs:161:3
+ ❯ setupTest testdriver/acceptance-sdk/setup/testHelpers.mjs:360:5
+ ❯ testdriver/acceptance-sdk/assert.test.mjs:23:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { fatal: false, attachScreenshot: true }
+            </failure>
         </testcase>
     </testsuite>
 </testsuites>
