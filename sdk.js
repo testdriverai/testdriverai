@@ -265,8 +265,8 @@ class Element {
 
       const duration = Date.now() - startTime;
 
-      console.log('AI Response:', response);
-      console.log('AI Response Text:', response?.content[0]?.text);
+      console.log("AI Response:", response);
+      console.log("AI Response Text:", response?.content[0]?.text);
 
       if (response && response.coordinates) {
         // Store response but clear large base64 data to prevent memory leaks
@@ -835,7 +835,7 @@ class TestDriverSDK {
       command: "sdk",
       args: [],
       options: {
-        os: options.os || "linux"
+        os: options.os || "linux",
       },
     });
 

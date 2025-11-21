@@ -15,7 +15,7 @@ describe("Scroll Until Image Test", () => {
 
   beforeEach(async (context) => {
     testdriver = createTestClient({ task: context.task });
-    
+
     await setupTest(testdriver);
   });
 

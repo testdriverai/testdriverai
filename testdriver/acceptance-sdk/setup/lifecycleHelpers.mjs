@@ -8,7 +8,10 @@
  * @param {TestDriver} client - TestDriver client
  * @param {string} apiKey - Dashcam API key (default: 4e93d8bf-3886-4d26-a144-116c4063522d)
  */
-export async function authDashcam(client, apiKey = "4e93d8bf-3886-4d26-a144-116c4063522d") {
+export async function authDashcam(
+  client,
+  apiKey = "4e93d8bf-3886-4d26-a144-116c4063522d",
+) {
   const shell = client.os === "windows" ? "pwsh" : "sh";
   await client.exec(shell, `dashcam auth ${apiKey}`, 30000, true);
 }
@@ -27,7 +30,12 @@ export async function addDashcamLog(client, logName = "TestDriver Log") {
 
   // Create log file
   if (client.os === "windows") {
-    await client.exec(shell, `New-Item -ItemType File -Path "${logPath}" -Force`, 10000, true);
+    await client.exec(
+      shell,
+      `New-Item -ItemType File -Path "${logPath}" -Force`,
+      10000,
+      true,
+    );
   } else {
     await client.exec(shell, `touch ${logPath}`, 10000, true);
   }
@@ -47,25 +55,15 @@ export async function addDashcamLog(client, logName = "TestDriver Log") {
  */
 export async function startDashcam(client) {
   const shell = client.os === "windows" ? "pwsh" : "sh";
-  
+
   if (client.os === "windows") {
-    
-    await client.exec(
-      "pwsh",
-      'npm install -g dashcam@beta', 60000 * 10
-    );
-    
+    await client.exec("pwsh", "npm install -g dashcam@beta", 60000 * 10);
+
     // Use cmd.exe to run dashcam record in background on Windows
-    await client.exec(
-      "pwsh",
-      'npm ls dashcam -g'
-    );
-    
+    await client.exec("pwsh", "npm ls dashcam -g");
+
     // Use cmd.exe to run dashcam record in background on Windows
-    await client.exec(
-      "pwsh",
-      'dashcam start', 60000
-    );
+    await client.exec("pwsh", "dashcam start", 60000);
   } else {
     await client.exec(shell, "dashcam record >/dev/null 2>&1 &");
   }
@@ -110,9 +108,12 @@ export async function stopDashcam(client) {
  * @param {TestDriver} client - TestDriver client
  * @param {string} url - URL to open (default: https://testdriver-sandbox.vercel.app/)
  */
-export async function launchChrome(client, url = "http://testdriver-sandbox.vercel.app/") {
+export async function launchChrome(
+  client,
+  url = "http://testdriver-sandbox.vercel.app/",
+) {
   const shell = client.os === "windows" ? "pwsh" : "sh";
-  
+
   if (client.os === "windows") {
     await client.exec(
       "pwsh",
@@ -135,15 +136,20 @@ export async function launchChrome(client, url = "http://testdriver-sandbox.verc
  * @param {number} maxAttempts - Maximum number of attempts (default: 60)
  * @param {number} pollInterval - Interval between polls in ms (default: 5000)
  */
-export async function waitForPage(client, text, maxAttempts = 60, pollInterval = 5000) {
-  console.log('Waiting for page to load, looking for text:', text);
+export async function waitForPage(
+  client,
+  text,
+  maxAttempts = 60,
+  pollInterval = 5000,
+) {
+  console.log("Waiting for page to load, looking for text:", text);
   let element;
   for (let i = 0; i < maxAttempts; i++) {
     element = await client.find(text);
 
-    console.log('foudn', element.found());
-    console.log('Debug Info:');
-    console.log((element.getDebugInfo()));
+    console.log("foudn", element.found());
+    console.log("Debug Info:");
+    console.log(element.getDebugInfo());
 
     if (element.found()) break;
     await new Promise((resolve) => setTimeout(resolve, pollInterval));

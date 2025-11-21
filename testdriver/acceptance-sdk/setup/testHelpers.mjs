@@ -18,13 +18,19 @@ import {
   runPrerun,
   startDashcam,
   stopDashcam,
-  waitForPage
+  waitForPage,
 } from "./lifecycleHelpers.mjs";
 
 // Re-export lifecycle helpers for backward compatibility
 export {
-  addDashcamLog, authDashcam, launchChrome, runPostrun, runPrerun, startDashcam,
-  stopDashcam, waitForPage
+  addDashcamLog,
+  authDashcam,
+  launchChrome,
+  runPostrun,
+  runPrerun,
+  startDashcam,
+  stopDashcam,
+  waitForPage,
 };
 
 // Get the directory of the current module
@@ -393,7 +399,9 @@ export async function initializeSuiteTestRun(suiteTask) {
   }
 
   try {
-    console.log(`[TestHelpers] Initializing test run for suite: ${suiteTask.name}`);
+    console.log(
+      `[TestHelpers] Initializing test run for suite: ${suiteTask.name}`,
+    );
 
     // Authenticate
     const token = await globalThis.__testdriverPlugin.authenticateWithApiKey(
@@ -491,29 +499,30 @@ export async function teardownTest(client, options = {}) {
     if (options.task) {
       const testResultFile = path.join(
         os.tmpdir(),
-        'testdriver-results',
-        `${options.task.id}.json`
+        "testdriver-results",
+        `${options.task.id}.json`,
       );
-      
+
       try {
         // Ensure directory exists
         const dir = path.dirname(testResultFile);
         if (!fs.existsSync(dir)) {
           fs.mkdirSync(dir, { recursive: true });
         }
-        
+
         // Get test file path
-        const testFile = options.task.file?.filepath || options.task.file?.name || "unknown";
-        
+        const testFile =
+          options.task.file?.filepath || options.task.file?.name || "unknown";
+
         // Calculate test order (index within parent suite)
         let testOrder = 0;
         if (options.task.suite && options.task.suite.tasks) {
           testOrder = options.task.suite.tasks.indexOf(options.task);
         }
-        
+
         // Note: Duration is calculated by Vitest and passed via result.duration
         // We don't need to track start time ourselves
-        
+
         // Write test result with dashcam URL, platform, and metadata
         const testResult = {
           testId: options.task.id,
@@ -521,15 +530,22 @@ export async function teardownTest(client, options = {}) {
           testFile: testFile,
           testOrder: testOrder,
           dashcamUrl: dashcamUrl,
-          replayObjectId: dashcamUrl ? dashcamUrl.match(/\/replay\/([^?]+)/)?.[1] : null,
+          replayObjectId: dashcamUrl
+            ? dashcamUrl.match(/\/replay\/([^?]+)/)?.[1]
+            : null,
           platform: client.os, // Include platform from SDK client (source of truth)
           timestamp: Date.now(),
         };
-        
+
         fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
-        console.log(`[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder})`);
+        console.log(
+          `[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder})`,
+        );
       } catch (error) {
-        console.error(`[TestHelpers] ❌ Failed to write test result file:`, error.message);
+        console.error(
+          `[TestHelpers] ❌ Failed to write test result file:`,
+          error.message,
+        );
       }
     }
   } catch (error) {
@@ -572,8 +588,6 @@ export async function teardownTest(client, options = {}) {
 
   return sessionInfo;
 }
-
-
 
 /**
  * Perform login flow (reusable snippet)

@@ -15,8 +15,7 @@ describe("Formatted Logging Test", () => {
 
   beforeEach(async (context) => {
     testdriver = createTestClient({ task: context.task });
-    
-    
+
     await setupTest(testdriver);
   });
 

@@ -15,8 +15,7 @@ describe("Exec JavaScript Test", () => {
 
   beforeEach(async (context) => {
     testdriver = createTestClient({ task: context.task });
-    
-    
+
     await setupTest(testdriver);
   });
 

@@ -9,8 +9,7 @@ export default defineConfig({
   plugins: [
     testDriverPlugin({
       apiKey: process.env.TD_API_KEY,
-      apiRoot:
-        process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
+      apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
     }),
   ],
 
@@ -39,8 +38,7 @@ export default defineConfig({
         {
           apiKey: process.env.TD_API_KEY,
           apiRoot:
-            process.env.TD_API_ROOT ||
-            "https://testdriver-api.onrender.com",
+            process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
         },
       ], // TestDriver test recording
     ],

@@ -16,7 +16,7 @@ describe("Hover Image Test", () => {
 
   beforeEach(async (context) => {
     testdriver = createTestClient({ task: context.task });
-    
+
     await setupTest(testdriver);
   });
 

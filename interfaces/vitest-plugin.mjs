@@ -16,10 +16,11 @@ function withTimeout(promise, timeoutMs, operationName) {
     promise,
     new Promise((_, reject) =>
       setTimeout(
-        () => reject(new Error(`${operationName} timed out after ${timeoutMs}ms`)),
-        timeoutMs
-      )
-    )
+        () =>
+          reject(new Error(`${operationName} timed out after ${timeoutMs}ms`)),
+        timeoutMs,
+      ),
+    ),
   ]);
 }
 
@@ -119,7 +120,7 @@ export async function authenticateWithApiKey(apiKey, apiRoot) {
       body: JSON.stringify({ apiKey }),
     }),
     10000,
-    "Authentication"
+    "Authentication",
   );
 
   if (!response.ok) {
@@ -144,7 +145,7 @@ export async function createTestRunDirect(token, apiRoot, testRunData) {
       body: JSON.stringify(testRunData),
     }),
     10000,
-    "Create Test Run"
+    "Create Test Run",
   );
 
   if (!response.ok) {
@@ -169,7 +170,7 @@ export async function recordTestCaseDirect(token, apiRoot, testCaseData) {
       body: JSON.stringify(testCaseData),
     }),
     10000,
-    "Record Test Case"
+    "Record Test Case",
   );
 
   if (!response.ok) {
@@ -216,7 +217,7 @@ class TestDriverReporter {
   async onInit(ctx) {
     this.ctx = ctx;
     console.log("[TestDriver Reporter] onInit called");
-    
+
     // Initialize test run
     await this.initializeTestRun();
   }
@@ -254,15 +255,15 @@ class TestDriverReporter {
 
       // Platform will be set from the first test result file
       // Default to linux if no tests write platform info
-      testRunData.platform = 'linux';
+      testRunData.platform = "linux";
 
       pluginState.testRun = await createTestRun(testRunData);
 
       // Store in environment variables for worker processes to access
       process.env.TD_TEST_RUN_ID = pluginState.testRunId;
-      process.env.TD_TEST_RUN_DB_ID = pluginState.testRun.data?.id || '';
+      process.env.TD_TEST_RUN_DB_ID = pluginState.testRun.data?.id || "";
       process.env.TD_TEST_RUN_TOKEN = pluginState.token;
-      
+
       // Also store in shared state module (won't work across processes but good for main)
       setTestRunInfo({
         testRun: pluginState.testRun,
@@ -336,7 +337,9 @@ class TestDriverReporter {
       const platform = getPlatform();
       if (platform) {
         completeData.platform = platform;
-        console.log(`[TestDriver Reporter] Updating test run with platform: ${platform}`);
+        console.log(
+          `[TestDriver Reporter] Updating test run with platform: ${platform}`,
+        );
       }
 
       // Wait for any pending operations (shouldn't be any, but just in case)
@@ -353,7 +356,10 @@ class TestDriverReporter {
       );
 
       const completeResponse = await completeTestRun(completeData);
-      console.log(`[TestDriver Reporter] ✅ Test run completion API response:`, completeResponse);
+      console.log(
+        `[TestDriver Reporter] ✅ Test run completion API response:`,
+        completeResponse,
+      );
 
       console.log(
         `[TestDriver Reporter] Test run completed: ${stats.passedTests}/${stats.totalTests} passed`,
@@ -383,8 +389,13 @@ class TestDriverReporter {
     if (!pluginState.apiKey || !pluginState.testRun) return;
 
     const result = test.result();
-    const status = result.state === "passed" ? "passed" : result.state === "skipped" ? "skipped" : "failed";
-    
+    const status =
+      result.state === "passed"
+        ? "passed"
+        : result.state === "skipped"
+          ? "skipped"
+          : "failed";
+
     console.log(
       `[TestDriver Reporter] Test case completed: ${test.name} (${status})`,
     );
@@ -394,30 +405,39 @@ class TestDriverReporter {
     let testFile = "unknown";
     let testOrder = 0;
     let duration = result.duration || 0;
-    
+
     const testResultFile = path.join(
       os.tmpdir(),
-      'testdriver-results',
-      `${test.id}.json`
+      "testdriver-results",
+      `${test.id}.json`,
     );
-    
+
     try {
       if (fs.existsSync(testResultFile)) {
-        const testResult = JSON.parse(fs.readFileSync(testResultFile, 'utf-8'));
+        const testResult = JSON.parse(fs.readFileSync(testResultFile, "utf-8"));
         dashcamUrl = testResult.dashcamUrl || null;
         const platform = testResult.platform || null;
-        testFile = testResult.testFile || test.file?.filepath || test.file?.name || "unknown";
-        testOrder = testResult.testOrder !== undefined ? testResult.testOrder : 0;
+        testFile =
+          testResult.testFile ||
+          test.file?.filepath ||
+          test.file?.name ||
+          "unknown";
+        testOrder =
+          testResult.testOrder !== undefined ? testResult.testOrder : 0;
         duration = testResult.duration || result.duration || 0;
-        
-        console.log(`[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`);
-        
+
+        console.log(
+          `[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`,
+        );
+
         // Update test run platform from first test that reports it
         if (platform && !pluginState.detectedPlatform) {
           pluginState.detectedPlatform = platform;
-          console.log(`[TestDriver Reporter] 🖥️  Detected platform from test: ${platform}`);
+          console.log(
+            `[TestDriver Reporter] 🖥️  Detected platform from test: ${platform}`,
+          );
         }
-        
+
         // Clean up the file after reading
         try {
           fs.unlinkSync(testResultFile);
@@ -425,34 +445,43 @@ class TestDriverReporter {
           // Ignore cleanup errors
         }
       } else {
-        console.log(`[TestDriver Reporter] ⚠️  No result file found for test: ${test.id}`);
+        console.log(
+          `[TestDriver Reporter] ⚠️  No result file found for test: ${test.id}`,
+        );
         // Fallback to test object properties - try multiple sources
         // In Vitest, the file path is typically on the module, not the test itself
         const module = test.module || test.suite;
-        testFile = test.file?.filepath || 
-                   test.file?.name || 
-                   module?.file?.filepath || 
-                   module?.file?.name || 
-                   test.location?.file || 
-                   "unknown";
-        console.log(`[TestDriver Reporter] 📂 Resolved testFile for skipped test: ${testFile}`);
+        testFile =
+          test.file?.filepath ||
+          test.file?.name ||
+          module?.file?.filepath ||
+          module?.file?.name ||
+          test.location?.file ||
+          "unknown";
+        console.log(
+          `[TestDriver Reporter] 📂 Resolved testFile for skipped test: ${testFile}`,
+        );
       }
     } catch (error) {
-      console.error(`[TestDriver Reporter] ❌ Failed to read test result file:`, error.message);
+      console.error(
+        `[TestDriver Reporter] ❌ Failed to read test result file:`,
+        error.message,
+      );
       // Fallback to test object properties - try multiple sources
       const module = test.module || test.suite;
-      testFile = test.file?.filepath || 
-                 test.file?.name || 
-                 module?.file?.filepath || 
-                 module?.file?.name || 
-                 test.location?.file || 
-                 "unknown";
+      testFile =
+        test.file?.filepath ||
+        test.file?.name ||
+        module?.file?.filepath ||
+        module?.file?.name ||
+        test.location?.file ||
+        "unknown";
     }
-    
+
     // Get test run info from environment variables
     const testRunId = process.env.TD_TEST_RUN_ID;
     const token = process.env.TD_TEST_RUN_TOKEN;
-    
+
     if (!testRunId || !token) {
       console.warn(
         `[TestDriver Reporter] ⚠️  Test run not initialized, skipping test case recording for: ${test.name}`,
@@ -464,7 +493,11 @@ class TestDriverReporter {
       let errorMessage = null;
       let errorStack = null;
 
-      if (result.state === "failed" && result.errors && result.errors.length > 0) {
+      if (
+        result.state === "failed" &&
+        result.errors &&
+        result.errors.length > 0
+      ) {
         const error = result.errors[0];
         errorMessage = error.message;
         errorStack = error.stack;
@@ -495,19 +528,21 @@ class TestDriverReporter {
       if (errorMessage) testCaseData.errorMessage = errorMessage;
       if (errorStack) testCaseData.errorStack = errorStack;
 
-      console.log(`[TestDriver Reporter] Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? 'yes' : 'no'}`);
-      
+      console.log(
+        `[TestDriver Reporter] Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`,
+      );
+
       const testCaseResponse = await recordTestCaseDirect(
         token,
         pluginState.apiRoot,
         testCaseData,
       );
-      
+
       const testCaseDbId = testCaseResponse.data?.id;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
-      
+
       console.log(
-        `[TestDriver Reporter] ✅ Reported test case to API${dashcamUrl ? ' with dashcam URL' : ''}`,
+        `[TestDriver Reporter] ✅ Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`,
       );
       console.log(
         `[TestDriver Reporter] 🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/test-runs/${testRunDbId}/${testCaseDbId}`,
@@ -642,7 +677,7 @@ async function authenticate() {
       }),
     }),
     10000,
-    "Internal Authentication"
+    "Internal Authentication",
   );
 
   if (!response.ok) {
@@ -667,7 +702,7 @@ async function createTestRun(data) {
       body: JSON.stringify(data),
     }),
     10000,
-    "Internal Create Test Run"
+    "Internal Create Test Run",
   );
 
   if (!response.ok) {
@@ -692,7 +727,7 @@ async function completeTestRun(data) {
       body: JSON.stringify(data),
     }),
     10000,
-    "Internal Complete Test Run"
+    "Internal Complete Test Run",
   );
 
   if (!response.ok) {

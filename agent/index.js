@@ -104,11 +104,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.outputs = createOutputs();
 
     // Create SDK instance with this agent's emitter, config, session, and abort signal
-    this.sdk = createSDK(
-      this.emitter,
-      this.config,
-      this.session
-    );
+    this.sdk = createSDK(this.emitter, this.config, this.session);
 
     // Create analytics instance with this agent's emitter, config, and session
     this.analytics = createAnalytics(this.emitter, this.config, this.session);

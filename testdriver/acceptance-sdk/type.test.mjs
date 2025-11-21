@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
 import {
   addDashcamLog,
   authDashcam,
@@ -17,7 +25,7 @@ describe.sequential("Type Test", () => {
   beforeAll(async () => {
     testdriver = createTestClient({ task: { id: "type-test-suite" } });
     await setupTest(testdriver, { prerun: false }); // Skip prerun, we'll handle dashcam manually
-    
+
     // One-time dashcam setup (auth and add logs)
     await authDashcam(testdriver);
     await addDashcamLog(testdriver);
@@ -33,16 +41,16 @@ describe.sequential("Type Test", () => {
     // Stop dashcam first to get the URL
     const dashcamUrl = await stopDashcam(testdriver);
     console.log("📤 Dashcam URL:", dashcamUrl);
-    
+
     // Use teardownTest to track results, but skip postrun (already stopped dashcam) and disconnect
-    await teardownTest(testdriver, { 
+    await teardownTest(testdriver, {
       task: context.task,
       dashcamUrl: dashcamUrl, // Pass the dashcam URL we already got
       postrun: false, // Skip postrun since we manually stopped dashcam
-      disconnect: false // Don't disconnect, we'll do that in afterAll
+      disconnect: false, // Don't disconnect, we'll do that in afterAll
     });
   });
-  
+
   afterAll(async () => {
     await testdriver.disconnect();
   });

@@ -1,9 +1,9 @@
 /**
  * Shared Test State Module
- * 
+ *
  * This module uses Node.js module caching to share state between
  * the reporter process and worker processes in Vitest.
- * 
+ *
  * Since Node.js caches modules, all imports of this file will
  * receive the same state object instance.
  */
@@ -22,12 +22,12 @@ const sharedState = {
  * Set the test run information
  */
 export function setTestRunInfo(info) {
-  console.log('[SharedState] Setting test run info:', { 
+  console.log("[SharedState] Setting test run info:", {
     testRunId: info.testRunId,
     hasToken: !!info.token,
-    hasTestRun: !!info.testRun
+    hasTestRun: !!info.testRun,
   });
-  
+
   if (info.testRun) sharedState.testRun = info.testRun;
   if (info.testRunId) sharedState.testRunId = info.testRunId;
   if (info.token) sharedState.token = info.token;
@@ -54,7 +54,7 @@ export function getTestRunInfo() {
  * Clear the test run information
  */
 export function clearTestRunInfo() {
-  console.log('[SharedState] Clearing test run info');
+  console.log("[SharedState] Clearing test run info");
   sharedState.testRun = null;
   sharedState.testRunId = null;
   sharedState.token = null;

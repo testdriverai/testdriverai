@@ -14,7 +14,6 @@ describe("Assert Test", () => {
   let testdriver;
 
   beforeEach(async (context) => {
-
     // Create a new client for each test
     testdriver = createTestClient({
       task: context.task,
@@ -33,8 +32,7 @@ describe("Assert Test", () => {
     );
   });
 
-  it("should assert the testdriver login page shows", async (context) => {
-
+  it("should assert the testdriver login page shows", async () => {
     // Assert the TestDriver.ai Sandbox login page is displayed
     const result = await testdriver.assert(
       "the TestDriver.ai Sandbox login page is displayed",
