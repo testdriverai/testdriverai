@@ -260,7 +260,7 @@ export function createTestClient(options = {}) {
     headless: true,
     newSandbox: false, // Always create a new sandbox for each test
     ...clientOptions, // This will include signal if passed in
-    cache: true, // Force cache disabled - put AFTER ...options to ensure it's not overridden
+    cache: false, // Force cache disabled - put AFTER ...options to ensure it's not overridden
   });
 
   console.log(
@@ -345,27 +345,6 @@ export function setupEventLogging(client) {
  * @returns {Promise<Object>} Sandbox instance
  */
 export async function setupTest(client, options = {}) {
-  // Write test start time to file for duration calculation (cross-process)
-  if (client.vitestTaskId) {
-    const startTimeFile = path.join(
-      os.tmpdir(),
-      'testdriver-results',
-      `${client.vitestTaskId}-start.json`
-    );
-    
-    try {
-      const dir = path.dirname(startTimeFile);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      fs.writeFileSync(startTimeFile, JSON.stringify({ startTime: Date.now() }));
-      console.log(`[TestHelpers] ⏱️  Recorded start time for test: ${client.vitestTaskId}`);
-    } catch (error) {
-      console.error(`[TestHelpers] ⚠️  Failed to write start time file:`, error.message);
-    }
-  }
-  
   await client.auth();
   const instance = await client.connect({
     ...options,
@@ -532,28 +511,8 @@ export async function teardownTest(client, options = {}) {
           testOrder = options.task.suite.tasks.indexOf(options.task);
         }
         
-        // Read start time from file and calculate duration
-        let duration = 0;
-        const startTimeFile = path.join(
-          os.tmpdir(),
-          'testdriver-results',
-          `${options.task.id}-start.json`
-        );
-        
-        try {
-          if (fs.existsSync(startTimeFile)) {
-            const startData = JSON.parse(fs.readFileSync(startTimeFile, 'utf-8'));
-            duration = Date.now() - startData.startTime;
-            console.log(`[TestHelpers] ⏱️  Calculated duration: ${duration}ms`);
-            
-            // Clean up start time file
-            fs.unlinkSync(startTimeFile);
-          } else {
-            console.log(`[TestHelpers] ⚠️  No start time file found, duration will be 0`);
-          }
-        } catch (error) {
-          console.error(`[TestHelpers] ⚠️  Failed to read start time:`, error.message);
-        }
+        // Note: Duration is calculated by Vitest and passed via result.duration
+        // We don't need to track start time ourselves
         
         // Write test result with dashcam URL, platform, and metadata
         const testResult = {
@@ -561,7 +520,6 @@ export async function teardownTest(client, options = {}) {
           testName: options.task.name,
           testFile: testFile,
           testOrder: testOrder,
-          duration: duration,
           dashcamUrl: dashcamUrl,
           replayObjectId: dashcamUrl ? dashcamUrl.match(/\/replay\/([^?]+)/)?.[1] : null,
           platform: client.os, // Include platform from SDK client (source of truth)
@@ -569,7 +527,7 @@ export async function teardownTest(client, options = {}) {
         };
         
         fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
-        console.log(`[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms)`);
+        console.log(`[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder})`);
       } catch (error) {
         console.error(`[TestHelpers] ❌ Failed to write test result file:`, error.message);
       }

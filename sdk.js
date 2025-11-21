@@ -266,6 +266,9 @@ class Element {
 
       const duration = Date.now() - startTime;
 
+      console.log('AI Response:', response);
+      console.log('AI Response Text:', response?.content?.text);
+
       if (response && response.coordinates) {
         // Store response but clear large base64 data to prevent memory leaks
         this._response = this._sanitizeResponse(response);

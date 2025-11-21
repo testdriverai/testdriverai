@@ -120,9 +120,15 @@ export async function launchChrome(client, url = "http://testdriver-sandbox.verc
  * @param {number} pollInterval - Interval between polls in ms (default: 5000)
  */
 export async function waitForPage(client, text, maxAttempts = 60, pollInterval = 5000) {
-  let element = await client.find(text);
+  console.log('Waiting for page to load, looking for text:', text);
+  let element;
   for (let i = 0; i < maxAttempts; i++) {
-    element = await element.find();
+    element = await client.find(text);
+
+    console.log('foudn', element.found());
+    console.log('Debug Info:');
+    console.log((element.getDebugInfo()));
+
     if (element.found()) break;
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
