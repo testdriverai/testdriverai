@@ -5,9 +5,9 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-    createTestClient,
-    setupTest,
-    teardownTest,
+  createTestClient,
+  setupTest,
+  teardownTest,
 } from "./setup/testHelpers.mjs";
 
 describe("Scroll Keyboard Test", () => {

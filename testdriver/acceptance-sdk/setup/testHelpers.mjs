@@ -10,6 +10,22 @@ import os from "os";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";
+import {
+  addDashcamLog,
+  authDashcam,
+  launchChrome,
+  runPostrun,
+  runPrerun,
+  startDashcam,
+  stopDashcam,
+  waitForPage
+} from "./lifecycleHelpers.mjs";
+
+// Re-export lifecycle helpers for backward compatibility
+export {
+  addDashcamLog, authDashcam, launchChrome, runPostrun, runPrerun, startDashcam,
+  stopDashcam, waitForPage
+};
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -329,6 +345,27 @@ export function setupEventLogging(client) {
  * @returns {Promise<Object>} Sandbox instance
  */
 export async function setupTest(client, options = {}) {
+  // Write test start time to file for duration calculation (cross-process)
+  if (client.vitestTaskId) {
+    const startTimeFile = path.join(
+      os.tmpdir(),
+      'testdriver-results',
+      `${client.vitestTaskId}-start.json`
+    );
+    
+    try {
+      const dir = path.dirname(startTimeFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      fs.writeFileSync(startTimeFile, JSON.stringify({ startTime: Date.now() }));
+      console.log(`[TestHelpers] ⏱️  Recorded start time for test: ${client.vitestTaskId}`);
+    } catch (error) {
+      console.error(`[TestHelpers] ⚠️  Failed to write start time file:`, error.message);
+    }
+  }
+  
   await client.auth();
   const instance = await client.connect({
     ...options,
@@ -407,6 +444,11 @@ export async function initializeSuiteTestRun(suiteTask) {
     // Store in plugin state
     globalThis.__testdriverPlugin.setSuiteTestRun(suiteTask.id, runInfo);
 
+    // Set environment variables for the reporter to use
+    process.env.TD_TEST_RUN_ID = runId;
+    process.env.TD_TEST_RUN_DB_ID = testRunDbId;
+    process.env.TD_TEST_RUN_TOKEN = token;
+
     console.log(
       `[TestHelpers] ✅ Created test run for suite: ${runId} (DB ID: ${testRunDbId})`,
     );
@@ -426,16 +468,19 @@ export async function initializeSuiteTestRun(suiteTask) {
  * @param {TestDriver} client - TestDriver client
  * @param {Object} options - Teardown options
  * @param {Object} options.task - Vitest task context (optional, for storing in task.meta)
+ * @param {string} options.dashcamUrl - Dashcam URL if already retrieved
+ * @param {boolean} options.postrun - Whether to run postrun lifecycle (default: true)
+ * @param {boolean} options.disconnect - Whether to disconnect client (default: true)
  * @returns {Promise<Object>} Session info including dashcam URL
  */
 export async function teardownTest(client, options = {}) {
-  let dashcamUrl = null;
+  let dashcamUrl = options.dashcamUrl || null;
 
   console.log("🧹 Running teardown...");
 
   try {
-    // Run postrun lifecycle if enabled
-    if (options.postrun !== false) {
+    // Run postrun lifecycle if enabled and dashcamUrl not already provided
+    if (options.postrun !== false && !dashcamUrl) {
       dashcamUrl = await runPostrun(client);
 
       // Store dashcamUrl in client for reporter access
@@ -487,8 +532,28 @@ export async function teardownTest(client, options = {}) {
           testOrder = options.task.suite.tasks.indexOf(options.task);
         }
         
-        // Get duration from task result if available
-        const duration = options.task.result?.duration || 0;
+        // Read start time from file and calculate duration
+        let duration = 0;
+        const startTimeFile = path.join(
+          os.tmpdir(),
+          'testdriver-results',
+          `${options.task.id}-start.json`
+        );
+        
+        try {
+          if (fs.existsSync(startTimeFile)) {
+            const startData = JSON.parse(fs.readFileSync(startTimeFile, 'utf-8'));
+            duration = Date.now() - startData.startTime;
+            console.log(`[TestHelpers] ⏱️  Calculated duration: ${duration}ms`);
+            
+            // Clean up start time file
+            fs.unlinkSync(startTimeFile);
+          } else {
+            console.log(`[TestHelpers] ⚠️  No start time file found, duration will be 0`);
+          }
+        } catch (error) {
+          console.error(`[TestHelpers] ⚠️  Failed to read start time:`, error.message);
+        }
         
         // Write test result with dashcam URL, platform, and metadata
         const testResult = {
@@ -516,13 +581,18 @@ export async function teardownTest(client, options = {}) {
     // Remove console interceptor before disconnecting
     removeConsoleInterceptor(client);
 
-    console.log("🔌 Disconnecting client...");
-    try {
-      await client.disconnect();
-      console.log("✅ Client disconnected");
-    } catch (disconnectError) {
-      console.error("❌ Error disconnecting:", disconnectError.message);
-      // Don't throw - we're already in cleanup
+    // Only disconnect if not explicitly disabled
+    if (options.disconnect !== false) {
+      console.log("🔌 Disconnecting client...");
+      try {
+        await client.disconnect();
+        console.log("✅ Client disconnected");
+      } catch (disconnectError) {
+        console.error("❌ Error disconnecting:", disconnectError.message);
+        // Don't throw - we're already in cleanup
+      }
+    } else {
+      console.log("⏭️  Disconnect skipped (disabled in options)");
     }
   }
 
@@ -545,107 +615,7 @@ export async function teardownTest(client, options = {}) {
   return sessionInfo;
 }
 
-/**
- * Run prerun lifecycle hooks
- * Implements lifecycle/prerun.yaml functionality
- * @param {TestDriver} client - TestDriver client
- */
-export async function runPrerun(client) {
-  // Determine shell command based on OS
-  const shell = client.os === "windows" ? "pwsh" : "sh";
-  const logPath =
-    client.os === "windows"
-      ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-      : "/tmp/testdriver.log";
 
-  await client.exec(
-    shell,
-    `dashcam auth 4e93d8bf-3886-4d26-a144-116c4063522d`,
-    30000,
-    true,
-  );
-  // Start dashcam tracking
-  await client.exec(shell, `touch ${logPath}`, 10000, true);
-
-  // Start dashcam tracking
-  await client.exec(
-    shell,
-    `dashcam logs --add --type=file --file="${logPath}" --name="TestDriver Log"`,
-    10000,
-    true,
-  );
-
-  // Start dashcam recording
-  if (client.os === "windows") {
-    // Use cmd.exe to run dashcam record in background on Windows
-    await client.exec(
-      "pwsh",
-      "Start-Process cmd.exe -ArgumentList '/c', 'dashcam record' -WindowStyle Hidden",
-    );
-  } else {
-    await client.exec(shell, "dashcam record >/dev/null 2>&1 &");
-  }
-
-  // Launch Chrome with guest mode directly (not jumpapp to avoid focus issues)
-  if (client.os === "windows") {
-    await client.exec(
-      "pwsh",
-      'Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "https://testdriver-sandbox.vercel.app/login"',
-      30000,
-    );
-  } else {
-    await client.exec(
-      shell,
-      'google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "http://testdriver-sandbox.vercel.app/" >/dev/null 2>&1 &',
-      30000,
-    );
-  }
-
-  // Wait for the login page to load - poll for text to appear
-  let loginPage = await client.find("TestDriver.ai Sandbox");
-  const maxAttempts = 60;
-  for (let i = 0; i < maxAttempts; i++) {
-    loginPage = await loginPage.find();
-    if (loginPage.found()) break;
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  }
-}
-
-/**
- * Run postrun lifecycle hooks
- * Implements lifecycle/postrun.yaml functionality
- * @param {TestDriver} client - TestDriver client
- * @returns {Promise<string|null>} Dashcam URL if available
- */
-export async function runPostrun(client) {
-  console.log("🎬 Stopping dashcam and retrieving URL...");
-
-  // Determine shell command based on OS
-  const shell = client.os === "windows" ? "pwsh" : "sh";
-
-  // Stop dashcam with title and push - this returns the URL
-  const output = await client.exec(shell, "dashcam stop", 60000, false); // Don't silence output so we can capture it
-
-  console.log("📤 Dashcam command output:", output);
-
-  // Extract URL from output - dashcam typically outputs the URL in the response
-  // The URL is usually in the format: https://dashcam.testdriver.ai/...
-  if (output) {
-    // Match URL but stop at whitespace or quotes
-    const urlMatch = output.match(/https?:\/\/[^\s"']+/);
-    if (urlMatch) {
-      const url = urlMatch[0];
-      console.log("✅ Found dashcam URL:", url);
-      return url;
-    } else {
-      console.warn("⚠️  No URL found in dashcam output");
-    }
-  } else {
-    console.warn("⚠️  Dashcam command returned no output");
-  }
-
-  return null;
-}
 
 /**
  * Perform login flow (reusable snippet)

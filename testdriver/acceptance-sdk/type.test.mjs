@@ -1,21 +1,50 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  addDashcamLog,
+  authDashcam,
   createTestClient,
+  launchChrome,
   setupTest,
+  startDashcam,
+  stopDashcam,
   teardownTest,
+  waitForPage,
 } from "./setup/testHelpers.mjs";
 
 describe.sequential("Type Test", () => {
   let testdriver;
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-   
-    await setupTest(testdriver);
+  beforeAll(async () => {
+    testdriver = createTestClient({ task: { id: "type-test-suite" } });
+    await setupTest(testdriver, { prerun: false }); // Skip prerun, we'll handle dashcam manually
+    
+    // One-time dashcam setup (auth and add logs)
+    await authDashcam(testdriver);
+    await addDashcamLog(testdriver);
+    await launchChrome(testdriver);
+    await waitForPage(testdriver, "TestDriver.ai Sandbox");
+  });
+
+  beforeEach(async () => {
+    await startDashcam(testdriver);
   });
 
   afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
+    // Stop dashcam first to get the URL
+    const dashcamUrl = await stopDashcam(testdriver);
+    console.log("📤 Dashcam URL:", dashcamUrl);
+    
+    // Use teardownTest to track results, but skip postrun (already stopped dashcam) and disconnect
+    await teardownTest(testdriver, { 
+      task: context.task,
+      dashcamUrl: dashcamUrl, // Pass the dashcam URL we already got
+      postrun: false, // Skip postrun since we manually stopped dashcam
+      disconnect: false // Don't disconnect, we'll do that in afterAll
+    });
+  });
+  
+  afterAll(async () => {
+    await testdriver.disconnect();
   });
 
   it("should enter standard_user in username field", async () => {
