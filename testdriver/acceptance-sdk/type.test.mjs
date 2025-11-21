@@ -20,13 +20,13 @@ describe.sequential("Type Test", () => {
     
     // One-time dashcam setup (auth and add logs)
     await authDashcam(testdriver);
-    await addDashcamLog(testdriver);
     await launchChrome(testdriver);
     await waitForPage(testdriver, "TestDriver.ai Sandbox");
   });
 
   beforeEach(async () => {
     await startDashcam(testdriver);
+    await addDashcamLog(testdriver);
   });
 
   afterEach(async (context) => {
