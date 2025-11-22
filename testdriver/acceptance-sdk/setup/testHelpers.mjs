@@ -264,7 +264,7 @@ export function createTestClient(options = {}) {
     apiKey: process.env.TD_API_KEY,
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
     // headless: false,
-    // newSandbox: true, 
+    newSandbox: true, 
     // ip: '18.217.194.23'
     // ...clientOptions,
     // cache: false,

@@ -24,6 +24,10 @@ export async function authDashcam(
 
     console.log("Debug version output:", debug);
 
+    // Uninstall and clear cache first to ensure fresh install
+    await client.exec(shell, `npm uninstall dashcam -g`, 40000, true);
+    await client.exec(shell, `npm cache clean --force`, 40000, true);
+    
     let installDashcam = await client.exec(
       shell,
       `npm install dashcam@beta -g`,
@@ -32,11 +36,40 @@ export async function authDashcam(
     );
     console.log("Install dashcam output:", installDashcam);
 
-    let dashcamVersion = await client.exec(shell, `npm ls dashcam -g`, 40000, true);
-    console.log("Dashcam version:", dashcamVersion);
+    // Get version from package.json
+    let latestVersion = await client.exec(
+      shell, 
+      `npm view dashcam@beta version`, 
+      40000, 
+      true
+    );
+    console.log("Latest beta version available:", latestVersion);
+    
+    // Get the npm global prefix path
+    let npmPrefix = await client.exec(shell, `npm prefix -g`, 40000, true);
+    const dashcamPath = npmPrefix.trim() + '\\dashcam.cmd';
+    console.log("Dashcam executable path:", dashcamPath);
+    
+    let installedVersion = await client.exec(shell, `npm ls dashcam -g`, 40000, true);
+    console.log("Installed dashcam version:", installedVersion);
+    
+    // Test that dashcam version command works using explicit path
+    let dashcamVersionTest = await client.exec(shell, `& "${dashcamPath}" version`, 40000, true);
+    console.log("Dashcam version test:", dashcamVersionTest);
+    
+    // Verify we have a version installed
+    if (!installedVersion) {
+      console.error("❌ Dashcam version command returned null/empty");
+      console.log("Install output was:", installDashcam);
+    } else if (!installedVersion.includes("1.3.")) {
+      console.warn("⚠️  Dashcam version may be outdated. Expected 1.3.x, got:", installedVersion);
+    } else {
+      console.log("✅ Dashcam version verified:", installedVersion);
+    }
 
-    const authOutput = await client.exec(shell, `dashcam auth ${apiKey}`, 120000, true);
+    const authOutput = await client.exec(shell, `& "${dashcamPath}" auth ${apiKey}`, 120000, true);
     console.log("Auth output:", authOutput);
+    
     return;
   }
   
@@ -61,12 +94,11 @@ export async function addDashcamLog(client, logName = "TestDriver Log") {
       true,
     );
     console.log("Create log file output:", createFileOutput);
-    const addLogOutput = await client.exec(
-      shell,
-      `dashcam logs --add --type=file --file="${logPath}" --name="${logName}"`,
-      10000,
-      true,
-    );
+
+    let npmPrefix = await client.exec(shell, `npm prefix -g`, 40000, true);
+    const dashcamPath = npmPrefix.trim() + '\\dashcam.cmd';
+    const addLogOutput = await client.exec(shell, `& "${dashcamPath}" logs --add --type=file --file="${logPath}" --name="${logName}"`, 120000, true);
+
     console.log("Add log tracking output:", addLogOutput);
     return;
   }
@@ -95,12 +127,37 @@ export async function startDashcam(client) {
   if (client.os === "windows") {
     console.log("Starting dashcam recording on Windows...");
     
-    // Start dashcam using Start-Process without output redirection
-    // Let dashcam handle its own logging
-    const startScript = `Start-Process "cmd.exe" -ArgumentList "/c", "dashcam record"`;
+    // Get explicit path to dashcam
+    let npmPrefix = await client.exec("pwsh", `npm prefix -g`, 40000, true);
+    const dashcamPath = npmPrefix.trim() + '\\dashcam.cmd';
     
-    const startOutput = await client.exec("pwsh", startScript, 10000);
-    console.log("Start process output:", startOutput);
+    // Start dashcam record using Start-Process with cmd.exe
+    const startScript = `Start-Process "cmd.exe" -ArgumentList "/c", "${dashcamPath}", "record"`;
+    const startOutput = await client.exec("pwsh", startScript, 10000, true);
+    console.log("📋 Start-Process output:", startOutput);
+    
+    // Give the background process a moment to initialize and create status file
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Check if status file was created
+    const statusCheck = await client.exec("pwsh", `Get-Content "C:\\Users\\testdriver\\.dashcam-cli\\status.json" -ErrorAction SilentlyContinue`, 10000, true);
+    console.log("📋 Status file after start:", statusCheck);
+    
+    // Check if logs directory exists
+    const logsDirCheck = await client.exec("pwsh", `Test-Path "C:\\Users\\testdriver\\.dashcam-cli\\logs"`, 10000, true);
+    console.log("📁 Logs directory exists:", logsDirCheck);
+    
+    // List all files in .dashcam-cli directory
+    const allFiles = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName`, 10000, true);
+    console.log("📂 All files in .dashcam-cli:", allFiles);
+    
+    // Check background process logs
+    const latestLog = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\logs\\*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Tail 50`, 10000, true);
+    console.log("📝 Background process log (last 50 lines):", latestLog);
+    
+    // Check if any dashcam processes are running
+    const processes = await client.exec("pwsh", `Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path`, 10000, true);
+    console.log("🔍 Node processes:", processes);
     
     console.log("✅ Dashcam recording started");
     return;
@@ -121,12 +178,29 @@ export async function stopDashcam(client) {
   if (client.os === "windows") {
     console.log("Stopping dashcam process on Windows...");
     
+    // Get explicit path to dashcam
+    const npmPrefix = await client.exec("pwsh", `npm prefix -g`, 40000, true);
+    const dashcamPath = npmPrefix.trim() + '\\dashcam.cmd';
+    
+    // Check status file before stopping
+    const statusPath = "C:\\Users\\testdriver\\.dashcam-cli\\status.json";
+    const statusBefore = await client.exec("pwsh", `Get-Content "${statusPath}" -ErrorAction SilentlyContinue`, 10000, true);
+    console.log("📋 Status file before stop:", statusBefore);
+    
     // Set UTF-8 encoding to handle emojis and special characters in output
     let stop = await client.exec(
-      "pwsh", "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; dashcam stop", 120000);
+      "pwsh", `& "${dashcamPath}" stop`, 120000);
 
 
     console.log("📤 Dashcam stop command output:", stop);
+    
+    // Check status file after stopping
+    const statusAfter = await client.exec("pwsh", `Get-Content "${statusPath}" -ErrorAction SilentlyContinue`, 10000, true);
+    console.log("📋 Status file after stop:", statusAfter);
+    
+    // Check for video files
+    const videoFiles = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\*" -Include *.mp4 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name`, 10000, true);
+    console.log("🎥 Video files in .dashcam-cli:", videoFiles);
 
     let urlData = stop;
     
@@ -146,7 +220,9 @@ export async function stopDashcam(client) {
   
   const shell = "sh";
   // On non-Windows, use regular stop command
-  const output = await client.exec(shell, "dashcam stop", 60000, false);
+  const npmPrefix = await client.exec(shell, `npm prefix -g`, 40000, true);
+  const dashcamPath = npmPrefix.trim() + '/bin/dashcam';
+  const output = await client.exec(shell, `"${dashcamPath}" stop`, 60000, false);
   
   console.log("📤 Dashcam command output:", output);
 
