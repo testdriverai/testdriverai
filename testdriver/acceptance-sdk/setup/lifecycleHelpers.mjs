@@ -226,6 +226,18 @@ export async function stopDashcam(client) {
     const statusAfter = await client.exec("pwsh", `Get-Content "${statusPath}" -ErrorAction SilentlyContinue`, 10000, true);
     console.log("📋 Status file after stop:", statusAfter);
     
+    // Check background process log to see what happened
+    const bgLog = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\logs\\*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Tail 100`, 10000, true);
+    console.log("📝 Background process log (last 100 lines):", bgLog);
+    
+    // Check for signal marker file
+    const signalMarker = await client.exec("pwsh", `Get-Content "C:\\Users\\testdriver\\.dashcam-cli\\signal-received.txt" -ErrorAction SilentlyContinue`, 10000, true);
+    console.log("🎯 Signal marker file:", signalMarker);
+    
+    // Check for recording-result.json file
+    const recordingResult = await client.exec("pwsh", `Get-Content "C:\\Users\\testdriver\\.dashcam-cli\\recording-result.json" -ErrorAction SilentlyContinue`, 10000, true);
+    console.log("📤 Recording result file:", recordingResult);
+    
     // Check for video files
     const videoFiles = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\*" -Include *.mp4 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name`, 10000, true);
     console.log("🎥 Video files in .dashcam-cli:", videoFiles);
