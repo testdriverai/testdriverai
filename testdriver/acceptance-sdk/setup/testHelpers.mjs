@@ -30,7 +30,7 @@ export {
   runPrerun,
   startDashcam,
   stopDashcam,
-  waitForPage,
+  waitForPage
 };
 
 // Get the directory of the current module
@@ -263,10 +263,11 @@ export function createTestClient(options = {}) {
     os: os, // Use OS from environment variable (windows or linux)
     apiKey: process.env.TD_API_KEY,
     apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
-    headless: false,
-    newSandbox: false, // Always create a new sandbox for each test
-    ...clientOptions, // This will include signal if passed in
-    cache: false, // Force cache disabled - put AFTER ...options to ensure it's not overridden
+    // headless: false,
+    // newSandbox: true, 
+    // ip: '18.217.194.23'
+    // ...clientOptions,
+    // cache: false,
   });
 
   console.log(

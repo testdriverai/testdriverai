@@ -1806,6 +1806,11 @@ ${regression}
 
     let { headless = false, heal, new: createNew = false } = options;
 
+    // Prioritize this.newSandbox flag if it's set
+    if (this.newSandbox) {
+      createNew = true;
+    }
+
     // If CI environment variable is true, always create a new sandbox
     if (this.config.CI) {
       createNew = true;
@@ -1820,10 +1825,17 @@ ${regression}
     // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
     if (createNew) {
       this.clearRecentSandboxId();
-      if (!this.config.CI) {
+      // Also clear this.sandboxId to prevent reconnection attempts
+      this.sandboxId = null;
+      if (!this.config.CI && !this.newSandbox) {
         this.emitter.emit(
           events.log.log,
           theme.dim("--`new` flag detected, will create a new sandbox"),
+        );
+      } else if (this.newSandbox) {
+        this.emitter.emit(
+          events.log.log,
+          theme.dim("--new-sandbox flag detected, will create a new sandbox"),
         );
       }
     }
@@ -1844,7 +1856,8 @@ ${regression}
 
       this.emitter.emit(events.sandbox.connected);
 
-      await this.renderSandbox(instance.instance, headless);
+      this.instance = instance.instance;
+      await this.renderSandbox(this.instance, headless);
       await this.newSession();
       await this.runLifecycle("provision");
 
@@ -1856,12 +1869,32 @@ ${regression}
         theme.dim(`using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
-    } else if (!createNew) {
+      
+      try {
+        let instance = await this.connectToSandboxDirect(
+          this.sandboxId,
+          true, // always persist by default
+        );
+
+        this.instance = instance;
+
+        await this.renderSandbox(instance, headless);
+        await this.newSession();
+        return;
+      } catch (error) {
+        // If connection fails, fall through to creating a new sandbox
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`failed to connect to recent sandbox, creating new one...`),
+        );
+        console.error("Failed to reconnect to sandbox:", error);
+      }
+    } else if (!createNew && !recentId) {
       this.emitter.emit(
         events.log.narration,
         theme.dim(`no recent sandbox found, creating a new one.`),
       );
-    } else if (this.sandboxId && !this.config.CI) {
+    } else if (!createNew && this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
@@ -1889,38 +1922,40 @@ ${regression}
         console.error("Failed to reconnect to sandbox:", error);
       }
     }
-
-    this.emitter.emit(
-      events.log.narration,
-      theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
-    );
-    // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-    // to see if that fixes the issue.
-    let newSandbox = await this.createNewSandbox().catch(() => {
+    
+    // Create new sandbox (either because createNew is true, or no existing sandbox to connect to)
+    if (!this.instance) {
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`double-checking sandbox availability`),
+        theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
       );
+      // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
+      // to see if that fixes the issue.
+      let newSandbox = await this.createNewSandbox().catch(() => {
+        this.emitter.emit(
+          events.log.narration,
+          theme.dim(`double-checking sandbox availability`),
+        );
+        return this.createNewSandbox();
+      });
 
-      return this.createNewSandbox();
-    });
+      // Extract the sandbox ID from the newly created sandbox
+      this.sandboxId = newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
+      
+      // Use the configured sandbox OS type
+      this.saveLastSandboxId(this.sandboxId, this.sandboxOs);
+      
+      let instance = await this.connectToSandboxDirect(
+        this.sandboxId,
+        true, // always persist by default
+      );
+      this.instance = instance;
+      await this.renderSandbox(instance, headless);
+      await this.newSession();
+      await this.runLifecycle("provision");
 
-    // For Linux sandboxes, use sandboxId; for Windows, use instanceId
-    const sandboxIdentifier =
-      newSandbox.sandbox.sandboxId || newSandbox.sandbox.instanceId;
-
-    // Use the configured sandbox OS type
-    this.saveLastSandboxId(sandboxIdentifier, this.sandboxOs);
-    let instance = await this.connectToSandboxDirect(
-      sandboxIdentifier,
-      true, // always persist by default
-    );
-    this.instance = instance;
-    await this.renderSandbox(instance, headless);
-    await this.newSession();
-    await this.runLifecycle("provision");
-
-    console.log("provision run");
+      console.log("provision run");
+    }
   }
 
   async start() {

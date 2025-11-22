@@ -22,7 +22,7 @@ export default defineConfig({
 
     // Timeout settings
     testTimeout: 600000, // 10 minutes per test
-    hookTimeout: 120000, // 2 minutes for setup/teardown
+    hookTimeout: 600000, // 10 minutes for setup/teardown
     teardownTimeout: 120000, // 2 minutes for teardown specifically
 
     globalTeardown: "./testdriver/acceptance-sdk/setup/globalTeardown.mjs",

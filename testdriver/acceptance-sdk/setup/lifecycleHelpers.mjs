@@ -12,8 +12,37 @@ export async function authDashcam(
   client,
   apiKey = "4e93d8bf-3886-4d26-a144-116c4063522d",
 ) {
-  const shell = client.os === "windows" ? "pwsh" : "sh";
-  await client.exec(shell, `dashcam auth ${apiKey}`, 30000, true);
+  if (client.os === "windows") {
+    const shell = "pwsh";
+
+    let debug = await client.exec(
+      shell,
+      `query session`,
+      40000,
+      true,
+    );
+
+    console.log("Debug version output:", debug);
+
+    let installDashcam = await client.exec(
+      shell,
+      `npm install dashcam@beta -g`,
+      120000,
+      true,
+    );
+    console.log("Install dashcam output:", installDashcam);
+
+    let dashcamVersion = await client.exec(shell, `npm ls dashcam -g`, 40000, true);
+    console.log("Dashcam version:", dashcamVersion);
+
+    const authOutput = await client.exec(shell, `dashcam auth ${apiKey}`, 120000, true);
+    console.log("Auth output:", authOutput);
+    return;
+  }
+  
+  const shell = "sh";
+  const authOutput = await client.exec(shell, `dashcam auth ${apiKey}`, 120000, true);
+  console.log("Auth output:", authOutput);
 }
 
 /**
@@ -22,31 +51,40 @@ export async function authDashcam(
  * @param {string} logName - Name for the log in dashcam (default: "TestDriver Log")
  */
 export async function addDashcamLog(client, logName = "TestDriver Log") {
-  const shell = client.os === "windows" ? "pwsh" : "sh";
-  const logPath =
-    client.os === "windows"
-      ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-      : "/tmp/testdriver.log";
-
-  // Create log file
   if (client.os === "windows") {
-    await client.exec(
+    const shell = "pwsh";
+    const logPath = "C:\\Users\\testdriver\\Documents\\testdriver.log";
+    const createFileOutput = await client.exec(
       shell,
       `New-Item -ItemType File -Path "${logPath}" -Force`,
       10000,
       true,
     );
-  } else {
-    await client.exec(shell, `touch ${logPath}`, 10000, true);
+    console.log("Create log file output:", createFileOutput);
+    const addLogOutput = await client.exec(
+      shell,
+      `dashcam logs --add --type=file --file="${logPath}" --name="${logName}"`,
+      10000,
+      true,
+    );
+    console.log("Add log tracking output:", addLogOutput);
+    return;
   }
 
+  const shell = "sh";
+  const logPath = "/tmp/testdriver.log";
+
+  // Create log file
+  await client.exec(shell, `touch ${logPath}`, 10000, true);
+
   // Add log tracking
-  await client.exec(
+  const addLogOutput = await client.exec(
     shell,
     `dashcam logs --add --type=file --file="${logPath}" --name="${logName}"`,
     10000,
     true,
   );
+  console.log("Add log tracking output:", addLogOutput);
 }
 
 /**
@@ -54,19 +92,22 @@ export async function addDashcamLog(client, logName = "TestDriver Log") {
  * @param {TestDriver} client - TestDriver client
  */
 export async function startDashcam(client) {
-  const shell = client.os === "windows" ? "pwsh" : "sh";
-
   if (client.os === "windows") {
-    await client.exec("pwsh", "npm install -g dashcam@beta", 60000 * 10);
-
-    // Use cmd.exe to run dashcam record in background on Windows
-    await client.exec("pwsh", "npm ls dashcam -g");
-
-    // Use cmd.exe to run dashcam record in background on Windows
-    await client.exec("pwsh", "dashcam start", 60000);
-  } else {
-    await client.exec(shell, "dashcam record >/dev/null 2>&1 &");
+    console.log("Starting dashcam recording on Windows...");
+    
+    // Start dashcam using Start-Process without output redirection
+    // Let dashcam handle its own logging
+    const startScript = `Start-Process "cmd.exe" -ArgumentList "/c", "dashcam record"`;
+    
+    const startOutput = await client.exec("pwsh", startScript, 10000);
+    console.log("Start process output:", startOutput);
+    
+    console.log("✅ Dashcam recording started");
+    return;
   }
+  
+  const shell = "sh";
+  await client.exec(shell, `dashcam record >/dev/null 2>&1 &`);
 }
 
 /**
@@ -77,17 +118,40 @@ export async function startDashcam(client) {
 export async function stopDashcam(client) {
   console.log("🎬 Stopping dashcam and retrieving URL...");
 
-  const shell = client.os === "windows" ? "pwsh" : "sh";
+  if (client.os === "windows") {
+    console.log("Stopping dashcam process on Windows...");
+    
+    // Set UTF-8 encoding to handle emojis and special characters in output
+    let stop = await client.exec(
+      "pwsh", "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; dashcam stop", 120000);
 
-  // Stop dashcam with title and push - this returns the URL
-  const output = await client.exec(shell, "dashcam stop", 60000, false); // Don't silence output so we can capture it
 
+    console.log("📤 Dashcam stop command output:", stop);
+
+    let urlData = stop;
+    
+    // Extract URL from output
+    if (urlData) {
+      const urlMatch = urlData.match(/https?:\/\/[^\s"',}]+/);
+      if (urlMatch) {
+        const url = urlMatch[0];
+        console.log("✅ Found dashcam URL:", url);
+        return url;
+      } else {
+        console.warn("⚠️  No URL found in dashcam config");
+      }
+    }
+    return null;
+  }
+  
+  const shell = "sh";
+  // On non-Windows, use regular stop command
+  const output = await client.exec(shell, "dashcam stop", 60000, false);
+  
   console.log("📤 Dashcam command output:", output);
 
-  // Extract URL from output - dashcam typically outputs the URL in the response
-  // The URL is usually in the format: https://dashcam.testdriver.ai/...
+  // Extract URL from output
   if (output) {
-    // Match URL but stop at whitespace or quotes
     const urlMatch = output.match(/https?:\/\/[^\s"']+/);
     if (urlMatch) {
       const url = urlMatch[0];
@@ -146,11 +210,6 @@ export async function waitForPage(
   let element;
   for (let i = 0; i < maxAttempts; i++) {
     element = await client.find(text);
-
-    console.log("foudn", element.found());
-    console.log("Debug Info:");
-    console.log(element.getDebugInfo());
-
     if (element.found()) break;
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }

@@ -265,8 +265,7 @@ class Element {
 
       const duration = Date.now() - startTime;
 
-      console.log("AI Response:", response);
-      console.log("AI Response Text:", response?.content[0]?.text);
+      console.log("AI Response Text:", response?.response.content[0]?.text);
 
       if (response && response.coordinates) {
         // Store response but clear large base64 data to prevent memory leaks
@@ -853,6 +852,14 @@ class TestDriverSDK {
     // Store headless preference from options
     this.headless = options.headless !== undefined ? options.headless : false;
 
+    // Store IP address if provided for direct connection
+    this.ip = options.ip || null;
+
+    // Store sandbox configuration options
+    this.sandboxAmi = options.sandboxAmi || null;
+    this.sandboxOs = options.sandboxOs || null;
+    this.sandboxInstance = options.sandboxInstance || null;
+
     // Cache threshold configuration
     // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
     // cache: false option disables cache completely by setting threshold to -1
@@ -965,17 +972,29 @@ class TestDriverSDK {
     if (connectOptions.sandboxId) {
       this.agent.sandboxId = connectOptions.sandboxId;
     }
-    if (connectOptions.ip) {
+    // Use IP from connectOptions if provided, otherwise fall back to constructor IP
+    if (connectOptions.ip !== undefined) {
       this.agent.ip = connectOptions.ip;
+    } else if (this.ip) {
+      this.agent.ip = this.ip;
     }
-    if (connectOptions.sandboxAmi) {
+    // Use sandboxAmi from connectOptions if provided, otherwise fall back to constructor value
+    if (connectOptions.sandboxAmi !== undefined) {
       this.agent.sandboxAmi = connectOptions.sandboxAmi;
+    } else if (this.sandboxAmi) {
+      this.agent.sandboxAmi = this.sandboxAmi;
     }
-    if (connectOptions.sandboxInstance) {
+    // Use sandboxInstance from connectOptions if provided, otherwise fall back to constructor value
+    if (connectOptions.sandboxInstance !== undefined) {
       this.agent.sandboxInstance = connectOptions.sandboxInstance;
+    } else if (this.sandboxInstance) {
+      this.agent.sandboxInstance = this.sandboxInstance;
     }
-    if (connectOptions.os) {
+    // Use os from connectOptions if provided, otherwise fall back to constructor value
+    if (connectOptions.os !== undefined) {
       this.agent.sandboxOs = connectOptions.os;
+    } else if (this.sandboxOs) {
+      this.agent.sandboxOs = this.sandboxOs;
     }
 
     // Set redrawThreshold on agent's cliArgs.options
