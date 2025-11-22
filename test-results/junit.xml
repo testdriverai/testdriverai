@@ -1,0 +1,772 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="245.167273125">
+    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-22T14:33:05.022Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="245.167273125">
+        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="245.166374458">
+            <system-out>
+🔧 createTestClient: SDK created, cacheThresholds = { find: [33m0.05[39m, findAll: [33m0.05[39m }
+[TestHelpers] Client OS configured as: windows
+[TestHelpers] Storing task ID on client: -1973333524_0_0
+
+[2m--`new` flag detected, will create a new sandbox[22m
+[2mestablishing connection...[22m
+
+[2mauthenticating...[22m
+
+[2mcreating new sandbox (can take up to 2 minutes)...[22m
+
+[2mconnecting...[22m
+
+renderSandbox {
+  instanceId: [32m&apos;i-0ec0d4bdb38afcb9e&apos;[39m,
+  ip: [32m&apos;18.222.10.66&apos;[39m,
+  vncPort: [33m8080[39m,
+  wsUrl: [32m&apos;ws://18.222.10.66:8765&apos;[39m,
+  vncUrl: [32m&apos;http://18.222.10.66:8080&apos;[39m,
+  wsPort: [33m8765[39m
+}
+
+Live test execution:
+http://localhost:63458?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwOi8vMTguMjIyLjEwLjY2OjgwODAvdm5jX2xpdGUuaHRtbD90b2tlbj1WM2I4d0c5IiwidG9rZW4iOiJWM2I4d0c5In0=
+
+Running lifecycle: provision
+No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml
+
+provision run
+
+[TestHelpers] Console interceptor enabled for task: -1973333524_0_0
+[2mcalling exec...[22m
+query session
+
+Debug version output: SESSIONNAME       USERNAME                 ID  STATE   TYPE        DEVICE 
+ services                                    0  Disc                        
+ console           rdp_local                 1  Active                      
+&gt;rdp-tcp#0         testdriver                2  Active                      
+ 31c5ce94259d4...                        65536  Listen                      
+ rdp-tcp                                 65537  Listen
+[2mcalling exec...[22m
+npm uninstall dashcam -g
+
+[2mcalling exec...[22m
+npm cache clean --force
+
+[2mcalling exec...[22m
+npm install dashcam@beta -g
+
+Install dashcam output: added 387 packages in 56s
+
+71 packages are looking for funding
+  run `npm fund` for details
+[2mcalling exec...[22m
+npm view dashcam@beta version
+
+Latest beta version available: 1.3.25
+[2mcalling exec...[22m
+npm prefix -g
+
+Dashcam executable path: C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd
+[2mcalling exec...[22m
+npm ls dashcam -g
+
+Installed dashcam version: C:\Users\testdriver\AppData\Roaming\npm
+`-- dashcam@1.3.25
+[2mcalling exec...[22m
+&amp; &quot;C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd&quot; version
+
+Dashcam version test: [INIT] Process Manager initialized
+[INIT] Process directory: C:\Users\testdriver\.dashcam-cli
+[INIT] Status file: C:\Users\testdriver\.dashcam-cli\status.json
+[INIT] Platform: win32
+[INIT] Creating process directory: C:\Users\testdriver\.dashcam-cli
+Dashcam CLI v1.3.25
+Node.js v22.2.0
+Platform: win32 x64
+✅ Dashcam version verified: C:\Users\testdriver\AppData\Roaming\npm
+`-- dashcam@1.3.25
+[2mcalling exec...[22m
+&amp; &quot;C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd&quot; auth 4e93d8bf-3886-4d26-a144-116c4063522d
+
+Auth output: [INIT] Process Manager initialized
+[INIT] Process directory: C:\Users\testdriver\.dashcam-cli
+[INIT] Status file: C:\Users\testdriver\.dashcam-cli\status.json
+[INIT] Platform: win32
+[INIT] Process directory exists: C:\Users\testdriver\.dashcam-cli
+14:30:20.209 [[32minfo[39m] Authenticating with API key
+14:30:20.608 [[32minfo[39m] Successfully authenticated and stored token
+Successfully authenticated with API key
+
+[2mcalling exec...[22m
+New-Item -ItemType File -Path &quot;C:\Users\testdriver\Documents\testdriver.log&quot; -Force
+
+Create log file output: Directory: C:\Users\testdriver\Documents
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+-a----        11/22/2025   2:30 PM              0 testdriver.log
+[2mcalling exec...[22m
+npm prefix -g
+
+[2mcalling exec...[22m
+&amp; &quot;C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd&quot; logs --add --type=file --file=&quot;C:\Users\testdriver\Documents\testdriver.log&quot; --name=&quot;TestDriver Log&quot;
+
+Add log tracking output: [INIT] Process Manager initialized
+[INIT] Process directory: C:\Users\testdriver\.dashcam-cli
+[INIT] Status file: C:\Users\testdriver\.dashcam-cli\status.json
+[INIT] Platform: win32
+[INIT] Process directory exists: C:\Users\testdriver\.dashcam-cli
+14:30:22.295 [[32minfo[39m] Started tracking logs for C:\Users\testdriver\Documents\testdriver.log
+14:30:22.340 [[32minfo[39m] Added CLI tracked path: C:\Users\testdriver\Documents\testdriver.log
+Added file tracker &quot;TestDriver Log&quot; for: C:\Users\testdriver\Documents\testdriver.log
+
+Starting dashcam recording on Windows...
+[2mcalling exec...[22m
+npm prefix -g
+
+📍 Dashcam path: C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd
+[2mcalling exec...[22m
+Test-Path &quot;C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd&quot;
+
+✓ Dashcam.cmd exists: True
+[2mcalling exec...[22m
+
+      try {
+        $process = Start-Process &quot;cmd.exe&quot; -ArgumentList &quot;/c&quot;, &quot;C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd record &gt; C:\Users\testdriver\.dashcam-cli\dashcam-start.log 2&gt;&amp;1&quot; -PassThru
+        Write-Output &quot;Process started with PID: $($process.Id)&quot;
+        Start-Sleep -Seconds 2
+        if ($process.HasExited) {
+          Write-Output &quot;Process has already exited with code: $($process.ExitCode)&quot;
+        } else {
+          Write-Output &quot;Process is still running&quot;
+        }
+      } catch {
+        Write-Output &quot;ERROR: $_&quot;
+      }
+    
+
+📋 Start-Process output: Process started with PID: 1100
+Process is still running
+
+[2mcalling exec...[22m
+Get-Content &quot;C:\Users\testdriver\.dashcam-cli\dashcam-start.log&quot; -ErrorAction SilentlyContinue
+
+📝 Dashcam record output: [INIT] Process Manager initialized
+[INIT] Process directory: C:\Users\testdriver\.dashcam-cli
+[INIT] Status file: C:\Users\testdriver\.dashcam-cli\status.json
+[INIT] Platform: win32
+[INIT] Process directory exists: C:\Users\testdriver\.dashcam-cli
+[DEBUG] Checking if recording is active...
+[DEBUG] Status file path: C:\Users\testdriver\.dashcam-cli\status.json
+[DEBUG] Status file exists: false
+[DEBUG] Status read result: null
+[DEBUG] No status found - recording not active
+Starting recording in background...
+[DEBUG] Checking if recording is active...
+[DEBUG] Status file path: C:\Users\testdriver\.dashcam-cli\status.json
+[DEBUG] Status file exists: false
+[DEBUG] Status read result: null
+[DEBUG] No status found - recording not active
+14:30:24.387 [[32minfo[39m] Starting background recording process
+14:30:24.401 [[32minfo[39m] Background process log file
+[ProcessManager] Log file created: C:\Users\testdriver\.dashcam-cli\logs\recording-1763821824388.log
+[ProcessManager] Node path: C:\Program Files\nodejs\node.exe
+[ProcessManager] Background script: C:\Users\testdriver\AppData\Roaming\npm\node_modules\dashcam\bin\dashcam-background.js
+[ProcessManager] Options: {&quot;fps&quot;:30}
+[ProcessManager] Background process spawned with PID: 2336
+14:30:24.407 [[32minfo[39m] Background process spawned
+14:30:26.386 [[33mwarn[39m] Permission check timed out, assuming permissions granted
+14:30:26.623 [[32minfo[39m] Recording started successfully in background
+Recording started successfully (PID: 2336)
+Output: C:\Users\TESTDR~1\AppData\Local\Temp\dashcam\recordings\recording-2025-11-22T14-30-25-068Z.webm
+
+Use &quot;dashcam status&quot; to check progress
+Use &quot;dashcam stop&quot; to stop recording and upload
+
+[2mcalling exec...[22m
+Get-Content &quot;C:\Users\testdriver\.dashcam-cli\status.json&quot; -ErrorAction SilentlyContinue
+
+📋 Status file after start: {
+  &quot;isRecording&quot;: true,
+  &quot;startTime&quot;: 1763821826498,
+  &quot;options&quot;: {
+    &quot;fps&quot;: 30
+  },
+  &quot;pid&quot;: 2336,
+  &quot;outputPath&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&quot;,
+  &quot;timestamp&quot;: 1763821826499,
+  &quot;platform&quot;: &quot;win32&quot;
+}
+[2mcalling exec...[22m
+Test-Path &quot;C:\Users\testdriver\.dashcam-cli\logs&quot;
+
+📁 Logs directory exists: True
+[2mcalling exec...[22m
+Get-ChildItem &quot;C:\Users\testdriver\.dashcam-cli\logs\*.log&quot; -ErrorAction SilentlyContinue | Select-Object Name,Length,LastWriteTime | Format-Table -AutoSize
+
+📋 All log files: Name                        Length LastWriteTime        
+----                        ------ -------------        
+recording-1763821824388.log  22171 11/22/2025 2:30:33 PM
+[2mcalling exec...[22m
+Get-ChildItem &quot;C:\Users\testdriver\.dashcam-cli&quot; -Recurse -ErrorAction SilentlyContinue | Select-Object FullName
+
+📂 All files in .dashcam-cli: FullName                                                         
+--------                                                         
+C:\Users\testdriver\.dashcam-cli\logs                            
+C:\Users\testdriver\.dashcam-cli\dashcam-start.log               
+C:\Users\testdriver\.dashcam-cli\status.json                     
+C:\Users\testdriver\.dashcam-cli\logs\recording-1763821824388.log
+[2mcalling exec...[22m
+Get-ChildItem &quot;C:\Users\testdriver\.dashcam-cli\logs\*.log&quot; -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content
+
+📝 Background process log (full content): 14:30:24.794 [[32minfo[39m] Started tracking logs for C:\Users\testdriver\Documents\testdriver.log
+[Background INIT] Process directory: C:\Users\testdriver\.dashcam-cli
+[Background INIT] Status file: C:\Users\testdriver\.dashcam-cli\status.json
+[Background] Process started {
+  pid: 2336,
+  platform: &apos;win32&apos;,
+  processDir: &apos;C:\\Users\\testdriver\\.dashcam-cli&apos;,
+  statusFile: &apos;C:\\Users\\testdriver\\.dashcam-cli\\status.json&apos;
+}
+14:30:25.064 [[32minfo[39m] Background recording process started
+  {
+    &quot;pid&quot;: 2336,
+    &quot;options&quot;: {
+      &quot;fps&quot;: 30
+    }
+  }
+14:30:25.065 [[32minfo[39m] Starting recording with options
+  {
+    &quot;recordingOptions&quot;: {
+      &quot;fps&quot;: 30,
+      &quot;includeAudio&quot;: false,
+      &quot;customOutputPath&quot;: null
+    }
+  }
+[Background] Starting recording with options: { fps: 30, includeAudio: false, customOutputPath: null }
+14:30:25.066 [[34mdebug[39m] ƒ+&apos; Entering clearRecordingsDirectory
+  {
+    &quot;args&quot;: {}
+  }
+14:30:25.067 [[34mdebug[39m] Recordings directory does not exist, nothing to clear
+14:30:25.067 [[34mdebug[39m] ƒ+? Exiting clearRecordingsDirectory
+  {
+    &quot;result&quot;: &quot;undefined&quot;
+  }
+14:30:25.068 [[34mdebug[39m] ƒ+&apos; Entering generateOutputPath
+  {
+    &quot;args&quot;: {}
+  }
+14:30:25.068 [[34mdebug[39m] [VERBOSE] Generating output path
+  {
+    &quot;directory&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings&quot;,
+    &quot;filepath&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&quot;,
+    &quot;directoryExists&quot;: false
+  }
+14:30:25.071 [[34mdebug[39m] Created recordings directory
+  {
+    &quot;directory&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings&quot;
+  }
+14:30:25.072 [[34mdebug[39m] ƒ+? Exiting generateOutputPath
+  {
+    &quot;result&quot;: &quot;undefined&quot;
+  }
+14:30:25.072 [[34mdebug[39m] ƒ+&apos; Entering getPlatformArgs
+  {
+    &quot;args&quot;: {
+      &quot;fps&quot;: 30,
+      &quot;includeAudio&quot;: false
+    }
+  }
+14:30:25.072 [[34mdebug[39m] ƒ+&apos; Entering detectPrimaryScreenDevice
+  {
+    &quot;args&quot;: {}
+  }
+14:30:25.073 [[32minfo[39m] Using Windows desktop capture (all monitors)
+14:30:25.073 [[34mdebug[39m] ƒ+? Exiting detectPrimaryScreenDevice
+  {
+    &quot;result&quot;: &quot;undefined&quot;
+  }
+14:30:25.073 [[34mdebug[39m] [VERBOSE] Using platform configuration
+  {
+    &quot;platform&quot;: &quot;win32&quot;,
+    &quot;config&quot;: {
+      &quot;inputFormat&quot;: &quot;gdigrab&quot;,
+      &quot;screenInput&quot;: &quot;desktop&quot;,
+      &quot;audioInput&quot;: &quot;audio=\&quot;virtual-audio-capturer\&quot;&quot;
+    }
+  }
+[Background] Recording started, writing status file...
+[Background] Writing status file: {
+  statusFile: &apos;C:\\Users\\testdriver\\.dashcam-cli\\status.json&apos;,
+  pid: 2336,
+  isRecording: true,
+  platform: &apos;win32&apos;
+}
+[Background] Status file written and verified: C:\Users\testdriver\.dashcam-cli\status.json
+[Background] Status file content verification: { contentLength: 280, parseable: true }
+[Background] Recording started successfully {
+  outputPath: &apos;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&apos;,
+  startTime: 1763821826498,
+  pid: 2336
+}
+14:30:26.524 [[34mdebug[39m] FFmpeg capture command:
+  {
+    &quot;args&quot;: &quot;-thread_queue_size 512 -f gdigrab -framerate 30 -probesize 50M -i desktop&quot;
+  }
+14:30:26.524 [[34mdebug[39m] [VERBOSE] Platform-specific arguments added
+  {
+    &quot;totalArgs&quot;: 10,
+    &quot;includeAudio&quot;: false,
+    &quot;fps&quot;: 30,
+    &quot;screenInput&quot;: &quot;desktop&quot;
+  }
+14:30:26.525 [[34mdebug[39m] ƒ+? Exiting getPlatformArgs
+  {
+    &quot;result&quot;: &quot;undefined&quot;
+  }
+14:30:26.525 [[32minfo[39m] Generated temp file path
+  {
+    &quot;tempFile&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;,
+    &quot;tempDir&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings&quot;
+  }
+14:30:26.525 [[32minfo[39m] Wrote temp file info to disk
+  {
+    &quot;path&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\temp-file.json&quot;,
+    &quot;tempFileInfo&quot;: {
+      &quot;tempFile&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;,
+      &quot;outputPath&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&quot;,
+      &quot;startTime&quot;: 1763821825073
+    }
+  }
+14:30:26.525 [[34mdebug[39m] Getting ffmpeg path from ffmpeg-static
+  {
+    &quot;path&quot;: &quot;C:\\Users\\testdriver\\AppData\\Roaming\\npm\\node_modules\\dashcam\\node_modules\\ffmpeg-static\\ffmpeg.exe&quot;
+  }
+14:30:26.526 [[32minfo[39m] Starting recording with options:
+  {
+    &quot;fps&quot;: 30,
+    &quot;includeAudio&quot;: false,
+    &quot;platform&quot;: &quot;win32&quot;,
+    &quot;outputPath&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&quot;,
+    &quot;tempFile&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;
+  }
+14:30:26.526 [[34mdebug[39m] [VERBOSE] FFmpeg command details
+  {
+    &quot;ffmpegPath&quot;: &quot;C:\\Users\\testdriver\\AppData\\Roaming\\npm\\node_modules\\dashcam\\node_modules\\ffmpeg-static\\ffmpeg.exe&quot;,
+    &quot;totalArgs&quot;: 40,
+    &quot;outputArgs&quot;: &quot;-c:v libvpx-vp9 -quality realtime -cpu-used 8 -deadline realtime -b:v 2M -r 30 -g 30 -force_key_frames expr:gte(t,n_forced*1) -f webm -flush_packets 1 -fflags +genpts -avoid_negative_ts make_zero -vsync 1 -max_muxing_queue_size 9999&quot;,
+    &quot;platformArgs&quot;: &quot;-thread_queue_size 512 -f gdigrab -framerate 30 -probesize 50M -i desktop&quot;
+  }
+14:30:26.526 [[35msilly[39m] [TRACE] Full FFmpeg command
+  {
+    &quot;command&quot;: &quot;C:\\Users\\testdriver\\AppData\\Roaming\\npm\\node_modules\\dashcam\\node_modules\\ffmpeg-static\\ffmpeg.exe -thread_queue_size 512 -f gdigrab -framerate 30 -probesize 50M -i desktop -c:v libvpx-vp9 -quality realtime -cpu-used 8 -deadline realtime -b:v 2M -r 30 -g 30 -force_key_frames expr:gte(t,n_forced*1) -f webm -flush_packets 1 -fflags +genpts -avoid_negative_ts make_zero -vsync 1 -max_muxing_queue_size 9999 -y C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;
+  }
+14:30:26.526 [[34mdebug[39m] Spawning FFmpeg process...
+14:30:26.526 [[32minfo[39m] FFmpeg process spawned
+  {
+    &quot;pid&quot;: 6184,
+    &quot;args&quot;: [
+      &quot;1&quot;,
+      &quot;-max_muxing_queue_size&quot;,
+      &quot;9999&quot;,
+      &quot;-y&quot;,
+      &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;
+    ],
+    &quot;tempFile&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;
+  }
+14:30:26.526 [[34mdebug[39m] Starting application tracking...
+14:30:26.526 [[34mdebug[39m] ƒ+&apos; Entering ApplicationTracker.start
+  {
+    &quot;args&quot;: {}
+  }
+14:30:26.526 [[34mdebug[39m] Starting enhanced application tracking
+  {
+    &quot;trackingDir&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam-cli-tracking&quot;,
+    &quot;logFile&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam-cli-tracking\\active-win.jsonl&quot;
+  }
+14:30:26.526 [[34mdebug[39m] ƒ+? Exiting ApplicationTracker.start
+  {
+    &quot;result&quot;: &quot;undefined&quot;
+  }
+14:30:26.527 [[34mdebug[39m] Starting log tracking...
+  {
+    &quot;recorderId&quot;: &quot;recording-2025-11-22T14-30-25-068Z&quot;
+  }
+14:30:26.541 [[34mdebug[39m] LogsTrackerManager: Starting new logs tracker instance
+  {
+    &quot;recorderId&quot;: &quot;recording-2025-11-22T14-30-25-068Z&quot;,
+    &quot;screenId&quot;: &quot;1&quot;,
+    &quot;directory&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings&quot;
+  }
+14:30:26.542 [[32minfo[39m] Started tracking logs for C:\Users\testdriver\Documents\testdriver.log
+14:30:26.542 [[34mdebug[39m] LogsTrackerManager: Starting WebSocket server...
+14:30:26.542 [[34mdebug[39m] WebSocketServer: Starting server, trying ports...
+  {
+    &quot;ports&quot;: [
+      10368,
+      16240,
+      21855,
+      24301,
+      25928
+    ]
+  }
+14:30:26.543 [[34mdebug[39m] WebSocketServer: Trying port 10368
+14:30:26.543 [[34mdebug[39m] WebSocketServer: Unreffed server to allow process exit
+14:30:26.543 [[32minfo[39m] Recording timeline started
+  {
+    &quot;recordingStartTime&quot;: 1763821826498,
+    &quot;recordingStartTimeReadable&quot;: &quot;2025-11-22T14:30:26.498Z&quot;
+  }
+14:30:26.543 [[32minfo[39m] Recording process started successfully
+  {
+    &quot;pid&quot;: 6184,
+    &quot;startTime&quot;: 1763821826498
+  }
+14:30:26.543 [[32minfo[39m] Recording started successfully
+  {
+    &quot;outputPath&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&quot;,
+    &quot;startTime&quot;: 1763821826498
+  }
+14:30:26.543 [[32minfo[39m] Background recording is now running. Waiting for stop signal...
+14:30:26.544 [[34mdebug[39m] WebSocketServer: Successfully listening on port 10368
+14:30:26.544 [[34mdebug[39m] WebSocketServer: Setting up server on port
+  {
+    &quot;port&quot;: 10368
+  }
+14:30:26.544 [[32minfo[39m] WebSocketServer: Setup complete, server is listening
+  {
+    &quot;port&quot;: 10368
+  }
+14:30:26.544 [[32minfo[39m] LogsTrackerManager: WebSocket server started on port
+  {
+    &quot;port&quot;: 10368
+  }
+14:30:26.544 [[34mdebug[39m] LogsTrackerManager: Creating WebTrackerManager for recording...
+14:30:26.544 [[34mdebug[39m] WebTrackerManager: Effect triggered
+  {
+    &quot;size&quot;: 0,
+    &quot;isListening&quot;: true,
+    &quot;shouldStart&quot;: false
+  }
+14:30:26.559 [[34mdebug[39m] WebTrackerManager: Stopping tracking...
+14:30:26.560 [[34mdebug[39m] WebSocketServer: Broadcasting message to all clients
+  {
+    &quot;clientCount&quot;: 0,
+    &quot;messageType&quot;: &quot;STOP_RECORDING&quot;
+  }
+14:30:26.561 [[34mdebug[39m] WebTrackerManager: Broadcasted stop message to all clients
+14:30:26.561 [[34mdebug[39m] WebTrackerManager: Stopped and cleaned up event handlers
+14:30:26.561 [[34mdebug[39m] LogsTrackerManager: Creating WebLogsTracker for recording...
+  {
+    &quot;directory&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings&quot;,
+    &quot;webConfigCount&quot;: 0
+  }
+14:30:26.561 [[34mdebug[39m] WebLogsTracker: Initializing
+  {
+    &quot;isWatchOnly&quot;: false,
+    &quot;configKeys&quot;: [],
+    &quot;configCount&quot;: 0
+  }
+14:30:26.561 [[34mdebug[39m] WebLogsTracker: Subscribing to global tabs and navigation events
+14:30:26.561 [[34mdebug[39m] WebTrackerManager: Subscribing to global tabs/navigation events
+14:30:26.561 [[34mdebug[39m] WebLogsTracker: Processing event
+  {
+    &quot;type&quot;: &quot;INITIAL_TABS&quot;,
+    &quot;time&quot;: 1763821826508
+  }
+14:30:26.561 [[34mdebug[39m] WebLogsTracker: Filtered initial tabs
+  {
+    &quot;originalCount&quot;: 0,
+    &quot;filteredCount&quot;: 0
+  }
+14:30:26.562 [[34mdebug[39m] WebLogsTracker: Writing event to file
+  {
+    &quot;fileLocation&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\dashcam_logs_web_events.jsonl&quot;
+  }
+14:30:26.562 [[32minfo[39m] WebTrackerManager: Starting tracking...
+  {
+    &quot;patterns&quot;: [],
+    &quot;callbackCount&quot;: 0
+  }
+14:30:26.562 [[34mdebug[39m] WebSocketServer: Broadcasting message to all clients
+  {
+    &quot;clientCount&quot;: 0,
+    &quot;messageType&quot;: &quot;START_RECORDING&quot;
+  }
+14:30:26.562 [[32minfo[39m] WebTrackerManager: Broadcasted start message to all clients
+  {
+    &quot;patterns&quot;: []
+  }
+14:30:26.562 [[34mdebug[39m] WebTrackerManager: Started successfully, registered event handlers
+14:30:26.562 [[34mdebug[39m] WebLogsTracker: Updating pattern subscriptions
+  {
+    &quot;patternsToRemove&quot;: 0,
+    &quot;newPatterns&quot;: 0,
+    &quot;totalPatterns&quot;: 0
+  }
+14:30:26.590 [[32minfo[39m] Started new logs tracker instance with web support
+  {
+    &quot;recorderId&quot;: &quot;recording-2025-11-22T14-30-25-068Z&quot;,
+    &quot;screenId&quot;: &quot;1&quot;,
+    &quot;directory&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings&quot;,
+    &quot;webConfigCount&quot;: 0
+  }
+14:30:26.649 [[32minfo[39m] FFmpeg output: ffmpeg version 6.1.1-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 12.2.0 (Rev10, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --pkg-config=pkgconf --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-ffnvcodec --enable-nvdec --enable-nvenc --enable-dxva2 --enable-d3d11va --enable-libvpl --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+  libavutil      58. 29.100 / 58. 29.100
+  libavcodec     60. 31.102 / 60. 31.102
+  libavformat    60. 16.100 / 60. 16.100
+  libavdevice    60.  3.100 / 60.  3.100
+  libavfilter     9. 12.100 /  9. 12.100
+  libswscale      7.  5.100 /  7.  5.100
+  libswresample   4. 12.100 /  4. 12.100
+  libpostproc    57.  3.100 / 57.  3.100
+-vsync is deprecated. Use -fps_mode
+Passing a number to -vsync is deprecated, use a string argument as described in the manual.
+[gdigrab @ 0000023b416ae000] Capturing whole desktop as 1366x768x32 at (0,0)
+14:30:26.651 [[34mdebug[39m] FFmpeg: ffmpeg version 6.1.1-essentials_build-www.gyan.dev Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 12.2.0 (Rev10, Built by MSYS2 project)
+  configuration: --enable-gpl --enable-version3 --enable-static --pkg-config=pkgconf --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-ffnvcodec --enable-nvdec --enable-nvenc --enable-dxva2 --enable-d3d11va --enable-libvpl --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+  libavutil      58. 29.100 / 58. 29.100
+  libavcodec     60. 31.102 / 60. 31.102
+  libavformat    60. 16.100 / 60. 16.100
+  libavdevice    60.  3.100 / 60.  3.100
+  libavfilter     9. 12.100 /  9. 12.100
+  libswscale      7.  5.100 /  7.  5.100
+  libswresample   4. 12.100 /  4. 12.100
+  libpostproc    57.  3.100 / 57.  3.100
+-vsync is deprecated. Use -fps_mode
+Passing a number to -vsync is deprecated, use a string argument as described in the manual.
+[gdigrab @ 0000023b416ae000] Capturing whole desktop as 1366x768x32 at (0,0)
+14:30:27.044 [[32minfo[39m] FFmpeg output: Input #0, gdigrab, from &apos;desktop&apos;:
+  Duration: N/A, start: 1763821826.649465, bitrate: 1007137 kb/s
+14:30:27.045 [[34mdebug[39m] FFmpeg: Input #0, gdigrab, from &apos;desktop&apos;:
+  Duration: N/A, start: 1763821826.649465, bitrate: 1007137 kb/s
+14:30:27.046 [[32minfo[39m] FFmpeg output: Stream #0:0: Video: bmp, bgra, 1366x768, 1007137 kb/s, 30 fps, 29.92 tbr, 1000k tbn
+14:30:27.047 [[34mdebug[39m] FFmpeg: Stream #0:0: Video: bmp, bgra, 1366x768, 1007137 kb/s, 30 fps, 29.92 tbr, 1000k tbn
+14:30:27.048 [[32minfo[39m] FFmpeg output: Stream mapping:
+  Stream #0:0 -&gt; #0:0
+14:30:27.048 [[34mdebug[39m] FFmpeg: Stream mapping:
+  Stream #0:0 -&gt; #0:0
+14:30:27.049 [[32minfo[39m] FFmpeg output: (bmp (native) -&gt; vp9 (libvpx-vp9))
+Press [q] to stop, [?] for help
+14:30:27.049 [[34mdebug[39m] FFmpeg: (bmp (native) -&gt; vp9 (libvpx-vp9))
+Press [q] to stop, [?] for help
+14:30:27.061 [[32minfo[39m] FFmpeg output: [libvpx-vp9 @ 0000023b416b7140] v1.13.1-601-g655da33b8
+14:30:27.062 [[34mdebug[39m] FFmpeg: [libvpx-vp9 @ 0000023b416b7140] v1.13.1-601-g655da33b8
+14:30:27.114 [[32minfo[39m] FFmpeg output: Output #0, webm, to &apos;C:\Users\TESTDR~1\AppData\Local\Temp\dashcam\recordings\temp-1763821825073.webm&apos;:
+  Metadata:
+    encoder         : Lavf60.16.100
+14:30:27.115 [[34mdebug[39m] FFmpeg: Output #0, webm, to &apos;C:\Users\TESTDR~1\AppData\Local\Temp\dashcam\recordings\temp-1763821825073.webm&apos;:
+  Metadata:
+    encoder         : Lavf60.16.100
+14:30:27.116 [[32minfo[39m] FFmpeg output: Stream #0:0: Video: vp9, yuva420p(tv, progressive), 1366x768, q=2-31, 2000 kb/s, 30 fps, 1k tbn
+    Metadata:
+      encoder         : Lavc60.31.102 libvpx-vp9
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+14:30:27.116 [[34mdebug[39m] FFmpeg: Stream #0:0: Video: vp9, yuva420p(tv, progressive), 1366x768, q=2-31, 2000 kb/s, 30 fps, 1k tbn
+    Metadata:
+      encoder         : Lavc60.31.102 libvpx-vp9
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+14:30:27.168 [[32minfo[39m] FFmpeg output: frame=    0 fps=0.0 q=0.0 size=       0kB time=N/A bitrate=N/A speed=N/A
+14:30:27.169 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=    0 fps=0.0 q=0.0 size=       0kB time=N/A bitrate=N/A speed=N/A
+14:30:27.585 [[32minfo[39m] FFmpeg output: frame=    4 fps=0.0 q=26.0 size=       0kB time=00:00:00.13 bitrate=  28.9kbits/s dup=1 drop=0 speed=0.264x
+14:30:27.585 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=    4 fps=0.0 q=26.0 size=       0kB time=00:00:00.13 bitrate=  28.9kbits/s dup=1 drop=0 speed=0.264x
+14:30:28.087 [[32minfo[39m] FFmpeg output: frame=   19 fps= 19 q=7.0 size=       0kB time=00:00:00.63 bitrate=   6.1kbits/s dup=1 drop=0 speed=0.627x
+14:30:28.088 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=   19 fps= 19 q=7.0 size=       0kB time=00:00:00.63 bitrate=   6.1kbits/s dup=1 drop=0 speed=0.627x
+14:30:28.098 [[33mwarn[39m] Error found in log file
+  {
+    &quot;file&quot;: &quot;C:\\Users\\testdriver\\Documents\\testdriver.log&quot;,
+    &quot;line&quot;: &quot;Process is still running\u001b[2mcalling exec...\u001b[22mGet-Content \&quot;C:\\Users\\testdriver\\.dashcam-cli\\dashcam-start.log\&quot; -ErrorAction SilentlyContinuedY&quot;? Dashcam record output: [INIT] Process Manager initializ&quot;
+  }
+14:30:28.615 [[32minfo[39m] FFmpeg output: frame=   35 fps= 23 q=2.0 size=      46kB time=00:00:01.16 bitrate= 324.0kbits/s dup=1 drop=0 speed=0.759x
+14:30:28.615 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=   35 fps= 23 q=2.0 size=      46kB time=00:00:01.16 bitrate= 324.0kbits/s dup=1 drop=0 speed=0.759x
+14:30:29.118 [[32minfo[39m] FFmpeg output: frame=   50 fps= 25 q=0.0 size=      46kB time=00:00:01.66 bitrate= 226.8kbits/s dup=1 drop=0 speed=0.818x
+14:30:29.119 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=   50 fps= 25 q=0.0 size=      46kB time=00:00:01.66 bitrate= 226.8kbits/s dup=1 drop=0 speed=0.818x
+14:30:29.495 [[32minfo[39m] Temp file created successfully
+  {
+    &quot;path&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\temp-1763821825073.webm&quot;,
+    &quot;size&quot;: 119432
+  }
+14:30:29.646 [[32minfo[39m] FFmpeg output: frame=   66 fps= 26 q=1.0 size=     117kB time=00:00:02.20 bitrate= 434.3kbits/s dup=1 drop=0 speed=0.857x
+14:30:29.647 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=   66 fps= 26 q=1.0 size=     117kB time=00:00:02.20 bitrate= 434.3kbits/s dup=1 drop=0 speed=0.857x
+14:30:30.148 [[32minfo[39m] FFmpeg output: frame=   81 fps= 26 q=0.0 size=     117kB time=00:00:02.70 bitrate= 353.9kbits/s dup=1 drop=0 speed=0.88x
+14:30:30.148 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=   81 fps= 26 q=0.0 size=     117kB time=00:00:02.70 bitrate= 353.9kbits/s dup=1 drop=0 speed=0.88x
+14:30:30.677 [[32minfo[39m] FFmpeg output: frame=   97 fps= 27 q=1.0 size=     172kB time=00:00:03.23 bitrate= 436.3kbits/s dup=1 drop=0 speed=0.899x
+14:30:30.677 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=   97 fps= 27 q=1.0 size=     172kB time=00:00:03.23 bitrate= 436.3kbits/s dup=1 drop=0 speed=0.899x
+14:30:31.177 [[32minfo[39m] FFmpeg output: frame=  112 fps= 27 q=1.0 size=     172kB time=00:00:03.73 bitrate= 377.9kbits/s dup=1 drop=0 speed=0.911x
+14:30:31.178 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  112 fps= 27 q=1.0 size=     172kB time=00:00:03.73 bitrate= 377.9kbits/s dup=1 drop=0 speed=0.911x
+14:30:31.708 [[32minfo[39m] FFmpeg output: frame=  128 fps= 28 q=1.0 size=     228kB time=00:00:04.26 bitrate= 437.4kbits/s dup=1 drop=0 speed=0.922x
+14:30:31.709 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  128 fps= 28 q=1.0 size=     228kB time=00:00:04.26 bitrate= 437.4kbits/s dup=1 drop=0 speed=0.922x
+14:30:32.208 [[32minfo[39m] FFmpeg output: frame=  143 fps= 28 q=1.0 size=     228kB time=00:00:04.76 bitrate= 391.5kbits/s dup=1 drop=0 speed=0.929x
+14:30:32.209 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  143 fps= 28 q=1.0 size=     228kB time=00:00:04.76 bitrate= 391.5kbits/s dup=1 drop=0 speed=0.929x
+14:30:32.740 [[32minfo[39m] FFmpeg output: frame=  159 fps= 28 q=1.0 size=     283kB time=00:00:05.30 bitrate= 438.0kbits/s dup=1 drop=0 speed=0.936x
+14:30:32.740 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  159 fps= 28 q=1.0 size=     283kB time=00:00:05.30 bitrate= 438.0kbits/s dup=1 drop=0 speed=0.936x
+14:30:33.239 [[32minfo[39m] FFmpeg output: frame=  173 fps= 28 q=1.0 size=     283kB time=00:00:05.76 bitrate= 402.6kbits/s dup=1 drop=0 speed=0.936x
+14:30:33.240 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  173 fps= 28 q=1.0 size=     283kB time=00:00:05.76 bitrate= 402.6kbits/s dup=1 drop=0 speed=0.936x
+14:30:33.344 [[33mwarn[39m] Error found in log file
+  {
+    &quot;file&quot;: &quot;C:\\Users\\testdriver\\Documents\\testdriver.log&quot;,
+    &quot;line&quot;: &quot;Use \&quot;dashcam stop\&quot; to stop recording and upload\u001b[2mcalling exec...\u001b[22mGet-Content \&quot;C:\\Users\\testdriver\\.dashcam-cli\\status.json\&quot; -ErrorAction SilentlyContinuedY&quot;&lt; Status file after start: {&quot;
+  }
+14:30:33.744 [[32minfo[39m] FFmpeg output: frame=  189 fps= 28 q=1.0 size=     339kB time=00:00:06.26 bitrate= 443.1kbits/s dup=1 drop=0 speed=0.94x
+14:30:33.744 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  189 fps= 28 q=1.0 size=     339kB time=00:00:06.26 bitrate= 443.1kbits/s dup=1 drop=0 speed=0.94x
+14:30:34.000 [[33mwarn[39m] Error found in log file
+  {
+    &quot;file&quot;: &quot;C:\\Users\\testdriver\\Documents\\testdriver.log&quot;,
+    &quot;line&quot;: &quot;}\u001b[2mcalling exec...\u001b[22mTest-Path \&quot;C:\\Users\\testdriver\\.dashcam-cli\\logs\&quot;dY&quot;? Logs directory exists: True\u001b[2mcalling exec...\u001b[22mGet-ChildItem \&quot;C:\\Users\\testdriver\\.dashcam-cli\\logs\\*.log\&quot; -ErrorAction&quot;
+  }
+14:30:34.271 [[32minfo[39m] FFmpeg output: frame=  204 fps= 28 q=1.0 size=     339kB time=00:00:06.80 bitrate= 408.4kbits/s dup=1 drop=0 speed=0.946x
+14:30:34.272 [[34mdebug[39m] [VERBOSE] FFmpeg progress: frame=  204 fps= 28 q=1.0 size=     339kB time=00:00:06.80 bitrate= 408.4kbits/s dup=1 drop=0 speed=0.946x
+14:30:34.347 [[33mwarn[39m] Error found in log file
+  {
+    &quot;file&quot;: &quot;C:\\Users\\testdriver\\Documents\\testdriver.log&quot;,
+    &quot;line&quot;: &quot;recording-1763821824388.log  22171 11/22/2025 2:30:33 PM\u001b[2mcalling exec...\u001b[22mGet-ChildItem \&quot;C:\\Users\\testdriver\\.dashcam-cli\&quot; -Recurse -ErrorAction SilentlyContinue | Select-Object FullNamedY&quot;, All f&quot;
+  }
+[2mcalling exec...[22m
+Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path
+
+🔍 Node processes: Id ProcessName Path                            
+  -- ----------- ----                            
+2336 node        C:\Program Files\nodejs\node.exe
+✅ Dashcam recording started
+
+[2mcalling exec...[22m
+Start-Process &quot;C:/Program Files/Google/Chrome/Application/chrome.exe&quot; -ArgumentList &quot;--start-maximized&quot;, &quot;--guest&quot;, &quot;http://testdriver-sandbox.vercel.app/&quot;
+
+Waiting for page to load, looking for text: TestDriver.ai Sandbox
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
+
+AI Response Text: I need to analyze the screenshot to find &quot;TestDriver.ai Sandbox&quot;.
+
+Looking at the screenshot, I can see:
+- Recycle Bin icon at the top
+- Google Chrome icon
+- EC2 Feedback icon
+- EC2 Macros icon
+- Microsoft Edge icon
+- A taskbar at the bottom with search bar and system icons
+
+I do not see any element labeled &quot;TestDriver.ai Sandbox&quot; anywhere in this screenshot.
+
+Element not found
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
+
+AI Response Text: I need to analyze the screenshot to find &quot;TestDriver.ai Sandbox&quot;.
+
+Looking at the screenshot, I can see:
+- Recycle Bin icon at the top
+- Google Chrome icon
+- EC2 Feedback icon
+- EC2 Macros icon
+- Microsoft Edge icon
+- A taskbar at the bottom with search bar and system icons
+
+I do not see any element labeled &quot;TestDriver.ai Sandbox&quot; anywhere in this screenshot.
+
+Element not found
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
+
+AI Response Text: I need to analyze the screenshot to find &quot;TestDriver.ai Sandbox&quot;.
+
+Looking at the screenshot, I can see:
+- Recycle Bin icon at the top
+- Google Chrome icon
+- EC2 Feedback icon
+- EC2 Macros icon
+- Microsoft Edge icon
+- A taskbar at the bottom with search bar and system icons
+
+I do not see any element labeled &quot;TestDriver.ai Sandbox&quot; anywhere in this screenshot.
+
+Element not found
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
+
+AI Response Text: I need to analyze the screenshot to find &quot;TestDriver.ai Sandbox&quot;.
+
+Looking at the screenshot, I can see:
+- Recycle Bin icon at the top
+- Google Chrome icon
+- EC2 Feedback icon
+- EC2 Macros icon
+- Microsoft Edge icon
+- A taskbar at the bottom with search bar and system icons
+
+I do not see any element labeled &quot;TestDriver.ai Sandbox&quot; anywhere in this screenshot.
+
+Element not found
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m
+
+AI Response Text: I need to analyze the screenshot to find &quot;TestDriver.ai Sandbox&quot; and determine if it&apos;s an IMAGE or TEXT element.
+
+Looking at the screenshot, I can see &quot;TestDriver.ai Sandbox&quot; appears as a heading at the top of the login page. This is clearly a text heading element, not an image/icon/logo.
+
+Element type: TEXT
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;TestDriver.ai Sandbox&quot;[39m [2m·[22m [2m[90m📍 (682, 153)[39m[22m[2m · [22m[2m⏱️  [31m2656ms[39m[22m[2m · [22m[1m[33m⚡ cached[39m[22m
+
+🧹 Running teardown...
+🎬 Stopping dashcam and retrieving URL...
+Stopping dashcam process on Windows...
+[2mcalling exec...[22m
+npm prefix -g
+
+[2mcalling exec...[22m
+Get-Content &quot;C:\Users\testdriver\.dashcam-cli\status.json&quot; -ErrorAction SilentlyContinue
+
+📋 Status file before stop: {
+  &quot;isRecording&quot;: true,
+  &quot;startTime&quot;: 1763821826498,
+  &quot;options&quot;: {
+    &quot;fps&quot;: 30
+  },
+  &quot;pid&quot;: 2336,
+  &quot;outputPath&quot;: &quot;C:\\Users\\TESTDR~1\\AppData\\Local\\Temp\\dashcam\\recordings\\recording-2025-11-22T14-30-25-068Z.webm&quot;,
+  &quot;timestamp&quot;: 1763821826499,
+  &quot;platform&quot;: &quot;win32&quot;
+}
+[2mcalling exec...[22m
+&amp; &quot;C:\Users\testdriver\AppData\Roaming\npm\dashcam.cmd&quot; stop
+
+[TestHelpers] Console interceptor removed for task: -1973333524_0_0
+🔌 Disconnecting client...
+
+✅ Client disconnected
+📊 Session info: {
+  &quot;sessionId&quot;: &quot;6921c8b3b5ccc6f7fc6ebf9c&quot;,
+  &quot;dashcamUrl&quot;: null,
+  &quot;replayObjectId&quot;: null,
+  &quot;instance&quot;: null
+}
+
+[Test] Teardown complete, dashcam URL: null
+
+            </system-out>
+            <system-err>
+❌ Error in postrun: MatchError: Command failed with exit code -1: Command timed out
+    at TestDriverSDK.&lt;anonymous&gt; [90m(/Users/ianjennings/Development/cli/[39msdk.js:1457:15[90m)[39m
+    at stopDashcam [90m(/Users/ianjennings/Development/cli/[39mtestdriver/acceptance-sdk/setup/lifecycleHelpers.mjs:219:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at runPostrun [90m(/Users/ianjennings/Development/cli/[39mtestdriver/acceptance-sdk/setup/lifecycleHelpers.mjs:342:10[90m)[39m
+    at teardownTest [90m(/Users/ianjennings/Development/cli/[39mtestdriver/acceptance-sdk/setup/testHelpers.mjs:472:20[90m)[39m
+    at [90m/Users/ianjennings/Development/cli/[39mtestdriver/acceptance-sdk/assert.test.mjs:27:25 {
+  fatal: [33mfalse[39m,
+  attachScreenshot: [33mtrue[39m
+}
+❌ Error stack: Error: Command failed with exit code -1: Command timed out
+    at TestDriverSDK.&lt;anonymous&gt; (/Users/ianjennings/Development/cli/sdk.js:1457:15)
+    at stopDashcam (/Users/ianjennings/Development/cli/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs:219:29)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at runPostrun (/Users/ianjennings/Development/cli/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs:342:10)
+    at teardownTest (/Users/ianjennings/Development/cli/testdriver/acceptance-sdk/setup/testHelpers.mjs:472:20)
+    at /Users/ianjennings/Development/cli/testdriver/acceptance-sdk/assert.test.mjs:27:25
+
+            </system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

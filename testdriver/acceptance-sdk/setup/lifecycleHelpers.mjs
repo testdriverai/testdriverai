@@ -130,11 +130,35 @@ export async function startDashcam(client) {
     // Get explicit path to dashcam
     let npmPrefix = await client.exec("pwsh", `npm prefix -g`, 40000, true);
     const dashcamPath = npmPrefix.trim() + '\\dashcam.cmd';
+    console.log("📍 Dashcam path:", dashcamPath);
     
-    // Start dashcam record using Start-Process with cmd.exe
-    const startScript = `Start-Process "cmd.exe" -ArgumentList "/c", "${dashcamPath}", "record"`;
+    // Verify dashcam.cmd exists
+    const dashcamExists = await client.exec("pwsh", `Test-Path "${dashcamPath}"`, 10000, true);
+    console.log("✓ Dashcam.cmd exists:", dashcamExists);
+    
+    // Start dashcam record and redirect output to a file so we can see errors
+    const outputFile = "C:\\Users\\testdriver\\.dashcam-cli\\dashcam-start.log";
+    const startScript = `
+      try {
+        $process = Start-Process "cmd.exe" -ArgumentList "/c", "${dashcamPath} record > ${outputFile} 2>&1" -PassThru
+        Write-Output "Process started with PID: $($process.Id)"
+        Start-Sleep -Seconds 2
+        if ($process.HasExited) {
+          Write-Output "Process has already exited with code: $($process.ExitCode)"
+        } else {
+          Write-Output "Process is still running"
+        }
+      } catch {
+        Write-Output "ERROR: $_"
+      }
+    `;
     const startOutput = await client.exec("pwsh", startScript, 10000, true);
     console.log("📋 Start-Process output:", startOutput);
+    
+    // Read the output file to see what dashcam record produced
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const dashcamOutput = await client.exec("pwsh", `Get-Content "${outputFile}" -ErrorAction SilentlyContinue`, 10000, true);
+    console.log("📝 Dashcam record output:", dashcamOutput);
     
     // Give the background process a moment to initialize and create status file
     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -147,13 +171,17 @@ export async function startDashcam(client) {
     const logsDirCheck = await client.exec("pwsh", `Test-Path "C:\\Users\\testdriver\\.dashcam-cli\\logs"`, 10000, true);
     console.log("📁 Logs directory exists:", logsDirCheck);
     
+    // List all log files with their sizes and modification times
+    const allLogs = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\logs\\*.log" -ErrorAction SilentlyContinue | Select-Object Name,Length,LastWriteTime | Format-Table -AutoSize`, 10000, true);
+    console.log("📋 All log files:", allLogs);
+    
     // List all files in .dashcam-cli directory
     const allFiles = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli" -Recurse -ErrorAction SilentlyContinue | Select-Object FullName`, 10000, true);
     console.log("📂 All files in .dashcam-cli:", allFiles);
     
     // Check background process logs
-    const latestLog = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\logs\\*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Tail 50`, 10000, true);
-    console.log("📝 Background process log (last 50 lines):", latestLog);
+    const latestLog = await client.exec("pwsh", `Get-ChildItem "C:\\Users\\testdriver\\.dashcam-cli\\logs\\*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content`, 10000, true);
+    console.log("📝 Background process log (full content):", latestLog);
     
     // Check if any dashcam processes are running
     const processes = await client.exec("pwsh", `Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path`, 10000, true);
