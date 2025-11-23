@@ -244,16 +244,30 @@ export async function stopDashcam(client) {
 
     let urlData = stop;
     
-    // Extract URL from output
+    // Extract URL from output - look specifically for replay URLs
     if (urlData) {
-      const urlMatch = urlData.match(/https?:\/\/[^\s"',}]+/);
-      if (urlMatch) {
-        const url = urlMatch[0];
+      // First try to find a URL with /replay/ path (most specific)
+      const replayUrlMatch = urlData.match(/https?:\/\/[^\s"',}]+\/replay\/[^\s"',}]+/);
+      if (replayUrlMatch) {
+        let url = replayUrlMatch[0];
+        // Remove any trailing punctuation or whitespace
+        url = url.replace(/[.,;:!\?\)\]]+$/, '').trim();
         console.log("✅ Found dashcam URL:", url);
+        console.log("🎥 Dashcam URL:", url);
         return url;
-      } else {
-        console.warn("⚠️  No URL found in dashcam config");
       }
+      
+      // Fallback: look for any dashcam.io or testdriver.ai URL
+      const dashcamUrlMatch = urlData.match(/https?:\/\/(?:app\.)?(?:dashcam\.io|testdriver\.ai)[^\s"',}]+/);
+      if (dashcamUrlMatch) {
+        let url = dashcamUrlMatch[0];
+        url = url.replace(/[.,;:!\?\)\]]+$/, '').trim();
+        console.log("✅ Found dashcam URL:", url);
+        console.log("🎥 Dashcam URL:", url);
+        return url;
+      }
+      
+      console.warn("⚠️  No replay URL found in dashcam output");
     }
     return null;
   }
@@ -266,16 +280,30 @@ export async function stopDashcam(client) {
   
   console.log("📤 Dashcam command output:", output);
 
-  // Extract URL from output
+  // Extract URL from output - look specifically for replay URLs
   if (output) {
-    const urlMatch = output.match(/https?:\/\/[^\s"']+/);
-    if (urlMatch) {
-      const url = urlMatch[0];
+    // First try to find a URL with /replay/ path (most specific)
+    const replayUrlMatch = output.match(/https?:\/\/[^\s"',}]+\/replay\/[^\s"',}]+/);
+    if (replayUrlMatch) {
+      let url = replayUrlMatch[0];
+      // Remove any trailing punctuation or whitespace
+      url = url.replace(/[.,;:!\?\)\]]+$/, '').trim();
       console.log("✅ Found dashcam URL:", url);
+      console.log("🎥 Dashcam URL:", url);
       return url;
-    } else {
-      console.warn("⚠️  No URL found in dashcam output");
     }
+    
+    // Fallback: look for any dashcam.io or testdriver.ai URL
+    const dashcamUrlMatch = output.match(/https?:\/\/(?:app\.)?(?:dashcam\.io|testdriver\.ai)[^\s"',}]+/);
+    if (dashcamUrlMatch) {
+      let url = dashcamUrlMatch[0];
+      url = url.replace(/[.,;:!\?\)\]]+$/, '').trim();
+      console.log("✅ Found dashcam URL:", url);
+      console.log("🎥 Dashcam URL:", url);
+      return url;
+    }
+    
+    console.warn("⚠️  No replay URL found in dashcam output");
   } else {
     console.warn("⚠️  Dashcam command returned no output");
   }
