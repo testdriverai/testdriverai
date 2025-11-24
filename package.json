@@ -3,6 +3,11 @@
   "version": "7.0.0",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
+  "exports": {
+    ".": "./sdk.js",
+    "./core": "./src/core/index.js",
+    "./vitest": "./interfaces/vitest-plugin.mjs"
+  },
   "bin": {
     "testdriverai": "bin/testdriverai.js"
   },

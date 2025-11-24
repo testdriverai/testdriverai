@@ -1093,15 +1093,256 @@ export type { TestDriverConfig } from './config/types';
 
 ---
 
+---
+
+## Design Principles: Avoiding Over-Abstraction
+
+### Direct Access Always Available
+
+**Critical principle**: Every layer is **optional sugar** over the core SDK. You can always drop down to lower levels.
+
+```typescript
+// Layer 3: Preset (highest abstraction)
+testdriver({ preset: 'chrome', launch: { url: 'https://myapp.com' } })
+
+// Layer 2: Plugin hook (medium abstraction)
+const td = useTestDriver();
+
+// Layer 1: Direct SDK (no abstraction)
+const td = new TestDriver(apiKey);
+await td.auth();
+await td.connect();
+
+// ALL THREE GIVE YOU THE SAME TestDriver INSTANCE
+// You can call td.find(), td.exec(), etc. the same way
+```
+
+### No Hidden Magic
+
+Every convenience method is just a thin wrapper that you could write yourself:
+
+```typescript
+// useTestDriver() is just:
+export function useTestDriver(options = {}) {
+  let client;
+  
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY);
+    await client.auth();
+    await client.connect();
+  });
+  
+  afterAll(async () => {
+    await client.disconnect();
+  });
+  
+  return client;  // Returns the actual SDK instance!
+}
+
+// Dashcam is just a standalone class:
+const dashcam = new Dashcam(td);  // Takes TestDriver instance
+await dashcam.start();  // Calls td.exec() under the hood
+```
+
+### Escape Hatches Everywhere
+
+You can mix and match abstraction levels:
+
+```typescript
+describe('Mix and Match', () => {
+  // Use plugin for convenience
+  const td = useTestDriver();
+  
+  // But also create manual Dashcam for special config
+  let customDashcam;
+  
+  beforeAll(async () => {
+    customDashcam = new Dashcam(td, {
+      logs: [/* complex config */]
+    });
+    await customDashcam.auth();
+  });
+  
+  it('test', async () => {
+    // Start custom dashcam
+    await customDashcam.start();
+    
+    // Use td directly - it's just the SDK instance
+    await td.exec('sh', 'custom-command');
+    const el = await td.find('Button');
+    await el.click();
+    
+    // Stop custom dashcam
+    const url = await customDashcam.stop();
+  });
+});
+```
+
+### Programmatic Invocation Examples
+
+**1. Pure SDK - No Plugin/Preset (Zero Abstraction)**
+
+```typescript
+import { TestDriver, Dashcam } from 'testdriverai';
+
+const td = new TestDriver(process.env.TD_API_KEY, { os: 'linux' });
+await td.auth();
+await td.connect();
+
+const dashcam = new Dashcam(td);
+await dashcam.auth();
+await dashcam.addFileLog('/tmp/app.log', 'App Log');
+await dashcam.start();
+
+// Do your testing
+await td.exec('sh', 'google-chrome https://myapp.com');
+const btn = await td.find('Login button');
+await btn.click();
+
+const replayUrl = await dashcam.stop();
+await td.disconnect();
+```
+
+**2. Programmatic with Helpers (Minimal Abstraction)**
+
+```typescript
+import { TestDriver, Dashcam } from 'testdriverai';
+import { launchChrome, waitForElement } from 'testdriverai/helpers';
+
+const td = new TestDriver(apiKey);
+await td.auth();
+await td.connect();
+
+// Helpers are just functions, you can read their source
+await launchChrome(td, 'https://myapp.com');
+await waitForElement(td, 'Page loaded', 30000);
+
+// Still calling SDK directly
+const el = await td.find('Button');
+await el.click();
+```
+
+**3. Plugin Mode - Still Direct Access**
+
+```typescript
+import { useTestDriver } from 'testdriverai/vitest';
+
+describe('Tests', () => {
+  const td = useTestDriver();  // Returns TestDriver instance
+  
+  it('test', async () => {
+    // Access underlying SDK at any time
+    console.log(td.getSessionId());  // SDK method
+    console.log(td.getInstance());   // SDK method
+    
+    // Access internal agent if needed
+    const emitter = td.getEmitter();
+    emitter.on('command:start', (cmd) => {
+      console.log('Command:', cmd);
+    });
+    
+    // Call SDK methods directly
+    await td.exec('sh', 'custom-script.sh');
+  });
+});
+```
+
+### Implementation Strategy: Thin Wrappers Only
+
+```typescript
+// BAD: Thick abstraction that hides functionality
+class ChromePresetManager {
+  private internalClient;
+  private internalDashcam;
+  
+  async click(selector) {
+    // Lost access to TestDriver!
+  }
+}
+
+// GOOD: Thin wrapper that returns SDK instance
+function chromePreset(options) {
+  return {
+    name: 'chrome',
+    async afterConnect(client) {  // Receives TestDriver instance
+      // Just runs commands on the client
+      await client.exec('sh', `chrome ${options.url}`);
+      // Client is still fully accessible to user
+    }
+  };
+}
+```
+
+### Abstraction Layers Summary
+
+```
+┌─────────────────────────────────────────────┐
+│  Presets: chromePreset({ url })             │  ← Sugar
+│  - Returns lifecycle hooks                  │
+│  - Hooks receive TestDriver instance        │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│  Plugin Hooks: useTestDriver()              │  ← Sugar
+│  - Handles beforeAll/afterAll               │
+│  - Returns TestDriver instance              │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│  Helpers: launchChrome(td, url)             │  ← Sugar
+│  - Just functions that call TD methods      │
+│  - Fully transparent                        │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│  Core SDK: new TestDriver()                 │  ← Reality
+│  - Everything else is built on this         │
+│  - Always directly accessible               │
+│  - No hidden state                          │
+└─────────────────────────────────────────────┘
+```
+
+### Rules to Prevent Over-Abstraction
+
+1. **Never hide the SDK instance** - All wrappers must expose the underlying TestDriver
+2. **No proxy patterns** - Don't intercept SDK method calls
+3. **Stateless helpers** - Helper functions take SDK instance as parameter
+4. **Transparent presets** - Presets are just lifecycle hooks with SDK access
+5. **Composable, not hierarchical** - Mix core SDK + helpers + plugin as needed
+
+### When to Use What
+
+```typescript
+// Script or non-Vitest framework? Use core SDK
+const td = new TestDriver(apiKey);
+
+// Want some helper functions? Import them
+import { launchChrome } from 'testdriverai/helpers';
+await launchChrome(td, url);
+
+// Using Vitest and want lifecycle management? Use plugin
+const td = useTestDriver();
+// Still get full SDK access!
+
+// Want preset configuration? Use it
+testdriver({ preset: chromePreset({ url }) });
+// Preset just runs commands on your SDK instance
+```
+
+---
+
 ## Conclusion
 
 This design provides:
 
 1. **Simple for beginners**: One-line setup for common cases
-2. **Powerful for experts**: Full control when needed
+2. **Powerful for experts**: Full control when needed - **no abstraction lock-in**
 3. **Maintainable**: Clear separation of concerns
 4. **Extensible**: Easy to add new presets and helpers
 5. **Type-safe**: Full TypeScript support
 6. **Well-documented**: Clear examples for every use case
+7. **Transparent**: Every layer is optional sugar over the core SDK
 
 The key insight is **progressive disclosure** - users start simple and only learn about advanced features when they need them. The preset system and helper functions cover the most common use cases, while the manual mode and hook system provide escape hatches for edge cases.
+
+**Most importantly**: You can always drop down to `new TestDriver()` and call methods directly. The layers don't hide functionality - they just reduce boilerplate for common patterns.
