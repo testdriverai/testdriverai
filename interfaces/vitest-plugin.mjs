@@ -400,16 +400,30 @@ class TestDriverReporter {
       `[TestDriver Reporter] Test case completed: ${test.name} (${status})`,
     );
 
+    // Calculate duration from tracked start time
+    const testCase = pluginState.testCases.get(test.id);
+    const duration = testCase ? Date.now() - testCase.startTime : 0;
+    
+    console.log(
+      `[TestDriver Reporter] 🐛 DEBUG - Calculated duration: ${duration}ms (startTime: ${testCase?.startTime}, now: ${Date.now()})`,
+    );
+
     // Read test metadata from file (cross-process communication)
     let dashcamUrl = null;
     let testFile = "unknown";
     let testOrder = 0;
-    let duration = result.duration || 0;
 
     const testResultFile = path.join(
       os.tmpdir(),
       "testdriver-results",
       `${test.id}.json`,
+    );
+
+    console.log(
+      `[TestDriver Reporter] 🐛 DEBUG - Looking for test result file with test.id: ${test.id}`,
+    );
+    console.log(
+      `[TestDriver Reporter] 🐛 DEBUG - Test result file path: ${testResultFile}`,
     );
 
     try {
@@ -424,10 +438,11 @@ class TestDriverReporter {
           "unknown";
         testOrder =
           testResult.testOrder !== undefined ? testResult.testOrder : 0;
-        duration = testResult.duration || result.duration || 0;
+        // Don't override duration from file - use Vitest's result.duration
+        // duration is already set above from result.duration
 
         console.log(
-          `[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`,
+          `[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms (from Vitest)`,
         );
 
         // Update test run platform from first test that reports it
@@ -545,7 +560,7 @@ class TestDriverReporter {
         `[TestDriver Reporter] ✅ Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`,
       );
       console.log(
-        `[TestDriver Reporter] 🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/test-runs/${testRunDbId}/${testCaseDbId}`,
+        `[TestDriver Reporter] 🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`,
       );
     } catch (error) {
       console.error(

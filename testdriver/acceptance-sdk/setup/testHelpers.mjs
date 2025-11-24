@@ -521,8 +521,17 @@ export async function teardownTest(client, options = {}) {
           testOrder = options.task.suite.tasks.indexOf(options.task);
         }
 
-        // Note: Duration is calculated by Vitest and passed via result.duration
-        // We don't need to track start time ourselves
+        // Note: In Vitest 4, task.result.duration is not available during afterEach
+        // We calculate it from task.result.startTime instead
+
+        const result = options.task.result;
+        const duration = result?.startTime 
+          ? Date.now() - result.startTime 
+          : 0;
+
+        console.log(
+          `[TestHelpers] 🐛 DEBUG - task.id: ${options.task.id}, calculated duration: ${duration}ms`,
+        );
 
         // Write test result with dashcam URL, platform, and metadata
         const testResult = {
@@ -536,11 +545,15 @@ export async function teardownTest(client, options = {}) {
             : null,
           platform: client.os, // Include platform from SDK client (source of truth)
           timestamp: Date.now(),
+          duration: duration, // Include duration from Vitest
         };
 
         fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
         console.log(
-          `[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder})`,
+          `[TestHelpers] ✅ Wrote test result to file: ${testResultFile}`,
+        );
+        console.log(
+          `[TestHelpers]    - testId: ${options.task.id}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, dashcam: ${dashcamUrl ? 'yes' : 'no'}`,
         );
       } catch (error) {
         console.error(
