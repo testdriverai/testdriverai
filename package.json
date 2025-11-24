@@ -6,7 +6,8 @@
   "exports": {
     ".": "./sdk.js",
     "./core": "./src/core/index.js",
-    "./vitest": "./interfaces/vitest-plugin.mjs"
+    "./vitest": "./interfaces/vitest-plugin.mjs",
+    "./vitest/hooks": "./src/vitest/hooks.mjs"
   },
   "bin": {
     "testdriverai": "bin/testdriverai.js"
