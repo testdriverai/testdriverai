@@ -10,6 +10,71 @@ Automate and scale QA with computer-use agents.
 
 [Follow the instructions on our docs for more.](https://docs.testdriver.ai/overview/quickstart).
 
+## v7 SDK - Progressive Disclosure
+
+TestDriver v7 introduces **three levels of API** to match your experience level:
+
+### 🟢 Beginner: Presets (Zero Config)
+
+```javascript
+import { test } from 'vitest';
+import { chromePreset } from 'testdriverai/presets';
+
+test('login test', async (context) => {
+  const { browser } = await chromePreset(context, {
+    url: 'https://myapp.com'
+  });
+  
+  await browser.find('Login button').click();
+});
+```
+
+**Built-in presets:** Chrome, VS Code, Electron, and create your own!
+
+### 🟡 Intermediate: Hooks (Flexible)
+
+```javascript
+import { test } from 'vitest';
+import { useTestDriver, useDashcam } from 'testdriverai/vitest/hooks';
+
+test('my test', async (context) => {
+  const client = useTestDriver(context, { os: 'linux' });
+  const dashcam = useDashcam(context, client, {
+    autoStart: true,
+    autoStop: true
+  });
+  
+  await client.find('button').click();
+});
+```
+
+**Automatic lifecycle management** - no more forgetting cleanup!
+
+### 🔴 Advanced: Core Classes (Full Control)
+
+```javascript
+import { test } from 'vitest';
+import { TestDriver, Dashcam } from 'testdriverai/core';
+
+test('my test', async () => {
+  const client = new TestDriver(apiKey, { os: 'linux' });
+  const dashcam = new Dashcam(client);
+  
+  await client.auth();
+  await client.connect();
+  await dashcam.start();
+  
+  await client.find('button').click();
+  
+  await dashcam.stop();
+  await client.disconnect();
+});
+```
+
+**Full manual control** for advanced scenarios.
+
+📖 **Learn more:** [MIGRATION.md](./docs/MIGRATION.md) | [PRESETS.md](./docs/PRESETS.md) | [HOOKS.md](./docs/HOOKS.md)
+
 # About
 
 TestDriver isn't like any test framework you've used before. TestDriver is an OS Agent for QA. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
