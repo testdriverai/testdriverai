@@ -1,11 +1,468 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="0.004102084">
-    <testsuite name="testdriver/acceptance-sdk/hooks-example.test.mjs" timestamp="2025-11-24T19:51:30.237Z" hostname="MacBookPro.lan" tests="1" failures="1" errors="0" skipped="0" time="0.004102084">
-        <testcase classname="testdriver/acceptance-sdk/hooks-example.test.mjs" name="Hooks API Demo &gt; should use hooks for automatic lifecycle management" time="0.003478708">
-            <failure message="client.focusApplication is not a function" type="TypeError">
-TypeError: client.focusApplication is not a function
- ❯ testdriver/acceptance-sdk/hooks-example.test.mjs:23:18
-            </failure>
+<testsuites name="vitest tests" tests="6" failures="0" errors="0" time="23.793439916">
+    <testsuite name="testdriver/acceptance-sdk/presets-example.test.mjs" timestamp="2025-11-24T22:20:16.222Z" hostname="MacBookPro.lan" tests="6" failures="0" errors="0" skipped="5" time="23.793439916">
+        <testcase classname="testdriver/acceptance-sdk/presets-example.test.mjs" name="Chrome preset - simple navigation" time="23.792742459">
+            <system-out>
+[useTestDriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+[2mestablishing connection...[22m
+
+[2mauthenticating...[22m
+
+[2mcreating new sandbox (can take up to 2 minutes)...[22m
+
+[2mconnecting...[22m
+
+renderSandbox {
+  sandboxId: [32m&apos;i6fqjwdje7vyhm82mkvnz&apos;[39m,
+  url: [32m&apos;https://6080-i6fqjwdje7vyhm82mkvnz.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
+}
+
+Live test execution:
+http://localhost:65284?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwczovLzYwODAtaTZmcWp3ZGplN3Z5aG04Mm1rdm56LmUyYi5hcHAvdm5jX2xpdGUuaHRtbD9hdXRvY29ubmVjdD10cnVlJnJlc2l6ZT1zY2FsZSIsInRva2VuIjoiVjNiOHdHOSJ9
+
+Running lifecycle: provision
+No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml
+
+provision run
+
+[useTestDriver] ✅ Connected to sandbox
+
+[2mcalling exec...[22m
+dashcam auth c30e5756-df39-4980-804b-21eb6160b43f
+[2mcalling exec...[22m
+google-chrome --start-maximized --guest --disable-fre --no-default-browser-check --no-first-run &quot;http://testdriver-sandbox.vercel.app/&quot; &gt;/dev/null 2&gt;&amp;1 &amp;
+
+[2mcalling exec...[22m
+dashcam record &gt;/dev/null 2&gt;&amp;1 &amp;
+
+[useDashcam] ✅ Recording started
+
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/1s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:735ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;main heading text&quot;[39m
+
+AI Response Text: I need to analyze this screenshot to find &quot;main heading text&quot;.
+
+Looking at the screenshot, I can see:
+- A dark desktop environment
+- A top panel with &quot;Applications&quot; menu and system information showing &quot;Mon 24 Nov, 22:20&quot;
+- A taskbar at the bottom with several application icons
+- The main area is mostly black/empty
+
+I don&apos;t see any main heading text visible in this screenshot. The desktop appears to be empty without any prominent heading text displayed.
+
+Element not found
+
+Found heading: Element {
+  description: [32m&apos;main heading text&apos;[39m,
+  sdk: TestDriverSDK {
+    agent: TestDriverAgent {
+      _events: {},
+      _newListener: [33mfalse[39m,
+      _removeListener: [33mfalse[39m,
+      verboseMemoryLeak: [33mfalse[39m,
+      _conf: [36m[Object][39m,
+      delimiter: [32m&apos;:&apos;[39m,
+      _maxListeners: [33m20[39m,
+      wildcard: [33mtrue[39m,
+      listenerTree: {},
+      emitter: [36m[EventEmitter][39m,
+      config: [36m[Object][39m,
+      cliArgs: [36m[Object][39m,
+      thisFile: [90mundefined[39m,
+      resultFile: [1mnull[22m,
+      newSandbox: [33mfalse[39m,
+      healMode: [33mfalse[39m,
+      sandboxId: [32m&apos;i6fqjwdje7vyhm82mkvnz&apos;[39m,
+      sandboxAmi: [1mnull[22m,
+      sandboxInstance: [1mnull[22m,
+      sandboxOs: [32m&apos;linux&apos;[39m,
+      ip: [1mnull[22m,
+      workingDir: [32m&apos;/Users/ianjennings/Development/cli&apos;[39m,
+      parser: [36m[Object][39m,
+      session: [36m[Object][39m,
+      outputs: [36m[Object][39m,
+      sdk: [36m[Object][39m,
+      analytics: [36m[Object][39m,
+      sandbox: [36m[Sandbox][39m,
+      system: [36m[Object][39m,
+      commands: [36m[Object][39m,
+      redraw: [36m[Object][39m,
+      commander: [36m[Object][39m,
+      lastPrompt: [32m&apos;&apos;[39m,
+      executionHistory: [],
+      errorCounts: {},
+      errorLimit: [33m3[39m,
+      checkCount: [33m0[39m,
+      checkLimit: [33m7[39m,
+      lastScreenshot: [1mnull[22m,
+      readlineInterface: [1mnull[22m,
+      tasks: [],
+      hasRunPostrun: [33mfalse[39m,
+      lastCommand: [33m1764022792048[39m,
+      csv: [36m[Array][39m,
+      debuggerUrl: [32m&apos;http://localhost:65284&apos;[39m,
+      sourceMapper: [36m[SourceMapper][39m,
+      commandHistoryFile: [32m&apos;/Users/ianjennings/.testdriver_history&apos;[39m,
+      stopped: [33mfalse[39m,
+      instance: [36m[Object][39m
+    },
+    options: {
+      apiRoot: [32m&apos;https://testdriver-api.onrender.com&apos;[39m,
+      os: [32m&apos;linux&apos;[39m,
+      newSandbox: [33mtrue[39m,
+      cacheThresholds: [36m[Object][39m,
+      resolution: [32m&apos;1366x768&apos;[39m,
+      analytics: [33mtrue[39m
+    },
+    os: [32m&apos;linux&apos;[39m,
+    resolution: [32m&apos;1366x768&apos;[39m,
+    newSandbox: [33mtrue[39m,
+    headless: [33mfalse[39m,
+    ip: [1mnull[22m,
+    sandboxAmi: [1mnull[22m,
+    sandboxOs: [1mnull[22m,
+    sandboxInstance: [1mnull[22m,
+    cacheThresholds: { find: [33m0.05[39m, findAll: [33m0.05[39m },
+    redrawThreshold: [33m0.1[39m,
+    connected: [33mtrue[39m,
+    authenticated: [33mtrue[39m,
+    emitter: EventEmitter {
+      _events: {},
+      _newListener: [33mfalse[39m,
+      _removeListener: [33mfalse[39m,
+      verboseMemoryLeak: [33mfalse[39m,
+      _conf: [36m[Object][39m,
+      delimiter: [32m&apos;:&apos;[39m,
+      _maxListeners: [33m20[39m,
+      wildcard: [33mtrue[39m,
+      listenerTree: [36m[Object][39m,
+      event: [32m&apos;sdk:response&apos;[39m
+    },
+    config: {
+      TD_ANALYTICS: [33mtrue[39m,
+      TD_API_ROOT: [32m&apos;https://testdriver-api.onrender.com&apos;[39m,
+      TD_API_KEY: [32m&apos;4e93d8bf-3886-4d26-a144-116c4063522d&apos;[39m,
+      TD_PROFILE: [33mfalse[39m,
+      TD_RESOLUTION: [36m[Array][39m,
+      _environment: [36m[Object][39m
+    },
+    session: { get: [36m[Function: get][39m, set: [36m[Function: set][39m },
+    apiClient: { req: [36m[AsyncFunction: req][39m, auth: [36m[AsyncFunction: auth][39m },
+    analytics: { track: [36m[AsyncFunction: track][39m },
+    sandbox: Sandbox {
+      socket: [36m[WebSocket][39m,
+      ps: {},
+      heartbeat: [1mnull[22m,
+      apiSocketConnected: [33mtrue[39m,
+      instanceSocketConnected: [33mtrue[39m,
+      authenticated: [33mtrue[39m,
+      instance: [1mnull[22m,
+      messageId: [33m15[39m,
+      uniqueId: [32m&apos;xjzlhf&apos;[39m,
+      os: [32m&apos;linux&apos;[39m
+    },
+    system: {
+      captureScreenBase64: [36m[AsyncFunction: captureScreenBase64][39m,
+      captureScreenPNG: [36m[AsyncFunction: captureScreenPNG][39m,
+      getMousePosition: [36m[AsyncFunction: getMousePosition][39m,
+      primaryDisplay: [1mnull[22m,
+      activeWin: [36m[AsyncFunction: activeWin][39m,
+      platform: [36m[Function: platform][39m,
+      getSystemInformationOsInfo: [36m[AsyncFunction: getSystemInformationOsInfo][39m
+    },
+    instance: {
+      sandboxId: [32m&apos;i6fqjwdje7vyhm82mkvnz&apos;[39m,
+      url: [32m&apos;https://6080-i6fqjwdje7vyhm82mkvnz.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
+    },
+    commands: {
+      scroll: [36m[AsyncFunction: scroll][39m,
+      click: [36m[AsyncFunction: click][39m,
+      hover: [36m[AsyncFunction: hover][39m,
+      [32m&apos;hover-text&apos;[39m: [36m[AsyncFunction: hover-text][39m,
+      [32m&apos;hover-image&apos;[39m: [36m[AsyncFunction: hover-image][39m,
+      [32m&apos;match-image&apos;[39m: [36m[AsyncFunction: match-image][39m,
+      type: [36m[AsyncFunction: type][39m,
+      [32m&apos;press-keys&apos;[39m: [36m[AsyncFunction: press-keys][39m,
+      wait: [36m[AsyncFunction: wait][39m,
+      [32m&apos;wait-for-image&apos;[39m: [36m[AsyncFunction: wait-for-image][39m,
+      [32m&apos;wait-for-text&apos;[39m: [36m[AsyncFunction: wait-for-text][39m,
+      [32m&apos;scroll-until-text&apos;[39m: [36m[AsyncFunction: scroll-until-text][39m,
+      [32m&apos;scroll-until-image&apos;[39m: [36m[AsyncFunction: scroll-until-image][39m,
+      [32m&apos;focus-application&apos;[39m: [36m[AsyncFunction: focus-application][39m,
+      remember: [36m[AsyncFunction: remember][39m,
+      assert: [36m[AsyncFunction: assert][39m,
+      exec: [36m[AsyncFunction: exec][39m
+    },
+    loggingEnabled: [33mtrue[39m,
+    __vitestContext: {
+      id: [32m&apos;-1610965907_0&apos;[39m,
+      name: [32m&apos;Chrome preset - simple navigation&apos;[39m,
+      suite: [90mundefined[39m,
+      each: [90mundefined[39m,
+      fails: [90mundefined[39m,
+      type: [32m&apos;test&apos;[39m,
+      file: [36m[Object][39m,
+      timeout: [33m60000[39m,
+      retry: [90mundefined[39m,
+      repeats: [90mundefined[39m,
+      mode: [32m&apos;run&apos;[39m,
+      meta: [Object: null prototype] {},
+      annotations: [],
+      concurrent: [33mtrue[39m,
+      shuffle: [90mundefined[39m,
+      location: [36m[Object][39m,
+      result: [36m[Object][39m,
+      onFinished: [36m[Array][39m
+    },
+    __connectionPromise: Promise { [90mundefined[39m },
+    scroll: [36m[Function: scroll] AsyncFunction[39m,
+    click: [36m[Function: click] AsyncFunction[39m,
+    hover: [36m[Function: hover] AsyncFunction[39m,
+    hoverText: [36m[Function: hoverText] AsyncFunction[39m,
+    hoverImage: [36m[Function: hoverImage] AsyncFunction[39m,
+    matchImage: [36m[Function: matchImage] AsyncFunction[39m,
+    type: [36m[Function: type] AsyncFunction[39m,
+    pressKeys: [36m[Function: pressKeys] AsyncFunction[39m,
+    wait: [36m[Function: wait] AsyncFunction[39m,
+    waitForImage: [36m[Function: waitForImage] AsyncFunction[39m,
+    waitForText: [36m[Function: waitForText] AsyncFunction[39m,
+    scrollUntilText: [36m[Function: scrollUntilText] AsyncFunction[39m,
+    scrollUntilImage: [36m[Function: scrollUntilImage] AsyncFunction[39m,
+    focusApplication: [36m[Function: focusApplication] AsyncFunction[39m,
+    remember: [36m[Function: remember] AsyncFunction[39m,
+    assert: [36m[Function: assert] AsyncFunction[39m,
+    exec: [36m[Function: exec] AsyncFunction[39m
+  },
+  system: {
+    captureScreenBase64: [36m[AsyncFunction: captureScreenBase64][39m,
+    captureScreenPNG: [36m[AsyncFunction: captureScreenPNG][39m,
+    getMousePosition: [36m[AsyncFunction: getMousePosition][39m,
+    primaryDisplay: [1mnull[22m,
+    activeWin: [36m[AsyncFunction: activeWin][39m,
+    platform: [36m[Function: platform][39m,
+    getSystemInformationOsInfo: [36m[AsyncFunction: getSystemInformationOsInfo][39m
+  },
+  commands: {
+    scroll: [36m[AsyncFunction: scroll][39m,
+    click: [36m[AsyncFunction: click][39m,
+    hover: [36m[AsyncFunction: hover][39m,
+    [32m&apos;hover-text&apos;[39m: [36m[AsyncFunction: hover-text][39m,
+    [32m&apos;hover-image&apos;[39m: [36m[AsyncFunction: hover-image][39m,
+    [32m&apos;match-image&apos;[39m: [36m[AsyncFunction: match-image][39m,
+    type: [36m[AsyncFunction: type][39m,
+    [32m&apos;press-keys&apos;[39m: [36m[AsyncFunction: press-keys][39m,
+    wait: [36m[AsyncFunction: wait][39m,
+    [32m&apos;wait-for-image&apos;[39m: [36m[AsyncFunction: wait-for-image][39m,
+    [32m&apos;wait-for-text&apos;[39m: [36m[AsyncFunction: wait-for-text][39m,
+    [32m&apos;scroll-until-text&apos;[39m: [36m[AsyncFunction: scroll-until-text][39m,
+    [32m&apos;scroll-until-image&apos;[39m: [36m[AsyncFunction: scroll-until-image][39m,
+    [32m&apos;focus-application&apos;[39m: [36m[AsyncFunction: focus-application][39m,
+    remember: [36m[AsyncFunction: remember][39m,
+    assert: [36m[AsyncFunction: assert][39m,
+    exec: [36m[AsyncFunction: exec][39m
+  },
+  coordinates: [1mnull[22m,
+  _found: [33mfalse[39m,
+  _response: {
+    response: {
+      model: [32m&apos;claude-sonnet-4-5-20250929&apos;[39m,
+      id: [32m&apos;msg_01E3ucfP6b5SPCDgPXRfK4Ne&apos;[39m,
+      type: [32m&apos;message&apos;[39m,
+      role: [32m&apos;assistant&apos;[39m,
+      content: [36m[Array][39m,
+      stop_reason: [32m&apos;end_turn&apos;[39m,
+      stop_sequence: [1mnull[22m,
+      usage: [36m[Object][39m
+    },
+    croppedImage: [1mnull[22m,
+    coordinates: [1mnull[22m,
+    elementType: [32m&apos;unknown&apos;[39m,
+    error: [32m&apos;No click coordinates found in response&apos;[39m,
+    cacheHit: [33mfalse[39m,
+    similarity: [1mnull[22m,
+    cacheStrategy: [32m&apos;none&apos;[39m
+  },
+  _screenshot: [32m&apos;iVBORw0KGgoAAAANSUhEUgAABVYAAAMACAYAAADPPjzCAABj1ElEQVR4AezBD7zXdWEv/tfn/fkScDBUQMU6A8T+SZl2TUXLyUYq2p3ldmGWZeXdtDuXa17/YM1dXMyri5pCqczQR7rZL8yEm8qU6dWYrltjsTvRxS2LnxApgoJ6OBzOOd/7+z4ev/N4nMtF7dOsO7rP57OaOnVqOwAAAPAq2nnMRdnbjPrO59LT05O9TVdXV3p6erK36erqSk9PT/ZGo0ePDkAJAAAAAACNlAAAAAAA0EgJAAAAAACNlAAAAAAA0Egre9Ae1ZUy5rVpb3kqezIwZt/UL24LAAAAAHuHZcuWZdq0aelYu3ZtzjjjjAA/u5LdtEePyUVfuDl/8Lnrs7O0srtq+qkpn/5ynj9gSv5PmjhxYsaOHZshEydOzNixY/PzMnHixIwdOzYAAAAAe6Np06Zl+vTpOe644/LWt741P0/f+MY3snz58sAvs2rq1KntDBmzb/7zjV/OjCOm5Se9A7nhzrvzjf/0B3nNiBHpKFPflgMvvjbPDrayacvWlEWfzH6b1+elHH/88fn93//93Hbbbbnrrrvyarrjjjvy0EMPZeHChem444478tBDD2XhwoX5l3rPe96TjRs35vHHH8+QO+64Iw899FAWLlwYAAAAXt7OYy7K3mbUdz6Xnp6e7G26urrS09OTvU1XV1d6enqyNxo9enReDSNGjMiuXbvy87Rs2bJMmzYtL2ft2rU544wz8mp45zvfmT/6oz/KtGnT0rF27drMnz8/q1evzqvt0ksvzRFHHJEvf/nLuffeezPc9ddfn3333Tfz5s3LunXr8vPw4Q9/ODNnzsykSZOyY8eOrFq1Ktdee2127NiR3X30ox/NySefnOuvvz6rVq3Knlx66aU54ogj8md/9mdZs2ZNhpx//vkZOXJkPv/5z+cX4cMf/nBmzpyZSZMmZceOHVm1alWuvfba7NixIx0f/vCHM3PmzEyaNCk7duzIqlWrcu2112bHjh3Zkw9/+MOZOXNmJk2alB07dmTVqlW59tprs2PHjgz5d//u3+UjH/lIXvva12bNmjX5kz/5k2zdujX/2rUyzHkLbsi73n5YXuwfTN9gO++ddUr++fH/kCeWLk6ZMDGHfvI/Z+drRqbdO5CM2TfPnnN1RsyfnTEj6uzJ2WefncMOOywf+9jHctddd+XVNDg4mOEWL16cDRs25NVw/vnn52/+5m/y+OOPZ8jixYuzYcOG/KLNnTs3w1111VUBAAAA9m6tViszZszIypUr8/M0bdq0TJ8+PVu3bs2ejB8/Pn/3d3+XV8O0adOyZMmSjB49OkPe+ta35qabbsoHPvCBPPbYY3k1veUtb8m0adPykY98JPfee2+GHHfccTnuuOPS1dWVffbZJz8vZ599dlasWJFbb701EyZMyAUXXJBDDjkk5513XoZ705velHPOOScHHHBAJk6cmJfylre8Je985ztzySWX5IMf/GCGHHrooRkzZkx+Uc4+++ysWLEit956ayZMmJALLrgghxxySM4777x0nH322VmxYkVuvfXWTJgwIRdccEEOOeSQnHfeedmTs88+OytWrMitt96aCRMm5IILLsghhxyS8847Lx2zZs3KZz7zmSxYsCD//M//nIsvvjg33nhjfuu3fiv/2rUyzLIl1+XfvG1hXjvyNXm+v50X+wfzG//+P2TxjzfkDad/KCP3H5/neweya7CdXbv60nXblRlVskf77bdfTjjhhMydOzef/exn86Y3vSnr1q3LkOnTp2fTpk0ZO3ZsTjjhhDz99NNZtmxZ+vv70zF9+vRs2rQpY8eOzQknnJCnn346y5YtS39/f/Zky5Yt6enpyXDjxo3LKaecknHjxmX9+vV58MEH88ILL2T06NE54YQTMnXq1Gzfvj0PPfRQNm7cmI7DDz88++yzTw455JCcfPLJ6evry4MPPpgtW7akp6cnw02ZMiUzZ87MiBEjsmrVqqxduzZDpk+fnk2bNqWrqysnnnhiNm/enOXLl6e/vz8drVYrp556aiZNmpTnn38+q1evztq1a7O7q666KgAAAMAvj1arlRkzZmT//ffPL8LWrVsz/uQnk6qd/0W7ypb78qq56KKLMnr06Oxu9OjRufDCC/M7v/M7ebX97d/+bX71V381r3/967Nx48Z0zJ49O/fff39+4zd+I+12O8NNmTIlM2fOzIgRI7Jq1aqsXbs2Q6ZPn55Nmzalq6srJ554YjZv3pzly5env78/ezJz5swM19/fn/nz52fUqFHp7e1NR1VVueqqq3LNNdfkM5/5TNrtdl7OI488kqOPPjozZszIgw8+mCHtdjvDTZkyJTNnzsyIESOyatWqrF27Nh2HHXZYurq6snr16gx3/PHHZ+PGjVm/fn1eycyZMzNcf39/5s+fn1GjRqW3tzczZ87McP39/Zk/f35GjRqV3t7e7G7mzJkZrr+/P/Pnz8+oUaPS29ub3/3d382dd96ZG2+8MR0/+tGP8sADD2T69On51re+lSZOOOGErFu3Lk899VSGzJw5M6tXr85zzz2XVquVU089NZMmTcrzzz+f1atXZ+3atRkyfvz4zJo1K2PGjMmaNWvy7W9/O0OmT5+eTZs2ZcyYMfnVX/3VfOc730nJME/9/arMu/SS/OD5nXlm50Ce7RvMznZy6kV/kvFT3pAdA+3sHGynd9euVH/xR5nwo++mruvsyezZs/OTn/wky5cvz5o1azJnzpwMd/nll2fBggVZsGBBJk+enAsuuCC333576rpOx+WXX54FCxZkwYIFmTx5ci644ILcfvvtqes6e3LZZZfl9NNPz5Dp06fn/vvvz+zZszNp0qScddZZ+b3f+710XHPNNfnYxz6WKVOm5KSTTspdd92V448/Ph3HHnts9ttvvxx22GF5//vfn1mzZqXjsssuy+mnn54hs2bNyt133513v/vdOfzww7N06dKcd955GXL55ZfnyiuvzDXXXJNp06blk5/8ZG655ZZ01HWdZcuW5eMf/3gOPvjgHHPMMVmwYEEAAACAX26tViszZszIuHHj8gtVtfO/qdp5Nb397W/PSznyyCPz8/D888/nkUceyZlnnpmO0aNH59d//dezdOnS7G7WrFm5++678+53vzuHH354li5dmvPOOy9DLr/88lx55ZW55pprMm3atHzyk5/MLbfckpdSSkkpJaWUlFIycuTI9PX1pa+vL0POPffcvPDCC/na176Wn8amTZvy9a9/Pf/xP/7HvJRZs2bl7rvvzrvf/e4cfvjhWbp0ac4777x0vPGNb8yNN96YkSNHZshBBx2UJUuWZL/99stPo5SSUkpKKSmlZOTIkenr60tfX186SikppaSUklJKRo4cmb6+vvT19aXjIx/5SP7mb/4mQ0opKaWklJJSSkaOHJm+vr709fWl1Wpl2rRp+W//7b+llJJSSjZs2JANGzbk2GOPTVNXXnll3vWud2W4P//zP8+0adNS13WWLVuWj3/84zn44INzzDHHZMGCBRnyzne+MytXrsxpp52WN7/5zbn22mszb968DLn88svzZ3/2Z/nCF76QI444Ioceemha2c2mR1Zm0WdG5YyL/ji7UrJt12Be6G/n+f7BvNA/mOd39ueFv/hPGbfuW6lbrbyU97///bn77rtTSsmyZctywQUX5Morr8zg4GA62u12JkyYkFNOOSU7duzIuHHj8sADD2TOnDn5yle+kna7nQkTJuSUU07Jjh07Mm7cuDzwwAOZM2dOvvKVr2R37XY7Q0opmT9/fu6+++5cdtllGTJixIh0nH/++dm5c2eG/OEf/mE++clP5pFHHslf/MVf5L3vfW/uu+++fOELX0hHXddpt9sZ0mq18qlPfSo333xzrr766nTMnj078+bNy7Jly/LUU0+l3W5n3333zaxZs9Lf359Jkybl/vvvz7Rp09Jx6KGHZtq0aenv709HVVUppQQAAAD45TRnzpy8nHPOOSdr1qxJx5FHHpmbbrope4tWq5WxY8fmpYwdOzatViv9/f15td1+++351Kc+lc997nM5/fTT86Mf/Sjf//73M1yr1cqnPvWp3Hzzzbn66qvTMXv27MybNy/Lli3LU089lXa7nX333TezZs1Kf39/Jk2alPvvvz/Tpk3LY489lpfT1dWVc845J/fcc08GBwfTMWXKlJxzzjn5zd/8zZRS8tO65pprcv/99+d973tfli9fnuFarVY+9alP5eabb87VV1+djtmzZ2fevHlZtmxZ7r777vzxH/9x3vve9+brX/96OubMmZP169fnu9/9bkopaaKrqyvnnHNO7rnnngwODmZ3XV1dOeecc3LPPfdkcHAwHdu3b89PfvKT7ElXV1fOOeec3HPPPRkcHMxBBx2Uuq6zadOmDKmqKlu3bs2BBx6Yn8Xg4GD25M1vfnMOPfTQTJs2Lf39/emoqiqllFRVlT/90z/NzTffnGuuuSYdr3/96/PXf/3XueOOO/JP//RPabfbGTduXGbNmpUdO3akqqqU7MHTD34jX1v42Wzq2ZUtOweytW8gz+0azLZd7Wy+9XMZ+08PpdVq5aW87W1vy6GHHpqlS5em47/8l/+SMWPG5D3veU+GW7lyZfr6+lLXdbZt25ZvfvObOfbYYzNk5cqV6evrS13X2bZtW775zW/m2GOPzSuZMmVKJk2alMWLF6eu69R1nbquMzg4mCFnnnlmrrjiinz+85/PUUcdlUmTJqWjlJIhdV2nruvsburUqZk4cWJuu+221HWduq5zxx13pN1u5+ijj86QBx54IO12O3VdZ8OGDXn22WczadKkbNq0KTt37szChQsza9as7LPPPimlZE/mzp2buXPnZu7cuZk7d24AAACAX06rV6/OkUcemSOPPDJr1qzJ3uSggw7KKznggAPy8/DAAw9k1KhROe6443LGGWfkzjvvTFVVGW7q1KmZOHFibrvtttR1nbquc8cdd6Tdbufoo4/OkAceeCDtdjt1XWfDhg159tlnM2nSpLycVquV6667Lr29vbniiisy5Oqrr86NN96YDRs2pIktW7bkL//yL/P7v//7qes6w02dOjUTJ07MbbfdlrquU9d17rjjjrTb7Rx99NEZGBjIX//1X+f9739/hpx++ulZvnx5SilpotVq5brrrktvb2+uuOKK7K7VauW6665Lb29vrrjiigy544478oEPfCC7a7Vaue6669Lb25srrrgiHXVdp6OUkuHa7XaqqsqradOmTdm5c2cWLlyYWbNmZZ999kkpJR2TJ0/OIYcckqeffjqnnnpqTjvttBx55JHZvHlz3vnOd2bIypUr09fXl7quU0pJKy9hV9fYbN45mB2Dyfb+wTy3azDP7RrIzqPek9HfWZERGcxLOfPMM7Njx4584hOfyJAXXnghs2fPzn333Zch27dvz3Dbt2/P5MmTM2T79u0Zbvv27Zk8eXJeyYEHHpiOZ555JnvyV3/1Vxk1alTuueeePP744zn00EPzjne8Iz+t8ePHp2Pr1q0ZUlVVtm/fnv333z9DXnzxxQypqir9/f0ZMWJEnn322Xzwgx/Mueeem3nz5mXs2LH56le/mvnz52d3V111VQAAAIBffnVdZ0ir1crepLu7O6/kV37lV7Jp06a82trtdu66666cf/75Oeyww/K7v/u7GTlyZIYbP358OrZu3ZohVVVl+/bt2X///TPkxRdfzJCqqtLf358RI0bkpdR1nS9+8Ys5+OCDM2fOnPT29qbj5JNPzpvf/OasWLEiH/vYx9JRSslxxx2X559/Pvfee29ezg033JDf/u3fzgc+8IEMN378+HRs3bo1Q6qqyvbt27P//vunY+nSpfnqV7+agw46KK9//evT3d2d22+/PU3UdZ0vfvGLOfjggzNnzpz09vZmuLqu88UvfjEHH3xw5syZk97e3gwppWR3dV3ni1/8Yg4++ODMmTMnvb296di6dWva7Xb233//DLfvvvvmueeey6vp2WefzQc/+MGce+65mTdvXsaOHZuvfvWrmT9/fl7/+tenY8aMGWm32xnyve99L5s3b86Qbdu2ZbhW9uA1p//7HHj6R7O5bzA9A+083z+Y7bsG89yuweyYcnj6PvqnOejmyzKyyv+m1WrllFNOycMPP5wtW7ZkyDe/+c2cfvrpGTduXLZu3ZqO7u7uDNfd3Z1NmzZlSHd3d4br7u7Opk2b8kqeeOKJdLz5zW/OmjVrMtyUKVPyjne8I8ccc0y2bt2ajo9+9KMZrr+/P1VV5aWsX78+HVOnTs1jjz2WjjFjxmT8+PF58skn89N49NFH84lPfCIdM2bMyJe+9KXcc889+Yd/+IcAAAAA//c58sgjs2bNmgwMDOSoo47Kt7/97ewtjj322LySY445Jt/+9rfz83D77bfnYx/7WO677748//zzGTlyZIZbv359OqZOnZrHHnssHWPGjMn48ePz5JNP5mdRSsmiRYsyderUnHnmmdm2bVuGvPjii/nHf/zH/Pqv/3qGVFWVww47LFu2bMm9996bl/PCCy9kyZIl+fjHP57vfve7GbJ+/fp0TJ06NY899lg6xowZk/Hjx+fJJ59Mx5o1a7J+/frMnj07r3vd6/J3f/d3eeaZZ/LTKqVk0aJFmTp1as4888xs27Ytw5VSsmjRokydOjVnnnlmtm3blpdTSsmiRYsyderUnHnmmdm2bVuG9PT0ZOPGjTniiCOyYsWKdIwdOza/8iu/kscffzxN9fb2Zp999smQ/fbbL6NGjcqQRx99NJ/4xCfSMWPGjHzpS1/KPffckx//+MfpWLhwYR599NEMV1VVSinZk5LdDJ52TrpOPTtP9Q3mJ70D+cmOXdn02HfzTN9gXuhvp52k/y1H56mz5qVvsJ3d/dt/+28zevToXHrppbnqqqty1VVX5aqrrsqll16a5557LnPmzMmQk08+OYcddlg6jjnmmBx//PG58847M+Tkk0/OYYcdlo5jjjkmxx9/fO688868kqeffjoPP/xwPv3pT2e//fZLR1dXV97whjekp6cn7XY7RxxxREop6e7uzkc+8pEMt3nz5rzlLW9Jq9XKnmzcuDFr1qzJRRddlFarlY7LLrsszzzzTB5++OG8kilTpuQd73hH6rpOXdfZsGFD2u12du7cGQAAAOCX09KlS/P1r389W7duzZ7cdNNN+Yd/+If84z/+Y2666absTWbMmJFXMmPGjPy8/I//8T9y4okn5tJLL82ebNy4MWvWrMlFF12UVquVjssuuyzPPPNMHn744TRVVVUWLVqUo446KhdffHFGjx6d7u7udHd3p67rrFq1Kh/60Idy1lln5ayzzspZZ52VgYGBLFmyJPPnz89PY8mSJWm32znxxBMzZOPGjVmzZk0uuuiitFqtdFx22WV55pln8vDDD6ejlJLly5fnfe97X04++eR8/etfz3CnnHJKrr322uxJVVVZtGhRjjrqqFx88cUZPXp0uru7093dnbquU1VVFi1alKOOOioXX3xxRo8ene7u7nR3d6eu63Sccsopufbaa9NRVVUWLVqUo446KhdffHFGjx6d7u7udHd3p67rdHzjG9/IGWeckSlTpqSUkgsvvDDbt2/Pfffdl6bWrVuXWbNmpdVqpdVq5dOf/nTa7XY6pkyZkne84x2p6zp1XWfDhg1pt9vZuXNnnnjiiaxevTrz5s3LgQcemLquU9d13vWud+Xggw/OS2llmBdP/mjqkz6Un+wczEA76RtsZ+c3lmT/lV/Ojo9/Pnnjv8mQ/re/O0/99mU56P+5Mq+pS4b85m/+Zv72b/82L774YkopGe6+++7L+973vtxwww3pWLlyZRYvXpyOAw44IF/+8pfzrW99K6WUdKxcuTKLFy9OxwEHHJAvf/nL+da3vpVSSl7JJZdcki984Qt55JFH8swzz2TffffNwoULs2TJkixZsiTXX399nnrqqYwcOTLLli3Lhz70oQy54YYb8tnPfjb//b//97z44os5+uijM1xVVbnkkkuyePHirF69Ort27Upvb28uvPDC7Nq1K6/kwAMPzA033JDBwcFs27YtEyZMyE033ZRHH300VVVluLlz52a4q666KgAAAMDeqb+/Pw8++GBmzJiRcePG5ZfB3Llz87a3vS2v5O1vf3suvfTSXH311Xm1VVWVH//4x6mqKntSVVUuueSSLF68OKtXr86uXbvS29ubCy+8MLt27UpTI0eOzEknnZSOpUuXZrjTTjst3//+97MnVVWllJKfxq5du3L99ddn3rx5GVJVVS655JIsXrw4q1evzq5du9Lb25sLL7wwu3btypDbb789F1xwQV544YWsWLEiw731rW/NEUcckT0ZOXJkTjrppHQsXbo0w5122mnZsGFDTjrppHQsXbo0w5122mn5/ve/n0MPPTQnnnhiOkaOHJmTTjopHUuXLs1wp512Wr7//e9n4cKFecMb3pAVK1Zk586d2bFjR/7gD/4gO3fuTFN//ud/niVLluTv//7v0263c8stt2Tnzp3pOPDAA3PDDTdkcHAw27Zty4QJE3LTTTfl0UcfTVVV+b3f+71cc801+eY3v5ktW7Zk3333zZYtW/I7v/M7eSnV1KlT2/n/9I1/XX7yh0uSESPSTtJuJ9Xfr8yBf/UnGT1yZAZHjMqP/8M16XvdGzKkenpDxl1zbvYd7MuQgYGBdNR1nd0NDAyko67r3HXXXVm+fHm+9KUv5Y1vfGOeeuqpPPvssymlpOOuu+7K8uXL86UvfSlvfOMb89RTT+XZZ59NKSUdAwMDqaoqpZR0DAwMpKqqlFIyZGBgIBMnTsy4cePy5JNP5oUXXkgpJYODg9lvv/0yceLE/OAHP8iuXbsyODiYVquVjsHBwbTb7bTb7XS0Wq0MDAykqqqUUtLRbrczODiYyZMnZ8SIEXniiSfSbrdTSknHwMBAqqpKKSVDBgYGUlVVhnR3d2fMmDFZv359ent7U0oJAADAL4Odx1yUvc2o73wuPT092dt0dXWlp6cne5uurq709PRkbzR69Oj8S7Varfzar/1aVq5cmZ+ndevW5U1velPGn/L/Zk+23Dsp69aty5ve9Kb8rFauXJnJkyfnp/HDH/4wp5xySl4NAwMD6ajrOnvS39+fUkpKKelot9sZHBzM5MmTM2LEiDzxxBNpt9sppaRjYGAgVVWllJIhAwMDqaoqpZTsrr+/P3tS13Wqqsru+vv7U0pJKSV7MjAwkI66rjNkcHAwg4ODqaoqdV2no91uZ3BwMJMnT86IESPyxBNPpN1up5SS4fr7+9PRarUy3C233JL/+l//a26++ebsSX9/f/akrutUVZX+/v7sSV3Xqaoqg4ODGRwcTKvVSkd/f3/2pK7rVFWVjoGBgRxwwAEZN25cfvCDH2RgYCCllDTVbrdTVVWmTJmSLVu2ZNu2bRkcHEwpJUO6u7szZsyYrF+/Pr29vSmlZMjAwED233//vO51r8vTTz+dzZs3p5SSqqoyMDCQqqpSSsmQVv5/r9ny44z/yvw8fean0x7xmpQfrs34267M6JEj01F29ebgmy7LxvO/kP79D0r19Ibst+j8vLa/NyklQ+q6zkup6zrDlVLSbrfzve99L1VVpZSS4Uopabfb+d73vpeqqlJKyZC6rjNcXdfZXV3X2bx5c55++ulUVZVSSjpKKdm+fXu2bduWqqpSSkkpJUNKKdldXdcZrqqq1HWdJ598Mh1VVaWqqgyp6zq7q+s6w23cuDEdVVWllBIAAADg/w79/f158MEH8wvTrpKqnf9Fu8qr4aSTTsr/CXVd5+W0Wq0MV1VV6rrOk08+mY6qqlJVVYbUdZ3d1XWdl9JqtdJEq9XKy6nrOrsrpaSUkuGqqkpd13nyySfTUVVVqqrK7lqtVvZkzZo1ueWWW/JSWq1WXk6r1crLKaWklJIhrVYrr6Su62zdujVbtmxJVVUppeRnUVVVOn74wx+mqqqUUlJKyXAb&apos;[39m... 24152 more characters,
+  _threshold: [33m0.05[39m
+}
+
+[useDashcam] Stopping Dashcam...
+🎬 Stopping dashcam and retrieving URL...
+[2mcalling exec...[22m
+npm prefix -g
+
+[2mcalling exec...[22m
+&quot;/usr/bin/dashcam&quot; stop
+
+[2mstdout:[22m
+[INIT] Process Manager initialized
+[INIT] Process directory: /home/user/.dashcam-cli
+[INIT] Status file: /home/user/.dashcam-cli/status.json
+[INIT] Platform: linux
+[INIT] Process directory exists: /home/user/.dashcam-cli
+!!!! Updated Stop
+22:20:15.732 [[34mdebug[39m] Stop command invoked
+  {
+    &quot;platform&quot;: &quot;linux&quot;,
+    &quot;cwd&quot;: &quot;/home/user&quot;,
+    &quot;pid&quot;: 1524,
+    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;
+  }
+[DEBUG] Checking if recording is active...
+[DEBUG] Status file path: /home/user/.dashcam-cli/status.json
+[DEBUG] Status file exists: false
+22:20:15.791 [[34mdebug[39m] Checking if recording is active...
+  {
+    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
+    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;,
+    &quot;platform&quot;: &quot;linux&quot;
+  }
+22:20:15.792 [[34mdebug[39m] Reading status file
+  {
+    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
+    &quot;exists&quot;: false
+  }
+22:20:15.792 [[34mdebug[39m] Status file does not exist
+[DEBUG] Status read result: null
+22:20:15.794 [[34mdebug[39m] Status check result
+  {
+    &quot;hasStatus&quot;: false,
+    &quot;hasPid&quot;: false,
+    &quot;isRecording&quot;: null,
+    &quot;statusPid&quot;: null,
+    &quot;currentPid&quot;: 1524
+  }
+[DEBUG] No status found - recording not active
+22:20:15.794 [[34mdebug[39m] No status found - recording not active
+22:20:15.795 [[34mdebug[39m] Recording active check result
+  {
+    &quot;isActive&quot;: false
+  }
+No active recording to stop
+22:20:15.796 [[33mwarn[39m] Stop command called but no active recording found
+  {
+    &quot;platform&quot;: &quot;linux&quot;,
+    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
+    &quot;statusFileExists&quot;: false
+  }
+Status file does not exist
+Expected status file location: /home/user/.dashcam-cli/status.json
+
+
+📤 Dashcam command output: [INIT] Process Manager initialized
+[INIT] Process directory: /home/user/.dashcam-cli
+[INIT] Status file: /home/user/.dashcam-cli/status.json
+[INIT] Platform: linux
+[INIT] Process directory exists: /home/user/.dashcam-cli
+!!!! Updated Stop
+22:20:15.732 [[34mdebug[39m] Stop command invoked
+  {
+    &quot;platform&quot;: &quot;linux&quot;,
+    &quot;cwd&quot;: &quot;/home/user&quot;,
+    &quot;pid&quot;: 1524,
+    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;
+  }
+[DEBUG] Checking if recording is active...
+[DEBUG] Status file path: /home/user/.dashcam-cli/status.json
+[DEBUG] Status file exists: false
+22:20:15.791 [[34mdebug[39m] Checking if recording is active...
+  {
+    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
+    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;,
+    &quot;platform&quot;: &quot;linux&quot;
+  }
+22:20:15.792 [[34mdebug[39m] Reading status file
+  {
+    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
+    &quot;exists&quot;: false
+  }
+22:20:15.792 [[34mdebug[39m] Status file does not exist
+[DEBUG] Status read result: null
+22:20:15.794 [[34mdebug[39m] Status check result
+  {
+    &quot;hasStatus&quot;: false,
+    &quot;hasPid&quot;: false,
+    &quot;isRecording&quot;: null,
+    &quot;statusPid&quot;: null,
+    &quot;currentPid&quot;: 1524
+  }
+[DEBUG] No status found - recording not active
+22:20:15.794 [[34mdebug[39m] No status found - recording not active
+22:20:15.795 [[34mdebug[39m] Recording active check result
+  {
+    &quot;isActive&quot;: false
+  }
+No active recording to stop
+22:20:15.796 [[33mwarn[39m] Stop command called but no active recording found
+  {
+    &quot;platform&quot;: &quot;linux&quot;,
+    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
+    &quot;statusFileExists&quot;: false
+  }
+Status file does not exist
+Expected status file location: /home/user/.dashcam-cli/status.json
+
+[useTestDriver] Cleaning up TestDriver client...
+
+✅ Client disconnected
+
+            </system-out>
+            <system-err>
+error:sandbox : {
+  name: [32m&apos;CommandExitError&apos;[39m,
+  result: {
+    exitCode: [33m1[39m,
+    error: [32m&apos;exit status 1&apos;[39m,
+    stdout: [32m&apos;[INIT] Process Manager initialized\n&apos;[39m +
+      [32m&apos;[INIT] Process directory: /home/user/.dashcam-cli\n&apos;[39m +
+      [32m&apos;[INIT] Status file: /home/user/.dashcam-cli/status.json\n&apos;[39m +
+      [32m&apos;[INIT] Platform: linux\n&apos;[39m +
+      [32m&apos;[INIT] Creating process directory: /home/user/.dashcam-cli\n&apos;[39m +
+      [32m&apos;22:20:09.449 [\x1B[32minfo\x1B[39m] Authenticating with API key\n&apos;[39m +
+      [32m&apos;22:20:09.867 [\x1B[31merror\x1B[39m] Authentication failed: Response code 404 (Not Found)\n&apos;[39m +
+      [32m&apos;22:20:09.871 [\x1B[31merror\x1B[39m] Authentication failed with details:\n&apos;[39m,
+    stderr: [32m&apos;Authentication failed: Response code 404 (Not Found)\n&apos;[39m
+  }
+}
+
+[useDashcam] Error authenticating: Error: [object Object]
+    at TestDriverSDK.&lt;anonymous&gt; [90m(/Users/ianjennings/Development/cli/[39msdk.js:1457:15[90m)[39m
+    at Dashcam.auth [90m(/Users/ianjennings/Development/cli/[39msrc/core/Dashcam.js:132:44[90m)[39m
+    at [90m/Users/ianjennings/Development/cli/[39msrc/vitest/hooks.mjs:166:23
+    at useDashcam [90m(/Users/ianjennings/Development/cli/[39msrc/vitest/hooks.mjs:171:7[90m)[39m
+    at chromePreset [90m(/Users/ianjennings/Development/cli/[39msrc/presets/index.mjs:65:25[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m
+    at [90m/Users/ianjennings/Development/cli/[39mtestdriver/acceptance-sdk/presets-example.test.mjs:12:23
+    at [90mfile:///Users/ianjennings/Development/cli/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:753:20 {
+  responseData: {
+    error: [33mtrue[39m,
+    errorMessage: { name: [32m&apos;CommandExitError&apos;[39m, result: [36m[Object][39m },
+    requestId: [32m&apos;xjzlhf-6&apos;[39m
+  }
+}
+
+⚠️  No replay URL found in dashcam output
+
+            </system-err>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/presets-example.test.mjs" name="Chrome preset - with custom options" time="0">
+            <skipped/>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/presets-example.test.mjs" name="VS Code preset - basic usage" time="0">
+            <skipped/>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/presets-example.test.mjs" name="VS Code preset - with extensions" time="0">
+            <skipped/>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/presets-example.test.mjs" name="Custom preset - Electron app" time="0">
+            <skipped/>
+        </testcase>
+        <testcase classname="testdriver/acceptance-sdk/presets-example.test.mjs" name="Custom preset - create your own" time="0">
+            <skipped/>
         </testcase>
     </testsuite>
 </testsuites>

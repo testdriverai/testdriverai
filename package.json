@@ -7,7 +7,8 @@
     ".": "./sdk.js",
     "./core": "./src/core/index.js",
     "./vitest": "./interfaces/vitest-plugin.mjs",
-    "./vitest/hooks": "./src/vitest/hooks.mjs"
+    "./vitest/hooks": "./src/vitest/hooks.mjs",
+    "./presets": "./src/presets/index.mjs"
   },
   "bin": {
     "testdriverai": "bin/testdriverai.js"

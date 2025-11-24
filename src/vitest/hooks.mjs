@@ -35,6 +35,7 @@ const lifecycleHandlers = new WeakMap();
  * @param {string} options.apiRoot - API endpoint (defaults to process.env.TD_API_ROOT)
  * @param {string} options.os - Target OS: 'linux', 'mac', 'windows' (defaults to process.env.TD_OS || 'linux')
  * @param {boolean} options.new - Create new sandbox (default: true)
+ * @param {boolean} options.autoConnect - Automatically connect to sandbox (default: true)
  * @param {object} options.cacheThresholds - Cache thresholds for find operations
  * @returns {TestDriver} TestDriver client instance
  * 
@@ -55,23 +56,47 @@ export function useTestDriver(context, options = {}) {
   }
   
   // Create new TestDriver instance
+  const apiKey = options.apiKey || process.env.TD_API_KEY;
   const config = {
-    apiKey: options.apiKey || process.env.TD_API_KEY,
     apiRoot: options.apiRoot || process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com',
     os: options.os || process.env.TD_OS || 'linux',
-    new: options.new !== undefined ? options.new : true,
+    newSandbox: options.new !== undefined ? options.new : true,
     cacheThresholds: options.cacheThresholds || { find: 0.05, findAll: 0.05 },
+    resolution: options.resolution || '1366x768',
+    analytics: options.analytics !== undefined ? options.analytics : true,
   };
   
-  const client = new TestDriver(config);
+  const client = new TestDriver(apiKey, config);
   client.__vitestContext = context.task; // Store reference for cleanup
   testDriverInstances.set(context.task, client);
+  
+  // Auto-connect if enabled (default: true)
+  const autoConnect = options.autoConnect !== undefined ? options.autoConnect : true;
+  if (autoConnect) {
+    // Create a promise that will connect the client
+    // This runs asynchronously but we store the promise so presets can await it
+    client.__connectionPromise = (async () => {
+      try {
+        console.log('[useTestDriver] Connecting to sandbox...');
+        await client.auth();
+        await client.connect({ new: config.newSandbox });
+        console.log('[useTestDriver] ✅ Connected to sandbox');
+      } catch (error) {
+        console.error('[useTestDriver] Error connecting to sandbox:', error);
+        throw error;
+      }
+    })();
+  }
   
   // Register cleanup handler
   if (!lifecycleHandlers.has(context.task)) {
     const cleanup = async () => {
       console.log('[useTestDriver] Cleaning up TestDriver client...');
       try {
+        // Wait for connection to finish if it was initiated
+        if (client.__connectionPromise) {
+          await client.__connectionPromise.catch(() => {}); // Ignore connection errors during cleanup
+        }
         await client.disconnect();
         console.log('✅ Client disconnected');
       } catch (error) {
