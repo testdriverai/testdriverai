@@ -1,0 +1,457 @@
+---
+title: "GitHub Actions"
+description: "Run TestDriver tests in GitHub Actions"
+icon: "github"
+---
+
+## Basic Setup
+
+Create `.github/workflows/test.yml`:
+
+```yaml
+name: TestDriver Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TestDriver tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test-results/
+```
+
+## Add API Key
+
+1. Go to repository **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Name: `TD_API_KEY`
+4. Value: Your API key from [dashboard.testdriver.ai](https://dashboard.testdriver.ai)
+5. Click **Add secret**
+
+## Parallel Tests
+
+Run tests in parallel using matrix strategy:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run shard ${{ matrix.shard }}
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest --shard=${{ matrix.shard }}/4
+```
+
+This runs 4 test shards in parallel, completing in ~25% of the time.
+
+## Save Dashcam URLs
+
+Capture replay URLs for debugging failures:
+
+```yaml
+      - name: Run tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest 2>&1 | tee test-output.log
+      
+      - name: Extract Dashcam URLs
+        if: always()
+        run: |
+          grep -o 'https://dashcam.testdriver.ai/[a-zA-Z0-9-]*' test-output.log > dashcam-urls.txt || true
+      
+      - name: Upload Dashcam URLs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dashcam-urls
+          path: dashcam-urls.txt
+      
+      - name: Comment on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const urls = fs.readFileSync('dashcam-urls.txt', 'utf8').trim().split('\n');
+            const body = '## ❌ Tests Failed\n\n**Dashcam Replays:**\n' + 
+              urls.map(url => `- ${url}`).join('\n');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+```
+
+## Scheduled Tests
+
+Run tests on schedule:
+
+```yaml
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:  # Manual trigger button
+  push:
+    branches: [main]
+  pull_request:
+```
+
+## Cache Dependencies
+
+Speed up workflow with dependency caching:
+
+```yaml
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'  # Built-in npm cache
+      
+      # Or manually cache
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+```
+
+## Conditional Execution
+
+Skip tests on documentation changes:
+
+```yaml
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'README.md'
+```
+
+Or run only on specific file changes:
+
+```yaml
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'package.json'
+```
+
+## Test Results
+
+Publish test results to GitHub UI:
+
+```yaml
+      - name: Run tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest
+      
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: TestDriver Tests
+          path: test-results/junit.xml
+          reporter: java-junit
+```
+
+Requires JUnit reporter in `vitest.config.mjs`:
+
+```javascript
+export default defineConfig({
+  test: {
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: './test-results/junit.xml'
+    }
+  }
+});
+```
+
+## Multiple Node Versions
+
+Test across Node.js versions:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      
+      - run: npm ci
+      - run: npx vitest
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+```
+
+## Fail Fast
+
+Stop on first failure to save minutes:
+
+```yaml
+      - name: Run tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest --bail
+```
+
+Or stop other jobs when one fails:
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: true  # Stop all jobs on first failure
+      matrix:
+        shard: [1, 2, 3, 4]
+```
+
+## Reusable Workflow
+
+Create reusable workflow for multiple repos:
+
+```yaml
+# .github/workflows/testdriver-reusable.yml
+name: TestDriver (Reusable)
+
+on:
+  workflow_call:
+    secrets:
+      TD_API_KEY:
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npx vitest
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+```
+
+Use in other workflows:
+
+```yaml
+# .github/workflows/test.yml
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    uses: ./.github/workflows/testdriver-reusable.yml
+    secrets:
+      TD_API_KEY: ${{ secrets.TD_API_KEY }}
+```
+
+## Environment-Specific Tests
+
+Test against different environments:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [staging, production]
+    
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npx vitest
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TEST_URL: ${{ matrix.environment == 'staging' && 'https://staging.example.com' || 'https://example.com' }}
+```
+
+## Troubleshooting
+
+### Tests timeout
+
+Increase timeout:
+
+```yaml
+      - name: Run tests
+        timeout-minutes: 30  # Default is 360
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest
+```
+
+### API key not found
+
+Debug environment variables:
+
+```yaml
+      - name: Debug
+        run: |
+          echo "Has TD_API_KEY: ${{ secrets.TD_API_KEY != '' }}"
+          echo "Node version: $(node --version)"
+```
+
+### Out of disk space
+
+Clean up before running:
+
+```yaml
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+```
+
+## Complete Example
+
+Full-featured workflow:
+
+```yaml
+name: TestDriver Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM daily
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests (shard ${{ matrix.shard }}/4)
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest --shard=${{ matrix.shard }}/4 2>&1 | tee test-output.log
+      
+      - name: Extract Dashcam URLs
+        if: always()
+        run: |
+          grep -o 'https://dashcam.testdriver.ai/[a-zA-Z0-9-]*' test-output.log > dashcam-urls.txt || true
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: |
+            test-results/
+            test-output.log
+            dashcam-urls.txt
+      
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Tests (Shard ${{ matrix.shard }})
+          path: test-results/junit.xml
+          reporter: java-junit
+```
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="CI/CD Overview" icon="arrows-spin" href="/v7/guides/ci-cd/overview">
+    CI/CD concepts
+  </Card>
+  
+  <Card title="Performance" icon="gauge" href="/v7/guides/performance">
+    Optimize tests
+  </Card>
+  
+  <Card title="Troubleshooting" icon="circle-question" href="/v7/guides/troubleshooting">
+    Common issues
+  </Card>
+  
+  <Card title="GitHub Actions Docs" icon="book" href="https://docs.github.com/en/actions">
+    Official docs
+  </Card>
+</CardGroup>

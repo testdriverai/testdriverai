@@ -3,27 +3,16 @@
  * Converted from: testdriver/acceptance/exec-js.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Exec JavaScript Test", () => {
-  let testdriver;
+  it("should fetch user data from API and enter email", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should fetch user data from API and enter email", async () => {
+    //
     // Execute JavaScript to fetch user data
     const userEmail = await testdriver.exec(
       "js",

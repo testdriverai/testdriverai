@@ -1,33 +1,26 @@
 /**
  * TestDriver SDK - Scroll Test (Vitest)
  * Converted from: testdriver/acceptance/scroll.yaml
+ * 
+ * UPDATED: Now using chrome preset for automatic setup
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Scroll Test", () => {
-  let testdriver;
+  it("should navigate and scroll down the page", async (context) => {
+    // Use chrome preset - automatically sets up TestDriver and Dashcam
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
+    // Give Chrome a moment to fully render the UI
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should navigate and scroll down the page", async () => {
-    // Navigate to webhamster.com
-    await testdriver.focusApplication("Google Chrome");
+    // Navigate to webhamster.com - just look for the domain, not the full path
     const urlBar = await testdriver.find(
-      "testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page",
+      "testdriver-sandbox.vercel.app, the URL in the address bar",
     );
     await urlBar.click();
     await testdriver.pressKeys(["ctrl", "a"]);
@@ -44,7 +37,7 @@ describe("Scroll Test", () => {
     await testdriver.scroll("down", 1000);
 
     // Assert page is scrolled
-    const result = await testdriver.assert("the page is scrolled down");
+    const result = await testdriver.assert("the page is scrolled down, the hamster dance heading is not visible on the page");
     expect(result).toBeTruthy();
   });
 });

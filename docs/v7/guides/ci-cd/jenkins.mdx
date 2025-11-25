@@ -1,0 +1,664 @@
+---
+title: "Jenkins"
+description: "Run TestDriver tests in Jenkins"
+icon: "jenkins"
+---
+
+## Pipeline Setup
+
+Create `Jenkinsfile`:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Install') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+    
+    stage('Test') {
+      steps {
+        sh 'npx vitest'
+      }
+    }
+  }
+  
+  post {
+    always {
+      archiveArtifacts artifacts: 'test-results/**', allowEmptyArchive: true
+      junit 'test-results/junit.xml'
+    }
+  }
+}
+```
+
+## Add API Key
+
+### Using Credentials Plugin
+
+1. Go to **Manage Jenkins** → **Credentials**
+2. Select domain (usually "Global")
+3. Click **Add Credentials**
+4. Kind: **Secret text**
+5. Secret: Your API key from [dashboard.testdriver.ai](https://dashboard.testdriver.ai)
+6. ID: `td-api-key`
+7. Description: "TestDriver API Key"
+8. Click **OK**
+
+### Using Environment Variables
+
+Or set directly in Jenkins:
+
+1. Go to **Manage Jenkins** → **Configure System**
+2. Find **Global properties**
+3. Check **Environment variables**
+4. Add:
+   - Name: `TD_API_KEY`
+   - Value: Your API key
+5. Click **Save**
+
+## Parallel Tests
+
+Run tests in parallel stages:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Install') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+    
+    stage('Test') {
+      parallel {
+        stage('Shard 1') {
+          steps {
+            sh 'npx vitest --shard=1/4'
+          }
+        }
+        stage('Shard 2') {
+          steps {
+            sh 'npx vitest --shard=2/4'
+          }
+        }
+        stage('Shard 3') {
+          steps {
+            sh 'npx vitest --shard=3/4'
+          }
+        }
+        stage('Shard 4') {
+          steps {
+            sh 'npx vitest --shard=4/4'
+          }
+        }
+      }
+    }
+  }
+  
+  post {
+    always {
+      junit 'test-results/junit.xml'
+    }
+  }
+}
+```
+
+## Save Dashcam URLs
+
+Extract replay URLs from test output:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Install') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+    
+    stage('Test') {
+      steps {
+        sh '''
+          npx vitest 2>&1 | tee test-output.log
+          grep -o 'https://dashcam.testdriver.ai/[a-zA-Z0-9-]*' test-output.log > dashcam-urls.txt || true
+        '''
+      }
+    }
+  }
+  
+  post {
+    always {
+      archiveArtifacts artifacts: 'test-results/**, test-output.log, dashcam-urls.txt', allowEmptyArchive: true
+      junit 'test-results/junit.xml'
+    }
+    failure {
+      script {
+        def urls = readFile('dashcam-urls.txt').trim()
+        echo "Dashcam URLs:\n${urls}"
+      }
+    }
+  }
+}
+```
+
+## Scheduled Builds
+
+Configure build triggers:
+
+```groovy
+pipeline {
+  triggers {
+    // Poll SCM every 6 hours
+    pollSCM('H */6 * * *')
+    
+    // Or schedule directly (2 AM daily)
+    cron('0 2 * * *')
+  }
+  
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Test') {
+      steps {
+        sh 'npm ci'
+        sh 'npx vitest'
+      }
+    }
+  }
+}
+```
+
+## Multiple Node Versions
+
+Test across Node.js versions:
+
+```groovy
+pipeline {
+  agent none
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Test') {
+      matrix {
+        axes {
+          axis {
+            name 'NODE_VERSION'
+            values '16', '18', '20'
+          }
+        }
+        agent {
+          docker {
+            image "node:${NODE_VERSION}"
+          }
+        }
+        stages {
+          stage('Install') {
+            steps {
+              sh 'npm ci'
+            }
+          }
+          stage('Run Tests') {
+            steps {
+              sh 'npx vitest'
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  post {
+    always {
+      junit 'test-results/junit.xml'
+    }
+  }
+}
+```
+
+## Conditional Execution
+
+Skip tests on documentation changes:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  stages {
+    stage('Check Changes') {
+      steps {
+        script {
+          def changes = sh(
+            script: 'git diff --name-only HEAD~1',
+            returnStdout: true
+          ).trim()
+          
+          if (changes ==~ /.*\.(md|txt)$/) {
+            echo "Only docs changed, skipping tests"
+            currentBuild.result = 'SUCCESS'
+            return
+          }
+        }
+      }
+    }
+    
+    stage('Test') {
+      when {
+        expression { currentBuild.result != 'SUCCESS' }
+      }
+      steps {
+        sh 'npm ci'
+        sh 'npx vitest'
+      }
+    }
+  }
+}
+```
+
+## Retry Failed Tests
+
+Automatically retry on failure:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Test') {
+      steps {
+        retry(3) {
+          sh 'npm ci'
+          sh 'npx vitest'
+        }
+      }
+    }
+  }
+}
+```
+
+Or retry specific stages:
+
+```groovy
+    stage('Test') {
+      steps {
+        sh 'npm ci'
+        script {
+          try {
+            sh 'npx vitest'
+          } catch (Exception e) {
+            echo 'First attempt failed, retrying...'
+            sh 'npx vitest'
+          }
+        }
+      }
+    }
+```
+
+## Build Parameters
+
+Allow manual parameter input:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  parameters {
+    choice(
+      name: 'ENVIRONMENT',
+      choices: ['staging', 'production'],
+      description: 'Environment to test'
+    )
+    booleanParam(
+      name: 'PARALLEL',
+      defaultValue: true,
+      description: 'Run tests in parallel'
+    )
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+    TEST_URL = "${params.ENVIRONMENT == 'production' ? 'https://example.com' : 'https://staging.example.com'}"
+  }
+  
+  stages {
+    stage('Test') {
+      steps {
+        sh 'npm ci'
+        script {
+          if (params.PARALLEL) {
+            sh 'npx vitest --maxConcurrency=5'
+          } else {
+            sh 'npx vitest --maxConcurrency=1'
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Notifications
+
+Send notifications on failure:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+  }
+  
+  stages {
+    stage('Test') {
+      steps {
+        sh 'npm ci'
+        sh 'npx vitest'
+      }
+    }
+  }
+  
+  post {
+    failure {
+      emailext(
+        subject: "Build Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+        body: """
+          Build failed: ${env.BUILD_URL}
+          
+          Check Dashcam URLs in artifacts.
+        """,
+        to: 'team@example.com'
+      )
+    }
+    success {
+      echo 'Tests passed!'
+    }
+  }
+}
+```
+
+## Timeout
+
+Set build timeout:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  options {
+    timeout(time: 30, unit: 'MINUTES')
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+  }
+  
+  stages {
+    stage('Test') {
+      steps {
+        timeout(time: 20, unit: 'MINUTES') {
+          sh 'npm ci'
+          sh 'npx vitest'
+        }
+      }
+    }
+  }
+}
+```
+
+## Workspace Cleanup
+
+Clean workspace before/after build:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+    }
+  }
+  
+  options {
+    skipDefaultCheckout()
+  }
+  
+  stages {
+    stage('Checkout') {
+      steps {
+        cleanWs()
+        checkout scm
+      }
+    }
+    
+    stage('Test') {
+      steps {
+        sh 'npm ci'
+        sh 'npx vitest'
+      }
+    }
+  }
+  
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}
+```
+
+## Troubleshooting
+
+### Docker permission denied
+
+If using Docker agent on self-hosted Jenkins:
+
+```bash
+# Add Jenkins user to docker group
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+```
+
+### API key not found
+
+Debug credentials:
+
+```groovy
+    stage('Debug') {
+      steps {
+        sh '''
+          echo "Has TD_API_KEY: ${TD_API_KEY:+yes}"
+          node --version
+          npm --version
+        '''
+      }
+    }
+```
+
+### Tests timeout
+
+Increase timeout:
+
+```groovy
+  options {
+    timeout(time: 60, unit: 'MINUTES')
+  }
+```
+
+## Complete Example
+
+Full-featured Jenkinsfile:
+
+```groovy
+pipeline {
+  agent {
+    docker {
+      image 'node:18'
+      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
+  }
+  
+  options {
+    timeout(time: 30, unit: 'MINUTES')
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+    disableConcurrentBuilds()
+  }
+  
+  triggers {
+    cron('0 2 * * *')  // 2 AM daily
+  }
+  
+  environment {
+    TD_API_KEY = credentials('td-api-key')
+    CI = 'true'
+  }
+  
+  stages {
+    stage('Install') {
+      steps {
+        sh 'npm ci'
+      }
+    }
+    
+    stage('Test') {
+      parallel {
+        stage('Shard 1/4') {
+          steps {
+            sh 'npx vitest --shard=1/4 2>&1 | tee test-output-1.log'
+          }
+        }
+        stage('Shard 2/4') {
+          steps {
+            sh 'npx vitest --shard=2/4 2>&1 | tee test-output-2.log'
+          }
+        }
+        stage('Shard 3/4') {
+          steps {
+            sh 'npx vitest --shard=3/4 2>&1 | tee test-output-3.log'
+          }
+        }
+        stage('Shard 4/4') {
+          steps {
+            sh 'npx vitest --shard=4/4 2>&1 | tee test-output-4.log'
+          }
+        }
+      }
+    }
+    
+    stage('Extract Dashcam URLs') {
+      steps {
+        sh '''
+          cat test-output-*.log | \
+          grep -o 'https://dashcam.testdriver.ai/[a-zA-Z0-9-]*' > dashcam-urls.txt || true
+        '''
+      }
+    }
+  }
+  
+  post {
+    always {
+      archiveArtifacts(
+        artifacts: 'test-results/**, test-output-*.log, dashcam-urls.txt',
+        allowEmptyArchive: true
+      )
+      junit(
+        testResults: 'test-results/junit.xml',
+        allowEmptyResults: true
+      )
+    }
+    failure {
+      script {
+        def urls = readFile('dashcam-urls.txt').trim()
+        echo "❌ Tests failed. Dashcam URLs:\n${urls}"
+      }
+    }
+    success {
+      echo '✅ All tests passed!'
+    }
+  }
+}
+```
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="CI/CD Overview" icon="arrows-spin" href="/v7/guides/ci-cd/overview">
+    CI/CD concepts
+  </Card>
+  
+  <Card title="Performance" icon="gauge" href="/v7/guides/performance">
+    Optimize tests
+  </Card>
+  
+  <Card title="Troubleshooting" icon="circle-question" href="/v7/guides/troubleshooting">
+    Common issues
+  </Card>
+  
+  <Card title="Jenkins Docs" icon="book" href="https://www.jenkins.io/doc/">
+    Official docs
+  </Card>
+</CardGroup>

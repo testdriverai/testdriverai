@@ -3,29 +3,18 @@
  * Converted from: testdriver/acceptance/exec-shell.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Exec PowerShell Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it.skipIf(() => testdriver.os === "linux")(
+  it.skipIf(process.env.TD_OS === "linux")(
     "should generate random email using PowerShell and enter it",
-    async () => {
+    async (context) => {
+      const { testdriver } = await chrome(context, {
+        url: 'http://testdriver-sandbox.vercel.app/login',
+      });
+
+      //
       // Generate random email using PowerShell
       const randomEmail = await testdriver.exec(
         "pwsh",

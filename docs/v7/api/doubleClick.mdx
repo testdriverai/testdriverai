@@ -1,0 +1,102 @@
+---
+title: "doubleClick"
+description: "Perform a double-click action on an element or at specific coordinates"
+icon: "hand-pointer"
+---
+
+## Overview
+
+The `doubleClick()` method performs a double-click action on an element. You can either call it on an [`Element`](/v7/core-concepts/elements) instance or use it directly with a selector.
+
+## Syntax
+
+```javascript
+// Double-click on an element
+await element.doubleClick();
+
+// Double-click using a selector
+await ai.doubleClick('selector');
+```
+
+## Parameters
+
+When called on an `Element`, no parameters are required.
+
+When called directly on the AI client:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `selector` | `string` | The selector describing the element to double-click |
+
+## Returns
+
+Returns a `Promise<void>` that resolves when the double-click action completes.
+
+## Examples
+
+### Double-Click on Found Element
+
+```javascript
+const fileItem = await ai.find('README.md file');
+await fileItem.doubleClick();
+```
+
+### Direct Double-Click with Selector
+
+```javascript
+await ai.doubleClick('README.md in the file list');
+```
+
+### Opening Files in VS Code
+
+```javascript
+import { test } from 'vitest';
+import { vscode } from '@testdriver/sdk';
+
+test('opens a file by double-clicking', async () => {
+  const { ai } = await vscode();
+  
+  // Double-click to open a file in the explorer
+  await ai.doubleClick('package.json in the file explorer');
+  
+  // Verify the file opened
+  const editor = await ai.find('text editor showing package.json');
+  expect(editor).toBeTruthy();
+});
+```
+
+### Opening Folders in File Manager
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from '@testdriver/sdk';
+
+test('navigates folders in Google Drive', async () => {
+  const { ai } = await chrome('https://drive.google.com');
+  
+  // Double-click to open a folder
+  await ai.doubleClick('Documents folder');
+  
+  // Wait for folder to open
+  await ai.find('breadcrumb showing Documents');
+});
+```
+
+### Selecting Text with Double-Click
+
+```javascript
+// Double-click to select a word
+await ai.doubleClick('word "TestDriver" in the paragraph');
+
+// Verify selection
+const selectedText = await ai.exec('window.getSelection().toString()');
+expect(selectedText).toBe('TestDriver');
+```
+
+## Related Methods
+
+- [`click()`](/v7/api/click) - Single click on an element
+- [`rightClick()`](/v7/api/rightClick) - Right-click to open context menu
+- [`mouseDown()`](/v7/api/mouseDown) - Press mouse button without releasing
+- [`mouseUp()`](/v7/api/mouseUp) - Release mouse button
+- [`hover()`](/v7/api/hover) - Move mouse over element without clicking

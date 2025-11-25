@@ -3,7 +3,7 @@
  * @module testdriverai/vitest/hooks
  */
 
-import { TestDriver, Dashcam, TestDriverOptions, DashcamOptions } from '../core/index';
+import { Dashcam, DashcamOptions, TestDriver, TestDriverOptions } from '../core/index';
 
 /**
  * Vitest test context (from test function parameter)

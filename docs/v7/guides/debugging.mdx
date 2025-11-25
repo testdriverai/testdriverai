@@ -1,0 +1,349 @@
+---
+title: "Debugging Tests"
+description: "Debug failing tests and understand test execution"
+icon: "bug"
+---
+
+## Overview
+
+TestDriver provides multiple ways to debug tests: Dashcam recordings, verbose logging, screenshots, and direct sandbox access.
+
+## Dashcam Recordings
+
+Every test creates a video recording automatically:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('login flow', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://myapp.com'
+  });
+  
+  // Test code...
+  
+  // Dashcam URL automatically logged
+  console.log('Replay:', dashcam.url);
+});
+```
+
+**Dashcam shows:**
+- Video recording of screen
+- All commands executed
+- Logged output
+- Timestamps
+- Element locations
+
+## Verbose Logging
+
+Enable detailed logging:
+
+```javascript
+const client = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  verbosity: 2,  // 0=silent, 1=normal, 2=debug
+  logging: true
+});
+```
+
+**Debug output includes:**
+- API requests/responses
+- Element coordinates found
+- Cache hits/misses
+- Command execution time
+- Screenshot hashes
+
+## Check Element Found
+
+Always verify elements were located:
+
+```javascript
+const button = await testdriver.find('submit button');
+
+if (!button.found()) {
+  console.log('Button not found!');
+  console.log('Coordinates:', button.coordinates);
+  console.log('Confidence:', button.confidence);
+  
+  // Try alternative selector
+  const button2 = await testdriver.find('blue button at bottom');
+  console.log('Alternative found:', button2.found());
+}
+
+await button.click();
+```
+
+## Take Screenshots
+
+Capture screenshots at key points:
+
+```javascript
+// Using exec to save screenshot
+if (process.platform !== 'win32') {
+  await testdriver.exec('sh', 'scrot /tmp/debug.png', 5000, true);
+} else {
+  await testdriver.exec('pwsh', 
+    'Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait("%{PRTSC}"); Start-Sleep -Seconds 1',
+    5000, true
+  );
+}
+
+// Element screenshots (if available)
+const element = await testdriver.find('error message');
+if (element.screenshot) {
+  console.log('Element screenshot:', element.screenshot);
+}
+```
+
+## Inspect Element Properties
+
+```javascript
+const element = await testdriver.find('submit button');
+
+console.log('Found:', element.found());
+console.log('Coordinates:', element.coordinates);
+console.log('Center:', element.centerX, element.centerY);
+console.log('Confidence:', element.confidence);
+console.log('Text:', element.text);
+console.log('Bounding box:', element.boundingBox);
+console.log('Cache hit:', element.cacheHit);
+```
+
+## Step-by-Step Debugging
+
+Add delays to watch execution:
+
+```javascript
+test('debug step by step', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  console.log('Step 1: Finding username field');
+  const username = await testdriver.find('username field');
+  await new Promise(r => setTimeout(r, 2000)); // Pause 2s
+  
+  console.log('Step 2: Clicking username');
+  await username.click();
+  await new Promise(r => setTimeout(r, 2000));
+  
+  console.log('Step 3: Typing username');
+  await testdriver.type('user@example.com');
+  await new Promise(r => setTimeout(r, 2000));
+});
+```
+
+## Using Assertions for Debugging
+
+```javascript
+// Verify state at checkpoints
+const result1 = await testdriver.assert('login form is visible');
+console.log('Form visible:', result1);
+
+await testdriver.find('username').then(el => el.click());
+await testdriver.type('user@example.com');
+
+const result2 = await testdriver.assert('username field contains user@example.com');
+console.log('Username entered:', result2);
+```
+
+## Common Issues
+
+### Element Not Found
+
+```javascript
+// Issue: Element not found
+const button = await testdriver.find('submit button');
+console.log('Found:', button.found()); // false
+
+// Debug: Try different descriptions
+const alternatives = [
+  'submit button',
+  'blue button at bottom',
+  'button with text Submit',
+  'primary button in form'
+];
+
+for (const desc of alternatives) {
+  const el = await testdriver.find(desc);
+  console.log(`"${desc}":`, el.found(), el.confidence);
+  if (el.found()) break;
+}
+```
+
+### Wrong Element Clicked
+
+```javascript
+// Issue: Clicked wrong element
+
+// Debug: Check coordinates
+const button = await testdriver.find('submit button');
+console.log('Button at:', button.centerX, button.centerY);
+console.log('Confidence:', button.confidence);
+
+// Use more specific description
+const specificButton = await testdriver.find(
+  'blue submit button at the bottom right of the login form'
+);
+```
+
+### Command Timeout
+
+```javascript
+// Issue: Command times out
+
+// Debug: Increase timeout and add logging
+try {
+  await testdriver.exec('sh', 'slow-command', 120000, false);
+} catch (error) {
+  console.error('Command failed:', error.message);
+  console.error('Increase timeout or check command');
+}
+```
+
+### Cache Issues
+
+```javascript
+// Issue: Using stale cached element
+
+// Debug: Bypass cache
+const element = await testdriver.find('button', { threshold: -1 });
+console.log('Fresh lookup (no cache):', element.found());
+
+// Or clear prompt cache
+import { exec } from 'child_process';
+exec('rm -rf .testdriver/.cache/*.yaml');
+```
+
+## Interactive Debugging
+
+### Access Sandbox Directly
+
+Get sandbox details for manual inspection:
+
+```javascript
+const instance = testdriver.getInstance();
+console.log('Sandbox ID:', instance.instanceId);
+console.log('IP:', instance.ip);
+console.log('VNC Port:', instance.vncPort);
+
+// Connect via VNC to watch live
+console.log('VNC URL:', `vnc://${instance.ip}:${instance.vncPort}`);
+```
+
+### Keep Sandbox Alive
+
+Don't disconnect for manual debugging:
+
+```javascript
+test('debug manually', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  // Run test
+  await testdriver.find('button').then(el => el.click());
+  
+  // Keep alive for inspection
+  console.log('Sandbox still running. Press Ctrl+C when done.');
+  await new Promise(() => {}); // Never resolves
+  
+  // Don't call disconnect() to keep sandbox alive
+});
+```
+
+## Event Listeners
+
+Listen to internal events:
+
+```javascript
+const emitter = testdriver.getEmitter();
+
+emitter.on('command:start', (data) => {
+  console.log('🔵 Command starting:', data);
+});
+
+emitter.on('command:success', (data) => {
+  console.log('✅ Command succeeded:', data);
+});
+
+emitter.on('command:error', (error) => {
+  console.error('❌ Command failed:', error);
+});
+
+emitter.on('log:info', (message) => {
+  console.log('ℹ️ ', message);
+});
+```
+
+## Debugging Checklist
+
+When a test fails:
+
+1. ✅ **Check Dashcam recording** - Watch what actually happened
+2. ✅ **Enable verbose logging** - See detailed execution
+3. ✅ **Verify element.found()** - Ensure elements were located
+4. ✅ **Check coordinates** - Verify element positions
+5. ✅ **Try alternative descriptions** - Use different prompts
+6. ✅ **Disable cache** - Rule out stale cache
+7. ✅ **Add delays** - Slow down execution
+8. ✅ **Use assertions** - Verify state at checkpoints
+9. ✅ **Check timeouts** - Increase if needed
+10. ✅ **Inspect sandbox** - Connect directly via VNC
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always use Dashcam">
+    Every test should record with Dashcam for post-failure analysis:
+    ```javascript
+    const { testdriver, dashcam } = await chrome(context, {
+      dashcam: true  // Default, but be explicit
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Log element properties">
+    ```javascript
+    const element = await testdriver.find('button');
+    console.log('Element:', {
+      found: element.found(),
+      coords: element.coordinates,
+      confidence: element.confidence
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Use descriptive test names">
+    ```javascript
+    test('login with valid credentials shows dashboard', async () => {
+      // Clear what's being tested
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Add checkpoint assertions">
+    ```javascript
+    await testdriver.assert('login page loaded');
+    // ... login steps ...
+    await testdriver.assert('dashboard is visible');
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Dashcam" icon="video" href="/v7/api/dashcam">
+    Recording API reference
+  </Card>
+  
+  <Card title="Assertions" icon="circle-check" href="/v7/api/assertions">
+    Verification methods
+  </Card>
+  
+  <Card title="Troubleshooting" icon="circle-question" href="/v7/guides/troubleshooting">
+    Common issues
+  </Card>
+  
+  <Card title="Best Practices" icon="star" href="/v7/guides/best-practices">
+    Testing patterns
+  </Card>
+</CardGroup>

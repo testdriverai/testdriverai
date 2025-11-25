@@ -123,6 +123,70 @@ export async function launchChrome(
 }
 
 /**
+ * Launch Chrome for Testing browser with guest mode
+ * @param {TestDriver} client - TestDriver client
+ * @param {string} url - URL to open (default: https://testdriver-sandbox.vercel.app/)
+ */
+export async function launchChromeForTesting(
+  client,
+  url = "http://testdriver-sandbox.vercel.app/",
+) {
+  const shell = client.os === "windows" ? "pwsh" : "sh";
+
+  if (client.os === "windows") {
+    // Windows Chrome for Testing path would need to be determined
+    // For now, fallback to regular Chrome on Windows
+    await client.exec(
+      "pwsh",
+      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "${url}"`,
+      30000,
+    );
+  } else {
+    await client.exec(
+      shell,
+      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "${url}" >/dev/null 2>&1 &`,
+      30000,
+    );
+  }
+}
+
+/**
+ * Launch Chrome for Testing with a Chrome extension loaded
+ * @param {TestDriver} client - TestDriver client
+ * @param {string} extensionId - Chrome Web Store extension ID (e.g., "cjpalhdlnbpafiamejdnhcphjbkeiagm" for uBlock Origin)
+ * @param {string} url - URL to open (default: https://testdriver-sandbox.vercel.app/)
+ * @example
+ * // Launch with uBlock Origin extension
+ * await launchChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm");
+ * 
+ * // Launch with multiple extensions (comma-separated)
+ * await launchChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm,nngceckbapebfimnlniiiahkandclblb");
+ */
+export async function launchChromeExtension(
+  client,
+  extensionId,
+  url = "http://testdriver-sandbox.vercel.app/",
+) {
+  const shell = client.os === "windows" ? "pwsh" : "sh";
+
+  if (client.os === "windows") {
+    // Windows Chrome for Testing path would need to be determined
+    // For now, fallback to regular Chrome on Windows
+    await client.exec(
+      "pwsh",
+      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--load-extension=${extensionId}", "${url}"`,
+      30000,
+    );
+  } else {
+    await client.exec(
+      shell,
+      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --load-extension=${extensionId} "${url}" >/dev/null 2>&1 &`,
+      30000,
+    );
+  }
+}
+
+/**
  * Wait for page to load by polling for text
  * @param {TestDriver} client - TestDriver client
  * @param {string} text - Text to wait for
@@ -154,6 +218,36 @@ export async function runPrerun(client) {
   await addDashcamLog(client);
   await startDashcam(client);
   await launchChrome(client);
+  await waitForPage(client, "TestDriver.ai Sandbox");
+}
+
+/**
+ * Run prerun lifecycle hooks with Chrome for Testing
+ * Implements lifecycle/prerun.yaml functionality using Chrome for Testing
+ * @param {TestDriver} client - TestDriver client
+ */
+export async function runPrerunChromeForTesting(client) {
+  await authDashcam(client);
+  await addDashcamLog(client);
+  await startDashcam(client);
+  await launchChromeForTesting(client);
+  await waitForPage(client, "TestDriver.ai Sandbox");
+}
+
+/**
+ * Run prerun lifecycle hooks with Chrome extension loaded
+ * Implements lifecycle/prerun.yaml functionality with a Chrome extension
+ * @param {TestDriver} client - TestDriver client
+ * @param {string} extensionId - Chrome Web Store extension ID to load
+ * @example
+ * // Launch with uBlock Origin extension
+ * await runPrerunChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm");
+ */
+export async function runPrerunChromeExtension(client, extensionId) {
+  await authDashcam(client);
+  await addDashcamLog(client);
+  await startDashcam(client);
+  await launchChromeExtension(client, extensionId);
   await waitForPage(client, "TestDriver.ai Sandbox");
 }
 

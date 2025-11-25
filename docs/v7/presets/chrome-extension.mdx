@@ -1,0 +1,223 @@
+---
+title: "Chrome Extension Testing"
+sidebarTitle: "Chrome Extensions"
+description: "Test Chrome extensions with Chrome for Testing"
+icon: "puzzle-piece"
+---
+
+## Overview
+
+Test Chrome extensions by loading them into Chrome for Testing. This preset uses the `launchChromeExtension()` helper to launch Chrome with a specific extension loaded by its Chrome Web Store ID.
+
+## Quick Start
+
+```javascript
+import { test } from 'vitest';
+import TestDriver from 'testdriverai';
+import { 
+  runPrerunChromeExtension, 
+  runPostrun 
+} from 'testdriverai/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs';
+
+test('test chrome extension', async () => {
+  const client = await TestDriver.create({
+    apiKey: process.env.TD_API_KEY,
+    os: "linux",
+    verbosity: 1,
+  });
+
+  // Launch Chrome with extension loaded
+  // Extension ID from Chrome Web Store
+  await runPrerunChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm");
+
+  // Your test code here
+  await client.focusApplication("Google Chrome");
+  
+  // ... test extension functionality
+
+  await runPostrun(client);
+  await client.cleanup();
+});
+```
+
+## Finding Extension IDs
+
+Extension IDs can be found in the Chrome Web Store URL:
+
+```
+https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                      This is the extension ID
+```
+
+## Popular Extensions
+
+| Extension | ID |
+|-----------|---|
+| uBlock Origin | `cjpalhdlnbpafiamejdnhcphjbkeiagm` |
+| React Developer Tools | `fmkadmapgofadopljbjfkapdkoienihi` |
+| Redux DevTools | `lmhkpmbekcpmknklioeibfkpmmfibljd` |
+| Bitwarden | `nngceckbapebfimnlniiiahkandclblb` |
+
+## Loading Multiple Extensions
+
+Load multiple extensions by separating IDs with commas:
+
+```javascript
+await launchChromeExtension(
+  client, 
+  "cjpalhdlnbpafiamejdnhcphjbkeiagm,nngceckbapebfimnlniiiahkandclblb"
+);
+```
+
+## Complete Example
+
+```javascript
+import { describe, it, beforeAll, afterAll } from 'vitest';
+import TestDriver from 'testdriverai';
+import { 
+  runPrerunChromeExtension, 
+  runPostrun 
+} from 'testdriverai/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs';
+
+describe('Chrome Extension Testing', () => {
+  let client;
+  let dashcamUrl;
+
+  beforeAll(async () => {
+    client = await TestDriver.create({
+      apiKey: process.env.TD_API_KEY,
+      os: "linux",
+      verbosity: 1,
+    });
+
+    // Load uBlock Origin extension
+    await runPrerunChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm");
+  });
+
+  afterAll(async () => {
+    if (client) {
+      dashcamUrl = await runPostrun(client);
+      await client.cleanup();
+    }
+  });
+
+  it('should verify extension is loaded', async () => {
+    await client.focusApplication("Google Chrome");
+
+    // Navigate to a page
+    const element = await client.find("TestDriver.ai Sandbox");
+    expect(element.found()).toBe(true);
+
+    // Test extension-specific functionality
+    // For example, checking if ads are blocked with uBlock
+  });
+
+  it('should access extension popup', async () => {
+    await client.focusApplication("Google Chrome");
+    
+    // Open extension management
+    await client.exec(
+      "sh",
+      `xdotool key --clearmodifiers ctrl+shift+e`,
+      5000,
+      true
+    );
+
+    // Wait for extensions page
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  });
+});
+```
+
+## Environment Setup
+
+Chrome for Testing is pre-installed in the E2B sandbox environment at:
+
+```
+/opt/chrome-for-testing/chrome
+/usr/local/bin/chrome-for-testing (symlink)
+```
+
+## Direct API Usage
+
+Use the lower-level API for more control:
+
+```javascript
+import { launchChromeExtension } from 'testdriverai/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs';
+
+// Launch with specific extension and URL
+await launchChromeExtension(
+  client,
+  "cjpalhdlnbpafiamejdnhcphjbkeiagm",
+  "https://example.com"
+);
+```
+
+## Testing Extension Features
+
+### Test Extension Popup
+
+```javascript
+it('opens extension popup', async () => {
+  // Click extension icon (varies by extension)
+  await client.click('extension icon in toolbar');
+  
+  // Interact with popup
+  const popup = await client.find('extension popup window');
+  expect(popup.found()).toBe(true);
+});
+```
+
+### Test Extension Settings
+
+```javascript
+it('configures extension settings', async () => {
+  // Right-click extension icon
+  await client.rightClick('extension icon');
+  
+  // Click options
+  await client.click('Options');
+  
+  // Configure settings
+  await client.click('Enable feature X');
+  await client.click('Save');
+});
+```
+
+### Test Content Scripts
+
+```javascript
+it('verifies content script injection', async () => {
+  // Navigate to a page
+  await client.exec('sh', 'xdotool key ctrl+l', 5000, true);
+  await client.type('https://example.com');
+  await client.pressKeys('Enter');
+  
+  // Check for extension-injected elements
+  const injected = await client.find('element added by extension');
+  expect(injected.found()).toBe(true);
+});
+```
+
+## Troubleshooting
+
+### Extension Not Loading
+
+1. Verify the extension ID is correct
+2. Check Chrome for Testing is installed in the sandbox
+3. Ensure extension is compatible with Chrome for Testing version
+
+### Extension Permissions
+
+Some extensions may require additional permissions or setup. You may need to:
+
+1. Navigate to `chrome://extensions/`
+2. Enable developer mode
+3. Grant required permissions
+
+## See Also
+
+- [Web Apps (Chrome)](/v7/presets/chrome) - Regular Chrome browser testing
+- [Desktop Apps (Electron)](/v7/presets/electron) - Electron app testing
+- [Lifecycle Helpers](/v7/guides/lifecycle) - Prerun/postrun functions

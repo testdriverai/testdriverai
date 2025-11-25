@@ -1,30 +1,19 @@
 /**
  * TestDriver SDK - Formatted Logging Demo
  * Demonstrates nice Vitest-style formatted logs for Dashcam replay
+ * 
+ * UPDATED: Now using provision() for zero-config setup
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { provision } from "../../src/presets/index.mjs";
 
 describe("Formatted Logging Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should demonstrate formatted logs in dashcam replay", async () => {
-    await testdriver.focusApplication("Google Chrome");
+  it("should demonstrate formatted logs in dashcam replay", async (context) => {
+    // Use provision() for automatic Chrome + Dashcam setup
+    const { testdriver } = await provision('chrome', {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    }, context);
 
     // Find and click - logs will be nicely formatted
     const signInButton = await testdriver.find(

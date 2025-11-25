@@ -1,0 +1,523 @@
+---
+title: "CircleCI"
+description: "Run TestDriver tests in CircleCI"
+icon: "circle"
+---
+
+## Basic Setup
+
+Create `.circleci/config.yml`:
+
+```yaml
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.0
+    
+    steps:
+      - checkout
+      
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "package-lock.json" }}
+            - v1-deps-
+      
+      - run:
+          name: Install dependencies
+          command: npm ci
+      
+      - save_cache:
+          key: v1-deps-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
+      
+      - run:
+          name: Run tests
+          command: npx vitest
+          environment:
+            TD_API_KEY: $TD_API_KEY
+      
+      - store_artifacts:
+          path: test-results
+      
+      - store_test_results:
+          path: test-results
+
+workflows:
+  test:
+    jobs:
+      - test
+```
+
+## Add API Key
+
+1. Go to **Project Settings** → **Environment Variables**
+2. Click **Add Environment Variable**
+3. Name: `TD_API_KEY`
+4. Value: Your API key from [dashboard.testdriver.ai](https://dashboard.testdriver.ai)
+5. Click **Add Variable**
+
+## Parallel Tests
+
+Use CircleCI's parallelism feature:
+
+```yaml
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.0
+    parallelism: 4
+    
+    steps:
+      - checkout
+      
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "package-lock.json" }}
+      
+      - run: npm ci
+      
+      - save_cache:
+          key: v1-deps-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
+      
+      - run:
+          name: Run tests (shard $CIRCLE_NODE_INDEX/$CIRCLE_NODE_TOTAL)
+          command: npx vitest --shard=$CIRCLE_NODE_INDEX/$CIRCLE_NODE_TOTAL
+      
+      - store_test_results:
+          path: test-results
+
+workflows:
+  test:
+    jobs:
+      - test
+```
+
+This runs 4 test shards in parallel.
+
+## Save Dashcam URLs
+
+Extract replay URLs:
+
+```yaml
+      - run:
+          name: Run tests
+          command: npx vitest 2>&1 | tee test-output.log
+      
+      - run:
+          name: Extract Dashcam URLs
+          when: always
+          command: |
+            grep -o 'https://dashcam.testdriver.ai/[a-zA-Z0-9-]*' test-output.log > dashcam-urls.txt || true
+      
+      - store_artifacts:
+          path: test-output.log
+      
+      - store_artifacts:
+          path: dashcam-urls.txt
+```
+
+## Scheduled Tests
+
+Run tests on schedule:
+
+```yaml
+workflows:
+  version: 2
+  
+  # Run on every commit
+  test:
+    jobs:
+      - test
+  
+  # Run nightly at 2 AM
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 2 * * *"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - test
+```
+
+## Multiple Node Versions
+
+Test across Node.js versions:
+
+```yaml
+version: 2.1
+
+jobs:
+  test:
+    parameters:
+      node-version:
+        type: string
+    
+    docker:
+      - image: cimg/node:<< parameters.node-version >>
+    
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npx vitest
+
+workflows:
+  test-all:
+    jobs:
+      - test:
+          matrix:
+            parameters:
+              node-version: ["16.0", "18.0", "20.0"]
+```
+
+## Orbs
+
+Use CircleCI orbs for common tasks:
+
+```yaml
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.0
+    
+    steps:
+      - checkout
+      
+      - node/install-packages:
+          pkg-manager: npm
+      
+      - run:
+          name: Run tests
+          command: npx vitest
+          environment:
+            TD_API_KEY: $TD_API_KEY
+      
+      - store_test_results:
+          path: test-results
+
+workflows:
+  test:
+    jobs:
+      - test
+```
+
+## Conditional Execution
+
+Skip tests on documentation changes:
+
+```yaml
+workflows:
+  test:
+    jobs:
+      - test:
+          filters:
+            branches:
+              ignore:
+                - /docs\/.*/
+```
+
+Or use CircleCI API to detect changes:
+
+```yaml
+      - run:
+          name: Check for code changes
+          command: |
+            if git diff --name-only HEAD~1 | grep -qE '^(src|test)/'; then
+              echo "Code changed, running tests"
+            else
+              echo "Only docs changed, skipping tests"
+              circleci step halt
+            fi
+```
+
+## Resource Classes
+
+Use larger machines for faster tests:
+
+```yaml
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.0
+    resource_class: large  # 4 vCPUs, 8GB RAM
+    
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npx vitest
+```
+
+Available classes:
+- `small` - 1 vCPU, 2GB RAM
+- `medium` (default) - 2 vCPUs, 4GB RAM
+- `medium+` - 3 vCPUs, 6GB RAM
+- `large` - 4 vCPUs, 8GB RAM
+- `xlarge` - 8 vCPUs, 16GB RAM
+
+## Retry Failed Tests
+
+Automatically retry on failure:
+
+```yaml
+      - run:
+          name: Run tests
+          command: npx vitest
+          no_output_timeout: 30m
+          when: always
+      
+      - run:
+          name: Retry failed tests
+          command: npx vitest --retry=2
+          when: on_fail
+```
+
+## Save Test Results
+
+Store JUnit XML for CircleCI dashboard:
+
+```yaml
+      - run:
+          name: Run tests
+          command: npx vitest
+      
+      - store_test_results:
+          path: test-results
+      
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+```
+
+Requires JUnit reporter in `vitest.config.mjs`:
+
+```javascript
+export default defineConfig({
+  test: {
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: './test-results/junit.xml'
+    }
+  }
+});
+```
+
+## Workspaces
+
+Share data between jobs:
+
+```yaml
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/node:18.0
+    steps:
+      - checkout
+      - run: npm ci
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+  
+  test:
+    docker:
+      - image: cimg/node:18.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npx vitest
+
+workflows:
+  build-and-test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+```
+
+## Approval Jobs
+
+Add manual approval step:
+
+```yaml
+workflows:
+  test:
+    jobs:
+      - test
+      - hold:
+          type: approval
+          requires:
+            - test
+      - deploy:
+          requires:
+            - hold
+```
+
+## Troubleshooting
+
+### Tests timeout
+
+Increase timeout:
+
+```yaml
+      - run:
+          name: Run tests
+          command: npx vitest
+          no_output_timeout: 30m
+```
+
+### Out of memory
+
+Use larger resource class:
+
+```yaml
+jobs:
+  test:
+    resource_class: large
+```
+
+Or reduce parallelism in tests:
+
+```javascript
+// vitest.config.mjs
+export default defineConfig({
+  test: {
+    maxConcurrency: 3
+  }
+});
+```
+
+### API key not found
+
+Debug environment:
+
+```yaml
+      - run:
+          name: Debug
+          command: |
+            echo "Has TD_API_KEY: ${TD_API_KEY:+yes}"
+            node --version
+            npm --version
+```
+
+## Complete Example
+
+Full-featured configuration:
+
+```yaml
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.0
+    
+    resource_class: large
+    parallelism: 4
+    
+    steps:
+      - checkout
+      
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "package-lock.json" }}
+            - v1-deps-
+      
+      - run:
+          name: Install dependencies
+          command: npm ci
+      
+      - save_cache:
+          key: v1-deps-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
+      
+      - run:
+          name: Run tests (shard $CIRCLE_NODE_INDEX/$CIRCLE_NODE_TOTAL)
+          command: npx vitest --shard=$CIRCLE_NODE_INDEX/$CIRCLE_NODE_TOTAL 2>&1 | tee test-output.log
+          environment:
+            TD_API_KEY: $TD_API_KEY
+          no_output_timeout: 30m
+      
+      - run:
+          name: Extract Dashcam URLs
+          when: always
+          command: |
+            grep -o 'https://dashcam.testdriver.ai/[a-zA-Z0-9-]*' test-output.log > dashcam-urls.txt || true
+      
+      - store_test_results:
+          path: test-results
+      
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      
+      - store_artifacts:
+          path: test-output.log
+          destination: logs
+      
+      - store_artifacts:
+          path: dashcam-urls.txt
+          destination: dashcam-urls
+
+workflows:
+  version: 2
+  
+  test:
+    jobs:
+      - test:
+          filters:
+            branches:
+              ignore:
+                - /docs\/.*/
+  
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 2 * * *"
+          filters:
+            branches:
+              only: main
+    jobs:
+      - test
+```
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="CI/CD Overview" icon="arrows-spin" href="/v7/guides/ci-cd/overview">
+    CI/CD concepts
+  </Card>
+  
+  <Card title="Performance" icon="gauge" href="/v7/guides/performance">
+    Optimize tests
+  </Card>
+  
+  <Card title="Troubleshooting" icon="circle-question" href="/v7/guides/troubleshooting">
+    Common issues
+  </Card>
+  
+  <Card title="CircleCI Docs" icon="book" href="https://circleci.com/docs/">
+    Official docs
+  </Card>
+</CardGroup>

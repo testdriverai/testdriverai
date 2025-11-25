@@ -1,0 +1,459 @@
+# Core Classes
+
+Direct access to TestDriver and Dashcam classes for full manual control.
+
+## Overview
+
+The core module provides the fundamental building blocks without any automatic lifecycle management. Use this when you need complete control or when working outside of Vitest.
+
+```javascript
+import { TestDriver, Dashcam } from 'testdriverai/core';
+
+const client = new TestDriver(apiKey, { os: 'linux' });
+await client.auth();
+await client.connect();
+
+const dashcam = new Dashcam(client);
+await dashcam.start();
+
+// Your test code
+
+await dashcam.stop();
+await client.disconnect();
+```
+
+## TestDriver Class
+
+### Constructor
+
+```javascript
+import { TestDriver } from 'testdriverai/core';
+
+const client = new TestDriver(apiKey, options);
+```
+
+**Parameters:**
+- `apiKey` - Your TestDriver API key (string)
+- `options` - Configuration object
+
+**Options:**
+```javascript
+{
+  os: 'linux',              // Target OS: 'linux', 'mac', 'windows'
+  apiRoot: 'https://...',   // API endpoint
+  resolution: '1366x768',   // Screen resolution
+  newSandbox: true,         // Create new sandbox
+  analytics: true,          // Enable analytics
+  cacheThresholds: {
+    find: 0.05,
+    findAll: 0.05
+  }
+}
+```
+
+### Methods
+
+#### auth()
+Authenticate with TestDriver API.
+
+```javascript
+await client.auth();
+```
+
+#### connect(options)
+Connect to a sandbox instance.
+
+```javascript
+await client.connect({
+  new: true  // Create new sandbox (default: true)
+});
+```
+
+#### disconnect()
+Disconnect from sandbox and clean up.
+
+```javascript
+await client.disconnect();
+```
+
+#### find(query)
+Find an element on screen.
+
+```javascript
+const element = await client.find('Login button');
+await element.click();
+
+// Or chain:
+await client.find('Login button').then(el => el.click());
+```
+
+#### findAll(query)
+Find all matching elements.
+
+```javascript
+const buttons = await client.findAll('button');
+console.log('Found', buttons.length, 'buttons');
+```
+
+#### click(target)
+Click an element.
+
+```javascript
+await client.click('Submit button');
+```
+
+#### type(text)
+Type text (at current cursor position).
+
+```javascript
+await client.type('username@example.com');
+```
+
+#### pressKeys(keys)
+Press keyboard keys or shortcuts.
+
+```javascript
+await client.pressKeys(['ctrl', 'a']);
+await client.pressKeys(['enter']);
+```
+
+#### exec(shell, command, timeout, ignoreError)
+Execute shell command.
+
+```javascript
+const output = await client.exec(
+  'sh',                              // Shell: 'sh' or 'pwsh'
+  'google-chrome "https://..." &',   // Command
+  30000,                             // Timeout (ms)
+  false                              // Ignore errors
+);
+```
+
+#### focusApplication(appName)
+Focus/activate an application window.
+
+```javascript
+await client.focusApplication('Google Chrome');
+await client.focusApplication('Visual Studio Code');
+```
+
+#### scroll(direction, amount)
+Scroll the page.
+
+```javascript
+await client.scroll('down', 500);
+await client.scroll('up', 200);
+```
+
+#### assert(query)
+Assert that something is true on screen.
+
+```javascript
+const result = await client.assert('Login successful message appears');
+// Returns boolean
+```
+
+## Dashcam Class
+
+### Constructor
+
+```javascript
+import { Dashcam } from 'testdriverai/core';
+
+const dashcam = new Dashcam(client, options);
+```
+
+**Parameters:**
+- `client` - TestDriver instance (required)
+- `options` - Configuration object (optional)
+
+**Options:**
+```javascript
+{
+  apiKey: process.env.TD_API_KEY  // API key (same as TestDriver)
+}
+```
+
+### Methods
+
+#### auth(apiKey)
+Authenticate with Dashcam CLI.
+
+```javascript
+await dashcam.auth();  // Uses TD_API_KEY env var (same as TestDriver)
+// Or:
+await dashcam.auth('your-api-key');
+```
+
+#### start()
+Start recording.
+
+```javascript
+await dashcam.start();
+```
+
+#### stop()
+Stop recording and get replay URL.
+
+```javascript
+const url = await dashcam.stop();
+console.log('Replay:', url);
+// Returns: https://app.dashcam.io/replay/...
+```
+
+#### isRecording()
+Check if currently recording.
+
+```javascript
+if (dashcam.isRecording()) {
+  console.log('Recording in progress');
+}
+```
+
+#### addFileLog(path, name)
+Add a file to Dashcam logs.
+
+```javascript
+await dashcam.addFileLog('/var/log/app.log', 'Application Log');
+```
+
+#### addApplicationLog(application, name)
+Track an application in Dashcam.
+
+```javascript
+await dashcam.addApplicationLog('Google Chrome', 'Browser');
+```
+
+## Complete Examples
+
+### Basic Test
+
+```javascript
+import { TestDriver } from 'testdriverai/core';
+
+async function runTest() {
+  const client = new TestDriver(process.env.TD_API_KEY, {
+    os: 'linux',
+    resolution: '1920x1080'
+  });
+  
+  try {
+    // Connect
+    await client.auth();
+    await client.connect({ new: true });
+    
+    // Focus browser
+    await client.focusApplication('Google Chrome');
+    
+    // Navigate
+    const urlBar = await client.find('URL bar');
+    await urlBar.click();
+    await client.type('https://example.com');
+    await client.pressKeys(['enter']);
+    
+    // Test
+    await client.find('heading').click();
+    const result = await client.assert('page loaded successfully');
+    
+    console.log('Test passed:', result);
+  } finally {
+    // Always disconnect
+    await client.disconnect();
+  }
+}
+
+runTest();
+```
+
+### With Dashcam
+
+```javascript
+import { TestDriver, Dashcam } from 'testdriverai/core';
+
+async function runRecordedTest() {
+  const client = new TestDriver(process.env.TD_API_KEY, { os: 'linux' });
+  const dashcam = new Dashcam(client);
+  
+  try {
+    // Setup
+    await client.auth();
+    await client.connect();
+    
+    // Start recording
+    await dashcam.auth();
+    await dashcam.start();
+    
+    // Run test
+    await client.focusApplication('Google Chrome');
+    await client.find('button').click();
+    
+    // Stop recording
+    const url = await dashcam.stop();
+    console.log('Replay URL:', url);
+    
+  } finally {
+    await client.disconnect();
+  }
+}
+
+runRecordedTest();
+```
+
+### Multiple Operations
+
+```javascript
+import { TestDriver } from 'testdriverai/core';
+
+async function complexTest() {
+  const client = new TestDriver(process.env.TD_API_KEY, { os: 'linux' });
+  
+  await client.auth();
+  await client.connect();
+  
+  try {
+    // Launch application
+    await client.exec(
+      'sh',
+      'google-chrome --start-maximized "https://example.com" &',
+      30000
+    );
+    
+    await client.focusApplication('Google Chrome');
+    
+    // Fill form
+    await client.find('username field').type('user@example.com');
+    await client.find('password field').type('password123');
+    await client.find('submit button').click();
+    
+    // Navigate
+    await client.find('dashboard link').click();
+    
+    // Scroll and interact
+    await client.scroll('down', 500);
+    await client.find('settings button').click();
+    
+    // Verify
+    const result = await client.assert('settings page is visible');
+    console.log('Test result:', result);
+    
+  } finally {
+    await client.disconnect();
+  }
+}
+
+complexTest();
+```
+
+### Error Handling
+
+```javascript
+import { TestDriver } from 'testdriverai/core';
+
+async function testWithErrorHandling() {
+  const client = new TestDriver(process.env.TD_API_KEY, { os: 'linux' });
+  
+  try {
+    await client.auth();
+    await client.connect();
+    
+    await client.focusApplication('Google Chrome');
+    
+    // Try to find element
+    const element = await client.find('optional button');
+    
+    if (element.found()) {
+      await element.click();
+    } else {
+      console.log('Button not found, continuing...');
+    }
+    
+  } catch (error) {
+    console.error('Test failed:', error);
+    throw error;
+  } finally {
+    // Always cleanup
+    try {
+      await client.disconnect();
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+    }
+  }
+}
+```
+
+## TypeScript Support
+
+```typescript
+import { TestDriver, Dashcam, TestDriverOptions, DashcamOptions } from 'testdriverai/core';
+
+const options: TestDriverOptions = {
+  os: 'linux',
+  resolution: '1366x768',
+  newSandbox: true,
+  analytics: true
+};
+
+const client = new TestDriver(process.env.TD_API_KEY!, options);
+
+const dashcamOptions: DashcamOptions = {
+  apiKey: process.env.TD_API_KEY  // Same as TestDriver
+};
+
+const dashcam = new Dashcam(client, dashcamOptions);
+```
+
+## When to Use Core Classes
+
+**Use core classes when:**
+- You need full manual control
+- You're not using Vitest
+- You're integrating with another test framework
+- You're building custom abstractions
+- You're debugging lifecycle issues
+- You're writing scripts, not tests
+
+**Use hooks or provision() instead when:**
+- You're using Vitest
+- You want automatic cleanup
+- You prefer simpler APIs
+- You're testing common applications
+
+## Best Practices
+
+1. **Always disconnect** - Use try/finally to ensure cleanup
+2. **Check element.found()** - Before using optional elements
+3. **Handle errors gracefully** - Log and re-throw when appropriate
+4. **Use TypeScript** - Get type safety and autocomplete
+5. **Set reasonable timeouts** - Default is 30 seconds for exec()
+6. **Focus applications** - Before interacting with them
+
+## Platform Differences
+
+### Shell Commands
+
+**Linux/Mac:**
+```javascript
+await client.exec('sh', 'google-chrome "https://example.com" &', 30000);
+```
+
+**Windows:**
+```javascript
+await client.exec(
+  'pwsh',
+  'Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "https://example.com"',
+  30000
+);
+```
+
+### Application Names
+
+- Linux: `'Google Chrome'`, `'Firefox'`, `'Visual Studio Code'`
+- Mac: `'Google Chrome'`, `'Firefox'`, `'Visual Studio Code'`  
+- Windows: `'Google Chrome'`, `'Firefox'`, `'Visual Studio Code'`
+
+## See Also
+
+- [Provision API](./PROVISION.md) - Simplified API for common apps
+- [Hooks API](./HOOKS.md) - Automatic lifecycle management
+- [Migration Guide](../MIGRATION.md) - Upgrading from v6
+- [API Reference](../../sdk.js) - Full source code

@@ -3,29 +3,18 @@
  * Converted from: testdriver/acceptance/exec-output.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Exec Output Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it.skipIf(() => testdriver.os === "linux")(
+  it.skipIf(process.env.TD_OS === "linux")(
     "should set date using PowerShell and navigate to calendar",
-    async () => {
+    async (context) => {
+      const { testdriver } = await chrome(context, {
+        url: 'http://testdriver-sandbox.vercel.app/login',
+      });
+
+      //
       // Generate date in query string format
       const queryString = await testdriver.exec(
         "pwsh",

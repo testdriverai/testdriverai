@@ -1,0 +1,535 @@
+---
+title: "Using TestDriver with Vitest"
+sidebarTitle: "Vitest Integration"
+description: "Complete guide to integrating TestDriver with Vitest"
+icon: "flask-vial"
+---
+
+## Overview
+
+TestDriver integrates seamlessly with Vitest, providing three levels of API complexity to match your needs. From simple preset functions to full manual control, choose the approach that works best for your project.
+
+## Quick Start
+
+### 1. Install TestDriver
+
+```bash
+npm install --save-dev testdriverai
+```
+
+### 2. Create Vitest Config
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    // Optional: Configure test timeout
+    testTimeout: 120000,
+    hookTimeout: 120000,
+  },
+});
+```
+
+### 3. Write Your First Test
+
+```javascript example.test.js
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('my first test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  await testdriver.find('More information link').click();
+  await testdriver.assert('IANA information page is visible');
+});
+```
+
+### 4. Run Your Tests
+
+```bash
+npx vitest
+```
+
+That's it! TestDriver automatically handles all setup and teardown.
+
+## Three Levels of Integration
+
+<CardGroup cols={3}>
+  <Card title="Provision API" icon="rocket" href="/v7/progressive-apis/PROVISION">
+    **Easiest** - One-line setup
+    ```javascript
+    const { testdriver } = await provision('chrome', { url }, context);
+    ```
+  </Card>
+  
+  <Card title="Hooks API" icon="link" href="/v7/progressive-apis/HOOKS">
+    **Flexible** - More control
+    ```javascript
+    const client = useTestDriver(context);
+    const dashcam = useDashcam(context, client);
+    ```
+  </Card>
+  
+  <Card title="Core Classes" icon="code" href="/v7/progressive-apis/CORE">
+    **Full Control** - Manual everything
+    ```javascript
+    const client = new TestDriver(apiKey);
+    await client.connect();
+    ```
+  </Card>
+</CardGroup>
+
+## Complete Examples
+
+### Web Application Testing
+
+```javascript login.test.js
+import { describe, test, expect } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+describe('User Login', () => {
+  test('successful login flow', async (context) => {
+    const { testdriver, dashcam } = await chrome(context, {
+      url: 'https://myapp.com/login',
+      maximized: true
+    });
+    
+    // Fill login form
+    await testdriver.find('email input').type('user@example.com');
+    await testdriver.find('password input').type('password123');
+    await testdriver.find('Login button').click();
+    
+    // Verify dashboard loads
+    const result = await testdriver.assert('Welcome message is visible');
+    expect(result).toBeTruthy();
+    
+    // Dashcam automatically saves replay URL
+    console.log('Replay:', dashcam.url);
+  });
+  
+  test('invalid credentials error', async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'https://myapp.com/login'
+    });
+    
+    await testdriver.find('email input').type('wrong@example.com');
+    await testdriver.find('password input').type('wrongpass');
+    await testdriver.find('Login button').click();
+    
+    await testdriver.assert('Invalid credentials error appears');
+  });
+});
+```
+
+### VS Code Extension Testing
+
+```javascript extension.test.js
+import { test } from 'vitest';
+import { vscode } from 'testdriverai/presets';
+
+test('create new python file', async (context) => {
+  const { vscode } = await vscode(context, {
+    workspace: '/tmp/test-project',
+    extensions: ['ms-python.python']
+  });
+  
+  // Open command palette
+  await vscode.pressKeys(['cmd', 'shift', 'p']);
+  
+  // Create new Python file
+  await vscode.type('Python: Create New File');
+  await vscode.pressKeys(['enter']);
+  
+  // Verify file created
+  await vscode.assert('Untitled Python file is open');
+});
+```
+
+### Electron App Testing
+
+```javascript electron-app.test.js
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('file menu operations', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-app',
+    args: ['--enable-logging']
+  });
+  
+  await app.find('File menu').click();
+  await app.find('New Document').click();
+  
+  await app.assert('New document window opens');
+});
+```
+
+### Using Multiple Presets
+
+```javascript multi-app.test.js
+import { test } from 'vitest';
+import { chrome, vscode } from 'testdriverai/presets';
+
+test('test chrome and vscode together', async (context) => {
+  // Both share the same Vitest context for cleanup
+  const browser = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  const editor = await vscode(context, {
+    workspace: '/tmp/project'
+  });
+  
+  // Use both in the same test
+  await browser.testdriver.find('link').click();
+  await editor.vscode.find('File').click();
+});
+```
+
+## Test Lifecycle
+
+TestDriver automatically manages the entire test lifecycle:
+
+```javascript
+test('lifecycle example', async (context) => {
+  // 1. Setup happens automatically when you call preset
+  const { testdriver, dashcam } = await chrome(context, { url });
+  
+  // 2. Your test code runs
+  await testdriver.find('button').click();
+  
+  // 3. Teardown happens automatically after test completes
+  // - Dashcam stops and saves replay URL
+  // - TestDriver disconnects from sandbox
+  // - All resources are cleaned up
+});
+```
+
+### Automatic Cleanup
+
+Even if your test fails or throws an error, cleanup still happens:
+
+```javascript
+test('error handling', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  try {
+    await testdriver.find('non-existent element').click();
+  } catch (error) {
+    // Cleanup STILL happens automatically via Vitest hooks
+    console.error('Test failed:', error);
+    throw error;
+  }
+  // No need for finally block or manual cleanup
+});
+```
+
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file in your project root:
+
+```bash .env
+TD_API_KEY=your-api-key-here
+TD_API_ROOT=https://testdriver-api.onrender.com
+```
+
+TestDriver automatically reads these when initializing.
+
+### Vitest Config Options
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    // Recommended: Increase timeouts for UI testing
+    testTimeout: 120000, // 2 minutes per test
+    hookTimeout: 120000, // 2 minutes for setup/teardown
+    
+    // Optional: Run tests sequentially for resource-intensive tests
+    threads: false,
+    
+    // Optional: Limit concurrent tests
+    maxConcurrency: 3,
+    
+    // Optional: Enable file watching
+    watch: false,
+  },
+});
+```
+
+### Per-Test Configuration
+
+Override defaults for specific tests:
+
+```javascript
+test('long running test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://slow-app.com',
+    dashcam: false, // Disable recording for faster execution
+    maximized: false,
+  });
+  
+  // Your test code
+}, { timeout: 180000 }); // 3-minute timeout for this test only
+```
+
+## Running Tests
+
+### Basic Commands
+
+```bash
+# Run all tests
+npx vitest
+
+# Run specific file
+npx vitest login.test.js
+
+# Run in watch mode
+npx vitest --watch
+
+# Run with coverage
+npx vitest --coverage
+
+# Run tests matching pattern
+npx vitest --grep "login"
+```
+
+### CI/CD Integration
+
+```yaml .github/workflows/test.yml
+name: TestDriver Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest --run
+```
+
+## Advanced Patterns
+
+### Shared Setup with beforeEach
+
+```javascript
+import { describe, test, beforeEach } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+describe('Dashboard Tests', () => {
+  let testdriver;
+  
+  beforeEach(async (context) => {
+    // Setup runs before each test
+    const result = await chrome(context, {
+      url: 'https://myapp.com'
+    });
+    testdriver = result.testdriver;
+    
+    // Shared login
+    await testdriver.find('email').type('user@example.com');
+    await testdriver.find('password').type('password');
+    await testdriver.find('Login').click();
+  });
+  
+  test('view profile', async () => {
+    await testdriver.find('Profile link').click();
+    await testdriver.assert('Profile page loads');
+  });
+  
+  test('view settings', async () => {
+    await testdriver.find('Settings link').click();
+    await testdriver.assert('Settings page loads');
+  });
+});
+```
+
+### Parameterized Tests
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+const testCases = [
+  { browser: 'chrome', os: 'linux' },
+  { browser: 'chrome', os: 'windows' },
+  { browser: 'chrome', os: 'mac' },
+];
+
+testCases.forEach(({ browser, os }) => {
+  test(`login on ${os}`, async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'https://myapp.com',
+      os
+    });
+    
+    await testdriver.find('Login').click();
+    await testdriver.assert('Login successful');
+  });
+});
+```
+
+### Custom Helpers
+
+```javascript helpers.js
+import { chrome } from 'testdriverai/presets';
+
+export async function loginAsUser(context, email, password) {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/login'
+  });
+  
+  await testdriver.find('email input').type(email);
+  await testdriver.find('password input').type(password);
+  await testdriver.find('Login button').click();
+  
+  return testdriver;
+}
+```
+
+```javascript test.js
+import { test } from 'vitest';
+import { loginAsUser } from './helpers.js';
+
+test('logged in user can view dashboard', async (context) => {
+  const testdriver = await loginAsUser(context, 'user@example.com', 'pass123');
+  
+  await testdriver.find('Dashboard link').click();
+  await testdriver.assert('Dashboard is visible');
+});
+```
+
+## Best Practices
+
+### 1. Use Descriptive Test Names
+
+```javascript
+// ✅ Good
+test('user can login with valid credentials and view dashboard', async (context) => {
+
+// ❌ Bad
+test('test1', async (context) => {
+```
+
+### 2. Enable Dashcam for Debugging
+
+```javascript
+test('complex interaction', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://myapp.com',
+    dashcam: true // Always enable for debugging
+  });
+  
+  // If test fails, check dashcam.url for replay
+});
+```
+
+### 3. Use Assertions Liberally
+
+```javascript
+test('multi-step flow', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  await testdriver.find('Step 1').click();
+  await testdriver.assert('Step 1 completed'); // Verify each step
+  
+  await testdriver.find('Step 2').click();
+  await testdriver.assert('Step 2 completed');
+});
+```
+
+### 4. Keep Tests Focused
+
+```javascript
+// ✅ Good - One test per scenario
+test('user can login', async (context) => { /* ... */ });
+test('user can logout', async (context) => { /* ... */ });
+
+// ❌ Bad - Testing too many things
+test('user can login and logout and change settings and...', async (context) => { /* ... */ });
+```
+
+### 5. Use Environment Variables for Secrets
+
+```javascript
+// ✅ Good
+await testdriver.find('password').type(process.env.TEST_PASSWORD);
+
+// ❌ Bad
+await testdriver.find('password').type('hardcoded-password');
+```
+
+## Troubleshooting
+
+### Tests Timeout
+
+Increase timeout in vitest.config.mjs:
+
+```javascript
+export default defineConfig({
+  test: {
+    testTimeout: 180000, // 3 minutes
+  },
+});
+```
+
+### Cleanup Not Working
+
+Make sure you're passing the `context` parameter:
+
+```javascript
+// ✅ Correct
+test('my test', async (context) => {
+  await chrome(context, { url });
+});
+
+// ❌ Wrong - cleanup won't work
+test('my test', async () => {
+  await chrome({}, { url });
+});
+```
+
+### Dashcam URL Not Available
+
+Ensure Dashcam is enabled and check for errors:
+
+```javascript
+const { testdriver, dashcam } = await chrome(context, {
+  url: 'https://example.com',
+  dashcam: true
+});
+
+if (dashcam) {
+  console.log('Replay URL:', dashcam.url);
+} else {
+  console.error('Dashcam not initialized');
+}
+```
+
+## See Also
+
+- [Provision API](/v7/progressive-apis/PROVISION) - One-line setup for common apps
+- [Hooks API](/v7/progressive-apis/HOOKS) - Flexible lifecycle control
+- [Chrome Preset](/v7/presets/chrome) - Browser testing
+- [VS Code Preset](/v7/presets/vscode) - Extension testing
+- [Electron Preset](/v7/presets/electron) - Desktop app testing
+- [Vitest Plugin](/v7/guides/vitest-plugin) - Test recording and reporting

@@ -1927,7 +1927,7 @@ ${regression}
     if (!this.instance) {
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`creating new sandbox (can take up to 2 minutes)...`),
+        theme.dim(`creating new sandbox...`),
       );
       // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
       // to see if that fixes the issue.

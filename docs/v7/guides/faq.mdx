@@ -1,0 +1,393 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about TestDriver"
+icon: "question"
+---
+
+## General
+
+### What is TestDriver?
+
+TestDriver is an AI-powered test automation SDK that lets you write tests using natural language. Instead of writing complex selectors, you describe what you want to test, and AI figures out how to do it.
+
+```javascript
+// Traditional approach
+await page.locator('[data-testid="submit-button"]').click();
+
+// TestDriver approach
+await testdriver.find('submit button').then(el => el.click());
+```
+
+### How does TestDriver work?
+
+TestDriver combines:
+1. **AI vision** - Understands screenshots to locate elements
+2. **Natural language** - You describe what to test
+3. **Cloud sandboxes** - Isolated VMs for test execution
+4. **Caching** - Speeds up repeated operations
+
+### Is TestDriver free?
+
+TestDriver offers:
+- **Free tier** - Limited test minutes per month
+- **Paid plans** - More test minutes, team features
+- **Enterprise** - Self-hosted, SLA, custom integrations
+
+Check [pricing](https://testdriver.ai/pricing) for details.
+
+### What can TestDriver test?
+
+- ✅ Web applications (Chrome, Firefox)
+- ✅ Desktop apps (Electron, native)
+- ✅ VS Code extensions
+- ✅ Chrome extensions
+- ✅ Any GUI application on Linux/Windows
+
+## Technical
+
+### What testing frameworks are supported?
+
+TestDriver works best with:
+- **Vitest** (recommended) - Full support with presets
+- **Jest** - Supported with manual setup
+- **Mocha** - Supported with manual setup
+- **Playwright** - Integration available
+- **Any Node.js framework** - Use core APIs
+
+### What languages are supported?
+
+TestDriver SDK is JavaScript/TypeScript only. But you can test applications in any language since it interacts with the UI.
+
+### What operating systems are supported?
+
+Sandboxes support:
+- **Linux** (Ubuntu 22.04)
+- **Windows** (Server 2019/2022)
+- **macOS** (coming soon)
+
+Your local machine can be any OS.
+
+### Do I need Docker?
+
+No! TestDriver uses cloud sandboxes by default. Docker is only needed for self-hosted deployments.
+
+### Can I run tests locally?
+
+Tests run in cloud sandboxes by default. For local execution, see [self-hosting guide](/v7/guides/self-hosting).
+
+### How fast are tests?
+
+- **First run**: ~60s (sandbox startup)
+- **Subsequent runs**: 5-30s per test (sandbox reuse)
+- **With caching**: 2-10s per test (cache hits)
+
+Tips for speed:
+- Reuse sandboxes across tests
+- Enable caching
+- Run tests in parallel
+
+### Do tests run in parallel?
+
+Yes! Configure concurrency in `vitest.config.mjs`:
+
+```javascript
+export default defineConfig({
+  test: {
+    maxConcurrency: 5,
+    fileParallelism: true
+  }
+});
+```
+
+Each test gets its own sandbox.
+
+## Features
+
+### What is Dashcam?
+
+Dashcam records video + logs of test execution. Every test automatically gets a replay URL for debugging.
+
+Features:
+- Screen recording
+- Log aggregation
+- Command history
+- Timestamps
+- Shareable URLs
+
+### How does caching work?
+
+Two types of caching:
+
+**1. Prompt Cache** - Caches AI-generated commands locally
+```javascript
+await testdriver.ai('click button'); // AI call
+await testdriver.ai('click button'); // Uses cache
+```
+
+**2. Selector Cache** - Caches element locations on server
+```javascript
+await testdriver.find('button'); // AI vision
+await testdriver.find('button'); // Cache hit (95%+ similar UI)
+```
+
+See [caching guide](/v7/guides/caching-ai) for details.
+
+### Can I test responsive designs?
+
+Yes! Set different resolutions:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  resolution: '1920x1080'  // Desktop
+});
+
+const mobile = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  resolution: '375x667'  // iPhone
+});
+```
+
+### Can I test with real user data?
+
+Yes! Use environment variables or test data files:
+
+```javascript
+test('login with real user', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  await testdriver.find('email').then(el => el.click());
+  await testdriver.type(process.env.TEST_USER_EMAIL);
+  
+  await testdriver.find('password').then(el => el.click());
+  await testdriver.type(process.env.TEST_USER_PASSWORD);
+  
+  await testdriver.find('submit').then(el => el.click());
+});
+```
+
+### Can I upload files?
+
+Yes! Use `exec()` to interact with file pickers or copy files:
+
+```javascript
+// Copy file to sandbox
+await testdriver.exec('sh', 
+  'curl -o /tmp/test.pdf https://example.com/test.pdf',
+  30000
+);
+
+// Then interact with file picker
+await testdriver.find('upload button').then(el => el.click());
+await testdriver.type('/tmp/test.pdf');
+await testdriver.pressKeys(['enter']);
+```
+
+### Can I take screenshots?
+
+Yes! Element screenshots are available when found:
+
+```javascript
+const element = await testdriver.find('error message');
+if (element.screenshot) {
+  console.log('Screenshot:', element.screenshot); // base64
+}
+```
+
+Or use system commands:
+
+```javascript
+// Linux
+await testdriver.exec('sh', 'scrot /tmp/screenshot.png', 5000);
+
+// Windows
+await testdriver.exec('pwsh', 
+  'Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait("%{PRTSC}")',
+  5000
+);
+```
+
+## Debugging
+
+### How do I debug failing tests?
+
+1. **Watch Dashcam replay** - See exactly what happened
+2. **Enable verbose logging** - `verbosity: 2`
+3. **Check element.found()** - Verify elements were located
+4. **Use assertions** - Verify state at checkpoints
+5. **Add delays** - Slow down to watch execution
+
+See [debugging guide](/v7/guides/debugging).
+
+### Why isn't my element found?
+
+Common reasons:
+
+1. **Too vague** - Be more specific:
+   ```javascript
+   // ❌ Vague
+   await testdriver.find('button');
+   
+   // ✅ Specific
+   await testdriver.find('blue submit button at bottom of form');
+   ```
+
+2. **Element not visible** - Wait for it:
+   ```javascript
+   // Poll until appears
+   let element;
+   for (let i = 0; i < 30; i++) {
+     element = await testdriver.find('button');
+     if (element.found()) break;
+     await new Promise(r => setTimeout(r, 1000));
+   }
+   ```
+
+3. **Wrong page** - Verify navigation:
+   ```javascript
+   await testdriver.assert('login page loaded');
+   ```
+
+### How do I see what TestDriver is doing?
+
+Enable debug logging:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  verbosity: 2  // 0=silent, 1=normal, 2=debug
+});
+```
+
+Or watch live via VNC:
+
+```javascript
+const instance = testdriver.getInstance();
+console.log('VNC:', `vnc://${instance.ip}:${instance.vncPort}`);
+```
+
+## Best Practices
+
+### Should I test in production?
+
+**No!** TestDriver can interact with any UI, so use:
+- Staging environments
+- Test environments
+- Local development
+- Mock data
+
+Never test against production databases or real user accounts.
+
+### How should I organize tests?
+
+```
+tests/
+  setup/
+    helpers.mjs
+    pages/
+      LoginPage.mjs
+      DashboardPage.mjs
+  auth/
+    login.test.mjs
+    logout.test.mjs
+  dashboard/
+    navigation.test.mjs
+    settings.test.mjs
+```
+
+### What should I test?
+
+Focus on:
+- **Critical user flows** - Login, checkout, registration
+- **Cross-browser** - Chrome, Firefox, Safari
+- **Responsive** - Desktop, tablet, mobile
+- **Accessibility** - Keyboard navigation, screen readers
+- **Error states** - Invalid input, network failures
+
+Skip:
+- Unit tests (use Jest/Vitest)
+- API tests (use Supertest)
+- Load tests (use k6)
+
+### How many tests should I write?
+
+Quality > quantity. Start with:
+- 5-10 critical happy paths
+- 3-5 error scenarios
+- 2-3 edge cases
+
+Then expand based on coverage needs.
+
+## Pricing & Limits
+
+### How is usage calculated?
+
+Usage is measured in:
+- **Test minutes** - Time sandbox is running
+- **API calls** - Number of AI requests
+
+Tips to reduce usage:
+- Reuse sandboxes across tests
+- Enable caching
+- Run tests in parallel
+
+### What happens if I exceed limits?
+
+Free tier:
+- Tests pause until next month
+- Or upgrade to paid plan
+
+Paid plans:
+- Overage charges apply
+- Or upgrade to higher tier
+
+### Can I self-host?
+
+Yes! Enterprise plans include self-hosting options. See [self-hosting guide](/v7/guides/self-hosting).
+
+## Support
+
+### Where can I get help?
+
+- **Discord** - [discord.com/invite/cWDFW8DzPm](https://discord.com/invite/cWDFW8DzPm)
+- **Docs** - [docs.testdriver.ai](https://docs.testdriver.ai)
+- **GitHub** - [github.com/testdriverai/testdriverai](https://github.com/testdriverai/testdriverai)
+- **Email** - support@testdriver.ai
+
+### How do I report bugs?
+
+1. Check [existing issues](https://github.com/testdriverai/testdriverai/issues)
+2. Create new issue with:
+   - TestDriver version
+   - Node version
+   - Error message
+   - Dashcam URL
+   - Minimal reproduction
+
+### Is there a community?
+
+Yes! Join our [Discord](https://discord.com/invite/cWDFW8DzPm) to:
+- Ask questions
+- Share tips
+- See examples
+- Get updates
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/v7/getting-started/quickstart">
+    Get started in 5 minutes
+  </Card>
+  
+  <Card title="Troubleshooting" icon="circle-question" href="/v7/guides/troubleshooting">
+    Common issues
+  </Card>
+  
+  <Card title="Best Practices" icon="star" href="/v7/guides/best-practices">
+    Testing patterns
+  </Card>
+  
+  <Card title="Discord Community" icon="discord" href="https://discord.com/invite/cWDFW8DzPm">
+    Join the community
+  </Card>
+</CardGroup>

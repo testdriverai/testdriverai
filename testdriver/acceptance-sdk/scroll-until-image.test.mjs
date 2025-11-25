@@ -3,27 +3,16 @@
  * Converted from: testdriver/acceptance/scroll-until-image.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Scroll Until Image Test", () => {
-  let testdriver;
+  it("should scroll until brown colored house image appears", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should scroll until brown colored house image appears", async () => {
+    //
     // Navigate to Wikipedia page
     await testdriver.pressKeys(["ctrl", "l"]);
     await testdriver.type("https://en.wikipedia.org/wiki/Leonardo_da_Vinci");

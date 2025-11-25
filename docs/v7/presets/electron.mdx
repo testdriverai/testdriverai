@@ -1,0 +1,435 @@
+---
+title: "Desktop Apps"
+sidebarTitle: "Desktop Apps"
+description: "Automatically launch and test Electron applications"
+icon: "atom"
+---
+
+## Overview
+
+The `electron()` preset automatically sets up an Electron application with TestDriver and Dashcam recording. Perfect for testing desktop apps built with Electron.
+
+## Quick Start
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('electron app test', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-app'
+  });
+  
+  await app.find('main window').click();
+  await app.find('File menu').click();
+  await app.find('New Document').click();
+});
+```
+
+## Signature
+
+```typescript
+electron(context, options): Promise<ElectronResult>
+```
+
+### Parameters
+
+<ParamField path="context" type="object" required>
+  Vitest test context - automatically passed to your test function
+</ParamField>
+
+<ParamField path="options" type="object">
+  Configuration options for Electron
+
+  <Expandable title="properties">
+    <ParamField path="appPath" type="string" required>
+      Path to your Electron application executable or main file
+    </ParamField>
+
+    <ParamField path="args" type="string[]" default={[]}>
+      Additional command-line arguments to pass to Electron
+    </ParamField>
+
+    <ParamField path="dashcam" type="boolean" default={true}>
+      Enable Dashcam test recording
+    </ParamField>
+
+    <ParamField path="os" type="'linux' | 'mac' | 'windows'" default="linux">
+      Target operating system for the test
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField name="testdriver" type="TestDriver" required>
+  TestDriver instance ready to use
+</ResponseField>
+
+<ResponseField name="app" type="TestDriver" required>
+  Alias for testdriver (semantic clarity for Electron apps)
+</ResponseField>
+
+<ResponseField name="dashcam" type="Dashcam">
+  Dashcam instance for test recording (if enabled)
+</ResponseField>
+
+## Examples
+
+### Basic Electron App
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('opens main window', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-electron-app'
+  });
+  
+  await app.assert('Main window is visible');
+  await app.find('Welcome message').click();
+});
+```
+
+### With Command-Line Arguments
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('app with debug mode', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/app',
+    args: [
+      '--enable-logging',
+      '--debug',
+      '--user-data-dir=/tmp/test-data'
+    ]
+  });
+  
+  await app.find('Debug panel').click();
+  await app.assert('Debug information is visible');
+});
+```
+
+### Menu Navigation
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('file menu operations', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/editor-app'
+  });
+  
+  // Open File menu
+  await app.find('File').click();
+  await app.find('New File').click();
+  
+  // Verify new file created
+  await app.assert('Untitled document is open');
+  
+  // Save file
+  await app.find('File').click();
+  await app.find('Save As').click();
+  await app.type('test-document.txt');
+  await app.pressKeys(['enter']);
+  
+  await app.assert('File saved successfully');
+});
+```
+
+### Testing on Different Platforms
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('windows electron app', async (context) => {
+  const { app } = await electron(context, {
+    appPath: 'C:\\Program Files\\MyApp\\MyApp.exe',
+    os: 'windows'
+  });
+  
+  await app.find('Start button').click();
+});
+
+test('mac electron app', async (context) => {
+  const { app } = await electron(context, {
+    appPath: '/Applications/MyApp.app/Contents/MacOS/MyApp',
+    os: 'mac'
+  });
+  
+  await app.find('Start button').click();
+});
+```
+
+### Preferences and Settings
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('configure app settings', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-app'
+  });
+  
+  // Open preferences
+  await app.find('Settings').click();
+  
+  // Change theme
+  await app.find('Appearance').click();
+  await app.find('Dark mode toggle').click();
+  
+  // Verify change
+  await app.assert('Dark mode is enabled');
+  
+  // Save settings
+  await app.find('Save button').click();
+  
+  await app.assert('Settings saved');
+});
+```
+
+### Window Management
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('multiple windows', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/multi-window-app'
+  });
+  
+  // Open new window
+  await app.find('File').click();
+  await app.find('New Window').click();
+  
+  // Switch between windows
+  await app.find('second window').click();
+  await app.assert('Second window is focused');
+  
+  // Close window
+  await app.find('Close button').click();
+  
+  await app.assert('Window closed');
+});
+```
+
+### Form Interaction
+
+```javascript
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('form submission', async (context) => {
+  const { app, dashcam } = await electron(context, {
+    appPath: './dist/form-app'
+  });
+  
+  // Fill form
+  await app.find('Name input').type('John Doe');
+  await app.find('Email input').type('john@example.com');
+  await app.find('Phone input').type('555-1234');
+  
+  // Select dropdown
+  await app.find('Country dropdown').click();
+  await app.find('United States').click();
+  
+  // Check checkbox
+  await app.find('Terms and conditions').click();
+  
+  // Submit
+  await app.find('Submit button').click();
+  
+  await app.assert('Form submitted successfully');
+  
+  // Dashcam captures entire interaction
+});
+```
+
+## What It Does
+
+When you call `electron()`, it automatically:
+
+1. **Initializes TestDriver** - Creates and connects to sandbox
+2. **Sets up Dashcam** - Authenticates and starts recording (if enabled)
+3. **Launches Electron** - Starts your app with specified arguments
+4. **Waits for Ready** - Ensures app is focused and windows are loaded
+5. **Returns Instances** - Provides ready-to-use testdriver, app alias, and dashcam
+
+At test end:
+- Dashcam automatically stops and saves replay URL
+- TestDriver automatically disconnects
+- All cleanup is handled for you
+
+## Common Patterns
+
+### IPC Communication Testing
+
+```javascript
+test('ipc events', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/ipc-app'
+  });
+  
+  // Trigger IPC event from renderer
+  await app.find('Send Message button').click();
+  
+  // Verify main process response
+  await app.assert('Response received from main process');
+});
+```
+
+### Notification Testing
+
+```javascript
+test('system notifications', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/notification-app'
+  });
+  
+  await app.find('Show Notification').click();
+  await app.assert('System notification appears');
+});
+```
+
+### Tray Icon Interaction
+
+```javascript
+test('system tray', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/tray-app'
+  });
+  
+  // Click tray icon
+  await app.find('app tray icon').click();
+  
+  // Interact with tray menu
+  await app.find('Show Window').click();
+  
+  await app.assert('Main window appears');
+});
+```
+
+### Auto-Update Flow
+
+```javascript
+test('app update', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/updatable-app',
+    args: ['--check-updates']
+  });
+  
+  await app.find('Check for Updates').click();
+  await app.assert('Checking for updates message');
+  
+  // Assuming update is available
+  await app.find('Download Update').click();
+  await app.assert('Update downloaded');
+});
+```
+
+## Development Paths
+
+### Common Development Paths
+
+```javascript
+// Electron Forge
+appPath: './out/my-app-linux-x64/my-app'
+
+// Electron Builder
+appPath: './dist/linux-unpacked/my-app'
+
+// Direct execution
+appPath: './node_modules/.bin/electron'
+args: ['./main.js']
+
+// Packaged app (Windows)
+appPath: 'C:\\Program Files\\MyApp\\MyApp.exe'
+
+// Packaged app (macOS)
+appPath: '/Applications/MyApp.app/Contents/MacOS/MyApp'
+
+// Packaged app (Linux)
+appPath: '/opt/MyApp/my-app'
+```
+
+## Using with provision()
+
+The `electron()` preset can also be called via the unified `provision()` function:
+
+```javascript
+import { provision } from 'testdriverai/presets';
+
+test('using provision', async (context) => {
+  const { app } = await provision('electron', {
+    appPath: './dist/my-app'
+  }, context);
+  
+  // Same functionality as electron() directly
+});
+```
+
+## Error Handling
+
+```javascript
+test('handles missing app path', async (context) => {
+  try {
+    const { app } = await electron(context, {
+      appPath: '/nonexistent/path'
+    });
+  } catch (error) {
+    // Cleanup still happens automatically
+    expect(error.message).toContain('appPath');
+  }
+});
+
+test('handles app crashes', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-app'
+  });
+  
+  try {
+    // Trigger something that might crash
+    await app.find('Crash button').click();
+  } catch (error) {
+    // Dashcam still saves replay of crash
+    console.error('App crashed:', error);
+  }
+});
+```
+
+## Debugging Tips
+
+1. **Enable Electron DevTools** - Pass `--enable-logging` in args
+2. **Use Dashcam** - Review test recordings to see what happened
+3. **Custom User Data** - Use `--user-data-dir` for isolated testing
+4. **Remote Debugging** - Use `--remote-debugging-port=9222`
+
+```javascript
+test('with debugging enabled', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-app',
+    args: [
+      '--enable-logging',
+      '--remote-debugging-port=9222',
+      '--user-data-dir=/tmp/test-profile'
+    ]
+  });
+  
+  // Test with full debugging capabilities
+});
+```
+
+## See Also
+
+- [Provision API](/v7/progressive-apis/PROVISION) - Overview of all presets
+- [Chrome Preset](/v7/presets/chrome) - Testing web applications
+- [VS Code Preset](/v7/presets/vscode) - Testing VS Code extensions
+- [Vitest Integration](/v7/guides/vitest) - Complete Vitest setup guide
+- [Hooks API](/v7/progressive-apis/HOOKS) - Manual lifecycle control

@@ -3,29 +3,18 @@
  * Converted from: testdriver/acceptance/focus-window.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Focus Window Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it.skipIf(() => testdriver.os === "linux")(
+  it.skipIf(process.env.TD_OS === "linux")(
     "should click Microsoft Edge icon and focus Google Chrome",
-    async () => {
+    async (context) => {
+      const { testdriver } = await chrome(context, {
+        url: 'http://testdriver-sandbox.vercel.app/login',
+      });
+
+      //
       // Show desktop
       await testdriver.pressKeys(["winleft", "d"]);
 

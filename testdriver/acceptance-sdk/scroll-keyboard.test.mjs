@@ -3,29 +3,16 @@
  * Converted from: testdriver/acceptance/scroll-keyboard.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Scroll Keyboard Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    testdriver = createTestClient({
-      task: context.task,
-      redrawThreshold: 0.5, // Higher threshold for scroll test
+  it("should navigate to webhamster.com and scroll with keyboard", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
     });
-    await setupTest(testdriver);
-  });
 
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should navigate to webhamster.com and scroll with keyboard", async () => {
+    //
     // Navigate to https://www.webhamster.com/
     await testdriver.focusApplication("Google Chrome");
     const urlBar = await testdriver.find(

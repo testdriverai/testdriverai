@@ -13,12 +13,12 @@ import { test } from 'vitest';
 import { chromePreset } from 'testdriverai/presets';
 
 test('my test', async (context) => {
-  const { browser } = await chromePreset(context, {
+  const { client } = await chromePreset(context, {
     url: 'https://myapp.com/login'
   });
   
-  await browser.find('email input').type('user@example.com');
-  await browser.find('Login button').click();
+  await client.find('email input').type('user@example.com');
+  await client.find('Login button').click();
 });
 ```
 
@@ -31,7 +31,6 @@ test('my test', async (context) => {
 
 **Returns:**
 - `client` - TestDriver instance
-- `browser` - Alias for client (semantic clarity)
 - `dashcam` - Dashcam instance (if enabled)
 
 ### vscodePreset
@@ -99,12 +98,12 @@ Generic web application preset (currently uses Chrome).
 import { webAppPreset } from 'testdriverai/presets';
 
 test('web app test', async (context) => {
-  const { browser } = await webAppPreset(context, {
+  const { client } = await webAppPreset(context, {
     url: 'https://example.com',
     browser: 'chrome' // Only Chrome supported currently
   });
   
-  await browser.find('login form').click();
+  await client.find('login form').click();
 });
 ```
 
@@ -126,18 +125,18 @@ const firefoxPreset = createPreset({
     await client.focusApplication('Firefox');
     
     return {
-      browser: client,
+      // client is already included automatically
     };
   },
 });
 
 // Use your custom preset
 test('my test', async (context) => {
-  const { browser } = await firefoxPreset(context, {
+  const { client } = await firefoxPreset(context, {
     url: 'https://example.com',
   });
   
-  await browser.find('page content').click();
+  await client.find('page content').click();
 });
 ```
 
@@ -177,7 +176,7 @@ Presets fit into the progressive disclosure pattern:
 
 ### Beginner (Presets)
 ```javascript
-const { browser } = await chromePreset(context, { url: 'https://example.com' });
+const { client } = await chromePreset(context, { url: 'https://example.com' });
 ```
 Everything automatic - just pass URL and start testing.
 
@@ -204,7 +203,7 @@ Complete control, manual everything.
 2. **Create custom presets for your apps** - Encapsulate setup logic
 3. **Enable dashcam by default** - Great for debugging failures
 4. **Keep presets focused** - One app/scenario per preset
-5. **Return semantic aliases** - `browser`, `vscode`, `app` instead of just `client`
+5. **Use descriptive variable names** - `client`, `vscode`, `app` based on what you're testing
 
 ## Examples
 

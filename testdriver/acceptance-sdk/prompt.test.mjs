@@ -3,27 +3,16 @@
  * Converted from: testdriver/acceptance/prompt.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe.skip("Prompt Test", () => {
-  let testdriver;
+  it("should execute AI-driven prompts", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should execute AI-driven prompts", async () => {
+    //
     // Note: The SDK doesn't have a direct equivalent to YAML prompts without commands.
     // This would typically be handled by the AI agent interpreting natural language.
     // For SDK usage, you need to use explicit commands.

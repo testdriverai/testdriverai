@@ -5,32 +5,21 @@
 
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  performLogin,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
+import { performLogin } from "./setup/testHelpers.mjs";
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe("Match Image Test", () => {
-  let testdriver;
+  it("should match shopping cart image and verify empty cart", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should match shopping cart image and verify empty cart", async () => {
+    //
     // Perform login first
     await performLogin(testdriver);
 

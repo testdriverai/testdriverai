@@ -3,7 +3,7 @@
  * @module testdriverai/presets
  */
 
-import { TestDriver, Dashcam } from '../core/index';
+import { Dashcam, TestDriver } from '../core/index';
 import { VitestContext } from '../vitest/hooks';
 
 /**
@@ -45,8 +45,7 @@ export interface ChromePresetOptions extends PresetOptions {
  * Chrome preset result
  */
 export interface ChromePresetResult {
-  client: TestDriver;
-  browser: TestDriver;
+  testdriver: TestDriver;
   dashcam: Dashcam | null;
 }
 
@@ -56,15 +55,15 @@ export interface ChromePresetResult {
  * 
  * @param context - Vitest test context
  * @param options - Preset options
- * @returns Promise with client, browser, and dashcam
+ * @returns Promise with testdriver and dashcam
  * 
  * @example
  * test('login test', async (context) => {
- *   const { browser } = await chromePreset(context, {
+ *   const { testdriver } = await chromePreset(context, {
  *     url: 'https://myapp.com/login'
  *   });
  *   
- *   await browser.find('email input').type('user@example.com');
+ *   await testdriver.find('email input').type('user@example.com');
  * });
  */
 export function chromePreset(context: VitestContext, options?: ChromePresetOptions): Promise<ChromePresetResult>;
@@ -88,7 +87,7 @@ export interface VSCodePresetOptions extends PresetOptions {
  * VS Code preset result
  */
 export interface VSCodePresetResult {
-  client: TestDriver;
+  testdriver: TestDriver;
   vscode: TestDriver;
   dashcam: Dashcam | null;
 }
@@ -103,7 +102,7 @@ export interface VSCodePresetResult {
  * 
  * @example
  * test('extension test', async (context) => {
- *   const { vscode } = await vscodePreset(context, {
+ *   const { testdriver, vscode } = await vscodePreset(context, {
  *     workspace: '/tmp/test-project',
  *     extensions: ['ms-python.python']
  *   });
@@ -132,7 +131,7 @@ export interface ElectronPresetOptions extends PresetOptions {
  * Electron preset result
  */
 export interface ElectronPresetResult {
-  client: TestDriver;
+  testdriver: TestDriver;
   app: TestDriver;
   dashcam: Dashcam | null;
 }
@@ -147,7 +146,7 @@ export interface ElectronPresetResult {
  * 
  * @example
  * test('my test', async (context) => {
- *   const { app } = await electronPreset(context, {
+ *   const { testdriver, app } = await electronPreset(context, {
  *     appPath: '/path/to/electron/app'
  *   });
  *   
@@ -172,7 +171,7 @@ export interface WebAppPresetOptions extends ChromePresetOptions {
  * 
  * @param context - Vitest test context
  * @param options - Preset options
- * @returns Promise with client, browser, and dashcam
+ * @returns Promise with testdriver and dashcam
  */
 export function webAppPreset(context: VitestContext, options?: WebAppPresetOptions): Promise<ChromePresetResult>;
 
@@ -226,3 +225,72 @@ export interface PresetConfig {
  * });
  */
 export function createPreset(config: PresetConfig): (context: VitestContext, options?: any) => Promise<any>;
+
+/**
+ * Application type for provision() function
+ */
+export type AppType = 'chrome' | 'vscode' | 'electron' | 'webapp';
+
+/**
+ * Provision application preset
+ * Main entry point for provisioning any application preset
+ * 
+ * @param app - Application type
+ * @param options - Preset options (varies by app type)
+ * @param context - Vitest test context
+ * @returns Promise with testdriver and other app-specific properties
+ * 
+ * @example
+ * test('my test', async (context) => {
+ *   const { testdriver } = await provision('chrome', {
+ *     url: 'https://example.com'
+ *   }, context);
+ *   
+ *   await testdriver.find('button').click();
+ * });
+ */
+export function provision(
+  app: 'chrome',
+  options: ChromePresetOptions,
+  context: VitestContext
+): Promise<ChromePresetResult>;
+export function provision(
+  app: 'vscode',
+  options: VSCodePresetOptions,
+  context: VitestContext
+): Promise<VSCodePresetResult>;
+export function provision(
+  app: 'electron',
+  options: ElectronPresetOptions,
+  context: VitestContext
+): Promise<ElectronPresetResult>;
+export function provision(
+  app: 'webapp',
+  options: WebAppPresetOptions,
+  context: VitestContext
+): Promise<ChromePresetResult>;
+export function provision(
+  app: AppType,
+  options: any,
+  context: VitestContext
+): Promise<any>;
+
+/**
+ * Chrome browser preset (can also use run(context, 'chrome', options))
+ */
+export function chrome(context: VitestContext, options?: ChromePresetOptions): Promise<ChromePresetResult>;
+
+/**
+ * VS Code preset (can also use run(context, 'vscode', options))
+ */
+export function vscode(context: VitestContext, options?: VSCodePresetOptions): Promise<VSCodePresetResult>;
+
+/**
+ * Electron preset (can also use run(context, 'electron', options))
+ */
+export const electron: (context: VitestContext, options: ElectronPresetOptions) => Promise<ElectronPresetResult>;
+
+/**
+ * Web app preset (can also use run(context, 'webapp', options))
+ */
+export function webApp(context: VitestContext, options?: WebAppPresetOptions): Promise<ChromePresetResult>;

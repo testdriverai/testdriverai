@@ -1,199 +1,332 @@
 ---
-title: "SDK Quickstart"
+title: "Quick Start"
 sidebarTitle: "Quickstart"
-description: "Get started with the TestDriver JavaScript SDK in minutes."
-icon: "gauge-high"
+description: "Get started with the TestDriver JavaScript SDK in 2 minutes."
+icon: "rocket"
 mode: "wide"
 ---
 
-TestDriver v7 introduces a powerful JavaScript SDK that lets you write tests in JavaScript/TypeScript instead of YAML. This gives you full programmatic control over your tests with IDE autocomplete, type safety, and all the benefits of modern development tooling.
+TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full IDE support, type safety, and automatic lifecycle management.
 
 <Steps>
-  <Step title="Create a TestDriver Account">
+  <Step title="Install TestDriver">
       
-  You will need a [TestDriver Pro](https://app.testdriver.ai/team) account ($20/month) to get an API key. 
-    
-    <Card
-      title="Sign Up for TestDriver"
-      icon="user-plus"
-      href="https://app.testdriver.ai/team"
-    />
-
-  </Step>
-  
-  <Step title="Install TestDriver SDK">
-      
-    Install the TestDriver SDK package in your project:
+    Install the TestDriver SDK and Vitest test runner:
     
     ```bash
-    npm install testdriverai
+    npm install --save-dev testdriverai vitest
     ```
-    
-    Or using other package managers:
-    
-    <Tabs>
-      <Tab title="npm">
-        ```bash
-        npm install testdriverai
-        ```
-      </Tab>
-      <Tab title="yarn">
-        ```bash
-        yarn add testdriverai
-        ```
-      </Tab>
-      <Tab title="pnpm">
-        ```bash
-        pnpm add testdriverai
-        ```
-      </Tab>
-    </Tabs>
 
   </Step>
   
-  <Step title="Set up your environment">
+  <Step title="Write Your First Test">
       
-    Copy your API key from [the TestDriver dashboard](https://app.testdriver.ai/team), and set it as an environment variable.
-    
+    Create `test.test.js` and add your API key from [app.testdriver.ai](https://app.testdriver.ai):
+
     <Tabs>
-      <Tab title="macOS / Linux">
-        ```bash
-        export TD_API_KEY="your_api_key_here"
-        ```
-      </Tab>
-      <Tab title="Windows (PowerShell)">
-        ```powershell
-        $env:TD_API_KEY="your_api_key_here"
-        ```
-      </Tab>
-      <Tab title="Windows (CMD)">
-        ```cmd
-        set TD_API_KEY=your_api_key_here
-        ```
-      </Tab>
-    </Tabs>
+      <Tab title="Fast">
+        ```javascript test.test.js
+        import { test } from 'vitest';
+        import { chrome } from 'testdriverai/presets';
 
-  </Step>
-  
-  <Step title="Write your first test">
-      
-    Create a new test file (e.g., `login.test.mjs`):
-
-    ```javascript login.test.mjs
-    import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-    import TestDriver from 'testdriverai';
-
-    describe('Login Test', () => {
-      let testdriver;
-
-      beforeAll(async () => {
-        // Create a new TestDriver client
-        client = new TestDriver(process.env.TD_API_KEY, {
-          os: 'windows',        // 'windows' or 'linux'
-          resolution: '1366x768'
+        test('my first test', async (context) => {
+          const { testdriver } = await chrome(context, {
+            url: 'https://example.com',
+            apiKey: 'tdai-1234567890abcdef' // Your API key from app.testdriver.ai
+          });
+          
+          await testdriver.find('More information link').click();
+          await testdriver.assert('IANA page is visible');
         });
+        ```
         
-        // Authenticate and connect to a sandbox
-        await testdriver.auth();
-        await testdriver.connect({ newSandbox: true });
-      });
+        <Warning>
+          Don't commit API keys to version control!
+        </Warning>
+      </Tab>
+      
+      <Tab title="Secure with .env (Recommended)">
+        Create `.env`:
+        
+        ```bash .env
+        TD_API_KEY=tdai-1234567890abcdef
+        ```
+        
+        Then create `test.test.js`:
+        
+        ```javascript test.test.js
+        import { test } from 'vitest';
+        import { chrome } from 'testdriverai/presets';
 
-      afterAll(async () => {
-        // Clean up after tests
-        await testdriver.disconnect();
-      });
-
-      it('should verify the login page is displayed', async () => {
-        // Use AI to assert the login page is visible
-        const result = await testdriver.assert('the TestDriver.ai Sandbox login page is displayed');
-        expect(result).toBeTruthy();
-      });
-
-      it('should enter username and password', async () => {
-        // Focus the browser
-        await testdriver.focusApplication('Google Chrome');
+        test('my first test', async (context) => {
+          const { testdriver } = await chrome(context, {
+            url: 'https://example.com'
+            // apiKey automatically read from process.env.TD_API_KEY
+          });
+          
+          await testdriver.find('More information link').click();
+          await testdriver.assert('IANA page is visible');
+        });
+        ```
         
-        // Find and click the username field
-        const usernameField = await testdriver.find('Username input field');
-        await usernameField.click();
-        await testdriver.type('standard_user');
-        
-        // Tab to password field and enter password
-        await testdriver.pressKeys(['tab']);
-        await testdriver.type('secret_sauce');
-        
-        // Verify the credentials were entered
-        const result = await testdriver.assert('username field contains "standard_user"');
-        expect(result).toBeTruthy();
-      });
-    });
-    ```
+        <Tip>
+          Add `.env` to your `.gitignore` file!
+        </Tip>
+      </Tab>
+    </Tabs>
 
   </Step>
   
-  <Step title="Run your test">
+  <Step title="Run Your Test">
     
-    Run your test using Vitest (or your preferred test runner):
-
     ```bash
-    npx vitest run login.test.mjs
+    npx vitest run
     ```
     
-    TestDriver will:
-    1. Authenticate with the API
-    2. Spin up a virtual machine sandbox
-    3. Execute your test steps
-    4. Return results to your test runner
+    That's it! 🎉
     
     <Tip>
-      The SDK automatically connects to TestDriver's cloud infrastructure. You can also [self-host](/getting-started/self-hosting) the sandbox environment.
+      The `chrome()` preset automatically handles authentication, browser launch, and cleanup.
     </Tip>
 
   </Step>
 </Steps>
 
+## What Just Happened?
+
+The `chrome()` preset automatically:
+1. ✅ Connected to a TestDriver sandbox
+2. ✅ Launched Chrome browser
+3. ✅ Navigated to your URL
+4. ✅ Started recording with Dashcam
+5. ✅ Cleaned up everything when done
+
+No manual setup or teardown needed!
+
+## More Examples
+
+### Login Flow
+
+```javascript login.test.js
+import { test, expect } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('user can login', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/login'
+  });
+  
+  await testdriver.find('email input').type('user@example.com');
+  await testdriver.find('password input').type('password123');
+  await testdriver.find('Login button').click();
+  
+  const result = await testdriver.assert('Dashboard is visible');
+  expect(result).toBeTruthy();
+});
+```
+
+### VS Code Extension
+
+```javascript extension.test.js
+import { test } from 'vitest';
+import { vscode } from 'testdriverai/presets';
+
+test('create python file', async (context) => {
+  const { vscode } = await vscode(context, {
+    workspace: '/tmp/project',
+    extensions: ['ms-python.python']
+  });
+  
+  await vscode.pressKeys(['cmd', 'shift', 'p']);
+  await vscode.type('Python: Create New File');
+  await vscode.pressKeys(['enter']);
+  
+  await vscode.assert('Untitled Python file is open');
+});
+```
+
+### Electron App
+
+```javascript electron.test.js
+import { test } from 'vitest';
+import { electron } from 'testdriverai/presets';
+
+test('electron app menu', async (context) => {
+  const { app } = await electron(context, {
+    appPath: './dist/my-app'
+  });
+  
+  await app.find('File menu').click();
+  await app.find('New Document').click();
+  
+  await app.assert('New document window opens');
+});
+```
+
+## Three Levels of Control
+
+Choose your complexity level:
+
+<CardGroup cols={3}>
+  <Card title="Presets (Easiest)" icon="rocket" href="/v7/progressive-apis/PROVISION">
+    **One-line setup**
+    ```javascript
+    const { testdriver } = await chrome(context, { url });
+    ```
+  </Card>
+  
+  <Card title="Hooks (Flexible)" icon="link" href="/v7/progressive-apis/HOOKS">
+    **More control**
+    ```javascript
+    const client = useTestDriver(context);
+    const dashcam = useDashcam(context, client);
+    ```
+  </Card>
+  
+  <Card title="Core (Full Control)" icon="code" href="/v7/progressive-apis/CORE">
+    **Manual everything**
+    ```javascript
+    const client = new TestDriver(apiKey);
+    await client.connect();
+    ```
+  </Card>
+</CardGroup>
+
+## Video Replays
+
+Tests automatically record with Dashcam for easy debugging:
+
+```javascript
+test('with replay', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  await testdriver.find('button').click();
+  
+  // After test, check the replay
+  console.log('Watch replay:', dashcam.url);
+});
+```
+
+View all replays at [app.testdriver.ai](https://app.testdriver.ai)
+
+## Optional Configuration
+
+For better developer experience, create `vitest.config.mjs`:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000,  // 2 minutes per test
+    hookTimeout: 120000,  // 2 minutes for setup
+  },
+});
+```
+
+## Common Commands
+
+```bash
+# Run all tests
+npx vitest run
+
+# Run all tests in watch mode
+npx vitest
+
+# Run specific file
+npx vitest run login.test.js
+
+# Run in watch mode
+npx vitest --watch
+
+# Run tests matching pattern
+npx vitest run --grep "login"
+```
+
+## Troubleshooting
+
+### Test times out
+
+Increase the timeout in your config:
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    testTimeout: 180000, // 3 minutes
+  },
+});
+```
+
+### API key not found
+
+Either pass it directly to the preset:
+
+```javascript
+const { testdriver } = await chrome(context, {
+  url: 'https://example.com',
+  apiKey: 'tdai-your-api-key-here'
+});
+```
+
+Or create a `.env` file in your project root:
+
+```bash .env
+TD_API_KEY=tdai-your-api-key-here
+```
+
+### Import errors
+
+Make sure you installed testdriverai:
+
+```bash
+npm install --save-dev testdriverai
+```
+
 ## Next Steps
 
 <CardGroup cols={2}>
+  <Card
+    title="Complete Vitest Guide"
+    icon="flask-vial"
+    href="/v7/guides/vitest"
+  >
+    Everything about TestDriver + Vitest integration
+  </Card>
+  
+  <Card
+    title="All Presets"
+    icon="rocket"
+    href="/v7/progressive-apis/PROVISION"
+  >
+    Chrome, VS Code, Electron, and more
+  </Card>
+  
   <Card
     title="API Reference"
     icon="book"
     href="/v7/api/client"
   >
-    Explore all available SDK methods and options
+    All available methods and options
   </Card>
   
   <Card
-    title="Element Finding"
-    icon="search"
-    href="/v7/api/elements"
+    title="Progressive APIs"
+    icon="gauge-high"
+    href="/v7/progressive-apis/PROGRESSIVE_DISCLOSURE"
   >
-    Learn how to locate and interact with UI elements
-  </Card>
-  
-  <Card
-    title="Sandbox Management"
-    icon="server"
-    href="/v7/api/sandbox"
-  >
-    Manage sandbox lifecycle and connections
-  </Card>
-  
-  <Card
-    title="Assertions & Testing"
-    icon="check"
-    href="/v7/api/assertions"
-  >
-    Use AI-powered assertions in your tests
+    Choose your complexity level
   </Card>
 </CardGroup>
 
-## Key Differences from v6
+## Why TestDriver v7?
 
-The v7 SDK offers several advantages over the YAML-based approach:
+The v7 SDK offers advantages over YAML-based testing:
 
-- **Type Safety**: Full TypeScript support with IntelliSense
-- **Programmatic Control**: Use variables, loops, and functions
-- **Better Debugging**: Stack traces point to your actual code
-- **Integration**: Works with any JavaScript test framework (Vitest, Jest, Mocha, etc.)
-- **Flexibility**: Combine TestDriver with other testing tools seamlessly
+- ✅ **Type Safety** - Full TypeScript support with IntelliSense
+- ✅ **Programmatic Control** - Use variables, loops, and functions
+- ✅ **Better Debugging** - Stack traces point to your actual code
+- ✅ **Automatic Lifecycle** - Presets handle setup and cleanup
+- ✅ **Framework Integration** - Works with Vitest, Jest, Mocha, etc.
+- ✅ **Video Replays** - Automatic Dashcam recording included

@@ -21,11 +21,11 @@ import { test } from 'vitest';
 import { chromePreset } from 'testdriverai/presets';
 
 test('login test', async (context) => {
-  const { browser } = await chromePreset(context, {
+  const { client } = await chromePreset(context, {
     url: 'https://myapp.com'
   });
   
-  await browser.find('Login button').click();
+  await client.find('Login button').click();
 });
 ```
 

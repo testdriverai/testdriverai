@@ -3,28 +3,16 @@
  * Tests that finding a non-existent element returns properly without timing out
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Element Not Found Test", () => {
-  let testdriver;
+  it("should handle non-existent element gracefully without timing out", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should handle non-existent element gracefully without timing out", async () => {
-    await testdriver.focusApplication("Google Chrome");
+    //
 
     // Try to find an element that definitely doesn't exist
     const element = await testdriver.find(

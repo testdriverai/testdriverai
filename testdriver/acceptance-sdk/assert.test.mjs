@@ -3,36 +3,16 @@
  * Converted from: testdriver/acceptance/assert.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 describe("Assert Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    // Create a new client for each test
-    testdriver = createTestClient({
-      task: context.task,
+  it("should assert the testdriver login page shows", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
     });
 
-    await setupTest(testdriver);
-  }, 600000);
-
-  afterEach(async (context) => {
-    // Teardown after each test, passing the individual test context
-    const sessionInfo = await teardownTest(testdriver, {
-      task: context.task,
-    });
-    console.log(
-      `[Test] Teardown complete, dashcam URL: ${sessionInfo.dashcamUrl}`,
-    );
-  });
-
-  it("should assert the testdriver login page shows", async () => {
+    //
     // Assert the TestDriver.ai Sandbox login page is displayed
     // const result = await testdriver.assert(
     //   "the TestDriver.ai Sandbox login page is displayed",

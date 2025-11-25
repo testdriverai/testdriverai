@@ -3,31 +3,20 @@
  * Converted from: testdriver/acceptance/drag-and-drop.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 
 describe("Drag and Drop Test", () => {
-  let testdriver;
-
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
   it.skipIf(isLinux)(
     'should drag "New Text Document" to "Recycle Bin"',
-    async () => {
+    async (context) => {
+      const { testdriver } = await chrome(context, {
+        url: 'http://testdriver-sandbox.vercel.app/login',
+      });
+
+      //
       // Show the desktop
       await testdriver.pressKeys(["win", "d"]);
 

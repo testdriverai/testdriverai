@@ -38,12 +38,12 @@ import { test } from 'vitest';
 import { chromePreset } from 'testdriverai/presets';
 
 test('my test', async (context) => {
-  const { browser } = await chromePreset(context, {
+  const { client } = await chromePreset(context, {
     url: 'https://myapp.com'
   });
   
   // Dashcam already running, auto-stops at test end
-  await browser.find('Login button').click();
+  await client.find('Login button').click();
 });
 ```
 
@@ -294,7 +294,7 @@ test('chrome test', async ({ client }) => {
 import { chromePreset } from 'testdriverai/presets';
 
 test('chrome test', async (context) => {
-  const { browser } = await chromePreset(context, {
+  const { client } = await chromePreset(context, {
     url: 'https://example.com'
   });
   // ... test code
@@ -352,12 +352,12 @@ const myAppPreset = createPreset({
     const argsStr = args.join(' ');
     await client.exec('sh', `myapp ${argsStr} &`, 30000);
     await client.focusApplication('MyApp');
-    return { app: client };
+    return {}; // client is returned automatically
   }
 });
 
 test('custom app', async (context) => {
-  const { app } = await myAppPreset(context, {
+  const { client } = await myAppPreset(context, {
     args: ['--arg1', '--arg2']
   });
   // ... test code
@@ -379,13 +379,13 @@ import { Dashcam, DashcamOptions } from 'testdriverai/core';
 
 // Full autocomplete and type checking!
 test('typed test', async (context) => {
-  const { browser } = await chromePreset(context, {
+  const { client } = await chromePreset(context, {
     url: 'https://example.com',
     maximized: true,
     os: 'linux' // Type-safe: only 'linux' | 'mac' | 'windows'
   });
   
-  await browser.find('button').click();
+  await client.find('button').click();
 });
 ```
 

@@ -22,55 +22,109 @@
               {
                 "group": "Getting Started",
                 "pages": [
-                  "/v7/getting-started/quickstart"
-                ]
-              },
-              {
-                "group": "API Reference",
-                "pages": [
+                  "/v7/getting-started/quickstart",
                   {
-                    "group": "Setup",
+                    "group": "Configuration",
                     "icon": "gear",
                     "pages": [
-                      "/v7/api/client",
-                      "/v7/api/sandbox"
-                    ]
-                  },
-                  {
-                    "group": "Actions",
-                    "icon": "wand-magic-sparkles",
-                    "pages": [
-                      "/v7/api/ai"
-                    ]
-                  },
-                  {
-                    "group": "Methods",
-                    "icon": "code",
-                    "pages": [
-                      "/v7/api/find",
-                      "/v7/api/click",
-                      "/v7/api/type",
-                      "/v7/api/pressKeys",
-                      "/v7/api/scroll",
-                      "/v7/api/hover",
-                      "/v7/api/exec",
-                      "/v7/api/focusApplication",
-                      "/v7/api/assert"
-                    ]
-                  },
-                  {
-                    "group": "Reference",
-                    "icon": "book",
-                    "pages": [
-                      "/v7/api/elements",
-                      "/v7/api/assertions"
+                      "/v7/getting-started/configuration",
+                      {
+                        "group": "Platforms",
+                        "icon": "server",
+                        "pages": [
+                          "/v7/platforms/linux",
+                          "/v7/platforms/windows",
+                          "/v7/platforms/macos"
+                        ]
+                      }
                     ]
                   }
                 ]
               },
               {
-                "group": "Guides",
+                "group": "Examples",
+                "icon": "code",
                 "pages": [
+                  "/v7/presets/chrome",
+                  "/v7/presets/chrome-extension",
+                  "/v7/presets/vscode",
+                  "/v7/presets/electron"
+                ]
+              },
+              {
+                "group": "Interactions",
+                "icon": "bolt",
+                "pages": [
+                  "/v7/api/find",
+                  "/v7/api/ai",
+                  "/v7/api/click",
+                  "/v7/api/doubleClick",
+                  "/v7/api/rightClick",
+                  "/v7/api/hover",
+                  "/v7/api/mouseDown",
+                  "/v7/api/mouseUp",
+                  "/v7/api/type",
+                  "/v7/api/pressKeys",
+                  "/v7/api/scroll",
+                  "/v7/api/focusApplication",
+                  "/v7/api/assert",
+                  "/v7/api/exec"
+                ]
+              },
+              {
+                "group": "Core Concepts",
+                "icon": "book",
+                "pages": [
+                  "/v7/api/client",
+                  "/v7/api/sandbox",
+                  "/v7/api/elements",
+                  "/v7/api/dashcam",
+                  "/v7/api/assertions"
+                ]
+              },
+              {
+                "group": "Progressive APIs",
+                "icon": "layer-group",
+                "pages": [
+                  "/v7/progressive-apis/PROGRESSIVE_DISCLOSURE",
+                  "/v7/progressive-apis/PROVISION",
+                  "/v7/progressive-apis/HOOKS"
+                ]
+              },
+            
+              {
+                "group": "Guides",
+                "icon": "book-open",
+                "pages": [
+                  "/v7/guides/vitest",
+                  "/v7/guides/vitest-plugin",
+                  "/v7/guides/debugging",
+                  "/v7/guides/best-practices",
+                  "/v7/guides/troubleshooting",
+                  "/v7/guides/faq",
+                  {
+                    "group": "Caching",
+                    "icon": "bolt",
+                    "pages": [
+                      "/v7/guides/caching-ai",
+                      "/v7/guides/caching-selectors"
+                    ]
+                  },
+                  {
+                    "group": "CI/CD Integration",
+                    "icon": "arrows-spin",
+                    "pages": [
+                      "/v7/guides/ci-cd/overview",
+                      "/v7/guides/ci-cd/github-actions",
+                      "/v7/guides/ci-cd/gitlab",
+                      "/v7/guides/ci-cd/circleci",
+                      "/v7/guides/ci-cd/jenkins",
+                      "/v7/guides/ci-cd/azure",
+                      "/v7/guides/ci-cd/travis"
+                    ]
+                  },
+                  "/v7/guides/performance",
+                  "/v7/guides/self-hosting",
                   "/v7/guides/migration"
                 ]
               }

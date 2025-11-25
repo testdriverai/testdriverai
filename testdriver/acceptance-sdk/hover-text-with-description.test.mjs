@@ -3,28 +3,17 @@
  * Converted from: testdriver/acceptance/hover-text-with-description.yaml
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  performLogin,
-  setupTest,
-  teardownTest,
-} from "./setup/testHelpers.mjs";
+import { describe, expect, it } from "vitest";
+import { chrome } from "../../src/presets/index.mjs";
+import { performLogin } from "./setup/testHelpers.mjs";
 
 describe("Hover Text With Description Test", () => {
-  let testdriver;
+  it("should add TestDriver Hat to cart and verify", async (context) => {
+    const { testdriver } = await chrome(context, {
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
 
-  beforeEach(async (context) => {
-    testdriver = createTestClient({ task: context.task });
-
-    await setupTest(testdriver);
-  });
-
-  afterEach(async (context) => {
-    await teardownTest(testdriver, { task: context.task });
-  });
-
-  it("should add TestDriver Hat to cart and verify", async () => {
+    //
     // Perform login first
     await performLogin(testdriver);
 
