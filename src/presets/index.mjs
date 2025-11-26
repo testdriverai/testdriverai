@@ -35,7 +35,10 @@ export async function chrome(context, options = {}) {
 
   const testdriver = TestDriver(context, testDriverOptions);
   
-  await testdriver.connected();
+  // Wait for connection to complete if autoConnect was enabled
+  if (testdriver.__connectionPromise) {
+    await testdriver.__connectionPromise;
+  }
 
   if (enableDashcam) {
     await testdriver.dashcam.start();
@@ -87,28 +90,16 @@ export async function vscode(context, options = {}) {
   } = options;
 
   // Set up TestDriver client - all options pass through directly
-  const client = useTestDriver(context, testDriverOptions);
+  const client = TestDriver(context, testDriverOptions);
   
   // Wait for client to connect (if autoConnect was enabled)
   if (client.__connectionPromise) {
     await client.__connectionPromise;
   }
 
-  // Set up Dashcam if enabled
-  let dashcam = null;
+  // Set up Dashcam if enabled (dashcam is built into TestDriver)
   if (enableDashcam) {
-    dashcam = useDashcam(context, client, {
-      autoAuth: true,
-      autoStart: true,
-      autoStop: true,
-    });
-    
-    // Wait for Dashcam to be ready
-    if (dashcam.__startPromise) {
-      await dashcam.__startPromise;
-    } else if (dashcam.__authPromise) {
-      await dashcam.__authPromise;
-    }
+    await client.dashcam.start();
   }
 
   // Install extensions if provided
@@ -148,7 +139,7 @@ export async function vscode(context, options = {}) {
   return {
     testdriver: client,
     vscode: client, // Alias for semantic clarity
-    dashcam,
+    dashcam: enableDashcam ? client.dashcam : null,
   };
 }
 
@@ -192,42 +183,30 @@ export function createPreset(config) {
     const finalOptions = { ...defaults, ...options };
     const {
       dashcam: enableDashcam = true,
-      // All other options are passed directly to useTestDriver
+      // All other options are passed directly to TestDriver
       ...testDriverOptions
     } = finalOptions;
 
     // Set up TestDriver client - all options pass through directly
-    const client = useTestDriver(context, testDriverOptions);
+    const client = TestDriver(context, testDriverOptions);
     
     // Wait for client to connect (if autoConnect was enabled)
     if (client.__connectionPromise) {
       await client.__connectionPromise;
     }
 
-    // Set up Dashcam if enabled
-    let dashcam = null;
+    // Set up Dashcam if enabled (dashcam is built into TestDriver)
     if (enableDashcam) {
-      dashcam = useDashcam(context, client, {
-        autoAuth: true,
-        autoStart: true,
-        autoStop: true,
-      });
-      
-      // Wait for Dashcam to be ready
-      if (dashcam.__startPromise) {
-        await dashcam.__startPromise;
-      } else if (dashcam.__authPromise) {
-        await dashcam.__authPromise;
-      }
+      await client.dashcam.start();
     }
 
     // Call user's setup function
-    const result = await setup(context, client, dashcam, finalOptions);
+    const result = await setup(context, client, enableDashcam ? client.dashcam : null, finalOptions);
 
     // Ensure we return testdriver and dashcam
     return {
       testdriver: client,
-      dashcam,
+      dashcam: enableDashcam ? client.dashcam : null,
       ...result,
     };
   };

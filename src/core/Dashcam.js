@@ -325,7 +325,9 @@ class Dashcam {
       console.log('✅ Dashcam recording started');
     } else {
       // Linux/Mac with TD_API_ROOT
+      console.log('Starting dashcam recording on Linux/Mac...');
       await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" dashcam record >/dev/null 2>&1 &`);
+      console.log('✅ Dashcam recording started');
     }
 
     this.recording = true;
@@ -365,11 +367,13 @@ class Dashcam {
 
     // Extract URL from output
     if (output) {
-      // Look for replay URL (most specific)
+      // Look for replay URL with optional query parameters (most specific)
+      // Matches: http://localhost:3001/replay/abc123?share=xyz or https://app.dashcam.io/replay/abc123
       const replayUrlMatch = output.match(/https?:\/\/[^\s"',}]+\/replay\/[^\s"',}]+/);
       if (replayUrlMatch) {
         let url = replayUrlMatch[0];
-        url = url.replace(/[.,;:!\?\)\]]+$/, '').trim();
+        // Remove trailing punctuation but keep query params
+        url = url.replace(/[.,;:!\)\]]+$/, '').trim();
         console.log('✅ Found dashcam URL:', url);
         console.log('🎥 Dashcam URL:', url);
         return url;

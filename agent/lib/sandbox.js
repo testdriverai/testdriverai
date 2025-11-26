@@ -2,7 +2,7 @@ const WebSocket = require("ws");
 const marky = require("marky");
 const { events } = require("../events");
 
-const createSandbox = (emitter, analytics) => {
+const createSandbox = (emitter, analytics, sessionInstance) => {
   class Sandbox {
     constructor() {
       this.socket = null;
@@ -15,6 +15,7 @@ const createSandbox = (emitter, analytics) => {
       this.messageId = 0;
       this.uniqueId = Math.random().toString(36).substring(7);
       this.os = null; // Store OS value to send with every message
+      this.sessionInstance = sessionInstance; // Store session instance to include in messages
     }
 
     send(message) {
@@ -33,6 +34,14 @@ const createSandbox = (emitter, analytics) => {
         // Add os to every message if it's been set
         if (this.os && !message.os) {
           message.os = this.os;
+        }
+
+        // Add session to every message if available (for interaction tracking)
+        if (this.sessionInstance && !message.session) {
+          const sessionId = this.sessionInstance.get();
+          if (sessionId) {
+            message.session = sessionId;
+          }
         }
 
         // Start timing for this message

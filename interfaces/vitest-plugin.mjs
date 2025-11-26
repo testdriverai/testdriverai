@@ -334,6 +334,8 @@ class TestDriverReporter {
         ...pluginState.gitInfo,
       };
 
+      // Session ID will be added from the first test result file that includes it
+
       // Only add ciProvider if it's not null
       if (pluginState.ciProvider) {
         testRunData.ciProvider = pluginState.ciProvider;
@@ -499,6 +501,7 @@ class TestDriverReporter {
 
     // Read test metadata from file (cross-process communication)
     let dashcamUrl = null;
+    let sessionId = null;
     let testFile = "unknown";
     let testOrder = 0;
 
@@ -520,6 +523,7 @@ class TestDriverReporter {
         const testResult = JSON.parse(fs.readFileSync(testResultFile, "utf-8"));
         dashcamUrl = testResult.dashcamUrl || null;
         const platform = testResult.platform || null;
+        sessionId = testResult.sessionId || null;
         testFile =
           testResult.testFile ||
           test.file?.filepath ||
@@ -531,7 +535,7 @@ class TestDriverReporter {
         // duration is already set above from result.duration
 
         console.log(
-          `[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms (from Vitest)`,
+          `[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms (from Vitest)`,
         );
 
         // Update test run platform from first test that reports it
@@ -630,6 +634,11 @@ class TestDriverReporter {
         duration: duration,
         retries: result.retryCount || 0,
       };
+
+      // Add sessionId if available
+      if (sessionId) {
+        testCaseData.sessionId = sessionId;
+      }
 
       // Only include replayUrl if we have a valid dashcam URL
       if (dashcamUrl) {

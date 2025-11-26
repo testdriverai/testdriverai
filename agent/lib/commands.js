@@ -202,6 +202,22 @@ const createCommands = (
       expect: assertion,
       image: await system.captureScreenBase64(),
     });
+    
+    // Track interaction
+    if (sessionInstance?.sessionId) {
+      try {
+        await sandbox.send({
+          type: "trackInteraction",
+          interactionType: "assert",
+          session: sessionInstance.sessionId,
+          prompt: assertion,
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        console.warn("Failed to track assert interaction:", err.message);
+      }
+    }
+    
     return handleAssertResponse(response.data);
   };
   const scroll = async (direction = "down", amount = 300) => {
@@ -253,7 +269,7 @@ const createCommands = (
 
   // perform a mouse click
   // click, right-click, double-click, hover
-  const click = async (x, y, action = "click") => {
+  const click = async (x, y, action = "click", elementData = {}) => {
     await redraw.start();
 
     let button = "left";
@@ -275,7 +291,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ type: "moveMouse", x, y });
+    await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
     emitter.emit(events.mouseMove, { x, y });
 
@@ -283,19 +299,22 @@ const createCommands = (
 
     if (action !== "hover") {
       if (action === "click" || action === "left-click") {
-        await sandbox.send({ type: "leftClick" });
+        await sandbox.send({ type: "leftClick", x, y, ...elementData });
       } else if (action === "right-click") {
-        await sandbox.send({ type: "rightClick" });
+        await sandbox.send({ type: "rightClick", x, y, ...elementData });
       } else if (action === "middle-click") {
-        await sandbox.send({ type: "middleClick" });
+        await sandbox.send({ type: "middleClick", x, y, ...elementData });
       } else if (action === "double-click") {
-        await sandbox.send({ type: "doubleClick" });
+        await sandbox.send({ type: "doubleClick", x, y, ...elementData });
       } else if (action === "mouseDown") {
-        await sandbox.send({ type: "mousePress", button: "left" });
+        await sandbox.send({ type: "mousePress", button: "left", x, y, ...elementData });
       } else if (action === "mouseUp") {
         await sandbox.send({
           type: "mouseRelease",
           button: "left",
+          x,
+          y,
+          ...elementData
         });
       }
 
@@ -307,7 +326,7 @@ const createCommands = (
     return;
   };
 
-  const hover = async (x, y) => {
+  const hover = async (x, y, elementData = {}) => {
     emitter.emit(events.log.narration, theme.dim(`hovering at ${x}, ${y}...`));
 
     await redraw.start();
@@ -315,7 +334,7 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
-    await sandbox.send({ type: "moveMouse", x, y });
+    await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
     await redraw.wait(2500);
 
@@ -465,7 +484,24 @@ const createCommands = (
     // simple delay, usually to let ui render or webpage to load
     wait: async (timeout = 3000) => {
       emitter.emit(events.log.narration, theme.dim(`waiting ${timeout}ms...`));
-      return await delay(timeout);
+      const result = await delay(timeout);
+      
+      // Track interaction
+      if (sessionInstance?.sessionId) {
+        try {
+          await sandbox.send({
+            type: "trackInteraction",
+            interactionType: "wait",
+            session: sessionInstance.sessionId,
+            input: { timeout },
+            timestamp: Date.now(),
+          });
+        } catch (err) {
+          console.warn("Failed to track wait interaction:", err.message);
+        }
+      }
+      
+      return result;
     },
     "wait-for-image": async (description, timeout = 10000) => {
       emitter.emit(
@@ -507,6 +543,23 @@ const createCommands = (
           ),
           true,
         );
+        
+        // Track interaction
+        if (sessionInstance?.sessionId) {
+          try {
+            await sandbox.send({
+              type: "trackInteraction",
+              interactionType: "waitForImage",
+              session: sessionInstance.sessionId,
+              prompt: description,
+              input: { timeout },
+              timestamp: Date.now(),
+            });
+          } catch (err) {
+            console.warn("Failed to track waitForImage interaction:", err.message);
+          }
+        }
+        
         return;
       } else {
         throw new MatchError(
@@ -552,6 +605,23 @@ const createCommands = (
 
       if (passed) {
         emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
+        
+        // Track interaction
+        if (sessionInstance?.sessionId) {
+          try {
+            await sandbox.send({
+              type: "trackInteraction",
+              interactionType: "waitForText",
+              session: sessionInstance.sessionId,
+              prompt: text,
+              input: { timeout },
+              timestamp: Date.now(),
+            });
+          } catch (err) {
+            console.warn("Failed to track waitForText interaction:", err.message);
+          }
+        }
+        
         return;
       } else {
         throw new MatchError(
@@ -698,6 +768,22 @@ const createCommands = (
         image: await system.captureScreenBase64(),
         description,
       });
+      
+      // Track interaction
+      if (sessionInstance?.sessionId) {
+        try {
+          await sandbox.send({
+            type: "trackInteraction",
+            interactionType: "remember",
+            session: sessionInstance.sessionId,
+            prompt: description,
+            timestamp: Date.now(),
+          });
+        } catch (err) {
+          console.warn("Failed to track remember interaction:", err.message);
+        }
+      }
+      
       return result.data;
     },
     assert: async (assertion) => {

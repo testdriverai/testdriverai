@@ -15,6 +15,9 @@
  * });
  */
 
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import TestDriverSDK from '../../sdk.js';
 
 /**
@@ -254,6 +257,38 @@ export function TestDriver(context, options = {}) {
           try {
             const dashcamUrl = await testdriver.dashcam.stop();
             console.log('🎥 Dashcam URL:', dashcamUrl);
+            
+            // Write dashcam URL to file for the reporter (cross-process communication)
+            if (dashcamUrl) {
+              const testId = context.task.id;
+              const platform = testdriver.os || 'linux';
+              const testFile = context.task.file?.filepath || context.task.file?.name || 'unknown';
+              
+              // Create results directory if it doesn't exist
+              const resultsDir = path.join(os.tmpdir(), 'testdriver-results');
+              if (!fs.existsSync(resultsDir)) {
+                fs.mkdirSync(resultsDir, { recursive: true });
+              }
+              
+              // Write test result file
+              const testResultFile = path.join(resultsDir, `${testId}.json`);
+              const testResult = {
+                dashcamUrl,
+                platform,
+                testFile,
+                testOrder: 0,
+                sessionId: testdriver.getSessionId(),
+              };
+              
+              fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
+              console.log(`[testdriver] ✅ Wrote dashcam URL to ${testResultFile}`);
+              
+              // Also register in memory if plugin is available
+              if (globalThis.__testdriverPlugin?.registerDashcamUrl) {
+                globalThis.__testdriverPlugin.registerDashcamUrl(testId, dashcamUrl, platform);
+                console.log(`[testdriver] ✅ Registered dashcam URL in memory for test ${testId}`);
+              }
+            }
           } catch (error) {
             // Log more detailed error information for debugging
             console.error('❌ Failed to stop dashcam:', error.name || error.constructor?.name || 'Error');
