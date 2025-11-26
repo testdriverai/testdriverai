@@ -4,14 +4,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 import { performLogin } from "./setup/testHelpers.mjs";
 
 describe("Hover Text With Description Test", () => {
   it("should add TestDriver Hat to cart and verify", async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
     // Perform login first

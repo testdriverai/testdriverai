@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Type Test", () => {
   it("should enter standard_user in username field", async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
     const usernameField = await testdriver.find(
@@ -21,9 +20,8 @@ describe("Type Test", () => {
   });
 
   it("should show validation message when clicking Sign In without password", async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // First fill in username
     const usernameField = await testdriver.find(

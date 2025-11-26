@@ -194,6 +194,27 @@ const createSDK = (emitter, config, sessionInstance) => {
 
       return value;
     } catch (error) {
+      // Check if this is an API validation error with detailed problems
+      if (error.response?.data?.problems) {
+        const problems = error.response.data.problems;
+        const errorMessage = error.response.data.message || 'API validation error';
+        const detailedError = new Error(
+          `${errorMessage}\n\nDetails:\n${problems.map(p => `  - ${p}`).join('\n')}`
+        );
+        detailedError.originalError = error;
+        detailedError.problems = problems;
+        
+        // Emit the formatted error
+        emitter.emit(events.error.sdk, {
+          message: detailedError.message,
+          code: error.response?.data?.code || error.code,
+          problems: problems,
+          fullError: error,
+        });
+        
+        throw detailedError;
+      }
+      
       outputError(error);
       throw error; // Re-throw the error so calling code can handle it properly
     }

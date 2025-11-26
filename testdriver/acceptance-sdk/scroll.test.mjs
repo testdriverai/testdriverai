@@ -6,14 +6,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Scroll Test", () => {
   it("should navigate and scroll down the page", async (context) => {
-    // Use chrome preset - automatically sets up TestDriver and Dashcam
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // Give Chrome a moment to fully render the UI
     await new Promise(resolve => setTimeout(resolve, 2000));

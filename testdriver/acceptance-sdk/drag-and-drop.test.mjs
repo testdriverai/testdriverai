@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 
@@ -12,9 +12,8 @@ describe("Drag and Drop Test", () => {
   it.skipIf(isLinux)(
     'should drag "New Text Document" to "Recycle Bin"',
     async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'http://testdriver-sandbox.vercel.app/login',
-      });
+      const testdriver = TestDriver(context, { headless: true });
+      await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //
       // Show the desktop

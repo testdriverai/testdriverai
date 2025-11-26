@@ -987,13 +987,97 @@ testLoginFlow();
 
 ## Configuration Options
 
+### Cache Behavior (v7.0+)
+
+**⚠️ Important:** By default, caching is **DISABLED** to avoid unnecessary AI costs. To enable caching for a test run, you must provide a `cacheKey`.
+
+**Why use cacheKey?**
+
+- Groups related find operations (e.g., all finds in a single test run)
+- Enables cache hits across multiple test executions with the same key
+- Avoids unwanted cache hits from unrelated tests
+- Gives you explicit control over when caching is active
+
+**Basic Usage:**
+
+```javascript
+// NO caching - fresh AI lookup every time (default behavior)
+const element = await client.find("login button");
+
+// WITH caching - enable by providing a cacheKey
+const element = await client.find("login button", {
+  cacheKey: "my-test-run-123",
+});
+
+// All finds with the same cacheKey share cache
+const email = await client.find("email field", { cacheKey: "my-test-run-123" });
+const password = await client.find("password field", {
+  cacheKey: "my-test-run-123",
+});
+```
+
+**Legacy cache threshold syntax still supported:**
+
+```javascript
+// Override cache threshold (legacy - still works)
+const element = await client.find("login button", 0.01); // 99% similarity
+```
+
+**New combined syntax:**
+
+```javascript
+// Provide both cacheKey and custom threshold
+const element = await client.find("login button", {
+  cacheKey: "my-test-run",
+  cacheThreshold: 0.01, // 99% similarity required for cache hit
+});
+```
+
+**Using with findAll():**
+
+```javascript
+// No caching (default)
+const buttons = await client.findAll("button");
+
+// With caching enabled
+const buttons = await client.findAll("button", {
+  cacheKey: "my-test-run",
+});
+```
+
+**Best Practices:**
+
+```javascript
+// Use unique cacheKey per test run
+const cacheKey = `test-${Date.now()}`;
+
+// Or use a consistent key for regression tests
+const cacheKey = "login-flow-v1";
+
+async function testLogin() {
+  // All finds in this test share the same cache
+  const email = await client.find("email input", { cacheKey });
+  const password = await client.find("password input", { cacheKey });
+  const submit = await client.find("submit button", { cacheKey });
+
+  await email.click();
+  await client.type("user@example.com");
+  await password.click();
+  await client.type("password123");
+  await submit.click();
+}
+```
+
 ### Cache Thresholds
 
 Configure cache sensitivity for element finding operations. Lower thresholds require higher similarity for cache hits.
 
-**Global Configuration:**
+**Global Configuration (Deprecated):**
 
 ```javascript
+// Old way: Configure global cache thresholds
+// Note: As of v7.0+, cache is disabled by default
+// These settings only affect finds when cacheKey IS provided
 const client = new TestDriver(process.env.TD_API_KEY, {
   cacheThreshold: {
     find: 0.03, // 3% difference = 97% similarity required (stricter)
@@ -1002,26 +1086,44 @@ const client = new TestDriver(process.env.TD_API_KEY, {
 });
 ```
 
-**Disable Cache Globally:**
+**Disable Cache Globally (Deprecated):**
 
 ```javascript
-// Force all find operations to regenerate (never use cache)
+// Force all find operations to skip cache even if cacheKey is provided
 const client = new TestDriver(process.env.TD_API_KEY, {
   cache: false,
 });
 ```
 
-**Per-Command Configuration:**
+**Note:** As of v7.0+, it's recommended to control caching per-find using the `cacheKey` parameter rather than global settings.
+
+**Per-Command Configuration (Deprecated):**
 
 ```javascript
-// Override cache threshold for a specific find
+// Old way: Override cache threshold for a specific find
+// Note: This disables cache unless you also provide cacheKey
 const element = await client.find("login button", 0.01); // 99% similarity required
 
-// Override cache threshold for a specific findAll
+// Old way: Override cache threshold for a specific findAll
 const items = await client.findAll("list items", 0.1); // 90% similarity required
 
 // Disable cache for a specific find (always regenerate)
 const element = await client.find("login button", -1);
+```
+
+**New Recommended Approach:**
+
+Use the `cacheKey` parameter to enable caching and optionally customize the threshold:
+
+```javascript
+// Enable cache with default threshold (95% similarity)
+const element = await client.find("login button", { cacheKey: "test-run-1" });
+
+// Enable cache with custom threshold
+const element = await client.find("login button", {
+  cacheKey: "test-run-1",
+  cacheThreshold: 0.01, // 99% similarity required
+});
 ```
 
 **Cache Threshold Values:**

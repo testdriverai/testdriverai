@@ -4,15 +4,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Focus Window Test", () => {
   it.skipIf(process.env.TD_OS === "linux")(
     "should click Microsoft Edge icon and focus Google Chrome",
     async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'http://testdriver-sandbox.vercel.app/login',
-      });
+      const testdriver = TestDriver(context, { headless: true });
+      await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //
       // Show desktop

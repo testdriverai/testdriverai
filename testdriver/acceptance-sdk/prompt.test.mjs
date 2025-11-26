@@ -4,13 +4,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe.skip("Prompt Test", () => {
   it("should execute AI-driven prompts", async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
     // Note: The SDK doesn't have a direct equivalent to YAML prompts without commands.

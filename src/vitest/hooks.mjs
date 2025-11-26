@@ -1,27 +1,21 @@
 /**
  * Vitest Hooks for TestDriver
  * 
- * Provides React-style hooks for using TestDriver and Dashcam in Vitest tests.
- * Hooks automatically manage lifecycle (setup/teardown) and integrate with the plugin.
+ * Provides lifecycle management for TestDriver in Vitest tests.
  * 
  * @example
- * import { useTestDriver, useDashcam } from 'testdriverai/vitest/hooks';
+ * import { TestDriver } from 'testdriverai/vitest/hooks';
  * 
  * test('my test', async (context) => {
- *   const client = useTestDriver(context);
- *   const dashcam = useDashcam(context, client);
+ *   const testdriver = TestDriver(context, { headless: true });
  *   
- *   await dashcam.start();
- *   await client.find('button').click();
- *   const url = await dashcam.stop();
+ *   await testdriver.ready();
+ *   await testdriver.provision.chrome({ url: 'https://example.com' });
+ *   await testdriver.find('button').click();
  * });
  */
 
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import TestDriver from '../../sdk.js';
-import { Dashcam } from '../../src/core/index.js';
+import TestDriverSDK from '../../sdk.js';
 
 /**
  * Intercept console logs and write to a log file on the remote machine
@@ -147,32 +141,32 @@ function removeConsoleInterceptor(client) {
 
 // Weak maps to store instances per test context
 const testDriverInstances = new WeakMap();
-const dashcamInstances = new WeakMap();
 const lifecycleHandlers = new WeakMap();
 
 /**
- * Use TestDriver client in a test
- * Creates and manages TestDriver instance for the current test
+ * Create a TestDriver client in a Vitest test with automatic lifecycle management
  * 
  * @param {object} context - Vitest test context (from async (context) => {})
- * @param {object} options - TestDriver options
- * @param {string} options.apiKey - TestDriver API key (defaults to process.env.TD_API_KEY)
- * @param {string} options.apiRoot - API endpoint (defaults to process.env.TD_API_ROOT)
- * @param {string} options.os - Target OS: 'linux', 'mac', 'windows' (defaults to process.env.TD_OS || 'linux')
- * @param {boolean} options.new - Create new sandbox (default: true)
- * @param {boolean} options.autoConnect - Automatically connect to sandbox (default: true)
- * @param {object} options.cacheThresholds - Cache thresholds for find operations
+ * @param {object} options - TestDriver options (passed directly to TestDriver constructor)
+ * @param {string} [options.apiKey] - TestDriver API key (defaults to process.env.TD_API_KEY)
+ * @param {boolean} [options.headless] - Run sandbox in headless mode
+ * @param {boolean} [options.newSandbox] - Create new sandbox
+ * @param {boolean} [options.autoConnect=true] - Automatically connect to sandbox
  * @returns {TestDriver} TestDriver client instance
  * 
  * @example
  * test('my test', async (context) => {
- *   const client = useTestDriver(context, { os: 'linux' });
- *   await client.find('Login button').click();
+ *   const testdriver = TestDriver(context, { headless: true });
+ *   
+ *   // provision.chrome() automatically calls ready() and starts dashcam
+ *   await testdriver.provision.chrome({ url: 'https://example.com' });
+ *   
+ *   await testdriver.find('Login button').click();
  * });
  */
-export function useTestDriver(context, options = {}) {
+export function TestDriver(context, options = {}) {
   if (!context || !context.task) {
-    throw new Error('useTestDriver requires Vitest context. Pass the context parameter from your test function: test("name", async (context) => { ... })');
+    throw new Error('TestDriver() requires Vitest context. Pass the context parameter from your test function: test("name", async (context) => { ... })');
   }
   
   // Return existing instance if already created for this test
@@ -180,68 +174,105 @@ export function useTestDriver(context, options = {}) {
     return testDriverInstances.get(context.task);
   }
   
-  // Create new TestDriver instance
-  const apiKey = options.apiKey || process.env.TD_API_KEY;
-  const config = {
-    apiRoot: options.apiRoot || process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com',
-    os: options.os || process.env.TD_OS || 'linux',
-    newSandbox: options.new !== undefined ? options.new : true,
-    cacheThresholds: options.cacheThresholds || { find: 0.05, findAll: 0.05 },
-    resolution: options.resolution || '1366x768',
-    analytics: options.analytics !== undefined ? options.analytics : true,
-  };
+  // Get global plugin options if available
+  const pluginOptions = globalThis.__testdriverPlugin?.state?.testDriverOptions || {};
   
-  const client = new TestDriver(apiKey, config);
-  client.__vitestContext = context.task; // Store reference for cleanup
-  testDriverInstances.set(context.task, client);
+  // Merge options: plugin global options < test-specific options
+  const mergedOptions = { ...pluginOptions, ...options };
+  
+  // Extract TestDriver-specific options
+  const apiKey = mergedOptions.apiKey || process.env.TD_API_KEY;
+  
+  // Build config for TestDriverSDK constructor
+  const config = { ...mergedOptions };
+  delete config.apiKey;
+  
+  // Use TD_API_ROOT from environment if not provided in config
+  if (!config.apiRoot && process.env.TD_API_ROOT) {
+    config.apiRoot = process.env.TD_API_ROOT;
+  }
+  
+  const testdriver = new TestDriverSDK(apiKey, config);
+  testdriver.__vitestContext = context.task;
+  testDriverInstances.set(context.task, testdriver);
   
   // Auto-connect if enabled (default: true)
-  const autoConnect = options.autoConnect !== undefined ? options.autoConnect : true;
+  const autoConnect = config.autoConnect !== undefined ? config.autoConnect : true;
   if (autoConnect) {
-    // Create a promise that will connect the client
-    // This runs asynchronously but we store the promise so presets can await it
-    client.__connectionPromise = (async () => {
+    testdriver.__connectionPromise = (async () => {
       try {
-        console.log('[useTestDriver] Connecting to sandbox...');
-        await client.auth();
-        await client.connect({ new: config.newSandbox });
-        console.log('[useTestDriver] ✅ Connected to sandbox');
+        console.log('[testdriver] Connecting to sandbox...');
+        await testdriver.auth();
+        await testdriver.connect();
+        console.log('[testdriver] ✅ Connected to sandbox');
         
         // Set up console interceptor after connection
-        setupConsoleInterceptor(client, context.task.id);
+        setupConsoleInterceptor(testdriver, context.task.id);
         
         // Create the log file on the remote machine
-        const shell = client.os === "windows" ? "pwsh" : "sh";
-        const logPath = client.os === "windows" 
+        const shell = testdriver.os === "windows" ? "pwsh" : "sh";
+        const logPath = testdriver.os === "windows" 
           ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
           : "/tmp/testdriver.log";
         
-        const createLogCmd = client.os === "windows"
+        const createLogCmd = testdriver.os === "windows"
           ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
           : `touch ${logPath}`;
         
-        await client.exec(shell, createLogCmd, 10000, true);
-        console.log('[useTestDriver] ✅ Created log file:', logPath);
+        await testdriver.exec(shell, createLogCmd, 10000, true);
+        console.log('[testdriver] ✅ Created log file:', logPath);
+        
+        // Add automatic log tracking when dashcam starts
+        // Store original start method
+        const originalDashcamStart = testdriver.dashcam.start.bind(testdriver.dashcam);
+        testdriver.dashcam.start = async function() {
+          // Call original start (which handles auth)
+          await originalDashcamStart();
+          
+          // Add log file tracking after dashcam starts
+          try {
+            await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
+            console.log('[testdriver] ✅ Added log file to dashcam tracking');
+          } catch (error) {
+            console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
+          }
+        };
       } catch (error) {
-        console.error('[useTestDriver] Error connecting to sandbox:', error);
+        console.error('[testdriver] Error during setup:', error);
         throw error;
       }
     })();
   }
   
-  // Register cleanup handler
+  // Register cleanup handler with dashcam.stop()
   if (!lifecycleHandlers.has(context.task)) {
     const cleanup = async () => {
-      console.log('[useTestDriver] Cleaning up TestDriver client...');
+      console.log('[testdriver] Cleaning up TestDriver client...');
       try {
+        // Stop dashcam if it was started
+        if (testdriver._dashcam && testdriver._dashcam.recording) {
+          try {
+            const dashcamUrl = await testdriver.dashcam.stop();
+            console.log('🎥 Dashcam URL:', dashcamUrl);
+          } catch (error) {
+            // Log more detailed error information for debugging
+            console.error('❌ Failed to stop dashcam:', error.name || error.constructor?.name || 'Error');
+            if (error.message) console.error('   Message:', error.message);
+            // NotFoundError during cleanup is expected if sandbox already terminated
+            if (error.name === 'NotFoundError' || error.responseData?.error === 'NotFoundError') {
+              console.log('   ℹ️  Sandbox session already terminated - dashcam stop skipped');
+            }
+          }
+        }
+        
         // Remove console interceptor before disconnecting
-        removeConsoleInterceptor(client);
+        removeConsoleInterceptor(testdriver);
         
         // Wait for connection to finish if it was initiated
-        if (client.__connectionPromise) {
-          await client.__connectionPromise.catch(() => {}); // Ignore connection errors during cleanup
+        if (testdriver.__connectionPromise) {
+          await testdriver.__connectionPromise.catch(() => {}); // Ignore connection errors during cleanup
         }
-        await client.disconnect();
+        await testdriver.disconnect();
         console.log('✅ Client disconnected');
       } catch (error) {
         console.error('Error disconnecting client:', error);
@@ -253,213 +284,5 @@ export function useTestDriver(context, options = {}) {
     context.onTestFinished?.(cleanup);
   }
   
-  return client;
+  return testdriver;
 }
-
-/**
- * Use Dashcam in a test
- * Creates and manages Dashcam instance for the current test
- * 
- * @param {object} context - Vitest test context
- * @param {TestDriver} client - TestDriver client instance (from useTestDriver)
- * @param {object} options - Dashcam options
- * @param {string} options.apiKey - Dashcam API key (defaults to process.env.DASHCAM_API_KEY)
- * @param {boolean} options.autoAuth - Automatically authenticate (default: true)
- * @param {boolean} options.autoStart - Automatically start recording (default: false)
- * @param {boolean} options.autoStop - Automatically stop recording at test end (default: false)
- * @returns {Dashcam} Dashcam instance
- * 
- * @example
- * test('my test', async (context) => {
- *   const client = useTestDriver(context);
- *   const dashcam = useDashcam(context, client, { autoStart: true, autoStop: true });
- *   
- *   // Dashcam automatically started
- *   await client.find('button').click();
- *   // Dashcam automatically stopped and URL registered
- * });
- */
-export function useDashcam(context, client, options = {}) {
-  if (!context || !context.task) {
-    throw new Error('useDashcam requires Vitest context. Pass the context parameter from your test function.');
-  }
-  
-  if (!client) {
-    throw new Error('useDashcam requires a TestDriver client. Call useTestDriver first.');
-  }
-  
-  // Return existing instance if already created for this test
-  if (dashcamInstances.has(context.task)) {
-    return dashcamInstances.get(context.task);
-  }
-  
-  // Create new Dashcam instance
-  // Dashcam uses the same API key as TestDriver
-  const apiKey = options.apiKey || process.env.TD_API_KEY;
-  
-  // Skip Dashcam if no API key provided
-  if (!apiKey) {
-    console.log('[useDashcam] ⚠️  No API key provided, skipping Dashcam');
-    // Return a null-like object that won't break tests
-    const noop = { auth: async () => {}, start: async () => {}, stop: async () => null, isRecording: () => false };
-    dashcamInstances.set(context.task, noop);
-    return noop;
-  }
-  
-  const config = { apiKey };
-  
-  const dashcam = new Dashcam(client, config);
-  dashcamInstances.set(context.task, dashcam);
-  
-  // Auto-auth if configured (default: true)
-  const shouldAutoAuth = options.autoAuth !== false;
-  if (shouldAutoAuth) {
-    // Store auth promise so presets can await it
-    dashcam.__authPromise = (async () => {
-      try {
-        await dashcam.auth();
-        console.log('[useDashcam] ✅ Authenticated with Dashcam');
-      } catch (error) {
-        console.warn('[useDashcam] ⚠️  Dashcam authentication failed:', error.message);
-        console.warn('[useDashcam] Tests will continue without Dashcam recording');
-        // Don't throw - allow tests to continue without Dashcam
-      }
-    })();
-  }
-  
-  // Auto-start if configured
-  if (options.autoStart) {
-    dashcam.__startPromise = (async () => {
-      try {
-        // Wait for auth to complete first
-        if (dashcam.__authPromise) {
-          await dashcam.__authPromise;
-        }
-        
-        // Wait for client connection if needed
-        if (client.__connectionPromise) {
-          await client.__connectionPromise;
-        }
-        
-        // Add log file tracking if console interceptor is set up
-        if (client._testLogPath) {
-          console.log('[useDashcam] Adding log file to tracking:', client._testLogPath);
-          await dashcam.addFileLog(client._testLogPath, "Test Console Logs");
-        }
-        
-        await dashcam.start();
-        console.log('[useDashcam] ✅ Recording started');
-      } catch (error) {
-        console.warn('[useDashcam] ⚠️  Could not start recording:', error.message);
-        console.warn('[useDashcam] Tests will continue without Dashcam recording');
-        // Don't throw - allow tests to continue
-      }
-    })();
-  }
-  
-  // Auto-stop if configured
-  if (options.autoStop) {
-    const cleanup = async () => {
-      console.log('[useDashcam] Stopping Dashcam...');
-      try {
-        const url = await dashcam.stop();
-        if (url) {
-          console.log('🎥 Dashcam URL:', url);
-          
-          // Register URL with plugin if available
-          if (globalThis.__testdriverPlugin?.registerDashcamUrl) {
-            const testId = `${context.task.file?.id || 'unknown'}_${context.task.id}_0`;
-            globalThis.__testdriverPlugin.registerDashcamUrl(testId, url, client.os);
-          }
-          
-          // Write test result file for the reporter to pick up
-          const testResultFile = path.join(
-            os.tmpdir(),
-            'testdriver-results',
-            `${context.task.id}.json`
-          );
-          
-          try {
-            // Ensure directory exists
-            const dir = path.dirname(testResultFile);
-            if (!fs.existsSync(dir)) {
-              fs.mkdirSync(dir, { recursive: true });
-            }
-            
-            // Get test file path from Vitest context
-            // Try multiple ways to get the file path
-            // Resolve testFile with fallback options
-            const testFile = context.task.file?.filepath 
-              || context.task.file?.name 
-              || context.task.suite?.file?.filepath 
-              || context.task.suite?.file?.name 
-              || 'unknown';
-            
-            // Calculate test order (index within parent suite)
-            let testOrder = 0;
-            if (context.task.suite && context.task.suite.tasks) {
-              testOrder = context.task.suite.tasks.indexOf(context.task);
-            }
-            
-            // Extract replay object ID from URL
-            const replayObjectId = url.match(/\/replay\/([^?]+)/)?.[1] || null;
-            
-            // Write test result
-            const testResult = {
-              testId: context.task.id,
-              testName: context.task.name,
-              testFile: testFile,
-              testOrder: testOrder,
-              dashcamUrl: url,
-              replayObjectId: replayObjectId,
-              platform: client.os,
-              timestamp: Date.now(),
-            };
-            
-            fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
-            console.log(`[useDashcam] ✅ Wrote test result to ${testResultFile}`);
-          } catch (error) {
-            console.error('[useDashcam] ❌ Failed to write test result file:', error.message);
-          }
-        }
-      } catch (error) {
-        console.error('[useDashcam] Error stopping Dashcam:', error);
-      }
-    };
-    
-    context.onTestFinished?.(cleanup);
-  }
-  
-  return dashcam;
-}
-
-/**
- * Use both TestDriver and Dashcam together with auto-lifecycle
- * This is the simplest way to get started - everything is automatic!
- * 
- * @param {object} context - Vitest test context
- * @param {object} options - Combined options
- * @param {string} options.os - Target OS (default: 'linux')
- * @param {boolean} options.new - Create new sandbox (default: true)
- * @returns {{ client: TestDriver, dashcam: Dashcam }} Both instances
- * 
- * @example
- * test('my test', async (context) => {
- *   const { client, dashcam } = useTestDriverWithDashcam(context);
- *   
- *   // Everything auto-managed: connection, recording, cleanup
- *   await client.find('Login button').click();
- * });
- */
-export function useTestDriverWithDashcam(context, options = {}) {
-  const client = useTestDriver(context, options);
-  const dashcam = useDashcam(context, client, {
-    autoAuth: true,
-    autoStart: true,
-    autoStop: true,
-    ...options,
-  });
-  
-  return { client, dashcam };
-}
-

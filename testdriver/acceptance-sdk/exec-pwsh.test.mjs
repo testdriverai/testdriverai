@@ -4,15 +4,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Exec PowerShell Test", () => {
   it.skipIf(process.env.TD_OS === "linux")(
     "should generate random email using PowerShell and enter it",
     async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'http://testdriver-sandbox.vercel.app/login',
-      });
+      const testdriver = TestDriver(context, { headless: true });
+      await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //
       // Generate random email using PowerShell

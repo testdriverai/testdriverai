@@ -251,3 +251,64 @@ You can also set the default test file path using environment variables:
 export TD_DEFAULT_TEST_FILE="custom/path/test.yaml"
 node your-script.js
 ```
+
+## MCP Server for AI Agents
+
+TestDriver includes a Model Context Protocol (MCP) server that enables AI agents to **interactively create Vitest test files**.
+
+### How It Works
+
+1. **AI agent connects** to a persistent TestDriver sandbox
+2. **User describes** what they want to test
+3. **AI explores** the application using TestDriver commands
+4. **AI generates** Vitest test code from successful interactions
+
+### Quick Start
+
+```bash
+cd mcp-server
+npm install && npm run build
+npm run deploy  # Install to ~/.mcp/testdriver
+```
+
+### Configuration
+
+Add to your MCP client configuration:
+
+```json
+{
+  "servers": {
+    "testdriverai": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/cli/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+### Example Workflow
+
+```
+User: "Create a test that logs into the app"
+
+AI: [Connects to sandbox with user's API key]
+AI: [Takes screenshot to see login page]
+AI: [Finds username field: await testdriver_find({ description: "username field" })]
+AI: [Clicks and types: await testdriver_type({ text: "test_user" })]
+AI: [Finds password field, enters password]
+AI: [Clicks login button]
+AI: [Asserts login succeeded]
+AI: [Generates Vitest test file from these steps]
+AI: [Saves test/login.test.mjs]
+```
+
+### Key Features
+
+- **Persistent sandbox** - Connection stays alive throughout test creation
+- **Live debugger URL** - User can watch the AI test in real-time
+- **Full SDK access** - All v7 SDK methods available
+- **Code generation** - AI translates interactions into proper Vitest code
+
+See [mcp-server/TEST_CREATION_GUIDE.md](mcp-server/TEST_CREATION_GUIDE.md) for the complete guide.
+

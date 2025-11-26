@@ -1,18 +1,15 @@
 /**
  * TestDriver SDK - Press Keys Test (Vitest)
  * Converted from: testdriver/acceptance/press-keys.yaml
- * 
- * UPDATED: Now using provision() for zero-config setup
  */
 
 import { describe, expect, it } from "vitest";
-import { provision } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Press Keys Test", () => {
   it("should create tabs and navigate using keyboard shortcuts", async (context) => {
-    const { testdriver } = await provision('chrome', {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    }, context);
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     const signInButton = await testdriver.find(
       "Sign In, black button below the password field",

@@ -1,174 +1,51 @@
 /**
  * TestDriver Presets
  * 
- * Pre-configured setups for common applications and workflows.
- * Presets encapsulate best practices and reduce boilerplate.
+ * DEPRECATED: These presets are maintained for backwards compatibility.
+ * New code should use the simpler API:
  * 
  * @example
- * import { chrome } from 'testdriverai/presets';
+ * import { TestDriver } from 'testdriverai/vitest/hooks';
  * 
  * test('my test', async (context) => {
- *   const { testdriver } = await chrome(context, {
- *     url: 'https://example.com'
- *   });
+ *   const testdriver = TestDriver(context, { headless: true });
  *   
+ *   await testdriver.connected();
+ *   await testdriver.dashcam.start();
+ *   await testdriver.provision.chrome({ url: 'https://example.com' });
  *   await testdriver.find('Login').click();
+ *   await testdriver.dashcam.stop();
  * });
  */
 
-import { useDashcam, useTestDriver } from '../vitest/hooks.mjs';
+import { TestDriver } from '../vitest/hooks.mjs';
 
 /**
- * Chrome Browser Preset
- * Automatically sets up Chrome with TestDriver and Dashcam
- * 
- * @param {object} context - Vitest test context
- * @param {object} options - Preset options
- * @param {string} options.url - URL to navigate to (default: 'http://testdriver-sandbox.vercel.app/')
- * @param {string} options.os - Target OS (default: 'linux')
- * @param {boolean} options.dashcam - Enable Dashcam recording (default: true)
- * @param {boolean} options.maximized - Start maximized (default: true)
- * @param {boolean} options.guest - Use guest mode (default: true)
- * @returns {Promise<{client: TestDriver, dashcam: Dashcam}>}
- * 
- * @example
- * test('login test', async (context) => {
- *   const { testdriver } = await chrome(context, {
- *     url: 'https://myapp.com/login'
- *   });
- *   
- *   await testdriver.find('email input').type('user@example.com');
- *   await client.find('password input').type('password123');
- *   await client.find('Login button').click();
- * });
+ * Chrome Browser Preset (DEPRECATED)
+ * Use testdriver.provision.chrome() instead
  */
 export async function chrome(context, options = {}) {
+  console.warn('[chrome preset] DEPRECATED: Use TestDriver() + testdriver.provision.chrome() instead');
+  
   const {
     url = 'http://testdriver-sandbox.vercel.app/',
-    os = 'linux',
-    dashcam: enableDashcam = true,
-    maximized = true,
-    guest = false,
+    dashcam: enableDashcam = false,
+    ...testDriverOptions
   } = options;
 
-  // Set up TestDriver client
-  const client = useTestDriver(context, { os });
+  const testdriver = TestDriver(context, testDriverOptions);
   
-  // Wait for client to connect (if autoConnect was enabled)
-  if (client.__connectionPromise) {
-    await client.__connectionPromise;
-  }
+  await testdriver.connected();
 
-  // Set up Dashcam if enabled
-  let dashcam = null;
   if (enableDashcam) {
-    dashcam = useDashcam(context, client, {
-      autoAuth: true,
-      autoStart: true,
-      autoStop: true,
-    });
-    
-    // Wait for Dashcam to be ready
-    if (dashcam.__startPromise) {
-      await dashcam.__startPromise;
-    } else if (dashcam.__authPromise) {
-      await dashcam.__authPromise;
-    }
-    
-    // Track the URL domain in web mode
-    try {
-      const urlObj = new URL(url);
-      const domain = urlObj.hostname;
-      const shell = os === 'windows' ? 'pwsh' : 'sh';
-      await client.exec(
-        shell,
-        `dashcam logs --add --name=TestDriver --type=web --pattern="*${domain}*"`,
-        10000
-      );
-      console.log(`[chrome preset] 🎥 Tracking domain "${domain}" with Dashcam`);
-    } catch (e) {
-      console.warn(`[chrome preset] ⚠️  Could not track URL domain:`, e.message);
-    }
+    await testdriver.dashcam.start();
   }
 
-  // Build Chrome launch command
-  const chromeArgs = [];
-  if (maximized) chromeArgs.push('--start-maximized');
-  if (guest) chromeArgs.push('--guest');
-  chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run');
-  
-  // Add dashcam-chrome extension on Linux
-  if (os === 'linux') {
-    chromeArgs.push('--load-extension=/usr/lib/node_modules/dashcam-chrome/build');
-  }
-
-  // Launch Chrome
-  const shell = os === 'windows' ? 'pwsh' : 'sh';
-  
-  if (os === 'windows') {
-    const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
-    await client.exec(
-      shell,
-      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
-      30000
-    );
-  } else {
-    const argsString = chromeArgs.join(' ');
-    await client.exec(
-      shell,
-      `chrome-for-testing ${argsString} "${url}" >/dev/null 2>&1 &`,
-      30000
-    );
-  }
-
-  // Wait for Chrome to be ready
-  await client.focusApplication('Google Chrome');
-
-  // Extract domain from URL to wait for it to appear in the address bar
-  // This prevents race conditions where tests try to interact with the URL bar before it's loaded
-  try {
-    const urlObj = new URL(url);
-    const domain = urlObj.hostname;
-    
-    console.log(`[chrome preset] Waiting for domain "${domain}" to appear in URL bar...`);
-    
-    // Wait for the domain to appear in the address bar (with retries)
-    // Poll every second for up to 30 seconds
-    let found = false;
-    for (let attempt = 0; attempt < 30; attempt++) {
-      try {
-        // Look for just the domain in the address bar
-        const result = await client.find(`${domain}`);
-        if (result) {
-          console.log(`[chrome preset] ✅ Found domain "${domain}" in URL bar after ${attempt + 1} attempts`);
-          found = true;
-          break;
-        }
-      } catch (e) {
-        // Not found yet, continue polling
-        if (attempt % 5 === 0 && attempt > 0) {
-          console.log(`[chrome preset] Still waiting for domain (attempt ${attempt + 1}/30)...`);
-        }
-      }
-      // Wait 1 second before next attempt
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    if (!found) {
-      console.warn(`[chrome preset] ⚠️  Warning: Domain "${domain}" not found in URL bar after 30 seconds`);
-      console.warn(`[chrome preset] Tests may fail if they try to interact with the address bar`);
-    }
-    
-    // Re-focus Chrome to ensure it's visible and ready for test interactions
-    await client.focusApplication('Google Chrome');
-    console.log(`[chrome preset] ✅ Chrome focused and ready for testing`);
-  } catch (e) {
-    console.warn(`[chrome preset] ⚠️  Could not parse URL "${url}" to extract domain:`, e.message);
-  }
+  await testdriver.provision.chrome({ url });
 
   return {
-    testdriver: client,
-    dashcam,
+    testdriver: testdriver,
+    dashcam: enableDashcam ? testdriver.dashcam : null,
   };
 }
 
@@ -177,12 +54,16 @@ export async function chrome(context, options = {}) {
  * Automatically sets up VS Code with TestDriver and Dashcam
  * 
  * @param {object} context - Vitest test context
- * @param {object} options - Preset options
- * @param {string} options.workspace - Workspace/folder to open
- * @param {string} options.os - Target OS (default: 'linux')
- * @param {boolean} options.dashcam - Enable Dashcam recording (default: true)
- * @param {string[]} options.extensions - Extensions to install
- * @returns {Promise<{client: TestDriver, vscode: TestDriver, dashcam: Dashcam}>}
+ * @param {object} options - Preset options (accepts all useTestDriver options)
+ * @param {string} [options.workspace] - Workspace/folder to open
+ * @param {string[]} [options.extensions=[]] - Extensions to install
+ * @param {boolean} [options.dashcam=true] - Enable Dashcam recording
+ * @param {boolean} [options.newSandbox=true] - Create new sandbox
+ * @param {string} [options.os='linux'] - Target OS (linux/mac/windows)
+ * @param {string} [options.apiKey] - TestDriver API key
+ * @param {string} [options.apiRoot] - API endpoint
+ * @param {boolean} [options.autoConnect=true] - Automatically connect to sandbox
+ * @returns {Promise<{testdriver: TestDriver, vscode: TestDriver, dashcam: Dashcam}>}
  * 
  * @example
  * test('extension test', async (context) => {
@@ -196,15 +77,17 @@ export async function chrome(context, options = {}) {
  * });
  */
 export async function vscode(context, options = {}) {
+  // Extract vscode-specific options
   const {
     workspace = null,
-    os = 'linux',
     dashcam: enableDashcam = true,
     extensions = [],
+    // All other options are passed directly to useTestDriver
+    ...testDriverOptions
   } = options;
 
-  // Set up TestDriver client
-  const client = useTestDriver(context, { os });
+  // Set up TestDriver client - all options pass through directly
+  const client = useTestDriver(context, testDriverOptions);
   
   // Wait for client to connect (if autoConnect was enabled)
   if (client.__connectionPromise) {
@@ -230,6 +113,7 @@ export async function vscode(context, options = {}) {
 
   // Install extensions if provided
   for (const extension of extensions) {
+    const os = testDriverOptions.os || 'linux';
     const shell = os === 'windows' ? 'pwsh' : 'sh';
     await client.exec(
       shell,
@@ -240,6 +124,7 @@ export async function vscode(context, options = {}) {
   }
 
   // Launch VS Code
+  const os = testDriverOptions.os || 'linux';
   const shell = os === 'windows' ? 'pwsh' : 'sh';
   const workspaceArg = workspace ? `"${workspace}"` : '';
   
@@ -274,7 +159,7 @@ export async function vscode(context, options = {}) {
  * @param {object} config - Preset configuration
  * @param {Function} config.setup - Setup function (async)
  * @param {string} config.name - Preset name
- * @param {object} config.defaults - Default options
+ * @param {object} config.defaults - Default options (accepts all useTestDriver options)
  * @returns {Function} Preset function
  * 
  * @example
@@ -290,7 +175,10 @@ export async function vscode(context, options = {}) {
  * 
  * // Use your custom preset
  * test('my test', async (context) => {
- *   const { app } = await myElectronPreset(context, { appPath: './dist' });
+ *   const { app } = await myElectronPreset(context, { 
+ *     appPath: './dist',
+ *     newSandbox: false  // All useTestDriver options work!
+ *   });
  * });
  */
 export function createPreset(config) {
@@ -303,12 +191,13 @@ export function createPreset(config) {
   return async function preset(context, options = {}) {
     const finalOptions = { ...defaults, ...options };
     const {
-      os = 'linux',
       dashcam: enableDashcam = true,
+      // All other options are passed directly to useTestDriver
+      ...testDriverOptions
     } = finalOptions;
 
-    // Set up TestDriver client
-    const client = useTestDriver(context, { os });
+    // Set up TestDriver client - all options pass through directly
+    const client = useTestDriver(context, testDriverOptions);
     
     // Wait for client to connect (if autoConnect was enabled)
     if (client.__connectionPromise) {
@@ -349,18 +238,22 @@ export function createPreset(config) {
  * Automatically sets up an Electron application with TestDriver
  * 
  * @param {object} context - Vitest test context
- * @param {object} options - Preset options
- * @param {string} options.appPath - Path to Electron app
- * @param {string} options.os - Target OS (default: 'linux')
- * @param {boolean} options.dashcam - Enable Dashcam recording (default: true)
- * @param {string[]} options.args - Additional electron args
+ * @param {object} options - Preset options (accepts all useTestDriver options)
+ * @param {string} options.appPath - Path to Electron app (required)
+ * @param {string[]} [options.args=[]] - Additional electron args
+ * @param {boolean} [options.dashcam=true] - Enable Dashcam recording
+ * @param {boolean} [options.newSandbox=true] - Create new sandbox
+ * @param {string} [options.os='linux'] - Target OS (linux/mac/windows)
+ * @param {string} [options.apiKey] - TestDriver API key
+ * @param {string} [options.apiRoot] - API endpoint
+ * @param {boolean} [options.autoConnect=true] - Automatically connect to sandbox
  * @returns {Promise<{testdriver: TestDriver, app: TestDriver, dashcam: Dashcam}>}
  */
 export const electron = createPreset({
   name: 'Electron App',
-  defaults: { os: 'linux', dashcam: true, args: [] },
+  defaults: { dashcam: true, args: [] },
   async setup(context, client, dashcam, options) {
-    const { appPath, args = [], os } = options;
+    const { appPath, args = [], os = 'linux' } = options;
     
     if (!appPath) {
       throw new Error('electron preset requires appPath option');
@@ -397,17 +290,19 @@ export const electron = createPreset({
  * Simplified preset for any web application
  * 
  * @param {object} context - Vitest test context
- * @param {object} options - Preset options
+ * @param {object} options - Preset options (accepts all useTestDriver options)
  * @param {string} options.url - URL to navigate to (required)
- * @param {string} options.browser - Browser to use: 'chrome', 'firefox', 'edge' (default: 'chrome')
- * @param {string} options.os - Target OS (default: 'linux')
- * @param {boolean} options.dashcam - Enable Dashcam recording (default: true)
+ * @param {string} [options.browser='chrome'] - Browser to use: 'chrome', 'firefox', 'edge'
+ * @param {boolean} [options.newSandbox=true] - Create new sandbox
+ * @param {string} [options.os='linux'] - Target OS (linux/mac/windows)
+ * @param {boolean} [options.dashcam=true] - Enable Dashcam recording
  * @returns {Promise<{testdriver: TestDriver, dashcam: Dashcam}>}
  */
 export async function webApp(context, options = {}) {
   const { browser = 'chrome', ...restOptions } = options;
   
   // Currently only Chrome is implemented
+  // All options are automatically forwarded to the browser preset
   if (browser === 'chrome') {
     return chrome(context, restOptions);
   }

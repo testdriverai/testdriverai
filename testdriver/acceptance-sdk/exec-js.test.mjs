@@ -4,13 +4,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Exec JavaScript Test", () => {
   it("should fetch user data from API and enter email", async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
     // Execute JavaScript to fetch user data

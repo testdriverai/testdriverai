@@ -4,16 +4,14 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { provision } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 
 describe("Console Log Test", () => {
   it("should capture console logs and send them to dashcam", async (context) => {
     console.log("🎬 Test starting - this should appear in dashcam");
     
-    // Use provision() - Chrome is already open and focused
-    const { testdriver } = await provision('chrome', {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    }, context);
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     console.log("✅ Chrome launched successfully");
 

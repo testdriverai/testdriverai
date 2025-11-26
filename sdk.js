@@ -13,8 +13,8 @@ class ElementNotFoundError extends Error {
   constructor(message, debugInfo = {}) {
     super(message);
     this.name = "ElementNotFoundError";
-    this.screenshot = debugInfo.screenshot;
-    this.aiResponse = debugInfo.aiResponse;
+    // Sanitize aiResponse to remove base64 images before storing
+    this.aiResponse = this._sanitizeAiResponse(debugInfo.aiResponse);
     this.description = debugInfo.description;
     this.timestamp = new Date().toISOString();
     this.screenshotPath = null;
@@ -24,8 +24,9 @@ class ElementNotFoundError extends Error {
       Error.captureStackTrace(this, ElementNotFoundError);
     }
 
-    // Write screenshot to temp directory
-    if (this.screenshot) {
+    // Write screenshot to temp directory immediately (don't store on error object)
+    // This prevents vitest from serializing huge base64 strings
+    if (debugInfo.screenshot) {
       try {
         const tempDir = path.join(os.tmpdir(), "testdriver-debug");
         if (!fs.existsSync(tempDir)) {
@@ -36,7 +37,7 @@ class ElementNotFoundError extends Error {
         this.screenshotPath = path.join(tempDir, filename);
 
         // Remove data:image/png;base64, prefix if present
-        const base64Data = this.screenshot.replace(
+        const base64Data = debugInfo.screenshot.replace(
           /^data:image\/\w+;base64,/,
           "",
         );
@@ -182,6 +183,25 @@ class ElementNotFoundError extends Error {
       this.stack = filteredLines.join("\n");
     }
   }
+
+  /**
+   * Sanitize AI response by removing large base64 data to prevent serialization issues
+   * @private
+   * @param {Object} response - AI response
+   * @returns {Object} Sanitized response
+   */
+  _sanitizeAiResponse(response) {
+    if (!response) return null;
+
+    // Create shallow copy and remove large base64 fields
+    const sanitized = { ...response };
+    delete sanitized.croppedImage;
+    delete sanitized.screenshot;
+    delete sanitized.pixelDiffImage;
+    // Keep cachedImageUrl as it's just a URL string, not base64 data
+
+    return sanitized;
+  }
 }
 
 /**
@@ -213,10 +233,10 @@ class Element {
   /**
    * Find the element on screen
    * @param {string} [newDescription] - Optional new description to search for
-   * @param {number} [cacheThreshold] - Cache threshold for this specific find (overrides global setting)
+   * @param {Object} [options] - Optional options object with cacheThreshold and/or cacheKey
    * @returns {Promise<Element>} This element instance
    */
-  async find(newDescription, cacheThreshold) {
+  async find(newDescription, options) {
     const description = newDescription || this.description;
     if (newDescription) {
       this.description = newDescription;
@@ -239,9 +259,33 @@ class Element {
         this._screenshot = screenshot;
       }
 
-      // Use per-command threshold if provided, otherwise fall back to global threshold
-      const threshold =
-        cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.05;
+      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
+      let cacheKey = null;
+      let cacheThreshold = null;
+      
+      if (typeof options === 'number') {
+        // Legacy: options is just a number threshold
+        cacheThreshold = options;
+      } else if (typeof options === 'object' && options !== null) {
+        // New: options is an object with cacheKey and/or cacheThreshold
+        cacheKey = options.cacheKey || null;
+        cacheThreshold = options.cacheThreshold ?? null;
+      }
+
+      // Determine threshold: 
+      // - If cacheKey is provided, enable cache (threshold = 0.05 or custom)
+      // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
+      let threshold;
+      if (cacheKey) {
+        // cacheKey provided - enable cache with threshold
+        threshold = cacheThreshold ?? 0.05;
+      } else if (cacheThreshold !== null) {
+        // Explicit threshold provided without cacheKey
+        threshold = cacheThreshold;
+      } else {
+        // No cacheKey, no explicit threshold - use global default (which is -1 now)
+        threshold = this.sdk.cacheThresholds?.find ?? -1;
+      }
 
       // Store the threshold for debugging
       this._threshold = threshold;
@@ -251,7 +295,7 @@ class Element {
         const { events } = require("./agent/events.js");
         this.sdk.emitter.emit(
           events.log.debug,
-          `🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"})`,
+          `🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey}` : ""})`,
         );
       }
 
@@ -259,6 +303,7 @@ class Element {
         element: description,
         image: screenshot,
         threshold: threshold,
+        cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
       });
@@ -544,11 +589,8 @@ class Element {
         `Element "${this.description}" not found.`,
         {
           description: this.description,
-          screenshot: this._screenshot,
           aiResponse: this._response,
           threshold: this._threshold,
-          cachedImageUrl: this._response?.cachedImageUrl,
-          pixelDiffImage: this._response?.pixelDiffImage,
         },
       );
     }
@@ -579,11 +621,8 @@ class Element {
         `Element "${this.description}" not found.`,
         {
           description: this.description,
-          screenshot: this._screenshot,
           aiResponse: this._response,
           threshold: this._threshold,
-          cachedImageUrl: this._response?.cachedImageUrl,
-          pixelDiffImage: this._response?.pixelDiffImage,
         },
       );
     }
@@ -862,25 +901,24 @@ class TestDriverSDK {
 
     // Cache threshold configuration
     // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
-    // cache: false option disables cache completely by setting threshold to -1
-    // Also support TD_NO_CACHE environment variable
-    const useCache =
-      options.cache !== false && process.env.TD_NO_CACHE !== "true";
+    // By default, cache is DISABLED (threshold = -1) to avoid unnecessary AI costs
+    // To enable cache, provide a cacheKey when calling find() or findAll()
+    // Also support TD_NO_CACHE environment variable and cache: false option for backwards compatibility
+    const cacheDisabled =
+      options.cache === false || process.env.TD_NO_CACHE === "true";
 
-    // Note: Cannot emit events here as emitter is not yet available
-    // Logging will be done after connection
-
-    if (!useCache) {
-      // If cache is disabled, use -1 to bypass cache entirely
+    if (cacheDisabled) {
+      // Explicit cache disabled via option or env var
       this.cacheThresholds = {
         find: -1,
         findAll: -1,
       };
     } else {
-      // Use configured thresholds or defaults
+      // Cache disabled by default, enabled only when cacheKey is provided
+      // Note: The threshold value here is the fallback when cacheKey is NOT provided
       this.cacheThresholds = {
-        find: options.cacheThreshold?.find ?? 0.05,
-        findAll: options.cacheThreshold?.findAll ?? 0.05,
+        find: options.cacheThreshold?.find ?? -1,  // Default: cache disabled
+        findAll: options.cacheThreshold?.findAll ?? -1,  // Default: cache disabled
       };
     }
 
@@ -910,6 +948,231 @@ class TestDriverSDK {
 
     // Set up event listeners once (they live for the lifetime of the SDK instance)
     this._setupLogging();
+
+    // Set up provision API
+    this.provision = this._createProvisionAPI();
+
+    // Set up dashcam API lazily
+    this._dashcam = null;
+  }
+
+  /**
+   * Wait for the sandbox connection to complete
+   * @returns {Promise<void>}
+   */
+  async ready() {
+    if (this.__connectionPromise) {
+      await this.__connectionPromise;
+    }
+    if (!this.connected) {
+      throw new Error('Not connected to sandbox. Call connect() first or use autoConnect option.');
+    }
+  }
+
+  /**
+   * Get or create the Dashcam instance
+   * @returns {Dashcam} Dashcam instance
+   */
+  get dashcam() {
+    if (!this._dashcam) {
+      const { Dashcam } = require("./src/core/index.js");
+      // Don't pass apiKey - let Dashcam use its default key
+      this._dashcam = new Dashcam(this);
+    }
+    return this._dashcam;
+  }
+
+  /**
+   * Create the provision API with methods for launching applications
+   * @private
+   */
+  _createProvisionAPI() {
+    return {
+      /**
+       * Launch Chrome browser
+       * @param {Object} options - Chrome launch options
+       * @param {string} [options.url='http://testdriver-sandbox.vercel.app/'] - URL to navigate to
+       * @param {boolean} [options.maximized=true] - Start maximized
+       * @param {boolean} [options.guest=false] - Use guest mode
+       * @returns {Promise<void>}
+       */
+      chrome: async (options = {}) => {
+        // Automatically wait for connection to be ready
+        await this.ready();
+        
+        const {
+          url = 'http://testdriver-sandbox.vercel.app/',
+          maximized = true,
+          guest = false,
+        } = options;
+
+        // If dashcam is available and recording, add web logs for this domain
+        if (this._dashcam) {
+          console.log('[provision.chrome] Adding web logs to dashcam...');
+          try {
+            const urlObj = new URL(url);
+            const domain = urlObj.hostname;
+            const pattern = `*${domain}*`;
+            await this._dashcam.addWebLog(pattern, 'Web Logs');
+            console.log(`[provision.chrome] ✅ Web logs added to dashcam (pattern: ${pattern})`);
+          } catch (error) {
+            console.warn('[provision.chrome] ⚠️  Failed to add web logs:', error.message);
+          }
+        }
+        
+        // Automatically start dashcam if not already recording
+        if (!this._dashcam || !this._dashcam.recording) {
+          console.log('[provision.chrome] Starting dashcam...');
+          await this.dashcam.start();
+          console.log('[provision.chrome] ✅ Dashcam started');
+        }
+
+        // Build Chrome launch command
+        const chromeArgs = [];
+        if (maximized) chromeArgs.push('--start-maximized');
+        if (guest) chromeArgs.push('--guest');
+        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run');
+        
+        // Add dashcam-chrome extension on Linux
+        if (this.os === 'linux') {
+          chromeArgs.push('--load-extension=/usr/lib/node_modules/dashcam-chrome/build');
+        }
+
+        // Launch Chrome
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        
+        if (this.os === 'windows') {
+          const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
+          await this.exec(
+            shell,
+            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
+            30000
+          );
+        } else {
+          const argsString = chromeArgs.join(' ');
+          await this.exec(
+            shell,
+            `chrome-for-testing ${argsString} "${url}" >/dev/null 2>&1 &`,
+            30000
+          );
+        }
+
+        // Wait for Chrome to be ready
+        await this.focusApplication('Google Chrome');
+
+
+        // Wait for URL to load
+        try {
+          const urlObj = new URL(url);
+          const domain = urlObj.hostname;
+          
+          console.log(`[provision.chrome] Waiting for domain "${domain}" to appear in URL bar...`);
+          
+          for (let attempt = 0; attempt < 30; attempt++) {
+            try {
+              const result = await this.find(`${domain}`);
+              if (result) {
+                console.log(`[provision.chrome] ✅ Chrome ready at ${url}`);
+                break;
+              }
+            } catch (e) {
+              // Not found yet, continue polling
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          
+          await this.focusApplication('Google Chrome');
+        } catch (e) {
+          console.warn(`[provision.chrome] ⚠️  Could not parse URL "${url}":`, e.message);
+        }
+      },
+
+      /**
+       * Launch VS Code
+       * @param {Object} options - VS Code launch options
+       * @param {string} [options.workspace] - Workspace/folder to open
+       * @param {string[]} [options.extensions=[]] - Extensions to install
+       * @returns {Promise<void>}
+       */
+      vscode: async (options = {}) => {
+        this._ensureConnected();
+        
+        const {
+          workspace = null,
+          extensions = [],
+        } = options;
+
+        // Install extensions if provided
+        for (const extension of extensions) {
+          const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+          await this.exec(
+            shell,
+            `code --install-extension ${extension}`,
+            60000,
+            true
+          );
+        }
+
+        // Launch VS Code
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        const workspaceArg = workspace ? `"${workspace}"` : '';
+        
+        if (this.os === 'windows') {
+          await this.exec(
+            shell,
+            `Start-Process code -ArgumentList ${workspaceArg}`,
+            30000
+          );
+        } else {
+          await this.exec(
+            shell,
+            `code ${workspaceArg} >/dev/null 2>&1 &`,
+            30000
+          );
+        }
+
+        // Wait for VS Code to be ready
+        await this.focusApplication('Visual Studio Code');
+        console.log('[provision.vscode] ✅ VS Code ready');
+      },
+
+      /**
+       * Launch Electron app
+       * @param {Object} options - Electron launch options
+       * @param {string} options.appPath - Path to Electron app (required)
+       * @param {string[]} [options.args=[]] - Additional electron args
+       * @returns {Promise<void>}
+       */
+      electron: async (options = {}) => {
+        this._ensureConnected();
+        
+        const { appPath, args = [] } = options;
+        
+        if (!appPath) {
+          throw new Error('provision.electron requires appPath option');
+        }
+
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        const argsString = args.join(' ');
+        
+        if (this.os === 'windows') {
+          await this.exec(
+            shell,
+            `Start-Process electron -ArgumentList "${appPath}", ${argsString}`,
+            30000
+          );
+        } else {
+          await this.exec(
+            shell,
+            `electron "${appPath}" ${argsString} >/dev/null 2>&1 &`,
+            30000
+          );
+        }
+
+        await this.focusApplication('Electron');
+        console.log('[provision.electron] ✅ Electron app ready');
+      },
+    };
   }
 
   /**
@@ -1054,7 +1317,7 @@ class TestDriverSDK {
    * Automatically locates the element and returns it
    *
    * @param {string} description - Description of the element to find
-   * @param {number} [cacheThreshold] - Cache threshold for this specific find (overrides global setting)
+   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
    * @returns {Promise<Element>} Element instance that has been located
    *
    * @example
@@ -1063,7 +1326,11 @@ class TestDriverSDK {
    * await element.click();
    *
    * @example
-   * // Find with custom cache threshold
+   * // Find with cache key to enable caching
+   * const element = await client.find('login button', { cacheKey: 'my-test-run' });
+   *
+   * @example
+   * // Find with custom cache threshold (legacy)
    * const element = await client.find('login button', 0.01);
    *
    * @example
@@ -1077,10 +1344,10 @@ class TestDriverSDK {
    * }
    * await element.click();
    */
-  async find(description, cacheThreshold) {
+  async find(description, options) {
     this._ensureConnected();
     const element = new Element(description, this, this.system, this.commands);
-    return await element.find(null, cacheThreshold);
+    return await element.find(null, options);
   }
 
   /**
@@ -1088,7 +1355,7 @@ class TestDriverSDK {
    * Automatically locates all matching elements and returns them as an array
    *
    * @param {string} description - Description of the elements to find
-   * @param {number} [cacheThreshold] - Cache threshold for this specific findAll (overrides global setting)
+   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
    * @returns {Promise<Element[]>} Array of Element instances that have been located
    *
    * @example
@@ -1099,13 +1366,13 @@ class TestDriverSDK {
    * }
    *
    * @example
-   * // Find all list items with custom cache threshold
-   * const items = await client.findAll('list item', 0.01);
+   * // Find all list items with cache key to enable caching
+   * const items = await client.findAll('list item', { cacheKey: 'my-test-run' });
    * for (const item of items) {
    *   console.log(`Found item at (${item.x}, ${item.y})`);
    * }
    */
-  async findAll(description, cacheThreshold) {
+  async findAll(description, options) {
     this._ensureConnected();
 
     const startTime = Date.now();
@@ -1118,8 +1385,33 @@ class TestDriverSDK {
     try {
       const screenshot = await this.system.captureScreenBase64();
 
-      // Use per-command threshold if provided, otherwise fall back to global threshold
-      const threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.05;
+      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
+      let cacheKey = null;
+      let cacheThreshold = null;
+      
+      if (typeof options === 'number') {
+        // Legacy: options is just a number threshold
+        cacheThreshold = options;
+      } else if (typeof options === 'object' && options !== null) {
+        // New: options is an object with cacheKey and/or cacheThreshold
+        cacheKey = options.cacheKey || null;
+        cacheThreshold = options.cacheThreshold ?? null;
+      }
+
+      // Determine threshold: 
+      // - If cacheKey is provided, enable cache (threshold = 0.05 or custom)
+      // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
+      let threshold;
+      if (cacheKey) {
+        // cacheKey provided - enable cache with threshold
+        threshold = cacheThreshold ?? 0.05;
+      } else if (cacheThreshold !== null) {
+        // Explicit threshold provided without cacheKey
+        threshold = cacheThreshold;
+      } else {
+        // No cacheKey, no explicit threshold - use global default (which is -1 now)
+        threshold = this.cacheThresholds?.findAll ?? -1;
+      }
 
       const response = await this.apiClient.req(
         "/api/v7.0.0/testdriver-agent/testdriver-find-all",
@@ -1127,6 +1419,7 @@ class TestDriverSDK {
           element: description,
           image: screenshot,
           threshold: threshold,
+          cacheKey: cacheKey,
           os: this.os,
           resolution: this.resolution,
         },

@@ -58,6 +58,7 @@ function withTimeout(promise, timeoutMs, operationName) {
 export const pluginState = {
   testRun: null,
   testRunId: null,
+  testRunCompleted: false,
   client: null,
   startTime: null,
   testCases: new Map(),
@@ -68,6 +69,8 @@ export const pluginState = {
   gitInfo: {},
   apiKey: null,
   apiRoot: null,
+  // TestDriver options to pass to all instances
+  testDriverOptions: {},
   // Dashcam URL tracking (in-memory, no files needed!)
   dashcamUrls: new Map(), // testId -> dashcamUrl
   lastDashcamUrl: null, // Fallback for when test ID isn't available
@@ -184,6 +187,75 @@ export async function recordTestCaseDirect(token, apiRoot, testCaseData) {
 }
 
 /**
+ * Handle process termination and mark test run as cancelled
+ */
+async function handleProcessExit() {
+  if (!pluginState.testRun || !pluginState.testRunId) {
+    return;
+  }
+
+  console.log("[TestDriver Plugin] Process interrupted, marking test run as cancelled...");
+
+  try {
+    const stats = {
+      totalTests: pluginState.testCases.size,
+      passedTests: 0,
+      failedTests: 0,
+      skippedTests: 0,
+    };
+
+    const completeData = {
+      runId: pluginState.testRunId,
+      status: "cancelled",
+      totalTests: stats.totalTests,
+      passedTests: stats.passedTests,
+      failedTests: stats.failedTests,
+      skippedTests: stats.skippedTests,
+      duration: Date.now() - pluginState.startTime,
+    };
+
+    // Update platform if detected
+    const platform = getPlatform();
+    if (platform) {
+      completeData.platform = platform;
+    }
+
+    await completeTestRun(completeData);
+    console.log("[TestDriver Plugin] ✅ Test run marked as cancelled");
+  } catch (error) {
+    console.error("[TestDriver Plugin] Failed to mark test run as cancelled:", error.message);
+  }
+}
+
+// Set up process exit handlers
+let exitHandlersRegistered = false;
+
+function registerExitHandlers() {
+  if (exitHandlersRegistered) return;
+  exitHandlersRegistered = true;
+
+  // Handle Ctrl+C
+  process.on("SIGINT", async () => {
+    await handleProcessExit();
+    process.exit(130); // Standard exit code for SIGINT
+  });
+
+  // Handle kill command
+  process.on("SIGTERM", async () => {
+    await handleProcessExit();
+    process.exit(143); // Standard exit code for SIGTERM
+  });
+
+  // Handle unexpected exits
+  process.on("beforeExit", async () => {
+    // Only handle if test run is still running (hasn't been completed normally)
+    if (pluginState.testRun && !pluginState.testRunCompleted) {
+      await handleProcessExit();
+    }
+  });
+}
+
+/**
  * Create the TestDriver Vitest plugin
  * This sets up global state and provides the registration API
  */
@@ -194,12 +266,25 @@ export default function testDriverPlugin(options = {}) {
     options.apiRoot || process.env.TD_API_ROOT || "http://localhost:1337";
   pluginState.ciProvider = detectCI();
   pluginState.gitInfo = getGitInfo();
+  
+  // Store TestDriver-specific options (excluding plugin-specific ones)
+  const { apiKey, apiRoot, ...testDriverOptions } = options;
+  pluginState.testDriverOptions = testDriverOptions;
+
+  // Register process exit handlers to handle cancellation
+  registerExitHandlers();
 
   // Note: globalThis setup happens in vitestSetup.mjs for worker processes
   console.log(
     "[TestDriver Plugin] Initialized with API root:",
     pluginState.apiRoot,
   );
+  if (Object.keys(testDriverOptions).length > 0) {
+    console.log(
+      "[TestDriver Plugin] Global TestDriver options:",
+      testDriverOptions,
+    );
+  }
 
   return new TestDriverReporter(options);
 }
@@ -240,6 +325,7 @@ class TestDriverReporter {
       // Generate unique run ID
       pluginState.testRunId = generateRunId();
       pluginState.startTime = Date.now();
+      pluginState.testRunCompleted = false; // Reset completion flag
 
       // Create test run via direct API call
       const testRunData = {
@@ -361,6 +447,9 @@ class TestDriverReporter {
         completeResponse,
       );
 
+      // Mark test run as completed to prevent duplicate completion
+      pluginState.testRunCompleted = true;
+
       console.log(
         `[TestDriver Reporter] Test run completed: ${stats.passedTests}/${stats.totalTests} passed`,
       );
@@ -464,17 +553,19 @@ class TestDriverReporter {
           `[TestDriver Reporter] ⚠️  No result file found for test: ${test.id}`,
         );
         // Fallback to test object properties - try multiple sources
-        // In Vitest, the file path is typically on the module, not the test itself
-        const module = test.module || test.suite;
+        // In Vitest, the file path is on test.module.task.filepath
         testFile =
+          test.module?.task?.filepath ||
+          test.module?.file?.filepath ||
+          test.module?.file?.name ||
           test.file?.filepath ||
           test.file?.name ||
-          module?.file?.filepath ||
-          module?.file?.name ||
+          test.suite?.file?.filepath ||
+          test.suite?.file?.name ||
           test.location?.file ||
           "unknown";
         console.log(
-          `[TestDriver Reporter] 📂 Resolved testFile for skipped test: ${testFile}`,
+          `[TestDriver Reporter] 📂 Resolved testFile: ${testFile}`,
         );
       }
     } catch (error) {
@@ -483,14 +574,20 @@ class TestDriverReporter {
         error.message,
       );
       // Fallback to test object properties - try multiple sources
-      const module = test.module || test.suite;
+      // In Vitest, the file path is on test.module.task.filepath
       testFile =
+        test.module?.task?.filepath ||
+        test.module?.file?.filepath ||
+        test.module?.file?.name ||
         test.file?.filepath ||
         test.file?.name ||
-        module?.file?.filepath ||
-        module?.file?.name ||
+        test.suite?.file?.filepath ||
+        test.suite?.file?.name ||
         test.location?.file ||
         "unknown";
+      console.log(
+        `[TestDriver Reporter] 📂 Resolved testFile from fallback: ${testFile}`,
+      );
     }
 
     // Get test run info from environment variables

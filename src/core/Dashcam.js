@@ -24,7 +24,8 @@ class Dashcam {
     }
     
     this.client = client;
-    this.apiKey = options.apiKey || '4e93d8bf-3886-4d26-a144-116c4063522d';
+    // Use provided apiKey, or client's apiKey, or fallback to a default
+    this.apiKey = options.apiKey || client.apiKey || client.config?.TD_API_KEY || '4e93d8bf-3886-4d26-a144-116c4063522d';
     this.autoStart = options.autoStart ?? false;
     this.logs = options.logs || [];
     this.recording = false;
@@ -37,6 +38,14 @@ class Dashcam {
    */
   _getShell() {
     return this.client.os === 'windows' ? 'pwsh' : 'sh';
+  }
+
+  /**
+   * Get TD_API_ROOT from client config
+   * @private
+   */
+  _getApiRoot() {
+    return this.client.config?.TD_API_ROOT || 'http://localhost:1337';
   }
 
   /**
@@ -61,6 +70,7 @@ class Dashcam {
   async auth(apiKey) {
     const key = apiKey || this.apiKey;
     const shell = this._getShell();
+    const apiRoot = this._getApiRoot();
 
     if (this.client.os === 'windows') {
       // Debug session info
@@ -71,10 +81,10 @@ class Dashcam {
       await this.client.exec(shell, 'npm uninstall dashcam -g', 40000, true);
       await this.client.exec(shell, 'npm cache clean --force', 40000, true);
       
-      // Install dashcam
+      // Install dashcam with TD_API_ROOT environment variable
       const installOutput = await this.client.exec(
         shell,
-        'npm install dashcam@beta -g',
+        `$env:TD_API_ROOT="${apiRoot}"; npm install dashcam@beta -g`,
         120000,
         true
       );
@@ -119,19 +129,19 @@ class Dashcam {
         console.log('✅ Dashcam version verified:', installedVersion);
       }
 
-      // Authenticate
+      // Authenticate with TD_API_ROOT
       const authOutput = await this.client.exec(
         shell,
-        `& "${dashcamPath}" auth ${key}`,
+        `$env:TD_API_ROOT="${apiRoot}"; & "${dashcamPath}" auth ${key}`,
         120000,
         true
       );
       console.log('Auth output:', authOutput);
     } else {
-      // Linux/Mac authentication
+      // Linux/Mac authentication with TD_API_ROOT
       const authOutput = await this.client.exec(
         shell,
-        `dashcam auth ${key}`,
+        `TD_API_ROOT="${apiRoot}" dashcam auth ${key}`,
         120000,
         true
       );
@@ -142,39 +152,6 @@ class Dashcam {
   }
 
   /**
-   * Add a log file or application to dashcam tracking
-   * @param {Object} config - Log configuration
-   * @param {string} config.name - Display name for the log
-   * @param {string} config.type - Log type: 'file', 'stdout', 'application'
-   * @param {string} [config.path] - File path (for type='file')
-   * @param {string} [config.application] - Application name (for type='application')
-   * @returns {Promise<void>}
-   */
-  async addLog(config) {
-    if (!config.name) {
-      throw new Error('Log config must have a name');
-    }
-
-    const { name, type = 'file', path, application } = config;
-
-    if (type === 'file' && !path) {
-      throw new Error('File log config must have a path');
-    }
-
-    if (type === 'application' && !application) {
-      throw new Error('Application log config must have an application name');
-    }
-
-    if (type === 'file') {
-      await this.addFileLog(path, name);
-    } else if (type === 'application') {
-      await this.addApplicationLog(application, name);
-    } else {
-      throw new Error(`Unsupported log type: ${type}`);
-    }
-  }
-
-  /**
    * Add file log tracking
    * @param {string} path - Path to log file
    * @param {string} name - Display name
@@ -182,6 +159,7 @@ class Dashcam {
    */
   async addFileLog(path, name) {
     const shell = this._getShell();
+    const apiRoot = this._getApiRoot();
 
     if (this.client.os === 'windows') {
       // Create log file if it doesn't exist
@@ -196,7 +174,7 @@ class Dashcam {
       const dashcamPath = await this._getDashcamPath();
       const addLogOutput = await this.client.exec(
         shell,
-        `& "${dashcamPath}" logs --add --type=file --file="${path}" --name="${name}"`,
+        `$env:TD_API_ROOT="${apiRoot}"; & "${dashcamPath}" logs --add --type=file --file="${path}" --name="${name}"`,
         120000,
         true
       );
@@ -205,10 +183,10 @@ class Dashcam {
       // Create log file
       await this.client.exec(shell, `touch ${path}`, 10000, true);
 
-      // Add log tracking
+      // Add log tracking with TD_API_ROOT
       const addLogOutput = await this.client.exec(
         shell,
-        `dashcam logs --add --type=file --file="${path}" --name="${name}"`,
+        `TD_API_ROOT="${apiRoot}" dashcam logs --add --type=file --file="${path}" --name="${name}"`,
         10000,
         true
       );
@@ -225,11 +203,12 @@ class Dashcam {
   async addApplicationLog(application, name) {
     const shell = this._getShell();
     const dashcamPath = await this._getDashcamPath();
+    const apiRoot = this._getApiRoot();
 
     if (this.client.os === 'windows') {
       const addLogOutput = await this.client.exec(
         shell,
-        `& "${dashcamPath}" logs --add --type=application --application="${application}" --name="${name}"`,
+        `$env:TD_API_ROOT="${apiRoot}"; & "${dashcamPath}" logs --add --type=application --application="${application}" --name="${name}"`,
         120000,
         true
       );
@@ -237,11 +216,41 @@ class Dashcam {
     } else {
       const addLogOutput = await this.client.exec(
         shell,
-        `dashcam logs --add --type=application --application="${application}" --name="${name}"`,
+        `TD_API_ROOT="${apiRoot}" dashcam logs --add --type=application --application="${application}" --name="${name}"`,
         10000,
         true
       );
       console.log('Add application log tracking output:', addLogOutput);
+    }
+  }
+
+  /**
+   * Add web log tracking
+   * @param {string} pattern - URL pattern to match (e.g., "*example.com*")
+   * @param {string} name - Display name
+   * @returns {Promise<void>}
+   */
+  async addWebLog(pattern, name) {
+    const shell = this._getShell();
+    const dashcamPath = await this._getDashcamPath();
+    const apiRoot = this._getApiRoot();
+
+    if (this.client.os === 'windows') {
+      const addLogOutput = await this.client.exec(
+        shell,
+        `$env:TD_API_ROOT="${apiRoot}"; & "${dashcamPath}" logs --add --type=web --pattern="${pattern}" --name="${name}"`,
+        120000,
+        true
+      );
+      console.log('Add web log tracking output:', addLogOutput);
+    } else {
+      const addLogOutput = await this.client.exec(
+        shell,
+        `TD_API_ROOT="${apiRoot}" dashcam logs --add --type=web --pattern="${pattern}" --name="${name}"`,
+        10000,
+        true
+      );
+      console.log('Add web log tracking output:', addLogOutput);
     }
   }
 
@@ -255,7 +264,14 @@ class Dashcam {
       return;
     }
 
+    // Auto-authenticate if not already done
+    if (!this._authenticated) {
+      console.log('🔐 Auto-authenticating dashcam...');
+      await this.auth();
+    }
+
     const shell = this._getShell();
+    const apiRoot = this._getApiRoot();
 
     if (this.client.os === 'windows') {
       console.log('Starting dashcam recording on Windows...');
@@ -272,10 +288,11 @@ class Dashcam {
       );
       console.log('✓ Dashcam.cmd exists:', dashcamExists);
       
-      // Start dashcam record and redirect output
+      // Start dashcam record and redirect output with TD_API_ROOT
       const outputFile = 'C:\\Users\\testdriver\\.dashcam-cli\\dashcam-start.log';
       const startScript = `
         try {
+          $env:TD_API_ROOT="${apiRoot}"
           $process = Start-Process "cmd.exe" -ArgumentList "/c", "${dashcamPath} record > ${outputFile} 2>&1" -PassThru
           Write-Output "Process started with PID: $($process.Id)"
           Start-Sleep -Seconds 2
@@ -307,8 +324,8 @@ class Dashcam {
       
       console.log('✅ Dashcam recording started');
     } else {
-      // Linux/Mac
-      await this.client.exec(shell, 'dashcam record >/dev/null 2>&1 &');
+      // Linux/Mac with TD_API_ROOT
+      await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" dashcam record >/dev/null 2>&1 &`);
     }
 
     this.recording = true;
@@ -326,6 +343,7 @@ class Dashcam {
 
     console.log('🎬 Stopping dashcam and retrieving URL...');
     const shell = this._getShell();
+    const apiRoot = this._getApiRoot();
     let output;
 
     if (this.client.os === 'windows') {
@@ -333,13 +351,13 @@ class Dashcam {
       
       const dashcamPath = await this._getDashcamPath();
       
-      // Stop and get output
-      output = await this.client.exec(shell, `& "${dashcamPath}" stop`, 120000);
+      // Stop and get output with TD_API_ROOT
+      output = await this.client.exec(shell, `$env:TD_API_ROOT="${apiRoot}"; & "${dashcamPath}" stop`, 120000);
       console.log('📤 Dashcam stop command output:', output);
     } else {
-      // Linux/Mac
+      // Linux/Mac with TD_API_ROOT
       const dashcamPath = await this._getDashcamPath();
-      output = await this.client.exec(shell, `"${dashcamPath}" stop`, 60000, false);
+      output = await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" "${dashcamPath}" stop`, 60000, false);
       console.log('📤 Dashcam command output:', output);
     }
 

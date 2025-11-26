@@ -6,7 +6,7 @@
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
-import { chrome } from "../../src/presets/index.mjs";
+import { TestDriver } from "../../src/vitest/hooks.mjs";
 import { performLogin } from "./setup/testHelpers.mjs";
 
 // Get the directory of the current module
@@ -15,9 +15,8 @@ const __dirname = dirname(__filename);
 
 describe("Match Image Test", () => {
   it("should match shopping cart image and verify empty cart", async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'http://testdriver-sandbox.vercel.app/login',
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
     // Perform login first
