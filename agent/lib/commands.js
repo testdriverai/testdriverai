@@ -45,6 +45,7 @@ const createCommands = (
   sessionInstance,
   getCurrentFilePath,
   redrawThreshold = 0.1,
+  getDashcamElapsedTime = null,
 ) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
@@ -291,6 +292,14 @@ const createCommands = (
     x = parseInt(x);
     y = parseInt(y);
 
+    // Add dashcam timestamp if available
+    if (getDashcamElapsedTime) {
+      const elapsed = getDashcamElapsedTime();
+      if (elapsed !== null) {
+        elementData.timestamp = elapsed;
+      }
+    }
+
     await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
     emitter.emit(events.mouseMove, { x, y });
@@ -298,6 +307,14 @@ const createCommands = (
     await delay(2500); // wait for the mouse to move
 
     if (action !== "hover") {
+      // Update timestamp for the actual click action
+      if (getDashcamElapsedTime) {
+        const elapsed = getDashcamElapsedTime();
+        if (elapsed !== null) {
+          elementData.timestamp = elapsed;
+        }
+      }
+
       if (action === "click" || action === "left-click") {
         await sandbox.send({ type: "leftClick", x, y, ...elementData });
       } else if (action === "right-click") {
@@ -333,6 +350,14 @@ const createCommands = (
 
     x = parseInt(x);
     y = parseInt(y);
+
+    // Add dashcam timestamp if available
+    if (getDashcamElapsedTime) {
+      const elapsed = getDashcamElapsedTime();
+      if (elapsed !== null) {
+        elementData.timestamp = elapsed;
+      }
+    }
 
     await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
@@ -451,14 +476,22 @@ const createCommands = (
     },
     // type a string
 
-    type: async (string, delay = 250) => {
+    type: async (string, delay = 250, elementData = {}) => {
       emitter.emit(events.log.narration, theme.dim(`typing "${string}"...`));
 
       await redraw.start();
 
       string = string.toString();
 
-      await sandbox.send({ type: "write", text: string, delay });
+      // Add dashcam timestamp if available
+      if (getDashcamElapsedTime) {
+        const elapsed = getDashcamElapsedTime();
+        if (elapsed !== null) {
+          elementData.timestamp = elapsed;
+        }
+      }
+
+      await sandbox.send({ type: "write", text: string, delay, ...elementData });
       await redraw.wait(5000);
       return;
     },

@@ -127,6 +127,7 @@ class TestDriverAgent extends EventEmitter2 {
       this.session,
       () => this.sourceMapper.currentFilePath || this.thisFile,
       this.cliArgs.options.redrawThreshold,
+      null, // getDashcamElapsedTime - will be set by SDK when dashcam is available
     );
     this.commands = commandsResult.commands;
     this.redraw = commandsResult.redraw;

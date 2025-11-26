@@ -30,6 +30,7 @@ class Dashcam {
     this.logs = options.logs || [];
     this.recording = false;
     this._authenticated = false;
+    this.startTime = null; // Track when dashcam recording started
   }
 
   /**
@@ -331,6 +332,30 @@ class Dashcam {
     }
 
     this.recording = true;
+    this.startTime = Date.now(); // Record the timestamp when dashcam started
+
+    // Update the session with dashcam start time for interaction timestamp synchronization
+    if (this.client && this.client.agent && this.client.agent.session) {
+      try {
+        const apiRoot = this.apiRoot || process.env.TD_API_ROOT || 'https://app.testdriver.ai';
+        const response = await fetch(`${apiRoot}/api/v7.0.0/testdriver/session/${this.client.agent.session}/update-dashcam-time`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          body: JSON.stringify({ dashcamStartTime: this.startTime })
+        });
+
+        if (response.ok) {
+          console.log(`✅ Updated session ${this.client.agent.session} with dashcam start time: ${this.startTime}`);
+        } else {
+          console.warn('⚠️  Failed to update session with dashcam start time:', response.statusText);
+        }
+      } catch (err) {
+        console.warn('⚠️  Error updating session with dashcam start time:', err.message);
+      }
+    }
   }
 
   /**
@@ -403,6 +428,17 @@ class Dashcam {
    */
   async isRecording() {
     return this.recording;
+  }
+
+  /**
+   * Get milliseconds elapsed since dashcam started recording
+   * @returns {number|null} Milliseconds since start, or null if not recording
+   */
+  getElapsedTime() {
+    if (!this.recording || !this.startTime) {
+      return null;
+    }
+    return Date.now() - this.startTime;
   }
 }
 

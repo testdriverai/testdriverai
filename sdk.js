@@ -1088,6 +1088,17 @@ class TestDriverSDK {
   }
 
   /**
+   * Get milliseconds elapsed since dashcam started recording
+   * @returns {number|null} Milliseconds since dashcam start, or null if not recording
+   */
+  getDashcamElapsedTime() {
+    if (this._dashcam) {
+      return this._dashcam.getElapsedTime();
+    }
+    return null;
+  }
+
+  /**
    * Create the provision API with methods for launching applications
    * @private
    */
@@ -1376,6 +1387,22 @@ class TestDriverSDK {
 
     // Expose the agent's commands, parser, and commander
     this.commands = this.agent.commands;
+
+    // Recreate commands with dashcam elapsed time support
+    const { createCommands } = require("./agent/lib/commands.js");
+    const commandsResult = createCommands(
+      this.agent.emitter,
+      this.agent.system,
+      this.agent.sandbox,
+      this.agent.config,
+      this.agent.session,
+      () => this.agent.sourceMapper?.currentFilePath || this.agent.thisFile,
+      this.agent.cliArgs.options.redrawThreshold,
+      () => this.getDashcamElapsedTime(), // Pass dashcam elapsed time function
+    );
+    this.commands = commandsResult.commands;
+    this.agent.commands = commandsResult.commands;
+    this.agent.redraw = commandsResult.redraw;
 
     // Dynamically create command methods based on available commands
     this._setupCommandMethods();
