@@ -205,12 +205,13 @@ const createCommands = (
     });
     
     // Track interaction
-    if (sessionInstance?.sessionId) {
+    const sessionId = sessionInstance?.get();
+    if (sessionId) {
       try {
         await sandbox.send({
           type: "trackInteraction",
           interactionType: "assert",
-          session: sessionInstance.sessionId,
+          session: sessionId,
           prompt: assertion,
           timestamp: Date.now(),
         });
@@ -520,12 +521,13 @@ const createCommands = (
       const result = await delay(timeout);
       
       // Track interaction
-      if (sessionInstance?.sessionId) {
+      const sessionId = sessionInstance?.get();
+      if (sessionId) {
         try {
           await sandbox.send({
             type: "trackInteraction",
             interactionType: "wait",
-            session: sessionInstance.sessionId,
+            session: sessionId,
             input: { timeout },
             timestamp: Date.now(),
           });
@@ -578,12 +580,13 @@ const createCommands = (
         );
         
         // Track interaction
-        if (sessionInstance?.sessionId) {
+        const sessionId = sessionInstance?.get();
+        if (sessionId) {
           try {
             await sandbox.send({
               type: "trackInteraction",
               interactionType: "waitForImage",
-              session: sessionInstance.sessionId,
+              session: sessionId,
               prompt: description,
               input: { timeout },
               timestamp: Date.now(),
@@ -640,12 +643,13 @@ const createCommands = (
         emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
         
         // Track interaction
-        if (sessionInstance?.sessionId) {
+        const sessionId = sessionInstance?.get();
+        if (sessionId) {
           try {
             await sandbox.send({
               type: "trackInteraction",
               interactionType: "waitForText",
-              session: sessionInstance.sessionId,
+              session: sessionId,
               prompt: text,
               input: { timeout },
               timestamp: Date.now(),
@@ -803,12 +807,13 @@ const createCommands = (
       });
       
       // Track interaction
-      if (sessionInstance?.sessionId) {
+      const sessionId = sessionInstance?.get();
+      if (sessionId) {
         try {
           await sandbox.send({
             type: "trackInteraction",
             interactionType: "remember",
-            session: sessionInstance.sessionId,
+            session: sessionId,
             prompt: description,
             timestamp: Date.now(),
           });
