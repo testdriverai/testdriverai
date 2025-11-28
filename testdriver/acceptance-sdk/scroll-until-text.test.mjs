@@ -18,13 +18,11 @@ describe("Scroll Until Text Test", () => {
 
     // Scroll until text appears
     await testdriver.focusApplication("Google Chrome");
-    await testdriver.scrollUntilText("testdriver socks", "down");
+    await testdriver.scrollUntilText({ text: "testdriver socks", direction: "down" });
 
     // Assert testdriver socks appears on screen
     await testdriver.focusApplication("Google Chrome");
-    const result = await testdriver.assert(
-      "TestDriver Socks appears on screen",
-    );
+    const result = await testdriver.assert("TestDriver Socks appears on screen");
     expect(result).toBeTruthy();
   });
 });

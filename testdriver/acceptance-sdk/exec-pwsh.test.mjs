@@ -15,9 +15,9 @@ describe("Exec PowerShell Test", () => {
 
       //
       // Generate random email using PowerShell
-      const randomEmail = await testdriver.exec(
-        "pwsh",
-        `
+      const randomEmail = await testdriver.exec({
+        language: "pwsh",
+        code: `
 # Random email generator in PowerShell
 
 # Arrays of possible names and domains
@@ -37,8 +37,8 @@ $email = "$first.$last$number@$domain".ToLower()
 # Output
 Write-Output "$email"
     `,
-        10000,
-      );
+        timeout: 10000,
+      });
 
       // Enter the email in username field
       const usernameField = await testdriver.find(

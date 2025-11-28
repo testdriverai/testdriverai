@@ -304,6 +304,8 @@ class Element {
     }
 
     const startTime = Date.now();
+    let response = null;
+    let findError = null;
 
     const debugMode =
       process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
@@ -368,7 +370,7 @@ class Element {
         );
       }
 
-      const response = await this.sdk.apiClient.req("find", {
+      response = await this.sdk.apiClient.req("find", {
         session: this.sdk.getSessionId(),
         element: description,
         image: screenshot,
@@ -390,70 +392,38 @@ class Element {
 
         // Log debug information when element is found
         this._logFoundDebug(response, duration);
-        
-        // Track successful find interaction
-        const sessionId = this.sdk.getSessionId();
-        if (sessionId && this.sdk.sandbox?.send) {
-          try {
-            await this.sdk.sandbox.send({
-              type: "trackInteraction",
-              interactionType: "find",
-              session: sessionId,
-              prompt: description,
-              timestamp: Date.now(),
-              success: true,
-              cacheHit: response.cacheHit || response.cache_hit || response.cached || false,
-              selector: response.selector,
-              selectorUsed: !!response.selector,
-            });
-          } catch (err) {
-            console.warn("Failed to track find interaction:", err.message);
-          }
-        }
       } else {
         this._response = this._sanitizeResponse(response);
         this._found = false;
-        
-        // Track failed find interaction
-        const sessionId = this.sdk.getSessionId();
-        if (sessionId && this.sdk.sandbox?.send) {
-          try {
-            await this.sdk.sandbox.send({
-              type: "trackInteraction",
-              interactionType: "find",
-              session: sessionId,
-              prompt: description,
-              timestamp: Date.now(),
-              success: false,
-              error: "Element not found",
-            });
-          } catch (err) {
-            console.warn("Failed to track find interaction:", err.message);
-          }
-        }
+        findError = "Element not found";
       }
     } catch (error) {
       this._response = error.response
         ? this._sanitizeResponse(error.response)
         : null;
       this._found = false;
-      
-      // Track find error interaction
-      const sessionId = this.sdk.getSessionId();
-      if (sessionId && this.sdk.sandbox?.send) {
-        try {
-          await this.sdk.sandbox.send({
-            type: "trackInteraction",
-            interactionType: "find",
-            session: sessionId,
-            prompt: description,
-            timestamp: Date.now(),
-            success: false,
-            error: error.message,
-          });
-        } catch (err) {
-          console.warn("Failed to track find interaction:", err.message);
-        }
+      findError = error.message;
+      response = error.response;
+    }
+
+    // Track find interaction once at the end
+    const sessionId = this.sdk.getSessionId();
+    if (sessionId && this.sdk.sandbox?.send) {
+      try {
+        await this.sdk.sandbox.send({
+          type: "trackInteraction",
+          interactionType: "find",
+          session: sessionId,
+          prompt: description,
+          timestamp: Date.now(),
+          success: this._found,
+          error: findError,
+          cacheHit: response?.cacheHit || response?.cache_hit || response?.cached || false,
+          selector: response?.selector,
+          selectorUsed: !!response?.selector,
+        });
+      } catch (err) {
+        console.warn("Failed to track find interaction:", err.message);
       }
     }
 
@@ -1806,17 +1776,18 @@ class TestDriverSDK {
    */
   _setupCommandMethods() {
     // Mapping from command names to SDK method names with type definitions
+    // Each command supports both positional args (legacy) and object args (new)
     const commandMapping = {
       "hover-text": {
         name: "hoverText",
         /**
          * Hover over text on screen
          * @deprecated Use find() and element.click() instead
-         * @param {string} text - Text to find and hover over
-         * @param {string | null} [description] - Optional description of the element
-         * @param {ClickAction} [action='click'] - Action to perform
-         * @param {TextMatchMethod} [method='turbo'] - Text matching method
-         * @param {number} [timeout=5000] - Timeout in milliseconds
+         * @param {Object|string} options - Options object or text (legacy positional)
+         * @param {string} options.text - Text to find and hover over
+         * @param {string|null} [options.description] - Optional description of the element
+         * @param {ClickAction} [options.action='click'] - Action to perform
+         * @param {number} [options.timeout=5000] - Timeout in milliseconds
          * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
          */
         doc: "Hover over text on screen (deprecated - use find() instead)",
@@ -1826,8 +1797,9 @@ class TestDriverSDK {
         /**
          * Hover over an image on screen
          * @deprecated Use find() and element.click() instead
-         * @param {string} description - Description of the image to find
-         * @param {ClickAction} [action='click'] - Action to perform
+         * @param {Object|string} options - Options object or description (legacy positional)
+         * @param {string} options.description - Description of the image to find
+         * @param {ClickAction} [options.action='click'] - Action to perform
          * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
          */
         doc: "Hover over an image on screen (deprecated - use find() instead)",
@@ -1836,9 +1808,10 @@ class TestDriverSDK {
         name: "matchImage",
         /**
          * Match and interact with an image template
-         * @param {string} imagePath - Path to the image template
-         * @param {ClickAction} [action='click'] - Action to perform
-         * @param {boolean} [invert=false] - Invert the match
+         * @param {Object|string} options - Options object or path (legacy positional)
+         * @param {string} options.path - Path to the image template
+         * @param {ClickAction} [options.action='click'] - Action to perform
+         * @param {boolean} [options.invert=false] - Invert the match
          * @returns {Promise<boolean>}
          */
         doc: "Match and interact with an image template",
@@ -1847,17 +1820,20 @@ class TestDriverSDK {
         name: "type",
         /**
          * Type text
-         * @param {string | number} text - Text to type
-         * @param {number} [delay=250] - Delay between keystrokes in milliseconds
+         * @param {string|number} text - Text to type
+         * @param {Object} [options] - Additional options
+         * @param {number} [options.delay=250] - Delay between keystrokes in milliseconds
+         * @param {boolean} [options.secret=false] - If true, text is treated as sensitive (not logged or stored)
          * @returns {Promise<void>}
          */
-        doc: "Type text",
+        doc: "Type text (use { secret: true } for passwords)",
       },
       "press-keys": {
         name: "pressKeys",
         /**
          * Press keyboard keys
          * @param {KeyboardKey[]} keys - Array of keys to press
+         * @param {Object} [options] - Additional options (reserved for future use)
          * @returns {Promise<void>}
          */
         doc: "Press keyboard keys",
@@ -1866,9 +1842,10 @@ class TestDriverSDK {
         name: "click",
         /**
          * Click at coordinates
-         * @param {number} x - X coordinate
-         * @param {number} y - Y coordinate
-         * @param {ClickAction} [action='click'] - Type of click action
+         * @param {Object|number} options - Options object or x coordinate (legacy positional)
+         * @param {number} options.x - X coordinate
+         * @param {number} options.y - Y coordinate
+         * @param {ClickAction} [options.action='click'] - Type of click action
          * @returns {Promise<void>}
          */
         doc: "Click at coordinates",
@@ -1877,8 +1854,9 @@ class TestDriverSDK {
         name: "hover",
         /**
          * Hover at coordinates
-         * @param {number} x - X coordinate
-         * @param {number} y - Y coordinate
+         * @param {Object|number} options - Options object or x coordinate (legacy positional)
+         * @param {number} options.x - X coordinate
+         * @param {number} options.y - Y coordinate
          * @returns {Promise<void>}
          */
         doc: "Hover at coordinates",
@@ -1888,7 +1866,8 @@ class TestDriverSDK {
         /**
          * Scroll the page
          * @param {ScrollDirection} [direction='down'] - Direction to scroll
-         * @param {number} [amount=300] - Amount to scroll in pixels
+         * @param {Object} [options] - Additional options
+         * @param {number} [options.amount=300] - Amount to scroll in pixels
          * @returns {Promise<void>}
          */
         doc: "Scroll the page",
@@ -1899,6 +1878,7 @@ class TestDriverSDK {
          * Wait for specified time
          * @deprecated Consider using element polling with find() instead of arbitrary waits
          * @param {number} [timeout=3000] - Time to wait in milliseconds
+         * @param {Object} [options] - Additional options (reserved for future use)
          * @returns {Promise<void>}
          */
         doc: "Wait for specified time (deprecated - consider element polling instead)",
@@ -1908,10 +1888,9 @@ class TestDriverSDK {
         /**
          * Wait for text to appear on screen
          * @deprecated Use find() in a polling loop instead
-         * @param {string} text - Text to wait for
-         * @param {number} [timeout=5000] - Timeout in milliseconds
-         * @param {TextMatchMethod} [method='turbo'] - Text matching method
-         * @param {boolean} [invert=false] - Invert the match (wait for text to disappear)
+         * @param {Object|string} options - Options object or text (legacy positional)
+         * @param {string} options.text - Text to wait for
+         * @param {number} [options.timeout=5000] - Timeout in milliseconds
          * @returns {Promise<void>}
          */
         doc: "Wait for text to appear on screen (deprecated - use find() in a loop instead)",
@@ -1921,9 +1900,9 @@ class TestDriverSDK {
         /**
          * Wait for image to appear on screen
          * @deprecated Use find() in a polling loop instead
-         * @param {string} description - Description of the image
-         * @param {number} [timeout=10000] - Timeout in milliseconds
-         * @param {boolean} [invert=false] - Invert the match (wait for image to disappear)
+         * @param {Object|string} options - Options object or description (legacy positional)
+         * @param {string} options.description - Description of the image
+         * @param {number} [options.timeout=10000] - Timeout in milliseconds
          * @returns {Promise<void>}
          */
         doc: "Wait for image to appear on screen (deprecated - use find() in a loop instead)",
@@ -1932,12 +1911,11 @@ class TestDriverSDK {
         name: "scrollUntilText",
         /**
          * Scroll until text is found
-         * @param {string} text - Text to find
-         * @param {ScrollDirection} [direction='down'] - Scroll direction
-         * @param {number} [maxDistance=10000] - Maximum distance to scroll in pixels
-         * @param {TextMatchMethod} [textMatchMethod='turbo'] - Text matching method
-         * @param {ScrollMethod} [method='keyboard'] - Scroll method
-         * @param {boolean} [invert=false] - Invert the match
+         * @param {Object|string} options - Options object or text (legacy positional)
+         * @param {string} options.text - Text to find
+         * @param {ScrollDirection} [options.direction='down'] - Scroll direction
+         * @param {number} [options.maxDistance=10000] - Maximum distance to scroll in pixels
+         * @param {boolean} [options.invert=false] - Invert the match
          * @returns {Promise<void>}
          */
         doc: "Scroll until text is found",
@@ -1946,12 +1924,13 @@ class TestDriverSDK {
         name: "scrollUntilImage",
         /**
          * Scroll until image is found
-         * @param {string} description - Description of the image (or use path parameter)
-         * @param {ScrollDirection} [direction='down'] - Scroll direction
-         * @param {number} [maxDistance=10000] - Maximum distance to scroll in pixels
-         * @param {ScrollMethod} [method='keyboard'] - Scroll method
-         * @param {string | null} [path=null] - Path to image template
-         * @param {boolean} [invert=false] - Invert the match
+         * @param {Object|string} [options] - Options object or description (legacy positional)
+         * @param {string} [options.description] - Description of the image
+         * @param {ScrollDirection} [options.direction='down'] - Scroll direction
+         * @param {number} [options.maxDistance=10000] - Maximum distance to scroll in pixels
+         * @param {string} [options.method='mouse'] - Scroll method
+         * @param {string} [options.path] - Path to image template
+         * @param {boolean} [options.invert=false] - Invert the match
          * @returns {Promise<void>}
          */
         doc: "Scroll until image is found",
@@ -1961,6 +1940,7 @@ class TestDriverSDK {
         /**
          * Focus an application by name
          * @param {string} name - Application name
+         * @param {Object} [options] - Additional options (reserved for future use)
          * @returns {Promise<string>}
          */
         doc: "Focus an application by name",
@@ -1969,7 +1949,8 @@ class TestDriverSDK {
         name: "remember",
         /**
          * Extract and remember information from the screen using AI
-         * @param {string} description - What to remember
+         * @param {Object|string} options - Options object or description (legacy positional)
+         * @param {string} options.description - What to remember
          * @returns {Promise<string>}
          */
         doc: "Extract and remember information from the screen",
@@ -1979,6 +1960,7 @@ class TestDriverSDK {
         /**
          * Make an AI-powered assertion
          * @param {string} assertion - Assertion to check
+         * @param {Object} [options] - Additional options (reserved for future use)
          * @returns {Promise<boolean>}
          */
         doc: "Make an AI-powered assertion",
@@ -1987,10 +1969,11 @@ class TestDriverSDK {
         name: "exec",
         /**
          * Execute code in the sandbox
-         * @param {ExecLanguage} language - Language ('js' or 'pwsh')
-         * @param {string} code - Code to execute
-         * @param {number} timeout - Timeout in milliseconds
-         * @param {boolean} [silent=false] - Suppress output
+         * @param {Object|ExecLanguage} options - Options object or language (legacy positional)
+         * @param {ExecLanguage} [options.language='pwsh'] - Language ('js', 'pwsh', or 'sh')
+         * @param {string} options.code - Code to execute
+         * @param {number} [options.timeout] - Timeout in milliseconds
+         * @param {boolean} [options.silent=false] - Suppress output
          * @returns {Promise<string>}
          */
         doc: "Execute code in the sandbox",

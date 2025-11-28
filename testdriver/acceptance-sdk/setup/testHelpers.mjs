@@ -11,26 +11,26 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";
 import {
-  addDashcamLog,
-  authDashcam,
-  launchChrome,
-  runPostrun,
-  runPrerun,
-  startDashcam,
-  stopDashcam,
-  waitForPage,
+    addDashcamLog,
+    authDashcam,
+    launchChrome,
+    runPostrun,
+    runPrerun,
+    startDashcam,
+    stopDashcam,
+    waitForPage,
 } from "./lifecycleHelpers.mjs";
 
 // Re-export lifecycle helpers for backward compatibility
 export {
-  addDashcamLog,
-  authDashcam,
-  launchChrome,
-  runPostrun,
-  runPrerun,
-  startDashcam,
-  stopDashcam,
-  waitForPage
+    addDashcamLog,
+    authDashcam,
+    launchChrome,
+    runPostrun,
+    runPrerun,
+    startDashcam,
+    stopDashcam,
+    waitForPage
 };
 
 // Get the directory of the current module
@@ -619,9 +619,9 @@ export async function performLogin(
   await usernameField.click();
   await client.type(username);
 
-  // Enter password
+  // Enter password (marked as secret so it's not logged or stored)
   await client.pressKeys(["tab"]);
-  await client.type(password);
+  await client.type(password, { secret: true });
 
   // Submit form
   await client.pressKeys(["tab"]);

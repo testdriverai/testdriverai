@@ -5,6 +5,38 @@ import path from "path";
 import { setTestRunInfo } from "./shared-test-state.mjs";
 
 /**
+ * Simple logger for the vitest plugin
+ * Supports log levels: debug, info, warn, error
+ * Control via TD_LOG_LEVEL environment variable (default: "info")
+ * Set TD_LOG_LEVEL=debug for verbose output
+ */
+const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
+const currentLogLevel = LOG_LEVELS[process.env.TD_LOG_LEVEL?.toLowerCase()] ?? LOG_LEVELS.info;
+
+const logger = {
+  debug: (...args) => {
+    if (currentLogLevel <= LOG_LEVELS.debug) {
+      console.log("[TestDriver]", ...args);
+    }
+  },
+  info: (...args) => {
+    if (currentLogLevel <= LOG_LEVELS.info) {
+      console.log("[TestDriver]", ...args);
+    }
+  },
+  warn: (...args) => {
+    if (currentLogLevel <= LOG_LEVELS.warn) {
+      console.warn("[TestDriver]", ...args);
+    }
+  },
+  error: (...args) => {
+    if (currentLogLevel <= LOG_LEVELS.error) {
+      console.error("[TestDriver]", ...args);
+    }
+  },
+};
+
+/**
  * Timeout wrapper for promises
  * @param {Promise} promise - Promise to wrap
  * @param {number} timeoutMs - Timeout in milliseconds
@@ -80,7 +112,7 @@ export const pluginState = {
 
 // Export functions that can be used by the reporter or tests
 export function registerDashcamUrl(testId, url, platform) {
-  console.log(`[Plugin] Registering dashcam URL for test ${testId}:`, url);
+  logger.debug(`Registering dashcam URL for test ${testId}:`, url);
   pluginState.dashcamUrls.set(testId, { url, platform });
   pluginState.lastDashcamUrl = url;
 }
@@ -99,7 +131,7 @@ export function getSuiteTestRun(suiteId) {
 }
 
 export function setSuiteTestRun(suiteId, runData) {
-  console.log(`[Plugin] Setting test run for suite ${suiteId}:`, runData);
+  logger.debug(`Setting test run for suite ${suiteId}:`, runData);
   pluginState.suiteTestRuns.set(suiteId, runData);
 }
 
@@ -194,7 +226,7 @@ async function handleProcessExit() {
     return;
   }
 
-  console.log("[TestDriver Plugin] Process interrupted, marking test run as cancelled...");
+  logger.info("Process interrupted, marking test run as cancelled...");
 
   try {
     const stats = {
@@ -221,9 +253,9 @@ async function handleProcessExit() {
     }
 
     await completeTestRun(completeData);
-    console.log("[TestDriver Plugin] ✅ Test run marked as cancelled");
+    logger.info("✅ Test run marked as cancelled");
   } catch (error) {
-    console.error("[TestDriver Plugin] Failed to mark test run as cancelled:", error.message);
+    logger.error("Failed to mark test run as cancelled:", error.message);
   }
 }
 
@@ -275,15 +307,9 @@ export default function testDriverPlugin(options = {}) {
   registerExitHandlers();
 
   // Note: globalThis setup happens in vitestSetup.mjs for worker processes
-  console.log(
-    "[TestDriver Plugin] Initialized with API root:",
-    pluginState.apiRoot,
-  );
+  logger.debug("Initialized with API root:", pluginState.apiRoot);
   if (Object.keys(testDriverOptions).length > 0) {
-    console.log(
-      "[TestDriver Plugin] Global TestDriver options:",
-      testDriverOptions,
-    );
+    logger.debug("Global TestDriver options:", testDriverOptions);
   }
 
   return new TestDriverReporter(options);
@@ -296,25 +322,23 @@ export default function testDriverPlugin(options = {}) {
 class TestDriverReporter {
   constructor(options = {}) {
     this.options = options;
-    console.log("[TestDriver Reporter] Created");
+    logger.debug("Reporter created");
   }
 
   async onInit(ctx) {
     this.ctx = ctx;
-    console.log("[TestDriver Reporter] onInit called");
+    logger.debug("onInit called");
 
     // Initialize test run
     await this.initializeTestRun();
   }
 
   async initializeTestRun() {
-    console.log("[TestDriver Reporter] Initializing test run...");
+    logger.debug("Initializing test run...");
 
     // Check if we should enable the reporter
     if (!pluginState.apiKey) {
-      console.log(
-        "[TestDriver Reporter] No API key provided, skipping test recording",
-      );
+      logger.debug("No API key provided, skipping test recording");
       return;
     }
 
@@ -362,31 +386,24 @@ class TestDriverReporter {
         startTime: pluginState.startTime,
       });
 
-      console.log(
-        `[TestDriver Reporter] Test run created: ${pluginState.testRunId}`,
-      );
+      logger.info(`Test run created: ${pluginState.testRunId}`);
     } catch (error) {
-      console.error(
-        "[TestDriver Reporter] Failed to initialize:",
-        error.message,
-      );
+      logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;
       pluginState.token = null;
     }
   }
 
   async onTestRunEnd(testModules, unhandledErrors, reason) {
-    console.log("[TestDriver Reporter] Test run ending with reason:", reason);
+    logger.debug("Test run ending with reason:", reason);
 
     if (!pluginState.apiKey) {
-      console.log("[TestDriver Reporter] Skipping completion - no API key");
+      logger.debug("Skipping completion - no API key");
       return;
     }
 
     if (!pluginState.testRun) {
-      console.log(
-        "[TestDriver Reporter] Skipping completion - no test run created",
-      );
+      logger.debug("Skipping completion - no test run created");
       return;
     }
 
@@ -394,7 +411,7 @@ class TestDriverReporter {
       // Calculate statistics from testModules
       const stats = calculateStatsFromModules(testModules);
 
-      console.log(`[TestDriver Reporter] Stats:`, stats);
+      logger.debug("Stats:", stats);
 
       // Determine overall status based on reason and stats
       let status = "passed";
@@ -407,9 +424,7 @@ class TestDriverReporter {
       }
 
       // Complete test run via API
-      console.log(
-        `[TestDriver Reporter] Completing test run ${pluginState.testRunId} with status: ${status}`,
-      );
+      logger.debug(`Completing test run ${pluginState.testRunId} with status: ${status}`);
 
       const completeData = {
         runId: pluginState.testRunId,
@@ -425,42 +440,28 @@ class TestDriverReporter {
       const platform = getPlatform();
       if (platform) {
         completeData.platform = platform;
-        console.log(
-          `[TestDriver Reporter] Updating test run with platform: ${platform}`,
-        );
+        logger.debug(`Updating test run with platform: ${platform}`);
       }
 
       // Wait for any pending operations (shouldn't be any, but just in case)
       if (pluginState.pendingTestCaseRecords.size > 0) {
-        console.log(
-          `[TestDriver Reporter] Waiting for ${pluginState.pendingTestCaseRecords.size} pending operations...`,
-        );
+        logger.debug(`Waiting for ${pluginState.pendingTestCaseRecords.size} pending operations...`);
         await Promise.all(Array.from(pluginState.pendingTestCaseRecords));
       }
 
       // Test cases are reported directly from teardownTest
-      console.log(
-        `[TestDriver Reporter] All test cases reported from teardown`,
-      );
+      logger.debug("All test cases reported from teardown");
 
       const completeResponse = await completeTestRun(completeData);
-      console.log(
-        `[TestDriver Reporter] ✅ Test run completion API response:`,
-        completeResponse,
-      );
+      logger.debug("Test run completion API response:", completeResponse);
 
       // Mark test run as completed to prevent duplicate completion
       pluginState.testRunCompleted = true;
 
-      console.log(
-        `[TestDriver Reporter] Test run completed: ${stats.passedTests}/${stats.totalTests} passed`,
-      );
+      logger.info(`✅ Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
     } catch (error) {
-      console.error(
-        "[TestDriver Reporter] Failed to complete test run:",
-        error.message,
-      );
-      console.error("[TestDriver Reporter] Error stack:", error.stack);
+      logger.error("Failed to complete test run:", error.message);
+      logger.debug("Error stack:", error.stack);
     }
   }
 
@@ -487,17 +488,13 @@ class TestDriverReporter {
           ? "skipped"
           : "failed";
 
-    console.log(
-      `[TestDriver Reporter] Test case completed: ${test.name} (${status})`,
-    );
+    logger.info(`Test case completed: ${test.name} (${status})`);
 
     // Calculate duration from tracked start time
     const testCase = pluginState.testCases.get(test.id);
     const duration = testCase ? Date.now() - testCase.startTime : 0;
     
-    console.log(
-      `[TestDriver Reporter] 🐛 DEBUG - Calculated duration: ${duration}ms (startTime: ${testCase?.startTime}, now: ${Date.now()})`,
-    );
+    logger.debug(`Calculated duration: ${duration}ms (startTime: ${testCase?.startTime}, now: ${Date.now()})`);
 
     // Read test metadata from file (cross-process communication)
     let dashcamUrl = null;
@@ -511,12 +508,8 @@ class TestDriverReporter {
       `${test.id}.json`,
     );
 
-    console.log(
-      `[TestDriver Reporter] 🐛 DEBUG - Looking for test result file with test.id: ${test.id}`,
-    );
-    console.log(
-      `[TestDriver Reporter] 🐛 DEBUG - Test result file path: ${testResultFile}`,
-    );
+    logger.debug(`Looking for test result file with test.id: ${test.id}`);
+    logger.debug(`Test result file path: ${testResultFile}`);
 
     try {
       if (fs.existsSync(testResultFile)) {
@@ -534,16 +527,12 @@ class TestDriverReporter {
         // Don't override duration from file - use Vitest's result.duration
         // duration is already set above from result.duration
 
-        console.log(
-          `[TestDriver Reporter] ✅ Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms (from Vitest)`,
-        );
+        logger.debug(`Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`);
 
         // Update test run platform from first test that reports it
         if (platform && !pluginState.detectedPlatform) {
           pluginState.detectedPlatform = platform;
-          console.log(
-            `[TestDriver Reporter] 🖥️  Detected platform from test: ${platform}`,
-          );
+          logger.debug(`Detected platform from test: ${platform}`);
         }
 
         // Clean up the file after reading
@@ -553,9 +542,7 @@ class TestDriverReporter {
           // Ignore cleanup errors
         }
       } else {
-        console.log(
-          `[TestDriver Reporter] ⚠️  No result file found for test: ${test.id}`,
-        );
+        logger.debug(`No result file found for test: ${test.id}`);
         // Fallback to test object properties - try multiple sources
         // In Vitest, the file path is on test.module.task.filepath
         testFile =
@@ -568,15 +555,10 @@ class TestDriverReporter {
           test.suite?.file?.name ||
           test.location?.file ||
           "unknown";
-        console.log(
-          `[TestDriver Reporter] 📂 Resolved testFile: ${testFile}`,
-        );
+        logger.debug(`Resolved testFile: ${testFile}`);
       }
     } catch (error) {
-      console.error(
-        `[TestDriver Reporter] ❌ Failed to read test result file:`,
-        error.message,
-      );
+      logger.error("Failed to read test result file:", error.message);
       // Fallback to test object properties - try multiple sources
       // In Vitest, the file path is on test.module.task.filepath
       testFile =
@@ -589,9 +571,7 @@ class TestDriverReporter {
         test.suite?.file?.name ||
         test.location?.file ||
         "unknown";
-      console.log(
-        `[TestDriver Reporter] 📂 Resolved testFile from fallback: ${testFile}`,
-      );
+      logger.debug(`Resolved testFile from fallback: ${testFile}`);
     }
 
     // Get test run info from environment variables
@@ -599,9 +579,7 @@ class TestDriverReporter {
     const token = process.env.TD_TEST_RUN_TOKEN;
 
     if (!testRunId || !token) {
-      console.warn(
-        `[TestDriver Reporter] ⚠️  Test run not initialized, skipping test case recording for: ${test.name}`,
-      );
+      logger.warn(`Test run not initialized, skipping test case recording for: ${test.name}`);
       return;
     }
 
@@ -649,9 +627,7 @@ class TestDriverReporter {
       if (errorMessage) testCaseData.errorMessage = errorMessage;
       if (errorStack) testCaseData.errorStack = errorStack;
 
-      console.log(
-        `[TestDriver Reporter] Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`,
-      );
+      logger.debug(`Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`);
 
       const testCaseResponse = await recordTestCaseDirect(
         token,
@@ -662,17 +638,10 @@ class TestDriverReporter {
       const testCaseDbId = testCaseResponse.data?.id;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
-      console.log(
-        `[TestDriver Reporter] ✅ Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`,
-      );
-      console.log(
-        `[TestDriver Reporter] 🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`,
-      );
+      logger.debug(`Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`);
+      logger.info(`🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`);
     } catch (error) {
-      console.error(
-        `[TestDriver Reporter] ❌ Failed to report test case:`,
-        error.message,
-      );
+      logger.error("Failed to report test case:", error.message);
     }
   }
 }
@@ -692,13 +661,11 @@ function getSuiteName() {
 function getPlatform() {
   // First try to get platform from SDK client detected during test execution
   if (pluginState.detectedPlatform) {
-    console.log(
-      `[TestDriver Plugin] Using platform from SDK client: ${pluginState.detectedPlatform}`,
-    );
+    logger.debug(`Using platform from SDK client: ${pluginState.detectedPlatform}`);
     return pluginState.detectedPlatform;
   }
 
-  console.log(`[TestDriver Plugin] Platform not yet detected from client`);
+  logger.debug("Platform not yet detected from client");
   return null;
 }
 
@@ -715,9 +682,7 @@ function detectPlatformFromTest(test) {
     else if (platform === "linux") platform = "linux";
 
     pluginState.detectedPlatform = platform;
-    console.log(
-      `[TestDriver Plugin] Detected platform from test context: ${platform}`,
-    );
+    logger.debug(`Detected platform from test context: ${platform}`);
   }
 }
 

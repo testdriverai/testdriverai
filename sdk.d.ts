@@ -287,6 +287,176 @@ export interface HoverResult {
   [key: string]: any;
 }
 
+// ====================================
+// Command Options Interfaces
+// ====================================
+
+/** Options for scroll command */
+export interface ScrollOptions {
+  /** Direction to scroll */
+  direction?: ScrollDirection;
+  /** Amount to scroll in pixels */
+  amount?: number;
+}
+
+/** Options for click command */
+export interface ClickOptions {
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Type of click action */
+  action?: ClickAction;
+  /** Prompt for tracking */
+  prompt?: string;
+  /** Whether cache was hit */
+  cacheHit?: boolean;
+  /** Selector used */
+  selector?: string;
+  /** Whether selector was used */
+  selectorUsed?: boolean;
+}
+
+/** Options for hover command */
+export interface HoverOptions {
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Prompt for tracking */
+  prompt?: string;
+  /** Whether cache was hit */
+  cacheHit?: boolean;
+  /** Selector used */
+  selector?: string;
+  /** Whether selector was used */
+  selectorUsed?: boolean;
+}
+
+/** Options for hoverText command */
+export interface HoverTextOptions {
+  /** Text to find and hover over */
+  text: string;
+  /** Optional description of the element */
+  description?: string | null;
+  /** Action to perform */
+  action?: ClickAction;
+  /** Timeout in milliseconds */
+  timeout?: number;
+}
+
+/** Options for hoverImage command */
+export interface HoverImageOptions {
+  /** Description of the image to find */
+  description: string;
+  /** Action to perform */
+  action?: ClickAction;
+}
+
+/** Options for matchImage command */
+export interface MatchImageOptions {
+  /** Path to the image template */
+  path: string;
+  /** Action to perform */
+  action?: ClickAction;
+  /** Invert the match */
+  invert?: boolean;
+}
+
+/** Options for type command */
+export interface TypeOptions {
+  /** Text to type */
+  text: string | number;
+  /** Delay between keystrokes in milliseconds */
+  delay?: number;
+}
+
+/** Options for pressKeys command */
+export interface PressKeysOptions {
+  /** Array of keys to press */
+  keys: KeyboardKey[];
+}
+
+/** Options for wait command */
+export interface WaitOptions {
+  /** Time to wait in milliseconds */
+  timeout?: number;
+}
+
+/** Options for waitForText command */
+export interface WaitForTextOptions {
+  /** Text to wait for */
+  text: string;
+  /** Timeout in milliseconds */
+  timeout?: number;
+}
+
+/** Options for waitForImage command */
+export interface WaitForImageOptions {
+  /** Description of the image */
+  description: string;
+  /** Timeout in milliseconds */
+  timeout?: number;
+}
+
+/** Options for scrollUntilText command */
+export interface ScrollUntilTextOptions {
+  /** Text to find */
+  text: string;
+  /** Scroll direction */
+  direction?: ScrollDirection;
+  /** Maximum distance to scroll in pixels */
+  maxDistance?: number;
+  /** Invert the match */
+  invert?: boolean;
+}
+
+/** Options for scrollUntilImage command */
+export interface ScrollUntilImageOptions {
+  /** Description of the image */
+  description?: string;
+  /** Scroll direction */
+  direction?: ScrollDirection;
+  /** Maximum distance to scroll in pixels */
+  maxDistance?: number;
+  /** Scroll method */
+  method?: ScrollMethod;
+  /** Path to image template */
+  path?: string;
+  /** Invert the match */
+  invert?: boolean;
+}
+
+/** Options for focusApplication command */
+export interface FocusApplicationOptions {
+  /** Application name */
+  name: string;
+}
+
+/** Options for remember command */
+export interface RememberOptions {
+  /** What to remember */
+  description: string;
+}
+
+/** Options for assert command */
+export interface AssertOptions {
+  /** Assertion to check */
+  assertion: string;
+}
+
+/** Options for exec command */
+export interface ExecOptions {
+  /** Language ('js', 'pwsh', or 'sh') */
+  language?: ExecLanguage;
+  /** Code to execute */
+  code: string;
+  /** Timeout in milliseconds */
+  timeout?: number;
+  /** Suppress output */
+  silent?: boolean;
+}
+
 /**
  * Element class representing a located or to-be-located element on screen
  */
@@ -473,57 +643,73 @@ export default class TestDriverSDK {
   /**
    * Hover over text on screen
    * @deprecated Use find() and element.click() instead
+   * @param options - Options object with text, description, action, and timeout
+   */
+  hoverText(options: HoverTextOptions): Promise<HoverResult>;
+  /**
+   * Hover over text on screen (positional arguments - legacy)
+   * @deprecated Use find() and element.click() instead
    * @param text - Text to find and hover over
    * @param description - Optional description of the element
    * @param action - Action to perform (default: 'click')
-   * @param method - Text matching method (default: 'turbo')
    * @param timeout - Timeout in milliseconds (default: 5000)
    */
   hoverText(
     text: string,
     description?: string | null,
     action?: ClickAction,
-    method?: TextMatchMethod,
     timeout?: number,
   ): Promise<HoverResult>;
 
   /**
    * Type text
    * @param text - Text to type
-   * @param delay - Delay between keystrokes in milliseconds (default: 250)
+   * @param options - Options object with delay and secret
+   * 
+   * @example
+   * // Type regular text
+   * await client.type('hello world');
+   * 
+   * @example
+   * // Type a password securely (not logged or stored)
+   * await client.type(process.env.TD_PASSWORD, { secret: true });
+   * 
+   * @example
+   * // Type with custom delay
+   * await client.type('slow typing', { delay: 100 });
    */
-  type(text: string | number, delay?: number): Promise<void>;
+  type(text: string | number, options?: { delay?: number; secret?: boolean }): Promise<void>;
 
   /**
    * Wait for text to appear on screen
    * @deprecated Use find() in a polling loop instead
+   * @param options - Options object with text and timeout
+   */
+  waitForText(options: WaitForTextOptions): Promise<void>;
+  /**
+   * Wait for text to appear on screen (positional arguments - legacy)
+   * @deprecated Use find() in a polling loop instead
    * @param text - Text to wait for
    * @param timeout - Timeout in milliseconds (default: 5000)
-   * @param method - Text matching method (default: 'turbo')
-   * @param invert - Invert the match (wait for text to disappear) (default: false)
    */
-  waitForText(
-    text: string,
-    timeout?: number,
-    method?: TextMatchMethod,
-    invert?: boolean,
-  ): Promise<void>;
+  waitForText(text: string, timeout?: number): Promise<void>;
 
   /**
    * Scroll until text is found
+   * @param options - Options object with text, direction, maxDistance, and invert
+   */
+  scrollUntilText(options: ScrollUntilTextOptions): Promise<void>;
+  /**
+   * Scroll until text is found (positional arguments - legacy)
    * @param text - Text to find
    * @param direction - Scroll direction (default: 'down')
    * @param maxDistance - Maximum distance to scroll in pixels (default: 10000)
-   * @param textMatchMethod - Text matching method (default: 'turbo')
-   * @param method - Scroll method (default: 'keyboard')
    * @param invert - Invert the match (default: false)
    */
   scrollUntilText(
     text: string,
     direction?: ScrollDirection,
     maxDistance?: number,
-    textMatchMethod?: TextMatchMethod,
-    method?: ScrollMethod,
     invert?: boolean,
   ): Promise<void>;
 
@@ -532,6 +718,12 @@ export default class TestDriverSDK {
   /**
    * Hover over an image on screen
    * @deprecated Use find() and element.click() instead
+   * @param options - Options object with description and action
+   */
+  hoverImage(options: HoverImageOptions): Promise<HoverResult>;
+  /**
+   * Hover over an image on screen (positional arguments - legacy)
+   * @deprecated Use find() and element.click() instead
    * @param description - Description of the image to find
    * @param action - Action to perform (default: 'click')
    */
@@ -539,6 +731,11 @@ export default class TestDriverSDK {
 
   /**
    * Match and interact with an image template
+   * @param options - Options object with path, action, and invert
+   */
+  matchImage(options: MatchImageOptions): Promise<boolean>;
+  /**
+   * Match and interact with an image template (positional arguments - legacy)
    * @param imagePath - Path to the image template
    * @param action - Action to perform (default: 'click')
    * @param invert - Invert the match (default: false)
@@ -552,18 +749,24 @@ export default class TestDriverSDK {
   /**
    * Wait for image to appear on screen
    * @deprecated Use find() in a polling loop instead
+   * @param options - Options object with description and timeout
+   */
+  waitForImage(options: WaitForImageOptions): Promise<void>;
+  /**
+   * Wait for image to appear on screen (positional arguments - legacy)
+   * @deprecated Use find() in a polling loop instead
    * @param description - Description of the image
    * @param timeout - Timeout in milliseconds (default: 10000)
-   * @param invert - Invert the match (wait for image to disappear) (default: false)
    */
-  waitForImage(
-    description: string,
-    timeout?: number,
-    invert?: boolean,
-  ): Promise<void>;
+  waitForImage(description: string, timeout?: number): Promise<void>;
 
   /**
    * Scroll until image is found
+   * @param options - Options object with description, direction, maxDistance, method, path, and invert
+   */
+  scrollUntilImage(options: ScrollUntilImageOptions): Promise<void>;
+  /**
+   * Scroll until image is found (positional arguments - legacy)
    * @param description - Description of the image (or use path parameter)
    * @param direction - Scroll direction (default: 'down')
    * @param maxDistance - Maximum distance to scroll in pixels (default: 10000)
@@ -584,6 +787,11 @@ export default class TestDriverSDK {
 
   /**
    * Click at coordinates
+   * @param options - Options object with x, y, and action
+   */
+  click(options: ClickOptions): Promise<void>;
+  /**
+   * Click at coordinates (positional arguments - legacy)
    * @param x - X coordinate
    * @param y - Y coordinate
    * @param action - Type of click action (default: 'click')
@@ -592,6 +800,11 @@ export default class TestDriverSDK {
 
   /**
    * Hover at coordinates
+   * @param options - Options object with x and y
+   */
+  hover(options: HoverOptions): Promise<void>;
+  /**
+   * Hover at coordinates (positional arguments - legacy)
    * @param x - X coordinate
    * @param y - Y coordinate
    */
@@ -600,45 +813,42 @@ export default class TestDriverSDK {
   /**
    * Press keyboard keys
    * @param keys - Array of keys to press
+   * @param options - Additional options (reserved for future use)
    */
-  pressKeys(keys: KeyboardKey[]): Promise<void>;
+  pressKeys(keys: KeyboardKey[], options?: object): Promise<void>;
 
   /**
    * Scroll the page
    * @param direction - Direction to scroll (default: 'down')
-   * @param amount - Amount to scroll in pixels (default: 300)
-   * @param method - Scroll method (default: 'mouse')
+   * @param options - Options object with amount
    */
-  scroll(
-    direction?: ScrollDirection,
-    amount?: number,
-    method?: ScrollMethod,
-  ): Promise<void>;
+  scroll(direction?: ScrollDirection, options?: { amount?: number }): Promise<void>;
 
   // Application Control
 
   /**
    * Focus an application by name
    * @param name - Application name
+   * @param options - Additional options (reserved for future use)
    */
-  focusApplication(name: string): Promise<string>;
+  focusApplication(name: string, options?: object): Promise<string>;
 
   // AI-Powered Methods
 
   /**
    * Make an AI-powered assertion
    * @param assertion - Assertion to check
-   * @param async - Run asynchronously (default: false)
-   * @param invert - Invert the assertion (default: false)
+   * @param options - Additional options (reserved for future use)
    */
-  assert(
-    assertion: string,
-    async?: boolean,
-    invert?: boolean,
-  ): Promise<boolean>;
+  assert(assertion: string, options?: object): Promise<boolean>;
 
   /**
    * Extract and remember information from the screen using AI
+   * @param options - Options object with description
+   */
+  remember(options: RememberOptions): Promise<string>;
+  /**
+   * Extract and remember information from the screen using AI (positional arguments - legacy)
    * @param description - What to remember
    */
   remember(description: string): Promise<string>;
@@ -647,6 +857,11 @@ export default class TestDriverSDK {
 
   /**
    * Execute code in the sandbox
+   * @param options - Options object with language, code, timeout, and silent
+   */
+  exec(options: ExecOptions): Promise<string>;
+  /**
+   * Execute code in the sandbox (positional arguments - legacy)
    * @param language - Language ('js' or 'pwsh')
    * @param code - Code to execute
    * @param timeout - Timeout in milliseconds
@@ -686,8 +901,10 @@ export default class TestDriverSDK {
   /**
    * Wait for specified time
    * @deprecated Consider using element polling with find() instead of arbitrary waits
+   * @param timeout - Time to wait in milliseconds (default: 3000)
+   * @param options - Additional options (reserved for future use)
    */
-  wait(timeout?: number): Promise<void>;
+  wait(timeout?: number, options?: object): Promise<void>;
 
   /**
    * Get the current sandbox instance details
