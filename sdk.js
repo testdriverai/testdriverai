@@ -390,15 +390,71 @@ class Element {
 
         // Log debug information when element is found
         this._logFoundDebug(response, duration);
+        
+        // Track successful find interaction
+        const sessionId = this.sdk.getSessionId();
+        if (sessionId && this.sdk.sandbox?.send) {
+          try {
+            await this.sdk.sandbox.send({
+              type: "trackInteraction",
+              interactionType: "find",
+              session: sessionId,
+              prompt: description,
+              timestamp: Date.now(),
+              success: true,
+              cacheHit: response.cacheHit || response.cache_hit || response.cached || false,
+              selector: response.selector,
+              selectorUsed: !!response.selector,
+            });
+          } catch (err) {
+            console.warn("Failed to track find interaction:", err.message);
+          }
+        }
       } else {
         this._response = this._sanitizeResponse(response);
         this._found = false;
+        
+        // Track failed find interaction
+        const sessionId = this.sdk.getSessionId();
+        if (sessionId && this.sdk.sandbox?.send) {
+          try {
+            await this.sdk.sandbox.send({
+              type: "trackInteraction",
+              interactionType: "find",
+              session: sessionId,
+              prompt: description,
+              timestamp: Date.now(),
+              success: false,
+              error: "Element not found",
+            });
+          } catch (err) {
+            console.warn("Failed to track find interaction:", err.message);
+          }
+        }
       }
     } catch (error) {
       this._response = error.response
         ? this._sanitizeResponse(error.response)
         : null;
       this._found = false;
+      
+      // Track find error interaction
+      const sessionId = this.sdk.getSessionId();
+      if (sessionId && this.sdk.sandbox?.send) {
+        try {
+          await this.sdk.sandbox.send({
+            type: "trackInteraction",
+            interactionType: "find",
+            session: sessionId,
+            prompt: description,
+            timestamp: Date.now(),
+            success: false,
+            error: error.message,
+          });
+        } catch (err) {
+          console.warn("Failed to track find interaction:", err.message);
+        }
+      }
     }
 
     return this;
@@ -1616,6 +1672,27 @@ class TestDriverSDK {
           return element;
         });
 
+        // Track successful findAll interaction
+        const sessionId = this.getSessionId();
+        if (sessionId && this.sandbox?.send) {
+          try {
+            await this.sandbox.send({
+              type: "trackInteraction",
+              interactionType: "findAll",
+              session: sessionId,
+              prompt: description,
+              timestamp: Date.now(),
+              success: true,
+              input: { count: elements.length },
+              cacheHit: response.cached || false,
+              selector: response.selector,
+              selectorUsed: !!response.selector,
+            });
+          } catch (err) {
+            console.warn("Failed to track findAll interaction:", err.message);
+          }
+        }
+
         // Log debug information when elements are found
         if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
           const { events } = require("./agent/events.js");
@@ -1632,10 +1709,51 @@ class TestDriverSDK {
 
         return elements;
       } else {
+        // No elements found - track interaction
+        const sessionId = this.getSessionId();
+        if (sessionId && this.sandbox?.send) {
+          try {
+            await this.sandbox.send({
+              type: "trackInteraction",
+              interactionType: "findAll",
+              session: sessionId,
+              prompt: description,
+              timestamp: Date.now(),
+              success: false,
+              error: "No elements found",
+              input: { count: 0 },
+              cacheHit: response?.cached || false,
+              selector: response?.selector,
+              selectorUsed: !!response?.selector,
+            });
+          } catch (err) {
+            console.warn("Failed to track findAll interaction:", err.message);
+          }
+        }
+
         // No elements found - return empty array
         return [];
       }
     } catch (error) {
+      // Track findAll error interaction
+      const sessionId = this.getSessionId();
+      if (sessionId && this.sandbox?.send) {
+        try {
+          await this.sandbox.send({
+            type: "trackInteraction",
+            interactionType: "findAll",
+            session: sessionId,
+            prompt: description,
+            timestamp: Date.now(),
+            success: false,
+            error: error.message,
+            input: { count: 0 },
+          });
+        } catch (err) {
+          console.warn("Failed to track findAll interaction:", err.message);
+        }
+      }
+
       const { events } = require("./agent/events.js");
       this.emitter.emit(events.log.log, `Error in findAll: ${error.message}`);
       return [];
