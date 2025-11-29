@@ -51,7 +51,8 @@ async function waitForElement(testdriver, description, maxAttempts = 10, delayMs
 describe("Sully.ai Patient Management Workflow", () => {
   it("should complete full patient workflow: login, view patients, update note, and edit profile", async (context) => {
     const { testdriver } = await chrome(context, {
-      url: 'https://app.sully.ai'
+      url: 'https://app.sully.ai',
+      redrawThreshold: { enabled: true }
     });
 
     // ========================================================================
@@ -111,6 +112,8 @@ describe("Sully.ai Patient Management Workflow", () => {
       console.log("Password save dialog not found");
     }
 
+    await testdriver.find("save profile changes popup or banner").click();
+
     // Click Patients
     const patientsLink = await testdriver.find("Patients navigation link or menu item");
     await patientsLink.click();
@@ -119,68 +122,31 @@ describe("Sully.ai Patient Management Workflow", () => {
     // CHECKPOINT 3: Patients Page Loaded
     // If test fails after this point, comment out all code above this checkpoint
     // ========================================================================
-
-    // Try to find and use the Existing Patient search
-    let patientFound = false;
     
     // Approach 1: Search for existing patient
-    try {
-      const existingPatientInput = await testdriver.find("search box or input field under Existing Patient section");
+      const existingPatientInput = await testdriver.find("Patient search input box");
       await existingPatientInput.click();
       
       // Type a search term to find a patient
-      await testdriver.type("Doe");
+      await testdriver.type("Patient Test");
       
       // Poll for search results to appear
       const firstPatient = await waitForElement(testdriver, "first patient name in the dropdown or list", 5, 500);
       await firstPatient.click();
-      
-      // Wait for patient details to load
-      await waitForElement(testdriver, "patient details page or patient information");
-      patientFound = true;
+    
       console.log("Found patient via search");
-    } catch {
-      console.log("Existing Patient search not working, trying alternative");
-    }
-
-    // Approach 2: If search didn't work, try to find any visible patient
-    if (!patientFound) {
-      try {
-        const anyPatient = await testdriver.find("patient name or patient record");
-        await anyPatient.click();
-        
-        // Wait for patient details to load
-        await waitForElement(testdriver, "patient details page or patient information");
-        patientFound = true;
-        console.log("Found patient via direct selection");
-      } catch {
-        console.log("Could not find patient with direct selection");
-      }
-    }
-
-    // Approach 3: Create a new patient if we can't find existing ones
-    if (!patientFound) {
-      console.log("Creating a new patient - clicking create new patient link");
-      const newPatientButton = await testdriver.find("New Patient button or Create Patient button");
-      await newPatientButton.click();
-      
-      // After clicking create patient, it goes to a visit page (not a form)
-      // The patient "Doe" is created automatically and we're taken to the visit page
-      console.log("Patient created, waiting for visit page to load");
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Verify we're on a visit or patient page
-      patientFound = true;
-    }
 
     // Verify patient visit page or details are loaded
-    const patientLoaded = await testdriver.assert("we are on a patient visit page or patient details page");
+    const patientLoaded = await testdriver.assert("we are on a patient recording page");
     expect(patientLoaded).toBeTruthy();
 
     // ========================================================================
     // CHECKPOINT 4: Patient Selected/Created
     // If test fails after this point, comment out all code above this checkpoint
     // ========================================================================
+
+    await testdriver.find('input box at the bottom of the screen').click();
+    await testdriver.type("This is a test note added by TestDriver automation.");
 
     // Regenerate note - click make note more concise
     console.log("Looking for note regeneration option...");

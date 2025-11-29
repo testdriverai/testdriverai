@@ -64,38 +64,13 @@ function setupConsoleInterceptor(client, taskId) {
         )
         .join(" ");
 
-      // Write to log file on remote machine (async, don't await)
-      const timestamp = new Date().toISOString();
-      const logLine = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-      
-      // Escape for shell (simple escaping - replace single quotes)
-      const escapedLog = logLine.replace(/'/g, "'\\''");
-      
-      const shell = client.os === "windows" ? "pwsh" : "sh";
-      const writeCommand = client.os === "windows"
-        ? `Add-Content -Path "${logPath}" -Value '${escapedLog}'`
-        : `echo '${escapedLog}' >> ${logPath}`;
-
-      // Set flag to prevent recursion
-      isWriting = true;
-      
-      // Write asynchronously (fire and forget)
-      client.exec(shell, writeCommand, 5000, false).catch(() => {
-        // Silently fail to avoid breaking the test
-      }).finally(() => {
-        isWriting = false;
-      });
-
       // Also send to sandbox for immediate visibility
       if (client.sandbox && client.sandbox.instanceSocketConnected) {
-        try {
+  
           client.sandbox.send({
             type: "output",
             output: Buffer.from(message, "utf8").toString("base64"),
           });
-        } catch (error) {
-          // Silently fail
-        }
       }
     };
   };

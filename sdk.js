@@ -415,7 +415,7 @@ class Element {
           interactionType: "find",
           session: sessionId,
           prompt: description,
-          timestamp: Date.now(),
+          timestamp: startTime,
           success: this._found,
           error: findError,
           cacheHit: response?.cacheHit || response?.cache_hit || response?.cached || false,
@@ -945,6 +945,60 @@ class Element {
 }
 
 /**
+ * Creates a chainable promise that allows method chaining on find() results
+ * This enables syntax like: await testdriver.find("button").click()
+ * 
+ * @param {Promise<Element>} promise - The promise that resolves to an Element
+ * @returns {Promise<Element> & ChainableElement} A promise with chainable element methods
+ */
+function createChainablePromise(promise) {
+  // Define the chainable methods that should be available
+  const chainableMethods = ['click', 'hover', 'doubleClick', 'rightClick', 'mouseDown', 'mouseUp'];
+  
+  // Create a new promise that wraps the original
+  const chainablePromise = promise.then(element => element);
+  
+  // Add chainable methods to the promise
+  for (const method of chainableMethods) {
+    chainablePromise[method] = function(...args) {
+      // Return a promise that waits for the element, then calls the method
+      return promise.then(element => element[method](...args));
+    };
+  }
+  
+  // Add getters for element properties (these return promises)
+  Object.defineProperty(chainablePromise, 'x', {
+    get() { return promise.then(el => el.x); }
+  });
+  Object.defineProperty(chainablePromise, 'y', {
+    get() { return promise.then(el => el.y); }
+  });
+  Object.defineProperty(chainablePromise, 'centerX', {
+    get() { return promise.then(el => el.centerX); }
+  });
+  Object.defineProperty(chainablePromise, 'centerY', {
+    get() { return promise.then(el => el.centerY); }
+  });
+  
+  // Add found() method
+  chainablePromise.found = function() {
+    return promise.then(el => el.found());
+  };
+  
+  // Add getCoordinates() method
+  chainablePromise.getCoordinates = function() {
+    return promise.then(el => el.getCoordinates());
+  };
+  
+  // Add getResponse() method
+  chainablePromise.getResponse = function() {
+    return promise.then(el => el.getResponse());
+  };
+  
+  return chainablePromise;
+}
+
+/**
  * TestDriver SDK
  *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
@@ -1053,9 +1107,27 @@ class TestDriverSDK {
       };
     }
 
-    // Redraw threshold configuration
-    // threshold = percentage of pixels that must change to consider screen redrawn (0.1 = 0.1%)
-    this.redrawThreshold = options.redrawThreshold ?? 0.1;
+    // Redraw configuration
+    // Supports both:
+    //   - redraw: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
+    //   - redrawThreshold: 0.1 (legacy, sets diffThreshold)
+    // The `redraw` option takes precedence and matches the per-command API
+    if (options.redraw !== undefined) {
+      // New unified API: redraw object (matches per-command options)
+      this.redrawOptions = typeof options.redraw === 'object' 
+        ? options.redraw 
+        : { enabled: options.redraw }; // Support redraw: false as shorthand
+    } else if (options.redrawThreshold !== undefined) {
+      // Legacy API: redrawThreshold number or object
+      this.redrawOptions = typeof options.redrawThreshold === 'object'
+        ? options.redrawThreshold
+        : { diffThreshold: options.redrawThreshold };
+    } else {
+      // Default: disabled
+      this.redrawOptions = { enabled: false };
+    }
+    // Keep redrawThreshold for backwards compatibility in connect()
+    this.redrawThreshold = this.redrawOptions;
 
     // Track connection state
     this.connected = false;
@@ -1476,10 +1548,14 @@ class TestDriverSDK {
    *
    * @param {string} description - Description of the element to find
    * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
-   * @returns {Promise<Element>} Element instance that has been located
+   * @returns {Promise<Element> & ChainableElement} Element instance that has been located, with chainable methods
    *
    * @example
-   * // Find and click immediately
+   * // Find and click immediately (chainable)
+   * await client.find('the sign in button').click();
+   *
+   * @example
+   * // Find and click (traditional)
    * const element = await client.find('the sign in button');
    * await element.click();
    *
@@ -1502,10 +1578,14 @@ class TestDriverSDK {
    * }
    * await element.click();
    */
-  async find(description, options) {
+  find(description, options) {
     this._ensureConnected();
     const element = new Element(description, this, this.system, this.commands);
-    return await element.find(null, options);
+    const findPromise = element.find(null, options);
+    
+    // Create a chainable promise that allows direct method chaining
+    // e.g., await testdriver.find("button").click()
+    return createChainablePromise(findPromise);
   }
 
   /**
@@ -1651,7 +1731,7 @@ class TestDriverSDK {
               interactionType: "findAll",
               session: sessionId,
               prompt: description,
-              timestamp: Date.now(),
+              timestamp: startTime,
               success: true,
               input: { count: elements.length },
               cacheHit: response.cached || false,
@@ -1688,7 +1768,7 @@ class TestDriverSDK {
               interactionType: "findAll",
               session: sessionId,
               prompt: description,
-              timestamp: Date.now(),
+              timestamp: startTime,
               success: false,
               error: "No elements found",
               input: { count: 0 },
@@ -1714,7 +1794,7 @@ class TestDriverSDK {
             interactionType: "findAll",
             session: sessionId,
             prompt: description,
-            timestamp: Date.now(),
+            timestamp: startTime,
             success: false,
             error: error.message,
             input: { count: 0 },

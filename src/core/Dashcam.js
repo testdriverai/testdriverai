@@ -76,7 +76,7 @@ class Dashcam {
     if (this.client.os === 'windows') {
       // Debug session info
       const debug = await this.client.exec(shell, 'query session', 40000, true);
-      console.log('Debug version output:', debug);
+      this._log('debug', 'Debug version output:', debug);
 
       // Uninstall and clear cache for fresh install
       await this.client.exec(shell, 'npm uninstall dashcam -g', 40000, true);
@@ -89,7 +89,7 @@ class Dashcam {
         120000,
         true
       );
-      console.log('Install dashcam output:', installOutput);
+      this._log('debug', 'Install dashcam output:', installOutput);
 
       // Verify version
       const latestVersion = await this.client.exec(
@@ -98,10 +98,10 @@ class Dashcam {
         40000,
         true
       );
-      console.log('Latest beta version available:', latestVersion);
+      this._log('debug', 'Latest beta version available:', latestVersion);
       
       const dashcamPath = await this._getDashcamPath();
-      console.log('Dashcam executable path:', dashcamPath);
+      this._log('debug', 'Dashcam executable path:', dashcamPath);
       
       const installedVersion = await this.client.exec(
         shell,
@@ -109,7 +109,7 @@ class Dashcam {
         40000,
         true
       );
-      console.log('Installed dashcam version:', installedVersion);
+      this._log('debug', 'Installed dashcam version:', installedVersion);
       
       // Test version command
       const versionTest = await this.client.exec(
@@ -118,16 +118,16 @@ class Dashcam {
         40000,
         true
       );
-      console.log('Dashcam version test:', versionTest);
+      this._log('debug', 'Dashcam version test:', versionTest);
       
       // Verify installation
       if (!installedVersion) {
-        console.error('❌ Dashcam version command returned null/empty');
-        console.log('Install output was:', installOutput);
+        this._log('error', 'Dashcam version command returned null/empty');
+        this._log('debug', 'Install output was:', installOutput);
       } else if (!installedVersion.includes('1.3.')) {
-        console.warn('⚠️  Dashcam version may be outdated. Expected 1.3.x, got:', installedVersion);
+        this._log('warn', 'Dashcam version may be outdated. Expected 1.3.x, got:', installedVersion);
       } else {
-        console.log('✅ Dashcam version verified:', installedVersion);
+        this._log('debug', 'Dashcam version verified:', installedVersion);
       }
 
       // Authenticate with TD_API_ROOT
@@ -137,7 +137,7 @@ class Dashcam {
         120000,
         true
       );
-      console.log('Auth output:', authOutput);
+      this._log('debug', 'Auth output:', authOutput);
     } else {
       // Linux/Mac authentication with TD_API_ROOT
       const authOutput = await this.client.exec(
@@ -146,7 +146,7 @@ class Dashcam {
         120000,
         true
       );
-      console.log('Auth output:', authOutput);
+      this._log('debug', 'Auth output:', authOutput);
     }
 
     this._authenticated = true;
@@ -170,7 +170,7 @@ class Dashcam {
         10000,
         true
       );
-      console.log('Create log file output:', createFileOutput);
+      this._log('debug', 'Create log file output:', createFileOutput);
 
       const dashcamPath = await this._getDashcamPath();
       const addLogOutput = await this.client.exec(
@@ -179,7 +179,7 @@ class Dashcam {
         120000,
         true
       );
-      console.log('Add log tracking output:', addLogOutput);
+      this._log('debug', 'Add log tracking output:', addLogOutput);
     } else {
       // Create log file
       await this.client.exec(shell, `touch ${path}`, 10000, true);
@@ -191,7 +191,7 @@ class Dashcam {
         10000,
         true
       );
-      console.log('Add log tracking output:', addLogOutput);
+      this._log('debug', 'Add log tracking output:', addLogOutput);
     }
   }
 
@@ -213,7 +213,7 @@ class Dashcam {
         120000,
         true
       );
-      console.log('Add application log tracking output:', addLogOutput);
+      this._log('debug', 'Add application log tracking output:', addLogOutput);
     } else {
       const addLogOutput = await this.client.exec(
         shell,
@@ -221,7 +221,7 @@ class Dashcam {
         10000,
         true
       );
-      console.log('Add application log tracking output:', addLogOutput);
+      this._log('debug', 'Add application log tracking output:', addLogOutput);
     }
   }
 
@@ -243,7 +243,7 @@ class Dashcam {
         120000,
         true
       );
-      console.log('Add web log tracking output:', addLogOutput);
+      this._log('debug', 'Add web log tracking output:', addLogOutput);
     } else {
       const addLogOutput = await this.client.exec(
         shell,
@@ -251,7 +251,7 @@ class Dashcam {
         10000,
         true
       );
-      console.log('Add web log tracking output:', addLogOutput);
+      this._log('debug', 'Add web log tracking output:', addLogOutput);
     }
   }
 
@@ -261,13 +261,13 @@ class Dashcam {
    */
   async start() {
     if (this.recording) {
-      console.warn('⚠️  Dashcam already recording');
+      this._log('warn', 'Dashcam already recording');
       return;
     }
 
     // Auto-authenticate if not already done
     if (!this._authenticated) {
-      console.log('🔐 Auto-authenticating dashcam...');
+      this._log('info', 'Auto-authenticating dashcam...');
       await this.auth();
     }
 
@@ -275,10 +275,10 @@ class Dashcam {
     const apiRoot = this._getApiRoot();
 
     if (this.client.os === 'windows') {
-      console.log('Starting dashcam recording on Windows...');
+      this._log('info', 'Starting dashcam recording on Windows...');
       
       const dashcamPath = await this._getDashcamPath();
-      console.log('📍 Dashcam path:', dashcamPath);
+      this._log('debug', 'Dashcam path:', dashcamPath);
       
       // Verify dashcam exists
       const dashcamExists = await this.client.exec(
@@ -287,7 +287,7 @@ class Dashcam {
         10000,
         true
       );
-      console.log('✓ Dashcam.cmd exists:', dashcamExists);
+      this._log('debug', 'Dashcam.cmd exists:', dashcamExists);
       
       // Start dashcam record and redirect output with TD_API_ROOT
       const outputFile = 'C:\\Users\\testdriver\\.dashcam-cli\\dashcam-start.log';
@@ -308,7 +308,7 @@ class Dashcam {
       `;
       
       const startOutput = await this.client.exec(shell, startScript, 10000, true);
-      console.log('📋 Start-Process output:', startOutput);
+      this._log('debug', 'Start-Process output:', startOutput);
       
       // Wait and check output
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -318,17 +318,17 @@ class Dashcam {
         10000,
         true
       );
-      console.log('📝 Dashcam record output:', dashcamOutput);
+      this._log('debug', 'Dashcam record output:', dashcamOutput);
       
       // Give process time to initialize
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      console.log('✅ Dashcam recording started');
+      this._log('info', 'Dashcam recording started');
     } else {
       // Linux/Mac with TD_API_ROOT
-      console.log('Starting dashcam recording on Linux/Mac...');
+      this._log('info', 'Starting dashcam recording on Linux/Mac...');
       await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" dashcam record >/dev/null 2>&1 &`);
-      console.log('✅ Dashcam recording started');
+      this._log('info', 'Dashcam recording started');
     }
 
     this.recording = true;
@@ -348,12 +348,12 @@ class Dashcam {
         });
 
         if (response.ok) {
-          console.log(`✅ Updated session ${this.client.agent.session} with dashcam start time: ${this.startTime}`);
+          this._log('info', `Updated session ${this.client.agent.session} with dashcam start time: ${this.startTime}`);
         } else {
-          console.warn('⚠️  Failed to update session with dashcam start time:', response.statusText);
+          this._log('warn', 'Failed to update session with dashcam start time:', response.statusText);
         }
       } catch (err) {
-        console.warn('⚠️  Error updating session with dashcam start time:', err.message);
+        this._log('warn', 'Error updating session with dashcam start time:', err.message);
       }
     }
   }
@@ -364,28 +364,29 @@ class Dashcam {
    */
   async stop() {
     if (!this.recording) {
-      console.warn('⚠️  Dashcam not recording');
+      // Internal log only - don't spam user console
+      this._log('warn', 'Dashcam not recording');
       return null;
     }
 
-    console.log('🎬 Stopping dashcam and retrieving URL...');
+    this._log('info', 'Stopping dashcam and retrieving URL...');
     const shell = this._getShell();
     const apiRoot = this._getApiRoot();
     let output;
 
     if (this.client.os === 'windows') {
-      console.log('Stopping dashcam process on Windows...');
+      this._log('info', 'Stopping dashcam process on Windows...');
       
       const dashcamPath = await this._getDashcamPath();
       
       // Stop and get output with TD_API_ROOT
       output = await this.client.exec(shell, `$env:TD_API_ROOT="${apiRoot}"; & "${dashcamPath}" stop`, 120000);
-      console.log('📤 Dashcam stop command output:', output);
+      this._log('debug', 'Dashcam stop command output:', output);
     } else {
       // Linux/Mac with TD_API_ROOT
       const dashcamPath = await this._getDashcamPath();
       output = await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" "${dashcamPath}" stop`, 60000, false);
-      console.log('📤 Dashcam command output:', output);
+      this._log('debug', 'Dashcam command output:', output);
     }
 
     this.recording = false;
@@ -399,8 +400,7 @@ class Dashcam {
         let url = replayUrlMatch[0];
         // Remove trailing punctuation but keep query params
         url = url.replace(/[.,;:!\)\]]+$/, '').trim();
-        console.log('✅ Found dashcam URL:', url);
-        console.log('🎥 Dashcam URL:', url);
+        this._log('info', 'Found dashcam URL:', url);
         return url;
       }
       
@@ -409,17 +409,41 @@ class Dashcam {
       if (dashcamUrlMatch) {
         let url = dashcamUrlMatch[0];
         url = url.replace(/[.,;:!\?\)\]]+$/, '').trim();
-        console.log('✅ Found dashcam URL:', url);
-        console.log('🎥 Dashcam URL:', url);
+        this._log('info', 'Found dashcam URL:', url);
         return url;
       }
       
-      console.warn('⚠️  No replay URL found in dashcam output');
+      this._log('warn', 'No replay URL found in dashcam output');
     } else {
-      console.warn('⚠️  Dashcam command returned no output');
+      this._log('warn', 'Dashcam command returned no output');
     }
 
     return null;
+  }
+
+  /**
+   * Internal logging - writes to testdriver log file but not user console
+   * @private
+   */
+  _log(level, ...args) {
+    const message = args.map(arg => 
+      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+    ).join(' ');
+    
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] [DASHCAM:${level.toUpperCase()}] ${message}`;
+    
+    // Send to sandbox log file via output command (same as console interceptor)
+    if (this.client?.sandbox?.instanceSocketConnected) {
+      try {
+        this.client.sandbox.send({
+          type: "output",
+          output: Buffer.from(logLine, "utf8").toString("base64"),
+        });
+      } catch {
+        // Silently fail
+      }
+    }
   }
 
   /**

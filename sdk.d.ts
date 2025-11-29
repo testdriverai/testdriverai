@@ -458,6 +458,78 @@ export interface ExecOptions {
 }
 
 /**
+ * A Promise that resolves to an Element but also has chainable element methods.
+ * This enables syntax like: await testdriver.find("button").click()
+ */
+export interface ChainableElementPromise extends Promise<Element> {
+  /**
+   * Click on the element (chainable)
+   * @param action - Type of click action (default: 'click')
+   */
+  click(action?: ClickAction): Promise<void>;
+
+  /**
+   * Hover over the element (chainable)
+   */
+  hover(): Promise<void>;
+
+  /**
+   * Double-click on the element (chainable)
+   */
+  doubleClick(): Promise<void>;
+
+  /**
+   * Right-click on the element (chainable)
+   */
+  rightClick(): Promise<void>;
+
+  /**
+   * Press mouse button down on this element (chainable)
+   */
+  mouseDown(): Promise<void>;
+
+  /**
+   * Release mouse button on this element (chainable)
+   */
+  mouseUp(): Promise<void>;
+
+  /**
+   * Check if element was found (chainable)
+   */
+  found(): Promise<boolean>;
+
+  /**
+   * Get the coordinates of the element (chainable)
+   */
+  getCoordinates(): Promise<ElementCoordinates | null>;
+
+  /**
+   * Get the full API response data (chainable)
+   */
+  getResponse(): Promise<ElementResponse | null>;
+
+  /**
+   * Get the x coordinate (chainable)
+   */
+  readonly x: Promise<number | null>;
+
+  /**
+   * Get the y coordinate (chainable)
+   */
+  readonly y: Promise<number | null>;
+
+  /**
+   * Get the center x coordinate (chainable)
+   */
+  readonly centerX: Promise<number | null>;
+
+  /**
+   * Get the center y coordinate (chainable)
+   */
+  readonly centerY: Promise<number | null>;
+}
+
+/**
  * Element class representing a located or to-be-located element on screen
  */
 export class Element {
@@ -598,10 +670,14 @@ export default class TestDriverSDK {
    *
    * @param description - Description of the element to find
    * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
-   * @returns Element instance that has been located
+   * @returns Chainable promise that resolves to Element instance
    *
    * @example
-   * // Find and click immediately
+   * // Find and click immediately (chainable)
+   * await client.find('the sign in button').click();
+   *
+   * @example
+   * // Find and click (traditional)
    * const element = await client.find('the sign in button');
    * await element.click();
    *
@@ -620,7 +696,7 @@ export default class TestDriverSDK {
    * }
    * await element.click();
    */
-  find(description: string, cacheThreshold?: number): Promise<Element>;
+  find(description: string, cacheThreshold?: number): ChainableElementPromise;
 
   /**
    * Find all elements matching a description
