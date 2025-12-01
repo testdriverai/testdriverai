@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="41.218669583">
-    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-11-29T00:18:05.107Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="41.218669583">
-        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="41.212671292">
+<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="1179.7957555">
+    <testsuite name="testdriver/acceptance-sdk/sully-ai.test.mjs" timestamp="2025-11-29T00:30:01.937Z" hostname="MacBookPro.lan" tests="1" failures="1" errors="0" skipped="0" time="1179.7957555">
+        <testcase classname="testdriver/acceptance-sdk/sully-ai.test.mjs" name="Sully.ai Patient Management Workflow &gt; should complete full patient workflow: login, view patients, update note, and edit profile" time="1179.79123">
             <system-out>
 [testdriver] Connecting to sandbox...
 
@@ -15,9 +15,12 @@
 [2mconnecting...[22m
 
 renderSandbox {
-  sandboxId: [32m&apos;irqf7tcugf6uzt3uwmrwf&apos;[39m,
-  url: [32m&apos;https://6080-irqf7tcugf6uzt3uwmrwf.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
+  sandboxId: [32m&apos;i8bj55uzaxh4rqu6ewxd4&apos;[39m,
+  url: [32m&apos;https://6080-i8bj55uzaxh4rqu6ewxd4.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
 }
+
+Live test execution:
+http://localhost:50568?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwczovLzYwODAtaThiajU1dXpheGg0cnF1NmV3eGQ0LmUyYi5hcHAvdm5jX2xpdGUuaHRtbD9hdXRvY29ubmVjdD10cnVlJnJlc2l6ZT1zY2FsZSIsInRva2VuIjoiVjNiOHdHOSJ9
 
 Running lifecycle: provision
 No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml
@@ -25,7 +28,7 @@ No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/tes
 provision run
 
 [testdriver] ✅ Connected to sandbox
-[useTestDriver] Console interceptor enabled for task: -1973333524_0_0
+[useTestDriver] Console interceptor enabled for task: 367533396_0_0
 [2mcalling exec...[22m
 touch /tmp/testdriver.log
 
@@ -36,9 +39,9 @@ touch /tmp/testdriver.log
 npm prefix -g
 
 [2mcalling exec...[22m
-TD_API_ROOT=&quot;https://replayable-dev-ian-mac-m1-16.ngrok.io&quot; dashcam logs --add --type=web --pattern=&quot;*testdriver-sandbox.vercel.app*&quot; --name=&quot;Web Logs&quot;
+TD_API_ROOT=&quot;https://replayable-dev-ian-mac-m1-16.ngrok.io&quot; dashcam logs --add --type=web --pattern=&quot;*app.sully.ai*&quot; --name=&quot;Web Logs&quot;
 
-[provision.chrome] ✅ Web logs added to dashcam (pattern: *testdriver-sandbox.vercel.app*)
+[provision.chrome] ✅ Web logs added to dashcam (pattern: *app.sully.ai*)
 [provision.chrome] Starting dashcam...
 [2mcalling exec...[22m
 TD_API_ROOT=&quot;https://replayable-dev-ian-mac-m1-16.ngrok.io&quot; dashcam auth 49c2996c-0687-40bf-9f2c-5d2e55b2a2c6
@@ -56,1088 +59,752 @@ TD_API_ROOT=&quot;https://replayable-dev-ian-mac-m1-16.ngrok.io&quot; dashcam lo
 
 [provision.chrome] ✅ Dashcam started
 [2mcalling exec...[22m
-chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --load-extension=/usr/lib/node_modules/dashcam-chrome/build &quot;http://testdriver-sandbox.vercel.app/login&quot; &gt;/dev/null 2&gt;&amp;1 &amp;
+chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --load-extension=/usr/lib/node_modules/dashcam-chrome/build &quot;https://app.sully.ai&quot; &gt;/dev/null 2&gt;&amp;1 &amp;
 
-[redraw] start() called with options: {&quot;enabled&quot;:false,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
-[redraw] start() - redraw disabled, returning null
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
 
-[provision.chrome] Waiting for domain &quot;testdriver-sandbox.vercel.app&quot; to appear in URL bar...
-[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;testdriver-sandbox.vercel.app&quot;[39m
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375040346.png
 
-AI Response Text: {&quot;elementType&quot;:&quot;notfound&quot;,&quot;reasoning&quot;:&quot;The screenshot shows a desktop environment with a blue background, featuring a few desktop icons (Trash, File System, Home), a taskbar at the bottom, and a white mouse/rat logo in the center. There is no visible text &apos;testdriver-sandbox.vercel.app&apos; anywhere in this screenshot. The only visible text elements are the desktop icon labels and system interface elements like &apos;Applications&apos; in the top menu bar and the date/time &apos;Sat 29 Nov, 00:16&apos; in the top right.&quot;}
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375040346.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375041301.png&apos;[39m
+}
 
-[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;testdriver-sandbox.vercel.app&quot;[39m
+[redraw] checkCondition() - diffPercent: [33m0[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m0/1s[22m
 
-AI Response Text: {&quot;elementType&quot;:&quot;notfound&quot;,&quot;reasoning&quot;:&quot;The screenshot shows a desktop environment with a blue background, featuring a few desktop icons (Trash, File System, Home), a taskbar at the bottom, and a white mouse/rat logo in the center. There is no visible text &apos;testdriver-sandbox.vercel.app&apos; anywhere in this screenshot. The only visible text elements are the desktop icon labels and system interface elements like &apos;Applications&apos; in the top menu bar and the date/time &apos;Sat 29 Nov, 00:16&apos; in the top right.&quot;}
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375040346.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375042527.png&apos;[39m
+}
 
-[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;testdriver-sandbox.vercel.app&quot;[39m
+[redraw] checkCondition() - diffPercent: [33m0[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
+[redraw complete] screen:false network:true timeout:true elapsed:1955ms
 
-AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The text &apos;testdriver-sandbox.vercel.app&apos; appears in the URL/address bar at the top of the browser window as part of the domain &apos;testdriver-sandbox.vercel.app/login&apos;&quot;}
-[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;testdriver-sandbox.vercel.app&quot;[39m [2m·[22m [2m[90m📍 (265, 78)[39m[22m[2m · [22m[2m⏱️  [31m1328ms[39m[22m[2m · [22m[1m[33m⚡ cached[39m[22m
+[provision.chrome] Waiting for domain &quot;app.sully.ai&quot; to appear in URL bar...
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;app.sully.ai&quot;[39m
 
-[provision.chrome] ✅ Chrome ready at http://testdriver-sandbox.vercel.app/login
-[redraw] start() called with options: {&quot;enabled&quot;:false,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
-[redraw] start() - redraw disabled, returning null
+AI Response Text: {&quot;elementType&quot;: &quot;notfound&quot;, &quot;reasoning&quot;: &quot;I examined the screenshot which shows a desktop environment with a blue background, three desktop icons (Trash, File System, Home), a taskbar at the bottom with some application icons, and a white mouse/rat graphic in the center. There is no visible text or element containing &apos;app.sully.ai&apos; anywhere in the screenshot.&quot;}
 
-[32m✅[39m [1m[36mAsserting[39m[22m [36m&quot;the TestDriver.ai Sandbox login page is displayed&quot;[39m
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;app.sully.ai&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The text &apos;app.sully.ai&apos; appears in the URL/address bar at the top of the browser window. This is a text element showing the current web address.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;app.sully.ai&quot;[39m [2m·[22m [2m[90m📍 (180, 78)[39m[22m[2m · [22m[2m⏱️  [31m13477ms[39m[22m
+
+[provision.chrome] ✅ Chrome ready at https://app.sully.ai
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375070146.png
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375070146.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375071178.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m0/1s[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375070146.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375072392.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
+[redraw complete] screen:false network:true timeout:true elapsed:2127ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Accept All button for cookies&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element &apos;Accept All button for cookies&apos; appears as a blue button with the text &apos;Accept All&apos; in the cookie consent dialog at the bottom left of the screen. This is a text element representing a button label.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Accept All button for cookies&quot;[39m [2m·[22m [2m[90m📍 (374, 716)[39m[22m[2m · [22m[2m⏱️  [31m14568ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Accept All button for cookies&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375089121.png
+
+[2mclick left clicking at 374, 716...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375089121.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375092878.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m1.33[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:666ms
+
+Waiting for login page to load...
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Email input field&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;image&quot;, &quot;reasoning&quot;: &quot;The email input field is a text input box where users can type their email address. It appears below the &apos;Email&apos; label and above the &apos;Password&apos; field in the login form. It has a light gray background with an envelope icon on the left side.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Email input field&quot;[39m [2m·[22m [2m[90m📍 (680, 523)[39m[22m[2m · [22m[2m⏱️  [31m11805ms[39m[22m
+
+Found email field
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Email input field&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375105452.png
+
+[2mclick left clicking at 680, 523...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375105452.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375109502.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.26[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m1/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:1611ms
+
+[2mtyping &quot;razeen+testdriver@sully.ai&quot;...[22m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375111124.png
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375111124.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375114321.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.07[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0.07/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m1/5s[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375111124.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375115934.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.11[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m2/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:2248ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Password input field&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;image&quot;, &quot;reasoning&quot;: &quot;The password input field is a form element (textbox) located below the Email field on the Sully.ai login page. It has placeholder text &apos;Password&apos; and an eye icon for toggling password visibility.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Password input field&quot;[39m [2m·[22m [2m[90m📍 (680, 616)[39m[22m[2m · [22m[2m⏱️  [31m14312ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Password input field&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375130996.png
+
+[2mclick left clicking at 680, 616...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375130996.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375134731.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.57[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:666ms
+
+[2mtyping secret &quot;****&quot;...[22m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375135406.png
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375135406.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375136647.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.02[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0.02/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375135406.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375137807.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.02[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0.02/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m1/5s[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375135406.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375138974.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.02[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0.02/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m3/5s[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375135406.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375140316.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.02[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0.02/0.1%[22m network:[38;2;179;211;52my[39m timeout:[2m4/5s[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375135406.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375141423.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.02[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mfalse[39m
+[redraw] screen:[2m0.02/0.1%[22m network:[38;2;179;211;52my[39m timeout:[38;2;179;211;52my[39m
+[redraw complete] screen:false network:true timeout:true elapsed:5373ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Login button&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The &apos;Login&apos; button appears as a blue button with white text at the bottom of the login form, below the password field and &apos;Forgot Password?&apos; link.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Login button&quot;[39m [2m·[22m [2m[90m📍 (680, 710)[39m[22m[2m · [22m[2m⏱️  [31m12579ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Login button&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375154715.png
+
+[2mclick left clicking at 680, 710...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375154715.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375158454.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.3[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:729ms
+
+Waiting for login to process...
+
+Screenshot taken after login
+[32m✅[39m [1m[36mAsserting[39m[22m [36m&quot;user is logged in and on the main application page or dashboard&quot;[39m
 thinking...
 
-The task passed. The screenshot clearly shows the TestDriver.ai Sandbox login page with the URL “testdriver-sandbox.vercel.app/login” and login fields.
+The task passed  
+The screenshot shows the user “razeen+testdriver@sully.ai” greeted on the Sully AI home/dashboard page, indicating they’re logged in and on the main application page.
+
+Looking for Patients link...
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Patients button or link in the navigation menu&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element &apos;Patients&apos; appears in the left navigation menu as a text link/button, visible below the &apos;Home&apos; menu item and above &apos;Visits&apos;. It has a small icon next to it but the clickable text label &apos;Patients&apos; is clearly visible.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Patients button or link in the navigation menu&quot;[39m [2m·[22m [2m[90m📍 (59, 373)[39m[22m[2m · [22m[2m⏱️  [31m13316ms[39m[22m
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Never button or Never save button&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The &apos;Never&apos; button appears in the password save dialog box at the top right of the screen. It is a text button label that allows users to decline saving the password.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Never button or Never save button&quot;[39m [2m·[22m [2m[90m📍 (1046, 385)[39m[22m[2m · [22m[2m⏱️  [31m12785ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Never button or Never save button&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375194895.png
+
+[2mclick left clicking at 1046, 385...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375194895.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375198646.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m7.36[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:697ms
+
+Dismissed password save dialog
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;save profile changes popup or banner&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element &apos;Save Profile Changes&apos; appears as a button label in the Edit Profile dialog box, located at the bottom right of the popup next to a &apos;Cancel&apos; button. It is text on a blue button that users can click to save their profile modifications.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;save profile changes popup or banner&quot;[39m [2m·[22m [2m[90m📍 (872, 608)[39m[22m[2m · [22m[2m⏱️  [31m13145ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;save profile changes popup or banner&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375212600.png
+
+[2mclick left clicking at 872, 608...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375212600.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375216334.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m58.41[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:853ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Patients navigation link or menu item&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element &apos;Patients&apos; appears as a navigation menu item in the left sidebar. It is text content that serves as a clickable link or menu item for navigation purposes.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Patients navigation link or menu item&quot;[39m [2m·[22m [2m[90m📍 (59, 373)[39m[22m[2m · [22m[2m⏱️  [31m13182ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Patients navigation link or menu item&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375230479.png
+
+[2mclick left clicking at 59, 373...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375230479.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375234214.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m3.51[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:715ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Patient search input box&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element &apos;Patient search input box&apos; appears in the screenshot as a text input field with placeholder text &apos;Search for patients...&apos; located below the &apos;All Patients (10)&apos; heading. This is a text-based interactive element where users can type search queries.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Patient search input box&quot;[39m [2m·[22m [2m[90m📍 (703, 343)[39m[22m[2m · [22m[2m⏱️  [31m13320ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Patient search input box&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375248512.png
+
+[2mclick left clicking at 703, 343...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375248512.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375252397.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.74[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:739ms
+
+[2mtyping &quot;Patient Test&quot;...[22m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375253161.png
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375253161.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375254557.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.52[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:643ms
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;first patient name in the dropdown or list&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;Looking at the screenshot, I can see a patient list interface. Under the &apos;Previous 30 days&apos; section, there is one patient entry visible with &apos;PT&apos; as an abbreviation and &apos;Patient Test&apos; as the name. This appears to be the first (and only) patient name shown in the list.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;first patient name in the dropdown or list&quot;[39m [2m·[22m [2m[90m📍 (303, 496)[39m[22m[2m · [22m[2m⏱️  [31m14861ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;first patient name in the dropdown or list&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375270184.png
+
+[2mclick left clicking at 303, 496...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375270184.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375273941.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m2.28[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:727ms
+
+Found patient via search
+[32m✅[39m [1m[36mAsserting[39m[22m [36m&quot;we are on a patient recording page&quot;[39m
+thinking...
+
+The task passed  
+The URL and page header indicate we are on the patient recordings page.
+
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;input box at the bottom of the screen&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element at the bottom of the screen is a text input box with placeholder text &apos;Add more details&apos; and two buttons labeled &apos;Make Concise&apos; and &apos;Ask Sully&apos;. This is a text-based element serving as an input field.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;input box at the bottom of the screen&quot;[39m [2m·[22m [2m[90m📍 (807, 699)[39m[22m[2m · [22m[2m⏱️  [31m14186ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;input box at the bottom of the screen&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375293323.png
+
+[2mclick left clicking at 807, 699...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375293323.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375297003.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.28[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:661ms
+
+[2mtyping &quot;This is a test note added by TestDriver automation.&quot;...[22m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375297673.png
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375297673.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375300682.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m0.24[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:655ms
+
+Looking for note regeneration option...
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;Make note more concise button or option&quot;[39m
+
+AI Response Text: {&quot;elementType&quot;: &quot;text&quot;, &quot;reasoning&quot;: &quot;The element &apos;Make Concise&apos; appears as a button text/label in the bottom portion of the screenshot, within a blue-bordered notification box that mentions &apos;This is a test note added by TestDriver automation.&apos; It is a clickable text button option.&quot;}
+[35m🔍[39m [1m[32mFound[39m[22m [36m&quot;Make note more concise button or option&quot;[39m [2m·[22m [2m[90m📍 (605, 739)[39m[22m[2m · [22m[2m⏱️  [31m15079ms[39m[22m
+
+[36m👆[39m [1m[36mClick[39m[22m [36m&quot;Make note more concise button or option&quot;[39m
+[redraw] start() called with options: {&quot;enabled&quot;:true,&quot;screenRedraw&quot;:true,&quot;networkMonitor&quot;:true,&quot;diffThreshold&quot;:0.1}
+
+[redraw] start() - captured startImage: /var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375316514.png
+
+[2mclick left clicking at 605, 739...[22m
+
+[redraw] checkCondition() - comparing images: {
+  startImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375316514.png&apos;[39m,
+  nowImage: [32m&apos;/var/folders/7s/2nhyb0rj2bs_rkswlgqnnhdm0000gn/T/1764375320207.png&apos;[39m
+}
+
+[redraw] checkCondition() - diffPercent: [33m63.97[39m threshold: [33m0.1[39m
+[redraw] checkCondition() - screenHasRedrawn: [33mtrue[39m
+[redraw] screen:[38;2;179;211;52my[39m network:[38;2;179;211;52my[39m timeout:[2m0/5s[22m
+[redraw complete] screen:true network:true timeout:false elapsed:703ms
+
+Clicked make note more concise
+
+[32m✅[39m [1m[36mAsserting[39m[22m [36m&quot;note has been regenerated or updated&quot;[39m
+thinking...
+
+Could not find or click make note more concise option
+Looking for kebab menu on the right...
+[35m🔍[39m [1m[36mFinding[39m[22m [36m&quot;three dots menu or kebab menu on the right side of the page&quot;[39m
 
 [testdriver] Cleaning up TestDriver client...
 [2mcalling exec...[22m
 npm prefix -g
 
-[2mcalling exec...[22m
-TD_API_ROOT=&quot;https://replayable-dev-ian-mac-m1-16.ngrok.io&quot; &quot;/usr/bin/dashcam&quot; stop
+            </system-out>
+            <system-err>
+[chrome preset] DEPRECATED: Use TestDriver() + testdriver.provision.chrome() instead
 
-[2mstdout:[22m
-[INIT] Process Manager initialized
-[INIT] Process directory: /home/user/.dashcam-cli
-[INIT] Status file: /home/user/.dashcam-cli/status.json
-[INIT] Platform: linux
-[INIT] Process directory exists: /home/user/.dashcam-cli
-!!!! Updated Stop
-00:17:57.393 [[34mdebug[39m] Stop command invoked
-  {
-    &quot;platform&quot;: &quot;linux&quot;,
-    &quot;cwd&quot;: &quot;/home/user&quot;,
-    &quot;pid&quot;: 1787,
-    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;
-  }
-[DEBUG] Checking if recording is active...
-[DEBUG] Status file path: /home/user/.dashcam-cli/status.json
-[DEBUG] Status file exists: true
-00:17:57.442 [[34mdebug[39m] Checking if recording is active...
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;,
-    &quot;platform&quot;: &quot;linux&quot;
-  }
-00:17:57.443 [[34mdebug[39m] Reading status file
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;exists&quot;: true
-  }
-00:17:57.444 [[34mdebug[39m] Status file read successfully
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRecording&quot;: true,
-    &quot;startTime&quot;: 1764375464876,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-[DEBUG] Status read result: {
-  isRecording: true,
-  startTime: 1764375464876,
-  options: { fps: 10 },
-  pid: 1429,
-  outputPath: &apos;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&apos;,
-  timestamp: 1764375464877,
-  platform: &apos;linux&apos;
-}
-00:17:57.446 [[34mdebug[39m] Status check result
-  {
-    &quot;hasStatus&quot;: true,
-    &quot;hasPid&quot;: true,
-    &quot;isRecording&quot;: true,
-    &quot;statusPid&quot;: 1429,
-    &quot;currentPid&quot;: 1787
-  }
-00:17:57.446 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-[DEBUG] Process running check: { pid: 1429, isRunning: true }
-00:17:57.447 [[34mdebug[39m] Process running check
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRunning&quot;: true
-  }
-[DEBUG] Recording active status: { isRecording: true, pid: 1429 }
-00:17:57.451 [[34mdebug[39m] Recording active status
-  {
-    &quot;isRecording&quot;: true,
-    &quot;pid&quot;: 1429
-  }
-00:17:57.451 [[34mdebug[39m] Recording active check result
-  {
-    &quot;isActive&quot;: true
-  }
-[DEBUG] Checking if recording is active...
-[DEBUG] Status file path: /home/user/.dashcam-cli/status.json
-[DEBUG] Status file exists: true
-00:17:57.452 [[34mdebug[39m] Checking if recording is active...
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;processDir&quot;: &quot;/home/user/.dashcam-cli&quot;,
-    &quot;platform&quot;: &quot;linux&quot;
-  }
-00:17:57.452 [[34mdebug[39m] Reading status file
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;exists&quot;: true
-  }
-00:17:57.453 [[34mdebug[39m] Status file read successfully
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRecording&quot;: true,
-    &quot;startTime&quot;: 1764375464876,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-[DEBUG] Status read result: {
-  isRecording: true,
-  startTime: 1764375464876,
-  options: { fps: 10 },
-  pid: 1429,
-  outputPath: &apos;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&apos;,
-  timestamp: 1764375464877,
-  platform: &apos;linux&apos;
-}
-00:17:57.453 [[34mdebug[39m] Status check result
-  {
-    &quot;hasStatus&quot;: true,
-    &quot;hasPid&quot;: true,
-    &quot;isRecording&quot;: true,
-    &quot;statusPid&quot;: 1429,
-    &quot;currentPid&quot;: 1787
-  }
-00:17:57.453 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-[DEBUG] Process running check: { pid: 1429, isRunning: true }
-00:17:57.454 [[34mdebug[39m] Process running check
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRunning&quot;: true
-  }
-[DEBUG] Recording active status: { isRecording: true, pid: 1429 }
-00:17:57.454 [[34mdebug[39m] Recording active status
-  {
-    &quot;isRecording&quot;: true,
-    &quot;pid&quot;: 1429
-  }
-Stopping recording...
-00:17:57.488 [[34mdebug[39m] Reading status file
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;exists&quot;: true
-  }
-00:17:57.490 [[34mdebug[39m] Status file read successfully
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRecording&quot;: true,
-    &quot;startTime&quot;: 1764375464876,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-00:17:57.490 [[34mdebug[39m] Active status before stop:
-  {
-    &quot;isRecording&quot;: true,
-    &quot;startTime&quot;: 1764375464876,
-    &quot;options&quot;: {
-      &quot;fps&quot;: 10
-    },
-    &quot;pid&quot;: 1429,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;platform&quot;: &quot;linux&quot;
-  }
-00:17:57.490 [[34mdebug[39m] Calling stopActiveRecording...
-00:17:57.490 [[34mdebug[39m] Reading status file
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;exists&quot;: true
-  }
-00:17:57.491 [[34mdebug[39m] Status file read successfully
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRecording&quot;: true,
-    &quot;startTime&quot;: 1764375464876,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-00:17:57.491 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.491 [[32minfo[39m] Killing background process
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.491 [[32minfo[39m] Sent SIGTERM to background process
-00:17:57.491 [[34mdebug[39m] Waiting for background process to exit gracefully...
-00:17:57.491 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.556 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.659 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.761 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.864 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:57.966 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.068 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.170 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.271 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.372 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.474 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.577 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.678 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.778 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.880 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:58.982 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.083 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.184 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.285 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.386 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.488 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.590 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.691 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.792 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.893 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:17:59.995 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.097 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.198 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.300 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.401 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.503 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.504 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.504 [[33mwarn[39m] Background process did not exit gracefully, sending SIGKILL
-00:18:00.505 [[32minfo[39m] Sent SIGKILL to background process
-00:18:00.505 [[34mdebug[39m] Process is running
-  {
-    &quot;pid&quot;: 1429
-  }
-00:18:00.606 [[34mdebug[39m] Process is not running
-  {
-    &quot;pid&quot;: 1429,
-    &quot;error&quot;: &quot;ESRCH&quot;,
-    &quot;platform&quot;: &quot;linux&quot;
-  }
-00:18:00.607 [[34mdebug[39m] Process is not running
-  {
-    &quot;pid&quot;: 1429,
-    &quot;error&quot;: &quot;ESRCH&quot;,
-    &quot;platform&quot;: &quot;linux&quot;
-  }
-00:18:00.607 [[32minfo[39m] Background process stopped
-00:18:00.608 [[34mdebug[39m] Reading status file
-  {
-    &quot;statusFile&quot;: &quot;/home/user/.dashcam-cli/status.json&quot;,
-    &quot;exists&quot;: true
-  }
-00:18:00.608 [[34mdebug[39m] Status file read successfully
-  {
-    &quot;pid&quot;: 1429,
-    &quot;isRecording&quot;: true,
-    &quot;startTime&quot;: 1764375464876,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-Recording stopped successfully
-00:18:00.609 [[34mdebug[39m] Stop result:
-  {
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;duration&quot;: 15733
-  }
-Processing recording...
-00:18:00.609 [[34mdebug[39m] Reconstructing recording data from status file
-00:18:00.805 [[34mdebug[39m] IconCache initialized
-  {
-    &quot;folderPath&quot;: &quot;/tmp/dashcam-cli-icons&quot;,
-    &quot;cachedIcons&quot;: 1
-  }
-00:18:00.844 [[32minfo[39m] Started tracking logs for /tmp/testdriver.log
-00:18:00.848 [[32minfo[39m] Fixing video with FFmpeg
-  {
-    &quot;tempFile&quot;: &quot;/tmp/dashcam/recordings/temp-1764375464830.webm&quot;,
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-00:18:00.848 [[34mdebug[39m] Entering fixVideoContainer
-  {
-    &quot;args&quot;: {
-      &quot;inputVideoPath&quot;: &quot;/tmp/dashcam/recordings/temp-1764375464830.webm&quot;,
-      &quot;outputVideoPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-    }
-  }
-00:18:00.849 [[34mdebug[39m] Getting ffmpeg path from ffmpeg-static
-  {
-    &quot;path&quot;: &quot;/usr/lib/node_modules/dashcam/node_modules/ffmpeg-static/ffmpeg&quot;
-  }
-00:18:00.849 [[32minfo[39m] Re-muxing video to fix container metadata
-  {
-    &quot;input&quot;: &quot;/tmp/dashcam/recordings/temp-1764375464830.webm&quot;,
-    &quot;output&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-  }
-00:18:00.879 [[32minfo[39m] Successfully re-muxed video
-  {
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;outputSize&quot;: 736695
-  }
-00:18:00.879 [[34mdebug[39m] Exiting fixVideoContainer
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:00.880 [[32minfo[39m] Video fixed successfully
-00:18:00.880 [[32minfo[39m] Output file ready for upload
-  {
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;size&quot;: 736695
-  }
-Creating preview assets...
-00:18:00.881 [[34mdebug[39m] Creating GIF
-  {
-    &quot;inputVideoPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;outputGifPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.gif&quot;
-  }
-00:18:00.882 [[34mdebug[39m] Getting ffmpeg path from ffmpeg-static
-  {
-    &quot;path&quot;: &quot;/usr/lib/node_modules/dashcam/node_modules/ffmpeg-static/ffmpeg&quot;
-  }
-00:18:00.883 [[34mdebug[39m] Creating snapshot
-  {
-    &quot;inputVideoPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;outputSnapshotPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.png&quot;,
-    &quot;snapshotTimeSeconds&quot;: 0
-  }
-00:18:00.883 [[34mdebug[39m] Getting ffmpeg path from ffmpeg-static
-  {
-    &quot;path&quot;: &quot;/usr/lib/node_modules/dashcam/node_modules/ffmpeg-static/ffmpeg&quot;
-  }
-00:18:00.883 [[34mdebug[39m] Getting ffprobe path from ffprobe-static
-  {
-    &quot;path&quot;: &quot;/usr/lib/node_modules/dashcam/node_modules/ffprobe-static/bin/linux/x64/ffprobe&quot;
-  }
-00:18:01.275 [[34mdebug[39m] Preview assets created successfully
-Collecting tracking data...
-00:18:01.277 [[34mdebug[39m] Entering ApplicationTracker.stop
-  {
-    &quot;args&quot;: {}
-  }
-00:18:01.277 [[34mdebug[39m] Application tracking not started
-00:18:01.277 [[34mdebug[39m] Exiting ApplicationTracker.stop
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:01.277 [[32minfo[39m] Collected app tracking results
-  {
-    &quot;apps&quot;: 0,
-    &quot;icons&quot;: 0,
-    &quot;events&quot;: 0
-  }
-00:18:01.279 [[32minfo[39m] Found web logs
-  {
-    &quot;count&quot;: 21,
-    &quot;file&quot;: &quot;/tmp/dashcam/recordings/dashcam_logs_web_events.jsonl&quot;,
-    &quot;patterns&quot;: [
-      &quot;*testdriver-sandbox.vercel.app*&quot;
-    ]
-  }
-00:18:01.279 [[32minfo[39m] Collected log tracking results
-  {
-    &quot;trackers&quot;: 1,
-    &quot;totalEvents&quot;: 21
-  }
-00:18:01.279 [[32minfo[39m] Found performance file, will upload to S3
-  {
-    &quot;file&quot;: &quot;/tmp/dashcam/recordings/performance.jsonl&quot;
-  }
-00:18:01.280 [[32minfo[39m] Parsed performance samples from file
-  {
-    &quot;sampleCount&quot;: 4
-  }
-00:18:01.280 [[32minfo[39m] Calculated performance summary for logging
-  {
-    &quot;sampleCount&quot;: 4,
-    &quot;avgCPU&quot;: &quot;6.7&quot;,
-    &quot;maxCPU&quot;: &quot;17.0&quot;,
-    &quot;avgMemoryMB&quot;: &quot;83.8&quot;
-  }
-00:18:01.280 [[32minfo[39m] Recording result prepared for upload
-  {
-    &quot;hasPerformanceFile&quot;: true,
-    &quot;performanceSamples&quot;: 4,
-    &quot;avgCPU&quot;: &quot;6.7&quot;,
-    &quot;maxCPU&quot;: &quot;17.0&quot;
-  }
-Uploading recording...
-00:18:01.281 [[34mdebug[39m] Recording result:
-  {
-    &quot;outputPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;gifPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.gif&quot;,
-    &quot;snapshotPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.png&quot;,
-    &quot;duration&quot;: 15733,
-    &quot;fileSize&quot;: 736695,
-    &quot;clientStartDate&quot;: 1764375464876,
-    &quot;apps&quot;: [],
-    &quot;icons&quot;: [],
-    &quot;logs&quot;: [
-      {
-        &quot;type&quot;: &quot;web&quot;,
-        &quot;name&quot;: &quot;Web Logs&quot;,
-        &quot;fileLocation&quot;: &quot;/tmp/dashcam/recordings/dashcam_logs_web_events.jsonl&quot;,
-        &quot;count&quot;: 21,
-        &quot;trimmedFileLocation&quot;: &quot;/tmp/dashcam/recordings/dashcam_logs_web_events.jsonl&quot;,
-        &quot;patterns&quot;: [
-          &quot;*testdriver-sandbox.vercel.app*&quot;
-        ]
-      }
-    ],
-    &quot;performanceFile&quot;: &quot;/tmp/dashcam/recordings/performance.jsonl&quot;
-  }
-00:18:01.282 [[34mdebug[39m] Entering upload
-  {
-    &quot;args&quot;: {
-      &quot;filePath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;,
-      &quot;metadata&quot;: {
-        &quot;title&quot;: &quot;Dashcam Recording&quot;,
-        &quot;duration&quot;: 15733,
-        &quot;clientStartDate&quot;: 1764375464876,
-        &quot;apps&quot;: [],
-        &quot;icons&quot;: [],
-        &quot;logs&quot;: [
-          {
-            &quot;type&quot;: &quot;web&quot;,
-            &quot;name&quot;: &quot;Web Logs&quot;,
-            &quot;fileLocation&quot;: &quot;/tmp/dashcam/recordings/dashcam_logs_web_events.jsonl&quot;,
-            &quot;count&quot;: 21,
-            &quot;trimmedFileLocation&quot;: &quot;/tmp/dashcam/recordings/dashcam_logs_web_events.jsonl&quot;,
-            &quot;patterns&quot;: [
-              &quot;*testdriver-sandbox.vercel.app*&quot;
-            ]
-          }
-        ],
-        &quot;performanceFile&quot;: &quot;/tmp/dashcam/recordings/performance.jsonl&quot;,
-        &quot;gifPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.gif&quot;,
-        &quot;snapshotPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.png&quot;
-      }
-    }
-  }
-00:18:01.596 [[32minfo[39m] Starting upload process
-  {
-    &quot;filePath&quot;: &quot;recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;fileType&quot;: &quot;video&quot;,
-    &quot;extension&quot;: &quot;webm&quot;,
-    &quot;title&quot;: &quot;Dashcam Recording&quot;,
-    &quot;hasProject&quot;: false
-  }
-00:18:01.596 [[34mdebug[39m] Collecting system information...
-00:18:01.597 [[34mdebug[39m] Collecting system information...
-00:18:01.730 [[34mdebug[39m] [VERBOSE] System information collected
-  {
-    &quot;cpuBrand&quot;: &quot;Xeon® Processor&quot;,
-    &quot;totalMemoryGB&quot;: &quot;7.78&quot;,
-    &quot;os&quot;: &quot;Ubuntu 22.04.5 LTS&quot;,
-    &quot;graphicsControllers&quot;: 0,
-    &quot;displays&quot;: 1
-  }
-00:18:01.731 [[34mdebug[39m] [VERBOSE] System information collected for upload
-  {
-    &quot;cpuBrand&quot;: &quot;Xeon® Processor&quot;,
-    &quot;osDistro&quot;: &quot;Ubuntu&quot;,
-    &quot;totalMemGB&quot;: &quot;7.78&quot;
-  }
-00:18:01.731 [[34mdebug[39m] No project ID provided, fetching user projects...
-00:18:01.732 [[34mdebug[39m] Entering auth.getProjects
-  {
-    &quot;args&quot;: {}
-  }
-00:18:01.732 [[34mdebug[39m] Fetching user projects...
-00:18:02.218 [[34mdebug[39m] [VERBOSE] Projects fetched successfully
-  {
-    &quot;projectCount&quot;: 1
-  }
-00:18:02.219 [[34mdebug[39m] Exiting auth.getProjects
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:02.219 [[32minfo[39m] Automatically selected first project
-  {
-    &quot;projectId&quot;: &quot;68461b32cd485429de831c36&quot;,
-    &quot;projectName&quot;: &quot;Demo Project&quot;
-  }
-00:18:02.220 [[34mdebug[39m] [VERBOSE] Creating replay with config
-  {
-    &quot;duration&quot;: 15733,
-    &quot;apps&quot;: [
-      &quot;Screen Recording&quot;
-    ],
-    &quot;title&quot;: &quot;Dashcam Recording&quot;,
-    &quot;system&quot;: {
-      &quot;cpu&quot;: {
-        &quot;manufacturer&quot;: &quot;Intel&quot;,
-        &quot;brand&quot;: &quot;Xeon® Processor&quot;,
-        &quot;vendor&quot;: &quot;Intel&quot;,
-        &quot;family&quot;: &quot;6&quot;,
-        &quot;model&quot;: &quot;85&quot;,
-        &quot;stepping&quot;: &quot;3&quot;,
-        &quot;revision&quot;: &quot;&quot;,
-        &quot;voltage&quot;: &quot;&quot;,
-        &quot;speed&quot;: 2,
-        &quot;speedMin&quot;: null,
-        &quot;speedMax&quot;: null,
-        &quot;cores&quot;: 4,
-        &quot;physicalCores&quot;: 2,
-        &quot;processors&quot;: 1,
-        &quot;socket&quot;: &quot;&quot;,
-        &quot;cache&quot;: {
-          &quot;l1d&quot;: 65536,
-          &quot;l1i&quot;: 65536,
-          &quot;l2&quot;: 2097152,
-          &quot;l3&quot;: 39845888
-        }
-      },
-      &quot;mem&quot;: {
-        &quot;total&quot;: 8352620544,
-        &quot;free&quot;: 7060631552,
-        &quot;used&quot;: 1291988992,
-        &quot;active&quot;: 814919680,
-        &quot;available&quot;: 7537700864,
-        &quot;swaptotal&quot;: 134213632,
-        &quot;swapused&quot;: 0,
-        &quot;swapfree&quot;: 134213632
-      },
-      &quot;os&quot;: {
-        &quot;platform&quot;: &quot;linux&quot;,
-        &quot;distro&quot;: &quot;Ubuntu&quot;,
-        &quot;release&quot;: &quot;22.04.5 LTS&quot;,
-        &quot;codename&quot;: &quot;jammy&quot;,
-        &quot;kernel&quot;: &quot;6.1.158&quot;,
-        &quot;arch&quot;: &quot;x64&quot;,
-        &quot;hostname&quot;: &quot;e2b.local&quot;,
-        &quot;fqdn&quot;: &quot;e2b.local&quot;,
-        &quot;codepage&quot;: &quot;UTF-8&quot;,
-        &quot;logofile&quot;: &quot;ubuntu&quot;,
-        &quot;build&quot;: &quot;&quot;,
-        &quot;servicepack&quot;: &quot;&quot;,
-        &quot;uefi&quot;: false
-      },
-      &quot;graphics&quot;: {
-        &quot;controllers&quot;: [],
-        &quot;displays&quot;: [
-          {
-            &quot;vendor&quot;: &quot;&quot;,
-            &quot;model&quot;: &quot;&quot;,
-            &quot;main&quot;: false,
-            &quot;builtin&quot;: false,
-            &quot;connection&quot;: &quot;screen&quot;,
-            &quot;resolutionX&quot;: null,
-            &quot;resolutionY&quot;: null,
-            &quot;sizeX&quot;: null,
-            &quot;sizeY&quot;: null,
-            &quot;pixelDepth&quot;: null,
-            &quot;currentResX&quot;: 1366,
-            &quot;currentResY&quot;: 768,
-            &quot;currentRefreshRate&quot;: 0
-          }
-        ]
-      },
-      &quot;system&quot;: {
-        &quot;manufacturer&quot;: &quot;&quot;,
-        &quot;model&quot;: &quot;Virtual machine&quot;,
-        &quot;version&quot;: &quot;&quot;,
-        &quot;serial&quot;: &quot;-&quot;,
-        &quot;uuid&quot;: &quot;&quot;,
-        &quot;sku&quot;: &quot;-&quot;,
-        &quot;virtual&quot;: true
-      }
-    },
-    &quot;clientStartDate&quot;: 1764375464876,
-    &quot;project&quot;: &quot;68461b32cd485429de831c36&quot;,
-    &quot;performanceDataWillBeUploaded&quot;: true
-  }
-Creating replay on server...
-00:18:02.220 [[32minfo[39m] Creating replay
-  {
-    &quot;title&quot;: &quot;Dashcam Recording&quot;,
-    &quot;duration&quot;: 15733,
-    &quot;apps&quot;: [
-      &quot;Screen Recording&quot;
-    ],
-    &quot;hasPerformanceFile&quot;: true
-  }
-00:18:02.220 [[34mdebug[39m] Sending replay creation request...
-  {
-    &quot;apiEndpoint&quot;: &quot;https://replayable-dev-ian-mac-m1-16.ngrok.io&quot;
-  }
-Replay created successfully
-00:18:02.438 [[32minfo[39m] Replay created successfully
-  {
-    &quot;replayId&quot;: &quot;692a3bbaf3cf09062a7517d0&quot;,
-    &quot;shareKey&quot;: &quot;Y2m685KflyNd5FrVvKwt6A&quot;,
-    &quot;shareLink&quot;: &quot;http://localhost:3001/replay/692a3bbaf3cf09062a7517d0?share=Y2m685KflyNd5FrVvKwt6A&quot;
-  }
-00:18:02.439 [[34mdebug[39m] [VERBOSE] Getting STS credentials for replay
-  {
-    &quot;replayId&quot;: &quot;692a3bbaf3cf09062a7517d0&quot;
-  }
-Getting upload credentials...
-00:18:02.439 [[34mdebug[39m] Entering auth.getStsCredentials
-  {
-    &quot;args&quot;: {}
-  }
-00:18:02.439 [[34mdebug[39m] Fetching STS credentials for upload...
-00:18:02.439 [[34mdebug[39m] [VERBOSE] Making STS request
-  {
-    &quot;tokenPrefix&quot;: &quot;eyJhbGciOi...&quot;,
-    &quot;replayData&quot;: {
-      &quot;id&quot;: &quot;692a3bbaf3cf09062a7517d0&quot;,
-      &quot;duration&quot;: 15733,
-      &quot;title&quot;: &quot;Dashcam Recording&quot;,
-      &quot;hasApps&quot;: true,
-      &quot;hasIcons&quot;: true,
-      &quot;hasProject&quot;: true
-    }
-  }
-00:18:03.504 [[34mdebug[39m] [VERBOSE] STS response received
-  {
-    &quot;hasVideo&quot;: true,
-    &quot;hasGif&quot;: true,
-    &quot;hasImage&quot;: true,
-    &quot;hasIcons&quot;: true
-  }
-00:18:03.505 [[34mdebug[39m] Exiting auth.getStsCredentials
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-Starting file uploads...
-00:18:03.505 [[34mdebug[39m] [VERBOSE] STS credentials received
-  {
-    &quot;hasVideo&quot;: true,
-    &quot;hasImage&quot;: true,
-    &quot;hasGif&quot;: true
-  }
-00:18:03.505 [[34mdebug[39m] Entering uploadFile
-  {
-    &quot;args&quot;: {
-      &quot;fileType&quot;: &quot;video&quot;,
-      &quot;extension&quot;: &quot;mp4&quot;,
-      &quot;file&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.webm&quot;
-    }
-  }
-00:18:03.506 [[32minfo[39m] Starting upload of video
-  {
-    &quot;file&quot;: &quot;recording-2025-11-29T00-17-44-824Z.webm&quot;,
-    &quot;fileType&quot;: &quot;video&quot;,
-    &quot;extension&quot;: &quot;mp4&quot;,
-    &quot;clipId&quot;: &quot;1764375482438&quot;
-  }
-00:18:03.506 [[34mdebug[39m] Entering createS3Client
-  {
-    &quot;args&quot;: {}
-  }
-00:18:03.506 [[34mdebug[39m] [VERBOSE] Creating S3 client
-  {
-    &quot;fallbackRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;hasAccessKey&quot;: true,
-    &quot;hasSecretKey&quot;: true,
-    &quot;hasSessionToken&quot;: true
-  }
-00:18:03.513 [[34mdebug[39m] S3 client created
-  {
-    &quot;configuredRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;
-  }
-00:18:03.513 [[34mdebug[39m] Exiting createS3Client
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:03.513 [[34mdebug[39m] Generating upload params:
-  {
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.mp4&quot;,
-    &quot;contentType&quot;: &quot;video/mp4&quot;
-  }
-00:18:03.514 [[34mdebug[39m] [VERBOSE] File upload details
-  {
-    &quot;fileSizeBytes&quot;: 736695,
-    &quot;fileSizeMB&quot;: &quot;0.70&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.mp4&quot;,
-    &quot;contentType&quot;: &quot;video/mp4&quot;
-  }
-00:18:03.516 [[34mdebug[39m] Adding GIF upload to queue
-  {
-    &quot;gifPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.gif&quot;
-  }
-00:18:03.516 [[34mdebug[39m] Entering uploadFile
-  {
-    &quot;args&quot;: {
-      &quot;fileType&quot;: &quot;image&quot;,
-      &quot;extension&quot;: &quot;gif&quot;,
-      &quot;file&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.gif&quot;
-    }
-  }
-00:18:03.516 [[32minfo[39m] Starting upload of image
-  {
-    &quot;file&quot;: &quot;recording-2025-11-29T00-17-44-824Z.gif&quot;,
-    &quot;fileType&quot;: &quot;image&quot;,
-    &quot;extension&quot;: &quot;gif&quot;,
-    &quot;clipId&quot;: &quot;1764375482438&quot;
-  }
-00:18:03.516 [[34mdebug[39m] Entering createS3Client
-  {
-    &quot;args&quot;: {}
-  }
-00:18:03.517 [[34mdebug[39m] [VERBOSE] Creating S3 client
-  {
-    &quot;fallbackRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;hasAccessKey&quot;: true,
-    &quot;hasSecretKey&quot;: true,
-    &quot;hasSessionToken&quot;: true
-  }
-Uploading 3 file(s)...
-00:18:03.527 [[34mdebug[39m] S3 client created
-  {
-    &quot;configuredRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;
-  }
-00:18:03.529 [[34mdebug[39m] Exiting createS3Client
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:03.529 [[34mdebug[39m] Generating upload params:
-  {
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.gif&quot;,
-    &quot;contentType&quot;: &quot;image/gif&quot;
-  }
-00:18:03.529 [[34mdebug[39m] [VERBOSE] File upload details
-  {
-    &quot;fileSizeBytes&quot;: 70985,
-    &quot;fileSizeMB&quot;: &quot;0.07&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.gif&quot;,
-    &quot;contentType&quot;: &quot;image/gif&quot;
-  }
-00:18:03.529 [[34mdebug[39m] Adding snapshot upload to queue
-  {
-    &quot;snapshotPath&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.png&quot;
-  }
-00:18:03.529 [[34mdebug[39m] Entering uploadFile
-  {
-    &quot;args&quot;: {
-      &quot;fileType&quot;: &quot;image&quot;,
-      &quot;extension&quot;: &quot;png&quot;,
-      &quot;file&quot;: &quot;/tmp/dashcam/recordings/recording-2025-11-29T00-17-44-824Z.png&quot;
-    }
-  }
-00:18:03.529 [[32minfo[39m] Starting upload of image
-  {
-    &quot;file&quot;: &quot;recording-2025-11-29T00-17-44-824Z.png&quot;,
-    &quot;fileType&quot;: &quot;image&quot;,
-    &quot;extension&quot;: &quot;png&quot;,
-    &quot;clipId&quot;: &quot;1764375482438&quot;
-  }
-00:18:03.530 [[34mdebug[39m] Entering createS3Client
-  {
-    &quot;args&quot;: {}
-  }
-00:18:03.530 [[34mdebug[39m] [VERBOSE] Creating S3 client
-  {
-    &quot;fallbackRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;hasAccessKey&quot;: true,
-    &quot;hasSecretKey&quot;: true,
-    &quot;hasSessionToken&quot;: true
-  }
-00:18:03.530 [[34mdebug[39m] S3 client created
-  {
-    &quot;configuredRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;
-  }
-00:18:03.530 [[34mdebug[39m] Exiting createS3Client
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:03.530 [[34mdebug[39m] Generating upload params:
-  {
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.png&quot;,
-    &quot;contentType&quot;: &quot;image/png&quot;
-  }
-00:18:03.530 [[34mdebug[39m] [VERBOSE] File upload details
-  {
-    &quot;fileSizeBytes&quot;: 693765,
-    &quot;fileSizeMB&quot;: &quot;0.66&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.png&quot;,
-    &quot;contentType&quot;: &quot;image/png&quot;
-  }
-00:18:03.530 [[32minfo[39m] Starting asset uploads
-  {
-    &quot;totalUploads&quot;: 3
-  }
-00:18:03.531 [[34mdebug[39m] Adding performance data upload to queue
-  {
-    &quot;performanceFile&quot;: &quot;/tmp/dashcam/recordings/performance.jsonl&quot;
-  }
-00:18:03.531 [[34mdebug[39m] Entering uploadFile
-  {
-    &quot;args&quot;: {
-      &quot;fileType&quot;: &quot;application&quot;,
-      &quot;extension&quot;: &quot;jsonl&quot;,
-      &quot;file&quot;: &quot;/tmp/dashcam/recordings/performance.jsonl&quot;
-    }
-  }
-00:18:03.558 [[32minfo[39m] Starting upload of application
-  {
-    &quot;file&quot;: &quot;performance.jsonl&quot;,
-    &quot;fileType&quot;: &quot;application&quot;,
-    &quot;extension&quot;: &quot;jsonl&quot;,
-    &quot;clipId&quot;: &quot;1764375482438&quot;
-  }
-00:18:03.560 [[34mdebug[39m] Entering createS3Client
-  {
-    &quot;args&quot;: {}
-  }
-00:18:03.560 [[34mdebug[39m] [VERBOSE] Creating S3 client
-  {
-    &quot;fallbackRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;hasAccessKey&quot;: true,
-    &quot;hasSecretKey&quot;: true,
-    &quot;hasSessionToken&quot;: true
-  }
-00:18:03.560 [[34mdebug[39m] S3 client created
-  {
-    &quot;configuredRegion&quot;: &quot;us-east-2&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;
-  }
-00:18:03.560 [[34mdebug[39m] Exiting createS3Client
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:03.560 [[34mdebug[39m] Generating upload params:
-  {
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/performance.jsonl&quot;,
-    &quot;contentType&quot;: &quot;application/jsonl&quot;
-  }
-00:18:03.560 [[34mdebug[39m] [VERBOSE] File upload details
-  {
-    &quot;fileSizeBytes&quot;: 6327,
-    &quot;fileSizeMB&quot;: &quot;0.01&quot;,
-    &quot;bucket&quot;: &quot;replayable-dev&quot;,
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/performance.jsonl&quot;,
-    &quot;contentType&quot;: &quot;application/jsonl&quot;
-  }
-00:18:03.560 [[32minfo[39m] Performance data upload queued
-  {
-    &quot;file&quot;: &quot;/tmp/dashcam/recordings/performance.jsonl&quot;
-  }
-00:18:03.561 [[34mdebug[39m] Processing logs for upload
-  {
-    &quot;logCount&quot;: 1
-  }
-00:18:03.561 [[34mdebug[39m] Trimming logs
-  {
-    &quot;startTime&quot;: 1764375464876,
-    &quot;endTime&quot;: 1764375480609,
-    &quot;duration&quot;: 15733
-  }
-00:18:03.561 [[32minfo[39m] Trimming logs
-  {
-    &quot;count&quot;: 1,
-    &quot;startMS&quot;: 0,
-    &quot;endMS&quot;: 15733,
-    &quot;clientStartDate&quot;: 1764375464876,
-    &quot;clientStartDateReadable&quot;: &quot;2025-11-29T00:17:44.876Z&quot;
-  }
-00:18:03.561 [[32minfo[39m] First event timestamp conversion
-  {
-    &quot;originalTime&quot;: 1764375464884,
-    &quot;clientStartDate&quot;: 1764375464876,
-    &quot;relativeTime&quot;: 8,
-    &quot;relativeSeconds&quot;: &quot;0.01&quot;,
-    &quot;startMS&quot;: 0,
-    &quot;line&quot;: &quot;N/A&quot;
-  }
-00:18:03.561 [[34mdebug[39m] Found web groupLog, handling all web groupLogs at once
-00:18:03.561 [[34mdebug[39m] Filtered events
-  {
-    &quot;source&quot;: 21,
-    &quot;filtered&quot;: 19,
-    &quot;difference&quot;: 2
-  }
-00:18:03.561 [[34mdebug[39m] Logs trimmed
-  {
-    &quot;trimmedCount&quot;: 1,
-    &quot;logsWithContent&quot;: 1
-  }
-00:18:03.561 [[34mdebug[39m] Creating log STS credentials
-  {
-    &quot;name&quot;: &quot;Web Logs&quot;,
-    &quot;type&quot;: &quot;web&quot;,
-    &quot;count&quot;: 19
-  }
-00:18:03.585 [[34mdebug[39m] Entering auth.createLogSts
-  {
-    &quot;args&quot;: {}
-  }
-00:18:03.586 [[34mdebug[39m] Creating log STS credentials
-  {
-    &quot;replayId&quot;: &quot;692a3bbaf3cf09062a7517d0&quot;,
-    &quot;appId&quot;: &quot;log-1764375483523&quot;,
-    &quot;name&quot;: &quot;Web Logs&quot;,
-    &quot;type&quot;: &quot;web&quot;
-  }
-00:18:03.848 [[34mdebug[39m] [VERBOSE] Upload application progress: 100%
-  {
-    &quot;loaded&quot;: 6327,
-    &quot;total&quot;: 6327,
-    &quot;speedMBps&quot;: &quot;0.02&quot;
-  }
-Uploaded application successfully (0.3s)
-00:18:03.849 [[32minfo[39m] Successfully uploaded application
-  {
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/performance.jsonl&quot;,
-    &quot;location&quot;: &quot;https://replayable-dev.s3.us-east-2.amazonaws.com/uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/performance.jsonl&quot;,
-    &quot;duration&quot;: &quot;0.3s&quot;,
-    &quot;averageSpeed&quot;: &quot;0.02 MB/s&quot;
-  }
-00:18:03.849 [[34mdebug[39m] Exiting uploadFile
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:04.023 [[34mdebug[39m] [VERBOSE] Upload image progress: 100%
-  {
-    &quot;loaded&quot;: 70985,
-    &quot;total&quot;: 70985,
-    &quot;speedMBps&quot;: &quot;0.13&quot;
-  }
-Uploaded image successfully (0.5s)
-00:18:04.024 [[32minfo[39m] Successfully uploaded image
-  {
-    &quot;key&quot;: &quot;uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.gif&quot;,
-    &quot;location&quot;: &quot;https://replayable-dev.s3.us-east-2.amazonaws.com/uploads/68461b32cd485429de831c36/692a3bbaf3cf09062a7517d0/692a3bbaf3cf09062a7517d0.gif&quot;,
-    &quot;duration&quot;: &quot;0.5s&quot;,
-    &quot;averageSpeed&quot;: &quot;0.13 MB/s&quot;
-  }
-00:18:04.024 [[34mdebug[39m] Exiting uploadFile
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:04.077 [[34mdebug[39m] [VERBOSE] Log STS credentials created
-  {
-    &quot;hasCredentials&quot;: true
-  }
-00:18:04.078 [[34mdebug[39m] Exiting auth.createLogSts
-  {
-    &quot;result&quot;: &quot;undefined&quot;
-  }
-00:18:04.079 [[34mdebug[39m] Uploading log file
-  {
-    &quot;file&quot;: &quot;692a3bbaf3cf09062a7517d0_dashcam_logs_web_events.jsonl&quot;,
-    &quot;size&quot;: 16424
-  }
-00:18:04.079 [[34mdebug[39m] Entering uploadFile
-  {
-    &quot;args&quot;: {
-      &quot;fileType&quot;: &quot;log&quot;,
-      &quot;extension&quot;: &quot;jsonl&quot;,
-      &quot;file&quot;: &quot;/tmp/dashcam/recordings/692a3bbaf3cf09062a7517d0_dashcam_logs_web_events.jsonl&quot;
-    }
-  }
-00:18:04.079 [[32minfo[39m] Starting upload of log
-  {
-    &quot;file&quot;: &quot;692a3bbaf3cf09062a7517d0_dashcam_logs_web_events.jsonl&quot;,
-    &quot;fileType&quot;: &quot;log&quot;,
-    &quot;extension&quot;: &quot;jsonl&quot;,
-    &quot;clipId&quot;: &quot;1764375482438&quot;
-  }
-00:18:04.079 [[34mdebug[39m] Entering createS3Client
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+error:sandbox : { name: [32m&apos;NotFoundError&apos;[39m }
+
+            </system-err>
+            <failure message="Element &quot;three dots menu or kebab menu on the right side of the page&quot; not found.
+
+=== Debug Information ===
+Element searched for: &quot;three dots menu or kebab menu on the right side of the page&quot;
+Cache: MISS" type="ElementNotFoundError">
+ElementNotFoundError: Element &quot;three dots menu or kebab menu on the right side of the page&quot; not found.
+
+=== Debug Information ===
+Element searched for: &quot;three dots menu or kebab menu on the right side of the page&quot;
+Cache: MISS
+ ❯ testdriver/acceptance-sdk/sully-ai.test.mjs:173:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { aiResponse: null, description: &apos;three dots menu or kebab menu on the right side of the page&apos;, timestamp: &apos;2025-11-29T00:15:26.630Z&apos;, screenshotPath: null, cachedImagePath: null, pixelDiffPath: null, _sanitizeAiResponse: &apos;Function&lt;_sanitizeAiResponse&gt;&apos; }
+            </failure>
+            <failure message="Hook timed out in 600000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with &quot;hookTimeout&quot;." type="Error">
+Error: Hook timed out in 600000ms.
+If this is a long-running hook, pass a timeout value as the last argument or configure it globally with &quot;hookTimeout&quot;.
+ ❯ TestDriver src/vitest/hooks.mjs:294:29
+ ❯ chrome src/presets/index.mjs:36:32
+ ❯ testdriver/acceptance-sdk/sully-ai.test.mjs:53:40
+
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>
+] Entering createS3Client
   {
     &quot;args&quot;: {}
   }

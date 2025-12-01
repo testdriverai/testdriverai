@@ -1711,12 +1711,28 @@ ${regression}
     this.emitter.emit(events.log.log, `${inputFile} (end)`);
   }
 
+  // Returns the path to the sandbox file (project-local first, then global)
+  getSandboxFilePath(preferProjectLocal = true) {
+    const projectLocalFile = path.join(process.cwd(), ".testdriver-sandbox.json");
+    const globalFile = path.join(os.homedir(), ".testdriverai-last-sandbox");
+    
+    if (preferProjectLocal) {
+      // For reading: check project-local first, then global
+      if (fs.existsSync(projectLocalFile)) {
+        return projectLocalFile;
+      }
+      if (fs.existsSync(globalFile)) {
+        return globalFile;
+      }
+      // For writing: default to project-local
+      return projectLocalFile;
+    }
+    return globalFile;
+  }
+
   // Returns sandboxId to use (either from file if recent, or null)
   getRecentSandboxId() {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    const lastSandboxFile = this.getSandboxFilePath(true);
 
     if (fs.existsSync(lastSandboxFile)) {
       try {
@@ -1762,10 +1778,8 @@ ${regression}
   }
 
   saveLastSandboxId(sandboxId, osType = "linux") {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    // Save to project-local .testdriver-sandbox.json
+    const projectLocalFile = path.join(process.cwd(), ".testdriver-sandbox.json");
     try {
       const sandboxInfo = {
         sandboxId: sandboxId,
@@ -1774,7 +1788,7 @@ ${regression}
         instanceType: this.sandboxInstance || null,
         timestamp: new Date().toISOString(),
       };
-      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
+      fs.writeFileSync(projectLocalFile, JSON.stringify(sandboxInfo, null, 2), {
         encoding: "utf-8",
       });
     } catch {
@@ -1783,13 +1797,16 @@ ${regression}
   }
 
   clearRecentSandboxId() {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    // Clear project-local file first, then global
+    const projectLocalFile = path.join(process.cwd(), ".testdriver-sandbox.json");
+    const globalFile = path.join(os.homedir(), ".testdriverai-last-sandbox");
+    
     try {
-      if (fs.existsSync(lastSandboxFile)) {
-        fs.unlinkSync(lastSandboxFile);
+      if (fs.existsSync(projectLocalFile)) {
+        fs.unlinkSync(projectLocalFile);
+      }
+      if (fs.existsSync(globalFile)) {
+        fs.unlinkSync(globalFile);
       }
     } catch {
       // ignore errors
@@ -1845,6 +1862,9 @@ ${regression}
     await this.connectToSandboxService();
 
     const recentId = createNew ? null : this.getRecentSandboxId();
+    
+    // Track whether we reconnected to an existing sandbox or created a new one
+    this.isReconnected = false;
 
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (this.ip) {
@@ -1858,6 +1878,7 @@ ${regression}
       this.emitter.emit(events.sandbox.connected);
 
       this.instance = instance.instance;
+      this.isReconnected = false; // Direct IP is considered new
       await this.renderSandbox(this.instance, headless);
       await this.newSession();
       await this.runLifecycle("provision");
@@ -1878,6 +1899,7 @@ ${regression}
         );
 
         this.instance = instance;
+        this.isReconnected = true; // Successfully reconnected to existing sandbox
 
         await this.renderSandbox(instance, headless);
         await this.newSession();
@@ -1910,6 +1932,7 @@ ${regression}
         );
 
         this.instance = instance;
+        this.isReconnected = true; // Successfully reconnected to existing sandbox
 
         await this.renderSandbox(instance, headless);
         await this.newSession();
@@ -1926,6 +1949,7 @@ ${regression}
     
     // Create new sandbox (either because createNew is true, or no existing sandbox to connect to)
     if (!this.instance) {
+      this.isReconnected = false; // Creating new sandbox
       this.emitter.emit(
         events.log.narration,
         theme.dim(`creating new sandbox...`),

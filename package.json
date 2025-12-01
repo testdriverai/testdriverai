@@ -1,13 +1,17 @@
 {
   "name": "testdriverai",
-  "version": "7.0.0",
+  "version": "7.1.0",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "exports": {
     ".": "./sdk.js",
     "./core": "./src/core/index.js",
-    "./vitest": "./interfaces/vitest-plugin.mjs",
+    "./vitest": "./src/vitest/index.mjs",
     "./vitest/hooks": "./src/vitest/hooks.mjs",
+    "./vitest/extended": "./src/vitest/extended.mjs",
+    "./vitest/lifecycle": "./src/vitest/lifecycle.mjs",
+    "./vitest/utils": "./src/vitest/utils.mjs",
+    "./vitest/plugin": "./interfaces/vitest-plugin.mjs",
     "./presets": "./src/presets/index.mjs"
   },
   "bin": {

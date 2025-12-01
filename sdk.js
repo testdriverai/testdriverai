@@ -1506,8 +1506,13 @@ class TestDriverSDK {
     this._setupCommandMethods();
 
     this.connected = true;
+    
+    // Expose whether we reconnected to an existing sandbox or created a new one
+    this.isReconnected = this.agent.isReconnected || false;
+    
     this.analytics.track("sdk.connect", {
       sandboxId: this.instance?.instanceId,
+      isReconnected: this.isReconnected,
     });
 
     return this.instance;
