@@ -2376,7 +2376,7 @@ class TestDriverSDK {
     const sdk = createSDK(
       this.emitter,
       this.config,
-      this.agent.sessionInstance,
+      this.agent.session,
     );
     await sdk.auth();
 
@@ -2392,7 +2392,7 @@ class TestDriverSDK {
     if (!sessionId && this.agent?.newSession) {
       try {
         await this.agent.newSession();
-        sessionId = this.agent.sessionInstance.get();
+        sessionId = this.agent.session.get();
         
         // Save session ID to file for reuse across test runs
         if (sessionId) {
@@ -2474,7 +2474,7 @@ class TestDriverSDK {
     const sdk = createSDK(
       this.emitter,
       this.config,
-      this.agent.sessionInstance,
+      this.agent.session,
     );
     await sdk.auth();
 
@@ -2519,7 +2519,7 @@ class TestDriverSDK {
     const sdk = createSDK(
       this.emitter,
       this.config,
-      this.agent.sessionInstance,
+      this.agent.session,
     );
     await sdk.auth();
 

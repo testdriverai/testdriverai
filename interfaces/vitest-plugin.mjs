@@ -318,6 +318,12 @@ function registerExitHandlers() {
  * Create the TestDriver Vitest plugin
  * This sets up global state and provides the registration API
  */
+/**
+ * TestDriver Vitest Plugin
+ * 
+ * Use this in the `plugins` array to inject console log forwarding.
+ * For the reporter functionality, use `testDriverReporter` in the `reporters` array.
+ */
 export default function testDriverPlugin(options = {}) {
   // Initialize plugin state with options
   pluginState.apiKey = options.apiKey;
@@ -338,6 +344,60 @@ export default function testDriverPlugin(options = {}) {
   if (Object.keys(testDriverOptions).length > 0) {
     logger.debug("Global TestDriver options:", testDriverOptions);
   }
+
+  // Return a Vite plugin object that injects console log forwarding
+  return {
+    name: 'testdriver-plugin',
+    
+    // Inject onConsoleLog into Vitest config to forward logs to sandbox
+    config() {
+      return {
+        test: {
+          onConsoleLog(log, type) {
+            // Forward to active sandbox if available
+            const sandbox = globalThis.__testdriverActiveSandbox;
+            if (sandbox?.instanceSocketConnected) {
+              try {
+                sandbox.send({
+                  type: "output",
+                  output: Buffer.from(log, "utf8").toString("base64"),
+                });
+              } catch {
+                // Ignore errors when forwarding logs
+              }
+            }
+            // Return true to still print the log
+            return true;
+          },
+        },
+      };
+    },
+  };
+}
+
+/**
+ * TestDriver Reporter for Vitest
+ * 
+ * Use this in the `reporters` array for test lifecycle tracking.
+ */
+export function testDriverReporter(options = {}) {
+  // Initialize plugin state if not already done by the plugin
+  if (!pluginState.apiKey) {
+    pluginState.apiKey = options.apiKey;
+  }
+  if (!pluginState.apiRoot) {
+    pluginState.apiRoot =
+      options.apiRoot || process.env.TD_API_ROOT || "http://localhost:1337";
+  }
+  if (!pluginState.ciProvider) {
+    pluginState.ciProvider = detectCI();
+  }
+  if (!pluginState.gitInfo || Object.keys(pluginState.gitInfo).length === 0) {
+    pluginState.gitInfo = getGitInfo();
+  }
+  
+  // Register process exit handlers to handle cancellation
+  registerExitHandlers();
 
   return new TestDriverReporter(options);
 }

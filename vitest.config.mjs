@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 import { defineConfig } from "vitest/config";
-import testDriverPlugin from "./interfaces/vitest-plugin.mjs";
+import testDriverPlugin, { testDriverReporter } from "./interfaces/vitest-plugin.mjs";
 
 // Load environment variables from .env file
 config();
@@ -34,14 +34,10 @@ export default defineConfig({
       ["junit", { outputFile: "test-results/junit.xml" }],
       ["json", { outputFile: "test-results/results.json" }],
       ["html", { outputFile: "test-results/index.html" }],
-      [
-        "./interfaces/vitest-plugin.mjs",
-        {
-          apiKey: process.env.TD_API_KEY,
-          apiRoot:
-            process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
-        },
-      ], // TestDriver test recording
+      testDriverReporter({
+        apiKey: process.env.TD_API_KEY,
+        apiRoot: process.env.TD_API_ROOT || "https://testdriver-api.onrender.com",
+      }), // TestDriver test recording
     ],
 
     // Use forks for isolation, run tests in parallel

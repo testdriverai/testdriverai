@@ -21,99 +21,27 @@ import path from 'path';
 import TestDriverSDK from '../../sdk.js';
 
 /**
- * Intercept console logs and write to a log file on the remote machine
- * This allows test logs to appear in Dashcam recordings
+ * Set up console log forwarding to the sandbox
+ * This sets a global reference that the vitest plugin's onConsoleLog hook uses
  * @param {TestDriver} client - TestDriver client instance
  * @param {string} taskId - Unique task identifier for this test
  */
-function setupConsoleInterceptor(client, taskId) {
-  // Store original console methods
-  const originalConsole = {
-    log: console.log,
-    error: console.error,
-    warn: console.warn,
-    info: console.info,
-  };
-
-  // Determine log file path based on OS
-  const logPath = client.os === "windows" 
-    ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-    : "/tmp/testdriver.log";
-
-  // Store log path on client for later use
-  client._testLogPath = logPath;
-
-  // Track if we're currently writing to avoid infinite loops
-  let isWriting = false;
-
-  // Create wrapper that writes to log file
-  const createInterceptor = (level, originalMethod) => {
-    return function (...args) {
-      // Call original console method first
-      originalMethod.apply(console, args);
-
-      // Skip if already writing to avoid infinite loops
-      if (isWriting) return;
-
-      // Format the log message
-      const message = args
-        .map((arg) =>
-          typeof arg === "object"
-            ? JSON.stringify(arg, null, 2)
-            : String(arg),
-        )
-        .join(" ");
-
-      // Also send to sandbox for immediate visibility
-      if (client.sandbox && client.sandbox.instanceSocketConnected) {
+function setupConsoleForwarding(client, taskId) {
+  // Set global sandbox reference for onConsoleLog hook in vitest plugin
+  globalThis.__testdriverActiveSandbox = client.sandbox;
   
-          client.sandbox.send({
-            type: "output",
-            output: Buffer.from(message, "utf8").toString("base64"),
-          });
-      }
-    };
-  };
-
-  // Replace console methods with interceptors
-  console.log = createInterceptor("log", originalConsole.log);
-  console.error = createInterceptor("error", originalConsole.error);
-  console.warn = createInterceptor("warn", originalConsole.warn);
-  console.info = createInterceptor("info", originalConsole.info);
-
-  // Store original methods and taskId on client for cleanup
-  client._consoleInterceptor = {
-    taskId,
-    original: originalConsole,
-  };
-
-  // Use original console for this message
-  originalConsole.log(
-    `[useTestDriver] Console interceptor enabled for task: ${taskId}`,
-  );
+  console.log(`[testdriver] Console forwarding enabled for task: ${taskId}`);
 }
 
 /**
- * Remove console interceptor and restore original console methods
+ * Remove console forwarding by clearing the global sandbox reference
  * @param {TestDriver} client - TestDriver client instance
  */
-function removeConsoleInterceptor(client) {
-  if (client._consoleInterceptor) {
-    const { original, taskId } = client._consoleInterceptor;
-
-    // Restore original console methods
-    console.log = original.log;
-    console.error = original.error;
-    console.warn = original.warn;
-    console.info = original.info;
-
-    // Use original console for cleanup message
-    original.log(
-      `[useTestDriver] Console interceptor removed for task: ${taskId}`,
-    );
-
-    // Clean up reference
-    delete client._consoleInterceptor;
+function clearConsoleForwarding(client) {
+  // Only clear if this client's sandbox is the active one
+  if (globalThis.__testdriverActiveSandbox === client.sandbox) {
+    globalThis.__testdriverActiveSandbox = null;
+    console.log(`[testdriver] Console forwarding disabled`);
   }
 }
 
@@ -125,13 +53,104 @@ const lifecycleHandlers = new WeakMap();
 const suiteInstances = new Map();
 
 // Track all test IDs that use a shared suite instance (for writing dashcam URLs)
-const suiteTestIds = new Map(); // suiteId -> Set of { testId, testFile }
+const suiteTestIds = new Map(); // suiteId -> Set of { testId, testName, testFile, startTime }
 
 // Store file-level instances (for beforeAll/afterAll pattern)
 const fileInstances = new Map(); // filePath -> testdriver instance
 
 // Track test IDs for file-level instances
 const fileTestIds = new Map(); // filePath -> Set of { testId, testFile }
+
+// Track test run ID for this session
+let currentTestRunId = null;
+
+/**
+ * Record test case start to the API
+ * @param {TestDriver} testdriver - TestDriver instance
+ * @param {object} context - Vitest context
+ * @param {number} startTime - Test start timestamp
+ */
+async function recordTestCaseStart(testdriver, context, startTime) {
+  try {
+    // Wait for connection if pending
+    if (testdriver.__connectionPromise) {
+      await testdriver.__connectionPromise;
+    }
+    
+    // Get or create test run ID
+    if (!currentTestRunId) {
+      currentTestRunId = `vitest-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    }
+    
+    const task = context.task;
+    const parentSuite = getParentSuite(task);
+    
+    const testCaseData = {
+      runId: currentTestRunId,
+      testName: task.name,
+      testFile: task.file?.filepath || task.file?.name || 'unknown',
+      testOrder: task.id ? parseInt(task.id.split('-').pop()) || 0 : 0,
+      suiteName: parentSuite?.name || 'Default Suite',
+      status: 'running',
+      startTime: startTime,
+      sessionId: testdriver.getSessionId?.() || null
+    };
+    
+    console.log(`[testdriver] Recording test case start: ${task.name}`);
+    await testdriver.recordTestCase(testCaseData);
+    console.log(`[testdriver] ✅ Test case started: ${task.name}`);
+  } catch (error) {
+    console.warn(`[testdriver] ⚠️ Failed to record test case start:`, error.message);
+  }
+}
+
+/**
+ * Record test case completion to the API
+ * @param {TestDriver} testdriver - TestDriver instance
+ * @param {object} context - Vitest context
+ * @param {number} startTime - Test start timestamp
+ * @param {string} status - Test result status ('passed' | 'failed')
+ * @param {Error} [error] - Error if test failed
+ */
+async function recordTestCaseEnd(testdriver, context, startTime, status, error = null) {
+  try {
+    // Wait for connection if pending
+    if (testdriver.__connectionPromise) {
+      await testdriver.__connectionPromise;
+    }
+    
+    if (!currentTestRunId) {
+      currentTestRunId = `vitest-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    }
+    
+    const task = context.task;
+    const parentSuite = getParentSuite(task);
+    const endTime = Date.now();
+    
+    const testCaseData = {
+      runId: currentTestRunId,
+      testName: task.name,
+      testFile: task.file?.filepath || task.file?.name || 'unknown',
+      testOrder: task.id ? parseInt(task.id.split('-').pop()) || 0 : 0,
+      suiteName: parentSuite?.name || 'Default Suite',
+      status: status,
+      startTime: startTime,
+      endTime: endTime,
+      duration: endTime - startTime,
+      sessionId: testdriver.getSessionId?.() || null,
+      ...(error && {
+        errorMessage: error.message,
+        errorStack: error.stack
+      })
+    };
+    
+    console.log(`[testdriver] Recording test case end: ${task.name} (${status})`);
+    await testdriver.recordTestCase(testCaseData);
+    console.log(`[testdriver] ✅ Test case recorded: ${task.name} - ${status}`);
+  } catch (err) {
+    console.warn(`[testdriver] ⚠️ Failed to record test case end:`, err.message);
+  }
+}
 
 /**
  * Get the suite (describe block) that contains this test
@@ -230,9 +249,9 @@ export async function createTestDriver(options = {}) {
   await testdriver.connect();
   console.log('[testdriver] ✅ Connected to sandbox');
   
-  // Set up console interceptor
+  // Set up console forwarding to sandbox
   const taskId = `file-${Date.now()}`;
-  setupConsoleInterceptor(testdriver, taskId);
+  setupConsoleForwarding(testdriver, taskId);
   
   // Create the log file on the remote machine
   const shell = testdriver.os === "windows" ? "pwsh" : "sh";
@@ -247,17 +266,16 @@ export async function createTestDriver(options = {}) {
   await testdriver.exec(shell, createLogCmd, 10000, true);
   console.log('[testdriver] ✅ Created log file:', logPath);
   
-  // Add automatic log tracking when dashcam starts
-  const originalDashcamStart = testdriver.dashcam.start.bind(testdriver.dashcam);
-  testdriver.dashcam.start = async function() {
-    await originalDashcamStart();
-    try {
-      await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
-      console.log('[testdriver] ✅ Added log file to dashcam tracking');
-    } catch (error) {
-      console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
-    }
-  };
+  // Add log file tracking and start dashcam
+  try {
+    await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
+    console.log('[testdriver] ✅ Added log file to dashcam tracking');
+  } catch (error) {
+    console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
+  }
+  
+  await testdriver.dashcam.start();
+  console.log('[testdriver] ✅ Dashcam started');
   
   // Mark this as a file-level instance
   testdriver.__isFileInstance = true;
@@ -269,6 +287,7 @@ export async function createTestDriver(options = {}) {
 /**
  * Register a test with a file-level TestDriver instance
  * Call this at the start of each test to track it for dashcam URL association
+ * Also records the test case start to the API
  * 
  * @param {TestDriver} testdriver - The file-level TestDriver instance
  * @param {object} context - Vitest test context
@@ -283,12 +302,27 @@ export function registerTest(testdriver, context) {
   if (!testdriver || !context?.task) return;
   
   const testId = context.task.id;
+  const testName = context.task.name;
   const testFile = context.task.file?.filepath || context.task.file?.name || 'unknown';
+  const startTime = Date.now();
+  
+  // Store start time on context for later use
+  context.task.__testStartTime = startTime;
   
   if (testdriver.__testIds) {
-    testdriver.__testIds.add({ testId, testFile });
+    testdriver.__testIds.add({ testId, testName, testFile, startTime });
     console.log(`[testdriver] Registered test: ${testId}`);
   }
+  
+  // Record test case start to API
+  recordTestCaseStart(testdriver, context, startTime);
+  
+  // Register test finished handler to record test case completion
+  context.onTestFinished?.(async (result) => {
+    const status = result?.state === 'fail' ? 'failed' : 'passed';
+    const error = result?.errors?.[0] || null;
+    await recordTestCaseEnd(testdriver, context, startTime, status, error);
+  });
 }
 
 /**
@@ -317,6 +351,9 @@ export function TestDriver(context, options = {}) {
     throw new Error('TestDriver() requires Vitest context. Pass the context parameter from your test function: test("name", async (context) => { ... })');
   }
   
+  // Record test start time
+  const testStartTime = Date.now();
+  
   // Check if there's a shared instance for this suite (describe block)
   const parentSuite = getParentSuite(context.task);
   const suiteId = parentSuite?.id;
@@ -332,9 +369,14 @@ export function TestDriver(context, options = {}) {
     }
     suiteTestIds.get(suiteId).add({
       testId: context.task.id,
-      testFile: context.task.file?.filepath || context.task.file?.name || 'unknown'
+      testName: context.task.name,
+      testFile: context.task.file?.filepath || context.task.file?.name || 'unknown',
+      startTime: testStartTime
     });
     console.log(`[testdriver] Registered test ${context.task.id} for shared suite ${suiteId}`);
+    
+    // Record test case start (async, don't await)
+    recordTestCaseStart(existingInstance, context, testStartTime);
     
     return existingInstance;
   }
@@ -378,10 +420,15 @@ export function TestDriver(context, options = {}) {
     }
     suiteTestIds.get(suiteId).add({
       testId: context.task.id,
-      testFile: context.task.file?.filepath || context.task.file?.name || 'unknown'
+      testName: context.task.name,
+      testFile: context.task.file?.filepath || context.task.file?.name || 'unknown',
+      startTime: testStartTime
     });
     console.log(`[testdriver] Registered first test ${context.task.id} for shared suite ${suiteId}`);
   }
+  
+  // Store start time on context for later use
+  context.task.__testStartTime = testStartTime;
   
   // Auto-connect if enabled (default: true)
   const autoConnect = config.autoConnect !== undefined ? config.autoConnect : true;
@@ -393,8 +440,11 @@ export function TestDriver(context, options = {}) {
         await testdriver.connect();
         console.log('[testdriver] ✅ Connected to sandbox');
         
-        // Set up console interceptor after connection
-        setupConsoleInterceptor(testdriver, context.task.id);
+        // Record test case start after connection
+        recordTestCaseStart(testdriver, context, testStartTime);
+        
+        // Set up console forwarding to sandbox
+        setupConsoleForwarding(testdriver, context.task.id);
         
         // Create the log file on the remote machine
         const shell = testdriver.os === "windows" ? "pwsh" : "sh";
@@ -409,21 +459,16 @@ export function TestDriver(context, options = {}) {
         await testdriver.exec(shell, createLogCmd, 10000, true);
         console.log('[testdriver] ✅ Created log file:', logPath);
         
-        // Add automatic log tracking when dashcam starts
-        // Store original start method
-        const originalDashcamStart = testdriver.dashcam.start.bind(testdriver.dashcam);
-        testdriver.dashcam.start = async function() {
-          // Call original start (which handles auth)
-          await originalDashcamStart();
-          
-          // Add log file tracking after dashcam starts
-          try {
-            await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
-            console.log('[testdriver] ✅ Added log file to dashcam tracking');
-          } catch (error) {
-            console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
-          }
-        };
+        // Add log file tracking and start dashcam
+        try {
+          await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
+          console.log('[testdriver] ✅ Added log file to dashcam tracking');
+        } catch (error) {
+          console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
+        }
+        
+        await testdriver.dashcam.start();
+        console.log('[testdriver] ✅ Dashcam started');
       } catch (error) {
         console.error('[testdriver] Error during setup:', error);
         throw error;
@@ -435,14 +480,27 @@ export function TestDriver(context, options = {}) {
   // The instance will persist across all tests in the suite
   // Cleanup happens when the sandbox session times out or is explicitly stopped
   if (suiteId && suiteInstances.has(suiteId)) {
-    // This is a shared instance - skip per-test cleanup
+    // This is a shared instance - skip per-test cleanup but still record test case completion
     console.log(`[testdriver] Using shared instance for suite, skipping per-test cleanup`);
+    
+    // Register test finished handler for recording test case completion
+    context.onTestFinished?.(async (result) => {
+      const status = result?.state === 'fail' ? 'failed' : 'passed';
+      const error = result?.errors?.[0] || null;
+      await recordTestCaseEnd(testdriver, context, testStartTime, status, error);
+    });
+    
     return testdriver;
   }
   
   // Register cleanup handler with dashcam.stop() (only for non-shared instances)
   if (!lifecycleHandlers.has(context.task)) {
-    const cleanup = async () => {
+    const cleanup = async (result) => {
+      // Record test case completion first
+      const status = result?.state === 'fail' ? 'failed' : 'passed';
+      const error = result?.errors?.[0] || null;
+      await recordTestCaseEnd(testdriver, context, testStartTime, status, error);
+      
       console.log('[testdriver] Cleaning up TestDriver client...');
       try {
         // Stop dashcam if it was started
@@ -493,8 +551,8 @@ export function TestDriver(context, options = {}) {
           }
         }
         
-        // Remove console interceptor before disconnecting
-        removeConsoleInterceptor(testdriver);
+        // Clear console forwarding before disconnecting
+        clearConsoleForwarding(testdriver);
         
         // Wait for connection to finish if it was initiated
         if (testdriver.__connectionPromise) {
@@ -613,10 +671,8 @@ export async function cleanupTestDriver(testdriver) {
       }
     }
     
-    // Remove console interceptor
-    if (testdriver._consoleInterceptor) {
-      removeConsoleInterceptor(testdriver);
-    }
+    // Clear console forwarding
+    clearConsoleForwarding(testdriver);
     
     // Wait for connection promise if pending
     if (testdriver.__connectionPromise) {
