@@ -1220,6 +1220,19 @@ class TestDriverSDK {
 
         // If dashcam is available and recording, add web logs for this domain
         if (this._dashcam) {
+    
+            // Create the log file on the remote machine
+            const shell = this.os === "windows" ? "pwsh" : "sh";
+            const logPath = this.os === "windows" 
+            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
+            : "/tmp/testdriver.log";
+            
+            const createLogCmd = this.os === "windows"
+            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
+            : `touch ${logPath}`;
+            
+            await this.exec(shell, createLogCmd, 10000, true);
+          
           console.log('[provision.chrome] Adding web logs to dashcam...');
           try {
             const urlObj = new URL(url);
@@ -1227,6 +1240,9 @@ class TestDriverSDK {
             const pattern = `*${domain}*`;
             await this._dashcam.addWebLog(pattern, 'Web Logs');
             console.log(`[provision.chrome] ✅ Web logs added to dashcam (pattern: ${pattern})`);
+
+            await this._dashcam.addFileLog(logPath, "TestDriver Log");
+
           } catch (error) {
             console.warn('[provision.chrome] ⚠️  Failed to add web logs:', error.message);
           }

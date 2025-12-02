@@ -1,40 +1,26 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="2" failures="0" errors="0" time="60.603655375">
-    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-12-02T17:14:16.876Z" hostname="MacBookPro.lan" tests="2" failures="0" errors="0" skipped="0" time="60.603655375">
-        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="60.60278825">
-        </testcase>
-        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows 2" time="60.525202958">
+<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="42.282716667">
+    <testsuite name="testdriver/acceptance-sdk/assert.test.mjs" timestamp="2025-12-02T17:46:27.868Z" hostname="MacBookPro.lan" tests="1" failures="0" errors="0" skipped="0" time="42.282716667">
+        <testcase classname="testdriver/acceptance-sdk/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="42.281644625">
             <system-out>
 [testdriver] Connecting to sandbox...
-[testdriver] Connecting to sandbox...
-
-[2m--`new` flag detected, will create a new sandbox[22m
-[2mestablishing connection...[22m
 
 [2m--`new` flag detected, will create a new sandbox[22m
 [2mestablishing connection...[22m
 
 [2mauthenticating...[22m
 
-[2mauthenticating...[22m
-
-[2mcreating new sandbox...[22m
-
 [2mcreating new sandbox...[22m
 
 [2mconnecting...[22m
 
 renderSandbox {
-  sandboxId: [32m&apos;ibqy5ssepmmy4b8rq9uj0&apos;[39m,
-  url: [32m&apos;https://6080-ibqy5ssepmmy4b8rq9uj0.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
+  sandboxId: [32m&apos;i1h8efg8w3ysbifg04xy8&apos;[39m,
+  url: [32m&apos;https://6080-i1h8efg8w3ysbifg04xy8.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
 }
 
-[2mconnecting...[22m
-
-renderSandbox {
-  sandboxId: [32m&apos;iqs947t0rbtqi5t1h4y2u&apos;[39m,
-  url: [32m&apos;https://6080-iqs947t0rbtqi5t1h4y2u.e2b.app/vnc_lite.html?autoconnect=true&amp;resize=scale&apos;[39m
-}
+Live test execution:
+http://localhost:49651?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwczovLzYwODAtaTFoOGVmZzh3M3lzYmlmZzA0eHk4LmUyYi5hcHAvdm5jX2xpdGUuaHRtbD9hdXRvY29ubmVjdD10cnVlJnJlc2l6ZT1zY2FsZSIsInRva2VuIjoiVjNiOHdHOSJ9
 
 Running lifecycle: provision
 No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml

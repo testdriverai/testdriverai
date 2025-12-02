@@ -29,13 +29,19 @@ import TestDriverSDK from '../../sdk.js';
  * @param {string} taskId - Unique task identifier for this test
  */
 function setupConsoleSpy(client, taskId) {
-  // Determine log file path based on OS
-  const logPath = client.os === "windows" 
-    ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-    : "/tmp/testdriver.log";
 
-  // Store log path on client for later use
-  client._testLogPath = logPath;
+  // Debug logging for console spy setup
+  const debugConsoleSpy = process.env.TD_DEBUG_CONSOLE_SPY === 'true';
+  if (debugConsoleSpy) {
+    process.stdout.write(`[DEBUG setupConsoleSpy] taskId: ${taskId}\n`);
+    process.stdout.write(`[DEBUG setupConsoleSpy] client.sandbox exists: ${!!client.sandbox}\n`);
+    process.stdout.write(`[DEBUG setupConsoleSpy] client.sandbox?.instanceSocketConnected: ${client.sandbox?.instanceSocketConnected}\n`);
+    process.stdout.write(`[DEBUG setupConsoleSpy] client.sandbox?.send: ${typeof client.sandbox?.send}\n`);
+  }
+
+  // Track forwarding stats
+  let forwardedCount = 0;
+  let skippedCount = 0;
 
   // Helper to forward logs to sandbox
   const forwardToSandbox = (args) => {
@@ -49,10 +55,25 @@ function setupConsoleSpy(client, taskId) {
 
     // Send to sandbox for immediate visibility in dashcam
     if (client.sandbox && client.sandbox.instanceSocketConnected) {
-      client.sandbox.send({
-        type: "output",
-        output: Buffer.from(message, "utf8").toString("base64"),
-      });
+      try {
+        client.sandbox.send({
+          type: "output",
+          output: Buffer.from(message, "utf8").toString("base64"),
+        });
+        forwardedCount++;
+        if (debugConsoleSpy && forwardedCount <= 3) {
+          process.stdout.write(`[DEBUG forwardToSandbox] Forwarded message #${forwardedCount}: "${message.substring(0, 50)}..."\n`);
+        }
+      } catch (err) {
+        if (debugConsoleSpy) {
+          process.stdout.write(`[DEBUG forwardToSandbox] Error sending: ${err.message}\n`);
+        }
+      }
+    } else {
+      skippedCount++;
+      if (debugConsoleSpy && skippedCount <= 3) {
+        process.stdout.write(`[DEBUG forwardToSandbox] SKIPPED (sandbox not connected): "${message.substring(0, 50)}..."\n`);
+      }
     }
   };
 
@@ -159,13 +180,24 @@ export function TestDriver(context, options = {}) {
   
   // Auto-connect if enabled (default: true)
   const autoConnect = config.autoConnect !== undefined ? config.autoConnect : true;
+  const debugConsoleSpy = process.env.TD_DEBUG_CONSOLE_SPY === 'true';
+  
   if (autoConnect) {
     testdriver.__connectionPromise = (async () => {
       try {
         console.log('[testdriver] Connecting to sandbox...');
+        if (debugConsoleSpy) {
+          console.log('[DEBUG] Before auth - sandbox.instanceSocketConnected:', testdriver.sandbox?.instanceSocketConnected);
+        }
+        
         await testdriver.auth();
         await testdriver.connect();
         console.log('[testdriver] ✅ Connected to sandbox');
+        
+        if (debugConsoleSpy) {
+          console.log('[DEBUG] After connect - sandbox.instanceSocketConnected:', testdriver.sandbox?.instanceSocketConnected);
+          console.log('[DEBUG] After connect - sandbox.send:', typeof testdriver.sandbox?.send);
+        }
         
         // Set up console spy using vi.spyOn (test-isolated)
         setupConsoleSpy(testdriver, context.task.id);
@@ -185,19 +217,9 @@ export function TestDriver(context, options = {}) {
         
         // Add automatic log tracking when dashcam starts
         // Store original start method
-        const originalDashcamStart = testdriver.dashcam.start.bind(testdriver.dashcam);
-        testdriver.dashcam.start = async function() {
-          // Call original start (which handles auth)
-          await originalDashcamStart();
-          
-          // Add log file tracking after dashcam starts
-          try {
-            await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
-            console.log('[testdriver] ✅ Added log file to dashcam tracking');
-          } catch (error) {
-            console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
-          }
-        };
+
+        await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
+
       } catch (error) {
         console.error('[testdriver] Error during setup:', error);
         throw error;
