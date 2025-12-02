@@ -46,7 +46,7 @@ The setup process involves three main steps:
   <Tip>
     Be sure to run `aws configure` with your credentials
   </Tip>
-- Access to the TestDriver AMI (Golden Image is `ami-055cd47506a2f39bb`)\
+- Access to the TestDriver AMI (Golden Image is `ami-086b5b4b86d78987c`)\
   [Contact us with your preferred AWS Region for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
 - A GitHub repository for committing your tests & workflow.
 
@@ -244,7 +244,7 @@ Configure these secrets in your GitHub repository:
 | `AWS_REGION`             | AWS Region                          | `us-east-2`                                                  |
 | `AWS_SECRET_ACCESS_KEY`  | AWS secret key                      | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`                   |
 | `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1`                                       |
-| `AMI_ID`                 | TestDriver AMI ID                   | `ami-085f872ca0cd80fed`                                      |
+| `AMI_ID`                 | TestDriver AMI ID                   | `ami-086b5b4b86d78987c`                                      |
 | `TD_API_KEY`             | TestDriver API key                  | Your API key from [the dashboard](https://app.testdriver.ai) |
 
 ## AMI Customization
@@ -291,6 +291,7 @@ Before doing anything else, change the default password:
 
 1. Open PowerShell on the instance
 2. Run the password rotation script:
+
    ```powershell
    C:\testdriver\RotateLocalPasswords.ps1
    ```
