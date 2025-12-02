@@ -49,7 +49,7 @@ export default defineConfig({
     poolOptions: {
       forks: {
         singleFork: false,
-        maxForks: 5, // Reduced from 10 to prevent resource contention
+        maxForks: 10,
         minForks: 1,
       },
     },

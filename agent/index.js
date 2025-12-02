@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // disable depreciation warnings
 process.removeAllListeners("warning");
 

@@ -18,23 +18,17 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { vi } from 'vitest';
 import TestDriverSDK from '../../sdk.js';
 
 /**
- * Intercept console logs and write to a log file on the remote machine
- * This allows test logs to appear in Dashcam recordings
+ * Set up console spies using Vitest's vi.spyOn to intercept console logs
+ * and forward them to the sandbox for Dashcam visibility.
+ * This is test-isolated and doesn't cause conflicts with concurrent tests.
  * @param {TestDriver} client - TestDriver client instance
  * @param {string} taskId - Unique task identifier for this test
  */
-function setupConsoleInterceptor(client, taskId) {
-  // Store original console methods
-  const originalConsole = {
-    log: console.log,
-    error: console.error,
-    warn: console.warn,
-    info: console.info,
-  };
-
+function setupConsoleSpy(client, taskId) {
   // Determine log file path based on OS
   const logPath = client.os === "windows" 
     ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
@@ -43,77 +37,66 @@ function setupConsoleInterceptor(client, taskId) {
   // Store log path on client for later use
   client._testLogPath = logPath;
 
-  // Track if we're currently writing to avoid infinite loops
-  let isWriting = false;
+  // Helper to forward logs to sandbox
+  const forwardToSandbox = (args) => {
+    const message = args
+      .map((arg) =>
+        typeof arg === "object"
+          ? JSON.stringify(arg, null, 2)
+          : String(arg),
+      )
+      .join(" ");
 
-  // Create wrapper that writes to log file
-  const createInterceptor = (level, originalMethod) => {
-    return function (...args) {
-      // Call original console method first
-      originalMethod.apply(console, args);
-
-      // Skip if already writing to avoid infinite loops
-      if (isWriting) return;
-
-      // Format the log message
-      const message = args
-        .map((arg) =>
-          typeof arg === "object"
-            ? JSON.stringify(arg, null, 2)
-            : String(arg),
-        )
-        .join(" ");
-
-      // Also send to sandbox for immediate visibility
-      if (client.sandbox && client.sandbox.instanceSocketConnected) {
-  
-          client.sandbox.send({
-            type: "output",
-            output: Buffer.from(message, "utf8").toString("base64"),
-          });
-      }
-    };
+    // Send to sandbox for immediate visibility in dashcam
+    if (client.sandbox && client.sandbox.instanceSocketConnected) {
+      client.sandbox.send({
+        type: "output",
+        output: Buffer.from(message, "utf8").toString("base64"),
+      });
+    }
   };
 
-  // Replace console methods with interceptors
-  console.log = createInterceptor("log", originalConsole.log);
-  console.error = createInterceptor("error", originalConsole.error);
-  console.warn = createInterceptor("warn", originalConsole.warn);
-  console.info = createInterceptor("info", originalConsole.info);
+  // Create spies for each console method
+  const logSpy = vi.spyOn(console, 'log').mockImplementation((...args) => {
+    // Call through to original
+    logSpy.mock.calls; // Track calls
+    process.stdout.write(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n');
+    forwardToSandbox(args);
+  });
 
-  // Store original methods and taskId on client for cleanup
-  client._consoleInterceptor = {
-    taskId,
-    original: originalConsole,
-  };
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+    process.stderr.write(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n');
+    forwardToSandbox(args);
+  });
 
-  // Use original console for this message
-  originalConsole.log(
-    `[useTestDriver] Console interceptor enabled for task: ${taskId}`,
-  );
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation((...args) => {
+    process.stderr.write(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n');
+    forwardToSandbox(args);
+  });
+
+  const infoSpy = vi.spyOn(console, 'info').mockImplementation((...args) => {
+    process.stdout.write(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n');
+    forwardToSandbox(args);
+  });
+
+  // Store spies on client for cleanup
+  client._consoleSpies = { logSpy, errorSpy, warnSpy, infoSpy };
+
+  console.log(`[testdriver] Console spy set up for task: ${taskId}`);
 }
 
 /**
- * Remove console interceptor and restore original console methods
+ * Clean up console spies and restore original console methods
  * @param {TestDriver} client - TestDriver client instance
  */
-function removeConsoleInterceptor(client) {
-  if (client._consoleInterceptor) {
-    const { original, taskId } = client._consoleInterceptor;
-
-    // Restore original console methods
-    console.log = original.log;
-    console.error = original.error;
-    console.warn = original.warn;
-    console.info = original.info;
-
-    // Use original console for cleanup message
-    original.log(
-      `[useTestDriver] Console interceptor removed for task: ${taskId}`,
-    );
-
-    // Clean up reference
-    delete client._consoleInterceptor;
+function cleanupConsoleSpy(client) {
+  if (client._consoleSpies) {
+    const { logSpy, errorSpy, warnSpy, infoSpy } = client._consoleSpies;
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+    infoSpy.mockRestore();
+    delete client._consoleSpies;
   }
 }
 
@@ -184,8 +167,8 @@ export function TestDriver(context, options = {}) {
         await testdriver.connect();
         console.log('[testdriver] ✅ Connected to sandbox');
         
-        // Set up console interceptor after connection
-        setupConsoleInterceptor(testdriver, context.task.id);
+        // Set up console spy using vi.spyOn (test-isolated)
+        setupConsoleSpy(testdriver, context.task.id);
         
         // Create the log file on the remote machine
         const shell = testdriver.os === "windows" ? "pwsh" : "sh";
@@ -275,8 +258,8 @@ export function TestDriver(context, options = {}) {
           }
         }
         
-        // Remove console interceptor before disconnecting
-        removeConsoleInterceptor(testdriver);
+        // Clean up console spies
+        cleanupConsoleSpy(testdriver);
         
         // Wait for connection to finish if it was initiated
         if (testdriver.__connectionPromise) {

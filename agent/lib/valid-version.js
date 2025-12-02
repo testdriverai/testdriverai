@@ -1,9 +1,9 @@
 const semver = require("semver");
-const package = require("../../package.json");
+const packageJson = require("../../package.json");
 
 // Function to check if the new version's minor version is >= current version's minor version
 module.exports = (inputVersion) => {
-  const currentParsed = semver.parse(package.version);
+  const currentParsed = semver.parse(packageJson.version);
   const inputParsed = semver.parse(inputVersion.replace("v", ""));
 
   if (!currentParsed || !inputParsed) {

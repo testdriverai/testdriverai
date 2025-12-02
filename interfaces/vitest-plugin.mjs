@@ -1,8 +1,12 @@
 import crypto from "crypto";
 import fs from "fs";
+import { createRequire } from "module";
 import os from "os";
 import path from "path";
 import { setTestRunInfo } from "./shared-test-state.mjs";
+
+// Use createRequire to import CommonJS modules without esbuild processing
+const require = createRequire(import.meta.url);
 
 /**
  * Simple logger for the vitest plugin
@@ -216,6 +220,126 @@ export async function recordTestCaseDirect(token, apiRoot, testCaseData) {
   }
 
   return await response.json();
+}
+
+// Import TestDriverSDK using require to avoid esbuild transformation issues
+const TestDriverSDK = require('../sdk.js');
+
+/**
+ * Create a TestDriver client for use in beforeAll/beforeEach hooks
+ * This is for the shared instance pattern where one driver is used across multiple tests
+ * 
+ * @param {object} options - TestDriver options
+ * @param {string} [options.apiKey] - TestDriver API key (defaults to process.env.TD_API_KEY)
+ * @param {boolean} [options.headless] - Run sandbox in headless mode
+ * @returns {Promise<TestDriver>} Connected TestDriver client instance
+ * 
+ * @example
+ * let testdriver;
+ * beforeAll(async () => {
+ *   testdriver = await createTestDriver({ headless: true });
+ *   await testdriver.provision.chrome({ url: 'https://example.com' });
+ * });
+ */
+export async function createTestDriver(options = {}) {
+  // Get global plugin options if available
+  const pluginOptions = globalThis.__testdriverPlugin?.state?.testDriverOptions || {};
+  
+  // Merge options: plugin global options < test-specific options
+  const mergedOptions = { ...pluginOptions, ...options };
+  
+  // Extract TestDriver-specific options
+  const apiKey = mergedOptions.apiKey || process.env.TD_API_KEY;
+  
+  // Build config for TestDriverSDK constructor
+  const config = { ...mergedOptions };
+  delete config.apiKey;
+  
+  // Use TD_API_ROOT from environment if not provided in config
+  if (!config.apiRoot && process.env.TD_API_ROOT) {
+    config.apiRoot = process.env.TD_API_ROOT;
+  }
+  
+  const testdriver = new TestDriverSDK(apiKey, config);
+  
+  // Connect to sandbox
+  console.log('[testdriver] Connecting to sandbox...');
+  await testdriver.auth();
+  await testdriver.connect();
+  console.log('[testdriver] ✅ Connected to sandbox');
+  
+  return testdriver;
+}
+
+/**
+ * Register a test with a shared TestDriver instance
+ * Call this at the start of each test to associate the test context with the driver
+ * 
+ * @param {TestDriver} testdriver - TestDriver client instance from createTestDriver
+ * @param {object} context - Vitest test context (from async (context) => {})
+ * 
+ * @example
+ * it("step01: verify login", async (context) => {
+ *   registerTest(testdriver, context);
+ *   const result = await testdriver.assert("login form visible");
+ * });
+ */
+export function registerTest(testdriver, context) {
+  if (!testdriver) {
+    throw new Error('registerTest() requires a TestDriver instance');
+  }
+  if (!context || !context.task) {
+    throw new Error('registerTest() requires Vitest context. Pass the context parameter from your test function.');
+  }
+  
+  testdriver.__vitestContext = context.task;
+  logger.debug(`Registered test: ${context.task.name}`);
+}
+
+/**
+ * Clean up a TestDriver client created with createTestDriver
+ * Call this in afterAll to properly disconnect and stop recordings
+ * 
+ * @param {TestDriver} testdriver - TestDriver client instance
+ * 
+ * @example
+ * afterAll(async () => {
+ *   await cleanupTestDriver(testdriver);
+ * });
+ */
+export async function cleanupTestDriver(testdriver) {
+  if (!testdriver) {
+    return;
+  }
+  
+  console.log('[testdriver] Cleaning up TestDriver client...');
+  
+  try {
+    // Stop dashcam if it was started
+    if (testdriver._dashcam && testdriver._dashcam.recording) {
+      try {
+        const dashcamUrl = await testdriver.dashcam.stop();
+        console.log('🎥 Dashcam URL:', dashcamUrl);
+        
+        // Register dashcam URL in memory for the reporter
+        if (dashcamUrl && globalThis.__testdriverPlugin?.registerDashcamUrl) {
+          const testId = testdriver.__vitestContext?.id || 'unknown';
+          const platform = testdriver.os || 'linux';
+          globalThis.__testdriverPlugin.registerDashcamUrl(testId, dashcamUrl, platform);
+        }
+      } catch (error) {
+        console.error('❌ Failed to stop dashcam:', error.message);
+        if (error.name === 'NotFoundError' || error.responseData?.error === 'NotFoundError') {
+          console.log('   ℹ️  Sandbox session already terminated - dashcam stop skipped');
+        }
+      }
+    }
+    
+    await testdriver.disconnect();
+    console.log('✅ Client disconnected');
+  } catch (error) {
+    console.error('Error disconnecting client:', error);
+  }
 }
 
 /**

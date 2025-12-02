@@ -7,6 +7,8 @@
     ".": "./sdk.js",
     "./core": "./src/core/index.js",
     "./vitest": "./interfaces/vitest-plugin.mjs",
+    "./vitest/plugin": "./interfaces/vitest-plugin.mjs",
+    "./vitest/setup": "./src/vitest/setup.mjs",
     "./vitest/hooks": "./src/vitest/hooks.mjs",
     "./presets": "./src/presets/index.mjs"
   },
