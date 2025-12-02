@@ -18,6 +18,18 @@ const createSDK = (emitter, config, sessionInstance) => {
   }
 
   const outputError = (error) => {
+    // Check for specific API key errors
+    const responseData = error.response?.data;
+    if (responseData?.error === 'invalid_api_key' || responseData?.raw === 'teamNotExist') {
+      const friendlyMessage = responseData?.message || 
+        'Invalid API key. Please check your TD_API_KEY and try again.';
+      emitter.emit(events.error.sdk, {
+        message: friendlyMessage,
+        code: 'INVALID_API_KEY',
+      });
+      return;
+    }
+
     emitter.emit(events.error.sdk, {
       message: error.status || error.reason || error.message,
       code: error.response?.data?.raw || error.statusText || error.code,
@@ -95,6 +107,17 @@ const createSDK = (emitter, config, sessionInstance) => {
         return token;
       } catch (error) {
         outputError(error);
+        
+        // Throw a cleaner error for invalid API keys
+        const responseData = error.response?.data;
+        if (responseData?.error === 'invalid_api_key' || responseData?.raw === 'teamNotExist') {
+          const friendlyMessage = responseData?.message || 
+            'Invalid API key. Please check your TD_API_KEY and try again.';
+          const cleanError = new Error(friendlyMessage);
+          cleanError.code = 'INVALID_API_KEY';
+          throw cleanError;
+        }
+        
         throw error; // Re-throw the error so calling code can handle it properly
       }
     }

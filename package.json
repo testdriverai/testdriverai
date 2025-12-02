@@ -11,6 +11,7 @@
     "./vitest/extended": "./src/vitest/extended.mjs",
     "./vitest/lifecycle": "./src/vitest/lifecycle.mjs",
     "./vitest/utils": "./src/vitest/utils.mjs",
+    "./vitest/setup": "./src/vitest/setup.mjs",
     "./vitest/plugin": "./interfaces/vitest-plugin.mjs",
     "./presets": "./src/presets/index.mjs"
   },

@@ -41,24 +41,24 @@
  * });
  */
 
-// Core TestDriver hook
-export { TestDriver } from './hooks.mjs';
+// Core TestDriver hook and cleanup
+export { cleanupTestDriver, TestDriver } from './hooks.mjs';
 
 // Extended Vitest functions
 export {
-    afterAll, beforeAll, describe, expect, getTestDriver,
-    isReconnected, it,
-    test
+  afterAll, beforeAll, describe, expect, getTestDriver,
+  isReconnected, it,
+  test
 } from './extended.mjs';
 
 // Lifecycle helpers
 export {
-    addDashcamLog, authDashcam, launchChrome, launchChromeExtension, launchChromeForTesting, runPostrun, runPrerun, runPrerunChromeExtension, runPrerunChromeForTesting, startDashcam,
-    stopDashcam, waitForPage
+  addDashcamLog, authDashcam, launchChrome, launchChromeExtension, launchChromeForTesting, runPostrun, runPrerun, runPrerunChromeExtension, runPrerunChromeForTesting, startDashcam,
+  stopDashcam, waitForPage
 } from './lifecycle.mjs';
 
 // Utility functions
 export {
-    generateTestId, retryAsync, setupEventLogging, sleep, waitFor
+  generateTestId, retryAsync, setupEventLogging, sleep, waitFor
 } from './utils.mjs';
 

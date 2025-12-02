@@ -63,7 +63,43 @@ Write all steps for a test flow in the same file. This allows:
 - Running the entire flow: `vitest path/to/test.test.js`
 - Debugging a single step: `vitest --testNamePattern "step03"`
 
-### 4. Optional Assertions
+### 4. Steps Run Sequentially, Not in Parallel
+
+**CRITICAL:** Steps must execute in sequence, one after another. Each step depends on the state left by the previous step.
+
+```javascript
+// ✅ CORRECT: Steps run in order, each building on the previous state
+it("step01: click login button", async () => { ... });  // First
+it("step02: type username", async () => { ... });       // Second (form is now open)
+it("step03: type password", async () => { ... });       // Third (username is filled)
+it("step04: submit form", async () => { ... });         // Fourth (credentials entered)
+
+// ❌ WRONG: Running steps in parallel breaks the test
+// Step 2 needs the form open (from step 1)
+// Step 3 needs username entered (from step 2)
+// Steps cannot run simultaneously!
+```
+
+**Why sequential execution matters:**
+- The sandbox maintains state between steps
+- Each step assumes the previous step completed successfully
+- UI state (open modals, filled forms, navigation) carries forward
+- Parallel execution would cause race conditions and undefined behavior
+
+**Vitest configuration:** Ensure your `vitest.config.js` does NOT run tests in parallel:
+
+```javascript
+export default {
+  test: {
+    sequence: {
+      concurrent: false,  // Steps run one at a time
+    },
+    testTimeout: 120000,
+  },
+};
+```
+
+### 5. Optional Assertions
 
 Assertions verify the action worked. Use them when appropriate:
 

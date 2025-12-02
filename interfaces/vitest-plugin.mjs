@@ -97,6 +97,8 @@ export const pluginState = {
   token: null,
   detectedPlatform: null,
   pendingTestCaseRecords: new Set(),
+  // Track test cases that need replay URLs updated (for shared instance suites)
+  pendingReplayUpdates: new Map(), // testId -> { testCaseDbId, suiteId }
   ciProvider: null,
   gitInfo: {},
   apiKey: null,
@@ -216,6 +218,31 @@ export async function recordTestCaseDirect(token, apiRoot, testCaseData) {
   }
 
   return await response.json();
+}
+
+export async function updateTestCaseDirect(token, apiRoot, testCaseId, replayUrl) {
+  const url = `${apiRoot}/api/v1/testdriver/test-case-update`;
+  const response = await withTimeout(
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ testCaseId, replayUrl }),
+    }),
+    10000,
+    "Update Test Case",
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `API error: ${response.status} ${response.statusText} - ${errorText}`,
+    );
+  }
+
+  return await response.json();;
 }
 
 /**
@@ -449,6 +476,43 @@ class TestDriverReporter {
         await Promise.all(Array.from(pluginState.pendingTestCaseRecords));
       }
 
+      // Check for pending replay URL updates (from shared suite instances)
+      // These are written by cleanupTestDriver in afterAll hooks
+      if (pluginState.pendingReplayUpdates.size > 0) {
+        logger.debug(`Checking ${pluginState.pendingReplayUpdates.size} test cases for replay URL updates...`);
+        
+        const resultsDir = path.join(os.tmpdir(), 'testdriver-results');
+        const token = process.env.TD_TEST_RUN_TOKEN;
+        
+        for (const [testId, pendingInfo] of pluginState.pendingReplayUpdates) {
+          try {
+            const testResultFile = path.join(resultsDir, `${testId}.json`);
+            
+            if (fs.existsSync(testResultFile)) {
+              const testResult = JSON.parse(fs.readFileSync(testResultFile, 'utf-8'));
+              const dashcamUrl = testResult.dashcamUrl;
+              
+              if (dashcamUrl && pendingInfo.testCaseDbId) {
+                logger.info(`Updating test case ${pendingInfo.testName} with replay URL...`);
+                await updateTestCaseDirect(token, pluginState.apiRoot, pendingInfo.testCaseDbId, dashcamUrl);
+                logger.info(`✅ Updated test case with replay URL: ${pendingInfo.testName}`);
+              }
+              
+              // Clean up the file
+              try {
+                fs.unlinkSync(testResultFile);
+              } catch {
+                // Ignore cleanup errors
+              }
+            }
+          } catch (error) {
+            logger.error(`Failed to update replay URL for test ${testId}:`, error.message);
+          }
+        }
+        
+        pluginState.pendingReplayUpdates.clear();
+      }
+
       // Test cases are reported directly from teardownTest
       logger.debug("All test cases reported from teardown");
 
@@ -638,8 +702,22 @@ class TestDriverReporter {
       const testCaseDbId = testCaseResponse.data?.id;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
+      // If no dashcam URL yet, track this test case for later update
+      // This handles shared suite instances where dashcam is stopped in afterAll
+      if (!dashcamUrl && testCaseDbId) {
+        const suiteId = test.suite?.id;
+        if (suiteId) {
+          pluginState.pendingReplayUpdates.set(test.id, {
+            testCaseDbId,
+            suiteId,
+            testName: test.name,
+          });
+          logger.debug(`Tracking test case ${testCaseDbId} for pending replay URL update (suite: ${suiteId})`);
+        }
+      }
+
       logger.debug(`Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`);
-      logger.info(`🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`);
+      logger.info(`🔗 View test: https://console.testdriver.ai/runs/${testRunDbId}/${testCaseDbId}`);
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }
