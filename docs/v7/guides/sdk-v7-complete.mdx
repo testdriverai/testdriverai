@@ -9,7 +9,7 @@ Implementation of the TestDriver SDK v7 redesign following progressive disclosur
 ## Phase 1: Core Foundation ✅ (Week 1-2)
 
 ### Task 1.1: Dashcam Class Extraction ✅
-- **Created:** `src/core/Dashcam.js` (422 lines)
+- **Created:** `lib/core/Dashcam.js` (422 lines)
 - **Features:**
   - Composable Dashcam class independent of lifecycle helpers
   - Methods: `auth()`, `addLog()`, `start()`, `stop()`, `isRecording()`
@@ -25,10 +25,10 @@ Implementation of the TestDriver SDK v7 redesign following progressive disclosur
 - **Modified:** `package.json`
 - **Added exports:**
   - `"."` → `./sdk.js` (main SDK)
-  - `"./core"` → `./src/core/index.js` (TestDriver + Dashcam)
+  - `"./core"` → `./lib/core/index.js` (TestDriver + Dashcam)
   - `"./vitest"` → `./interfaces/vitest-plugin.mjs` (plugin)
-  - `"./vitest/hooks"` → `./src/vitest/hooks.mjs` (hooks)
-  - `"./presets"` → `./src/presets/index.mjs` (presets)
+  - `"./vitest/hooks"` → `./lib/vitest/hooks.mjs` (hooks)
+  - `"./presets"` → `./lib/presets/index.mjs` (presets)
 
 ### Key Achievements:
 - ✅ Backward compatibility maintained via thin wrappers
@@ -43,7 +43,7 @@ Implementation of the TestDriver SDK v7 redesign following progressive disclosur
 ## Phase 2: Vitest Plugin Enhancement ✅ (Week 3-4)
 
 ### Task 2.1: Vitest Hooks API ✅
-- **Created:** `src/vitest/hooks.mjs` (221 lines)
+- **Created:** `lib/vitest/hooks.mjs` (221 lines)
 - **Three hooks implemented:**
   1. `useTestDriver(context, options)` - Managed TestDriver instance
      - Auto-connect to sandbox (default: true)
@@ -78,7 +78,7 @@ Implementation of the TestDriver SDK v7 redesign following progressive disclosur
 ## Phase 3: Presets System ✅ (Week 5-6)
 
 ### Task 3.1: Built-in Presets ✅
-- **Created:** `src/presets/index.mjs` (400+ lines)
+- **Created:** `lib/presets/index.mjs` (400+ lines)
 
 **chromePreset:**
 - Auto-launches Chrome with configurable URL
@@ -135,17 +135,17 @@ Implementation of the TestDriver SDK v7 redesign following progressive disclosur
 
 ### Task 4.1: TypeScript Definitions ✅
 
-**Created: `src/core/index.d.ts`**
+**Created: `lib/core/index.d.ts`**
 - Full types for `TestDriver` and `Dashcam` classes
 - Interfaces: `DashcamOptions`, `LogConfig`, `TestDriverOptions`, `ConnectOptions`
 - Comprehensive JSDoc comments
 
-**Created: `src/vitest/hooks.d.ts`**
+**Created: `lib/vitest/hooks.d.ts`**
 - Types for all three hooks
 - Interfaces: `VitestContext`, `UseTestDriverOptions`, `UseDashcamOptions`
 - Full autocomplete support
 
-**Created: `src/presets/index.d.ts`**
+**Created: `lib/presets/index.d.ts`**
 - Types for all presets
 - Interfaces: `ChromePresetOptions`, `VSCodePresetOptions`, `ElectronPresetOptions`
 - `PresetSetupFunction` and `PresetConfig` types
@@ -248,9 +248,9 @@ import { authDashcam, startDashcam, stopDashcam } from 'testdriverai';
 ## Key Metrics
 
 ### Lines of Code (New)
-- `src/core/Dashcam.js`: 422 lines
-- `src/vitest/hooks.mjs`: 221 lines
-- `src/presets/index.mjs`: 400+ lines
+- `lib/core/Dashcam.js`: 422 lines
+- `lib/vitest/hooks.mjs`: 221 lines
+- `lib/presets/index.mjs`: 400+ lines
 - TypeScript definitions: 500+ lines
 - Documentation: 1000+ lines
 - **Total new code:** ~2500+ lines

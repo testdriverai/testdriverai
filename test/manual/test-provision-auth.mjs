@@ -3,7 +3,7 @@
  */
 
 import { test } from 'vitest';
-import { provision } from './src/presets/index.mjs';
+import { provision } from '../../lib/presets/index.mjs';
 
 test('provision auth test', async (context) => {
   console.log('Starting provision...');

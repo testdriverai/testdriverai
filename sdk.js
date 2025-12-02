@@ -1176,7 +1176,7 @@ class TestDriverSDK {
    */
   get dashcam() {
     if (!this._dashcam) {
-      const { Dashcam } = require("./src/core/index.js");
+      const { Dashcam } = require("./lib/core/index.js");
       // Don't pass apiKey - let Dashcam use its default key
       this._dashcam = new Dashcam(this);
     }
@@ -1486,6 +1486,9 @@ class TestDriverSDK {
       this.agent.sandboxOs = connectOptions.os;
     } else if (this.sandboxOs) {
       this.agent.sandboxOs = this.sandboxOs;
+    } else {
+      // Fall back to this.os (which defaults to "linux")
+      this.agent.sandboxOs = this.os;
     }
 
     // Set redrawThreshold on agent's cliArgs.options
@@ -2212,6 +2215,9 @@ class TestDriverSDK {
    * @private
    */
   _setupLogging() {
+    // Track the last fatal error message to throw on exit
+    let lastFatalError = null;
+
     // Set up markdown logger
     createMarkdownLogger(this.emitter);
 
@@ -2234,6 +2240,11 @@ class TestDriverSDK {
       if (this.loggingEnabled) {
         const event = this.emitter.event;
         console.error(event, ":", data);
+        
+        // Capture fatal errors
+        if (event === events.error.fatal) {
+          lastFatalError = data;
+        }
       }
     });
 
@@ -2257,6 +2268,19 @@ class TestDriverSDK {
         console.log(
           `[redraw complete] screen:${info.screenHasRedrawn} network:${info.networkSettled} timeout:${info.isTimeout} elapsed:${info.timeElapsed}ms`,
         );
+      }
+    });
+
+    // Handle exit events - throw error with meaningful message instead of calling process.exit
+    // This allows test frameworks like Vitest to properly catch and display the error
+    this.emitter.on(events.exit, (exitCode) => {
+      if (exitCode !== 0) {
+        // Create an error with the fatal error message if available
+        const errorMessage = lastFatalError || 'TestDriver fatal error';
+        const error = new Error(errorMessage);
+        error.name = 'TestDriverFatalError';
+        error.exitCode = exitCode;
+        throw error;
       }
     });
 
@@ -2395,7 +2419,7 @@ class TestDriverSDK {
     );
     await sdk.auth();
 
-    const platform = options.platform || this.config.TD_PLATFORM || "windows";
+    const platform = options.platform || this.config.TD_PLATFORM || "linux";
 
     // Auto-detect sandbox ID from the active sandbox if not provided
     const sandboxId = options.sandboxId || this.agent?.sandbox?.id || null;

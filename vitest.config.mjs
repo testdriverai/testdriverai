@@ -1,5 +1,9 @@
-import { defineConfig } from 'vitest/config';
+import dotenv from 'dotenv';
 import TestDriver from 'testdriverai/vitest';
+import { defineConfig } from 'vitest/config';
+
+// Load .env file
+dotenv.config();
 
 export default defineConfig({
   plugins: [TestDriver()],

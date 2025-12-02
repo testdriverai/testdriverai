@@ -5,12 +5,12 @@
   "main": "sdk.js",
   "exports": {
     ".": "./sdk.js",
-    "./core": "./src/core/index.js",
+    "./core": "./lib/core/index.js",
     "./vitest": "./interfaces/vitest-plugin.mjs",
     "./vitest/plugin": "./interfaces/vitest-plugin.mjs",
-    "./vitest/setup": "./src/vitest/setup.mjs",
-    "./vitest/hooks": "./src/vitest/hooks.mjs",
-    "./presets": "./src/presets/index.mjs"
+    "./vitest/setup": "./lib/vitest/setup.mjs",
+    "./vitest/hooks": "./lib/vitest/hooks.mjs",
+    "./presets": "./lib/presets/index.mjs"
   },
   "bin": {
     "testdriverai": "bin/testdriverai.js"

@@ -14,7 +14,7 @@ Extract core components into clean, composable modules without breaking existing
 ### Tasks
 
 #### 1.1 Create Dashcam Class (Priority: HIGH)
-**File**: `src/core/Dashcam.js` (new)
+**File**: `lib/core/Dashcam.js` (new)
 
 **What to build:**
 ```javascript
@@ -123,14 +123,14 @@ export async function fillForm(client, formData) {
 {
   "exports": {
     ".": "./sdk.js",
-    "./core": "./src/core/index.js",
+    "./core": "./lib/core/index.js",
     "./helpers": "./src/helpers/index.js",
     "./vitest": "./interfaces/vitest-plugin.mjs"
   }
 }
 ```
 
-**Create**: `src/core/index.js`
+**Create**: `lib/core/index.js`
 ```javascript
 export { default as TestDriver } from '../../sdk.js';
 export { Dashcam } from './Dashcam.js';
@@ -223,7 +223,7 @@ export function useTestDriver(options = {}) {
 **What to build:**
 ```javascript
 import { beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { Dashcam } from '../../src/core/Dashcam.js';
+import { Dashcam } from '../../lib/core/Dashcam.js';
 
 let dashcamInstance = null;
 
@@ -370,7 +370,7 @@ Build preset system with at least 2 working presets (Chrome, VSCode).
 ### Tasks
 
 #### 3.1 Define Preset Interface (Priority: HIGH)
-**File**: `src/presets/types.js` (new)
+**File**: `lib/presets/types.js` (new)
 
 **What to build:**
 ```javascript
@@ -423,7 +423,7 @@ export function definePreset(config) {
 ---
 
 #### 3.2 Build Chrome Preset (Priority: HIGH)
-**File**: `src/presets/chrome.js` (new)
+**File**: `lib/presets/chrome.js` (new)
 
 **What to build:**
 ```javascript
@@ -484,7 +484,7 @@ export function chromePreset(options = {}) {
 ---
 
 #### 3.3 Build VSCode Preset (Priority: MEDIUM)
-**File**: `src/presets/vscode.js` (new)
+**File**: `lib/presets/vscode.js` (new)
 
 **What to build:**
 ```javascript
@@ -549,7 +549,7 @@ export function vscodePreset(options = {}) {
 ---
 
 #### 3.4 Create Preset Registry (Priority: LOW)
-**File**: `src/presets/index.js` (new)
+**File**: `lib/presets/index.js` (new)
 
 **What to build:**
 ```javascript

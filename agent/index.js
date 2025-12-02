@@ -224,13 +224,12 @@ class TestDriverAgent extends EventEmitter2 {
       this.emitter.emit(events.error.fatal, errorContext);
     } else {
       this.emitter.emit(
-        events.error.fatal,
-        theme.red("Fatal Error") + `\n${error}`,
+        events.error.fatal,error,
       );
     }
 
     if (skipPostrun) {
-      this.exit(true);
+      return await this.exit(true);
     } else {
       try {
         await this.summarize(error.message);
@@ -2160,7 +2159,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       type: "create",
       resolution: this.config.TD_RESOLUTION,
       ci: this.config.CI,
-      os: this.sandboxOs || "windows",
+      os: this.sandboxOs || "linux",
     };
 
     // Add AMI and instance type if specified

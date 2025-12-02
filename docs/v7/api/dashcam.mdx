@@ -38,7 +38,7 @@ For more control, create a Dashcam instance directly:
 
 ```javascript
 import TestDriver from 'testdriverai';
-import Dashcam from 'testdriverai/src/core/Dashcam.js';
+import Dashcam from 'testdriverai/lib/core/Dashcam.js';
 
 const client = await TestDriver.create({ os: 'linux' });
 const dashcam = new Dashcam(client, {
@@ -290,7 +290,7 @@ dashcam.client // TestDriver instance
 ```javascript
 import { test } from 'vitest';
 import TestDriver from 'testdriverai';
-import Dashcam from 'testdriverai/src/core/Dashcam.js';
+import Dashcam from 'testdriverai/lib/core/Dashcam.js';
 
 test('record test execution', async () => {
   const client = await TestDriver.create({ os: 'linux' });

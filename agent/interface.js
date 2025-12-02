@@ -69,7 +69,7 @@ function createCommandDefinitions(agent) {
         os: Flags.string({
           description: "Operating system for the sandbox (windows or linux)",
           options: ["windows", "linux"],
-          default: "windows",
+          default: "linux",
         }),
       },
       handler: async (args, flags) => {
@@ -246,7 +246,7 @@ function createCommandDefinitions(agent) {
         os: Flags.string({
           description: "Operating system for the sandbox (windows or linux)",
           options: ["windows", "linux"],
-          default: "windows",
+          default: "linux",
         }),
       },
       handler: async (args, flags) => {
