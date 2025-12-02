@@ -232,10 +232,18 @@ export function TestDriver(context, options = {}) {
     const cleanup = async () => {
       console.log('[testdriver] Cleaning up TestDriver client...');
       try {
-        // Stop dashcam if it was started
+        // Stop dashcam if it was started - with timeout to prevent hanging
         if (testdriver._dashcam && testdriver._dashcam.recording) {
           try {
-            const dashcamUrl = await testdriver.dashcam.stop();
+            // Add a timeout wrapper to prevent dashcam.stop from hanging indefinitely
+            const stopWithTimeout = Promise.race([
+              testdriver.dashcam.stop(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Dashcam stop timed out after 30s')), 30000)
+              )
+            ]);
+            
+            const dashcamUrl = await stopWithTimeout;
             console.log('🎥 Dashcam URL:', dashcamUrl);
             
             // Write dashcam URL to file for the reporter (cross-process communication)
@@ -277,6 +285,10 @@ export function TestDriver(context, options = {}) {
             if (error.name === 'NotFoundError' || error.responseData?.error === 'NotFoundError') {
               console.log('   ℹ️  Sandbox session already terminated - dashcam stop skipped');
             }
+            // Mark as not recording to prevent retries
+            if (testdriver._dashcam) {
+              testdriver._dashcam.recording = false;
+            }
           }
         }
         
@@ -287,7 +299,12 @@ export function TestDriver(context, options = {}) {
         if (testdriver.__connectionPromise) {
           await testdriver.__connectionPromise.catch(() => {}); // Ignore connection errors during cleanup
         }
-        await testdriver.disconnect();
+        
+        // Disconnect with timeout
+        await Promise.race([
+          testdriver.disconnect(),
+          new Promise((resolve) => setTimeout(resolve, 5000)) // 5s timeout for disconnect
+        ]);
         console.log('✅ Client disconnected');
       } catch (error) {
         console.error('Error disconnecting client:', error);

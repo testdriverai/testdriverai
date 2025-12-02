@@ -54,13 +54,15 @@ export default defineConfig({
       },
     },
 
-    // Enable parallel execution
+    // Run test files in parallel, but tests within each file sequentially
+    // This prevents resource conflicts when multiple tests in the same file
+    // try to connect to sandboxes simultaneously
     sequence: {
-      concurrent: true,
+      concurrent: false, // Changed from true - run tests within files sequentially
       shuffle: false,
     },
 
-    fileParallelism: true,
+    fileParallelism: true, // Keep file parallelism enabled
     maxConcurrency: 5, // Reduced from 10 to match maxForks
   },
 });

@@ -1534,13 +1534,19 @@ class TestDriverSDK {
    * @returns {Promise<void>}
    */
   async disconnect() {
+    // Track disconnect event if we were connected
     if (this.connected && this.instance) {
-      // Track disconnect event
       this.analytics.track("sdk.disconnect");
-
-      this.connected = false;
-      this.instance = null;
     }
+
+    // Always close the sandbox WebSocket connection to clean up resources
+    // This ensures we don't leave orphaned connections even if connect() failed
+    if (this.sandbox && typeof this.sandbox.close === 'function') {
+      this.sandbox.close();
+    }
+
+    this.connected = false;
+    this.instance = null;
   }
 
   /**

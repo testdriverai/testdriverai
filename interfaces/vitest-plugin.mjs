@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { execSync } from "child_process";
 import fs from "fs";
 import { createRequire } from "module";
 import os from "os";
@@ -865,6 +866,59 @@ function getGitInfo() {
     if (process.env.CIRCLE_BRANCH) info.branch = process.env.CIRCLE_BRANCH;
     if (process.env.CIRCLE_SHA1) info.commit = process.env.CIRCLE_SHA1;
     if (process.env.CIRCLE_USERNAME) info.author = process.env.CIRCLE_USERNAME;
+  }
+
+  // If not in CI or if commit info is missing, try to get it from local git
+  if (!info.commit) {
+    try {
+      info.commit = execSync("git rev-parse HEAD", {
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "ignore"]
+      }).trim();
+    } catch (e) {
+      // Git command failed, ignore
+    }
+  }
+
+  if (!info.branch) {
+    try {
+      info.branch = execSync("git rev-parse --abbrev-ref HEAD", {
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "ignore"]
+      }).trim();
+    } catch (e) {
+      // Git command failed, ignore
+    }
+  }
+
+  if (!info.author) {
+    try {
+      info.author = execSync("git config user.name", {
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "ignore"]
+      }).trim();
+    } catch (e) {
+      // Git command failed, ignore
+    }
+  }
+
+  if (!info.repo) {
+    try {
+      const remoteUrl = execSync("git config --get remote.origin.url", {
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "ignore"]
+      }).trim();
+
+      // Extract repo from git URL (supports both SSH and HTTPS)
+      // SSH: git@github.com:user/repo.git
+      // HTTPS: https://github.com/user/repo.git
+      const match = remoteUrl.match(/[:/]([^/:]+\/[^/:]+?)(\.git)?$/);
+      if (match) {
+        info.repo = match[1];
+      }
+    } catch (e) {
+      // Git command failed, ignore
+    }
   }
 
   return info;

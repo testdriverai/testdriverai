@@ -123,8 +123,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         this.socket.on("open", async () => {
           this.apiSocketConnected = true;
 
-          setInterval(() => {
-            if (this.socket.readyState === WebSocket.OPEN) {
+          this.heartbeat = setInterval(() => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
               this.socket.ping();
             }
           }, 5000);
@@ -174,6 +174,34 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           delete this.ps[message.requestId];
         });
       });
+    }
+
+    /**
+     * Close the WebSocket connection and clean up resources
+     */
+    close() {
+      if (this.heartbeat) {
+        clearInterval(this.heartbeat);
+        this.heartbeat = null;
+      }
+      
+      if (this.socket) {
+        try {
+          this.socket.close();
+        } catch (err) {
+          // Ignore close errors
+        }
+        this.socket = null;
+      }
+      
+      this.apiSocketConnected = false;
+      this.instanceSocketConnected = false;
+      this.authenticated = false;
+      this.instance = null;
+      
+      // Silently clear pending promises without rejecting
+      // (rejecting causes unhandled promise rejections during cleanup)
+      this.ps = {};
     }
   }
 
