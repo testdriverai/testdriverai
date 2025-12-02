@@ -9,6 +9,24 @@ icon: "atom"
 
 The `electron()` preset automatically sets up an Electron application with TestDriver and Dashcam recording. Perfect for testing desktop apps built with Electron.
 
+<Note>
+  **Recommended Pattern (v7.1+):** Use `TestDriver()` hook + `provision.electron()` for more flexibility:
+  
+  ```javascript
+  import { TestDriver } from 'testdriverai/vitest/hooks';
+  
+  test('my test', async (context) => {
+    const testdriver = TestDriver(context);
+    await testdriver.provision.electron({ 
+      appPath: './dist/my-app'
+    });
+    // ...
+  });
+  ```
+  
+  The `electron()` preset is still supported but the direct API provides better control and clearer lifecycle management.
+</Note>
+
 ## Quick Start
 
 ```javascript

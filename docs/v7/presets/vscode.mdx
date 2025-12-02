@@ -9,6 +9,25 @@ icon: "code"
 
 The `vscode()` preset automatically sets up Visual Studio Code with TestDriver and Dashcam recording. Perfect for testing VS Code extensions and IDE workflows.
 
+<Note>
+  **Recommended Pattern (v7.1+):** Use `TestDriver()` hook + `provision.vscode()` for more flexibility:
+  
+  ```javascript
+  import { TestDriver } from 'testdriverai/vitest/hooks';
+  
+  test('my test', async (context) => {
+    const testdriver = TestDriver(context);
+    await testdriver.provision.vscode({ 
+      workspace: '/tmp/project',
+      extensions: ['ms-python.python']
+    });
+    // ...
+  });
+  ```
+  
+  The `vscode()` preset is still supported but the direct API provides better control and clearer lifecycle management.
+</Note>
+
 ## Quick Start
 
 ```javascript

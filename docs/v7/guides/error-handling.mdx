@@ -1,0 +1,501 @@
+---
+title: "Error Handling & Debugging"
+sidebarTitle: "Error Handling"
+description: "Understanding and resolving TestDriver errors"
+icon: "bug"
+---
+
+## Overview
+
+TestDriver provides detailed debugging information when elements can't be found or operations fail. This guide explains how to interpret and resolve common errors.
+
+## Element Not Found Errors
+
+The most common error is `ElementNotFoundError`, thrown when `.find()` can't locate an element.
+
+### Error Structure
+
+```javascript
+try {
+  await testdriver.find('submit button').click();
+} catch (error) {
+  console.error(error.message);
+  console.log('Screenshot:', error.screenshotPath);
+  console.log('Cache hit:', error.aiResponse?.cacheHit);
+  console.log('Similarity:', error.aiResponse?.similarity);
+}
+```
+
+### Example Error Message
+
+```
+ElementNotFoundError: Element "submit button" not found.
+
+=== Debug Information ===
+Element searched for: "submit button"
+Cache threshold: 0.05 (95.0% similarity required)
+Cache: HIT (perceptual-hash strategy)
+Cache created: 2024-12-02T10:30:45.123Z (15s ago)
+Cache pixel diff: 2.34%
+Similarity score: 92.50% (below threshold)
+Input text: "submit button"
+Current screenshot: /tmp/testdriver-debug/screenshot-1234567890.png
+Cached image URL: https://s3.amazonaws.com/...
+Pixel diff image: /tmp/testdriver-debug/pixel-diff-error-1234567890.png
+
+AI Response:
+The submit button appears to have moved slightly to the right.
+The cached position shows it at (100, 200) but the current 
+position is approximately (105, 200). This 5px horizontal shift
+caused the pixel difference to exceed the 5% threshold.
+```
+
+## Debug Information Fields
+
+### Cache Information
+
+<ParamField path="cacheHit" type="boolean">
+  Whether cache was used for this find attempt
+</ParamField>
+
+<ParamField path="cacheStrategy" type="string">
+  Strategy used for cache matching:
+  - `perceptual-hash` - Fastest, hash-based matching
+  - `pixel-diff` - Pixel-by-pixel comparison
+  - `template-match` - Visual template matching
+</ParamField>
+
+<ParamField path="cacheCreatedAt" type="string">
+  ISO timestamp when cache entry was created
+</ParamField>
+
+<ParamField path="cacheDiffPercent" type="number">
+  Pixel difference percentage from cached image (0-1)
+</ParamField>
+
+### Similarity Scores
+
+<ParamField path="similarity" type="number">
+  AI confidence score (0-1) where:
+  - `1.0` = Perfect match
+  - `0.95+` = High confidence
+  - `0.80-0.95` = Medium confidence
+  - `<0.80` = Low confidence (likely wrong element)
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  Required similarity threshold for cache match
+  - Default: `0.05` (95% similarity required)
+  - Formula: `similarityRequired = (1 - threshold) * 100`
+</ParamField>
+
+### Debug Images
+
+<ParamField path="screenshotPath" type="string">
+  Path to current screen state screenshot
+  
+  Example: `/tmp/testdriver-debug/screenshot-1234567890.png`
+</ParamField>
+
+<ParamField path="cachedImagePath" type="string">
+  URL to cached screenshot (if cache hit)
+  
+  Example: `https://s3.amazonaws.com/testdriver-cache/...`
+</ParamField>
+
+<ParamField path="pixelDiffPath" type="string">
+  Path to pixel difference visualization
+  
+  Shows visual diff between current and cached screenshots
+</ParamField>
+
+## Common Error Scenarios
+
+### Scenario 1: Cache Miss (UI Changed)
+
+**Error:**
+```
+Cache: HIT
+Similarity score: 92.50% (below threshold)
+Cache pixel diff: 7.50%
+```
+
+**Cause:** UI changed more than allowed threshold (5% default)
+
+**Solutions:**
+
+```javascript
+// Option 1: Increase threshold (more lenient)
+await testdriver.find('button', { 
+  cacheThreshold: 0.10  // Allow 10% difference
+});
+
+// Option 2: Force fresh AI analysis
+await testdriver.find('button', { 
+  cacheThreshold: -1  // Bypass cache
+});
+
+// Option 3: Update cache by running test again
+// The new screenshot will replace the old cache entry
+```
+
+### Scenario 2: Element Moved
+
+**Error:**
+```
+AI Response:
+The submit button appears to have moved from (100, 200) to (105, 200).
+```
+
+**Cause:** Element position changed, cache outdated
+
+**Solutions:**
+
+```javascript
+// Disable cache to get fresh coordinates
+await testdriver.find('submit button', { cacheThreshold: -1 });
+
+// Or wait for UI to settle before finding
+await testdriver.scroll('down', 100);
+await new Promise(r => setTimeout(r, 1000)); // Wait for scroll
+await testdriver.find('submit button');
+```
+
+### Scenario 3: Wrong Element Found
+
+**Error:**
+```
+Similarity score: 0.65 (65% confidence)
+AI Response: Found "cancel button" instead of requested "submit button"
+```
+
+**Cause:** Element description too vague
+
+**Solutions:**
+
+```javascript
+// ❌ Too vague
+await testdriver.find('button');
+
+// ✅ More specific
+await testdriver.find('blue submit button at bottom of form');
+
+// ✅ Include position context
+await testdriver.find('submit button below the email field');
+
+// ✅ Include visual details
+await testdriver.find('green button with text Submit');
+```
+
+### Scenario 4: Element Not Visible Yet
+
+**Error:**
+```
+AI Response: Element not visible in current viewport.
+```
+
+**Cause:** Element hasn't loaded or is off-screen
+
+**Solutions:**
+
+```javascript
+// Polling approach
+async function waitForElement(testdriver, description, timeout = 30000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeout) {
+    try {
+      const element = await testdriver.find(description);
+      if (element.found()) return element;
+    } catch (error) {
+      // Element not found, keep trying
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  throw new Error(`Element "${description}" not found after ${timeout}ms`);
+}
+
+// Usage
+const button = await waitForElement(testdriver, 'submit button', 10000);
+await button.click();
+```
+
+### Scenario 5: Dynamic Content
+
+**Error:**
+```
+Cache: MISS
+AI Response: Found multiple elements matching description.
+```
+
+**Cause:** Multiple similar elements on screen
+
+**Solutions:**
+
+```javascript
+// Use findAll() for multiple elements
+const buttons = await testdriver.findAll('button');
+await buttons[0].click(); // Click first one
+
+// Or be more specific
+await testdriver.find('first button in the top navigation');
+await testdriver.find('button with text Submit');
+```
+
+## Error Handling Patterns
+
+### Pattern 1: Try/Catch with Fallback
+
+```javascript
+try {
+  await testdriver.find('submit button').click();
+} catch (error) {
+  if (error instanceof ElementNotFoundError) {
+    // Try alternative description
+    await testdriver.find('blue button at bottom').click();
+  } else {
+    throw error;
+  }
+}
+```
+
+### Pattern 2: Optional Elements
+
+```javascript
+// Handle optional popup
+try {
+  const popup = await testdriver.find('cookie consent popup');
+  await popup.find('accept button').click();
+  console.log('Popup dismissed');
+} catch (error) {
+  console.log('No popup to dismiss');
+}
+```
+
+### Pattern 3: Retry with Different Descriptions
+
+```javascript
+async function findWithAlternatives(testdriver, descriptions) {
+  for (const desc of descriptions) {
+    try {
+      const element = await testdriver.find(desc);
+      if (element.found()) {
+        console.log(`Found using: "${desc}"`);
+        return element;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  throw new Error('Element not found with any description');
+}
+
+// Usage
+const button = await findWithAlternatives(testdriver, [
+  'submit button',
+  'blue button at bottom',
+  'button with text Submit',
+  'send button'
+]);
+```
+
+### Pattern 4: Debug Mode
+
+```javascript
+async function findWithDebug(testdriver, description) {
+  try {
+    return await testdriver.find(description);
+  } catch (error) {
+    if (error instanceof ElementNotFoundError) {
+      console.error('Element not found:', description);
+      console.error('Screenshot:', error.screenshotPath);
+      console.error('Cache hit:', error.aiResponse?.cacheHit);
+      console.error('Similarity:', error.aiResponse?.similarity);
+      console.error('AI response:', error.aiResponse?.response);
+      
+      // Save screenshot for manual inspection
+      if (error.screenshotPath) {
+        const fs = require('fs');
+        fs.copyFileSync(error.screenshotPath, `./debug-${Date.now()}.png`);
+      }
+    }
+    throw error;
+  }
+}
+```
+
+## Debugging Tools
+
+### 1. Save Debug Screenshots
+
+```javascript
+const element = await testdriver.find('button');
+
+// Save screenshot to file
+const path = await element.saveDebugScreenshot('./debug.png');
+console.log('Screenshot saved:', path);
+```
+
+### 2. Check Element Properties
+
+```javascript
+const element = await testdriver.find('button');
+
+console.log('Found:', element.found());
+console.log('Position:', element.x, element.y);
+console.log('Size:', element.width, element.height);
+console.log('Confidence:', element.confidence);
+console.log('Text:', element.text);
+```
+
+### 3. View Pixel Diff Images
+
+When cache misses occur, TestDriver generates pixel diff images showing the differences:
+
+```javascript
+try {
+  await testdriver.find('button');
+} catch (error) {
+  if (error.pixelDiffPath) {
+    console.log('Visual diff:', error.pixelDiffPath);
+    // Open in image viewer to see exactly what changed
+  }
+}
+```
+
+### 4. Enable Verbose Logging
+
+```javascript
+const testdriver = new TestDriver(apiKey, {
+  loggingEnabled: true  // Enable detailed logs
+});
+
+// Now all operations log detailed information
+await testdriver.find('button'); // Logs AI calls, cache hits, etc.
+```
+
+## Best Practices
+
+<Check>
+  **Always handle ElementNotFoundError**
+  
+  ```javascript
+  // ✅ Good - explicit error handling
+  try {
+    await testdriver.find('optional popup').click();
+  } catch (error) {
+    if (error instanceof ElementNotFoundError) {
+      console.log('Popup not found, continuing');
+    } else {
+      throw error;
+    }
+  }
+  
+  // ❌ Bad - unhandled errors crash test
+  await testdriver.find('optional popup').click();
+  ```
+</Check>
+
+<Check>
+  **Save screenshots on failure**
+  
+  ```javascript
+  test('my test', async (context) => {
+    try {
+      await testdriver.find('button').click();
+    } catch (error) {
+      // Save screenshot before test fails
+      if (error.screenshotPath) {
+        const fs = require('fs');
+        const dest = `./failures/${context.test.name}-${Date.now()}.png`;
+        fs.copyFileSync(error.screenshotPath, dest);
+        console.log('Failure screenshot:', dest);
+      }
+      throw error;
+    }
+  });
+  ```
+</Check>
+
+<Check>
+  **Use polling for dynamic content**
+  
+  ```javascript
+  // ✅ Good - polls until element appears
+  async function waitFor(testdriver, desc, timeout = 30000) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      try {
+        const el = await testdriver.find(desc);
+        if (el.found()) return el;
+      } catch {}
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    throw new Error(`Timeout waiting for: ${desc}`);
+  }
+  
+  // ❌ Bad - fails immediately if not ready
+  await testdriver.find('loading complete message');
+  ```
+</Check>
+
+<Check>
+  **Inspect AI responses when debugging**
+  
+  ```javascript
+  try {
+    await testdriver.find('button');
+  } catch (error) {
+    // Read what the AI saw
+    const aiResponse = error.aiResponse?.response?.content?.[0]?.text;
+    console.log('AI analysis:', aiResponse);
+    
+    // Common patterns:
+    // "Found multiple buttons..."
+    // "Element not visible in viewport..."
+    // "No element matching description..."
+  }
+  ```
+</Check>
+
+## Troubleshooting Checklist
+
+When an element can't be found:
+
+1. **Check the screenshot**
+   - View `error.screenshotPath` to see what TestDriver sees
+   - Is the element actually visible?
+   - Is the UI in the expected state?
+
+2. **Review the description**
+   - Is it specific enough?
+   - Does it match what's on screen?
+   - Try adding more context (position, color, nearby text)
+
+3. **Check cache status**
+   - Is cache hitting but UI changed? (`error.aiResponse.cacheHit === true`)
+   - Is similarity below threshold? (`error.aiResponse.similarity < 0.95`)
+   - Try disabling cache: `{ cacheThreshold: -1 }`
+
+4. **Look at pixel diff**
+   - If `error.pixelDiffPath` exists, open it
+   - Visual diff shows exactly what changed
+   - Helps identify UI shifts, color changes, etc.
+
+5. **Read AI response**
+   - `error.aiResponse.response` contains AI's reasoning
+   - Often explains why element wasn't found
+   - May suggest alternative descriptions
+
+6. **Try alternatives**
+   - Use `findAll()` to see all matches
+   - Try different description wordings
+   - Add more visual context
+
+## Related Guides
+
+- [Element Finding](/v7/api/find) - Basic element finding
+- [Caching](/v7/guides/caching-selectors) - Cache configuration
+- [Best Practices](/v7/guides/best-practices) - General testing tips
+- [Debugging](/v7/guides/debugging) - Advanced debugging techniques

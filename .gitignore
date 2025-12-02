@@ -162,3 +162,7 @@ node_modules
 saves/*
 
 .trigger
+
+test-results
+test-results/*
+.vscode

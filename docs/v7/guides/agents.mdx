@@ -1,0 +1,852 @@
+# TestDriver AI SDK - Agent Guide
+
+This guide is designed for AI agents to understand how to use the TestDriver SDK for automated testing.
+
+## Table of Contents
+- [Quick Setup](#quick-setup)
+- [Authentication](#authentication)
+- [Provision Methods](#provision-methods)
+- [Core API Methods](#core-api-methods)
+- [Reconnection and Debugging](#reconnection-and-debugging)
+- [Best Practices](#best-practices)
+
+---
+
+## Quick Setup
+
+### 1. Install Dependencies
+
+```bash
+npm install --save-dev testdriverai vitest
+```
+
+### 2. Configure Vitest Project
+
+Create or update `vitest.config.mjs`:
+
+```javascript
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000, // 2 minutes (TestDriver tests can take longer)
+    hookTimeout: 120000,
+  },
+});
+```
+
+### 3. Create Test File
+
+Create a test file (e.g., `test.test.js`):
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('my first test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  await testdriver.find('More information link').click();
+  await testdriver.assert('IANA page is visible');
+});
+```
+
+---
+
+## Authentication
+
+### Getting an API Key
+
+1. Go to [app.testdriver.ai](https://app.testdriver.ai)
+2. Sign up or log in
+3. Navigate to your account settings
+4. Generate a new API key (format: `tdai-1234567890abcdef`)
+
+### Using API Keys
+
+**Recommended: Environment Variables**
+
+Create `.env` file (add to `.gitignore`):
+```bash
+TD_API_KEY=tdai-1234567890abcdef
+```
+
+Then use in tests:
+```javascript
+const { testdriver } = await chrome(context, {
+  url: 'https://example.com'
+  // apiKey automatically read from process.env.TD_API_KEY
+});
+```
+
+**Alternative: Direct in Code (Not Recommended)**
+```javascript
+const { testdriver } = await chrome(context, {
+  url: 'https://example.com',
+  apiKey: 'tdai-1234567890abcdef' // DON'T commit to version control!
+});
+```
+
+---
+
+## Provision Methods
+
+TestDriver provides presets to automatically provision different application types.
+
+### chrome() - Web Applications
+
+Automatically launches Chrome browser and navigates to a URL.
+
+```javascript
+import { chrome } from 'testdriverai/presets';
+
+test('web app test', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://myapp.com',
+    maximized: true,      // Start maximized (default: true)
+    guest: true,          // Use incognito mode (default: true)
+    dashcam: true,        // Enable recording (default: true)
+    os: 'linux',          // OS: 'linux', 'mac', 'windows' (default: 'linux')
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  // Your test code
+});
+```
+
+### vscode() - VS Code Extensions
+
+Automatically launches VS Code with specified workspace and extensions.
+
+```javascript
+import { vscode } from 'testdriverai/presets';
+
+test('vscode extension test', async (context) => {
+  const { testdriver, dashcam } = await vscode(context, {
+    workspace: '/tmp/test-project',
+    extensions: ['ms-python.python', 'dbaeumer.vscode-eslint'],
+    dashcam: true,
+    os: 'linux',
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  // Your test code
+});
+```
+
+### electron() - Desktop Applications
+
+Automatically launches Electron applications.
+
+```javascript
+import { electron } from 'testdriverai/presets';
+
+test('electron app test', async (context) => {
+  const { app, dashcam } = await electron(context, {
+    appPath: './dist/my-app',
+    args: ['--debug'],    // Additional CLI args (optional)
+    dashcam: true,
+    os: 'linux',
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  // Your test code (app is alias for testdriver)
+});
+```
+
+### Advanced: TestDriver() Hook + provision
+
+For more control, use the direct API (recommended for v7.1+):
+
+```javascript
+import { TestDriver } from 'testdriverai/vitest/hooks';
+
+test('my test', async (context) => {
+  const testdriver = TestDriver(context, {
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  // Provision Chrome
+  await testdriver.provision.chrome({ url: 'https://example.com' });
+  
+  // Or provision VS Code
+  await testdriver.provision.vscode({ 
+    workspace: '/tmp/project',
+    extensions: ['ms-python.python']
+  });
+  
+  // Or provision Electron
+  await testdriver.provision.electron({ appPath: './dist/app' });
+  
+  // Your test code
+});
+```
+
+---
+
+## Core API Methods
+
+All methods use AI-powered natural language descriptions.
+
+### find(description) - Locate Elements
+
+Find a single element using natural language.
+
+```javascript
+// Basic finding
+const button = await testdriver.find('submit button');
+const input = await testdriver.find('email input field');
+const link = await testdriver.find('Contact Us link');
+
+// With context
+const field = await testdriver.find('username input in the login form');
+const deleteBtn = await testdriver.find('delete button in the top right corner');
+
+// Chainable syntax (recommended)
+await testdriver.find('submit button').click();
+await testdriver.find('email input').type('user@example.com');
+```
+
+**Returns:** `Element` object with properties:
+- `coordinates` - Position `{x, y, centerX, centerY}`
+- `text` - Text content (if available)
+- `confidence` - AI confidence score
+- `screenshot` - Base64 screenshot (if available)
+
+### findAll(description) - Find Multiple Elements
+
+Find all matching elements.
+
+```javascript
+const items = await testdriver.findAll('product card');
+console.log(`Found ${items.length} products`);
+
+// Interact with each
+for (const item of items) {
+  await item.click();
+  // Do something
+}
+```
+
+**Returns:** `Array<Element>`
+
+### click(x?, y?, action?) - Click Elements or Coordinates
+
+```javascript
+// Element click (chainable)
+await testdriver.find('Login button').click();
+
+// Coordinate click
+await testdriver.click(500, 300);
+
+// Different click types
+await element.click();              // Regular click
+await element.click('double-click'); // Double-click
+await element.click('right-click');  // Right-click
+await element.click('mouseDown');    // Press and hold
+await element.click('mouseUp');      // Release
+
+// Or use dedicated methods
+await element.doubleClick();
+await element.rightClick();
+await element.mouseDown();
+await element.mouseUp();
+```
+
+### type(text, options) - Type Text
+
+Type text into the currently focused input.
+
+```javascript
+// Basic typing
+await testdriver.find('email input').click();
+await testdriver.type('user@example.com');
+
+// Type with delay between keystrokes
+await testdriver.type('slow typing', { delay: 500 }); // 500ms between chars
+
+// ⚠️ IMPORTANT: Always use secret: true for passwords and sensitive data
+await testdriver.find('password input').click();
+await testdriver.type('MySecureP@ssw0rd', { secret: true });
+// This prevents logging in dashcam, debug info, and console
+
+// Type numbers
+await testdriver.type(12345);
+```
+
+**Options:**
+- `delay` (number) - Delay between keystrokes in ms (default: 250)
+- `secret` (boolean) - Mark as sensitive data, won't be logged (default: false)
+
+### hover(x?, y?) - Hover Over Elements
+
+```javascript
+// Element hover
+const menu = await testdriver.find('Products menu');
+await menu.hover();
+await testdriver.find('Laptops submenu item').click();
+
+// Coordinate hover
+await testdriver.hover(500, 300);
+```
+
+### assert(assertion) - AI-Powered Assertions
+
+Verify screen state using natural language.
+
+```javascript
+// Verify elements
+await testdriver.assert('the login page is displayed');
+await testdriver.assert('submit button is visible');
+
+// Verify content
+await testdriver.assert('the page title is "Welcome"');
+await testdriver.assert('success message says "Account created"');
+
+// Verify state
+await testdriver.assert('the checkbox is checked');
+await testdriver.assert('the form is empty');
+
+// Verify visual appearance
+await testdriver.assert('the button is blue');
+await testdriver.assert('the loading spinner is displayed');
+```
+
+**Returns:** `Promise<boolean>` - `true` if passes, throws error if fails
+
+### pressKeys(keys) - Keyboard Shortcuts
+
+Press one or more keys simultaneously.
+
+```javascript
+// Navigation
+await testdriver.pressKeys(['tab']);
+await testdriver.pressKeys(['shift', 'tab']);
+await testdriver.pressKeys(['enter']);
+
+// Keyboard shortcuts
+await testdriver.pressKeys(['ctrl', 'c']);  // Copy
+await testdriver.pressKeys(['ctrl', 'v']);  // Paste
+await testdriver.pressKeys(['ctrl', 's']);  // Save
+await testdriver.pressKeys(['ctrl', 'a']);  // Select all
+
+// Arrow keys
+await testdriver.pressKeys(['up']);
+await testdriver.pressKeys(['down']);
+await testdriver.pressKeys(['left']);
+await testdriver.pressKeys(['right']);
+
+// Special keys
+await testdriver.pressKeys(['escape']);
+await testdriver.pressKeys(['backspace']);
+await testdriver.pressKeys(['delete']);
+await testdriver.pressKeys(['home']);
+await testdriver.pressKeys(['end']);
+```
+
+### scroll(direction, amount, method) - Scroll Pages
+
+```javascript
+// Scroll down (default)
+await testdriver.scroll();
+await testdriver.scroll('down', 500);
+
+// Scroll up
+await testdriver.scroll('up', 300);
+
+// Horizontal scrolling
+await testdriver.scroll('right', 300);
+await testdriver.scroll('left', 300);
+
+// Scroll methods
+await testdriver.scroll('down', 300, 'mouse');    // Mouse wheel (smooth)
+await testdriver.scroll('down', 300, 'keyboard'); // Page Down key
+
+// Scroll until text appears
+await testdriver.scrollUntilText('Contact Us');
+await testdriver.scrollUntilText('Footer', 'down', 5000);
+```
+
+### exec(language, code, timeout, silent) - Execute Code
+
+Execute JavaScript or PowerShell in the sandbox.
+
+```javascript
+// JavaScript execution (in browser)
+const title = await testdriver.exec('js', 'document.title', 5000);
+
+await testdriver.exec('js', `
+  document.querySelector('#username').value = 'testuser';
+`, 5000);
+
+// Get element text
+const text = await testdriver.exec('js', `
+  document.querySelector('.notification').textContent
+`, 5000);
+
+// PowerShell execution (Windows sandbox)
+await testdriver.exec('pwsh', 'npm install -g http-server', 30000);
+await testdriver.exec('pwsh', 'Start-Process notepad.exe', 5000);
+```
+
+### focusApplication(appName) - Switch Applications
+
+Focus a different application window.
+
+```javascript
+await testdriver.focusApplication('Chrome');
+await testdriver.focusApplication('VS Code');
+await testdriver.focusApplication('Notepad');
+```
+
+---
+
+## Reconnection and Debugging
+
+### Reconnecting to a Sandbox
+
+If a test fails or you need to try different selectors, you can reconnect to the same sandbox instance.
+
+**Automatic Sandbox Tracking:** TestDriver automatically saves the last sandbox ID to `.testdriver/last-sandbox` in your project directory. You can use this to reconnect without manually tracking the ID.
+
+**Manual Tracking:** You can also explicitly save the `sandboxId` from the initial connection:
+
+```javascript
+import { test } from 'vitest';
+import { TestDriver } from 'testdriverai';
+
+test('initial attempt', async () => {
+  const testdriver = new TestDriver({
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  const instance = await testdriver.connect();
+  console.log('Sandbox ID:', instance.instanceId);
+  // Output: Sandbox ID: i-0abc123def456789
+  
+  // Your test code that might fail
+  try {
+    await testdriver.find('difficult selector').click();
+  } catch (error) {
+    console.error('Failed:', error);
+    // Don't disconnect yet - keep sandbox alive for debugging
+  }
+});
+
+test('reconnect to same sandbox', async () => {
+  const testdriver = new TestDriver({
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  // Option 1: Read from saved file
+  const lastSandboxId = testdriver.getLastSandboxId();
+  
+  // Option 2: Use the ID from previous test (manual tracking)
+  // const sandboxId = 'i-0abc123def456789';
+  
+  // Reconnect using the sandbox ID
+  await testdriver.connect({
+    sandboxId: lastSandboxId, // or use manually saved ID
+    newSandbox: false
+  });
+  
+  // Try different selector on the same sandbox state
+  try {
+    await testdriver.find('alternative selector description').click();
+  } catch (error) {
+    console.error('Alternative also failed:', error);
+  }
+  
+  await testdriver.disconnect();
+});
+```
+
+### Debugging Failed Finds
+
+When `find()` fails, TestDriver provides detailed debug information:
+
+```javascript
+try {
+  await testdriver.find('non-existent button').click();
+} catch (error) {
+  // error.name === 'ElementNotFoundError'
+  console.log('Element not found:', error.message);
+  console.log('Similarity score:', error.similarity); // How close the match was
+  console.log('Debug screenshot:', error.debugScreenshot); // Base64 image
+  console.log('Cache info:', error.cacheInfo); // Cache diagnostics
+  
+  // Try alternative description
+  await testdriver.find('button with different description').click();
+}
+```
+
+### Keep Sandbox Alive for Multiple Attempts
+
+```javascript
+test('iterative debugging', async (context) => {
+  const testdriver = new TestDriver({
+    apiKey: process.env.TD_API_KEY
+  });
+  
+  const instance = await testdriver.connect();
+  const sandboxId = instance.instanceId;
+  
+  // Try multiple selectors
+  const selectors = [
+    'submit button',
+    'blue submit button',
+    'submit button in bottom right',
+    'button with "Submit" text'
+  ];
+  
+  for (const selector of selectors) {
+    try {
+      console.log(`Trying: ${selector}`);
+      const element = await testdriver.find(selector);
+      console.log(`✓ Found with: ${selector}`);
+      await element.click();
+      break; // Success!
+    } catch (error) {
+      console.log(`✗ Failed with: ${selector}`);
+      console.log(`  Similarity: ${error.similarity}`);
+    }
+  }
+  
+  // Clean up
+  await testdriver.disconnect();
+});
+```
+
+### Using Vitest Hooks for Reconnection
+
+```javascript
+import { test, beforeAll, afterAll } from 'vitest';
+import { TestDriver } from 'testdriverai';
+
+let testdriver;
+let sandboxId;
+
+beforeAll(async () => {
+  testdriver = new TestDriver({
+    apiKey: process.env.TD_API_KEY
+  });
+  const instance = await testdriver.connect();
+  sandboxId = instance.instanceId;
+  console.log('Sandbox started:', sandboxId);
+});
+
+afterAll(async () => {
+  await testdriver.disconnect();
+});
+
+test('first attempt', async () => {
+  await testdriver.find('selector v1').click();
+});
+
+test('second attempt - same sandbox', async () => {
+  // Continues in same sandbox session
+  await testdriver.find('selector v2').click();
+});
+```
+
+---
+
+## Best Practices
+
+### 1. Use Descriptive Selectors
+
+```javascript
+// ❌ Too vague
+await testdriver.find('button');
+
+// ✅ Specific
+await testdriver.find('blue submit button below the login form');
+```
+
+### 2. Always Use secret: true for Sensitive Data
+
+```javascript
+// ❌ Password will be logged
+await testdriver.type('MyPassword123');
+
+// ✅ Protected from logging
+await testdriver.type('MyPassword123', { secret: true });
+```
+
+### 3. Prefer Chainable Syntax
+
+```javascript
+// ❌ More verbose
+const button = await testdriver.find('submit button');
+await button.click();
+
+// ✅ Cleaner
+await testdriver.find('submit button').click();
+```
+
+### 4. Use Environment Variables for API Keys
+
+```javascript
+// ❌ Hardcoded (security risk)
+apiKey: 'tdai-1234567890abcdef'
+
+// ✅ From environment
+apiKey: process.env.TD_API_KEY
+```
+
+### 5. Set Appropriate Timeouts
+
+```javascript
+// vitest.config.mjs
+export default defineConfig({
+  test: {
+    testTimeout: 120000, // 2 minutes for TestDriver tests
+    hookTimeout: 120000,
+  },
+});
+```
+
+### 6. Handle Errors Gracefully
+
+```javascript
+try {
+  await testdriver.find('optional element').click();
+} catch (error) {
+  console.log('Element not found, continuing...');
+  // Try alternative path
+}
+```
+
+### 7. Use Assertions for Verification
+
+```javascript
+// After action, verify result
+await testdriver.find('submit button').click();
+await testdriver.assert('success message is displayed');
+```
+
+### 8. Clean Up Resources
+
+```javascript
+// Always disconnect when done
+test('my test', async (context) => {
+  const { testdriver } = await chrome(context, { url: 'https://example.com' });
+  
+  try {
+    // Your test code
+  } finally {
+    await testdriver.disconnect();
+  }
+});
+
+// Or use presets which auto-cleanup
+```
+
+### 9. Save Sandbox IDs for Debugging
+
+```javascript
+const instance = await testdriver.connect();
+console.log('Sandbox ID for debugging:', instance.instanceId);
+// Save this ID to reconnect later if test fails
+```
+
+### 10. Use findAll() for Lists
+
+```javascript
+// ❌ Finding one at a time
+const item1 = await testdriver.find('first product card');
+const item2 = await testdriver.find('second product card');
+
+// ✅ Find all at once
+const items = await testdriver.findAll('product card');
+for (const item of items) {
+  await item.click();
+}
+```
+
+---
+
+## Common Patterns
+
+### Login Flow
+
+```javascript
+test('user login', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/login'
+  });
+  
+  await testdriver.find('email input').type('user@example.com');
+  await testdriver.find('password input').type('SecurePass123', { secret: true });
+  await testdriver.find('Login button').click();
+  
+  await testdriver.assert('Welcome message is visible');
+});
+```
+
+### Form Filling
+
+```javascript
+test('contact form', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com/contact'
+  });
+  
+  await testdriver.find('name input').type('John Doe');
+  await testdriver.find('email input').type('john@example.com');
+  await testdriver.find('message textarea').type('Hello, this is a test message.');
+  await testdriver.find('submit button').click();
+  
+  await testdriver.assert('Thank you message appears');
+});
+```
+
+### Navigation
+
+```javascript
+test('multi-page navigation', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  await testdriver.find('About link').click();
+  await testdriver.assert('About page heading is visible');
+  
+  await testdriver.find('Contact link').click();
+  await testdriver.assert('Contact form is displayed');
+});
+```
+
+### Working with Dropdowns
+
+```javascript
+test('dropdown selection', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com/form'
+  });
+  
+  await testdriver.find('country dropdown').click();
+  await testdriver.find('United States option').click();
+  
+  await testdriver.assert('United States is selected');
+});
+```
+
+---
+
+## Environment Variables
+
+TestDriver supports these environment variables:
+
+- `TD_API_KEY` - Your TestDriver API key (recommended)
+- `TD_NO_CACHE` - Set to `"true"` to disable caching
+- `DASHCAM_API_KEY` - Dashcam API key (usually same as TD_API_KEY)
+- `TESTDRIVER_SANDBOX_ID` - Reuse an existing sandbox instance (see Sandbox Management below)
+
+---
+
+## Sandbox Management
+
+TestDriver allows you to create long-running sandbox instances that can be reused across multiple test runs.
+
+### Creating a Sandbox
+
+Use the CLI to spawn a new sandbox:
+
+```bash
+# Spawn a Linux sandbox (default)
+testdriver sandbox spawn
+
+# Spawn with a 2-hour lifetime (in milliseconds)
+testdriver sandbox spawn --timeout 7200000
+
+# Spawn a Windows sandbox
+testdriver sandbox spawn --os windows
+
+# Spawn with custom instance type (requires permission)
+testdriver sandbox spawn --instance-type c5.xlarge
+```
+
+The command will output the instance ID and instructions for using it.
+
+### Listing Sandboxes
+
+View all your team's sandboxes:
+
+```bash
+# List all sandboxes
+testdriver sandbox list
+
+# List only ready sandboxes
+testdriver sandbox list --status ready
+```
+
+### Using a Sandbox in Tests
+
+Set the `TESTDRIVER_SANDBOX_ID` environment variable to connect to an existing sandbox:
+
+```bash
+export TESTDRIVER_SANDBOX_ID=i-0abc123def456789
+vitest
+```
+
+This will:
+- Skip creating a new sandbox
+- Connect to the specified sandbox instance
+- Track which tests run on that sandbox
+- Keep the sandbox alive after tests finish
+
+### Stopping a Sandbox
+
+When you're done with a sandbox, stop it to avoid unnecessary costs:
+
+```bash
+testdriver sandbox stop i-0abc123def456789
+```
+
+This will:
+- Terminate the EC2 instance
+- Calculate the total runtime and cost
+- Send billing data to your team
+
+### Sandbox Benefits
+
+Using explicit sandboxes provides:
+- **Faster test runs** - No sandbox creation time
+- **Clear cost tracking** - Lifetime-based billing
+- **Better debugging** - Keep sandbox alive to investigate failures
+- **Team visibility** - See all active sandboxes in dashboard
+
+---
+
+## Resources
+
+- **Documentation:** [docs.testdriver.ai](https://docs.testdriver.ai)
+- **Dashboard:** [app.testdriver.ai](https://app.testdriver.ai)
+- **API Reference:** Full method documentation in `/docs/v7/api/`
+- **Examples:** See `/examples/` directory in the SDK package
+
+---
+
+## Quick Reference
+
+| Method | Purpose | Example |
+|--------|---------|---------|
+| `find(desc)` | Locate single element | `await testdriver.find('submit button')` |
+| `findAll(desc)` | Find all matching elements | `await testdriver.findAll('list item')` |
+| `click()` | Click element/coordinates | `await element.click()` |
+| `type(text, opts)` | Type text | `await testdriver.type('text', { secret: true })` |
+| `hover()` | Hover over element | `await element.hover()` |
+| `assert(text)` | Verify state | `await testdriver.assert('button is visible')` |
+| `pressKeys(keys)` | Keyboard shortcuts | `await testdriver.pressKeys(['ctrl', 'c'])` |
+| `scroll(dir, amt)` | Scroll page | `await testdriver.scroll('down', 500)` |
+| `exec(lang, code)` | Execute code | `await testdriver.exec('js', 'document.title', 5000)` |
+| `connect(opts)` | Connect to sandbox | `await testdriver.connect({ sandboxId: 'i-123' })` |
+| `disconnect()` | Close connection | `await testdriver.disconnect()` |
+
+---
+
+**Last Updated:** December 2, 2025

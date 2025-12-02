@@ -314,3 +314,261 @@ describe('Element Finding', () => {
 - [`hover()`](/v7/api/hover) - Hover over elements
 - [`assert()`](/v7/api/assert) - Verify element states
 - [Elements Reference](/v7/api/elements) - Complete Element API
+
+---
+
+## findAll()
+
+Locate **all elements** matching a description, rather than just one.
+
+### Syntax
+
+```javascript
+const elements = await testdriver.findAll(description, options)
+```
+
+### Parameters
+
+<ParamField path="description" type="string" required>
+  Natural language description of elements to find
+</ParamField>
+
+<ParamField path="options" type="object | number">
+  Optional cache options (same as `find()`)
+  
+  <Expandable title="properties">
+    <ParamField path="cacheKey" type="string">
+      Cache key for storing element location
+    </ParamField>
+    
+    <ParamField path="cacheThreshold" type="number" default={-1}>
+      Similarity threshold (0-1) for cache matching. Set to -1 to disable cache.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+`Promise<Element[]>` - Array of Element instances
+
+### Examples
+
+#### Basic Usage
+
+```javascript
+// Find all matching elements
+const buttons = await testdriver.findAll('button');
+console.log(`Found ${buttons.length} buttons`);
+
+// Interact with specific element
+if (buttons.length > 0) {
+  await buttons[0].click(); // Click first button
+}
+
+// Iterate over all
+for (const button of buttons) {
+  console.log(`Button at (${button.x}, ${button.y})`);
+}
+```
+
+#### Finding Multiple Items
+
+```javascript
+// Find all list items
+const items = await testdriver.findAll('list item');
+
+// Find specific item by index
+const thirdItem = items[2];
+await thirdItem.click();
+
+// Check all items
+for (let i = 0; i < items.length; i++) {
+  console.log(`Item ${i + 1}: ${items[i].text || 'No text'}`);
+}
+```
+
+#### With Caching
+
+```javascript
+// Cache element locations for faster subsequent runs
+const menuItems = await testdriver.findAll('menu item', {
+  cacheKey: 'main-menu-items'
+});
+
+// First run: ~2-3 seconds (AI call)
+// Subsequent runs: ~100ms (cache hit)
+```
+
+#### Empty Results
+
+```javascript
+// Returns empty array if nothing found (doesn't throw error)
+const errors = await testdriver.findAll('error message');
+
+if (errors.length === 0) {
+  console.log('No errors found - test passed!');
+} else {
+  console.log(`Found ${errors.length} errors`);
+}
+```
+
+### Differences from find()
+
+| Feature | find() | findAll() |
+|---------|--------|-----------|
+| Return type | Single `Element` | Array of `Element[]` |
+| If nothing found | Throws `ElementNotFoundError` | Returns empty array `[]` |
+| Chainable | ✅ Yes: `await find('button').click()` | ❌ No (returns array) |
+| Use case | One specific element | Multiple similar elements |
+| Cache support | ✅ Yes | ✅ Yes |
+
+### Use Cases
+
+<AccordionGroup>
+  <Accordion title="Table Rows">
+    ```javascript
+    // Find all rows in a table
+    const rows = await testdriver.findAll('table row');
+    
+    // Click every row
+    for (const row of rows) {
+      await row.click();
+      await new Promise(r => setTimeout(r, 500)); // Wait between clicks
+    }
+    
+    // Or click specific row
+    await rows[2].click(); // Click third row
+    ```
+  </Accordion>
+  
+  <Accordion title="Checkboxes/Radio Buttons">
+    ```javascript
+    // Find all checkboxes
+    const checkboxes = await testdriver.findAll('checkbox');
+    
+    // Check all boxes
+    for (const checkbox of checkboxes) {
+      await checkbox.click();
+    }
+    
+    // Or select first unchecked
+    const unchecked = checkboxes[0];
+    await unchecked.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Navigation Links">
+    ```javascript
+    // Find all navigation links
+    const navLinks = await testdriver.findAll('navigation link');
+    
+    // Validate all are present
+    expect(navLinks.length).toBeGreaterThan(0);
+    
+    // Click specific link by text
+    const homeLink = navLinks.find(link => 
+      link.text?.toLowerCase().includes('home')
+    );
+    
+    if (homeLink) {
+      await homeLink.click();
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Conditional Interactions">
+    ```javascript
+    // Check if any error messages exist
+    const errors = await testdriver.findAll('error message');
+    
+    if (errors.length > 0) {
+      console.log(`Found ${errors.length} validation errors`);
+      
+      // Log each error location
+      errors.forEach((error, i) => {
+        console.log(`Error ${i + 1} at (${error.x}, ${error.y})`);
+      });
+    } else {
+      console.log('Form validation passed!');
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Complete Example
+
+```javascript
+import { test, expect } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('select multiple items from list', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com/products'
+  });
+  
+  // Find all product cards
+  const products = await testdriver.findAll('product card');
+  
+  expect(products.length).toBeGreaterThan(0);
+  console.log(`Found ${products.length} products`);
+  
+  // Click first 3 products
+  const productsToSelect = Math.min(3, products.length);
+  
+  for (let i = 0; i < productsToSelect; i++) {
+    await products[i].click();
+    console.log(`Selected product ${i + 1}`);
+    await new Promise(r => setTimeout(r, 500)); // Brief pause
+  }
+  
+  // Verify selections
+  const selectedBadges = await testdriver.findAll('selected badge');
+  expect(selectedBadges.length).toBe(productsToSelect);
+});
+```
+
+### Best Practices
+
+<Check>
+  **Handle empty arrays gracefully**
+  
+  ```javascript
+  // ✅ Good - check length first
+  const items = await testdriver.findAll('list item');
+  if (items.length > 0) {
+    await items[0].click();
+  }
+  
+  // ❌ Bad - may throw error
+  const items = await testdriver.findAll('list item');
+  await items[0].click(); // Error if array is empty!
+  ```
+</Check>
+
+<Check>
+  **Use find() for single elements**
+  
+  ```javascript
+  // ✅ Use find() when you need exactly one
+  const submitBtn = await testdriver.find('submit button');
+  await submitBtn.click();
+  
+  // ❌ Unnecessary - findAll() returns array
+  const buttons = await testdriver.findAll('submit button');
+  await buttons[0].click(); // Extra array handling
+  ```
+</Check>
+
+<Check>
+  **Cache for performance**
+  
+  ```javascript
+  // First run - slow (AI call)
+  const items = await testdriver.findAll('menu item', {
+    cacheKey: 'menu-items'
+  });
+  
+  // Subsequent runs - fast (cache hit)
+  // ~10-20x faster than without cache
+  ```
+</Check>

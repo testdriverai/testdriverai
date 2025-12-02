@@ -1121,8 +1121,8 @@ class TestDriverSDK {
         ? options.redrawThreshold
         : { diffThreshold: options.redrawThreshold };
     } else {
-      // Default: disabled
-      this.redrawOptions = { enabled: false };
+      // Default: enabled (as of v7.2)
+      this.redrawOptions = { enabled: true };
     }
     // Keep redrawThreshold for backwards compatibility in connect()
     this.redrawThreshold = this.redrawOptions;

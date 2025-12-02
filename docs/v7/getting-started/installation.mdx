@@ -1,0 +1,486 @@
+---
+title: "Installation"
+description: "Install TestDriver and set up your first test in 2 minutes"
+icon: "download"
+---
+
+Get started with TestDriver in just a few steps. This guide will have you running your first AI-powered test in under 2 minutes.
+
+<Note>
+  **Fastest Way to Get Started:** Use `testdriverai init` to scaffold a complete project automatically:
+
+  ```bash
+  npm install -g testdriverai
+  testdriverai init
+  ```
+
+  This creates everything you need: package.json, test files, Vitest config, GitHub Actions workflow, and prompts for your API key. Then just run `npm test`!
+
+  For manual setup, continue with the steps below.
+</Note>
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Node.js 18 or higher
+
+    ```bash
+    node --version
+    # v18.0.0 or higher
+    ```
+  </Card>
+
+  <Card title="Package Manager" icon="box">
+    npm, yarn, or pnpm
+
+    ```bash
+    npm --version
+    # or
+    yarn --version
+    # or
+    pnpm --version
+    ```
+  </Card>
+</CardGroup>
+
+## Step 1: Install TestDriver
+
+Install TestDriver and Vitest test runner:
+
+<CodeGroup>
+```bash npm
+npm install --save-dev testdriverai vitest
+```
+
+```bash yarn
+yarn add --dev testdriverai vitest
+```
+
+```bash pnpm
+pnpm add -D testdriverai vitest
+```
+</CodeGroup>
+
+<Tip>
+  TestDriver works with any test framework (Vitest, Jest, Mocha), but we recommend Vitest for the best experience.
+</Tip>
+
+## Step 2: Get Your API Key
+
+<Steps>
+  <Step title="Sign up">
+    Visit [app.testdriver.ai](https://app.testdriver.ai) and create a free account.
+  </Step>
+
+  <Step title="Generate API Key">
+    Navigate to Settings → API Keys and generate a new key.
+
+    The key will look like: `tdai-1234567890abcdef1234567890abcdef`
+  </Step>
+
+  <Step title="Save API Key">
+    Create a `.env` file in your project root:
+
+    ```bash .env
+    TD_API_KEY=tdai-your-api-key-here
+    ```
+
+    <Warning>
+      Add `.env` to your `.gitignore` to avoid committing secrets!
+    </Warning>
+  </Step>
+</Steps>
+
+## Step 3: Create Your First Test
+
+Create a test file `test.test.js`:
+
+```javascript test.test.js
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('my first test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+    // apiKey automatically read from process.env.TD_API_KEY
+  });
+
+  await testdriver.find('More information link').click();
+  await testdriver.assert('IANA page is visible');
+});
+```
+
+<Check>
+  That's it! TestDriver automatically handles authentication, browser launch, navigation, video recording, and cleanup.
+</Check>
+
+## Step 4: Run Your Test
+
+Run your test with Vitest:
+
+```bash
+npx vitest run
+```
+
+You should see output like:
+
+```
+✓ test.test.js (1)
+  ✓ my first test (12.3s)
+
+Test Files  1 passed (1)
+Tests  1 passed (1)
+Duration  12.45s
+
+📹 Replay: https://app.testdriver.ai/dashcam/abc123
+```
+
+<Tip>
+  Click the Dashcam replay URL to watch a video of your test execution!
+</Tip>
+
+## Optional: Configure Vitest
+
+For a better experience, create a `vitest.config.mjs`:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000,  // 2 minutes per test (TestDriver tests can take longer)
+    hookTimeout: 120000,  // 2 minutes for setup/teardown
+  },
+});
+```
+
+## Installation Options
+
+### TypeScript Setup
+
+TestDriver includes TypeScript definitions out of the box:
+
+```typescript test.test.ts
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('typed test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  const element = await testdriver.find('button');
+  // element has full type information
+  console.log(element.coordinates.x);
+});
+```
+
+No additional setup needed!
+
+### Global Installation (Optional)
+
+Install TestDriver CLI globally for project scaffolding and sandbox management:
+
+```bash
+npm install -g testdriverai
+```
+
+This gives you access to commands like:
+
+```bash
+# Initialize a new project (recommended!)
+testdriverai init
+
+# Spawn a sandbox
+testdriverai sandbox spawn
+
+# List active sandboxes
+testdriverai sandbox list
+
+# Stop a sandbox
+testdriverai sandbox stop i-abc123
+```
+
+<Tip>
+  The `testdriverai init` command is the fastest way to start a new project. It creates:
+  - package.json with test scripts
+  - Vitest configuration with TestDriver plugin
+  - Example test file using the chrome preset
+  - GitHub Actions workflow for CI/CD
+  - .gitignore to protect secrets
+  - Installs all dependencies
+  - Prompts for your API key and saves to .env
+</Tip>
+
+[Learn more about sandbox management](/agents.md#sandbox-management)
+
+### Monorepo Setup
+
+For monorepos, install TestDriver in the root and reference it from test packages:
+
+```json package.json (root)
+{
+  "workspaces": ["packages/*"],
+  "devDependencies": {
+    "testdriverai": "^7.0.0",
+    "vitest": "^1.0.0"
+  }
+}
+```
+
+```json packages/app/package.json
+{
+  "scripts": {
+    "test": "vitest run"
+  }
+}
+```
+
+## Alternative Test Frameworks
+
+While we recommend Vitest, TestDriver works with any test framework:
+
+<Tabs>
+  <Tab title="Vitest (Recommended)">
+    ```javascript
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+
+    test('my test', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+      // Test code
+    });
+    ```
+  </Tab>
+
+  <Tab title="Jest">
+    ```javascript
+    import { chrome } from 'testdriverai/presets';
+
+    test('my test', async () => {
+      const { testdriver } = await chrome({ url });
+      // Test code
+    });
+    ```
+  </Tab>
+
+  <Tab title="Mocha">
+    ```javascript
+    import { chrome } from 'testdriverai/presets';
+
+    describe('My Suite', () => {
+      it('should work', async function() {
+        const { testdriver } = await chrome(this, { url });
+        // Test code
+      });
+    });
+    ```
+  </Tab>
+
+  <Tab title="Node (No Framework)">
+    ```javascript
+    import { TestDriver } from 'testdriverai';
+
+    async function runTest() {
+      const testdriver = new TestDriver({
+        apiKey: process.env.TD_API_KEY
+      });
+
+      await testdriver.connect();
+      // Test code
+      await testdriver.disconnect();
+    }
+
+    runTest();
+    ```
+  </Tab>
+</Tabs>
+
+## Verify Installation
+
+Run this quick verification to ensure everything is set up correctly:
+
+```javascript verify.test.js
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('verify installation', async (context) => {
+  console.log('✓ TestDriver SDK imported');
+
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  console.log('✓ Connected to TestDriver sandbox');
+  console.log('✓ Chrome browser launched');
+
+  const element = await testdriver.find('More information link');
+  console.log('✓ AI vision working');
+  console.log('✓ Element found:', element.text);
+
+  await element.click();
+  console.log('✓ Click action successful');
+
+  await testdriver.assert('IANA page is visible');
+  console.log('✓ AI assertion passed');
+
+  console.log('✓ Dashcam recording:', dashcam.url);
+  console.log('\n✅ Installation verified successfully!');
+});
+```
+
+Run it:
+
+```bash
+npx vitest run verify.test.js
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="API Key Not Found">
+    **Error:** `TestDriver API key not found`
+
+    **Solutions:**
+    1. Check `.env` file exists in project root
+    2. Verify key format: `TD_API_KEY=tdai-...`
+    3. Restart your terminal/IDE to reload environment
+    4. Or pass API key directly:
+
+    ```javascript
+    const { testdriver } = await chrome(context, {
+      url: 'https://example.com',
+      apiKey: 'tdai-your-key-here'
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Module Not Found">
+    **Error:** `Cannot find module 'testdriverai'`
+
+    **Solutions:**
+    1. Ensure you're in the correct directory
+    2. Run `npm install` again
+    3. Check `package.json` includes testdriverai
+    4. Delete `node_modules` and reinstall:
+
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+
+  <Accordion title="Test Timeout">
+    **Error:** `Test timed out after 5000ms`
+
+    **Solution:** Increase timeout in vitest config:
+
+    ```javascript vitest.config.mjs
+    export default defineConfig({
+      test: {
+        testTimeout: 120000, // 2 minutes
+      },
+    });
+    ```
+
+    TestDriver tests can take longer than unit tests due to AI analysis and browser automation.
+  </Accordion>
+
+  <Accordion title="TypeScript Errors">
+    **Error:** `Cannot find type definitions`
+
+    **Solution:** TestDriver includes types by default, but ensure your `tsconfig.json` is correct:
+
+    ```json tsconfig.json
+    {
+      "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "esModuleInterop": true
+      }
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Network/Firewall Issues">
+    **Error:** `Failed to connect to TestDriver API`
+
+    **Solution:**
+    1. Check your internet connection
+    2. Verify firewall allows outbound HTTPS
+    3. If behind corporate proxy, configure:
+
+    ```bash .env
+    HTTP_PROXY=http://proxy.company.com:8080
+    HTTPS_PROXY=http://proxy.company.com:8080
+    ```
+
+    For on-premise deployment, see [self-hosting guide](/v7/guides/self-hosting).
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that you have TestDriver installed:
+
+<CardGroup cols={2}>
+  <Card
+    title="Write Your First Test"
+    icon="pencil"
+    href="/v7/getting-started/writing-tests"
+  >
+    Learn how to write effective TestDriver tests
+  </Card>
+
+  <Card
+    title="Generate Tests with AI"
+    icon="wand-magic-sparkles"
+    href="/v7/getting-started/generating-tests"
+  >
+    Use Claude to generate tests automatically
+  </Card>
+
+  <Card
+    title="View Examples"
+    icon="code"
+    href="/v7/presets/chrome"
+  >
+    See TestDriver in action with examples
+  </Card>
+
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/v7/api/client"
+  >
+    Explore all available methods
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+<CardGroup cols={3}>
+  <Card
+    title="Discord"
+    icon="discord"
+    href="https://discord.com/invite/cWDFW8DzPm"
+  >
+    Join our community
+  </Card>
+
+  <Card
+    title="GitHub"
+    icon="github"
+    href="https://github.com/testdriverai"
+  >
+    Report issues
+  </Card>
+
+  <Card
+    title="Documentation"
+    icon="book"
+    href="/v7/guides/troubleshooting"
+  >
+    Troubleshooting guide
+  </Card>
+</CardGroup>

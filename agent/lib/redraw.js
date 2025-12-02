@@ -8,7 +8,7 @@ const DEFAULT_REDRAW_OPTIONS = {
   enabled: true,           // Master switch to enable/disable redraw detection
   screenRedraw: true,      // Enable screen redraw detection
   networkMonitor: true,    // Enable network activity monitoring
-  diffThreshold: 0.1,      // Percentage threshold for screen diff (0.1 = 0.1%)
+  diffThreshold: 0.01,     // Percentage threshold for screen diff (0.01 = 0.01%)
 };
 
 // Factory function that creates redraw functionality with the provided system instance

@@ -1,0 +1,525 @@
+---
+title: "Generating Tests with AI"
+description: "Use Claude and AI agents to automatically generate TestDriver tests"
+icon: "wand-magic-sparkles"
+---
+
+TestDriver is designed to work seamlessly with AI agents like Claude. You can use AI to generate complete test suites, refine selectors, and debug failing tests.
+
+## Using Claude to Generate Tests
+
+Claude can write TestDriver tests by following the patterns in the [AI Agent Guide](/agents.md).
+
+### Simple Prompt Example
+
+```
+Write a TestDriver test that:
+1. Navigates to https://example.com
+2. Clicks the "More information" link
+3. Asserts that the IANA page is visible
+```
+
+Claude will generate:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('navigate to IANA page', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    apiKey: process.env.TD_API_KEY
+  });
+
+  await testdriver.find('More information link').click();
+  await testdriver.assert('IANA page is visible');
+});
+```
+
+## AI Agent Guide
+
+TestDriver includes a comprehensive guide specifically for AI agents at [agents.md](/agents.md).
+
+<Card title="agents.md - Complete AI Agent Guide" icon="robot" href="/agents.md">
+  **Includes:**
+
+  - Quick setup and authentication
+  - Provision methods (chrome, vscode, electron)
+  - Core API methods with examples
+  - Sandbox reconnection patterns
+  - Debugging failed finds
+  - Iterative selector refinement
+  - Best practices for autonomous operation
+  - Common patterns and examples
+</Card>
+
+Share this guide with Claude or your AI agent to enable autonomous test generation and execution.
+
+## Generating Complete Test Suites
+
+Ask Claude to generate multiple related tests:
+
+```
+Generate a test suite for an e-commerce checkout flow:
+1. Browse products and add to cart
+2. View cart and update quantities
+3. Proceed to checkout
+4. Fill shipping information
+5. Complete payment
+6. Verify order confirmation
+```
+
+Claude will generate a complete test suite with proper structure and error handling.
+
+## Iterative Refinement
+
+AI agents can iteratively refine selectors when initial attempts fail:
+
+```javascript
+// AI agent tries multiple selector variations
+const selectors = [
+  'submit button',
+  'blue submit button',
+  'submit button in bottom right',
+  'button with "Submit" text',
+  'primary action button'
+];
+
+for (const selector of selectors) {
+  try {
+    console.log(`Trying: ${selector}`);
+    await testdriver.find(selector).click();
+    console.log(`✓ Success with: ${selector}`);
+    break;
+  } catch (error) {
+    console.log(`✗ Failed: ${selector} (similarity: ${error.similarity})`);
+  }
+}
+```
+
+[See full pattern in agents.md](/agents.md#iterative-selector-refinement)
+
+## Using Claude Code
+
+If you're using Claude Code (Anthropic's CLI agent), you can ask it to:
+
+### Generate Tests
+
+```
+@claude Generate a TestDriver test for the login flow at https://myapp.com/login
+```
+
+### Debug Failing Tests
+
+```
+@claude This test is failing. Can you help me figure out why?
+[paste error output]
+```
+
+### Refactor Tests
+
+```
+@claude Refactor these tests to use a shared login helper function
+```
+
+### Add Assertions
+
+```
+@claude Add assertions to verify the shopping cart total is calculated correctly
+```
+
+## Prompt Templates
+
+### Basic Test Generation
+
+```
+Write a TestDriver test that tests [feature description] on [URL].
+
+Requirements:
+- Use the chrome preset
+- Use natural language selectors
+- Include meaningful assertions
+- Add error handling if needed
+```
+
+### Form Testing
+
+```
+Generate a TestDriver test for the form at [URL] that:
+- Fills in all required fields
+- Validates field requirements
+- Submits the form
+- Verifies success message
+```
+
+### Multi-Step Flow
+
+```
+Create a TestDriver test suite for [flow name]:
+
+Steps:
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+
+Make sure to verify each step completes successfully.
+```
+
+### Visual Regression
+
+```
+Write a TestDriver test that captures screenshots of [page/component]
+and verifies visual appearance using AI assertions.
+```
+
+## AI Agent Patterns
+
+### Autonomous Debugging
+
+AI agents can debug tests by:
+
+1. **Analyzing error messages**
+   ```javascript
+   try {
+     await testdriver.find('submit button').click();
+   } catch (error) {
+     // AI analyzes error.similarity, error.debugScreenshot
+     // and suggests alternative selectors
+   }
+   ```
+
+2. **Reconnecting to sandboxes**
+   ```javascript
+   // AI can reconnect to failed sandbox to try different approaches
+   const lastSandboxId = testdriver.getLastSandboxId();
+   await testdriver.connect({ sandboxId: lastSandboxId });
+   ```
+
+3. **Iterative refinement**
+   - AI tries multiple selector variations
+   - Learns from similarity scores
+   - Adjusts strategy based on visual feedback
+
+[Full patterns in agents.md](/agents.md#debugging-failed-finds)
+
+### Test Generation from Requirements
+
+AI can generate tests from various formats:
+
+<Tabs>
+  <Tab title="User Stories">
+    ```
+    As a user, I want to reset my password so that
+    I can regain access to my account.
+
+    Acceptance criteria:
+    - User can request password reset via email
+    - User receives email with reset link
+    - User can set new password
+    - User can login with new password
+    ```
+
+    AI generates complete test covering all acceptance criteria.
+  </Tab>
+
+  <Tab title="BDD/Gherkin">
+    ```
+    Feature: User Login
+      Scenario: Successful login
+        Given I am on the login page
+        When I enter valid credentials
+        And I click the login button
+        Then I should see the dashboard
+    ```
+
+    AI converts to TestDriver test.
+  </Tab>
+
+  <Tab title="Manual Test Cases">
+    ```
+    Test Case: TC-001 - User Registration
+    1. Navigate to registration page
+    2. Enter email: test@example.com
+    3. Enter password: SecurePass123
+    4. Click "Create Account"
+    5. Verify welcome message
+    ```
+
+    AI generates TestDriver test with proper structure.
+  </Tab>
+</Tabs>
+
+## Claude + TestDriver Workflow
+
+Recommended workflow for using Claude with TestDriver:
+
+<Steps>
+  <Step title="Share agents.md">
+    Provide Claude with the [AI agent guide](/agents.md):
+
+    ```
+    I'm using TestDriver for testing. Here's the agent guide:
+    [paste agents.md content or link]
+    ```
+  </Step>
+
+  <Step title="Describe Requirements">
+    Clearly describe what you want to test:
+
+    ```
+    Generate a test that verifies users can:
+    - Login at https://myapp.com/login
+    - Navigate to their profile
+    - Update their email address
+    - Verify the change was saved
+    ```
+  </Step>
+
+  <Step title="Review & Refine">
+    Claude generates the test. Review and ask for refinements:
+
+    ```
+    Can you add error handling for the case where
+    the email is already taken?
+    ```
+  </Step>
+
+  <Step title="Run & Debug">
+    Run the test. If it fails, share the error with Claude:
+
+    ```
+    The test failed with: ElementNotFoundError: Could not find 'submit button'
+    Similarity score: 0.72
+
+    Can you suggest alternative selectors?
+    ```
+  </Step>
+
+  <Step title="Iterate">
+    Claude suggests improvements. Repeat until test passes.
+  </Step>
+</Steps>
+
+## Example: Full AI-Generated Test
+
+**Prompt:**
+```
+Generate a complete TestDriver test suite for an e-commerce site that tests:
+1. Product search
+2. Adding items to cart
+3. Checkout process
+4. Order confirmation
+
+Use https://shop.example.com as the base URL.
+```
+
+**Claude generates:**
+
+```javascript
+import { test, describe, beforeEach } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+describe('E-commerce Flow', () => {
+  let testdriver;
+
+  beforeEach(async (context) => {
+    const result = await chrome(context, {
+      url: 'https://shop.example.com',
+      apiKey: process.env.TD_API_KEY
+    });
+    testdriver = result.testdriver;
+  });
+
+  test('search for products', async () => {
+    await testdriver.find('search input').type('laptop');
+    await testdriver.pressKeys(['enter']);
+
+    await testdriver.assert('search results are displayed');
+    await testdriver.assert('results contain "laptop"');
+
+    const results = await testdriver.findAll('product card');
+    console.log(`Found ${results.length} products`);
+  });
+
+  test('add item to cart', async () => {
+    await testdriver.find('first product card').click();
+    await testdriver.assert('product detail page is shown');
+
+    await testdriver.find('add to cart button').click();
+    await testdriver.assert('item added confirmation appears');
+    await testdriver.assert('cart badge shows 1');
+  });
+
+  test('complete checkout', async (context) => {
+    // Add item first
+    await testdriver.find('first product').click();
+    await testdriver.find('add to cart').click();
+
+    // Go to cart
+    await testdriver.find('cart icon').click();
+    await testdriver.assert('cart page is displayed');
+
+    // Proceed to checkout
+    await testdriver.find('checkout button').click();
+
+    // Fill shipping
+    await testdriver.find('full name input').type('John Doe');
+    await testdriver.find('address input').type('123 Main St');
+    await testdriver.find('city input').type('Springfield');
+    await testdriver.find('state dropdown').click();
+    await testdriver.find('California option').click();
+    await testdriver.find('zip code input').type('12345');
+
+    // Continue
+    await testdriver.find('continue to payment button').click();
+
+    // Fill payment (test mode)
+    await testdriver.find('card number input').type('4242424242424242');
+    await testdriver.find('expiry input').type('12/25');
+    await testdriver.find('cvv input').type('123', { secret: true });
+
+    // Place order
+    await testdriver.find('place order button').click();
+
+    // Verify confirmation
+    await testdriver.assert('order confirmation page is displayed');
+    await testdriver.assert('order number is shown');
+    await testdriver.assert('thank you message is visible');
+  });
+});
+```
+
+## Best Practices for AI-Generated Tests
+
+<AccordionGroup>
+  <Accordion title="1. Provide Clear Context">
+    ```
+    ✅ Good:
+    "Generate a test for the login form at /login that validates:
+    - Email format
+    - Password requirements
+    - Shows appropriate error messages"
+
+    ❌ Vague:
+    "Write a login test"
+    ```
+  </Accordion>
+
+  <Accordion title="2. Specify Expected Behavior">
+    ```
+    ✅ Good:
+    "After clicking submit, verify:
+    - Loading spinner appears
+    - Then success message shows
+    - User is redirected to dashboard"
+
+    ❌ Incomplete:
+    "Click submit and check something happens"
+    ```
+  </Accordion>
+
+  <Accordion title="3. Include Error Cases">
+    ```
+    ✅ Good:
+    "Test should handle:
+    - Invalid email format
+    - Wrong password
+    - Network errors
+    - Session timeout"
+
+    ❌ Missing:
+    "Test the happy path only"
+    ```
+  </Accordion>
+
+  <Accordion title="4. Review Generated Code">
+    Always review AI-generated tests for:
+    - Security (secret: true for passwords)
+    - Proper error handling
+    - Meaningful assertions
+    - Clear test names
+  </Accordion>
+</AccordionGroup>
+
+## Limitations & Considerations
+
+<Warning>
+  **AI agents can:**
+  - Generate test structure and logic
+  - Suggest natural language selectors
+  - Debug and refine failing tests
+  - Iterate on selector descriptions
+
+  **AI agents cannot:**
+  - See your application's actual UI (unless you provide screenshots)
+  - Know your app's exact selector requirements without trial
+  - Guarantee first-try success (iteration is normal)
+</Warning>
+
+## Advanced: Custom AI Workflows
+
+Build custom workflows with AI:
+
+```javascript
+// ai-test-generator.js
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+async function generateTest(requirements) {
+  const message = await anthropic.messages.create({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 4096,
+    messages: [{
+      role: 'user',
+      content: `Generate a TestDriver test for: ${requirements}
+
+      Use the patterns from agents.md to create a well-structured test.`
+    }]
+  });
+
+  return message.content[0].text;
+}
+
+// Usage
+const test = await generateTest('User can reset password');
+console.log(test);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="AI Agent Guide"
+    icon="robot"
+    href="/agents.md"
+  >
+    Complete guide for AI agents
+  </Card>
+
+  <Card
+    title="Running & Debugging"
+    icon="bug"
+    href="/v7/getting-started/running-and-debugging"
+  >
+    Run and debug your tests
+  </Card>
+
+  <Card
+    title="Examples"
+    icon="code"
+    href="/v7/presets/chrome"
+  >
+    View example tests
+  </Card>
+
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/v7/api/client"
+  >
+    Complete API documentation
+  </Card>
+</CardGroup>

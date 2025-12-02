@@ -254,6 +254,17 @@ function createCommandDefinitions(agent) {
         await agent.generate(flags.count || 3, args.prompt);
       },
     },
+
+    init: {
+      description: "Initialize a new TestDriver project with Vitest SDK examples",
+      args: {},
+      flags: {},
+      handler: async () => {
+        // This handler is special - it doesn't need an agent instance
+        // It just scaffolds files, so it will be handled by the CLI command
+        throw new Error("Init mode should be handled by CLI interface");
+      },
+    },
   };
 }
 

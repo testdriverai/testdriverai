@@ -1,8 +1,0 @@
-version: 6.0.0
-steps:
-  - prompt: stop dashcam
-    commands:
-      - command: exec
-        lang: sh
-        timeout: 120000
-        code: dashcam stop

@@ -1,0 +1,623 @@
+---
+title: "Observable & Debuggable"
+description: "Complete visibility into test execution with replays, logs, and analytics"
+icon: "microscope"
+---
+
+Debugging test failures is effortless with TestDriver's comprehensive observability features - video replays, detailed logs, network monitoring, and performance metrics.
+
+## Video Replays with Dashcam
+
+Every test automatically records a video replay for easy debugging:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('with automatic replay', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  await testdriver.find('button').click();
+  await testdriver.find('input').type('test data');
+  await testdriver.find('submit').click();
+
+  // After test completes, view replay
+  console.log('Watch replay:', dashcam.url);
+  // Output: https://app.testdriver.ai/dashcam/abc123def456
+});
+```
+
+<Card title="Dashcam Features" icon="video">
+  **Every replay includes:**
+
+  - Full video recording of test execution
+  - Timeline with all actions marked
+  - Screenshots at key moments
+  - Console logs synchronized with video
+  - Network requests with timing
+  - Element highlights on interactions
+  - Slow-motion playback
+  - Frame-by-frame stepping
+</Card>
+
+[View all replays at app.testdriver.ai](https://app.testdriver.ai)
+
+## Replay Features
+
+<Tabs>
+  <Tab title="Video Playback">
+    - **Full resolution** - Recorded at native screen resolution
+    - **Variable speed** - Play at 0.25x to 2x speed
+    - **Frame-by-frame** - Step through individual frames
+    - **Jump to action** - Click timeline to jump to any action
+    - **Download** - Save replay as MP4
+  </Tab>
+
+  <Tab title="Action Timeline">
+    ```
+    00:00.000  Test started
+    00:01.234  find('submit button')
+    00:02.567  click()
+    00:03.890  find('email input')
+    00:04.123  type('user@example.com')
+    00:05.456  find('password input')
+    00:06.789  type('***') [secret]
+    00:07.012  find('Login button')
+    00:07.345  click()
+    00:09.678  assert('Dashboard is visible')
+    00:10.901  Test passed ✓
+    ```
+
+    Click any action to jump to that moment in the replay.
+  </Tab>
+
+  <Tab title="Element Highlights">
+    All interactions show visual highlights:
+
+    - **Green outline** - Element being located
+    - **Blue flash** - Click action
+    - **Yellow highlight** - Hover action
+    - **Red outline** - Failed assertion
+    - **Purple marker** - Type action
+  </Tab>
+
+  <Tab title="Sharing">
+    Share replays with your team:
+
+    ```javascript
+    // Public link (anyone with link can view)
+    console.log('Public replay:', dashcam.url);
+
+    // Team-only link (requires login)
+    console.log('Team replay:', dashcam.privateUrl);
+
+    // Embed in CI/CD
+    console.log('Embed:', dashcam.embedUrl);
+    ```
+
+    Replays can be:
+    - Shared via link
+    - Embedded in CI reports
+    - Downloaded as video
+    - Exported with logs
+  </Tab>
+</Tabs>
+
+## Application Logs
+
+Access all console output from your application:
+
+```javascript
+test('with console logging', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    captureConsole: true // Enable console capture
+  });
+
+  // Your test code
+  await testdriver.find('button').click();
+
+  // Application console logs are captured automatically
+  // View them in Dashcam replay
+});
+```
+
+<Accordion title="Captured Log Types">
+  **Browser Console:**
+  - `console.log()` - Debug messages
+  - `console.warn()` - Warnings
+  - `console.error()` - Errors
+  - `console.info()` - Info messages
+  - `console.debug()` - Debug messages
+
+  **Application Logs:**
+  - JavaScript errors and exceptions
+  - Unhandled promise rejections
+  - Network errors (404, 500, etc.)
+  - Security errors (CORS, CSP)
+  - React/Vue warnings
+</Accordion>
+
+## Network Monitoring
+
+Complete visibility into all network activity:
+
+<Card title="Network Request Details" icon="network-wired">
+  **For every request, view:**
+
+  - URL and method (GET, POST, etc.)
+  - Request headers
+  - Request payload/body
+  - Response status code
+  - Response headers
+  - Response body
+  - Timing breakdown (DNS, Connect, TLS, Wait, Download)
+  - Size (request and response)
+  - Initiated by (script/user action)
+</Card>
+
+```javascript
+test('network monitoring', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://api.example.com',
+    captureNetwork: true
+  });
+
+  await testdriver.find('Load data button').click();
+
+  // Network requests are captured and shown in Dashcam
+  // Filter by:
+  // - XHR/Fetch
+  // - Images
+  // - Scripts
+  // - Stylesheets
+  // - Failed requests
+});
+```
+
+### Network Waterfall
+
+View request timing in a waterfall chart:
+
+```
+GET /api/users        ████████░░░░░░░░  245ms
+GET /api/posts        ░░░░████████████  412ms
+GET /avatar.jpg       ░░░░░░░░░░██░░░░  87ms
+POST /api/comment     ░░░░░░░░░░░░████  156ms
+```
+
+### Failed Requests
+
+Easily identify failed network requests:
+
+```
+❌ GET /api/data        404 Not Found       (234ms)
+❌ POST /api/submit     500 Internal Error  (891ms)
+❌ GET /image.jpg       Failed to fetch     (timeout)
+```
+
+## Performance Metrics
+
+Track application performance over time:
+
+<Tabs>
+  <Tab title="Page Load Metrics">
+    ```javascript
+    test('measure performance', async (context) => {
+      const { testdriver } = await chrome(context, {
+        url: 'https://example.com',
+        capturePerformance: true
+      });
+
+      // Metrics automatically captured:
+      // - First Contentful Paint (FCP)
+      // - Largest Contentful Paint (LCP)
+      // - Time to Interactive (TTI)
+      // - Total Blocking Time (TBT)
+      // - Cumulative Layout Shift (CLS)
+    });
+    ```
+
+    View Core Web Vitals in Dashcam replay.
+  </Tab>
+
+  <Tab title="Resource Timing">
+    ```
+    Resource Performance:
+    - HTML: 234ms
+    - CSS: 456ms (3 files)
+    - JavaScript: 892ms (12 files)
+    - Images: 1.2s (45 files)
+    - Fonts: 234ms (2 files)
+    Total: 3.0s
+    ```
+
+    Identify slow resources in your application.
+  </Tab>
+
+  <Tab title="CPU Usage">
+    ```
+    CPU Usage During Test:
+    Average: 34%
+    Peak: 67% (at 00:05.234)
+    Idle: 15%
+
+    High CPU events:
+    - 00:05.234: JavaScript parsing (67%)
+    - 00:08.901: Animation rendering (54%)
+    ```
+
+    Available in enterprise plans.
+  </Tab>
+
+  <Tab title="Memory Usage">
+    ```
+    Memory Usage:
+    Start: 45MB
+    Peak: 187MB (at 00:12.456)
+    End: 92MB
+
+    Potential leaks:
+    - 00:15.000: +45MB (no corresponding release)
+    ```
+
+    Detect memory leaks in your application.
+    Available in enterprise plans.
+  </Tab>
+</Tabs>
+
+## Debug Screenshots
+
+Automatic screenshots on failures:
+
+```javascript
+try {
+  await testdriver.find('missing element');
+} catch (error) {
+  // Automatic debug screenshot
+  console.log('Screenshot:', error.debugScreenshot); // Base64 image
+  console.log('Similarity:', error.similarity); // How close we got
+  console.log('Confidence:', error.confidence); // AI confidence
+
+  // Screenshot shows:
+  // - Full page at time of failure
+  // - Highlighted search area
+  // - Similar elements (if any)
+}
+```
+
+<Card title="Debug Screenshot Features" icon="camera">
+  - Full page screenshot at failure point
+  - Annotated with attempted action
+  - Similar elements highlighted
+  - Bounding boxes for close matches
+  - Automatically attached to test report
+</Card>
+
+## Test Reports
+
+Generate comprehensive test reports:
+
+<Tabs>
+  <Tab title="HTML Report">
+    ```bash
+    npx vitest run --reporter=html
+    ```
+
+    Generates interactive HTML report with:
+    - Pass/fail status for all tests
+    - Execution time per test
+    - Dashcam replay links
+    - Screenshots on failures
+    - Error messages and stack traces
+  </Tab>
+
+  <Tab title="JSON Report">
+    ```bash
+    npx vitest run --reporter=json > report.json
+    ```
+
+    ```json
+    {
+      "testResults": [
+        {
+          "name": "user can login",
+          "status": "passed",
+          "duration": 12345,
+          "dashcamUrl": "https://app.testdriver.ai/dashcam/abc123",
+          "assertions": 3
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="JUnit XML">
+    ```bash
+    npx vitest run --reporter=junit --outputFile=results.xml
+    ```
+
+    ```xml
+    <testsuite name="login.test.js" tests="3" failures="0">
+      <testcase name="user can login" time="12.345">
+        <system-out>
+          Dashcam: https://app.testdriver.ai/dashcam/abc123
+        </system-out>
+      </testcase>
+    </testsuite>
+    ```
+  </Tab>
+
+  <Tab title="Custom Report">
+    ```javascript
+    import { BaseReporter } from 'vitest/reporters';
+
+    class CustomReporter extends BaseReporter {
+      onTestEnd(test) {
+        // Send to your analytics system
+        analytics.track('test_complete', {
+          name: test.name,
+          status: test.result.state,
+          duration: test.result.duration,
+          dashcamUrl: test.context.dashcam?.url
+        });
+      }
+    }
+
+    export default {
+      test: {
+        reporters: [new CustomReporter()]
+      }
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Analytics Dashboard
+
+View test analytics at [app.testdriver.ai](https://app.testdriver.ai):
+
+<CardGroup cols={2}>
+  <Card title="Test Trends" icon="chart-line">
+    - Pass/fail rate over time
+    - Average execution time
+    - Flaky test identification
+    - Most expensive tests
+    - Cache hit rates
+  </Card>
+
+  <Card title="Performance Trends" icon="gauge-high">
+    - Page load times
+    - Core Web Vitals
+    - Resource loading times
+    - API response times
+    - Performance regressions
+  </Card>
+
+  <Card title="Cost Analysis" icon="dollar-sign">
+    - Daily/weekly/monthly costs
+    - Cost per test
+    - Cost by team member
+    - Sandbox usage
+    - API call volume
+  </Card>
+
+  <Card title="Team Activity" icon="users">
+    - Tests run by user
+    - Most active tests
+    - Peak usage times
+    - Sandbox utilization
+    - Failed test hotspots
+  </Card>
+</CardGroup>
+
+## Failure Analysis
+
+Quickly identify and diagnose test failures:
+
+```javascript
+// Failed test provides rich context
+test('failing test', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  try {
+    await testdriver.find('missing button').click();
+  } catch (error) {
+    console.log('Failure details:', {
+      message: error.message,
+      dashcamUrl: dashcam.url,
+      screenshot: error.debugScreenshot,
+      similarity: error.similarity,
+      timestamp: error.timestamp,
+      sandboxId: context.sandboxId
+    });
+    throw error;
+  }
+});
+```
+
+### Failure Report
+
+```
+❌ Test failed: user can login
+
+Error: ElementNotFoundError: Could not find 'missing button'
+  at TestDriver.find (testdriver.js:123)
+  at login.test.js:15:24
+
+Details:
+- Similarity: 0.34 (no close match)
+- Duration: 12.3s
+- Dashcam: https://app.testdriver.ai/dashcam/abc123
+- Screenshot: [attached]
+- Sandbox: i-0abc123def456789
+
+Recent actions:
+1. navigate to https://example.com ✓
+2. find('email input') ✓
+3. type('user@example.com') ✓
+4. find('missing button') ✗
+
+Console errors:
+- TypeError: Cannot read property 'x' of undefined (app.js:456)
+- Warning: Missing key prop (React)
+
+Network errors:
+- 404: /api/user-settings (234ms)
+```
+
+## CI/CD Integration
+
+Integrate test results into your CI/CD pipeline:
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml
+    - name: Run tests
+      run: npx vitest run
+      env:
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: |
+          test-results.xml
+          .testdriver/dashcam-urls.txt
+
+    - name: Comment PR
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const dashcamUrls = fs.readFileSync('.testdriver/dashcam-urls.txt', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            body: `Tests failed. View replays:\n${dashcamUrls}`
+          });
+    ```
+  </Tab>
+
+  <Tab title="Slack Notifications">
+    ```javascript
+    // Post test results to Slack
+    import { WebClient } from '@slack/web-api';
+
+    test.afterEach(async (context) => {
+      if (context.task.result.state === 'fail') {
+        const slack = new WebClient(process.env.SLACK_TOKEN);
+
+        await slack.chat.postMessage({
+          channel: '#test-failures',
+          text: `Test failed: ${context.task.name}`,
+          attachments: [{
+            color: 'danger',
+            fields: [
+              { title: 'Test', value: context.task.name },
+              { title: 'Replay', value: context.dashcam.url },
+              { title: 'Error', value: context.task.result.error.message }
+            ]
+          }]
+        });
+      }
+    });
+    ```
+  </Tab>
+
+  <Tab title="Jira Integration">
+    ```javascript
+    // Automatically create Jira tickets for failures
+    import { JiraClient } from 'jira-client';
+
+    test.afterEach(async (context) => {
+      if (context.task.result.state === 'fail') {
+        const jira = new JiraClient({
+          host: 'company.atlassian.net',
+          apiVersion: '2'
+        });
+
+        await jira.addNewIssue({
+          fields: {
+            project: { key: 'TEST' },
+            summary: `Test failure: ${context.task.name}`,
+            description: `
+              Test failed: ${context.task.name}
+
+              Error: ${context.task.result.error.message}
+
+              Replay: ${context.dashcam.url}
+
+              Sandbox: ${context.sandboxId}
+            `,
+            issuetype: { name: 'Bug' }
+          }
+        });
+      }
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Real-Time Monitoring
+
+Monitor tests as they run:
+
+```bash
+# Watch test execution in real-time
+npx vitest --reporter=verbose
+
+# Output:
+✓ login.test.js > user can login (12.3s)
+  → find('email input') (1.2s)
+  → type('user@example.com') (0.8s)
+  → find('password input') (0.9s)
+  → type('***') (0.7s) [secret]
+  → find('Login button') (1.1s)
+  → click() (0.4s)
+  → assert('Dashboard is visible') (7.2s)
+  ✓ Test passed
+  📹 Replay: https://app.testdriver.ai/dashcam/abc123
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Dashcam API"
+    icon="video"
+    href="/v7/api/dashcam"
+  >
+    Complete Dashcam documentation
+  </Card>
+
+  <Card
+    title="Debugging Guide"
+    icon="bug"
+    href="/v7/guides/debugging"
+  >
+    Debug failing tests effectively
+  </Card>
+
+  <Card
+    title="View Replays"
+    icon="play"
+    href="https://app.testdriver.ai"
+  >
+    Access your test replays
+  </Card>
+
+  <Card
+    title="Performance Guide"
+    icon="gauge-high"
+    href="/v7/guides/performance"
+  >
+    Optimize test performance
+  </Card>
+</CardGroup>

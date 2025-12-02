@@ -8,11 +8,28 @@ mode: "wide"
 
 TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full IDE support, type safety, and automatic lifecycle management.
 
+<Note>
+  **New!** Use `testdriverai init` to scaffold a complete project with one command. This will:
+  - Create package.json with test scripts
+  - Set up Vitest configuration
+  - Create example tests
+  - Add GitHub Actions workflow
+  - Install dependencies automatically
+  - Prompt for your API key (saved to .env)
+
+  ```bash
+  npm install -g testdriverai
+  testdriverai init
+  ```
+
+  Then jump to [Step 3](#run-your-test) to run your tests!
+</Note>
+
 <Steps>
   <Step title="Install TestDriver">
-      
+
     Install the TestDriver SDK and Vitest test runner:
-    
+
     ```bash
     npm install --save-dev testdriverai vitest
     ```
@@ -103,6 +120,34 @@ The `chrome()` preset automatically:
 
 No manual setup or teardown needed!
 
+## Chainable API
+
+TestDriver uses a chainable promise API for elegant test writing:
+
+```javascript
+// ✅ Chainable - find and interact in one line
+await testdriver.find('submit button').click();
+await testdriver.find('menu item').hover();
+await testdriver.find('checkbox').doubleClick();
+
+// ✅ Also works - traditional two-step
+const button = await testdriver.find('submit button');
+await button.click();
+```
+
+**Available chainable methods:**
+- `.click()` - Click the element
+- `.hover()` - Hover over the element  
+- `.doubleClick()` - Double-click the element
+- `.rightClick()` - Right-click the element
+- `.mouseDown()` - Press mouse button down
+- `.mouseUp()` - Release mouse button
+- `.type(text)` - Type text (for input elements)
+
+<Tip>
+  Use chainable syntax for cleaner, more readable test code!
+</Tip>
+
 ## More Examples
 
 ### Login Flow
@@ -116,6 +161,7 @@ test('user can login', async (context) => {
     url: 'https://myapp.com/login'
   });
   
+  // Use chainable syntax for cleaner code
   await testdriver.find('email input').type('user@example.com');
   await testdriver.find('password input').type('password123');
   await testdriver.find('Login button').click();

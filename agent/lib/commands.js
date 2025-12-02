@@ -81,7 +81,7 @@ const createCommands = (
   config,
   sessionInstance,
   getCurrentFilePath,
-  redrawThreshold = 0.1,
+  redrawThreshold = 0.01,
   getDashcamElapsedTime = null,
 ) => {
   // Create SDK instance with emitter, config, and session

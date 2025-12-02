@@ -59,7 +59,7 @@
     "chalk": "^4.1.2",
     "cli-progress": "^3.12.0",
     "diff": "^8.0.2",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.6.1",
     "eventemitter2": "^6.4.9",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.0",
@@ -97,7 +97,8 @@
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3",
-    "vitest": "^4.0.8"
+    "testdriverai": "^6.1.11",
+    "vitest": "^4.0.15"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5"

@@ -194,11 +194,11 @@ await target.mouseUp();
 
 ### Properties
 
-Element properties provide additional information about located elements:
+Element properties provide additional information about located elements. Properties are available after a successful `find()` call.
 
 #### coordinates
 
-Get the element's coordinates object.
+Get the element's coordinates object containing all position information.
 
 ```javascript
 const coords = element.getCoordinates()
@@ -206,115 +206,217 @@ const coords = element.getCoordinates()
 element.coordinates
 ```
 
-**Returns:** Object with `{ x, y, centerX, centerY }` or `null`
+**Returns:** `Object | null` - Coordinate object with `{ x, y, centerX, centerY }`
 
 **Example:**
 ```javascript
 const button = await testdriver.find('submit button');
 const coords = button.coordinates;
-console.log(`Top-left: (${coords.x}, ${coords.y})`);
-console.log(`Center: (${coords.centerX}, ${coords.centerY})`);
+
+if (coords) {
+  console.log(`Top-left: (${coords.x}, ${coords.y})`);
+  console.log(`Center: (${coords.centerX}, ${coords.centerY})`);
+}
 ```
 
 #### x, y, centerX, centerY
 
-Direct access to coordinate values.
+Direct access to coordinate values. Always available after successful `find()`.
 
 ```javascript
-element.x        // Top-left X coordinate
-element.y        // Top-left Y coordinate  
-element.centerX  // Center X coordinate
-element.centerY  // Center Y coordinate
+element.x        // Top-left X coordinate (number)
+element.y        // Top-left Y coordinate (number)
+element.centerX  // Center X coordinate (number)
+element.centerY  // Center Y coordinate (number)
 ```
 
 **Example:**
 ```javascript
 const button = await testdriver.find('submit button');
+console.log(`Button at: (${button.x}, ${button.y})`);
 console.log(`Button center: (${button.centerX}, ${button.centerY})`);
-```
 
-#### screenshot
-
-Get a base64-encoded screenshot of the element (if available).
-
-```javascript
-element.screenshot
-```
-
-**Returns:** `string | null` - Base64-encoded image
-
-**Example:**
-```javascript
-const element = await testdriver.find('error message');
-if (element.screenshot) {
-  console.log('Element screenshot:', element.screenshot);
-}
-```
-
-#### text
-
-Get text content from the element (if available).
-
-```javascript
-element.text
-```
-
-**Returns:** `string | null`
-
-**Example:**
-```javascript
-const message = await testdriver.find('notification message');
-console.log('Message text:', message.text);
-```
-
-#### confidence
-
-Get the AI's confidence score for the element match.
-
-```javascript
-element.confidence
-```
-
-**Returns:** `number | null` - Confidence score (0-1)
-
-**Example:**
-```javascript
-const element = await testdriver.find('submit button');
-if (element.confidence < 0.8) {
-  console.warn('Low confidence match:', element.confidence);
-}
+// Use for custom mouse operations
+await testdriver.click(button.centerX, button.centerY);
 ```
 
 #### width, height
 
-Get element dimensions (if available).
+Element dimensions in pixels. Available when AI detects element bounds.
 
 ```javascript
-element.width
-element.height
+element.width   // Width in pixels (number | null)
+element.height  // Height in pixels (number | null)
 ```
 
-**Returns:** `number | null`
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+
+if (button.width && button.height) {
+  console.log(`Button size: ${button.width}x${button.height}px`);
+  
+  // Check if button is large enough
+  if (button.width < 50) {
+    console.warn('Button might be too small');
+  }
+}
+```
 
 #### boundingBox
 
-Get the complete bounding box information.
+Complete bounding box information including position and dimensions.
 
 ```javascript
 element.boundingBox
 ```
 
-**Returns:** `Object | null` - Bounding box with coordinates and dimensions
+**Returns:** `Object | null` - Bounding box with all dimension data
+
+```typescript
+{
+  x: number,        // Top-left X
+  y: number,        // Top-left Y
+  width: number,    // Width in pixels
+  height: number    // Height in pixels
+}
+```
+
+**Example:**
+```javascript
+const element = await testdriver.find('dialog box');
+
+if (element.boundingBox) {
+  const { x, y, width, height } = element.boundingBox;
+  console.log(`Dialog: ${width}x${height} at (${x}, ${y})`);
+  
+  // Calculate if element is in viewport
+  const rightEdge = x + width;
+  const bottomEdge = y + height;
+  console.log(`Element extends to (${rightEdge}, ${bottomEdge})`);
+}
+```
+
+#### screenshot
+
+Base64-encoded PNG screenshot of the screen when element was found. Only available in DEBUG mode or when an error occurs.
+
+```javascript
+element.screenshot
+```
+
+**Returns:** `string | null` - Base64-encoded PNG image
+
+**Example:**
+```javascript
+const element = await testdriver.find('error message');
+
+if (element.screenshot) {
+  // Save screenshot to file
+  const fs = require('fs');
+  const base64Data = element.screenshot.replace(/^data:image\/\w+;base64,/, '');
+  fs.writeFileSync('element-screenshot.png', Buffer.from(base64Data, 'base64'));
+  console.log('Screenshot saved');
+}
+```
+
+<Warning>
+  Screenshots can be large. They're automatically excluded from error messages to prevent memory issues.
+</Warning>
+
+#### text
+
+Text content extracted from the element by AI (if available).
+
+```javascript
+element.text
+```
+
+**Returns:** `string | null` - Element's text content
+
+**Example:**
+```javascript
+const message = await testdriver.find('notification message');
+
+if (message.text) {
+  console.log('Message says:', message.text);
+  
+  // Use text content in assertions
+  if (message.text.includes('success')) {
+    console.log('Success message detected');
+  }
+}
+
+// Another example - extracting button label
+const button = await testdriver.find('blue button');
+console.log('Button text:', button.text); // "Submit"
+```
 
 #### label
 
-Get the element's label or accessible name (if available).
+Accessible label or name of the element (if available). Useful for verifying accessibility.
 
 ```javascript
 element.label
 ```
 
-**Returns:** `string | null`
+**Returns:** `string | null` - Accessible label
+
+**Example:**
+```javascript
+const input = await testdriver.find('first input field');
+
+if (input.label) {
+  console.log('Input label:', input.label); // "Email Address"
+}
+```
+
+#### confidence
+
+AI confidence score for the element match (0-1, where 1 is perfect confidence).
+
+```javascript
+element.confidence
+```
+
+**Returns:** `number | null` - Confidence score between 0 and 1
+
+**Example:**
+```javascript
+const element = await testdriver.find('submit button');
+
+if (element.confidence !== null) {
+  const percentage = (element.confidence * 100).toFixed(1);
+  console.log(`Match confidence: ${percentage}%`);
+  
+  if (element.confidence < 0.8) {
+    console.warn('⚠️ Low confidence match - element might not be correct');
+  } else if (element.confidence > 0.95) {
+    console.log('✅ High confidence match');
+  }
+}
+```
+
+<Tip>
+  Confidence scores below 0.8 may indicate the element description was ambiguous or the wrong element was found.
+</Tip>
+
+### Property Availability
+
+| Property | When Available |
+|----------|---------------|
+| `x`, `y`, `centerX`, `centerY` | ✅ Always after successful `find()` |
+| `coordinates` | ✅ Always after successful `find()` |
+| `width`, `height` | ⚠️ When AI detects element bounds |
+| `boundingBox` | ⚠️ When AI detects element bounds |
+| `text` | ⚠️ When AI extracts text content |
+| `label` | ⚠️ When element has accessible label |
+| `confidence` | ✅ Always after AI element finding |
+| `screenshot` | ⚠️ Only in DEBUG mode or on errors |
+
+<Note>
+  Properties marked with ⚠️ may be `null` depending on what the AI could detect from the screenshot.
+</Note>
 
 ## Polling for Elements
 

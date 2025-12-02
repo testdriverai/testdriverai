@@ -12,7 +12,7 @@ Type text or numbers into the currently focused input field with optional delay 
 ## Syntax
 
 ```javascript
-await testdriver.type(text, delay)
+await testdriver.type(text, options)
 ```
 
 ## Parameters
@@ -21,8 +21,18 @@ await testdriver.type(text, delay)
   Text to type (can be a string or number)
 </ParamField>
 
-<ParamField path="delay" type="number" default="250">
-  Delay between keystrokes in milliseconds
+<ParamField path="options" type="object | number">
+  Typing options (or legacy delay number)
+  
+  <Expandable title="properties">
+    <ParamField path="delay" type="number" default={250}>
+      Delay between keystrokes in milliseconds
+    </ParamField>
+    
+    <ParamField path="secret" type="boolean" default={false}>
+      If `true`, treats text as sensitive data (won't be logged or stored in debug info/dashcam)
+    </ParamField>
+  </Expandable>
 </ParamField>
 
 ## Returns
@@ -40,9 +50,43 @@ await testdriver.type('hello@example.com');
 // Type numbers
 await testdriver.type(12345);
 
-// Type with custom delay
+// Type with custom delay (legacy syntax)
 await testdriver.type('slow typing', 500); // 500ms between each character
+
+// Type with options object
+await testdriver.type('text', { delay: 500 });
 ```
+
+### Password/Secret Handling
+
+```javascript
+// ✅ SECURE - Mark as secret to prevent logging
+const passwordField = await testdriver.find('password input');
+await passwordField.click();
+await testdriver.type('MySecureP@ssw0rd', { secret: true });
+// Password NOT logged in dashcam or debug output
+
+// ❌ INSECURE - Password will be logged
+await testdriver.type('MySecureP@ssw0rd');
+// Password appears in logs, dashcam replay, and debug info
+
+// Use secret for any sensitive data
+await testdriver.find('api key input').click();
+await testdriver.type('sk-1234567890abcdef', { secret: true });
+
+await testdriver.find('credit card input').click();
+await testdriver.type('4111111111111111', { secret: true });
+```
+
+<Warning>
+  **Always use `secret: true` for passwords and sensitive data!**
+  
+  Without this option, typed text appears in:
+  - Dashcam video replays
+  - TestDriver logs
+  - Debug screenshots
+  - Error messages
+</Warning>
 
 ### Form Filling
 
@@ -56,9 +100,9 @@ await testdriver.type('user@example.com');
 await testdriver.pressKeys(['tab']);
 await testdriver.type('John Doe');
 
-// Type password
+// Type password securely
 await testdriver.pressKeys(['tab']);
-await testdriver.type('MySecureP@ssw0rd');
+await testdriver.type('MySecureP@ssw0rd', { secret: true });
 ```
 
 ### Clearing and Replacing Text
@@ -135,7 +179,7 @@ await testdriver.type('new search query');
     await testdriver.type('testuser@example.com');
     
     await testdriver.pressKeys(['tab']);
-    await testdriver.type('MyP@ssword123');
+    await testdriver.type('MyP@ssword123', { secret: true });
     
     await testdriver.pressKeys(['enter']);
     ```

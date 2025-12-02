@@ -192,6 +192,7 @@ export function TestDriver(context, options = {}) {
         
         await testdriver.auth();
         await testdriver.connect();
+        
         console.log('[testdriver] ✅ Connected to sandbox');
         
         if (debugConsoleSpy) {
