@@ -17,6 +17,7 @@ class Dashcam {
    * @param {string} [options.apiKey] - Dashcam API key
    * @param {boolean} [options.autoStart=false] - Auto-start recording
    * @param {Array} [options.logs=[]] - Log configurations to add
+   * @param {string} [options.title] - Recording title (defaults to generated title)
    */
   constructor(client, options = {}) {
     if (!client) {
@@ -31,6 +32,30 @@ class Dashcam {
     this.recording = false;
     this._authenticated = false;
     this.startTime = null; // Track when dashcam recording started
+    this.title = options.title || this._generateDefaultTitle();
+  }
+
+  /**
+   * Generate a default title for the recording
+   * Uses test context if available, otherwise falls back to timestamp
+   * @private
+   */
+  _generateDefaultTitle() {
+    // Check for Vitest context
+    if (this.client.__vitestContext) {
+      const task = this.client.__vitestContext;
+      const testName = task.name || 'Test';
+      const fileName = task.file?.name || task.file?.filepath;
+      if (fileName) {
+        const baseName = fileName.split('/').pop().replace(/\.(test|spec)\.(js|mjs|ts|tsx)$/, '');
+        return `${baseName} - ${testName}`;
+      }
+      return testName;
+    }
+    
+    // Fallback to timestamp
+    const now = new Date();
+    return `Recording ${now.toISOString().replace(/T/, ' ').replace(/\..+/, '')}`;
   }
 
   /**
@@ -291,10 +316,11 @@ class Dashcam {
       
       // Start dashcam record and redirect output with TD_API_ROOT
       const outputFile = 'C:\\Users\\testdriver\\.dashcam-cli\\dashcam-start.log';
+      const titleArg = this.title ? ` --title="${this.title.replace(/"/g, '\"')}"` : '';
       const startScript = `
         try {
           $env:TD_API_ROOT="${apiRoot}"
-          $process = Start-Process "cmd.exe" -ArgumentList "/c", "${dashcamPath} record > ${outputFile} 2>&1" -PassThru
+          $process = Start-Process "cmd.exe" -ArgumentList "/c", "${dashcamPath} record${titleArg} > ${outputFile} 2>&1" -PassThru
           Write-Output "Process started with PID: $($process.Id)"
           Start-Sleep -Seconds 2
           if ($process.HasExited) {
@@ -327,7 +353,8 @@ class Dashcam {
     } else {
       // Linux/Mac with TD_API_ROOT
       this._log('info', 'Starting dashcam recording on Linux/Mac...');
-      await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" dashcam record >/dev/null 2>&1 &`);
+      const titleArg = this.title ? ` --title="${this.title.replace(/"/g, '\"')}"` : '';
+      await this.client.exec(shell, `TD_API_ROOT="${apiRoot}" dashcam record${titleArg} >/dev/null 2>&1 &`);
       this._log('info', 'Dashcam recording started');
     }
 
@@ -356,6 +383,16 @@ class Dashcam {
         this._log('warn', 'Error updating session with dashcam start time:', err.message);
       }
     }
+  }
+
+  /**
+   * Set the recording title
+   * This can be called before start() to customize the title
+   * @param {string} title - Custom recording title
+   */
+  setTitle(title) {
+    this.title = title;
+    this._log('info', `Set dashcam recording title: ${title}`);
   }
 
   /**
