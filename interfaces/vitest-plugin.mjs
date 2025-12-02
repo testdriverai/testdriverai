@@ -321,8 +321,11 @@ function registerExitHandlers() {
 /**
  * TestDriver Vitest Plugin
  * 
- * Use this in the `plugins` array to inject console log forwarding.
- * For the reporter functionality, use `testDriverReporter` in the `reporters` array.
+ * This function works in both contexts:
+ * - As a Vite plugin (in `plugins` array) - injects console log forwarding
+ * - As a Vitest reporter (in `reporters` array) - handles test lifecycle tracking
+ * 
+ * The function detects which context it's being used in and returns the appropriate object.
  */
 export default function testDriverPlugin(options = {}) {
   // Initialize plugin state with options
@@ -345,34 +348,38 @@ export default function testDriverPlugin(options = {}) {
     logger.debug("Global TestDriver options:", testDriverOptions);
   }
 
-  // Return a Vite plugin object that injects console log forwarding
-  return {
-    name: 'testdriver-plugin',
-    
-    // Inject onConsoleLog into Vitest config to forward logs to sandbox
-    config() {
-      return {
-        test: {
-          onConsoleLog(log, type) {
-            // Forward to active sandbox if available
-            const sandbox = globalThis.__testdriverActiveSandbox;
-            if (sandbox?.instanceSocketConnected) {
-              try {
-                sandbox.send({
-                  type: "output",
-                  output: Buffer.from(log, "utf8").toString("base64"),
-                });
-              } catch {
-                // Ignore errors when forwarding logs
-              }
+  // Return an object that works as BOTH a Vite plugin AND a Vitest reporter
+  // Vite plugins need: name, config(), etc.
+  // Vitest reporters need: onInit(), onTestCaseResult(), etc.
+  // We return the TestDriverReporter class which has both!
+  const reporter = new TestDriverReporter(options);
+  
+  // Add Vite plugin properties to the reporter instance
+  reporter.name = 'testdriver-plugin';
+  reporter.config = function() {
+    return {
+      test: {
+        onConsoleLog(log, type) {
+          // Forward to active sandbox if available
+          const sandbox = globalThis.__testdriverActiveSandbox;
+          if (sandbox?.instanceSocketConnected) {
+            try {
+              sandbox.send({
+                type: "output",
+                output: Buffer.from(log, "utf8").toString("base64"),
+              });
+            } catch {
+              // Ignore errors when forwarding logs
             }
-            // Return true to still print the log
-            return true;
-          },
+          }
+          // Return true to still print the log
+          return true;
         },
-      };
-    },
+      },
+    };
   };
+  
+  return reporter;
 }
 
 /**
@@ -462,6 +469,23 @@ class TestDriverReporter {
       process.env.TD_TEST_RUN_ID = pluginState.testRunId;
       process.env.TD_TEST_RUN_DB_ID = pluginState.testRun.data?.id || "";
       process.env.TD_TEST_RUN_TOKEN = pluginState.token;
+
+      // Write test run info to file for cross-process communication
+      // Worker processes can read this to get the test run ID
+      const resultsDir = path.join(os.tmpdir(), "testdriver-results");
+      if (!fs.existsSync(resultsDir)) {
+        fs.mkdirSync(resultsDir, { recursive: true });
+      }
+      const testRunInfoFile = path.join(resultsDir, "test-run-info.json");
+      fs.writeFileSync(testRunInfoFile, JSON.stringify({
+        testRunId: pluginState.testRunId,
+        testRunDbId: pluginState.testRun.data?.id || null,
+        token: pluginState.token,
+        apiKey: pluginState.apiKey,
+        apiRoot: pluginState.apiRoot,
+        startTime: pluginState.startTime,
+      }, null, 2));
+      logger.debug(`Wrote test run info to ${testRunInfoFile}`);
 
       // Also store in shared state module (won't work across processes but good for main)
       setTestRunInfo({

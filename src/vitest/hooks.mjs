@@ -61,8 +61,37 @@ const fileInstances = new Map(); // filePath -> testdriver instance
 // Track test IDs for file-level instances
 const fileTestIds = new Map(); // filePath -> Set of { testId, testFile }
 
-// Track test run ID for this session
+// Track test run ID for this session (read from plugin's shared file)
 let currentTestRunId = null;
+
+/**
+ * Get the test run ID from the plugin's shared file
+ * Will retry a few times if file doesn't exist yet (timing issue with worker startup)
+ * @returns {Promise<string|null>} The test run ID or null if not found
+ */
+async function getTestRunIdFromFile() {
+  const testRunInfoFile = path.join(os.tmpdir(), 'testdriver-results', 'test-run-info.json');
+  
+  // Try up to 10 times with 100ms delay (1 second total)
+  for (let i = 0; i < 10; i++) {
+    try {
+      if (fs.existsSync(testRunInfoFile)) {
+        const info = JSON.parse(fs.readFileSync(testRunInfoFile, 'utf-8'));
+        if (info.testRunId) {
+          return info.testRunId;
+        }
+      }
+    } catch (error) {
+      // File may be being written, retry
+    }
+    
+    // Wait 100ms before retry
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.warn('[testdriver] Test run info file not found after retries');
+  return null;
+}
 
 /**
  * Record test case start to the API
@@ -77,9 +106,15 @@ async function recordTestCaseStart(testdriver, context, startTime) {
       await testdriver.__connectionPromise;
     }
     
-    // Get or create test run ID
+    // Get test run ID from plugin's shared file (not generated locally)
     if (!currentTestRunId) {
-      currentTestRunId = `vitest-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      currentTestRunId = await getTestRunIdFromFile();
+    }
+    
+    // If still no test run ID, skip recording (plugin may not be configured)
+    if (!currentTestRunId) {
+      console.log(`[testdriver] Skipping test case recording - no test run ID found`);
+      return;
     }
     
     const task = context.task;
@@ -119,8 +154,15 @@ async function recordTestCaseEnd(testdriver, context, startTime, status, error =
       await testdriver.__connectionPromise;
     }
     
+    // Get test run ID from plugin's shared file (not generated locally)
     if (!currentTestRunId) {
-      currentTestRunId = `vitest-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      currentTestRunId = await getTestRunIdFromFile();
+    }
+    
+    // If still no test run ID, skip recording (plugin may not be configured)
+    if (!currentTestRunId) {
+      console.log(`[testdriver] Skipping test case recording - no test run ID found`);
+      return;
     }
     
     const task = context.task;
