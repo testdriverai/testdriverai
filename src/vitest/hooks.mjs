@@ -127,6 +127,12 @@ const suiteInstances = new Map();
 // Track all test IDs that use a shared suite instance (for writing dashcam URLs)
 const suiteTestIds = new Map(); // suiteId -> Set of { testId, testFile }
 
+// Store file-level instances (for beforeAll/afterAll pattern)
+const fileInstances = new Map(); // filePath -> testdriver instance
+
+// Track test IDs for file-level instances
+const fileTestIds = new Map(); // filePath -> Set of { testId, testFile }
+
 /**
  * Get the suite (describe block) that contains this test
  * @param {object} task - Vitest task object
@@ -142,6 +148,147 @@ function getParentSuite(task) {
     current = current.suite || current.parent;
   }
   return null;
+}
+
+/**
+ * Get the file path from a Vitest context
+ * @param {object} context - Vitest context object
+ * @returns {string|null} File path or null
+ */
+function getFilePath(context) {
+  if (!context) return null;
+  
+  // From beforeAll/afterAll context
+  if (context.file?.filepath) return context.file.filepath;
+  
+  // From test context
+  if (context.task?.file?.filepath) return context.task.file.filepath;
+  if (context.task?.file?.name) return context.task.file.name;
+  
+  return null;
+}
+
+/**
+ * Create a TestDriver instance for use in beforeAll/afterAll hooks
+ * This is the recommended pattern for sharing an instance across all tests in a file.
+ * 
+ * @param {object} options - TestDriver options
+ * @param {string} [options.apiKey] - TestDriver API key (defaults to process.env.TD_API_KEY)
+ * @param {boolean} [options.headless] - Run sandbox in headless mode
+ * @param {boolean} [options.newSandbox] - Create new sandbox
+ * @returns {Promise<TestDriver>} TestDriver client instance (connected)
+ * 
+ * @example
+ * import { createTestDriver, cleanupTestDriver } from 'testdriverai/vitest';
+ * import { describe, it, beforeAll, afterAll } from 'vitest';
+ * 
+ * describe('My Tests', () => {
+ *   let testdriver;
+ * 
+ *   beforeAll(async () => {
+ *     testdriver = await createTestDriver({ headless: true });
+ *     await testdriver.provision.chrome({ url: 'https://example.com' });
+ *   });
+ * 
+ *   afterAll(async () => {
+ *     await cleanupTestDriver(testdriver);
+ *   });
+ * 
+ *   it('step01: click button', async () => {
+ *     await testdriver.find('Button').click();
+ *   });
+ * 
+ *   it('step02: type text', async () => {
+ *     await testdriver.type('hello');
+ *   });
+ * });
+ */
+export async function createTestDriver(options = {}) {
+  // Get global plugin options if available
+  const pluginOptions = globalThis.__testdriverPlugin?.state?.testDriverOptions || {};
+  
+  // Merge options: plugin global options < test-specific options
+  const mergedOptions = { ...pluginOptions, ...options };
+  
+  // Extract TestDriver-specific options
+  const apiKey = mergedOptions.apiKey || process.env.TD_API_KEY;
+  
+  // Build config for TestDriverSDK constructor
+  const config = { ...mergedOptions };
+  delete config.apiKey;
+  
+  // Use TD_API_ROOT from environment if not provided in config
+  if (!config.apiRoot && process.env.TD_API_ROOT) {
+    config.apiRoot = process.env.TD_API_ROOT;
+  }
+  
+  const testdriver = new TestDriverSDK(apiKey, config);
+  
+  // Connect to sandbox
+  console.log('[testdriver] Connecting to sandbox...');
+  await testdriver.auth();
+  await testdriver.connect();
+  console.log('[testdriver] ✅ Connected to sandbox');
+  
+  // Set up console interceptor
+  const taskId = `file-${Date.now()}`;
+  setupConsoleInterceptor(testdriver, taskId);
+  
+  // Create the log file on the remote machine
+  const shell = testdriver.os === "windows" ? "pwsh" : "sh";
+  const logPath = testdriver.os === "windows" 
+    ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
+    : "/tmp/testdriver.log";
+  
+  const createLogCmd = testdriver.os === "windows"
+    ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
+    : `touch ${logPath}`;
+  
+  await testdriver.exec(shell, createLogCmd, 10000, true);
+  console.log('[testdriver] ✅ Created log file:', logPath);
+  
+  // Add automatic log tracking when dashcam starts
+  const originalDashcamStart = testdriver.dashcam.start.bind(testdriver.dashcam);
+  testdriver.dashcam.start = async function() {
+    await originalDashcamStart();
+    try {
+      await testdriver.dashcam.addFileLog(logPath, "TestDriver Log");
+      console.log('[testdriver] ✅ Added log file to dashcam tracking');
+    } catch (error) {
+      console.warn('[testdriver] ⚠️  Failed to add log tracking:', error.message);
+    }
+  };
+  
+  // Mark this as a file-level instance
+  testdriver.__isFileInstance = true;
+  testdriver.__testIds = new Set();
+  
+  return testdriver;
+}
+
+/**
+ * Register a test with a file-level TestDriver instance
+ * Call this at the start of each test to track it for dashcam URL association
+ * 
+ * @param {TestDriver} testdriver - The file-level TestDriver instance
+ * @param {object} context - Vitest test context
+ * 
+ * @example
+ * it('my test', async (context) => {
+ *   registerTest(testdriver, context);
+ *   await testdriver.find('Button').click();
+ * });
+ */
+export function registerTest(testdriver, context) {
+  if (!testdriver || !context?.task) return;
+  
+  const testId = context.task.id;
+  const testFile = context.task.file?.filepath || context.task.file?.name || 'unknown';
+  
+  if (testdriver.__testIds) {
+    testdriver.__testIds.add({ testId, testFile });
+    console.log(`[testdriver] Registered test: ${testId}`);
+  }
 }
 
 /**
@@ -398,6 +545,7 @@ export async function cleanupTestDriver(testdriver) {
   
   let dashcamUrl = null;
   const suiteId = testdriver.__suiteId;
+  const isFileInstance = testdriver.__isFileInstance;
   
   console.log('[testdriver] Cleaning up TestDriver instance...');
   
@@ -408,11 +556,21 @@ export async function cleanupTestDriver(testdriver) {
         dashcamUrl = await testdriver.dashcam.stop();
         console.log('🎥 Dashcam URL:', dashcamUrl);
         
-        // Write dashcam URL to result files for ALL tests that used this shared instance
-        if (dashcamUrl && suiteId && suiteTestIds.has(suiteId)) {
+        // Determine which test IDs to write dashcam URLs for
+        let testsToWrite = null;
+        
+        if (isFileInstance && testdriver.__testIds?.size > 0) {
+          // File-level instance (from createTestDriver + registerTest)
+          testsToWrite = testdriver.__testIds;
+        } else if (suiteId && suiteTestIds.has(suiteId)) {
+          // Suite-level instance (from TestDriver(context) pattern)
+          testsToWrite = suiteTestIds.get(suiteId);
+        }
+        
+        // Write dashcam URL to result files for ALL tests that used this instance
+        if (dashcamUrl && testsToWrite && testsToWrite.size > 0) {
           const platform = testdriver.os || 'linux';
           const sessionId = testdriver.getSessionId?.() || null;
-          const testsInSuite = suiteTestIds.get(suiteId);
           
           // Create results directory if it doesn't exist
           const resultsDir = path.join(os.tmpdir(), 'testdriver-results');
@@ -420,10 +578,10 @@ export async function cleanupTestDriver(testdriver) {
             fs.mkdirSync(resultsDir, { recursive: true });
           }
           
-          console.log(`[testdriver] Writing dashcam URL to ${testsInSuite.size} test result files...`);
+          console.log(`[testdriver] Writing dashcam URL to ${testsToWrite.size} test result files...`);
           
           let testOrder = 0;
-          for (const testInfo of testsInSuite) {
+          for (const testInfo of testsToWrite) {
             const testResultFile = path.join(resultsDir, `${testInfo.testId}.json`);
             const testResult = {
               dashcamUrl,
@@ -442,8 +600,10 @@ export async function cleanupTestDriver(testdriver) {
             }
           }
           
-          // Clear the tracked tests for this suite
-          suiteTestIds.delete(suiteId);
+          // Clear the tracked tests
+          if (suiteId) {
+            suiteTestIds.delete(suiteId);
+          }
         }
       } catch (error) {
         console.error('❌ Failed to stop dashcam:', error.message);
