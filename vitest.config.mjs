@@ -12,6 +12,6 @@ export default defineConfig({
         apiRoot: process.env.TD_API_ROOT,
       }),
     ],
-    setupFiles: ['testdriverai/vitest/setup'],
+    setupFiles: ['dotenv/config', 'testdriverai/vitest/setup'],
   },
 });
