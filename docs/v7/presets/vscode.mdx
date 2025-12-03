@@ -32,17 +32,19 @@ The `vscode()` preset automatically sets up Visual Studio Code with TestDriver a
 
 ```javascript
 import { test } from 'vitest';
-import { vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('extension test', async (context) => {
-  const { vscode } = await vscode(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.vscode({ 
     workspace: '/tmp/test-project',
     extensions: ['ms-python.python']
   });
   
-  await vscode.find('File menu').click();
-  await vscode.find('New File').click();
-  await vscode.find('Python file type').click();
+  await testdriver.find('File menu').click();
+  await testdriver.find('New File').click();
+  await testdriver.find('Python file type').click();
 });
 ```
 
@@ -100,23 +102,25 @@ vscode(context, options): Promise<VSCodeResult>
 
 ```javascript
 import { test } from 'vitest';
-import { vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('python extension creates new file', async (context) => {
-  const { vscode } = await vscode(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.vscode({ 
     workspace: '/tmp/python-project',
     extensions: ['ms-python.python']
   });
   
   // Open command palette
-  await vscode.pressKeys(['cmd', 'shift', 'p']);
+  await testdriver.pressKeys(['cmd', 'shift', 'p']);
   
   // Create new Python file
-  await vscode.type('Python: Create New File');
-  await vscode.pressKeys(['enter']);
+  await testdriver.type('Python: Create New File');
+  await testdriver.pressKeys(['enter']);
   
   // Verify file was created
-  await vscode.assert('Untitled Python file is open');
+  await testdriver.assert('Untitled Python file is open');
 });
 ```
 
@@ -124,10 +128,12 @@ test('python extension creates new file', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('eslint and prettier integration', async (context) => {
-  const { vscode } = await vscode(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.vscode({ 
     workspace: '/tmp/js-project',
     extensions: [
       'dbaeumer.vscode-eslint',
@@ -136,15 +142,15 @@ test('eslint and prettier integration', async (context) => {
   });
   
   // Open a JavaScript file
-  await vscode.find('File').click();
-  await vscode.find('Open File').click();
-  await vscode.type('src/index.js');
-  await vscode.pressKeys(['enter']);
+  await testdriver.find('File').click();
+  await testdriver.find('Open File').click();
+  await testdriver.type('src/index.js');
+  await testdriver.pressKeys(['enter']);
   
   // Format document
-  await vscode.pressKeys(['shift', 'alt', 'f']);
+  await testdriver.pressKeys(['shift', 'alt', 'f']);
   
-  await vscode.assert('Document is formatted');
+  await testdriver.assert('Document is formatted');
 });
 ```
 
@@ -152,18 +158,19 @@ test('eslint and prettier integration', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('empty workspace welcome screen', async (context) => {
-  const { vscode } = await vscode(context, {
-    // No workspace specified - opens to welcome screen
-  });
+  const testdriver = TestDriver(context, { headless: true });
   
-  await vscode.find('Open Folder button').click();
-  await vscode.type('/tmp/my-project');
-  await vscode.pressKeys(['enter']);
+  // No workspace specified - opens to welcome screen
+  await testdriver.provision.vscode({});
   
-  await vscode.assert('Folder is opened');
+  await testdriver.find('Open Folder button').click();
+  await testdriver.type('/tmp/my-project');
+  await testdriver.pressKeys(['enter']);
+  
+  await testdriver.assert('Folder is opened');
 });
 ```
 
@@ -171,24 +178,28 @@ test('empty workspace welcome screen', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('windows vscode test', async (context) => {
-  const { vscode } = await vscode(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.vscode({ 
     workspace: 'C:\\Users\\TestUser\\project',
     os: 'windows'
   });
   
-  await vscode.find('Explorer view').click();
+  await testdriver.find('Explorer view').click();
 });
 
 test('mac vscode test', async (context) => {
-  const { vscode } = await vscode(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.vscode({ 
     workspace: '/Users/testuser/project',
     os: 'mac'
   });
   
-  await vscode.find('Explorer view').click();
+  await testdriver.find('Explorer view').click();
 });
 ```
 

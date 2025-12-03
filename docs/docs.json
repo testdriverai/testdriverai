@@ -232,8 +232,27 @@
                   "/v7/presets/chrome",
                   "/v7/presets/chrome-extension",
                   "/v7/presets/vscode",
-                  "/v7/presets/electron",
-                  "/v7/presets/webapp"
+                  "/v7/presets/electron"
+                ]
+              },
+              {
+                "group": "Interactions",
+                "icon": "bolt",
+                "pages": [
+                  "/v7/api/act",
+                  "/v7/api/assert",
+                  "/v7/api/click",
+                  "/v7/api/doubleClick",
+                  "/v7/api/exec",
+                  "/v7/api/find",
+                  "/v7/api/focusApplication",
+                  "/v7/api/hover",
+                  "/v7/api/mouseDown",
+                  "/v7/api/mouseUp",
+                  "/v7/api/pressKeys",
+                  "/v7/api/rightClick",
+                  "/v7/api/scroll",
+                  "/v7/api/type"
                 ]
               },
               {
@@ -241,35 +260,8 @@
                 "icon": "book",
                 "pages": [
                   "/v7/api/client",
+                  "/v7/api/elements",
                   "/v7/api/sandbox",
-                  {
-                    "group": "Interactions",
-                    "icon": "bolt",
-                    "pages": [
-                      "/v7/api/find",
-                      "/v7/api/elements",
-                      "/v7/api/click",
-                      "/v7/api/doubleClick",
-                      "/v7/api/rightClick",
-                      "/v7/api/hover",
-                      "/v7/api/mouseDown",
-                      "/v7/api/mouseUp",
-                      "/v7/api/type",
-                      "/v7/api/pressKeys",
-                      "/v7/api/scroll",
-                      "/v7/api/focusApplication"
-                    ]
-                  },
-                  {
-                    "group": "AI & Assertions",
-                    "icon": "wand-magic-sparkles",
-                    "pages": [
-                      "/v7/api/act",
-                      "/v7/api/assert",
-                      "/v7/api/assertions"
-                    ]
-                  },
-                  "/v7/api/exec",
                   "/v7/api/dashcam"
                 ]
               }
@@ -313,16 +305,64 @@
   },
   "redirects": [
     {
-      "source": "/guides/github-actions",
-      "destination": "/action/setup"
+      "source": "/overview/:slug*",
+      "destination": "/v6/overview/:slug*"
     },
     {
-      "source": "/reference/test-steps",
-      "destination": "/features/selectorless"
+      "source": "/features/:slug*",
+      "destination": "/v6/features/:slug*"
     },
     {
-      "source": "/guides/debugging-test-runs",
-      "destination": "/getting-started/editing"
+      "source": "/account/:slug*",
+      "destination": "/v6/account/:slug*"
+    },
+    {
+      "source": "/cli/:slug*",
+      "destination": "/v6/cli/:slug*"
+    },
+    {
+      "source": "/interactive/:slug*",
+      "destination": "/v6/interactive/:slug*"
+    },
+    {
+      "source": "/getting-started/:slug*",
+      "destination": "/v6/getting-started/:slug*"
+    },
+    {
+      "source": "/apps/:slug*",
+      "destination": "/v6/apps/:slug*"
+    },
+    {
+      "source": "/scenarios/:slug*",
+      "destination": "/v6/scenarios/:slug*"
+    },
+    {
+      "source": "/integrations/:slug*",
+      "destination": "/v6/integrations/:slug*"
+    },
+    {
+      "source": "/guide/:slug*",
+      "destination": "/v6/guide/:slug*"
+    },
+    {
+      "source": "/action/:slug*",
+      "destination": "/v6/action/:slug*"
+    },
+    {
+      "source": "/importing/:slug*",
+      "destination": "/v6/importing/:slug*"
+    },
+    {
+      "source": "/exporting/:slug*",
+      "destination": "/v6/exporting/:slug*"
+    },
+    {
+      "source": "/bugs/:slug*",
+      "destination": "/v6/bugs/:slug*"
+    },
+    {
+      "source": "/commands/:slug*",
+      "destination": "/v6/commands/:slug*"
     }
   ],
   "integrations": {

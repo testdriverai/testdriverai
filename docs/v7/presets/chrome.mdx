@@ -29,12 +29,13 @@ The `chrome()` preset automatically sets up a Chrome browser with TestDriver and
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('login test', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://myapp.com/login'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  // Provision Chrome browser with a URL
+  await testdriver.provision.chrome({ url: 'https://myapp.com/login' });
   
   await testdriver.find('email input').type('user@example.com');
   await testdriver.find('password input').type('password123');
@@ -98,12 +99,12 @@ chrome(context, options): Promise<ChromeResult>
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('search functionality', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://example.com' });
   
   await testdriver.find('search input').type('TestDriver');
   await testdriver.find('search button').click();
@@ -115,10 +116,12 @@ test('search functionality', async (context) => {
 
 ```javascript
 import { test, expect } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('checkout flow', async (context) => {
-  const { testdriver, dashcam } = await chrome(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ 
     url: 'https://shop.example.com',
     maximized: true
   });
@@ -140,8 +143,6 @@ test('checkout flow', async (context) => {
   // Verify confirmation
   const confirmed = await testdriver.assert('Order confirmed');
   expect(confirmed).toBeTruthy();
-  
-  // Dashcam automatically saves replay URL when test completes
 });
 ```
 
@@ -149,10 +150,12 @@ test('checkout flow', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('windows chrome test', async (context) => {
-  const { testdriver } = await chrome(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ 
     url: 'https://myapp.com',
     os: 'windows'
   });
@@ -161,7 +164,9 @@ test('windows chrome test', async (context) => {
 });
 
 test('mac chrome test', async (context) => {
-  const { testdriver } = await chrome(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ 
     url: 'https://myapp.com',
     os: 'mac'
   });
@@ -174,10 +179,12 @@ test('mac chrome test', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('quick test without recording', async (context) => {
-  const { testdriver } = await chrome(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ 
     url: 'https://example.com',
     dashcam: false // Disable Dashcam for faster execution
   });
@@ -190,10 +197,12 @@ test('quick test without recording', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('chrome extension', async (context) => {
-  const { testdriver } = await chrome(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ 
     url: 'chrome://extensions',
     guest: false, // Need profile for extensions
     maximized: true
@@ -226,9 +235,9 @@ At test end:
 
 ```javascript
 test('user registration', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://myapp.com/register'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://myapp.com/register' });
   
   await testdriver.find('email field').type('user@example.com');
   await testdriver.find('password field').type('SecurePass123!');
@@ -244,9 +253,9 @@ test('user registration', async (context) => {
 
 ```javascript
 test('multi-page navigation', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://myapp.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://myapp.com' });
   
   // Navigate through pages
   await testdriver.find('About link').click();
@@ -265,9 +274,9 @@ test('multi-page navigation', async (context) => {
 ```javascript
 test('handles errors gracefully', async (context) => {
   try {
-    const { testdriver } = await chrome(context, {
-      url: 'https://myapp.com'
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    
+    await testdriver.provision.chrome({ url: 'https://myapp.com' });
     
     await testdriver.find('non-existent element').click();
   } catch (error) {

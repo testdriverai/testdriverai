@@ -35,12 +35,12 @@ export default defineConfig({
 
 ```javascript example.test.js
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('my first test', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://example.com' });
   
   await testdriver.find('More information link').click();
   await testdriver.assert('IANA information page is visible');
@@ -61,7 +61,8 @@ That's it! TestDriver automatically handles all setup and teardown.
   <Card title="Provision API" icon="rocket" href="/v7/progressive-apis/PROVISION">
     **Easiest** - One-line setup
     ```javascript
-    const { testdriver } = await provision('chrome', { url }, context);
+    const testdriver = TestDriver(context);
+    await testdriver.provision.chrome({ url });
     ```
   </Card>
   
@@ -92,7 +93,9 @@ import { chrome } from 'testdriverai/presets';
 
 describe('User Login', () => {
   test('successful login flow', async (context) => {
-    const { testdriver, dashcam } = await chrome(context, {
+    const testdriver = TestDriver(context, { headless: true });
+    
+    await testdriver.provision.chrome({ 
       url: 'https://myapp.com/login',
       maximized: true
     });
@@ -111,9 +114,9 @@ describe('User Login', () => {
   });
   
   test('invalid credentials error', async (context) => {
-    const { testdriver } = await chrome(context, {
-      url: 'https://myapp.com/login'
-    });
+    const testdriver = TestDriver(context, { headless: true });
+    
+    await testdriver.provision.chrome({ url: 'https://myapp.com/login' });
     
     await testdriver.find('email input').type('wrong@example.com');
     await testdriver.find('password input').type('wrongpass');
@@ -128,23 +131,25 @@ describe('User Login', () => {
 
 ```javascript extension.test.js
 import { test } from 'vitest';
-import { vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('create new python file', async (context) => {
-  const { vscode } = await vscode(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.vscode({ 
     workspace: '/tmp/test-project',
     extensions: ['ms-python.python']
   });
   
   // Open command palette
-  await vscode.pressKeys(['cmd', 'shift', 'p']);
+  await testdriver.pressKeys(['cmd', 'shift', 'p']);
   
   // Create new Python file
-  await vscode.type('Python: Create New File');
-  await vscode.pressKeys(['enter']);
+  await testdriver.type('Python: Create New File');
+  await testdriver.pressKeys(['enter']);
   
   // Verify file created
-  await vscode.assert('Untitled Python file is open');
+  await testdriver.assert('Untitled Python file is open');
 });
 ```
 
@@ -152,18 +157,20 @@ test('create new python file', async (context) => {
 
 ```javascript electron-app.test.js
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('file menu operations', async (context) => {
-  const { app } = await electron(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.electron({ 
     appPath: './dist/my-app',
     args: ['--enable-logging']
   });
   
-  await app.find('File menu').click();
-  await app.find('New Document').click();
+  await testdriver.find('File menu').click();
+  await testdriver.find('New Document').click();
   
-  await app.assert('New document window opens');
+  await testdriver.assert('New document window opens');
 });
 ```
 
@@ -171,21 +178,18 @@ test('file menu operations', async (context) => {
 
 ```javascript multi-app.test.js
 import { test } from 'vitest';
-import { chrome, vscode } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('test chrome and vscode together', async (context) => {
-  // Both share the same Vitest context for cleanup
-  const browser = await chrome(context, {
-    url: 'https://example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
   
-  const editor = await vscode(context, {
-    workspace: '/tmp/project'
-  });
+  // Provision Chrome browser
+  await testdriver.provision.chrome({ url: 'https://example.com' });
+  await testdriver.find('link').click();
   
-  // Use both in the same test
-  await browser.testdriver.find('link').click();
-  await editor.vscode.find('File').click();
+  // Can switch to VS Code in the same test
+  await testdriver.provision.vscode({ workspace: '/tmp/project' });
+  await testdriver.find('File').click();
 });
 ```
 
@@ -195,8 +199,9 @@ TestDriver automatically manages the entire test lifecycle:
 
 ```javascript
 test('lifecycle example', async (context) => {
-  // 1. Setup happens automatically when you call preset
-  const { testdriver, dashcam } = await chrome(context, { url });
+  // 1. Setup happens when you create TestDriver and provision
+  const testdriver = TestDriver(context, { headless: true });
+  await testdriver.provision.chrome({ url });
   
   // 2. Your test code runs
   await testdriver.find('button').click();
@@ -214,7 +219,8 @@ Even if your test fails or throws an error, cleanup still happens:
 
 ```javascript
 test('error handling', async (context) => {
-  const { testdriver } = await chrome(context, { url });
+  const testdriver = TestDriver(context, { headless: true });
+  await testdriver.provision.chrome({ url });
   
   try {
     await testdriver.find('non-existent element').click();
@@ -269,7 +275,9 @@ Override defaults for specific tests:
 
 ```javascript
 test('long running test', async (context) => {
-  const { testdriver } = await chrome(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ 
     url: 'https://slow-app.com',
     dashcam: false, // Disable recording for faster execution
     maximized: false,

@@ -12,13 +12,12 @@ Every TestDriver test follows this simple pattern:
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('descriptive test name', async (context) => {
-  // 1. Setup: Launch and navigate
-  const { testdriver } = await chrome(context, {
-    url: 'https://myapp.com'
-  });
+  // 1. Setup: Create TestDriver and provision browser
+  const testdriver = TestDriver(context, { headless: true });
+  await testdriver.provision.chrome({ url: 'https://myapp.com' });
 
   // 2. Act: Interact with your application
   await testdriver.find('email input').type('user@example.com');
@@ -30,7 +29,7 @@ test('descriptive test name', async (context) => {
 ```
 
 <Tip>
-  The preset handles all setup and cleanup automatically - no need for manual browser management!
+  The TestDriver hook handles all setup and cleanup automatically - no need for manual browser management!
 </Tip>
 
 ## Finding Elements
@@ -233,9 +232,9 @@ Complete form example:
 
 ```javascript
 test('fill out contact form', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://example.com/contact'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://example.com/contact' });
 
   // Fill text inputs
   await testdriver.find('name input').type('John Doe');
@@ -269,9 +268,9 @@ test('fill out contact form', async (context) => {
   <Tab title="Multi-Page Flow">
     ```javascript
     test('checkout flow', async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'https://shop.example.com'
-      });
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url: 'https://shop.example.com' });
 
       // Page 1: Browse products
       await testdriver.find('first product').click();
@@ -402,7 +401,9 @@ test('fill out contact form', async (context) => {
 
     testCases.forEach(({ email, password, shouldPass }) => {
       test(`login with ${email}`, async (context) => {
-        const { testdriver } = await chrome(context, { url });
+        const testdriver = TestDriver(context, { headless: true });
+        
+        await testdriver.provision.chrome({ url });
 
         await testdriver.find('email').type(email);
         await testdriver.find('password').type(password, { secret: true });
@@ -432,7 +433,9 @@ test('fill out contact form', async (context) => {
     import { login } from './helpers';
 
     test('user can view profile', async (context) => {
-      const { testdriver } = await chrome(context, { url });
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url });
 
       await login(testdriver, 'user@example.com', 'password');
 
@@ -449,9 +452,9 @@ test('fill out contact form', async (context) => {
   <Tab title="Login Flow">
     ```javascript
     test('user login', async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'https://myapp.com/login'
-      });
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url: 'https://myapp.com/login' });
 
       await testdriver.find('email input').type('user@example.com');
       await testdriver.find('password input').type('secret', { secret: true });
@@ -466,7 +469,9 @@ test('fill out contact form', async (context) => {
   <Tab title="Search">
     ```javascript
     test('search functionality', async (context) => {
-      const { testdriver } = await chrome(context, { url });
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url });
 
       await testdriver.find('search input').type('laptop');
       await testdriver.pressKeys(['enter']);
@@ -483,7 +488,9 @@ test('fill out contact form', async (context) => {
   <Tab title="Shopping Cart">
     ```javascript
     test('add to cart', async (context) => {
-      const { testdriver } = await chrome(context, { url });
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url });
 
       await testdriver.find('first product').click();
       await testdriver.find('add to cart button').click();

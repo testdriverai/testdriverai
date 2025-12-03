@@ -31,16 +31,16 @@ The `electron()` preset automatically sets up an Electron application with TestD
 
 ```javascript
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('electron app test', async (context) => {
-  const { app } = await electron(context, {
-    appPath: './dist/my-app'
-  });
+  const testdriver = TestDriver(context, { headless: true });
   
-  await app.find('main window').click();
-  await app.find('File menu').click();
-  await app.find('New Document').click();
+  await testdriver.provision.electron({ appPath: './dist/my-app' });
+  
+  await testdriver.find('main window').click();
+  await testdriver.find('File menu').click();
+  await testdriver.find('New Document').click();
 });
 ```
 
@@ -98,15 +98,15 @@ electron(context, options): Promise<ElectronResult>
 
 ```javascript
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('opens main window', async (context) => {
-  const { app } = await electron(context, {
-    appPath: './dist/my-electron-app'
-  });
+  const testdriver = TestDriver(context, { headless: true });
   
-  await app.assert('Main window is visible');
-  await app.find('Welcome message').click();
+  await testdriver.provision.electron({ appPath: './dist/my-electron-app' });
+  
+  await testdriver.assert('Main window is visible');
+  await testdriver.find('Welcome message').click();
 });
 ```
 
@@ -114,10 +114,12 @@ test('opens main window', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('app with debug mode', async (context) => {
-  const { app } = await electron(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.electron({ 
     appPath: './dist/app',
     args: [
       '--enable-logging',
@@ -126,8 +128,8 @@ test('app with debug mode', async (context) => {
     ]
   });
   
-  await app.find('Debug panel').click();
-  await app.assert('Debug information is visible');
+  await testdriver.find('Debug panel').click();
+  await testdriver.assert('Debug information is visible');
 });
 ```
 
@@ -135,27 +137,27 @@ test('app with debug mode', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('file menu operations', async (context) => {
-  const { app } = await electron(context, {
-    appPath: './dist/editor-app'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.electron({ appPath: './dist/editor-app' });
   
   // Open File menu
-  await app.find('File').click();
-  await app.find('New File').click();
+  await testdriver.find('File').click();
+  await testdriver.find('New File').click();
   
   // Verify new file created
-  await app.assert('Untitled document is open');
+  await testdriver.assert('Untitled document is open');
   
   // Save file
-  await app.find('File').click();
-  await app.find('Save As').click();
-  await app.type('test-document.txt');
-  await app.pressKeys(['enter']);
+  await testdriver.find('File').click();
+  await testdriver.find('Save As').click();
+  await testdriver.type('test-document.txt');
+  await testdriver.pressKeys(['enter']);
   
-  await app.assert('File saved successfully');
+  await testdriver.assert('File saved successfully');
 });
 ```
 
@@ -163,24 +165,28 @@ test('file menu operations', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('windows electron app', async (context) => {
-  const { app } = await electron(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.electron({ 
     appPath: 'C:\\Program Files\\MyApp\\MyApp.exe',
     os: 'windows'
   });
   
-  await app.find('Start button').click();
+  await testdriver.find('Start button').click();
 });
 
 test('mac electron app', async (context) => {
-  const { app } = await electron(context, {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.electron({ 
     appPath: '/Applications/MyApp.app/Contents/MacOS/MyApp',
     os: 'mac'
   });
   
-  await app.find('Start button').click();
+  await testdriver.find('Start button').click();
 });
 ```
 
@@ -188,15 +194,15 @@ test('mac electron app', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { electron } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('configure app settings', async (context) => {
-  const { app } = await electron(context, {
-    appPath: './dist/my-app'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.electron({ appPath: './dist/my-app' });
   
   // Open preferences
-  await app.find('Settings').click();
+  await testdriver.find('Settings').click();
   
   // Change theme
   await app.find('Appearance').click();
