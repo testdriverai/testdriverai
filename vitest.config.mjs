@@ -6,9 +6,16 @@ import { defineConfig } from 'vitest/config';
 dotenv.config();
 
 export default defineConfig({
-  plugins: [TestDriver()],
   test: {
     testTimeout: 120000,
     hookTimeout: 120000,
+    reporters: [
+      'default',
+      TestDriver({
+        apiKey: process.env.TD_API_KEY,
+        apiRoot: process.env.TD_API_ROOT,
+      }),
+    ],
+    setupFiles: ['testdriverai/vitest/setup'],
   },
 });
