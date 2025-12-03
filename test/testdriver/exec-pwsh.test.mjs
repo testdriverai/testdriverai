@@ -6,8 +6,8 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
-describe("Exec PowerShell Test", () => {
-  it.skipIf(process.env.TD_OS === "linux")(
+describe.skipIf(process.env.TD_OS === "linux")("Exec PowerShell Test", () => {
+  it(
     "should generate random email using PowerShell and enter it",
     async (context) => {
       const testdriver = TestDriver(context, { headless: true });

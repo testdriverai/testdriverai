@@ -10,7 +10,7 @@
  * await dashcam.auth();
  */
 
-import Dashcam from '../../../src/core/Dashcam.js';
+import Dashcam from '../../../lib/core/Dashcam.js';
 
 // Module-level cache to maintain Dashcam instance state across helper calls
 const dashcamInstances = new WeakMap();
