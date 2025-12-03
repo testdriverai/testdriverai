@@ -1,5 +1,5 @@
-import crypto from "crypto";
 import { execSync } from "child_process";
+import crypto from "crypto";
 import fs from "fs";
 import { createRequire } from "module";
 import os from "os";
@@ -417,10 +417,10 @@ function registerExitHandlers() {
  * This sets up global state and provides the registration API
  */
 export default function testDriverPlugin(options = {}) {
-  // Initialize plugin state with options
-  pluginState.apiKey = options.apiKey;
+  // Store options but don't read env vars yet - they may not be loaded
+  // Environment variables will be read in onInit after setupFiles run
   pluginState.apiRoot =
-    options.apiRoot || process.env.TD_API_ROOT || "http://localhost:1337";
+    options.apiRoot || process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
   pluginState.ciProvider = detectCI();
   pluginState.gitInfo = getGitInfo();
   
@@ -432,7 +432,11 @@ export default function testDriverPlugin(options = {}) {
   registerExitHandlers();
 
   // Note: globalThis setup happens in vitestSetup.mjs for worker processes
-  logger.debug("Initialized with API root:", pluginState.apiRoot);
+  logger.debug("TestDriver plugin initializing...");
+  logger.debug("API root:", pluginState.apiRoot);
+  logger.debug("API key from options:", !!options.apiKey);
+  logger.debug("API key from env (at config time):", !!process.env.TD_API_KEY);
+  logger.debug("CI Provider:", pluginState.ciProvider || "none");
   if (Object.keys(testDriverOptions).length > 0) {
     logger.debug("Global TestDriver options:", testDriverOptions);
   }
@@ -447,12 +451,18 @@ export default function testDriverPlugin(options = {}) {
 class TestDriverReporter {
   constructor(options = {}) {
     this.options = options;
-    logger.debug("Reporter created");
+    logger.debug("Reporter created with options:", { hasApiKey: !!options.apiKey, hasApiRoot: !!options.apiRoot });
   }
 
   async onInit(ctx) {
     this.ctx = ctx;
-    logger.debug("onInit called");
+    logger.debug("onInit called - UPDATED VERSION");
+
+    // NOW read the API key (after setupFiles have run, including dotenv/config)
+    pluginState.apiKey = this.options.apiKey || process.env.TD_API_KEY;
+    logger.debug("API key from options:", !!this.options.apiKey);
+    logger.debug("API key from env (at onInit):", !!process.env.TD_API_KEY);
+    logger.debug("Final API key set:", !!pluginState.apiKey);
 
     // Initialize test run
     await this.initializeTestRun();
@@ -460,16 +470,23 @@ class TestDriverReporter {
 
   async initializeTestRun() {
     logger.debug("Initializing test run...");
+    logger.debug("Current API key in pluginState:", !!pluginState.apiKey);
+    logger.debug("Current API root in pluginState:", pluginState.apiRoot);
 
     // Check if we should enable the reporter
     if (!pluginState.apiKey) {
-      logger.debug("No API key provided, skipping test recording");
+      logger.warn("No API key provided, skipping test recording");
+      logger.debug("API key sources - options:", !!this.options.apiKey, "env:", !!process.env.TD_API_KEY);
       return;
     }
 
+    logger.info("Starting test run initialization with API key...");
+
     try {
       // Exchange API key for JWT token
+      logger.debug("Authenticating with API...");
       await authenticate();
+      logger.debug("Authentication successful, token received");
 
       // Generate unique run ID
       pluginState.testRunId = generateRunId();
@@ -494,7 +511,9 @@ class TestDriverReporter {
       // Default to linux if no tests write platform info
       testRunData.platform = "linux";
 
+      logger.debug("Creating test run with data:", testRunData);
       pluginState.testRun = await createTestRun(testRunData);
+      logger.debug("Test run created successfully:", pluginState.testRun);
 
       // Store in environment variables for worker processes to access
       process.env.TD_TEST_RUN_ID = pluginState.testRunId;
@@ -521,16 +540,19 @@ class TestDriverReporter {
 
   async onTestRunEnd(testModules, unhandledErrors, reason) {
     logger.debug("Test run ending with reason:", reason);
+    logger.debug("Plugin state - API key present:", !!pluginState.apiKey, "Test run present:", !!pluginState.testRun);
 
     if (!pluginState.apiKey) {
-      logger.debug("Skipping completion - no API key");
+      logger.warn("Skipping completion - no API key (was it cleared after init failure?)");
       return;
     }
 
     if (!pluginState.testRun) {
-      logger.debug("Skipping completion - no test run created");
+      logger.warn("Skipping completion - no test run created (check initialization logs)");
       return;
     }
+
+    logger.info("Completing test run...");
 
     try {
       // Calculate statistics from testModules

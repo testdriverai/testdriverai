@@ -1,5 +1,10 @@
+import { config } from 'dotenv';
 import TestDriver from 'testdriverai/vitest';
 import { defineConfig } from 'vitest/config';
+
+// Load .env file early so it's available to the reporter (runs in main process)
+// and to worker processes
+config();
 
 export default defineConfig({
   test: {
@@ -7,11 +12,9 @@ export default defineConfig({
     hookTimeout: 120000,
     reporters: [
       'default',
-      TestDriver({
-        apiKey: process.env.TD_API_KEY,
-        apiRoot: process.env.TD_API_ROOT,
-      }),
+      // Don't pass apiKey/apiRoot here - they'll be read from env at runtime
+      TestDriver(),
     ],
-    setupFiles: ['dotenv/config', 'testdriverai/vitest/setup'],
+    setupFiles: ['testdriverai/vitest/setup'],
   },
 });
