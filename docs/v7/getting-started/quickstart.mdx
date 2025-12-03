@@ -38,7 +38,7 @@ TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full
   
   <Step title="Write Your First Test">
       
-    Create `test.test.js` and add your API key from [app.testdriver.ai](https://app.testdriver.ai):
+    Create `test.test.js` and add your API key from [console.testdriver.ai](https://console.testdriver.ai):
 
     <Tabs>
       <Tab title="Fast">
@@ -49,7 +49,7 @@ TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full
         test('my first test', async (context) => {
           const { testdriver } = await chrome(context, {
             url: 'https://example.com',
-            apiKey: 'tdai-1234567890abcdef' // Your API key from app.testdriver.ai
+            apiKey: 'tdai-1234567890abcdef' // Your API key from console.testdriver.ai
           });
           
           await testdriver.find('More information link').click();
@@ -255,7 +255,7 @@ test('with replay', async (context) => {
 });
 ```
 
-View all replays at [app.testdriver.ai](https://app.testdriver.ai)
+View all replays at [console.testdriver.ai](https://console.testdriver.ai)
 
 ## Optional Configuration
 

@@ -790,7 +790,7 @@ class TestDriverReporter {
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
       logger.debug(`Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`);
-      logger.info(`🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "app.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`);
+      logger.info(`🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "console.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`);
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }

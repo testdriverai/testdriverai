@@ -42,7 +42,7 @@ class InitCommand extends BaseCommand {
     }
 
     console.log(chalk.cyan("  Setting up your TestDriver API key...\n"));
-    console.log(chalk.gray("  Get your API key from: https://app.testdriver.ai/api-keys"));
+    console.log(chalk.gray("  Get your API key from: https://console.testdriver.ai/team"));
 
     // Ask if user wants to open the browser
     const shouldOpen = await this.askYesNo("  Open API keys page in browser? (Y/n): ");
@@ -50,7 +50,7 @@ class InitCommand extends BaseCommand {
       try {
         // Dynamic import for ES module
         const open = (await import("open")).default;
-        await open("https://app.testdriver.ai/api-keys");
+        await open("https://console.testdriver.ai/team");
         console.log(chalk.gray("  Opening browser...\n"));
       } catch (error) {
         console.log(chalk.yellow("  ⚠️  Could not open browser automatically\n"));

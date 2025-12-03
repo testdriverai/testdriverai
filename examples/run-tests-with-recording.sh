@@ -17,7 +17,7 @@ echo ""
 # Check for required environment variables
 if [ -z "$TD_API_KEY" ]; then
   echo "Error: TD_API_KEY environment variable is required"
-  echo "Get your API key from: https://app.testdriver.ai/settings/api-keys"
+  echo "Get your API key from: https://console.testdriver.ai/settings/api-keys"
   exit 1
 fi
 
@@ -63,7 +63,7 @@ echo ""
 echo "======================================"
 echo "📊 View Results"
 echo "======================================"
-echo "Dashboard: https://app.testdriver.ai/dashboard/test-runs"
+echo "Dashboard: https://console.testdriver.ai/dashboard/test-runs"
 echo ""
 
 # Exit with the same code as tests

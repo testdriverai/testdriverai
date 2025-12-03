@@ -25,7 +25,7 @@ test('with automatic replay', async (context) => {
 
   // After test completes, view replay
   console.log('Watch replay:', dashcam.url);
-  // Output: https://app.testdriver.ai/dashcam/abc123def456
+  // Output: https://console.testdriver.ai/dashcam/abc123def456
 });
 ```
 
@@ -326,7 +326,7 @@ Generate comprehensive test reports:
           "name": "user can login",
           "status": "passed",
           "duration": 12345,
-          "dashcamUrl": "https://app.testdriver.ai/dashcam/abc123",
+          "dashcamUrl": "https://console.testdriver.ai/dashcam/abc123",
           "assertions": 3
         }
       ]
@@ -343,7 +343,7 @@ Generate comprehensive test reports:
     <testsuite name="login.test.js" tests="3" failures="0">
       <testcase name="user can login" time="12.345">
         <system-out>
-          Dashcam: https://app.testdriver.ai/dashcam/abc123
+          Dashcam: https://console.testdriver.ai/dashcam/abc123
         </system-out>
       </testcase>
     </testsuite>
@@ -377,7 +377,7 @@ Generate comprehensive test reports:
 
 ## Analytics Dashboard
 
-View test analytics at [app.testdriver.ai](https://app.testdriver.ai):
+View test analytics at [console.testdriver.ai](https://console.testdriver.ai):
 
 <CardGroup cols={2}>
   <Card title="Test Trends" icon="chart-line">
@@ -452,7 +452,7 @@ Error: ElementNotFoundError: Could not find 'missing button'
 Details:
 - Similarity: 0.34 (no close match)
 - Duration: 12.3s
-- Dashcam: https://app.testdriver.ai/dashcam/abc123
+- Dashcam: https://console.testdriver.ai/dashcam/abc123
 - Screenshot: [attached]
 - Sandbox: i-0abc123def456789
 
@@ -583,7 +583,7 @@ npx vitest --reporter=verbose
   → click() (0.4s)
   → assert('Dashboard is visible') (7.2s)
   ✓ Test passed
-  📹 Replay: https://app.testdriver.ai/dashcam/abc123
+  📹 Replay: https://console.testdriver.ai/dashcam/abc123
 ```
 
 ## Learn More
@@ -608,7 +608,7 @@ npx vitest --reporter=verbose
   <Card
     title="View Replays"
     icon="play"
-    href="https://app.testdriver.ai"
+    href="https://console.testdriver.ai"
   >
     Access your test replays
   </Card>
