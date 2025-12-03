@@ -13,13 +13,12 @@ The `webApp()` preset provides a generic interface for testing web applications.
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('web app test', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://myapp.com',
-    browser: 'chrome'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://myapp.com' });
   
   await testdriver.find('Login button').click();
 });
@@ -83,12 +82,12 @@ webApp(context, options): Promise<WebAppResult>
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('user login flow', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://myapp.com/login'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://myapp.com/login' });
   
   await testdriver.find('email input').type('user@example.com');
   await testdriver.find('password input').type('password123');
@@ -102,12 +101,12 @@ test('user login flow', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('product purchase', async (context) => {
-  const { testdriver, dashcam } = await webApp(context, {
-    url: 'https://shop.example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://shop.example.com' });
   
   // Search for product
   await testdriver.find('search input').type('laptop');
@@ -131,12 +130,12 @@ test('product purchase', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('single page app routing', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://spa.example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://spa.example.com' });
   
   // Navigate through SPA routes
   await testdriver.find('About link').click();
@@ -154,12 +153,12 @@ test('single page app routing', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('form validation errors', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://myapp.com/register'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://myapp.com/register' });
   
   // Submit empty form
   await testdriver.find('Submit button').click();
@@ -183,12 +182,12 @@ test('form validation errors', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('data fetching and display', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://api-demo.example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://api-demo.example.com' });
   
   // Trigger data fetch
   await testdriver.find('Load Data button').click();
@@ -208,13 +207,12 @@ test('data fetching and display', async (context) => {
 
 ```javascript
 import { test } from 'vitest';
-import { webApp } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('mobile menu', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://responsive.example.com',
-    maximized: false // Start in default window size
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://responsive.example.com' });
   
   // Resize to mobile
   await testdriver.exec('sh', 'xdotool getactivewindow windowsize 375 667', 5000);
@@ -231,13 +229,12 @@ test('mobile menu', async (context) => {
 
 ## Browser Support
 
-Currently, `webApp()` only supports Chrome:
+Currently supports Chrome:
 
 ```javascript
 // ✅ Supported
-const { testdriver } = await webApp(context, {
-  browser: 'chrome'
-});
+const testdriver = TestDriver(context, { headless: true });
+await testdriver.provision.chrome({ url: 'https://myapp.com' });
 
 // ❌ Not yet supported
 const { testdriver } = await webApp(context, {
@@ -310,9 +307,9 @@ The behavior is identical, but `webApp()` provides a more generic interface for 
 
 ```javascript
 test('login and navigate', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://myapp.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://myapp.com' });
   
   // Login
   await testdriver.find('email').type('user@example.com');
@@ -332,9 +329,9 @@ test('login and navigate', async (context) => {
 
 ```javascript
 test('upload file', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://upload.example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://upload.example.com' });
   
   // Click upload button
   await testdriver.find('Upload file button').click();
@@ -352,9 +349,9 @@ test('upload file', async (context) => {
 
 ```javascript
 test('search with filters', async (context) => {
-  const { testdriver } = await webApp(context, {
-    url: 'https://catalog.example.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chrome({ url: 'https://catalog.example.com' });
   
   // Enter search query
   await testdriver.find('search input').type('laptop');

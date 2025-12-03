@@ -44,13 +44,15 @@ TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full
       <Tab title="Fast">
         ```javascript test.test.js
         import { test } from 'vitest';
-        import { chrome } from 'testdriverai/presets';
+        import { TestDriver } from 'testdriverai/vitest/hooks';
 
         test('my first test', async (context) => {
-          const { testdriver } = await chrome(context, {
-            url: 'https://example.com',
+          const testdriver = TestDriver(context, {
+            headless: true,
             apiKey: 'tdai-1234567890abcdef' // Your API key from console.testdriver.ai
           });
+          
+          await testdriver.provision.chrome({ url: 'https://example.com' });
           
           await testdriver.find('More information link').click();
           await testdriver.assert('IANA page is visible');
@@ -73,13 +75,13 @@ TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full
         
         ```javascript test.test.js
         import { test } from 'vitest';
-        import { chrome } from 'testdriverai/presets';
+        import { TestDriver } from 'testdriverai/vitest/hooks';
 
         test('my first test', async (context) => {
-          const { testdriver } = await chrome(context, {
-            url: 'https://example.com'
-            // apiKey automatically read from process.env.TD_API_KEY
-          });
+          const testdriver = TestDriver(context, { headless: true });
+          // apiKey automatically read from process.env.TD_API_KEY
+          
+          await testdriver.provision.chrome({ url: 'https://example.com' });
           
           await testdriver.find('More information link').click();
           await testdriver.assert('IANA page is visible');
@@ -111,7 +113,7 @@ TestDriver v7 lets you write AI-powered tests in JavaScript/TypeScript with full
 
 ## What Just Happened?
 
-The `chrome()` preset automatically:
+The TestDriver hook with `provision.chrome()` automatically:
 1. ✅ Connected to a TestDriver sandbox
 2. ✅ Launched Chrome browser
 3. ✅ Navigated to your URL

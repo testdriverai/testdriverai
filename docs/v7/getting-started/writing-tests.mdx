@@ -12,13 +12,12 @@ Every TestDriver test follows this simple pattern:
 
 ```javascript
 import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
 test('descriptive test name', async (context) => {
   // 1. Setup: Launch and navigate
-  const { testdriver } = await chrome(context, {
-    url: 'https://myapp.com'
-  });
+  const testdriver = TestDriver(context, { headless: true });
+  await testdriver.provision.chrome({ url: 'https://myapp.com' });
 
   // 2. Act: Interact with your application
   await testdriver.find('email input').type('user@example.com');
@@ -30,7 +29,7 @@ test('descriptive test name', async (context) => {
 ```
 
 <Tip>
-  The preset handles all setup and cleanup automatically - no need for manual browser management!
+  The TestDriver hook handles all setup and cleanup automatically - no need for manual browser management!
 </Tip>
 
 ## Finding Elements

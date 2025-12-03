@@ -232,8 +232,28 @@
                   "/v7/presets/chrome",
                   "/v7/presets/chrome-extension",
                   "/v7/presets/vscode",
-                  "/v7/presets/electron",
-                  "/v7/presets/webapp"
+                  "/v7/presets/electron"
+                ]
+              },
+              {
+                "group": "Actions",
+                "icon": "bolt",
+                "pages": [
+                  "/v7/api/act",
+                  "/v7/api/assert",
+                  "/v7/api/assertions",
+                  "/v7/api/click",
+                  "/v7/api/doubleClick",
+                  "/v7/api/exec",
+                  "/v7/api/find",
+                  "/v7/api/focusApplication",
+                  "/v7/api/hover",
+                  "/v7/api/mouseDown",
+                  "/v7/api/mouseUp",
+                  "/v7/api/pressKeys",
+                  "/v7/api/rightClick",
+                  "/v7/api/type",
+                  "/v7/api/scroll"
                 ]
               },
               {
@@ -241,35 +261,8 @@
                 "icon": "book",
                 "pages": [
                   "/v7/api/client",
+                  "/v7/api/elements",
                   "/v7/api/sandbox",
-                  {
-                    "group": "Interactions",
-                    "icon": "bolt",
-                    "pages": [
-                      "/v7/api/find",
-                      "/v7/api/elements",
-                      "/v7/api/click",
-                      "/v7/api/doubleClick",
-                      "/v7/api/rightClick",
-                      "/v7/api/hover",
-                      "/v7/api/mouseDown",
-                      "/v7/api/mouseUp",
-                      "/v7/api/type",
-                      "/v7/api/pressKeys",
-                      "/v7/api/scroll",
-                      "/v7/api/focusApplication"
-                    ]
-                  },
-                  {
-                    "group": "AI & Assertions",
-                    "icon": "wand-magic-sparkles",
-                    "pages": [
-                      "/v7/api/act",
-                      "/v7/api/assert",
-                      "/v7/api/assertions"
-                    ]
-                  },
-                  "/v7/api/exec",
                   "/v7/api/dashcam"
                 ]
               }

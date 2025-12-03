@@ -101,11 +101,12 @@ Every test automatically records a video replay:
   <Step title="Get Replay URL">
     ```javascript
     test('my test', async (context) => {
-      const { testdriver, dashcam } = await chrome(context, { url });
+      const testdriver = TestDriver(context, { headless: true });
+      await testdriver.provision.chrome({ url });
 
       // Your test code
 
-      console.log('Replay:', dashcam.url);
+      console.log('Replay:', testdriver.dashcam.url);
     });
     ```
 
