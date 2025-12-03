@@ -17,7 +17,181 @@
         "tab": "Computer-Use SDK",
         "versions": [
           {
-            "version": "v7 (JS)",
+            "version": "v6 (YAML)",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "/v6/overview/what-is-testdriver",
+                  {
+                    "group": "Concepts",
+                    "icon": "book",
+                    "pages": [
+                      "/v6/features/selectorless",
+                      "/v6/overview/comparison",
+                      "/v6/overview/performance",
+                      "/v6/overview/faq"
+                    ]
+                  },
+                  "/v6/account/enterprise"
+                ]
+              },
+              {
+                "group": "Get Started",
+                "pages": [
+                  "/v6/overview/quickstart",
+                  {
+                    "group": "CLI",
+                    "icon": "terminal",
+                    "pages": [
+                      "/v6/cli/overview",
+                      {
+                        "group": "Commands",
+                        "icon": "command",
+                        "pages": [
+                          "/v6/interactive/explore",
+                          "/v6/interactive/run",
+                          "/v6/interactive/save"
+                        ]
+                      }
+                    ]
+                  },
+                  "/v6/getting-started/self-hosting",
+                  "/v6/getting-started/playwright",
+                  "/v6/getting-started/vscode"
+                ]
+              },
+              {
+                "group": "Examples",
+                "pages": [
+                  {
+                    "group": "Apps",
+                    "icon": "laptop",
+                    "pages": [
+                      "apps/static-websites",
+                      "apps/desktop-apps",
+                      "apps/chrome-extensions",
+                      "apps/mobile-apps",
+                      "apps/tauri-apps"
+                    ]
+                  },
+                  {
+                    "group": "Scenarios",
+                    "icon": "computer-mouse",
+                    "pages": [
+                      "scenarios/ai-chatbot",
+                      "scenarios/cookie-banner",
+                      "scenarios/file-upload",
+                      "scenarios/form-filling",
+                      "scenarios/log-in",
+                      "scenarios/pdf-generation",
+                      "scenarios/spell-check"
+                    ]
+                  },
+                  {
+                    "group": "Build Systems",
+                    "icon": "helmet-safety",
+                    "pages": [
+                      "/v6/integrations/electron",
+                      "/v6/integrations/netlify",
+                      "/v6/integrations/vercel"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Guide",
+                "pages": [
+                  {
+                    "group": "Configuration",
+                    "icon": "desktop",
+                    "pages": [
+                      "/v6/guide/authentication",
+                      "/v6/guide/variables",
+                      "/v6/guide/lifecycle",
+                      "/v6/guide/dashcam",
+                      "/v6/guide/environment-variables",
+                      "/v6/action/ami"
+                    ]
+                  },
+                  {
+                    "group": "Writing",
+                    "icon": "pencil",
+                    "pages": [
+                      "/v6/features/generation",
+                      "/v6/guide/locating",
+                      "/v6/guide/waiting",
+                      "/v6/guide/assertions",
+                      "/v6/guide/code",
+                      "/v6/features/reusable-snippets",
+                      "/v6/guide/protips"
+                    ]
+                  },
+                  {
+                    "group": "Importing",
+                    "icon": "file-import",
+                    "pages": [
+                      "/v6/importing/csv",
+                      "/v6/importing/gherkin",
+                      "/v6/importing/jira",
+                      "/v6/importing/testrail"
+                    ]
+                  },
+                  {
+                    "group": "Running",
+                    "icon": "play",
+                    "pages": [
+                      "/v6/getting-started/running",
+                      "/v6/getting-started/ci",
+                      "/v6/features/parallel-testing",
+                      "/v6/action/performance",
+                      "/v6/action/secrets"
+                    ]
+                  },
+                  {
+                    "group": "Maintaining",
+                    "icon": "wrench",
+                    "pages": ["/v6/getting-started/editing", "/v6/features/auto-healing"]
+                  },
+                  {
+                    "group": "Reporting",
+                    "icon": "chart-simple",
+                    "pages": ["exporting/junit", "/v6/bugs/jira"]
+                  }
+                ]
+              },
+              {
+                "group": "Reference",
+                "pages": [
+                  {
+                    "group": "YAML",
+                    "icon": "file-code",
+                    "pages": [
+                      "/v6/commands/assert",
+                      "/v6/commands/exec",
+                      "/v6/commands/focus-application",
+                      "/v6/commands/hover-image",
+                      "/v6/commands/hover-text",
+                      "/v6/commands/if",
+                      "/v6/commands/match-image",
+                      "/v6/commands/press-keys",
+                      "/v6/commands/remember",
+                      "/v6/commands/run",
+                      "/v6/commands/scroll",
+                      "/v6/commands/scroll-until-image",
+                      "/v6/commands/scroll-until-text",
+                      "/v6/commands/type",
+                      "/v6/commands/wait",
+                      "/v6/commands/wait-for-image",
+                      "/v6/commands/wait-for-text"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "version": "v7 (JS Beta)",
             "groups": [
               {
                 "group": "Overview",
@@ -191,180 +365,6 @@
                   "/v7/guides/ci-cd/jenkins",
                   "/v7/guides/ci-cd/azure",
                   "/v7/guides/ci-cd/travis"
-                ]
-              }
-            ]
-          },
-          {
-            "version": "v6 (YAML)",
-            "groups": [
-              {
-                "group": "Overview",
-                "pages": [
-                  "/v6/overview/what-is-testdriver",
-                  {
-                    "group": "Concepts",
-                    "icon": "book",
-                    "pages": [
-                      "/v6/features/selectorless",
-                      "/v6/overview/comparison",
-                      "/v6/overview/performance",
-                      "/v6/overview/faq"
-                    ]
-                  },
-                  "/v6/account/enterprise"
-                ]
-              },
-              {
-                "group": "Get Started",
-                "pages": [
-                  "/v6/overview/quickstart",
-                  {
-                    "group": "CLI",
-                    "icon": "terminal",
-                    "pages": [
-                      "/v6/cli/overview",
-                      {
-                        "group": "Commands",
-                        "icon": "command",
-                        "pages": [
-                          "/v6/interactive/explore",
-                          "/v6/interactive/run",
-                          "/v6/interactive/save"
-                        ]
-                      }
-                    ]
-                  },
-                  "/v6/getting-started/self-hosting",
-                  "/v6/getting-started/playwright",
-                  "/v6/getting-started/vscode"
-                ]
-              },
-              {
-                "group": "Examples",
-                "pages": [
-                  {
-                    "group": "Apps",
-                    "icon": "laptop",
-                    "pages": [
-                      "apps/static-websites",
-                      "apps/desktop-apps",
-                      "apps/chrome-extensions",
-                      "apps/mobile-apps",
-                      "apps/tauri-apps"
-                    ]
-                  },
-                  {
-                    "group": "Scenarios",
-                    "icon": "computer-mouse",
-                    "pages": [
-                      "scenarios/ai-chatbot",
-                      "scenarios/cookie-banner",
-                      "scenarios/file-upload",
-                      "scenarios/form-filling",
-                      "scenarios/log-in",
-                      "scenarios/pdf-generation",
-                      "scenarios/spell-check"
-                    ]
-                  },
-                  {
-                    "group": "Build Systems",
-                    "icon": "helmet-safety",
-                    "pages": [
-                      "/v6/integrations/electron",
-                      "/v6/integrations/netlify",
-                      "/v6/integrations/vercel"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "Guide",
-                "pages": [
-                  {
-                    "group": "Configuration",
-                    "icon": "desktop",
-                    "pages": [
-                      "/v6/guide/authentication",
-                      "/v6/guide/variables",
-                      "/v6/guide/lifecycle",
-                      "/v6/guide/dashcam",
-                      "/v6/guide/environment-variables",
-                      "/v6/action/ami"
-                    ]
-                  },
-                  {
-                    "group": "Writing",
-                    "icon": "pencil",
-                    "pages": [
-                      "/v6/features/generation",
-                      "/v6/guide/locating",
-                      "/v6/guide/waiting",
-                      "/v6/guide/assertions",
-                      "/v6/guide/code",
-                      "/v6/features/reusable-snippets",
-                      "/v6/guide/protips"
-                    ]
-                  },
-                  {
-                    "group": "Importing",
-                    "icon": "file-import",
-                    "pages": [
-                      "/v6/importing/csv",
-                      "/v6/importing/gherkin",
-                      "/v6/importing/jira",
-                      "/v6/importing/testrail"
-                    ]
-                  },
-                  {
-                    "group": "Running",
-                    "icon": "play",
-                    "pages": [
-                      "/v6/getting-started/running",
-                      "/v6/getting-started/ci",
-                      "/v6/features/parallel-testing",
-                      "/v6/action/performance",
-                      "/v6/action/secrets"
-                    ]
-                  },
-                  {
-                    "group": "Maintaining",
-                    "icon": "wrench",
-                    "pages": ["/v6/getting-started/editing", "/v6/features/auto-healing"]
-                  },
-                  {
-                    "group": "Reporting",
-                    "icon": "chart-simple",
-                    "pages": ["exporting/junit", "/v6/bugs/jira"]
-                  }
-                ]
-              },
-              {
-                "group": "Reference",
-                "pages": [
-                  {
-                    "group": "YAML",
-                    "icon": "file-code",
-                    "pages": [
-                      "/v6/commands/assert",
-                      "/v6/commands/exec",
-                      "/v6/commands/focus-application",
-                      "/v6/commands/hover-image",
-                      "/v6/commands/hover-text",
-                      "/v6/commands/if",
-                      "/v6/commands/match-image",
-                      "/v6/commands/press-keys",
-                      "/v6/commands/remember",
-                      "/v6/commands/run",
-                      "/v6/commands/scroll",
-                      "/v6/commands/scroll-until-image",
-                      "/v6/commands/scroll-until-text",
-                      "/v6/commands/type",
-                      "/v6/commands/wait",
-                      "/v6/commands/wait-for-image",
-                      "/v6/commands/wait-for-text"
-                    ]
-                  }
                 ]
               }
             ]
