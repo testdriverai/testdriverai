@@ -2584,20 +2584,33 @@ class TestDriverSDK {
    *
    * @example
    * // Simple execution
-   * await client.ai('Click the submit button');
+   * await client.act('Click the submit button');
    *
    * @example
    * // With validation loop
-   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
+   * const result = await client.act('Fill out the contact form', { validateAndLoop: true });
    * console.log(result); // AI's final assessment
    */
-  async ai(task) {
+  async act(task) {
     this._ensureConnected();
 
-    this.analytics.track("sdk.ai", { task });
+    this.analytics.track("sdk.act", { task });
 
     // Use the agent's exploratoryLoop method directly
     return await this.agent.exploratoryLoop(task, false, true, false);
+  }
+
+  /**
+   * @deprecated Use act() instead
+   * Execute a natural language task using AI
+   *
+   * @param {string} task - Natural language description of what to do
+   * @param {Object} options - Execution options
+   * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
+   * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
+   */
+  async ai(task) {
+    return await this.act(task);
   }
 }
 

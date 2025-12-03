@@ -458,11 +458,15 @@ class TestDriverReporter {
     this.ctx = ctx;
     logger.debug("onInit called - UPDATED VERSION");
 
-    // NOW read the API key (after setupFiles have run, including dotenv/config)
+    // NOW read the API key and API root (after setupFiles have run, including dotenv/config)
     pluginState.apiKey = this.options.apiKey || process.env.TD_API_KEY;
+    pluginState.apiRoot = this.options.apiRoot || process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
     logger.debug("API key from options:", !!this.options.apiKey);
     logger.debug("API key from env (at onInit):", !!process.env.TD_API_KEY);
+    logger.debug("API root from options:", this.options.apiRoot);
+    logger.debug("API root from env (at onInit):", process.env.TD_API_ROOT);
     logger.debug("Final API key set:", !!pluginState.apiKey);
+    logger.debug("Final API root set:", pluginState.apiRoot);
 
     // Initialize test run
     await this.initializeTestRun();

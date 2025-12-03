@@ -1,18 +1,18 @@
 ---
-title: "ai()"
-sidebarTitle: "ai"
+title: "act()"
+sidebarTitle: "act"
 description: "Execute natural language tasks using AI"
 icon: "wand-magic-sparkles"
 ---
 
 ## Overview
 
-The `ai()` method allows you to execute complex tasks using natural language descriptions. TestDriver's AI will figure out the steps needed to accomplish the task.
+The `act()` method allows you to execute complex tasks using natural language descriptions. TestDriver's AI will figure out the steps needed to accomplish the task.
 
 ## Syntax
 
 ```javascript
-await testdriver.ai(task, options)
+await testdriver.act(task, options)
 ```
 
 ## Parameters
@@ -41,20 +41,20 @@ await testdriver.ai(task, options)
 
 ```javascript
 // Simple task execution
-await testdriver.ai('Click the submit button');
+await testdriver.act('Click the submit button');
 
 // Complex multi-step task
-await testdriver.ai('Fill out the contact form and submit it');
+await testdriver.act('Fill out the contact form and submit it');
 
 // Navigation task
-await testdriver.ai('Go to the settings page and enable notifications');
+await testdriver.act('Go to the settings page and enable notifications');
 ```
 
 ### With Validation
 
 ```javascript
 // AI will verify the task completed successfully
-const result = await testdriver.ai('Complete the checkout process', { 
+const result = await testdriver.act('Complete the checkout process', { 
   validateAndLoop: true 
 });
 
@@ -65,10 +65,10 @@ console.log('Task result:', result);
 
 ```javascript
 // The AI will break down complex tasks
-await testdriver.ai('Search for "laptop", add the first result to cart, and proceed to checkout');
+await testdriver.act('Search for "laptop", add the first result to cart, and proceed to checkout');
 
 // UI exploration
-await testdriver.ai('Find and click all menu items to explore the application');
+await testdriver.act('Find and click all menu items to explore the application');
 ```
 
 ## Use Cases
@@ -78,8 +78,8 @@ await testdriver.ai('Find and click all menu items to explore the application');
     Use AI to explore unfamiliar applications:
     
     ```javascript
-    await testdriver.ai('Explore the main navigation menu');
-    await testdriver.ai('Try to find the user profile settings');
+    await testdriver.act('Explore the main navigation menu');
+    await testdriver.act('Try to find the user profile settings');
     ```
   </Accordion>
   
@@ -87,8 +87,8 @@ await testdriver.ai('Find and click all menu items to explore the application');
     Let AI handle multi-step processes:
     
     ```javascript
-    await testdriver.ai('Complete the multi-step registration form');
-    await testdriver.ai('Configure all the advanced settings to default values');
+    await testdriver.act('Complete the multi-step registration form');
+    await testdriver.act('Configure all the advanced settings to default values');
     ```
   </Accordion>
   
@@ -96,8 +96,8 @@ await testdriver.ai('Find and click all menu items to explore the application');
     When exact element locations aren't critical:
     
     ```javascript
-    await testdriver.ai('Close any popup dialogs');
-    await testdriver.ai('Accept the cookie consent if it appears');
+    await testdriver.act('Close any popup dialogs');
+    await testdriver.act('Accept the cookie consent if it appears');
     ```
   </Accordion>
 </AccordionGroup>
@@ -109,13 +109,13 @@ await testdriver.ai('Find and click all menu items to explore the application');
   
   ```javascript
   // ✅ Good
-  await testdriver.ai('Add the first product to the shopping cart');
+  await testdriver.act('Add the first product to the shopping cart');
   
   // ❌ Too vague
-  await testdriver.ai('do something');
+  await testdriver.act('do something');
   
   // ❌ Too specific (defeats the purpose)
-  await testdriver.ai('click at coordinates 500, 300');
+  await testdriver.act('click at coordinates 500, 300');
   ```
 </Check>
 
@@ -124,7 +124,7 @@ await testdriver.ai('Find and click all menu items to explore the application');
   
   ```javascript
   // Use AI for setup
-  await testdriver.ai('Navigate to the login page');
+  await testdriver.act('Navigate to the login page');
   
   // Use explicit methods for critical steps
   const usernameField = await testdriver.find('username input');
@@ -141,7 +141,7 @@ await testdriver.ai('Find and click all menu items to explore the application');
 
 ## When to Use AI vs Explicit Methods
 
-### Use `ai()` when:
+### Use `act()` when:
 - Exploring unfamiliar applications
 - Handling optional UI elements (popups, cookies, etc.)
 - Prototyping tests quickly
@@ -177,8 +177,8 @@ describe('E-commerce Flow with AI', () => {
     await testdriver.focusApplication('Google Chrome');
     
     // Use AI for navigation and exploration
-    await testdriver.ai('Browse to the electronics section');
-    await testdriver.ai('Find and add a laptop to the cart');
+    await testdriver.act('Browse to the electronics section');
+    await testdriver.act('Find and add a laptop to the cart');
     
     // Use explicit methods for critical steps
     const cartIcon = await testdriver.find('shopping cart icon');
@@ -188,7 +188,7 @@ describe('E-commerce Flow with AI', () => {
     console.log('Cart total:', total);
     
     // Use AI for checkout flow
-    await testdriver.ai('Proceed to checkout and fill in shipping details', {
+    await testdriver.act('Proceed to checkout and fill in shipping details', {
       validateAndLoop: true
     });
     

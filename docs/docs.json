@@ -264,7 +264,7 @@
                     "group": "AI & Assertions",
                     "icon": "wand-magic-sparkles",
                     "pages": [
-                      "/v7/api/ai",
+                      "/v7/api/act",
                       "/v7/api/assert",
                       "/v7/api/assertions"
                     ]
@@ -272,114 +272,10 @@
                   "/v7/api/exec",
                   "/v7/api/dashcam"
                 ]
-              },
-              {
-                "group": "Progressive APIs",
-                "icon": "layer-group",
-                "pages": [
-                  "/v7/progressive-apis/progressive-disclosure",
-                  "/v7/progressive-apis/provision",
-                  "/v7/progressive-apis/hooks"
-                ]
-              },
-              {
-                "group": "Advanced Guides",
-                "icon": "book-open",
-                "pages": [
-                  "/v7/guides/vitest",
-                  "/v7/guides/vitest-plugin",
-                  "/v7/guides/debugging",
-                  "/v7/guides/best-practices",
-                  "/v7/guides/troubleshooting",
-                  "/v7/guides/faq",
-                  "/v7/guides/error-handling",
-                  "/v7/guides/architecture",
-                  "/v7/guides/presets",
-                  {
-                    "group": "Caching",
-                    "icon": "bolt",
-                    "pages": [
-                      "/v7/guides/caching",
-                      "/v7/guides/caching-ai",
-                      "/v7/guides/caching-selectors",
-                      "/v7/guides/auto-cache-key",
-                      "/v7/guides/prompt-cache"
-                    ]
-                  },
-                  "/v7/guides/performance",
-                  {
-                    "group": "Test Recording",
-                    "icon": "video",
-                    "pages": [
-                      "/v7/guides/test-recording",
-                      "/v7/guides/quick-start-test-recording"
-                    ]
-                  },
-                  {
-                    "group": "Deployment",
-                    "icon": "server",
-                    "pages": [
-                      "/v7/guides/self-hosting",
-                      {
-                        "group": "Platforms",
-                        "icon": "desktop",
-                        "pages": [
-                          "/v7/platforms/linux",
-                          "/v7/platforms/windows",
-                          "/v7/platforms/macos"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "group": "Migration",
-                    "icon": "right-left",
-                    "pages": [
-                      "/v7/guides/migration",
-                      "/v7/guides/cli-to-sdk-migration",
-                      "/v7/guides/sdk-migration",
-                      "/v7/guides/plugin-migration"
-                    ]
-                  },
-                  "/v7/guides/agents",
-                  "/v7/guides/sdk-logging",
-                  "/v7/guides/sdk-awesome-logs",
-                  "/v7/guides/awesome-logs-quick-ref",
-                  "/v7/guides/sdk-browser-rendering",
-                  "/v7/guides/sdk-v7-complete",
-                  "/v7/guides/contributing",
-                  "/v7/guides/dashcam-title-feature",
-                  "/v7/guides/implementation-plan",
-                  "/v7/guides/init-command",
-                  "/v7/guides/optimal-sdk-design"
-                ]
-              },
-              {
-                "group": "CI/CD",
-                "icon": "arrows-spin",
-                "pages": [
-                  "/v7/guides/ci-cd/overview",
-                  "/v7/guides/ci-cd/github-actions",
-                  "/v7/guides/ci-cd/gitlab",
-                  "/v7/guides/ci-cd/circleci",
-                  "/v7/guides/ci-cd/jenkins",
-                  "/v7/guides/ci-cd/azure",
-                  "/v7/guides/ci-cd/travis"
-                ]
               }
             ]
           }
         ]
-      },
-      {
-        "tab": "Playwright SDK",
-        "pages": ["v7/playwright"]
-      },
-      {
-        "tab": "Playwright Studio"
-      },
-      {
-        "tab": "Dashcam CLI"
       }
     ]
   },

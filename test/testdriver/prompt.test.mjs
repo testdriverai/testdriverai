@@ -25,7 +25,7 @@ describe.skip("Prompt Test", () => {
     // This test is skipped as it requires explicit SDK implementation
     // You would need to implement these as explicit SDK calls
 
-    await testdriver.ai("log in");
+    await testdriver.act("log in");
 
     const result = await testdriver.assert("the testdriver sandbox is visible");
     expect(result).toBeTruthy();
