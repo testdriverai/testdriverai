@@ -1,0 +1,433 @@
+---
+title: "macOS"
+description: "Run TestDriver tests on macOS sandboxes (Beta)"
+icon: "apple"
+---
+
+<Warning>
+macOS sandboxes are currently in **Beta**. Availability is limited and features may change. [Join the waitlist](https://testdriver.ai/contact) for early access.
+</Warning>
+
+## Overview
+
+macOS sandboxes enable testing of Mac-specific applications, desktop software, and macOS-only workflows.
+
+macOS sandboxes provide:
+- macOS Ventura (13.x) or Sonoma (14.x)
+- Full desktop environment
+- Terminal and command-line tools
+- Support for all TestDriver commands
+- VNC access for debugging
+
+## Usage
+
+Specify macOS as the operating system:
+
+```javascript
+import { TestDriver } from '@testdriverai/testdriver';
+
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'macos'  // Beta access required
+});
+```
+
+### With Lifecycle Helpers
+
+```javascript
+import { chrome } from './setup/lifecycleHelpers.mjs';
+import { test } from 'vitest';
+
+test('macos app test', async (context) => {
+  const { testdriver } = await chrome(context, { 
+    url: 'https://example.com',
+    os: 'macos'
+  });
+  
+  await testdriver.find('login button').then(el => el.click());
+});
+```
+
+## System Details
+
+### Operating System
+- **OS**: macOS Ventura 13.x or Sonoma 14.x
+- **Architecture**: x86_64 (Intel) or arm64 (Apple Silicon)
+- **Desktop**: Aqua (native macOS desktop)
+
+### Pre-installed Software
+- **Browsers**: Safari, Chrome, Firefox
+- **Runtimes**: Node.js, Python 3, Ruby
+- **Languages**: Swift, Objective-C (Xcode Command Line Tools)
+- **Tools**: Homebrew, Git, vim
+
+### Default Resolution
+- **1920x1080** (configurable via `resolution` parameter)
+
+## Configuration
+
+### Custom Resolution
+
+Set screen resolution:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'macos',
+  resolution: '1440x900'  // Common Mac resolution
+});
+```
+
+Common macOS resolutions:
+- `2560x1440` - 27" iMac
+- `1920x1080` - Full HD
+- `1440x900` - MacBook Pro (scaled)
+- `1280x800` - MacBook Air
+
+### Environment Variables
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'macos',
+  env: {
+    NODE_ENV: 'test',
+    DEBUG: 'true'
+  }
+});
+```
+
+## Common Use Cases
+
+### macOS Desktop Applications
+
+Test native Mac applications:
+
+```javascript
+import { test } from 'vitest';
+
+test('macos desktop app', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'macos' });
+  
+  // Launch application
+  await testdriver.exec('sh', 'open -a "MyApp"', 5000);
+  
+  // Wait for app to load
+  await new Promise(r => setTimeout(r, 3000));
+  
+  // Interact with app
+  await testdriver.find('menu bar').then(el => el.click());
+  await testdriver.find('preferences').then(el => el.click());
+});
+```
+
+### Safari Testing
+
+Test web apps in Safari:
+
+```javascript
+test('safari compatibility', async (context) => {
+  const { testdriver } = await chrome(context, { 
+    url: 'https://example.com',
+    os: 'macos',
+    browser: 'safari'
+  });
+  
+  await testdriver.find('login form').then(el => el.click());
+  await testdriver.type('user@example.com');
+});
+```
+
+### Electron Apps
+
+Test Electron applications on macOS:
+
+```javascript
+test('electron on macos', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'macos' });
+  
+  // Launch Electron app
+  await testdriver.exec('sh',
+    '/Applications/MyApp.app/Contents/MacOS/MyApp',
+    5000
+  );
+  
+  await testdriver.find('window').then(el => el.click());
+});
+```
+
+### iOS Development Testing
+
+Test iOS development tools and workflows:
+
+```javascript
+test('xcode tools', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'macos' });
+  
+  // Check Xcode installation
+  await testdriver.exec('sh', 'xcodebuild -version', 5000);
+  
+  // Run Swift script
+  await testdriver.exec('sh', 'swift --version', 5000);
+});
+```
+
+## Command Execution
+
+### Shell Commands
+
+Execute shell commands (zsh is default on modern macOS):
+
+```javascript
+// Run shell command
+await testdriver.exec('sh', 'ls -la /Applications', 5000);
+
+// Run zsh-specific command
+await testdriver.exec('sh', 'echo $SHELL', 5000);
+```
+
+### AppleScript
+
+Execute AppleScript for Mac automation:
+
+```javascript
+// Run AppleScript
+await testdriver.exec('sh',
+  'osascript -e \'tell application "Safari" to activate\'',
+  5000
+);
+
+// Run AppleScript file
+await testdriver.exec('sh', 'osascript /path/to/script.scpt', 10000);
+```
+
+### Application Launching
+
+Launch macOS applications:
+
+```javascript
+// Launch app
+await testdriver.exec('sh', 'open -a "Calculator"', 5000);
+
+// Launch app with arguments
+await testdriver.exec('sh', 'open -a "Safari" https://example.com', 5000);
+
+// Launch .app bundle
+await testdriver.exec('sh', 'open /Applications/MyApp.app', 5000);
+```
+
+## Package Management
+
+### Homebrew
+
+Install packages with Homebrew:
+
+```javascript
+// Update Homebrew
+await testdriver.exec('sh', 'brew update', 60000);
+
+// Install package
+await testdriver.exec('sh', 'brew install imagemagick', 120000);
+
+// Use installed package
+await testdriver.exec('sh', 
+  'convert input.png -resize 50% output.png',
+  10000
+);
+```
+
+### NPM
+
+Install Node.js packages:
+
+```javascript
+await testdriver.exec('sh', 'npm install -g typescript', 30000);
+```
+
+### Pip
+
+Install Python packages:
+
+```javascript
+await testdriver.exec('sh', 'pip3 install requests', 30000);
+```
+
+## Supported Commands
+
+All TestDriver commands are supported on macOS:
+
+<CardGroup cols={2}>
+  <Card title="find()" icon="magnifying-glass">
+    Locate UI elements
+  </Card>
+  
+  <Card title="click()" icon="hand-pointer">
+    Click elements
+  </Card>
+  
+  <Card title="type()" icon="keyboard">
+    Type text
+  </Card>
+  
+  <Card title="pressKeys()" icon="keyboard">
+    Press key combinations
+  </Card>
+  
+  <Card title="exec()" icon="terminal">
+    Execute commands
+  </Card>
+  
+  <Card title="assert()" icon="check">
+    Verify conditions
+  </Card>
+</CardGroup>
+
+### Keyboard Shortcuts
+
+macOS keyboard shortcuts work as expected:
+
+```javascript
+// Command+C (copy)
+await testdriver.pressKeys(['command', 'c']);
+
+// Command+V (paste)
+await testdriver.pressKeys(['command', 'v']);
+
+// Command+Q (quit app)
+await testdriver.pressKeys(['command', 'q']);
+
+// Command+Tab (switch apps)
+await testdriver.pressKeys(['command', 'tab']);
+```
+
+## Debugging
+
+### VNC Access
+
+Connect via VNC to watch tests:
+
+```javascript
+const instance = testdriver.getInstance();
+console.log('VNC:', `vnc://${instance.ip}:${instance.vncPort}`);
+
+// Use VNC client (Screen Sharing on Mac) to connect
+```
+
+### Screen Recording
+
+Enable screen recording:
+
+```javascript
+// macOS screenshots
+await testdriver.exec('sh',
+  'screencapture -x /tmp/screenshot.png',
+  5000
+);
+```
+
+### Console Logs
+
+Access macOS Console logs:
+
+```javascript
+const logs = await testdriver.exec('sh',
+  'log show --predicate "processImagePath contains \'MyApp\'" --last 5m',
+  10000
+);
+console.log('Console logs:', logs);
+```
+
+## Performance
+
+### Startup Time
+- **First test**: 90-180s (macOS boots slower than Linux)
+- **Subsequent tests**: 0s (sandbox reuse)
+
+### Optimization Tips
+- Reuse sandboxes across tests (critical on macOS)
+- Enable caching
+- Minimize Homebrew installations during tests
+- Use parallel test execution carefully (macOS instances are limited)
+
+See [Performance Guide](/v7/guides/performance) for details.
+
+## Beta Limitations
+
+### Limited Availability
+macOS sandboxes are in beta with limited concurrent instances.
+
+### Longer Startup
+macOS sandboxes take longer to boot than Linux (90-180s vs 20-60s).
+
+### Architecture Constraints
+Currently x86_64 only. Apple Silicon (arm64) support coming soon.
+
+### Higher Cost
+macOS sandboxes consume more test minutes due to licensing.
+
+## Troubleshooting
+
+### Application Permissions
+
+macOS apps may require accessibility permissions:
+
+```javascript
+// Grant permissions via AppleScript (if configured)
+await testdriver.exec('sh',
+  'osascript -e \'tell application "System Events" to keystroke "ok"\'',
+  5000
+);
+```
+
+### App Won't Launch
+
+```javascript
+// Try using open command
+await testdriver.exec('sh', 'open -a "App Name"', 5000);
+
+// Or full path to executable
+await testdriver.exec('sh', 
+  '/Applications/MyApp.app/Contents/MacOS/MyApp',
+  5000
+);
+```
+
+### Homebrew Installation Slow
+
+Homebrew installations can be slow. Pre-install via custom AMI or cache:
+
+```javascript
+// Check if already installed
+const result = await testdriver.exec('sh', 'which convert', 5000);
+if (!result.includes('/usr/local/bin/convert')) {
+  await testdriver.exec('sh', 'brew install imagemagick', 120000);
+}
+```
+
+## Beta Access
+
+Interested in testing on macOS?
+
+<Card title="Join Beta Waitlist" icon="clipboard" href="https://testdriver.ai/contact">
+  Request early access to macOS sandboxes
+</Card>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Linux" icon="linux" href="/v7/platforms/linux">
+    Linux sandboxes (default)
+  </Card>
+  
+  <Card title="Windows" icon="windows" href="/v7/platforms/windows">
+    Windows sandboxes (Enterprise)
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/v7/getting-started/configuration">
+    Sandbox configuration
+  </Card>
+  
+  <Card title="Performance" icon="gauge" href="/v7/guides/performance">
+    Optimize test speed
+  </Card>
+</CardGroup>

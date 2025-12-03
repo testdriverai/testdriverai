@@ -36,8 +36,26 @@ module.exports = [
     },
   },
   {
+    // Config for ES Module files (.mjs) - used in SDK tests
+    files: ["**/*.mjs"],
+    languageOptions: {
+      sourceType: "module",
+      ecmaVersion: 2022,
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     // this needs to be it's own object for some reason
     // https://github.com/eslint/eslint/issues/17400
-    ignores: ["agent/lib/subimage/**", "node_modules/**", ".git"],
+    ignores: [
+      "agent/lib/subimage/**",
+      "node_modules/**",
+      ".git",
+      "test-results/**",
+      "examples/test-recording-example.test.js",
+      "vitest.config.example.js",
+    ],
   },
 ];

@@ -2,7 +2,7 @@ const WebSocket = require("ws");
 const marky = require("marky");
 const { events } = require("../events");
 
-const createSandbox = (emitter, analytics) => {
+const createSandbox = (emitter, analytics, sessionInstance) => {
   class Sandbox {
     constructor() {
       this.socket = null;
@@ -14,6 +14,8 @@ const createSandbox = (emitter, analytics) => {
       this.instance = null;
       this.messageId = 0;
       this.uniqueId = Math.random().toString(36).substring(7);
+      this.os = null; // Store OS value to send with every message
+      this.sessionInstance = sessionInstance; // Store session instance to include in messages
     }
 
     send(message) {
@@ -23,6 +25,24 @@ const createSandbox = (emitter, analytics) => {
       if (this.socket) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
+
+        // If os is set in the message, store it for future messages
+        if (message.os) {
+          this.os = message.os;
+        }
+
+        // Add os to every message if it's been set
+        if (this.os && !message.os) {
+          message.os = this.os;
+        }
+
+        // Add session to every message if available (for interaction tracking)
+        if (this.sessionInstance && !message.session) {
+          const sessionId = this.sessionInstance.get();
+          if (sessionId) {
+            message.session = sessionId;
+          }
+        }
 
         // Start timing for this message
         const timingKey = `sandbox-${message.type}`;
@@ -71,9 +91,12 @@ const createSandbox = (emitter, analytics) => {
       if (reply.success) {
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
+        // Return the full reply (includes url and sandbox)
+        return reply;
+      } else {
+        // Throw error to trigger fallback to creating new sandbox
+        throw new Error(reply.errorMessage || "Failed to connect to sandbox");
       }
-
-      return reply.sandbox;
     }
 
     async boot(apiRoot) {
@@ -100,8 +123,8 @@ const createSandbox = (emitter, analytics) => {
         this.socket.on("open", async () => {
           this.apiSocketConnected = true;
 
-          setInterval(() => {
-            if (this.socket.readyState === WebSocket.OPEN) {
+          this.heartbeat = setInterval(() => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
               this.socket.ping();
             }
           }, 5000);
@@ -122,7 +145,9 @@ const createSandbox = (emitter, analytics) => {
 
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
-            this.ps[message.requestId].reject(JSON.stringify(message));
+            const error = new Error(message.errorMessage || "Sandbox error");
+            error.responseData = message;
+            this.ps[message.requestId].reject(error);
           } else {
             emitter.emit(events.sandbox.received);
 
@@ -149,6 +174,34 @@ const createSandbox = (emitter, analytics) => {
           delete this.ps[message.requestId];
         });
       });
+    }
+
+    /**
+     * Close the WebSocket connection and clean up resources
+     */
+    close() {
+      if (this.heartbeat) {
+        clearInterval(this.heartbeat);
+        this.heartbeat = null;
+      }
+      
+      if (this.socket) {
+        try {
+          this.socket.close();
+        } catch (err) {
+          // Ignore close errors
+        }
+        this.socket = null;
+      }
+      
+      this.apiSocketConnected = false;
+      this.instanceSocketConnected = false;
+      this.authenticated = false;
+      this.instance = null;
+      
+      // Silently clear pending promises without rejecting
+      // (rejecting causes unhandled promise rejections during cleanup)
+      this.ps = {};
     }
   }
 

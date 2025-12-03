@@ -1,4 +1,0 @@
-VSCode
-testdriver
-Testdriver
-testdriver.ai

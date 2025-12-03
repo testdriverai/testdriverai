@@ -1,0 +1,526 @@
+---
+title: "Troubleshooting"
+description: "Common issues and solutions"
+icon: "circle-question"
+---
+
+## Installation Issues
+
+### Module Not Found
+
+**Error:** `Cannot find module 'testdriverai'`
+
+**Solution:**
+```bash
+# Verify installation
+npm list testdriverai
+
+# Reinstall
+npm install testdriverai --save-dev
+
+# Clear cache and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Version Mismatch
+
+**Error:** `TestDriver requires Node 16+`
+
+**Solution:**
+```bash
+# Check Node version
+node --version
+
+# Update Node
+nvm install 18
+nvm use 18
+```
+
+## Authentication Issues
+
+### API Key Not Found
+
+**Error:** `API key required`
+
+**Solution:**
+```bash
+# Create .env file
+echo "TD_API_KEY=your_api_key_here" > .env
+
+# Verify it loads
+node -e "require('dotenv').config(); console.log(process.env.TD_API_KEY)"
+```
+
+### Invalid API Key
+
+**Error:** `Authentication failed: Invalid API key`
+
+**Solution:**
+1. Verify key at [console.testdriver.ai/team](https://console.testdriver.ai/team)
+2. Check for typos or extra spaces
+3. Regenerate key if needed
+
+```javascript
+// Remove quotes, spaces, newlines
+const apiKey = process.env.TD_API_KEY.trim();
+```
+
+## Connection Issues
+
+### Sandbox Connection Timeout
+
+**Error:** `Connection timeout after 60000ms`
+
+**Solution:**
+```javascript
+// Increase connection timeout
+const client = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  connectionTimeout: 120000  // 2 minutes
+});
+
+// Or retry connection
+let attempts = 0;
+while (attempts < 3) {
+  try {
+    await client.connect({ newSandbox: true });
+    break;
+  } catch (error) {
+    attempts++;
+    if (attempts === 3) throw error;
+    await new Promise(r => setTimeout(r, 5000));
+  }
+}
+```
+
+### Sandbox Quota Exceeded
+
+**Error:** `Sandbox limit reached`
+
+**Solution:**
+1. Check your [quota](https://console.testdriver.ai/team)
+2. Disconnect old sandboxes
+3. Upgrade plan if needed
+
+```javascript
+// Ensure cleanup in all tests
+afterAll(async () => {
+  await testdriver?.disconnect();
+});
+```
+
+## Element Finding Issues
+
+### Element Not Found
+
+**Error:** Element returns `found() === false`
+
+**Solutions:**
+
+**1. Be more specific:**
+```javascript
+// ❌ Too vague
+await testdriver.find('button');
+
+// ✅ Specific
+await testdriver.find('blue submit button at bottom right of login form');
+```
+
+**2. Wait for element to appear:**
+```javascript
+async function waitFor(testdriver, description, timeout = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const element = await testdriver.find(description);
+    if (element.found()) return element;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error(`Timeout waiting for: ${description}`);
+}
+
+const button = await waitFor(testdriver, 'submit button');
+```
+
+**3. Check if page loaded:**
+```javascript
+// Verify page is ready
+await testdriver.assert('page fully loaded');
+await testdriver.find('submit button');
+```
+
+**4. Try alternative descriptions:**
+```javascript
+const descriptions = [
+  'submit button',
+  'blue button at bottom',
+  'button with text Submit',
+  'primary button in form'
+];
+
+let button;
+for (const desc of descriptions) {
+  button = await testdriver.find(desc);
+  if (button.found()) break;
+}
+```
+
+### Wrong Element Found
+
+**Issue:** Finds wrong element or multiple matches
+
+**Solutions:**
+
+**1. Add more context:**
+```javascript
+// ❌ Ambiguous
+await testdriver.find('delete button');
+
+// ✅ Specific location
+await testdriver.find('delete button in the row for user John Doe');
+await testdriver.find('red delete button next to email field');
+```
+
+**2. Check confidence:**
+```javascript
+const element = await testdriver.find('button');
+console.log('Confidence:', element.confidence);
+
+if (element.confidence < 0.8) {
+  console.warn('Low confidence, trying alternative');
+  element = await testdriver.find('more specific button description');
+}
+```
+
+## Cache Issues
+
+### Stale Cache
+
+**Issue:** Using outdated cached element
+
+**Solutions:**
+
+**1. Bypass cache:**
+```javascript
+// Force fresh lookup
+const element = await testdriver.find('button', { threshold: -1 });
+```
+
+**2. Clear cache:**
+```bash
+# Clear prompt cache
+rm -rf .testdriver/.cache/*.yaml
+
+# Clear selector cache via console
+# Visit https://console.testdriver.ai
+```
+
+**3. Adjust threshold:**
+```javascript
+// More lenient (90% similarity)
+await testdriver.find('button', { threshold: 0.10 });
+
+// Stricter (99% similarity)
+await testdriver.find('button', { threshold: 0.01 });
+```
+
+### Cache Not Working
+
+**Issue:** No cache hits despite repeated calls
+
+**Solutions:**
+
+**1. Use consistent prompts:**
+```javascript
+// ❌ Different prompts
+await testdriver.find('submit button');
+await testdriver.find('the submit button');
+
+// ✅ Consistent
+const desc = 'submit button';
+await testdriver.find(desc);
+await testdriver.find(desc); // Cache hit
+```
+
+**2. Check cache is enabled:**
+```javascript
+// Verify cache not disabled
+console.log('Prompt cache:', !process.env.TD_NO_PROMPT_CACHE);
+console.log('Selector cache:', !process.env.TD_NO_SELECTOR_CACHE);
+```
+
+## Command Execution Issues
+
+### exec() Timeout
+
+**Error:** `Command timeout after 30000ms`
+
+**Solutions:**
+
+**1. Increase timeout:**
+```javascript
+await testdriver.exec('sh', 'slow-command', 120000); // 2 minutes
+```
+
+**2. Run in background:**
+```javascript
+// Add & for background execution
+await testdriver.exec('sh', 'long-running-process &', 5000);
+```
+
+**3. Check command exists:**
+```javascript
+// Verify command available
+const result = await testdriver.exec('sh', 'which google-chrome', 5000, true);
+console.log('Chrome path:', result);
+```
+
+### Command Failed
+
+**Error:** Command returns non-zero exit code
+
+**Solutions:**
+
+**1. Ignore errors:**
+```javascript
+// Last parameter ignores errors
+await testdriver.exec('sh', 'risky-command', 30000, true);
+```
+
+**2. Check output:**
+```javascript
+try {
+  const output = await testdriver.exec('sh', 'command', 30000, false);
+  console.log('Output:', output);
+} catch (error) {
+  console.error('Command failed:', error.message);
+}
+```
+
+**3. Use correct shell:**
+```javascript
+// Linux/Mac
+await testdriver.exec('sh', 'echo "test"', 5000);
+
+// Windows
+await testdriver.exec('pwsh', 'Write-Output "test"', 5000);
+```
+
+## Test Execution Issues
+
+### Test Timeout
+
+**Error:** `Test timed out after 60000ms`
+
+**Solutions:**
+
+**1. Increase test timeout:**
+```javascript
+// vitest.config.mjs
+export default defineConfig({
+  test: {
+    testTimeout: 300000  // 5 minutes
+  }
+});
+
+// Or per test
+test('slow test', async () => {
+  // ...
+}, 300000); // 5 minutes
+```
+
+**2. Optimize test:**
+```javascript
+// Use faster actions
+await testdriver.find('button').then(el => el.click());
+
+// Instead of
+await testdriver.ai('click the button');
+```
+
+### Tests Fail in CI
+
+**Issue:** Tests pass locally but fail in CI
+
+**Solutions:**
+
+**1. Check environment variables:**
+```yaml
+# .github/workflows/test.yml
+env:
+  TD_API_KEY: ${{ secrets.TD_API_KEY }}
+  TD_DEFAULT_OS: linux
+```
+
+**2. Increase timeouts for CI:**
+```javascript
+const timeout = process.env.CI ? 600000 : 300000;
+
+export default defineConfig({
+  test: {
+    testTimeout: timeout
+  }
+});
+```
+
+**3. Reduce concurrency:**
+```javascript
+// CI might have resource limits
+export default defineConfig({
+  test: {
+    maxConcurrency: process.env.CI ? 2 : 5
+  }
+});
+```
+
+## Dashcam Issues
+
+### No Replay URL
+
+**Issue:** `dashcam.url` is `null`
+
+**Solutions:**
+
+**1. Ensure dashcam started:**
+```javascript
+const dashcam = new Dashcam(client);
+await dashcam.auth();
+await dashcam.start();  // Must call start!
+
+// Run test
+
+const url = await dashcam.stop();
+console.log('Replay:', url);
+```
+
+**2. Check dashcam installed:**
+```javascript
+// Verify dashcam CLI available
+await testdriver.exec('sh', 'dashcam version', 5000);
+```
+
+**3. Use preset:**
+```javascript
+// Presets handle dashcam automatically
+const { testdriver, dashcam } = await chrome(context, {
+  dashcam: true
+});
+```
+
+### Recording Not Started
+
+**Issue:** Dashcam doesn't record
+
+**Solutions:**
+
+**1. Check authentication:**
+```javascript
+await dashcam.auth(process.env.TD_API_KEY);
+const recording = await dashcam.isRecording();
+console.log('Recording:', recording);
+```
+
+**2. Wait after start:**
+```javascript
+await dashcam.start();
+await new Promise(r => setTimeout(r, 2000)); // Wait 2s
+```
+
+## Performance Issues
+
+### Slow Test Execution
+
+**Solutions:**
+
+**1. Reuse sandboxes:**
+```javascript
+// ✅ One sandbox per suite
+beforeAll(async () => {
+  testdriver = await TestDriver.create(...);
+});
+
+// ❌ One per test (slow!)
+beforeEach(async () => {
+  testdriver = await TestDriver.create(...);
+});
+```
+
+**2. Use caching:**
+```javascript
+// Enable caching for repeated elements
+await testdriver.find('button'); // First call
+await testdriver.find('button'); // Cached (faster!)
+```
+
+**3. Run in parallel:**
+```javascript
+// vitest.config.mjs
+export default defineConfig({
+  test: {
+    maxConcurrency: 5,
+    fileParallelism: true
+  }
+});
+```
+
+### High Memory Usage
+
+**Solutions:**
+
+**1. Reduce concurrency:**
+```javascript
+maxConcurrency: 2  // Lower for resource-constrained environments
+```
+
+**2. Cleanup sandboxes:**
+```javascript
+afterAll(async () => {
+  await testdriver?.disconnect();
+});
+```
+
+**3. Monitor resources:**
+```javascript
+console.log('Memory:', process.memoryUsage());
+```
+
+## Getting Help
+
+If issues persist:
+
+1. **Check Dashcam recording** - See what actually happened
+2. **Enable debug logging** - `verbosity: 2`
+3. **Search Discord** - [discord.com/invite/cWDFW8DzPm](https://discord.com/invite/cWDFW8DzPm)
+4. **Check docs** - [docs.testdriver.ai](https://docs.testdriver.ai)
+5. **Report bug** - [github.com/testdriverai/testdriverai/issues](https://github.com/testdriverai/testdriverai/issues)
+
+### Information to Include
+
+When reporting issues:
+
+- TestDriver version: `npm list testdriverai`
+- Node version: `node --version`
+- OS: `uname -a` or `$PSVersionTable.OS`
+- Error message (full stack trace)
+- Dashcam URL
+- Minimal reproduction code
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Debugging" icon="bug" href="/v7/guides/debugging">
+    Debug failing tests
+  </Card>
+  
+  <Card title="Best Practices" icon="star" href="/v7/guides/best-practices">
+    Testing patterns
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/v7/getting-started/configuration">
+    Configure TestDriver
+  </Card>
+  
+  <Card title="FAQ" icon="question" href="/v7/guides/faq">
+    Frequently asked questions
+  </Card>
+</CardGroup>

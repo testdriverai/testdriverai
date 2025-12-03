@@ -1,0 +1,400 @@
+---
+title: "Selector Caching"
+sidebarTitle: "Selector Caching"
+description: "How TestDriver caches element locations for faster tests"
+icon: "crosshairs"
+---
+
+## Overview
+
+The Selector Cache stores element locations on the server, so `.find()` calls can skip the AI vision analysis.
+
+**Important:** Selector caching is **disabled by default** as of v7.1. You must provide a `cacheKey` to enable caching.
+
+This provides:
+- ⚡ **Up to 10x faster** - Skip AI vision analysis
+- 💰 **Lower AI costs** - Fewer vision API calls
+- 🎯 **Consistent results** - Same UI = same coordinates
+- 📊 **Metrics tracking** - See cache hit rates in console
+
+## Enabling the Cache
+
+### Auto-Generated Cache Keys (Recommended)
+
+TestDriver automatically generates cache keys based on your test file:
+
+```javascript
+// Cache automatically enabled - uses file hash as cache key
+const button = await testdriver.find('submit button');
+// Cache key: "a1b2c3d4e5f6..." (first 16 chars of file SHA-256)
+```
+
+**Benefits:**
+- ✅ **Per-file isolation** - Each test file has its own cache
+- ✅ **Auto-invalidation** - Cache updates when test code changes
+- ✅ **Zero configuration** - Works out of the box
+- ✅ **Safe** - No cross-test pollution
+
+### Custom Cache Keys
+
+Provide your own cache key for more control:
+
+```javascript
+// Custom cache key
+const button = await testdriver.find('submit button', {
+  cacheKey: 'my-test-key'
+});
+
+// Share cache across tests
+const button = await testdriver.find('submit button', {
+  cacheKey: 'shared-submit-button'
+});
+```
+
+### Global Cache Key
+
+Enable caching for all finds in your test:
+
+```javascript
+const client = new TestDriver(apiKey, {
+  cacheKey: 'my-global-key'  // All finds will use this cache
+});
+
+// Now all finds are cached
+await testdriver.find('button 1');  // Uses 'my-global-key'
+await testdriver.find('button 2');  // Uses 'my-global-key'
+```
+
+### Disable Auto-Cache
+
+If you don't want automatic caching:
+
+```javascript
+// Disable cache for this find
+await testdriver.find('button', { cacheThreshold: -1 });
+
+// Or use a threshold of -1 globally
+const client = new TestDriver(apiKey, {
+  cacheThreshold: { find: -1, findAll: -1 }
+});
+```
+
+## How It Works
+
+```mermaid
+sequenceDiagram
+    participant Test as Your Test
+    participant SDK as TestDriver SDK
+    participant API as TestDriver API
+    participant AI as Claude Vision
+    participant Cache as Selector Cache DB
+
+    Test->>SDK: testdriver.find('submit button')
+    SDK->>API: POST /locate (screenshot + prompt)
+    
+    API->>Cache: Check for matching cache entry
+    
+    alt Cache Hit (95%+ similar screenshot)
+        Cache-->>API: Return cached coordinates
+        API-->>SDK: {x, y, cacheHit: true}
+        SDK-->>Test: Element found (instant)
+    else Cache Miss
+        API->>AI: Analyze screenshot
+        AI-->>API: Element coordinates
+        API->>Cache: Save new cache entry
+        API-->>SDK: {x, y, cacheHit: false}
+        SDK-->>Test: Element found
+    end
+```
+
+## Cache Matching Strategy
+
+The selector cache uses a three-tier matching system:
+
+1. **Exact Hash Match** (Fastest)
+   - Perceptual hash comparison
+   - Same screenshot = instant match
+   - 0% difference threshold
+
+2. **Pixel Diff Match** (Fast)
+   - 80%+ perceptual hash similarity
+   - Pixel-by-pixel comparison
+   - Default 5% difference threshold (95% similarity)
+   - Configurable per call
+
+3. **Template Match** (Fallback)
+   - Edge detection + template matching
+   - Finds visually similar UI elements
+   - 75%+ confidence threshold
+
+## Controlling Cache Threshold
+
+Adjust similarity threshold when cache is enabled:
+
+```javascript
+// Default: 95% similarity (5% difference allowed)
+await testdriver.find('submit button', { cacheKey: 'test-1' });
+
+// Stricter: 99% similarity (1% difference allowed)
+await testdriver.find('submit button', { 
+  cacheKey: 'test-1',
+  cacheThreshold: 0.01 
+});
+
+// More lenient: 90% similarity (10% difference allowed)
+await testdriver.find('submit button', { 
+  cacheKey: 'test-1',
+  cacheThreshold: 0.10 
+});
+
+// Disable cache: force fresh AI analysis
+await testdriver.find('submit button', { cacheThreshold: -1 });
+```
+
+<Note>
+  `cacheThreshold` only works when caching is enabled via `cacheKey` or global config.
+</Note>
+
+## Cache Filtering
+
+The selector cache automatically filters by:
+
+- **Prompt** - Exact text match (case-insensitive)
+- **Team** - Your team ID
+- **OS** - Operating system (if specified)
+- **Resolution** - Screen resolution (if specified)
+- **Time Window** - Last 7 days by default
+
+## Viewing Cache Entries
+
+View all cached selectors at [console.testdriver.ai](https://console.testdriver.ai)
+
+The console shows:
+- Cached screenshots with green circles on found elements
+- Original prompts
+- Hit count (how many times cache was used)
+- Similarity scores
+- Cache age and last accessed time
+
+## Cache Statistics
+
+Each cache entry tracks:
+
+- **Hit Count** - Number of times cache was used
+- **Last Hit** - When cache was last accessed
+- **Similarity** - Percentage match to original
+- **Created At** - When entry was created
+- **Element Type** - button, input, link, etc.
+- **Element Bounds** - Bounding box coordinates
+
+## Usage Examples
+
+### Basic Selector Caching
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('find element', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  // Auto-cache enabled (uses file hash as cache key)
+  // First call: AI vision analysis, saves to cache
+  const button = await testdriver.find('More information link');
+  console.log('Cache hit:', button.cacheHit); // false (first run)
+  
+  // Second call: uses cache (instant)
+  const button2 = await testdriver.find('More information link');
+  console.log('Cache hit:', button2.cacheHit); // true (cache hit)
+  
+  // Custom cache key
+  const button3 = await testdriver.find('submit button', { 
+    cacheKey: 'my-button' 
+  });
+});
+```
+
+### Dynamic Threshold Example
+
+```javascript
+test('strict vs lenient matching', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  // Strict: 99% similarity required (auto-cache key)
+  const elem1 = await testdriver.find('button', { cacheThreshold: 0.01 });
+  
+  // Lenient: 90% similarity acceptable
+  const elem2 = await testdriver.find('button', { cacheThreshold: 0.10 });
+  
+  // Bypass cache entirely (no cacheKey needed)
+  const elem3 = await testdriver.find('button', { cacheThreshold: -1 });
+  
+  // Custom cache key with threshold
+  const elem4 = await testdriver.find('button', {
+    cacheKey: 'my-button',
+    cacheThreshold: 0.05
+  });
+});
+```
+
+### Checking Cache Hits
+
+```javascript
+test('monitor cache performance', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  // Auto-cache enabled
+  const element = await testdriver.find('submit button');
+  
+  if (element.cacheHit) {
+    console.log('✅ Cache hit - instant response');
+    console.log('Cache strategy:', element.cacheStrategy);
+    console.log('Cache age:', element.cacheCreatedAt);
+  } else {
+    console.log('⏱️  Cache miss - AI analysis performed');
+    console.log('New cache entry created');
+  }
+  
+  // Check similarity score
+  if (element.similarity) {
+    console.log(`Similarity: ${(element.similarity * 100).toFixed(1)}%`);
+  }
+});
+```
+
+## Best Practices
+
+### 1. Use Appropriate Thresholds
+
+```javascript
+// Stable UI: strict threshold (auto-cache)
+await testdriver.find('logo', { cacheThreshold: 0.01 });
+
+// Dynamic UI: lenient threshold
+await testdriver.find('news feed item', { cacheThreshold: 0.10 });
+
+// Always fresh: disable cache
+await testdriver.find('timestamp', { cacheThreshold: -1 });
+```
+
+### 2. Choose Cache Key Strategy
+
+```javascript
+// Auto-cache (recommended) - per-file isolation
+await testdriver.find('button');
+
+// Custom key - share across tests
+await testdriver.find('button', { cacheKey: 'global-submit' });
+
+// Global key - all finds in test
+const testdriver = new TestDriver(apiKey, {
+  cacheKey: 'test-suite-1'
+});
+```
+
+Check [console.testdriver.ai](https://console.testdriver.ai) regularly to:
+- See cache hit rates
+- Identify frequently used selectors
+- Remove stale cache entries
+- Optimize threshold settings
+
+### 3. Clear Cache When UI Changes
+
+If your UI changes significantly, delete cache entries through the console dashboard.
+
+### 4. Use Consistent Prompts
+
+```javascript
+// ✅ Good - consistent prompt
+await testdriver.find('submit button');
+await testdriver.find('submit button'); // Cache hit
+
+// ❌ Bad - different prompts
+await testdriver.find('submit button');
+await testdriver.find('the submit button'); // Cache miss
+```
+
+## Cache Storage Details
+
+| Property | Value |
+|----------|-------|
+| Location | Server (MongoDB + S3) |
+| Persistence | 7 days default |
+| Scope | Per-team |
+| Matching | Screenshot similarity + prompt |
+| Expiration | 7-day rolling window |
+
+## Troubleshooting
+
+### Cache Not Working
+
+Check:
+1. Threshold isn't too strict (try 0.10 for 90% similarity)
+2. Screenshot hasn't changed significantly
+3. OS/resolution matches cached entry
+4. Cache entry isn't older than 7 days
+5. Prompt matches exactly (case-insensitive)
+
+### Low Cache Hit Rate
+
+If you're seeing low cache hit rates:
+
+1. **Increase threshold** - Try 0.10 (90% similarity) for dynamic UIs
+2. **Stabilize UI** - Minimize animations, random data, timestamps
+3. **Use consistent prompts** - Same wording every time
+4. **Check console** - View similarity scores in dashboard
+
+### Stale Cache Data
+
+Delete selector cache entries at [console.testdriver.ai](https://console.testdriver.ai)
+
+- Find the cached entry by prompt or screenshot
+- Click delete to remove stale entries
+- Run test again to create fresh cache
+
+### Cache Misses on Identical UI
+
+If cache misses occur on seemingly identical screens:
+
+1. **Check resolution** - Cache is resolution-specific
+2. **Check OS** - Cache is platform-specific
+3. **Check pixel differences** - Even 1px changes can cause misses with strict thresholds
+4. **Increase threshold** - Allow more similarity variance
+
+## Advanced Configuration
+
+### Environment Variables
+
+```bash
+# Disable selector cache entirely
+TD_NO_SELECTOR_CACHE=1
+
+# Set default threshold globally
+TD_DEFAULT_THRESHOLD=0.10
+```
+
+### Per-Test Configuration
+
+```javascript
+test('custom cache settings', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url,
+    cacheDefaults: {
+      threshold: 0.10,  // 90% similarity
+      enabled: true
+    }
+  });
+  
+  // Uses custom defaults
+  await testdriver.find('button');
+});
+```
+
+## See Also
+
+- [AI Prompt Caching](/v7/guides/caching-ai) - Cache AI-generated YAML
+- [Console Dashboard](https://console.testdriver.ai) - View and manage selector cache
+- [`.find()` Method](/v7/api/find) - Element location
+- [Vitest Integration](/v7/guides/vitest) - Testing with TestDriver

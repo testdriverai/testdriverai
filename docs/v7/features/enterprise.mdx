@@ -1,0 +1,540 @@
+---
+title: "Enterprise Ready"
+description: "Security, compliance, and scale for the largest organizations"
+icon: "building"
+---
+
+TestDriver Enterprise provides the security, control, and scalability that large organizations demand.
+
+## On-Premise Deployment
+
+Run TestDriver entirely within your infrastructure:
+
+<Card title="Deployment Options" icon="server">
+  - **Air-Gapped Installation** - No external connectivity required
+  - **Custom VPC** - Deploy in your AWS/Azure/GCP environment
+  - **Kubernetes** - Helm charts for container orchestration
+  - **Docker Compose** - Simple self-hosted deployment
+  - **Bare Metal** - Install on your own hardware
+</Card>
+
+```yaml docker-compose.yml
+version: '3.8'
+services:
+  testdriver-api:
+    image: testdriver/api:latest
+    environment:
+      - LICENSE_KEY=${TESTDRIVER_LICENSE}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "3000:3000"
+
+  testdriver-worker:
+    image: testdriver/worker:latest
+    environment:
+      - API_URL=http://testdriver-api:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  testdriver-scheduler:
+    image: testdriver/scheduler:latest
+    environment:
+      - API_URL=http://testdriver-api:3000
+```
+
+[Complete self-hosting guide](/v7/guides/self-hosting)
+
+## Hardened Security
+
+Enterprise-grade security features:
+
+<AccordionGroup>
+  <Accordion title="SOC 2 Type II Certified">
+    TestDriver is SOC 2 Type II certified, ensuring:
+
+    - Rigorous security controls
+    - Regular third-party audits
+    - Documented security policies
+    - Incident response procedures
+    - Continuous monitoring
+
+    [View security documentation](https://testdriver.ai/security)
+  </Accordion>
+
+  <Accordion title="Data Encryption">
+    **At Rest:**
+    - AES-256 encryption for all stored data
+    - Encrypted database volumes
+    - Encrypted S3 buckets
+    - Encrypted cache storage
+
+    **In Transit:**
+    - TLS 1.3 for all connections
+    - Certificate pinning
+    - HTTPS-only communication
+    - VPN support for sandboxes
+  </Accordion>
+
+  <Accordion title="Network Isolation">
+    Each sandbox runs in complete isolation:
+
+    ```javascript
+    const { testdriver } = await chrome(context, {
+      url: 'https://internal-app.company.com',
+      network: {
+        isolated: true,          // Isolated network namespace
+        vpn: 'company-vpn',      // Connect through VPN
+        proxy: 'proxy.company.com:8080',
+        allowlist: ['*.company.com']
+      }
+    });
+    ```
+
+    - Isolated network namespaces
+    - No cross-sandbox communication
+    - Firewall rules per sandbox
+    - VPN integration
+    - Proxy support
+  </Accordion>
+
+  <Accordion title="Audit Logging">
+    Complete audit trail of all activities:
+
+    - User authentication events
+    - API calls and parameters
+    - Test executions
+    - Sandbox provisioning
+    - Configuration changes
+    - Data access logs
+
+    ```javascript
+    // Audit logs include:
+    {
+      timestamp: '2024-12-02T10:15:30Z',
+      user: 'user@company.com',
+      action: 'test.run',
+      resource: 'login.test.js',
+      sandbox: 'i-0abc123def',
+      ip: '10.0.1.45',
+      result: 'success'
+    }
+    ```
+
+    Export to SIEM systems: Splunk, Datadog, ELK Stack
+  </Accordion>
+
+  <Accordion title="Role-Based Access Control (RBAC)">
+    Granular permissions management:
+
+    ```yaml
+    roles:
+      - name: developer
+        permissions:
+          - tests.read
+          - tests.write
+          - tests.run
+
+      - name: qa-lead
+        permissions:
+          - tests.*
+          - sandboxes.manage
+          - reports.view
+
+      - name: admin
+        permissions:
+          - "*"
+    ```
+
+    - Team-based access control
+    - Resource-level permissions
+    - API key scoping
+    - SSO integration
+  </Accordion>
+
+  <Accordion title="Compliance">
+    Meet regulatory requirements:
+
+    - **GDPR** - EU data protection compliance
+    - **HIPAA** - Healthcare data protection
+    - **SOX** - Financial controls compliance
+    - **ISO 27001** - Information security management
+    - **FedRAMP** - US government cloud security (in progress)
+
+    Data residency options:
+    - US (us-east-1, us-west-2)
+    - EU (eu-west-1, eu-central-1)
+    - UK (eu-west-2)
+    - Asia Pacific (ap-southeast-1)
+  </Accordion>
+</AccordionGroup>
+
+## Authentication & SSO
+
+Enterprise authentication options:
+
+<Tabs>
+  <Tab title="SAML 2.0">
+    ```javascript
+    // Configure SAML authentication
+    {
+      "auth": {
+        "type": "saml",
+        "entryPoint": "https://idp.company.com/sso",
+        "issuer": "testdriver",
+        "cert": "MIIDXTCCAkWgAwIBAgIJAK..."
+      }
+    }
+    ```
+
+    Supported providers:
+    - Okta
+    - Azure AD
+    - OneLogin
+    - Auth0
+    - Google Workspace
+  </Tab>
+
+  <Tab title="LDAP/Active Directory">
+    ```javascript
+    {
+      "auth": {
+        "type": "ldap",
+        "url": "ldaps://ldap.company.com:636",
+        "bindDN": "cn=admin,dc=company,dc=com",
+        "searchBase": "ou=users,dc=company,dc=com"
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="OAuth 2.0 / OIDC">
+    ```javascript
+    {
+      "auth": {
+        "type": "oauth2",
+        "authorizationURL": "https://auth.company.com/oauth/authorize",
+        "tokenURL": "https://auth.company.com/oauth/token",
+        "clientID": "testdriver-client"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Custom Golden Images
+
+Pre-configure your test environments:
+
+```javascript
+const { testdriver } = await chrome(context, {
+  url: 'https://internal-app.company.com',
+  goldenImage: 'company-chrome-base-v1.2',
+  os: 'linux'
+});
+```
+
+<Card title="Golden Image Features" icon="image">
+  **Include in your golden images:**
+
+  - Company certificates and CA bundles
+  - Internal proxy configurations
+  - Pre-installed dependencies
+  - Custom browser extensions
+  - Development tools (Git, Node, etc.)
+  - Company fonts and assets
+  - Environment variables
+  - SSH keys and credentials
+  - Custom OS configurations
+</Card>
+
+### Creating Golden Images
+
+```bash
+# Start from base image
+testdriver image create --base ubuntu-22.04 --name company-base
+
+# Install dependencies
+testdriver image exec company-base -- bash -c "
+  apt-get update
+  apt-get install -y ca-certificates
+  cp /tmp/company-ca.crt /usr/local/share/ca-certificates/
+  update-ca-certificates
+"
+
+# Configure proxy
+testdriver image exec company-base -- bash -c "
+  echo 'export HTTP_PROXY=http://proxy.company.com:8080' >> /etc/environment
+  echo 'export HTTPS_PROXY=http://proxy.company.com:8080' >> /etc/environment
+"
+
+# Save image
+testdriver image save company-base --version v1.2
+
+# Use in tests
+testdriver sandbox spawn --image company-base:v1.2
+```
+
+## Unlimited Usage
+
+Enterprise plans include:
+
+<CardGroup cols={2}>
+  <Card title="Unlimited Tests" icon="infinity">
+    No limits on:
+    - Test executions
+    - API calls
+    - Concurrent tests
+    - Test duration
+  </Card>
+
+  <Card title="Unlimited Sandboxes" icon="server">
+    No limits on:
+    - Sandbox hours
+    - Concurrent sandboxes
+    - Sandbox storage
+    - Network bandwidth
+  </Card>
+
+  <Card title="Unlimited Team" icon="users">
+    No limits on:
+    - Team members
+    - Test projects
+    - API keys
+    - Integrations
+  </Card>
+
+  <Card title="Unlimited Storage" icon="database">
+    No limits on:
+    - Dashcam recordings
+    - Test artifacts
+    - Cache storage
+    - Log retention
+  </Card>
+</CardGroup>
+
+## Custom SLA
+
+Enterprise support includes:
+
+<Card title="Service Level Agreement" icon="file-contract">
+  - **99.9% uptime guarantee** - Guaranteed availability
+  - **< 1 hour response time** - Priority support tickets
+  - **Dedicated support engineer** - Named contact
+  - **24/7 emergency hotline** - Critical issues
+  - **Quarterly business reviews** - Performance optimization
+  - **Private Slack channel** - Direct team access
+  - **Custom training** - Onboarding and best practices
+</Card>
+
+## IP Allowlisting
+
+Restrict access to your infrastructure:
+
+```javascript
+// Enterprise dashboard configuration
+{
+  "security": {
+    "ipAllowlist": [
+      "10.0.0.0/8",        // Corporate network
+      "203.0.113.0/24",    // VPN range
+      "198.51.100.42/32"   // Specific IP
+    ],
+    "apiKeyRestrictions": {
+      "ipAllowlist": ["10.0.0.0/8"],
+      "referrerAllowlist": ["https://*.company.com"]
+    }
+  }
+}
+```
+
+## Secret Management
+
+Integrate with enterprise secret managers:
+
+<Tabs>
+  <Tab title="HashiCorp Vault">
+    ```javascript
+    import { VaultSecretProvider } from 'testdriverai/secrets';
+
+    const secrets = new VaultSecretProvider({
+      url: 'https://vault.company.com',
+      token: process.env.VAULT_TOKEN
+    });
+
+    const password = await secrets.get('prod/db/password');
+
+    await testdriver.find('password input').type(password, { secret: true });
+    ```
+  </Tab>
+
+  <Tab title="AWS Secrets Manager">
+    ```javascript
+    import { AWSSecretsProvider } from 'testdriverai/secrets';
+
+    const secrets = new AWSSecretsProvider({
+      region: 'us-east-1'
+    });
+
+    const apiKey = await secrets.get('prod/api-key');
+    ```
+  </Tab>
+
+  <Tab title="Azure Key Vault">
+    ```javascript
+    import { AzureKeyVaultProvider } from 'testdriverai/secrets';
+
+    const secrets = new AzureKeyVaultProvider({
+      vaultUrl: 'https://company-kv.vault.azure.net'
+    });
+
+    const token = await secrets.get('prod-access-token');
+    ```
+  </Tab>
+</Tabs>
+
+## Private Docker Registry
+
+Use your own container registry:
+
+```yaml docker-compose.yml
+services:
+  testdriver-api:
+    image: registry.company.com/testdriver/api:latest
+    imagePullSecrets:
+      - name: company-registry-secret
+
+  testdriver-worker:
+    image: registry.company.com/testdriver/worker:latest
+    imagePullSecrets:
+      - name: company-registry-secret
+```
+
+## Dedicated Infrastructure
+
+Enterprise customers can request:
+
+- **Dedicated API servers** - No multi-tenancy
+- **Dedicated database** - Isolated data storage
+- **Dedicated sandboxes** - Private compute fleet
+- **Custom instance types** - GPU, high-memory, etc.
+- **Private network** - Direct Connect, VPN
+- **Colocation** - Deploy in your data center
+
+## Cost Control
+
+Enterprise features for managing costs:
+
+```javascript
+// Set budget alerts
+{
+  "billing": {
+    "budget": {
+      "monthly": 50000,
+      "alerts": [
+        { "threshold": 0.5, "notify": ["finance@company.com"] },
+        { "threshold": 0.8, "notify": ["finance@company.com", "cto@company.com"] },
+        { "threshold": 1.0, "action": "pause_tests" }
+      ]
+    },
+    "limits": {
+      "maxConcurrentSandboxes": 100,
+      "maxSandboxDuration": 7200000, // 2 hours
+      "maxTestsPerDay": 10000
+    }
+  }
+}
+```
+
+## Compliance Reports
+
+Automated compliance reporting:
+
+- **Test coverage reports** - Code coverage metrics
+- **Security scan results** - Vulnerability reports
+- **Audit logs** - Complete activity logs
+- **Performance metrics** - SLA compliance
+- **Cost reports** - Resource usage and billing
+
+Export formats: PDF, CSV, JSON
+
+## Migration Support
+
+Enterprise onboarding includes:
+
+<Steps>
+  <Step title="Assessment">
+    Evaluate current testing infrastructure and requirements
+  </Step>
+
+  <Step title="Planning">
+    Design migration strategy and timeline
+  </Step>
+
+  <Step title="Pilot">
+    Run pilot tests with small subset of suite
+  </Step>
+
+  <Step title="Migration">
+    Migrate tests in phases with rollback plan
+  </Step>
+
+  <Step title="Training">
+    Train team on TestDriver best practices
+  </Step>
+
+  <Step title="Optimization">
+    Optimize test performance and costs
+  </Step>
+</Steps>
+
+## Enterprise Pricing
+
+Contact sales for custom pricing:
+
+<Card title="Get Enterprise Quote" icon="envelope" href="https://testdriver.ai/enterprise">
+  - Volume discounts available
+  - Custom contract terms
+  - Flexible payment options
+  - Multi-year agreements
+  - Prepaid credits
+
+  **Email:** enterprise@testdriver.ai
+  **Phone:** +1 (555) 123-4567
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Self-Hosting Guide"
+    icon="server"
+    href="/v7/guides/self-hosting"
+  >
+    Deploy TestDriver on-premise
+  </Card>
+
+  <Card
+    title="Security Documentation"
+    icon="shield"
+    href="https://testdriver.ai/security"
+  >
+    Security white papers and audits
+  </Card>
+
+  <Card
+    title="Compliance"
+    icon="file-contract"
+    href="https://testdriver.ai/compliance"
+  >
+    Compliance certifications
+  </Card>
+
+  <Card
+    title="Contact Sales"
+    icon="handshake"
+    href="https://testdriver.ai/enterprise"
+  >
+    Get enterprise quote
+  </Card>
+</CardGroup>

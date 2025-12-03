@@ -1,7 +1,0 @@
-version: 5.7.7
-session: 682f6071811bd5a322c0e6dd
-steps:
-  - prompt: run a prompt in the middle of a test
-    commands:
-      - command: run
-        file: testdriver/prompt-in-middle.yaml

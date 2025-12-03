@@ -1,0 +1,486 @@
+---
+title: "Best Practices"
+description: "Patterns and practices for reliable tests"
+icon: "star"
+---
+
+## Test Structure
+
+### Use beforeAll/afterAll
+
+Create one sandbox per test suite:
+
+```javascript
+describe('Login Flow', () => {
+  let testdriver;
+  
+  beforeAll(async () => {
+    const client = await TestDriver.create({
+      apiKey: process.env.TD_API_KEY,
+      os: 'linux'
+    });
+    await client.auth();
+    await client.connect({ newSandbox: true });
+    testdriver = client;
+  });
+  
+  afterAll(async () => {
+    await testdriver?.disconnect();
+  });
+  
+  it('logs in successfully', async () => {
+    // Test code
+  });
+  
+  it('shows error on invalid credentials', async () => {
+    // Test code
+  });
+});
+```
+
+### Use Presets
+
+Presets handle lifecycle automatically:
+
+```javascript
+// ✅ Good - automatic lifecycle
+test('my test', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  // Test code
+});
+
+// ❌ Avoid - manual lifecycle
+test('my test', async () => {
+  const client = new TestDriver(...);
+  await client.auth();
+  await client.connect();
+  // Test code
+  await client.disconnect();
+});
+```
+
+## Element Finding
+
+### Be Specific
+
+```javascript
+// ❌ Too vague
+await testdriver.find('button');
+
+// ✅ Specific
+await testdriver.find('blue submit button at bottom of login form');
+
+// ✅ Include visual context
+await testdriver.find('red delete button next to user John Doe');
+
+// ✅ Use nearby text
+await testdriver.find('button below "Confirm your email" text');
+```
+
+### Always Check found()
+
+```javascript
+// ❌ Assumes element exists
+const button = await testdriver.find('submit button');
+await button.click();
+
+// ✅ Verifies element exists
+const button = await testdriver.find('submit button');
+if (!button.found()) {
+  throw new Error('Submit button not found');
+}
+await button.click();
+
+// ✅ Or use assertion
+const button = await testdriver.find('submit button');
+expect(button.found()).toBe(true);
+await button.click();
+```
+
+### Poll for Dynamic Elements
+
+```javascript
+// ✅ Wait for element to appear
+async function waitFor(testdriver, description, timeout = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const element = await testdriver.find(description);
+    if (element.found()) return element;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  throw new Error(`Element not found: ${description}`);
+}
+
+const button = await waitFor(testdriver, 'submit button');
+await button.click();
+```
+
+## Actions
+
+### Use Descriptive Prompts
+
+```javascript
+// ❌ Generic
+await testdriver.ai('login');
+
+// ✅ Specific steps
+await testdriver.ai('click the username field and type user@example.com');
+await testdriver.ai('click the password field and type password123');
+await testdriver.ai('click the blue submit button');
+```
+
+### Chain Actions
+
+```javascript
+// ✅ Find once, use multiple times
+const input = await testdriver.find('username field');
+await input.click();
+await testdriver.type('user@example.com');
+await testdriver.pressKeys(['Tab']);
+
+// ✅ Or chain directly
+await testdriver.find('username field').then(el => el.click());
+```
+
+### Use Keyboard Shortcuts
+
+```javascript
+// ✅ Faster than UI navigation
+await testdriver.pressKeys(['ctrl', 'a']); // Select all
+await testdriver.pressKeys(['ctrl', 'c']); // Copy
+await testdriver.pressKeys(['ctrl', 'v']); // Paste
+await testdriver.pressKeys(['escape']); // Close dialog
+```
+
+## Assertions
+
+### Verify Key States
+
+```javascript
+// ✅ Assert at checkpoints
+await testdriver.assert('login page is visible');
+await testdriver.find('username').then(el => el.click());
+await testdriver.type('user@example.com');
+await testdriver.find('password').then(el => el.click());
+await testdriver.type('password123');
+await testdriver.find('submit').then(el => el.click());
+await testdriver.assert('dashboard is visible');
+await testdriver.assert('welcome message shows username');
+```
+
+### Use Vitest Assertions
+
+```javascript
+// ✅ Combine TestDriver and Vitest
+const element = await testdriver.find('error message');
+expect(element.found()).toBe(true);
+expect(element.text).toContain('Invalid credentials');
+
+const result = await testdriver.assert('dashboard loaded');
+expect(result).toBe(true);
+```
+
+## Performance
+
+### Reuse Sandboxes
+
+```javascript
+// ✅ One sandbox per suite
+beforeAll(async () => {
+  testdriver = await TestDriver.create(...);
+});
+
+afterAll(async () => {
+  await testdriver.disconnect();
+});
+
+// ❌ One sandbox per test (slow!)
+beforeEach(async () => {
+  testdriver = await TestDriver.create(...);
+});
+```
+
+### Use Caching
+
+```javascript
+// ✅ Enable caching for repeated elements
+await testdriver.find('submit button'); // AI call
+await testdriver.find('submit button'); // Cache hit (fast!)
+
+// ✅ Use consistent prompts
+const buttonDesc = 'blue submit button at bottom';
+await testdriver.find(buttonDesc); // Cache hit on reuse
+```
+
+### Parallel Execution
+
+```javascript
+// vitest.config.mjs
+export default defineConfig({
+  test: {
+    pool: 'forks',
+    maxConcurrency: 5,  // Run 5 tests in parallel
+    fileParallelism: true
+  }
+});
+```
+
+## Error Handling
+
+### Graceful Failures
+
+```javascript
+test('handles missing elements', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  const optionalButton = await testdriver.find('optional newsletter button');
+  
+  if (optionalButton.found()) {
+    await optionalButton.click();
+  } else {
+    console.log('Newsletter button not present, skipping');
+  }
+  
+  // Continue with required elements
+  const required = await testdriver.find('continue button');
+  expect(required.found()).toBe(true);
+  await required.click();
+});
+```
+
+### Try-Catch for exec()
+
+```javascript
+// ✅ Handle command failures
+try {
+  await testdriver.exec('sh', 'risky-command', 30000, false);
+} catch (error) {
+  console.log('Command failed, using fallback');
+  await testdriver.exec('sh', 'fallback-command', 30000, false);
+}
+```
+
+### Cleanup in Finally
+
+```javascript
+let testdriver;
+
+try {
+  testdriver = await TestDriver.create(...);
+  await testdriver.auth();
+  await testdriver.connect();
+  
+  // Test code
+  
+} catch (error) {
+  console.error('Test failed:', error);
+  throw error;
+} finally {
+  await testdriver?.disconnect();
+}
+```
+
+## Code Organization
+
+### Extract Common Patterns
+
+```javascript
+// helpers.mjs
+export async function login(testdriver, email, password) {
+  await testdriver.find('username field').then(el => el.click());
+  await testdriver.type(email);
+  await testdriver.find('password field').then(el => el.click());
+  await testdriver.type(password);
+  await testdriver.find('submit button').then(el => el.click());
+  await testdriver.assert('dashboard is visible');
+}
+
+// test file
+import { login } from './helpers.mjs';
+
+test('user can access settings', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  await login(testdriver, 'user@example.com', 'password123');
+  await testdriver.find('settings').then(el => el.click());
+});
+```
+
+### Use Page Objects
+
+```javascript
+// pages/LoginPage.mjs
+export class LoginPage {
+  constructor(testdriver) {
+    this.testdriver = testdriver;
+  }
+  
+  async login(email, password) {
+    await this.testdriver.find('username field').then(el => el.click());
+    await this.testdriver.type(email);
+    await this.testdriver.find('password field').then(el => el.click());
+    await this.testdriver.type(password);
+    await this.testdriver.find('submit button').then(el => el.click());
+  }
+  
+  async assertVisible() {
+    const result = await this.testdriver.assert('login page is visible');
+    expect(result).toBe(true);
+  }
+}
+
+// test file
+import { LoginPage } from './pages/LoginPage.mjs';
+
+test('login flow', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  const loginPage = new LoginPage(testdriver);
+  
+  await loginPage.assertVisible();
+  await loginPage.login('user@example.com', 'password123');
+});
+```
+
+## Environment Management
+
+### Use Environment Variables
+
+```javascript
+// ✅ Good - configurable
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: process.env.TD_OS || 'linux',
+  resolution: process.env.TD_RESOLUTION || '1920x1080'
+});
+
+// ❌ Bad - hardcoded
+const testdriver = await TestDriver.create({
+  apiKey: 'td_1234567890',
+  os: 'linux'
+});
+```
+
+### Separate Test Data
+
+```javascript
+// test-data.json
+{
+  "validUser": {
+    "email": "user@example.com",
+    "password": "password123"
+  },
+  "adminUser": {
+    "email": "admin@example.com",
+    "password": "admin123"
+  }
+}
+
+// test file
+import testData from './test-data.json';
+
+test('login as user', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  await login(testdriver, testData.validUser.email, testData.validUser.password);
+});
+```
+
+## Documentation
+
+### Comment Complex Logic
+
+```javascript
+// ✅ Explain why, not what
+// Wait for animation to complete before interacting
+await new Promise(r => setTimeout(r, 1000));
+
+// Navigate to nested menu item since direct click doesn't work
+await testdriver.find('menu button').then(el => el.hover());
+await testdriver.find('submenu item').then(el => el.click());
+```
+
+### Name Tests Clearly
+
+```javascript
+// ✅ Clear intent
+test('user sees error when submitting form with invalid email', async () => {});
+test('admin can delete user accounts from settings page', async () => {});
+
+// ❌ Vague
+test('form validation', async () => {});
+test('user deletion', async () => {});
+```
+
+## Anti-Patterns
+
+### Don't Use Hardcoded Delays
+
+```javascript
+// ❌ Brittle - might be too short or too long
+await new Promise(r => setTimeout(r, 5000));
+
+// ✅ Poll for condition
+const element = await waitFor(testdriver, 'success message');
+```
+
+### Don't Ignore Errors
+
+```javascript
+// ❌ Silently fails
+try {
+  await testdriver.find('button').then(el => el.click());
+} catch (error) {
+  // Ignore
+}
+
+// ✅ Handle gracefully
+const button = await testdriver.find('button');
+if (!button.found()) {
+  console.warn('Optional button not found, skipping');
+} else {
+  await button.click();
+}
+```
+
+### Don't Test Implementation Details
+
+```javascript
+// ❌ Too specific to implementation
+await testdriver.find('div with class submit-btn-container').then(el => el.click());
+
+// ✅ User-facing behavior
+await testdriver.find('submit button').then(el => el.click());
+```
+
+## Checklist
+
+Before committing tests:
+
+- ✅ Tests use `beforeAll`/`afterAll` for sandbox lifecycle
+- ✅ All elements checked with `.found()` before use
+- ✅ Descriptive element descriptions with visual context
+- ✅ Key assertions at important checkpoints
+- ✅ No hardcoded delays (use polling instead)
+- ✅ API keys in environment variables
+- ✅ Test names clearly describe intent
+- ✅ Common patterns extracted to helpers
+- ✅ Error handling for optional elements
+- ✅ Cleanup in `finally` blocks
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Debugging" icon="bug" href="/v7/guides/debugging">
+    Debug failing tests
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/v7/getting-started/configuration">
+    Configure TestDriver
+  </Card>
+  
+  <Card title="Caching" icon="bolt" href="/v7/guides/caching-ai">
+    Optimize with caching
+  </Card>
+  
+  <Card title="Examples" icon="code" href="/v7/presets/chrome">
+    See working examples
+  </Card>
+</CardGroup>

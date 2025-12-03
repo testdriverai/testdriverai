@@ -28,6 +28,9 @@ lib-cov
 coverage
 *.lcov
 
+# Test results
+test-results/
+
 # nyc test coverage
 .nyc_output
 
@@ -159,3 +162,7 @@ node_modules
 saves/*
 
 .trigger
+
+test-results
+test-results/*
+.vscode

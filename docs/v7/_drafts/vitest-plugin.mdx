@@ -1,0 +1,477 @@
+---
+title: "Vitest Plugin"
+sidebarTitle: "Test Recording Plugin"
+description: "Record and track test runs with the TestDriver Vitest plugin"
+icon: "video"
+---
+
+## Overview
+
+The TestDriver Vitest plugin automatically records your test runs, captures test results, and associates them with Dashcam replays. It provides a complete testing dashboard without any additional code.
+
+## Features
+
+- 📊 **Automatic Test Recording** - Every test run is tracked
+- 🎥 **Dashcam Integration** - Replays automatically linked to tests
+- ⚡ **Zero Configuration** - Works out of the box
+- 🔍 **Detailed Reporting** - Pass/fail stats, durations, errors
+- 🌐 **CI/CD Support** - GitHub Actions, GitLab CI, CircleCI, and more
+- 📈 **Test Dashboard** - View all runs at console.testdriver.ai
+
+## Installation
+
+The plugin is included with the TestDriver SDK. Simply import and configure it.
+
+## Setup
+
+### 1. Create Vitest Config
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+import testDriverPlugin from 'testdriverai/vitest';
+
+export default defineConfig({
+  test: {
+    // Add TestDriver plugin
+    reporters: [
+      'default', // Keep default Vitest reporter
+      testDriverPlugin({
+        apiKey: process.env.TD_API_KEY,
+      }),
+    ],
+    
+    // Recommended timeouts
+    testTimeout: 120000,
+    hookTimeout: 120000,
+  },
+});
+```
+
+### 2. Set API Key
+
+Create a `.env` file:
+
+```bash .env
+TD_API_KEY=your-api-key-here
+```
+
+Or set it in your CI environment.
+
+### 3. Run Tests
+
+```bash
+npx vitest
+```
+
+That's it! Your tests are now being recorded.
+
+## Configuration Options
+
+```javascript
+testDriverPlugin({
+  // Required: Your TestDriver API key
+  apiKey: process.env.TD_API_KEY,
+  
+  // Optional: Custom API endpoint (for self-hosted)
+  apiRoot: 'https://testdriver-api.onrender.com',
+})
+```
+
+<ParamField path="apiKey" type="string" required>
+  Your TestDriver API key. Get one at [console.testdriver.ai](https://console.testdriver.ai)
+</ParamField>
+
+<ParamField path="apiRoot" type="string" default="https://testdriver-api.onrender.com">
+  API endpoint URL. Only change this if you're using a self-hosted instance.
+</ParamField>
+
+## What Gets Recorded
+
+### Test Run Metadata
+
+Each test run captures:
+
+- **Run ID** - Unique identifier
+- **Suite Name** - Project name from package.json
+- **Platform** - Operating system (linux/mac/windows)
+- **Git Info** - Repository, branch, commit, author (if in CI)
+- **CI Provider** - GitHub Actions, GitLab, CircleCI, etc.
+- **Status** - passed/failed/cancelled
+- **Statistics** - Total, passed, failed, skipped counts
+- **Duration** - Total run time
+
+### Test Case Details
+
+Each test captures:
+
+- **Test Name** - From your test description
+- **Test File** - File path relative to project root
+- **Status** - passed/failed/skipped
+- **Duration** - Test execution time
+- **Dashcam URL** - Video replay (if Dashcam enabled)
+- **Error Details** - Stack trace and message (if failed)
+- **Retry Count** - Number of retries (if configured)
+
+## Dashcam Integration
+
+When you use Dashcam in your tests, the plugin automatically associates replay URLs:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('user login', async (context) => {
+  // Dashcam starts automatically
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://myapp.com',
+    dashcam: true
+  });
+  
+  await testdriver.find('Login').click();
+  
+  // Plugin automatically captures dashcam.url and links it to this test
+});
+```
+
+The replay URL is then visible in your test dashboard.
+
+## Viewing Results
+
+### Test Dashboard
+
+Visit [console.testdriver.ai](https://console.testdriver.ai) to view:
+
+- All test runs with status and statistics
+- Individual test cases with pass/fail status
+- Dashcam replays for each test
+- Error messages and stack traces
+- Git and CI information
+- Duration trends over time
+
+### Console Output
+
+The plugin also logs to console:
+
+```
+[TestDriver Reporter] Test run created: 1732483200000-a1b2c3d4
+[TestDriver Reporter] Recording test case: user login (passed)
+[TestDriver Reporter] ✅ Reported test case to API with dashcam URL
+[TestDriver Reporter] 🔗 View test: https://console.testdriver.ai/runs/123/456
+[TestDriver Reporter] Test run completed: 5/5 passed
+```
+
+## CI/CD Integration
+
+The plugin automatically detects CI environment and captures relevant metadata.
+
+### GitHub Actions
+
+```yaml .github/workflows/test.yml
+name: TestDriver Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: npx vitest --run
+```
+
+Captured metadata:
+- Repository: `GITHUB_REPOSITORY`
+- Branch: `GITHUB_REF_NAME`
+- Commit: `GITHUB_SHA`
+- Author: `GITHUB_ACTOR`
+
+### GitLab CI
+
+```yaml .gitlab-ci.yml
+test:
+  stage: test
+  script:
+    - npm install
+    - npx vitest --run
+  variables:
+    TD_API_KEY: $TD_API_KEY
+```
+
+Captured metadata:
+- Repository: `CI_PROJECT_PATH`
+- Branch: `CI_COMMIT_BRANCH`
+- Commit: `CI_COMMIT_SHA`
+- Author: `GITLAB_USER_LOGIN`
+
+### CircleCI
+
+```yaml .circleci/config.yml
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/node:18.0
+    steps:
+      - checkout
+      - run: npm install
+      - run:
+          command: npx vitest --run
+          environment:
+            TD_API_KEY: ${TD_API_KEY}
+```
+
+Captured metadata:
+- Repository: `CIRCLE_PROJECT_USERNAME/CIRCLE_PROJECT_REPONAME`
+- Branch: `CIRCLE_BRANCH`
+- Commit: `CIRCLE_SHA1`
+- Author: `CIRCLE_USERNAME`
+
+## Advanced Usage
+
+### Custom Test Order
+
+Tests are automatically numbered in execution order. You can verify this in the dashboard.
+
+### Platform Detection
+
+The plugin automatically detects the platform from your TestDriver client:
+
+```javascript
+test('cross-platform test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    os: 'mac' // Plugin detects and records 'mac'
+  });
+  
+  // Test runs on macOS
+});
+```
+
+### Multiple Test Suites
+
+Each test file creates separate test cases in the same run:
+
+```
+my-project/
+  ├── tests/
+  │   ├── login.test.js
+  │   ├── checkout.test.js
+  │   └── profile.test.js
+```
+
+All tests from all files are grouped under one test run.
+
+### Parallel Execution
+
+The plugin handles parallel test execution automatically:
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    reporters: [testDriverPlugin({ apiKey })],
+    
+    // Run tests in parallel
+    threads: true,
+    maxConcurrency: 5,
+  },
+});
+```
+
+Test results are still correctly associated with the run.
+
+## Troubleshooting
+
+### Tests Not Appearing in Dashboard
+
+Check that:
+1. API key is set correctly
+2. Plugin is configured in vitest.config.mjs
+3. Tests are running (not skipped)
+4. Network connection to TestDriver API is working
+
+```javascript
+// Debug mode - check console output
+console.log('API Key:', process.env.TD_API_KEY ? 'Set' : 'Not set');
+```
+
+### Dashcam URLs Not Linked
+
+Ensure Dashcam is enabled in your tests:
+
+```javascript
+// ✅ Dashcam enabled
+const { dashcam } = await chrome(context, { 
+  url: 'https://example.com',
+  dashcam: true 
+});
+
+// ❌ Dashcam disabled
+const { testdriver } = await chrome(context, { 
+  url: 'https://example.com',
+  dashcam: false 
+});
+```
+
+### Plugin Not Running
+
+Verify plugin is in reporters array:
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    reporters: [
+      'default',
+      testDriverPlugin({ apiKey: process.env.TD_API_KEY }), // Must be here
+    ],
+  },
+});
+```
+
+### API Authentication Errors
+
+Check your API key is valid:
+
+```bash
+# Test authentication
+curl -X POST https://testdriver-api.onrender.com/auth/exchange-api-key \
+  -H "Content-Type: application/json" \
+  -d '{"apiKey":"your-api-key-here"}'
+```
+
+Should return a JWT token.
+
+## How It Works
+
+### Reporter Lifecycle
+
+1. **onInit** - Plugin initializes, authenticates, creates test run
+2. **onTestCaseReady** - Test starts, start time recorded
+3. **onTestCaseResult** - Test completes, result sent to API
+4. **onTestRunEnd** - All tests complete, run stats calculated and sent
+
+### Cross-Process Communication
+
+Vitest runs tests in worker processes. The plugin uses:
+
+- Environment variables for test run info
+- Temporary files for Dashcam URLs (cleaned up automatically)
+- Shared state for run-level tracking
+
+All handled transparently - no user action needed.
+
+### Data Flow
+
+```
+Test File → Worker Process → Dashcam Recording → Temporary File
+                ↓
+          Test Result → Reporter → TestDriver API → Dashboard
+```
+
+## API Reference
+
+### Internal APIs
+
+These are used internally by the plugin. You typically don't need to call them directly.
+
+<ResponseField name="registerDashcamUrl" type="function">
+  ```javascript
+  registerDashcamUrl(testId, url, platform)
+  ```
+  Associates a Dashcam URL with a test case.
+</ResponseField>
+
+<ResponseField name="authenticateWithApiKey" type="function">
+  ```javascript
+  await authenticateWithApiKey(apiKey, apiRoot)
+  ```
+  Exchanges API key for JWT token.
+</ResponseField>
+
+<ResponseField name="createTestRunDirect" type="function">
+  ```javascript
+  await createTestRunDirect(token, apiRoot, testRunData)
+  ```
+  Creates a new test run record.
+</ResponseField>
+
+<ResponseField name="recordTestCaseDirect" type="function">
+  ```javascript
+  await recordTestCaseDirect(token, apiRoot, testCaseData)
+  ```
+  Records a test case result.
+</ResponseField>
+
+## Best Practices
+
+### 1. Always Set API Key
+
+```javascript
+// ✅ Good - Use environment variable
+testDriverPlugin({
+  apiKey: process.env.TD_API_KEY
+})
+
+// ❌ Bad - Hardcoded API key
+testDriverPlugin({
+  apiKey: 'sk-1234567890abcdef'
+})
+```
+
+### 2. Keep Default Reporter
+
+```javascript
+// ✅ Good - Keep both reporters
+reporters: [
+  'default', // Vitest output in terminal
+  testDriverPlugin({ apiKey })
+]
+
+// ❌ Bad - Only TestDriver reporter (no terminal output)
+reporters: [
+  testDriverPlugin({ apiKey })
+]
+```
+
+### 3. Enable Dashcam for Important Tests
+
+```javascript
+// For critical user flows, always record
+test('checkout flow', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://shop.example.com',
+    dashcam: true // Record this important flow
+  });
+  
+  // Complex checkout process
+});
+```
+
+### 4. Use in CI/CD
+
+Recording tests in CI provides historical data and debugging:
+
+```yaml
+- name: Run tests
+  env:
+    TD_API_KEY: ${{ secrets.TD_API_KEY }}
+  run: npx vitest --run
+```
+
+## See Also
+
+- [Vitest Integration](/v7/guides/vitest) - Complete Vitest setup guide
+- [Provision API](/v7/progressive-apis/PROVISION) - Test setup presets
+- [Dashcam](/v6/guide/dashcam) - Test recording and replay
+- [CI/CD Guide](/v6/getting-started/ci) - Running in continuous integration

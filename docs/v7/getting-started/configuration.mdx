@@ -1,0 +1,380 @@
+---
+title: "Options"
+description: "Configure TestDriver SDK for your testing environment"
+icon: "gear"
+---
+
+## Overview
+
+TestDriver can be configured through constructor options, environment variables, and Vitest configuration.
+
+## Environment Variables
+
+Set these in your `.env` file:
+
+```bash
+# Required
+TD_API_KEY=your_api_key_here
+
+# Optional
+TD_API_ROOT=https://testdriver-api.onrender.com
+TD_DEFAULT_OS=linux
+TD_DEFAULT_RESOLUTION=1920x1080
+TD_NO_PROMPT_CACHE=false
+TD_NO_SELECTOR_CACHE=false
+```
+
+## Client Configuration
+
+### Basic Options
+
+```javascript
+import TestDriver from 'testdriverai';
+
+const client = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'linux',              // 'linux' | 'windows' | 'mac'
+  resolution: '1920x1080',  // Any standard resolution
+  verbosity: 1,             // 0 (silent) | 1 (normal) | 2 (debug)
+});
+```
+
+### All Options
+
+```javascript
+const client = await TestDriver.create({
+  // Authentication
+  apiKey: process.env.TD_API_KEY,
+  
+  // Sandbox Configuration
+  os: 'linux',
+  resolution: '1920x1080',
+  newSandbox: true,
+  sandboxId: null,
+  
+  // API Configuration
+  apiRoot: 'https://testdriver-api.onrender.com',
+  
+  // Logging
+  verbosity: 1,
+  logging: true,
+  
+  // Analytics
+  analytics: true,
+  
+  // Cache Configuration
+  cacheDefaults: {
+    threshold: 0.05,  // 95% similarity
+    enabled: true
+  }
+});
+```
+
+## Vitest Configuration
+
+Create or update `vitest.config.mjs`:
+
+```javascript
+import { defineConfig } from 'vitest/config';
+import testDriverPlugin from 'testdriverai/interfaces/vitest-plugin.mjs';
+import { config } from 'dotenv';
+
+config(); // Load .env file
+
+export default defineConfig({
+  plugins: [
+    testDriverPlugin({
+      apiKey: process.env.TD_API_KEY,
+      apiRoot: process.env.TD_API_ROOT,
+    }),
+  ],
+  
+  test: {
+    // Test file patterns
+    include: ['**/*.test.{js,mjs,ts}'],
+    
+    // Timeout settings
+    testTimeout: 300000,      // 5 minutes per test
+    hookTimeout: 300000,      // 5 minutes for setup/teardown
+    teardownTimeout: 120000,  // 2 minutes for teardown
+    
+    // Parallel execution
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: false,
+        maxForks: 5,
+        minForks: 1,
+      },
+    },
+    
+    // Enable parallel execution
+    sequence: {
+      concurrent: true,
+      shuffle: false,
+    },
+    
+    fileParallelism: true,
+    maxConcurrency: 5,
+    
+    // Reporters
+    reporters: ['verbose'],
+  },
+});
+```
+
+## Preset Configuration
+
+### Chrome Preset
+
+```javascript
+import { chrome } from 'testdriverai/presets';
+
+const { testdriver, dashcam } = await chrome(context, {
+  url: 'https://example.com',
+  dashcam: true,
+  os: 'linux',
+  resolution: '1920x1080',
+  
+  // Chrome-specific options
+  headless: false,
+  incognito: false,
+});
+```
+
+### VS Code Preset
+
+```javascript
+import { vscode } from 'testdriverai/presets';
+
+const { testdriver, dashcam } = await vscode(context, {
+  workspace: '/path/to/workspace',
+  extensions: ['ms-python.python'],
+  settings: {
+    'editor.fontSize': 14
+  },
+  dashcam: true,
+});
+```
+
+### Electron Preset
+
+```javascript
+import { electron } from 'testdriverai/presets';
+
+const { testdriver, dashcam } = await electron(context, {
+  appPath: './dist/my-app',
+  args: ['--enable-logging'],
+  dashcam: true,
+});
+```
+
+## Operating System Settings
+
+### Linux
+
+```javascript
+{
+  os: 'linux',
+  resolution: '1920x1080',
+  // Linux-specific environment
+  environment: {
+    DISPLAY: ':0',
+    HOME: '/home/user'
+  }
+}
+```
+
+### Windows
+
+```javascript
+{
+  os: 'windows',
+  resolution: '1366x768',
+  // Windows-specific paths use backslashes
+}
+```
+
+### macOS
+
+```javascript
+{
+  os: 'mac',
+  resolution: '1920x1080',
+  // macOS-specific settings
+}
+```
+
+## Cache Configuration
+
+### Prompt Cache
+
+Configure AI prompt caching:
+
+```javascript
+// Disable prompt cache globally
+process.env.TD_NO_PROMPT_CACHE = 'true';
+
+// Per call
+await testdriver.ai('click button', false); // bypass cache
+```
+
+### Selector Cache
+
+Configure element location caching:
+
+```javascript
+// Disable selector cache globally
+process.env.TD_NO_SELECTOR_CACHE = 'true';
+
+// Per call with custom threshold
+await testdriver.find('button', { threshold: 0.01 }); // 99% similarity
+await testdriver.find('button', { threshold: 0.10 }); // 90% similarity
+await testdriver.find('button', { threshold: -1 });   // disable cache
+```
+
+## Dashcam Configuration
+
+```javascript
+import Dashcam from 'testdriverai/lib/core/Dashcam.js';
+
+const dashcam = new Dashcam(client, {
+  apiKey: process.env.TD_API_KEY,
+  autoStart: false,
+  logs: [
+    {
+      name: 'Application Log',
+      type: 'file',
+      path: '/tmp/app.log'
+    }
+  ]
+});
+```
+
+## Timeout Configuration
+
+### Test Timeouts
+
+```javascript
+// In vitest.config.mjs
+export default defineConfig({
+  test: {
+    testTimeout: 600000,  // 10 minutes
+    hookTimeout: 600000,  // 10 minutes
+  }
+});
+```
+
+### Command Timeouts
+
+```javascript
+// exec() timeout
+await client.exec('sh', 'long-running-command', 120000); // 2 minutes
+
+// Find timeout (polling)
+for (let i = 0; i < 60; i++) {
+  const element = await client.find('button');
+  if (element.found()) break;
+  await new Promise(r => setTimeout(r, 1000));
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use environment variables for secrets">
+    ```javascript
+    // ✅ Good
+    apiKey: process.env.TD_API_KEY
+    
+    // ❌ Bad
+    apiKey: 'td_1234567890abcdef'
+    ```
+  </Accordion>
+  
+  <Accordion title="Set appropriate timeouts">
+    ```javascript
+    // For slow operations
+    testTimeout: 600000,  // 10 minutes
+    
+    // For fast operations
+    testTimeout: 60000,   // 1 minute
+    ```
+  </Accordion>
+  
+  <Accordion title="Configure caching for your needs">
+    ```javascript
+    // Strict caching for stable UIs
+    threshold: 0.01  // 99% similarity
+    
+    // Lenient caching for dynamic UIs
+    threshold: 0.10  // 90% similarity
+    ```
+  </Accordion>
+  
+  <Accordion title="Use appropriate concurrency">
+    ```javascript
+    // High-end machine
+    maxConcurrency: 10
+    
+    // Low-end machine or resource-intensive tests
+    maxConcurrency: 2
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Example Configurations
+
+### CI/CD Configuration
+
+```javascript
+export default defineConfig({
+  test: {
+    testTimeout: 300000,
+    maxConcurrency: 3,  // Lower for CI
+    reporters: ['junit', 'json'],
+  },
+});
+```
+
+### Local Development
+
+```javascript
+export default defineConfig({
+  test: {
+    testTimeout: 600000,
+    maxConcurrency: 5,
+    reporters: ['verbose'],
+  },
+});
+```
+
+### Debug Mode
+
+```javascript
+const client = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  verbosity: 2,  // Debug logging
+  logging: true,
+});
+```
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/v7/getting-started/installation">
+    Install TestDriver SDK
+  </Card>
+  
+  <Card title="Quick Start" icon="rocket" href="/v7/getting-started/quickstart">
+    Build your first test
+  </Card>
+  
+  <Card title="Caching" icon="bolt" href="/v7/guides/caching-ai">
+    Configure caching
+  </Card>
+  
+  <Card title="Client API" icon="plug" href="/v7/api/client">
+    Full client reference
+  </Card>
+</CardGroup>

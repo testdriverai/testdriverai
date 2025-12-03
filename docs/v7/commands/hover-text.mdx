@@ -1,0 +1,47 @@
+---
+title: "hover-text"
+sidebarTitle: "hover-text"
+description: "Hover or click on text elements based on a description."
+icon: "text"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/hover-text-replay.mdx";
+import Example from "/snippets/tests/hover-text-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `hover-text` command is used to locate text on the screen based on a description and perform an action on it. This can include hovering, clicking, right-clicking, or double-clicking the text.
+
+## Arguments
+
+|   Argument    |   Type   | Description                                                                                                                                                                                                                 |
+| :-----------: | :------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    `text`     | `string` | The text to find on the screen. Longer and unique is better.                                                                                                                                                                |
+| `description` | `string` | A description of the text and what it represents. The actual text itself shouldn't be included here.                                                                                                                        |
+|   `action`    | `string` | The action to take when the text is found. Available actions are: `click`, `right-click`, `double-click`, `hover`. Also supports `drag-start` and `drag-end` for [dragging text](/commands/hover-image#drag-functionality). |
+|   `method`    |  `enum`  | The matching algorithm to use. Possible values are `turbo` (default) and `ai`.                                                                                                                                              |
+|   `timeout`   | `number` | **(Optional)** The duration in milliseconds to wait for the text to appear. Default is `5000` (5 seconds).                                                                                                                  |
+
+## Example usage
+
+```yaml
+command: hover-text
+text: Sign Up
+description: link in the header
+action: click
+timeout: 10000 # 10 seconds
+```
+
+## Gotchas
+
+- If the text can't be located, it will internally call the [wait-for-text](/commands/wait-for-text) command and wait for the text to appear. The wait `timeout` is 5 seconds by default, and the command fails if the text is not found.
+- Variations in font size, style, or screen resolution may affect detection accuracy.
+
+## Notes
+
+- The `hover-text` command is ideal for interacting with textual elements that can't be identified using other selectors.
+- Supported actions allow flexibility in how the text is interacted with during the test.

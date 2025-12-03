@@ -1,0 +1,60 @@
+---
+title: "scroll-until-text"
+sidebarTitle: "scroll-until-text"
+description: "Scroll the screen until the specified text is found."
+icon: "scroll"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/scroll-until-text-replay.mdx";
+import Example from "/snippets/tests/scroll-until-text-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `scroll-until-text` command is used to scroll the screen in a specified direction until the specified text is found. This is useful for navigating to elements that aren't initially visible on the screen.
+
+## Arguments
+
+|  Argument   |   Type    | Description                                                                                                             |
+| :---------: | :-------: | :---------------------------------------------------------------------------------------------------------------------- |
+|   `text`    | `string`  | The text to find on the screen. Longer and unique are better. Note this is **case sensitive**                           |
+| `direction` | `string`  | (Optional) The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. Defaults to `down`.        |
+|  `method`   | `string`  | (Optional) The method to use to scroll the page. Available methods are: `mouse` and `keyboard`. Defaults to `keyboard`. |
+| `distance`  | `number`  | (Optional) The maximum number of pixels to scroll before giving up. Default is `10000`.                                 |
+|  `invert`   | `boolean` | (Optional) If set to `true`, the command will scroll until the specified text is NOT detected. Default is `false`.      |
+
+<Note>
+If the method is `keyboard` it just searches for the string by doing `ctrl + f`. 
+This is helpful if there is a single string match that you want to operate with.
+
+If you are using `mouse` method, the command will manually scroll the page (based on the `distance`) until the text is found.
+
+</Note>
+
+## Example usage
+
+```yaml
+command: scroll-until-text
+text: Sign Up
+direction: down
+distance: 1000
+```
+
+## Protips
+
+- Use unique and specific text to improve detection accuracy.
+- Adjust the `distance` value to control how far the command scrolls before giving up.
+- If you don't specify a `distance`, the command will scroll 300 pixels at a time, giving up after 5 attempts.
+
+## Gotchas
+
+- If the text can't be located within the specified `distance`, the command will fail.
+- Ensure the text is visible and matches exactly, as variations in font size, style, or screen resolution may affect detection accuracy.
+- Note that `text` is case-sensitive, so **Sign Up** and **sign up** would be treated as different strings.
+
+---
+
+The `scroll-until-text` command is ideal for navigating to elements that are off-screen and can't be located using other commands.

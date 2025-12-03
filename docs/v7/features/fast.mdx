@@ -1,0 +1,424 @@
+---
+title: "Fast Performance"
+description: "1.7x faster test execution with intelligent caching and optimization"
+icon: "bolt"
+---
+
+Speed matters when you're running hundreds or thousands of tests. TestDriver is engineered for performance with intelligent caching that delivers up to **1.7x faster** test execution.
+
+## Test Caching Performance
+
+Selector caching dramatically reduces test execution time by skipping redundant AI vision analysis:
+
+<Card title="Real Performance Results" icon="chart-line">
+  **First run (no cache):**
+  ```
+  ⏱️  Test duration: 45.2s
+  🔍 AI vision calls: 12
+  💰 Cost: $0.048
+  ```
+
+  **Cached run:**
+  ```
+  ⚡ Test duration: 26.6s (1.7x faster)
+  ✅ Cache hits: 11/12
+  💰 Cost: $0.004 (92% savings)
+  ```
+</Card>
+
+The more you run your tests, the faster they get. Cache hits are nearly instant, turning slow AI analysis into millisecond lookups.
+
+## Intelligent Cache Strategy
+
+TestDriver uses a sophisticated three-tier matching system to maximize cache hits while maintaining accuracy:
+
+<Steps>
+  <Step title="Exact Hash Match (Fastest)">
+    Perceptual hash comparison for identical screenshots.
+
+    - **Speed:** Instant (< 1ms)
+    - **Accuracy:** 100%
+    - **Use case:** Repeat test runs
+
+    ```javascript
+    // First run: builds cache
+    await testdriver.find('submit button'); // 2.3s (AI analysis)
+
+    // Second run: exact match
+    await testdriver.find('submit button'); // 8ms (cache hit) ⚡
+    ```
+  </Step>
+
+  <Step title="Pixel Diff Match (Fast)">
+    Pixel-by-pixel comparison for similar screenshots.
+
+    - **Speed:** Very fast (< 50ms)
+    - **Accuracy:** 95%+ similarity threshold
+    - **Use case:** Minor UI changes (hover states, animations)
+
+    ```javascript
+    // Cache works even with small visual changes
+    await testdriver.find('button', {
+      cacheThreshold: 0.05 // Allow 5% difference
+    });
+    ```
+  </Step>
+
+  <Step title="Template Match (Fallback)">
+    Edge detection and template matching for structural similarity.
+
+    - **Speed:** Fast (< 200ms)
+    - **Accuracy:** 75%+ confidence
+    - **Use case:** Layout changes, responsive design
+
+    ```javascript
+    // Still uses cache even when layout shifts
+    await testdriver.find('submit button', {
+      cacheThreshold: 0.10 // More lenient
+    });
+    ```
+  </Step>
+</Steps>
+
+## Automatic Caching
+
+Caching is enabled automatically with zero configuration:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('auto-cached test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  // First call: AI analyzes screen, saves to cache
+  await testdriver.find('More information link'); // 2.1s
+
+  // Second call: cache hit, instant response
+  await testdriver.find('More information link'); // 12ms ⚡
+});
+```
+
+<Tip>
+  TestDriver automatically generates cache keys based on your test file hash. Each file has isolated caching, preventing cross-test pollution.
+</Tip>
+
+## Cache Hit Monitoring
+
+Track cache performance in real-time:
+
+```javascript
+test('monitor cache performance', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+
+  const element = await testdriver.find('submit button');
+
+  if (element.cacheHit) {
+    console.log('✅ Cache hit - instant response');
+    console.log('Strategy:', element.cacheStrategy); // 'exact', 'pixeldiff', or 'template'
+    console.log('Similarity:', `${(element.similarity * 100).toFixed(1)}%`);
+    console.log('Cache age:', element.cacheCreatedAt);
+  } else {
+    console.log('⏱️  Cache miss - AI analysis performed');
+    console.log('New cache entry created');
+  }
+});
+```
+
+Example output:
+```
+✅ Cache hit - instant response
+Strategy: pixeldiff
+Similarity: 97.3%
+Cache age: 2024-12-02T10:15:30Z
+```
+
+## Configurable Thresholds
+
+Fine-tune cache behavior for your application:
+
+<Tabs>
+  <Tab title="Strict (Default)">
+    ```javascript
+    // Default: 95% similarity required
+    await testdriver.find('submit button');
+
+    // Explicit strict threshold
+    await testdriver.find('submit button', {
+      cacheThreshold: 0.01 // 99% similarity
+    });
+    ```
+
+    **Best for:**
+    - Static content
+    - Stable UI elements
+    - Critical interactions
+  </Tab>
+
+  <Tab title="Lenient">
+    ```javascript
+    // Allow more variance
+    await testdriver.find('dynamic content', {
+      cacheThreshold: 0.10 // 90% similarity
+    });
+    ```
+
+    **Best for:**
+    - Dynamic content (timestamps, user data)
+    - Animated elements
+    - Responsive layouts
+    - A/B testing scenarios
+  </Tab>
+
+  <Tab title="Bypass Cache">
+    ```javascript
+    // Force fresh AI analysis
+    await testdriver.find('always fresh element', {
+      cacheThreshold: -1 // Disable cache
+    });
+    ```
+
+    **Best for:**
+    - Highly dynamic content
+    - Real-time data
+    - First-time debugging
+  </Tab>
+</Tabs>
+
+## Parallel Execution
+
+Run tests concurrently for maximum throughput:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000,
+    maxConcurrency: 10, // Run 10 tests simultaneously
+  },
+});
+```
+
+<CardGroup cols={2}>
+  <Card title="Sequential Execution" icon="arrow-right">
+    ```
+    Test 1: 30s
+    Test 2: 30s
+    Test 3: 30s
+    Total: 90s
+    ```
+  </Card>
+
+  <Card title="Parallel Execution (3x)" icon="arrows-split-up-and-left">
+    ```
+    Test 1: 30s
+    Test 2: 30s  } concurrent
+    Test 3: 30s
+    Total: 30s
+    ```
+  </Card>
+</CardGroup>
+
+With caching + parallelization:
+```
+✅ Cache-accelerated parallel execution:
+   Total: 15s (6x faster than sequential, no cache)
+```
+
+## Cache Persistence
+
+Cache entries are stored server-side with intelligent expiration:
+
+| Property | Value |
+|----------|-------|
+| **Location** | Server (MongoDB + S3) |
+| **Persistence** | 7 days rolling window |
+| **Scope** | Per-team, per-test-file |
+| **Matching** | Screenshot similarity + prompt + OS |
+| **Invalidation** | Automatic on file changes |
+
+The cache automatically invalidates when your test code changes, ensuring accuracy while maximizing performance.
+
+## Cache Analytics
+
+View cache performance in the TestDriver console:
+
+<Steps>
+  <Step title="Access Console">
+    Visit [console.testdriver.ai](https://console.testdriver.ai)
+  </Step>
+
+  <Step title="View Cache Metrics">
+    See detailed cache statistics:
+    - Cache hit rate per test
+    - Most frequently cached selectors
+    - Cache age distribution
+    - Cost savings from caching
+  </Step>
+
+  <Step title="Manage Cache">
+    Delete stale entries or clear cache for specific tests.
+  </Step>
+</Steps>
+
+## Performance Best Practices
+
+<AccordionGroup>
+  <Accordion title="1. Use Consistent Prompts">
+    ```javascript
+    // ✅ Good - consistent wording
+    await testdriver.find('submit button');
+    await testdriver.find('submit button'); // Cache hit
+
+    // ❌ Bad - different wording
+    await testdriver.find('submit button');
+    await testdriver.find('the submit button'); // Cache miss
+    ```
+
+    Cache matching is prompt-specific. Use the exact same description for maximum cache hits.
+  </Accordion>
+
+  <Accordion title="2. Choose Appropriate Thresholds">
+    ```javascript
+    // Stable elements: strict threshold
+    await testdriver.find('navigation logo', {
+      cacheThreshold: 0.01
+    });
+
+    // Dynamic elements: lenient threshold
+    await testdriver.find('live feed item', {
+      cacheThreshold: 0.10
+    });
+    ```
+
+    Match your threshold to element stability.
+  </Accordion>
+
+  <Accordion title="3. Leverage Automatic Cache Keys">
+    ```javascript
+    // ✅ Recommended - per-file automatic caching
+    await testdriver.find('button');
+
+    // ⚠️  Advanced - custom cache key for shared cache
+    await testdriver.find('button', {
+      cacheKey: 'global-buttons'
+    });
+    ```
+
+    Automatic file-based cache keys prevent cross-test issues while enabling caching.
+  </Accordion>
+
+  <Accordion title="4. Monitor Cache Hit Rates">
+    ```javascript
+    test('track cache performance', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+
+      let cacheHits = 0;
+      let cacheMisses = 0;
+
+      const selectors = ['button 1', 'button 2', 'button 3'];
+
+      for (const selector of selectors) {
+        const element = await testdriver.find(selector);
+        if (element.cacheHit) cacheHits++;
+        else cacheMisses++;
+      }
+
+      console.log(`Cache hit rate: ${(cacheHits / selectors.length * 100).toFixed(0)}%`);
+    });
+    ```
+
+    Track your cache hit rates to optimize threshold settings.
+  </Accordion>
+</AccordionGroup>
+
+## Real-World Performance
+
+Here's a real test suite performance comparison:
+
+<CodeGroup>
+```bash No Caching
+$ npx vitest run
+
+ ✓ test/login.test.js (3 tests) 87.4s
+ ✓ test/checkout.test.js (5 tests) 142.6s
+ ✓ test/profile.test.js (4 tests) 98.2s
+
+ Test Files: 3 passed (3)
+ Tests: 12 passed (12)
+ Duration: 328.2s
+```
+
+```bash With Caching
+$ npx vitest run
+
+ ✓ test/login.test.js (3 tests) 31.2s [cache: 92%]
+ ✓ test/checkout.test.js (5 tests) 58.7s [cache: 87%]
+ ✓ test/profile.test.js (4 tests) 35.1s [cache: 94%]
+
+ Test Files: 3 passed (3)
+ Tests: 12 passed (12)
+ Duration: 125.0s (2.6x faster ⚡)
+```
+</CodeGroup>
+
+<Check>
+  **Performance improvement: 2.6x faster** with an average 91% cache hit rate across all tests.
+</Check>
+
+## Advanced: Custom Cache Configuration
+
+For advanced use cases, configure caching globally:
+
+```javascript
+import { TestDriver } from 'testdriverai';
+
+const testdriver = new TestDriver({
+  apiKey: process.env.TD_API_KEY,
+  cacheKey: 'my-test-suite',
+  cacheDefaults: {
+    threshold: 0.05,      // 95% similarity
+    enabled: true,
+    ttl: 604800,          // 7 days (in seconds)
+  }
+});
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Selector Caching Guide"
+    icon="crosshairs"
+    href="/v7/guides/caching-selectors"
+  >
+    Deep dive into caching strategies
+  </Card>
+
+  <Card
+    title="AI Prompt Caching"
+    icon="brain"
+    href="/v7/guides/caching-ai"
+  >
+    Cache AI-generated test code
+  </Card>
+
+  <Card
+    title="Performance Guide"
+    icon="gauge-high"
+    href="/v7/guides/performance"
+  >
+    Optimize test suite performance
+  </Card>
+
+  <Card
+    title="Console Dashboard"
+    icon="chart-simple"
+    href="https://console.testdriver.ai"
+  >
+    View cache analytics
+  </Card>
+</CardGroup>

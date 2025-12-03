@@ -1,0 +1,87 @@
+---
+title: "press-keys"
+sidebarTitle: "press-keys"
+description: "Simulate typing a keyboard combination."
+icon: "keyboard"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/press-keys-replay.mdx";
+import Example from "/snippets/tests/press-keys-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `press-keys` command is used to simulate typing a keyboard combination. This is useful for triggering shortcuts or interacting with applications via keyboard input.
+
+## Arguments
+
+| Argument | Type                     | Description                       |
+| -------- | ------------------------ | :-------------------------------- |
+| `keys`   | YAML sequence of strings | A list of keys to press together. |
+
+---
+
+The keys supported are the standard [Windows keys](https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.keys?view=windowsdesktop-9.0). Supported values:
+
+<Tabs>
+  <Tab title="Modifiers">
+    - `ctrl`, `shift`, `alt`, `command`, `option`, `win` - Left/right variants:
+    `ctrlleft`, `ctrlright`, `shiftleft`, `shiftright`, `altleft`, `altright`,
+    `optionleft`, `optionright`, `winleft`, `winright`
+  </Tab>
+  <Tab title="Printable">
+    - All ASCII printable characters: letters `a`–`z`, digits `0`–`9`, common
+    punctuation, and `space`.
+  </Tab>
+  <Tab title="Function keys">- `f1`–`f24`</Tab>
+  <Tab title="Navigation">
+    - `up`, `down`, `left`, `right`, `home`, `end`, `pageup`, `pagedown`,
+    `pgup`, `pgdn`
+  </Tab>
+  <Tab title="Editing">
+    - `backspace`, `delete`, `del`, `insert`, `enter`, `return`, `tab`,
+    `escape`, `esc`
+  </Tab>
+  <Tab title="Locks & Print">
+    - `capslock`, `numlock`, `scrolllock`, `printscreen`, `prntscrn`, `prtsc`,
+    `prtscr`, `print`
+  </Tab>
+  <Tab title="Numpad">
+    - `num0`–`num9`, `add`, `subtract`, `multiply`, `divide`, `decimal`,
+    `separator`
+  </Tab>
+  <Tab title="Media & Browser">
+    - `playpause`, `stop`, `nexttrack`, `prevtrack`, `volumedown`, `volumeup`,
+    `volumemute` - `browserback`, `browserforward`, `browserrefresh`,
+    `browsersearch`, `browserstop`, `browserfavorites`, `browserhome` -
+    `launchapp1`, `launchapp2`, `launchmail`, `launchmediaselect`
+  </Tab>
+  <Tab title="IME / International">
+    - `hangul`, `hanguel`, `hanja`, `junja`, `kana`, `kanji`, `modechange`,
+    `nonconvert`, `convert`, `final`, `yen`
+  </Tab>
+  <Tab title="Other">- `help`, `select`, `sleep`, `space`</Tab>
+</Tabs>
+
+---
+
+## Example usage
+
+```yaml
+command: press-keys
+keys:
+  - ctrl
+  - space
+```
+
+## Protips
+
+- Use this command to trigger system-wide or application-specific shortcuts, such as the Start menu or the browser elements.
+- Ensure the application or system is in focus when using this command to avoid unexpected behavior.
+
+## Notes
+
+- The `press-keys` command is ideal for automating workflows that rely on keyboard shortcuts.

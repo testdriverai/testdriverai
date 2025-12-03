@@ -1,0 +1,69 @@
+---
+title: "scroll"
+sidebarTitle: "scroll"
+description: "Scroll the screen in a specified direction using the mouse wheel."
+icon: "computer-mouse"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/scroll-replay.mdx";
+import Example from "/snippets/tests/scroll-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `scroll` command is used to scroll the screen in a specified direction using the mouse wheel. This is useful for navigating through content that extends beyond the visible area.
+
+## Arguments
+
+|  Argument   |   Type   | Description                                                                           |
+| :---------: | :------: | :------------------------------------------------------------------------------------ |
+| `direction` | `string` | The direction to scroll. Available directions are: `up`, `down`, `left`, `right`.     |
+|  `method`   | `string` | The method to scroll. Available methods are: `mouse`, `keyboard`. Defaults to `mouse` |
+|  `amount`   | `number` | (Optional) Pixels to scroll. If not specified, a default amount of 300 is used.       |
+
+<Warning>
+  The `amount` should only be used when the `method` is mouse. If the `method`
+  is keyboard, it is redundant as the action performed is pressing the `pageup`
+  or `pagedown` keys.
+</Warning>
+
+## Example usage
+
+```yaml
+- command: scroll
+  direction: down
+  method: mouse
+  amount: 100
+```
+
+## Protips
+
+- Be sure to focus the application and frame you are trying to scroll before using the command.
+- Use precise `amount` values to control the scrolling distance for better accuracy in your tests.
+- Combine the `scroll` command with other commands like `hover-text` or `match-image` to interact with elements that are initially off-screen.
+- If you wish to scroll dynamically till a specific text or image appears, use [scroll-until-text](/commands/scroll-until-text) or [scroll-until-image](/commands/scroll-until-image) commands.
+- The most reliable way to scroll to the top or bottom of the page is to use the `home` and `end` keys:
+
+  ```yaml
+  # Scroll to the top of the page
+  - command: press-keys
+    keys:
+      - home
+  # Scroll to the bottom of the page
+  - command: press-keys
+    keys:
+      - end
+  ```
+
+## Gotchas
+
+- Scrolling too far may cause elements to move out of view. Adjust the `amount` value as needed.
+- Ensure the application or browser window is in focus when using this command to avoid unexpected behavior.
+
+## Notes
+
+- The `scroll` command is ideal for navigating through long pages or lists during automated tests.
+- This command supports both vertical and horizontal scrolling for flexible navigation.

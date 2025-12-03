@@ -1,0 +1,95 @@
+# TestDriver Init Command
+
+The `testdriverai init` command scaffolds a complete TestDriver.ai project with Vitest integration, similar to `npm init playwright`.
+
+## What it creates
+
+When you run `testdriverai init`, it automatically sets up:
+
+### 1. **package.json**
+- Creates a new package.json if one doesn't exist
+- Sets `"type": "module"` for ES modules
+- Adds test scripts:
+  - `npm test` - Run tests once
+  - `npm run test:watch` - Run tests in watch mode
+  - `npm run test:ui` - Open Vitest UI
+
+### 2. **Vitest Configuration** (`vitest.config.js`)
+- Configures TestDriver plugin
+- Sets appropriate timeouts (120s for test and hook timeouts)
+
+### 3. **Example Test** (`tests/example.test.js`)
+- Sample test using the Vitest SDK
+- Demonstrates basic TestDriver functionality:
+  - Navigating to a page
+  - Finding elements
+  - Using expect assertions
+
+### 4. **GitHub Actions Workflow** (`.github/workflows/testdriver.yml`)
+- Ready-to-use CI/CD pipeline
+- Runs on push to main/master and pull requests
+- Automatically installs dependencies and runs tests
+- Uploads test results as artifacts
+- Uses `TD_API_KEY` from GitHub secrets
+
+### 5. **npm install**
+- Automatically installs dependencies:
+  - `vitest` - Test runner
+  - `testdriverai` - TestDriver SDK
+
+## Usage
+
+```bash
+# Initialize a new project
+testdriverai init
+
+# The command will:
+# 1. Create package.json (if needed)
+# 2. Create test files and config
+# 3. Create GitHub Actions workflow
+# 4. Install dependencies
+```
+
+## Next Steps After Init
+
+1. **Set your API key:**
+   ```bash
+   export TD_API_KEY=your_api_key
+   ```
+
+2. **Run your tests:**
+   ```bash
+   npm test
+   ```
+
+3. **For CI/CD:**
+   - Go to your GitHub repository settings
+   - Navigate to: Settings → Secrets → Actions
+   - Add a new repository secret named `TD_API_KEY`
+
+## Testing
+
+Run the test script to verify the init command:
+
+```bash
+./test-init.sh
+```
+
+This will:
+- Create a test project
+- Verify all files are created correctly
+- Verify dependencies are installed
+- Clean up afterward
+
+## Implementation Details
+
+### Files
+- [agent/interface.js](agent/interface.js#L258-L267) - Command definition
+- [interfaces/cli/commands/init.js](interfaces/cli/commands/init.js) - Command implementation
+- [test-init.sh](test-init.sh) - Test script
+
+### Key Features
+- Idempotent: Safe to run multiple times, skips existing files
+- Automatic npm install with error handling
+- Creates proper directory structure
+- Ready-to-use CI/CD configuration

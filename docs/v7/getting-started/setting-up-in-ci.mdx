@@ -1,0 +1,612 @@
+---
+title: "Setting Up in CI"
+description: "Run TestDriver tests in CI/CD pipelines"
+icon: "arrows-spin"
+---
+
+TestDriver integrates seamlessly with all major CI/CD platforms. This guide covers the essential setup for running tests in continuous integration.
+
+## Quick Setup
+
+Running TestDriver in CI requires just three things:
+
+<Steps>
+  <Step title="Install Dependencies">
+    ```yaml
+    - run: npm install
+    ```
+  </Step>
+
+  <Step title="Set API Key">
+    ```yaml
+    env:
+      TD_API_KEY: ${{ secrets.TD_API_KEY }}
+    ```
+  </Step>
+
+  <Step title="Run Tests">
+    ```yaml
+    - run: npx vitest run
+    ```
+  </Step>
+</Steps>
+
+## Platform-Specific Setup
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml .github/workflows/test.yml
+    name: E2E Tests
+
+    on:
+      push:
+        branches: [main]
+      pull_request:
+        branches: [main]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+
+        steps:
+          - uses: actions/checkout@v3
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v3
+            with:
+              node-version: '20'
+
+          - name: Install dependencies
+            run: npm install
+
+          - name: Run tests
+            run: npx vitest run
+            env:
+              TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+          - name: Upload artifacts
+            if: failure()
+            uses: actions/upload-artifact@v3
+            with:
+              name: test-artifacts
+              path: |
+                .testdriver/debug-screenshots/
+                .testdriver/dashcam-urls.txt
+    ```
+
+    [Complete GitHub Actions guide](/v7/guides/ci-cd/github-actions)
+  </Tab>
+
+  <Tab title="GitLab CI">
+    ```yaml .gitlab-ci.yml
+    test:
+      image: node:20
+      stage: test
+      script:
+        - npm install
+        - npx vitest run
+      variables:
+        TD_API_KEY: $TD_API_KEY
+      artifacts:
+        when: on_failure
+        paths:
+          - .testdriver/debug-screenshots/
+          - .testdriver/dashcam-urls.txt
+    ```
+
+    [Complete GitLab CI guide](/v7/guides/ci-cd/gitlab)
+  </Tab>
+
+  <Tab title="CircleCI">
+    ```yaml .circleci/config.yml
+    version: 2.1
+
+    jobs:
+      test:
+        docker:
+          - image: cimg/node:20.0
+        steps:
+          - checkout
+          - run: npm install
+          - run:
+              name: Run tests
+              command: npx vitest run
+              environment:
+                TD_API_KEY: << pipeline.parameters.td-api-key >>
+          - store_artifacts:
+              path: .testdriver/debug-screenshots/
+              when: on_fail
+    ```
+
+    [Complete CircleCI guide](/v7/guides/ci-cd/circleci)
+  </Tab>
+
+  <Tab title="Jenkins">
+    ```groovy Jenkinsfile
+    pipeline {
+      agent any
+
+      environment {
+        TD_API_KEY = credentials('testdriver-api-key')
+      }
+
+      stages {
+        stage('Install') {
+          steps {
+            sh 'npm install'
+          }
+        }
+
+        stage('Test') {
+          steps {
+            sh 'npx vitest run'
+          }
+        }
+      }
+
+      post {
+        failure {
+          archiveArtifacts artifacts: '.testdriver/**/*', allowEmptyArchive: true
+        }
+      }
+    }
+    ```
+
+    [Complete Jenkins guide](/v7/guides/ci-cd/jenkins)
+  </Tab>
+</Tabs>
+
+## Storing API Keys
+
+Store your TestDriver API key securely in CI secrets:
+
+<CardGroup cols={2}>
+  <Card title="GitHub Actions" icon="github">
+    1. Go to repository Settings → Secrets
+    2. Click "New repository secret"
+    3. Name: `TD_API_KEY`
+    4. Value: Your API key
+  </Card>
+
+  <Card title="GitLab CI" icon="gitlab">
+    1. Go to Settings → CI/CD → Variables
+    2. Click "Add variable"
+    3. Key: `TD_API_KEY`
+    4. Value: Your API key
+    5. Check "Mask variable"
+  </Card>
+
+  <Card title="CircleCI" icon="circle">
+    1. Project Settings → Environment Variables
+    2. Click "Add Environment Variable"
+    3. Name: `TD_API_KEY`
+    4. Value: Your API key
+  </Card>
+
+  <Card title="Jenkins" icon="jenkins">
+    1. Manage Jenkins → Credentials
+    2. Add Credentials → Secret text
+    3. ID: `testdriver-api-key`
+    4. Secret: Your API key
+  </Card>
+</CardGroup>
+
+## Parallel Execution
+
+Run tests in parallel for faster CI builds:
+
+<Tabs>
+  <Tab title="GitHub Actions Matrix">
+    ```yaml
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - run: npx vitest run --shard=${{ matrix.shard }}/4
+    ```
+
+    Runs 4 parallel jobs, each handling 1/4 of tests.
+  </Tab>
+
+  <Tab title="GitLab CI Parallel">
+    ```yaml
+    test:
+      parallel: 4
+      script:
+        - npx vitest run --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
+    ```
+  </Tab>
+
+  <Tab title="CircleCI Parallelism">
+    ```yaml
+    test:
+      parallelism: 4
+      steps:
+        - run: |
+            SHARD_INDEX=$CIRCLE_NODE_INDEX
+            TOTAL_SHARDS=$CIRCLE_NODE_TOTAL
+            npx vitest run --shard=$((SHARD_INDEX+1))/$TOTAL_SHARDS
+    ```
+  </Tab>
+</Tabs>
+
+## Generating Reports
+
+Create test reports for CI dashboards:
+
+<Tabs>
+  <Tab title="JUnit XML">
+    ```bash
+    npx vitest run --reporter=junit --outputFile=test-results.xml
+    ```
+
+    ```yaml
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: test-results.xml
+    ```
+  </Tab>
+
+  <Tab title="HTML Report">
+    ```bash
+    npx vitest run --reporter=html --outputFile=test-report.html
+    ```
+
+    ```yaml
+    - name: Upload HTML Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: test-report.html
+    ```
+  </Tab>
+
+  <Tab title="JSON Report">
+    ```bash
+    npx vitest run --reporter=json --outputFile=test-results.json
+    ```
+
+    Parse JSON for custom reporting.
+  </Tab>
+</Tabs>
+
+## Handling Test Failures
+
+Capture debug information when tests fail:
+
+```yaml .github/workflows/test.yml
+- name: Run tests
+  id: tests
+  run: npx vitest run
+  continue-on-error: true
+  env:
+    TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+- name: Upload debug artifacts
+  if: steps.tests.outcome == 'failure'
+  uses: actions/upload-artifact@v3
+  with:
+    name: test-failures
+    path: |
+      .testdriver/debug-screenshots/
+      .testdriver/dashcam-urls.txt
+
+- name: Comment on PR with failures
+  if: steps.tests.outcome == 'failure' && github.event_name == 'pull_request'
+  uses: actions/github-script@v6
+  with:
+    script: |
+      const fs = require('fs');
+      const dashcamUrls = fs.readFileSync('.testdriver/dashcam-urls.txt', 'utf8');
+
+      await github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: `## ❌ Tests Failed\n\nView Dashcam replays:\n${dashcamUrls}`
+      });
+
+- name: Fail workflow if tests failed
+  if: steps.tests.outcome == 'failure'
+  run: exit 1
+```
+
+## Caching for Faster Builds
+
+Cache node_modules for faster CI runs:
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml
+    - name: Cache node modules
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+    ```
+  </Tab>
+
+  <Tab title="GitLab CI">
+    ```yaml
+    cache:
+      paths:
+        - node_modules/
+      key:
+        files:
+          - package-lock.json
+    ```
+  </Tab>
+
+  <Tab title="CircleCI">
+    ```yaml
+    - restore_cache:
+        keys:
+          - node-deps-{{ checksum "package-lock.json" }}
+          - node-deps-
+
+    - save_cache:
+        key: node-deps-{{ checksum "package-lock.json" }}
+        paths:
+          - node_modules
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  TestDriver's selector cache is stored server-side, so you automatically get faster test runs without any CI configuration!
+</Tip>
+
+## Notifications
+
+Send notifications on test failures:
+
+<Tabs>
+  <Tab title="Slack">
+    ```yaml
+    - name: Notify Slack
+      if: failure()
+      uses: slackapi/slack-github-action@v1
+      with:
+        payload: |
+          {
+            "text": "Tests failed on ${{ github.repository }}",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "❌ Tests failed\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+                }
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    ```
+  </Tab>
+
+  <Tab title="Email">
+    ```yaml
+    - name: Send email
+      if: failure()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: Tests failed in ${{ github.repository }}
+        body: Tests failed. View results at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        to: team@example.com
+        from: CI/CD
+    ```
+  </Tab>
+
+  <Tab title="Teams">
+    ```yaml
+    - name: Notify Teams
+      if: failure()
+      run: |
+        curl -H 'Content-Type: application/json' \
+          -d '{"text": "Tests failed in ${{ github.repository }}"}' \
+          ${{ secrets.TEAMS_WEBHOOK_URL }}
+    ```
+  </Tab>
+</Tabs>
+
+## Branch Protection
+
+Require tests to pass before merging:
+
+<Steps>
+  <Step title="GitHub">
+    1. Go to Settings → Branches
+    2. Add rule for main branch
+    3. Check "Require status checks to pass"
+    4. Select "test" job
+  </Step>
+
+  <Step title="GitLab">
+    1. Settings → Repository → Protected branches
+    2. Select main branch
+    3. Set "Allowed to merge" to "Developers + Maintainers"
+    4. Enable "Pipelines must succeed"
+  </Step>
+</Steps>
+
+## Cost Optimization
+
+Reduce CI costs with TestDriver:
+
+<AccordionGroup>
+  <Accordion title="1. Leverage Test Caching">
+    First CI run: Slow (builds cache)
+    Subsequent runs: 1.7x faster (uses cache)
+
+    No configuration needed - automatic!
+  </Accordion>
+
+  <Accordion title="2. Run Only Changed Tests">
+    ```yaml
+    # GitHub Actions
+    - run: npx vitest run --changed HEAD~1
+
+    # Only runs tests affected by PR changes
+    ```
+  </Accordion>
+
+  <Accordion title="3. Use Parallel Execution">
+    ```yaml
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    ```
+
+    4x parallel = 4x faster, but same total cost.
+  </Accordion>
+
+  <Accordion title="4. Skip Tests on Documentation Changes">
+    ```yaml
+    on:
+      push:
+        paths-ignore:
+          - '**.md'
+          - 'docs/**'
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring CI Performance
+
+Track test performance over time:
+
+```yaml
+- name: Upload timing data
+  if: always()
+  run: |
+    npx vitest run --reporter=json > test-results.json
+
+- name: Analyze performance
+  run: |
+    # Send to your analytics service
+    curl -X POST https://analytics.company.com/test-metrics \
+      -H "Content-Type: application/json" \
+      -d @test-results.json
+```
+
+View performance trends at [console.testdriver.ai](https://console.testdriver.ai).
+
+## Troubleshooting CI
+
+<AccordionGroup>
+  <Accordion title="Tests Pass Locally, Fail in CI">
+    **Common causes:**
+
+    1. **Environment differences** - Check Node version matches
+    2. **Missing environment variables** - Verify `TD_API_KEY` is set
+    3. **Timeout too short** - Increase test timeout
+    4. **Network restrictions** - Check firewall allows TestDriver API
+
+    **Debug:**
+    ```yaml
+    - run: node --version
+    - run: npm --version
+    - run: env | grep TD_
+    - run: npx vitest run --reporter=verbose
+    ```
+  </Accordion>
+
+  <Accordion title="Intermittent Failures">
+    **Solutions:**
+
+    1. **Increase timeout:**
+       ```javascript vitest.config.mjs
+       export default defineConfig({
+         test: {
+           testTimeout: 180000, // 3 minutes in CI
+         },
+       });
+       ```
+
+    2. **Add retries:**
+       ```javascript vitest.config.mjs
+       export default defineConfig({
+         test: {
+           retry: 2, // Retry failed tests twice
+         },
+       });
+       ```
+
+    3. **Check Dashcam replays** for both passing and failing runs
+  </Accordion>
+
+  <Accordion title="Rate Limiting">
+    If running many tests concurrently:
+
+    ```javascript vitest.config.mjs
+    export default defineConfig({
+      test: {
+        maxConcurrency: 5, // Limit concurrent tests
+      },
+    });
+    ```
+
+    Contact sales for higher rate limits.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="GitHub Actions"
+    icon="github"
+    href="/v7/guides/ci-cd/github-actions"
+  >
+    Complete GitHub Actions setup
+  </Card>
+
+  <Card
+    title="GitLab CI"
+    icon="gitlab"
+    href="/v7/guides/ci-cd/gitlab"
+  >
+    Complete GitLab CI setup
+  </Card>
+
+  <Card
+    title="CircleCI"
+    icon="circle"
+    href="/v7/guides/ci-cd/circleci"
+  >
+    Complete CircleCI setup
+  </Card>
+
+  <Card
+    title="Jenkins"
+    icon="jenkins"
+    href="/v7/guides/ci-cd/jenkins"
+  >
+    Complete Jenkins setup
+  </Card>
+
+  <Card
+    title="All CI/CD Guides"
+    icon="arrows-spin"
+    href="/v7/guides/ci-cd/overview"
+  >
+    View all platform guides
+  </Card>
+
+  <Card
+    title="Performance Optimization"
+    icon="gauge-high"
+    href="/v7/guides/performance"
+  >
+    Optimize test performance
+  </Card>
+</CardGroup>

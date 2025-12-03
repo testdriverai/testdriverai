@@ -1,0 +1,303 @@
+---
+title: "Web Apps"
+sidebarTitle: "Web Apps"
+description: "Automatically launch and test Chrome browser applications"
+icon: "chrome"
+---
+
+## Overview
+
+The `chrome()` preset automatically sets up a Chrome browser with TestDriver and Dashcam recording. It's the easiest way to test web applications.
+
+<Note>
+  **Recommended Pattern (v7.1+):** Use `TestDriver()` hook + `provision.chrome()` for more flexibility:
+  
+  ```javascript
+  import { TestDriver } from 'testdriverai/vitest/hooks';
+  
+  test('my test', async (context) => {
+    const testdriver = TestDriver(context);
+    await testdriver.provision.chrome({ url: 'https://example.com' });
+    // ...
+  });
+  ```
+  
+  The `chrome()` preset is still supported but the direct API provides better control and clearer lifecycle management.
+</Note>
+
+## Quick Start
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('login test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/login'
+  });
+  
+  await testdriver.find('email input').type('user@example.com');
+  await testdriver.find('password input').type('password123');
+  await testdriver.find('Login button').click();
+  
+  await testdriver.assert('Welcome message is visible');
+});
+```
+
+## Signature
+
+```typescript
+chrome(context, options): Promise<ChromeResult>
+```
+
+### Parameters
+
+<ParamField path="context" type="object" required>
+  Vitest test context - automatically passed to your test function
+</ParamField>
+
+<ParamField path="options" type="object">
+  Configuration options for Chrome
+
+  <Expandable title="properties">
+    <ParamField path="url" type="string" default="http://testdriver-sandbox.vercel.app/">
+      URL to navigate to when Chrome launches
+    </ParamField>
+
+    <ParamField path="maximized" type="boolean" default={true}>
+      Start Chrome in maximized window mode
+    </ParamField>
+
+    <ParamField path="guest" type="boolean" default={true}>
+      Use Chrome guest/incognito mode (no profile data)
+    </ParamField>
+
+    <ParamField path="dashcam" type="boolean" default={true}>
+      Enable Dashcam test recording
+    </ParamField>
+
+    <ParamField path="os" type="'linux' | 'mac' | 'windows'" default="linux">
+      Target operating system for the test
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+<ResponseField name="testdriver" type="TestDriver" required>
+  TestDriver instance ready to use
+</ResponseField>
+
+<ResponseField name="dashcam" type="Dashcam">
+  Dashcam instance for test recording (if enabled)
+</ResponseField>
+
+## Examples
+
+### Basic Web App Testing
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('search functionality', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  await testdriver.find('search input').type('TestDriver');
+  await testdriver.find('search button').click();
+  await testdriver.assert('search results are displayed');
+});
+```
+
+### With Dashcam Recording
+
+```javascript
+import { test, expect } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('checkout flow', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://shop.example.com',
+    maximized: true
+  });
+  
+  // Add items to cart
+  await testdriver.find('Add to Cart button').click();
+  await testdriver.find('View Cart').click();
+  
+  // Proceed to checkout
+  await testdriver.find('Checkout button').click();
+  
+  // Fill shipping info
+  await testdriver.find('Name input').type('John Doe');
+  await testdriver.find('Address input').type('123 Main St');
+  
+  // Submit order
+  await testdriver.find('Place Order').click();
+  
+  // Verify confirmation
+  const confirmed = await testdriver.assert('Order confirmed');
+  expect(confirmed).toBeTruthy();
+  
+  // Dashcam automatically saves replay URL when test completes
+});
+```
+
+### Testing on Different Operating Systems
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('windows chrome test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com',
+    os: 'windows'
+  });
+  
+  await testdriver.find('Start').click();
+});
+
+test('mac chrome test', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com',
+    os: 'mac'
+  });
+  
+  await testdriver.find('Start').click();
+});
+```
+
+### Without Dashcam
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('quick test without recording', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    dashcam: false // Disable Dashcam for faster execution
+  });
+  
+  await testdriver.find('button').click();
+});
+```
+
+### Testing Chrome Extensions
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('chrome extension', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'chrome://extensions',
+    guest: false, // Need profile for extensions
+    maximized: true
+  });
+  
+  await testdriver.find('Developer mode toggle').click();
+  await testdriver.find('Load unpacked').click();
+});
+```
+
+## What It Does
+
+When you call `chrome()`, it automatically:
+
+1. **Initializes TestDriver** - Creates and connects to sandbox
+2. **Sets up Dashcam** - Authenticates and starts recording (if enabled)
+3. **Launches Chrome** - Opens browser with your specified options
+4. **Navigates to URL** - Loads your application
+5. **Waits for Ready** - Ensures Chrome is focused and page is loaded
+6. **Returns Instances** - Provides ready-to-use testdriver and dashcam
+
+At test end:
+- Dashcam automatically stops and saves replay URL
+- TestDriver automatically disconnects
+- All cleanup is handled for you
+
+## Common Patterns
+
+### Form Filling
+
+```javascript
+test('user registration', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/register'
+  });
+  
+  await testdriver.find('email field').type('user@example.com');
+  await testdriver.find('password field').type('SecurePass123!');
+  await testdriver.find('confirm password field').type('SecurePass123!');
+  await testdriver.find('terms checkbox').click();
+  await testdriver.find('Sign Up button').click();
+  
+  await testdriver.assert('Registration successful message appears');
+});
+```
+
+### Navigation Testing
+
+```javascript
+test('multi-page navigation', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com'
+  });
+  
+  // Navigate through pages
+  await testdriver.find('About link').click();
+  await testdriver.assert('About page heading is visible');
+  
+  await testdriver.find('Services link').click();
+  await testdriver.assert('Services page content is loaded');
+  
+  await testdriver.find('Contact link').click();
+  await testdriver.assert('Contact form is displayed');
+});
+```
+
+### Error Handling
+
+```javascript
+test('handles errors gracefully', async (context) => {
+  try {
+    const { testdriver } = await chrome(context, {
+      url: 'https://myapp.com'
+    });
+    
+    await testdriver.find('non-existent element').click();
+  } catch (error) {
+    // Cleanup still happens automatically via Vitest hooks
+    console.error('Test failed:', error);
+    throw error; // Re-throw to mark test as failed
+  }
+});
+```
+
+## Using with provision()
+
+The `chrome()` preset can also be called via the unified `provision()` function:
+
+```javascript
+import { provision } from 'testdriverai/presets';
+
+test('using provision', async (context) => {
+  const { testdriver } = await provision('chrome', {
+    url: 'https://example.com'
+  }, context);
+  
+  // Same functionality as chrome() directly
+});
+```
+
+## See Also
+
+- [Provision API](/v7/progressive-apis/PROVISION) - Overview of all presets
+- [VS Code Preset](/v7/presets/vscode) - Testing VS Code extensions
+- [Electron Preset](/v7/presets/electron) - Testing Electron apps
+- [Vitest Integration](/v7/guides/vitest) - Complete Vitest setup guide
+- [Hooks API](/v7/progressive-apis/HOOKS) - Manual lifecycle control

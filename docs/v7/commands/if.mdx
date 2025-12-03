@@ -1,0 +1,53 @@
+---
+title: "if"
+sidebarTitle: "if"
+description: "Conditionally execute commands based on a specified condition."
+icon: "split"
+mode: "wide"
+---
+
+## Description
+
+The `if` command is used to conditionally execute a set of commands based on whether a specified condition evaluates to true or false. If the condition is true, the commands in the `then` block are executed. Otherwise, the commands in the `else` block are executed.
+
+## Arguments
+
+|  Argument   |        Type        | Description                                                                   |
+| :---------: | :----------------: | :---------------------------------------------------------------------------- |
+| `condition` |      `string`      | The condition to evaluate.                                                    |
+|   `then`    | `list of commands` | The commands to run if the condition is true.                                 |
+|   `else`    | `list of commands` | The commands to run if the condition is false. It is an **optional command**. |
+
+## Example usage
+
+```yaml
+- prompt: click on sign up, if cookie banner appears close it
+  commands:
+    - command: if
+      condition: the text "Accept Cookies" is visible
+      then:
+        - command: hover-text
+          text: Accept Cookies
+          description: cookie banner button
+          action: click
+      else:
+        - command: hover-text
+          text: Sign Up
+          description: link in the header
+          action: click
+```
+
+## Protips
+
+- Ensure the `condition` is clearly defined and evaluates correctly to avoid unexpected behavior.
+- Use descriptive `then` and `else` blocks to handle both outcomes effectively.
+
+## Gotchas
+
+- The else block is optional, if the `condition` fails and there is no `else` block, the execution will continue from the next available command.
+- If the `condition` is invalid or can't be evaluated, the command will fail.
+- Ensure all commands in the `then` and `else` blocks are valid and properly formatted.
+
+---
+
+The `if` command is useful for creating conditional logic in your tests, allowing for more dynamic and flexible workflows.

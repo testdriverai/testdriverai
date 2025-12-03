@@ -1,0 +1,308 @@
+---
+title: "Linux"
+description: "Run TestDriver tests on Linux sandboxes (default platform)"
+icon: "linux"
+---
+
+## Overview
+
+Linux is the **default platform** for TestDriver sandboxes. All tests run on Ubuntu 22.04 unless otherwise specified.
+
+Linux sandboxes provide:
+- Fast startup times (20-60s)
+- Full desktop environment (XFCE)
+- Chrome, Firefox, and other browsers pre-installed
+- Support for all TestDriver commands
+- VNC access for debugging
+
+## Usage
+
+Linux is used automatically when you create a TestDriver instance:
+
+```javascript
+import { TestDriver } from '@testdriverai/testdriver';
+
+// Linux is the default - no os parameter needed
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY
+});
+```
+
+Or explicitly specify Linux:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'linux'  // Optional - this is the default
+});
+```
+
+## System Details
+
+### Operating System
+- **Distribution**: Ubuntu 22.04 LTS
+- **Desktop Environment**: XFCE
+- **Architecture**: x86_64 (amd64)
+
+### Pre-installed Software
+- **Browsers**: Chrome, Firefox ESR, Chrome for Testing
+- **Languages**: Node.js 20, Python 3, build-essential (C/C++)
+- **Development**: VS Code, Git, vim, nano
+- **Office**: LibreOffice, Gnumeric
+- **Graphics**: ImageMagick, xpaint, scrot, gnome-screenshot
+- **Utilities**: xterm, xdotool, gedit, xpdf, pcmanfm (file manager), galculator
+- **Desktop**: XFCE4 desktop environment, tint2 panel
+- **Tools**: curl, wget, unzip, net-tools, netcat, jumpapp
+- **Multimedia**: FFmpeg
+- **TestDriver**: Dashcam (v1.4.11-beta.0), dashcam-chrome
+
+### Default Resolution
+- **1366x768** (configurable via `resolution` parameter)
+
+## Configuration
+
+### Custom Resolution
+
+Set a custom screen resolution:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'linux',
+  resolution: '1280x720'  // HD
+});
+```
+
+Common resolutions:
+- `1366x768` - Default
+- `1920x1080` - Full HD
+- `1280x720` - HD
+- `2560x1440` - 2K
+- `3840x2160` - 4K
+
+### Environment Variables
+
+Set environment variables in the sandbox:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'linux',
+  env: {
+    NODE_ENV: 'test',
+    DEBUG: 'true'
+  }
+});
+```
+
+## Common Use Cases
+
+### Web Application Testing
+
+Test web apps in Chrome or Firefox:
+
+```javascript
+import { chrome } from './setup/lifecycleHelpers.mjs';
+import { test } from 'vitest';
+
+test('login flow', async (context) => {
+  const { testdriver } = await chrome(context, { 
+    url: 'https://example.com',
+    os: 'linux'  // Optional
+  });
+  
+  await testdriver.find('email field').then(el => el.click());
+  await testdriver.type('user@example.com');
+  
+  await testdriver.find('password field').then(el => el.click());
+  await testdriver.type('password123');
+  
+  await testdriver.find('login button').then(el => el.click());
+  await testdriver.assert('dashboard loaded');
+});
+```
+
+### Desktop Application Testing
+
+Test Electron or other desktop apps:
+
+```javascript
+import { electron } from './setup/lifecycleHelpers.mjs';
+import { test } from 'vitest';
+
+test('electron app', async (context) => {
+  const { testdriver } = await electron(context, {
+    appPath: '/path/to/app',
+    os: 'linux'
+  });
+  
+  await testdriver.find('menu button').then(el => el.click());
+  await testdriver.find('settings').then(el => el.click());
+});
+```
+
+### Command-Line Tools
+
+Run shell commands in the sandbox:
+
+```javascript
+test('install and test CLI tool', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'linux' });
+  
+  // Install tool
+  await testdriver.exec('sh', 'npm install -g my-cli-tool', 30000);
+  
+  // Run tool
+  const result = await testdriver.exec('sh', 'my-cli-tool --version', 5000);
+  console.log('Tool version:', result);
+});
+```
+
+## Package Management
+
+### APT (Debian/Ubuntu)
+
+Install system packages:
+
+```javascript
+// Install dependencies
+await testdriver.exec('sh', 
+  'sudo apt-get update && sudo apt-get install -y imagemagick',
+  60000
+);
+
+// Use installed package
+await testdriver.exec('sh', 
+  'convert input.png -resize 50% output.png',
+  10000
+);
+```
+
+### NPM/Node.js
+
+Install Node.js packages:
+
+```javascript
+// Install package globally
+await testdriver.exec('sh', 'npm install -g typescript', 30000);
+
+// Or in project directory
+await testdriver.exec('sh', 'cd /tmp/project && npm install', 60000);
+```
+
+### Python/Pip
+
+Install Python packages:
+
+```javascript
+await testdriver.exec('sh', 'pip3 install requests', 30000);
+```
+
+## Debugging
+
+### VNC Access
+
+Connect to sandbox desktop via VNC:
+
+```javascript
+const instance = testdriver.getInstance();
+console.log('VNC:', `vnc://${instance.ip}:${instance.vncPort}`);
+
+// Use VNC client to connect and watch tests run
+```
+
+### Screenshots
+
+Take screenshots for debugging:
+
+```javascript
+const element = await testdriver.find('error message');
+if (element.found()) {
+  console.log('Screenshot:', element.screenshot);  // base64
+}
+```
+
+### Logs
+
+Access sandbox logs:
+
+```javascript
+// Run command and capture output
+const logs = await testdriver.exec('sh', 'tail -f /var/log/syslog', 5000);
+console.log('System logs:', logs);
+```
+
+## Performance
+
+### Startup Time
+- **First test**: 20-60s (sandbox creation)
+- **Subsequent tests**: 0s (sandbox reuse)
+
+### Optimization Tips
+- Reuse sandboxes across tests (use context)
+- Enable caching for faster element finding
+- Use parallel test execution
+- Minimize package installations
+
+See [Performance Guide](/v7/guides/performance) for details.
+
+## Limitations
+
+### No Root Access
+Sandboxes run with limited privileges. Some operations requiring root may fail.
+
+**Workaround**: Use `sudo` for commands that need elevation (already configured).
+
+### Temporary Storage
+Files are not persisted between sandbox sessions unless explicitly saved.
+
+**Workaround**: Upload files at test start or use external storage.
+
+### Network Restrictions
+Some outbound ports may be blocked for security.
+
+**Workaround**: Use standard HTTP/HTTPS (80/443) ports.
+
+## Troubleshooting
+
+### Package Installation Fails
+
+```javascript
+// Update package lists first
+await testdriver.exec('sh', 'sudo apt-get update', 30000);
+await testdriver.exec('sh', 'sudo apt-get install -y package-name', 60000);
+```
+
+### Display Issues
+
+```javascript
+// Set DISPLAY variable
+await testdriver.exec('sh', 'export DISPLAY=:0', 1000);
+```
+
+### Permission Denied
+
+```javascript
+// Use sudo for system operations
+await testdriver.exec('sh', 'sudo chmod +x /path/to/file', 5000);
+```
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Windows" icon="windows" href="/v7/platforms/windows">
+    Windows sandboxes (Enterprise)
+  </Card>
+  
+  <Card title="macOS" icon="apple" href="/v7/platforms/macos">
+    macOS sandboxes (Beta)
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/v7/getting-started/configuration">
+    Sandbox configuration
+  </Card>
+  
+  <Card title="Self-Hosting" icon="server" href="/v7/guides/self-hosting">
+    Run your own sandboxes
+  </Card>
+</CardGroup>

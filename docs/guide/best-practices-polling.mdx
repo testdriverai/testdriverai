@@ -1,0 +1,154 @@
+# Best Practices: Element Polling
+
+**⚠️ CRITICAL: Never use `wait()` for waiting for elements to appear.**
+
+## Why Avoid `wait()`?
+
+Arbitrary waits with `wait()` have several problems:
+
+1. **Brittle**: Fixed timeouts may be too short (causing flaky tests) or too long (wasting time)
+2. **Slow**: You always wait the full duration, even if the element appears sooner
+3. **Unreliable**: Network conditions, system load, and other factors affect timing
+4. **Hard to debug**: When tests fail, you don't know if it was a timing issue or actual failure
+
+## The Right Way: Element Polling with `find()`
+
+TestDriver's `find()` method is designed for element detection. Use it in a polling loop to wait for elements:
+
+### Basic Polling Pattern
+
+```javascript
+// ❌ WRONG: Using wait()
+await testdriver.wait(2000);
+const button = await testdriver.find("Submit button");
+
+// ✅ CORRECT: Polling with find()
+let button;
+for (let i = 0; i < 10; i++) {
+  try {
+    button = await testdriver.find("Submit button");
+    if (button.found()) break;
+  } catch (e) {
+    if (i === 9) throw e; // Re-throw on last attempt
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+```
+
+### Helper Function for Polling
+
+Create a reusable helper function:
+
+```javascript
+async function waitForElement(testdriver, description, maxAttempts = 10, delayMs = 1000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const element = await testdriver.find(description);
+      if (element.found()) {
+        return element;
+      }
+    } catch (e) {
+      if (i === maxAttempts - 1) throw e;
+    }
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  throw new Error(`Element not found after ${maxAttempts} attempts: ${description}`);
+}
+
+// Usage
+const emailField = await waitForElement(testdriver, "Email input field");
+await emailField.click();
+```
+
+## When to Use Polling
+
+Use element polling in these scenarios:
+
+- **After navigation**: Waiting for a new page to load
+- **After user action**: Waiting for UI updates (form submission, modal opening, etc.)
+- **Dynamic content**: Waiting for AJAX-loaded elements
+- **State transitions**: Waiting for loading spinners to disappear or success messages to appear
+
+## Example: Complete Login Flow
+
+```javascript
+import { chrome } from "testdriverai/presets";
+
+// Helper function
+async function waitForElement(testdriver, description, maxAttempts = 10, delayMs = 1000) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const element = await testdriver.find(description);
+      if (element.found()) return element;
+    } catch (e) {
+      if (i === maxAttempts - 1) throw e;
+    }
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  throw new Error(`Element not found after ${maxAttempts} attempts: ${description}`);
+}
+
+it("should log in successfully", async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com/login',
+  });
+
+  // Wait for login page to load
+  const emailField = await waitForElement(testdriver, "Email input field");
+  await emailField.click();
+  await testdriver.type("user@example.com");
+
+  const passwordField = await testdriver.find("Password input field");
+  await passwordField.click();
+  await testdriver.type("password123");
+
+  const loginButton = await testdriver.find("Login button");
+  await loginButton.click();
+
+  // Wait for dashboard to load after login
+  await waitForElement(testdriver, "Dashboard welcome message");
+  
+  // Verify login successful
+  const isLoggedIn = await testdriver.assert("user is logged in to dashboard");
+  expect(isLoggedIn).toBeTruthy();
+});
+```
+
+## Advanced: Conditional Polling
+
+For elements that may or may not appear (like dialogs or notifications):
+
+```javascript
+// Try to find and dismiss optional dialog
+try {
+  const dialog = await waitForElement(testdriver, "Cookie consent dialog", 3, 500);
+  const acceptButton = await testdriver.find("Accept button");
+  await acceptButton.click();
+  console.log("Dismissed cookie dialog");
+} catch {
+  console.log("No cookie dialog found, continuing...");
+}
+```
+
+## Configuration
+
+Adjust polling parameters based on your needs:
+
+```javascript
+// Quick polling for fast UI updates (check every 300ms, up to 3 seconds)
+await waitForElement(testdriver, "Success message", 10, 300);
+
+// Patient polling for slow operations (check every 2s, up to 20 seconds)
+await waitForElement(testdriver, "Processing complete indicator", 10, 2000);
+```
+
+## Summary
+
+| Pattern | Use Case |
+|---------|----------|
+| **Polling with `find()`** | ✅ Waiting for UI elements to appear or disappear |
+| **`wait()`** | ❌ NEVER use for element waiting |
+| **Helper function** | ✅ Recommended for cleaner, reusable code |
+| **Conditional polling** | ✅ For optional elements (dialogs, notifications) |
+
+Remember: **If you're waiting for something to appear on screen, use `find()` in a polling loop, not `wait()`.**

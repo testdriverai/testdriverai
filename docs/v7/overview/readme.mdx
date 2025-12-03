@@ -1,0 +1,135 @@
+# TestDriver v7 SDK Documentation
+
+This directory contains the documentation for TestDriver v7, which introduces the JavaScript SDK as the primary interface for writing tests.
+
+## Structure
+
+```
+v7/
+├── getting-started/
+│   └── quickstart.mdx          # Quick start guide for the SDK
+├── api/
+│   ├── client.mdx              # TestDriver client initialization and connection
+│   ├── elements.mdx            # Element finding and interaction
+│   ├── sandbox.mdx             # Sandbox management and script execution
+│   ├── interactions.mdx        # Keyboard, mouse, and scrolling
+│   └── assertions.mdx          # AI-powered assertions and testing
+└── guides/
+    └── migration.mdx           # Migration guide from YAML to SDK
+```
+
+## Documentation Coverage
+
+### Getting Started
+- **Quickstart**: Complete setup and first test example using the `assert.test.mjs` pattern
+  - Installation
+  - Authentication
+  - Basic test structure with Vitest
+  - Sandbox connection
+
+### API Reference
+
+#### Client (`/v7/api/client.mdx`)
+- Constructor and initialization
+- `auth()` - Authentication
+- `connect()` - Sandbox connection with all options
+- `disconnect()` - Cleanup
+- Instance management (`getInstance()`, `getSessionId()`)
+- Logging and events (`setLogging()`, `getEmitter()`)
+
+#### Elements (`/v7/api/elements.mdx`)
+- `find()` - AI-powered element location
+- Element class methods:
+  - `found()` - Check if located
+  - `click()`, `hover()`, `doubleClick()`, `rightClick()`
+  - `mouseDown()`, `mouseUp()` - For drag operations
+- Element properties:
+  - Coordinates (`x`, `y`, `centerX`, `centerY`)
+  - Visual data (`screenshot`, `width`, `height`, `boundingBox`)
+  - Content (`text`, `label`, `confidence`)
+- Polling patterns for dynamic elements
+
+#### Sandbox (`/v7/api/sandbox.mdx`)
+- `exec()` - Execute code in sandbox
+  - JavaScript execution (browser context)
+  - PowerShell execution (Windows commands)
+- `focusApplication()` - Window management
+- Common operations:
+  - Software installation
+  - File operations
+  - Environment variables
+  - Network operations
+  - Process management
+  - Browser automation
+
+#### Interactions (`/v7/api/interactions.mdx`)
+- `type()` - Text input
+- `pressKeys()` - Keyboard shortcuts and special keys
+- `click()` / `hover()` - Coordinate-based mouse actions
+- `scroll()` - Page scrolling
+- `scrollUntilText()` / `scrollUntilImage()` - Scroll until found
+- Keyboard key reference
+
+#### Assertions (`/v7/api/assertions.mdx`)
+- `assert()` - AI-powered assertions
+  - Basic assertions
+  - Negative assertions (invert parameter)
+  - Async assertions
+- `remember()` - Extract information from screen
+- Testing patterns:
+  - Polling assertions
+  - Multi-step validation
+  - Soft assertions
+- Best practices
+
+### Guides
+
+#### Migration (`/v7/guides/migration.mdx`)
+- Why migrate from YAML to SDK
+- Basic structure comparison
+- Complete command mapping:
+  - Element location
+  - Typing and keyboard
+  - Scrolling
+  - Assertions
+  - Code execution
+  - Application focus
+- Advanced patterns:
+  - Variables and data reuse
+  - Conditional logic
+  - Loops
+  - Data-driven tests
+- Lifecycle hooks comparison
+- Migration checklist
+- Common pitfalls
+- Complete example migration
+
+## Integration with docs.json
+
+The v7 documentation is integrated into `docs/docs.json` under the "Computer-Use SDK" tab with version "7.0.0 (SDK)", distinguishing it from the YAML-based "6.X.X (YAML)" documentation.
+
+## Examples Used
+
+The documentation uses examples from:
+- `testdriver/acceptance-sdk/assert.test.mjs` - Basic assertion test
+- `testdriver/acceptance-sdk/type.test.mjs` - Typing and form interaction
+- `testdriver/acceptance-sdk/focus-window.test.mjs` - Application focus
+- Other SDK test files for complete examples
+
+## Key Documentation Features
+
+1. **Practical Examples**: Every method includes working code examples
+2. **Best Practices**: Accordion sections with tips and patterns
+3. **Migration Support**: Complete YAML-to-SDK migration guide
+4. **Type Safety**: Parameter documentation with types
+5. **Real Test Patterns**: Examples based on actual test files
+6. **Comprehensive Coverage**: All major SDK features documented
+
+## Next Steps
+
+Consider adding:
+- `/v7/guides/best-practices.mdx` - Detailed best practices
+- `/v7/guides/examples.mdx` - Complete test suite examples
+- `/v7/guides/debugging.mdx` - Debugging techniques
+- `/v7/guides/ci-cd.mdx` - CI/CD integration guide
+- `/v7/api/keyboard-keys.mdx` - Complete keyboard key reference

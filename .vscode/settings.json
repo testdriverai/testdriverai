@@ -6,5 +6,9 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "yaml.schemas": {
     "https://raw.githubusercontent.com/testdriverai/testdriverai/main/schema.json": "file:///Users/kid/Desktop/td/internal/testdriverai/testdriver.yaml"
-  }
+  },
+  "vitest.enable": true,
+  "vitest.commandLine": "npx vitest --watch",
+  "vitest.include": ["**/testdriver/acceptance-sdk/*.test.mjs"],
+  "vitest.exclude": []
 }

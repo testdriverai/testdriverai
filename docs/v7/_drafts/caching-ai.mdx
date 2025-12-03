@@ -1,0 +1,215 @@
+---
+title: "AI Prompt Caching"
+sidebarTitle: "AI Caching"
+description: "How TestDriver caches AI-generated YAML commands for faster tests"
+icon: "bolt"
+---
+
+## Overview
+
+The Prompt Cache stores AI-generated YAML commands locally, so repeated `.ai()` calls with the same prompt skip the AI entirely.
+
+This provides:
+- ⚡ **Instant execution** - No AI call needed
+- 💰 **Cost savings** - Reduces API usage
+- 🔌 **Offline testing** - Works without network
+- 🎯 **Deterministic** - Same prompt = same commands
+
+## How It Works
+
+<Steps>
+  <Step title="First Call">
+    ```javascript
+    await testdriver.ai('click the submit button');
+    ```
+    
+    - Sends prompt + screenshot to AI
+    - Receives YAML commands
+    - Saves to `.testdriver/.cache/{prompt-hash}.yaml`
+  </Step>
+  
+  <Step title="Subsequent Calls">
+    ```javascript
+    await testdriver.ai('click the submit button');
+    ```
+    
+    - Checks cache first
+    - Finds matching cached YAML
+    - Uses cached commands (no AI call)
+    - Shows `(using cached response)` in output
+  </Step>
+</Steps>
+
+## Cache Location
+
+Cached prompts are stored locally in your project:
+
+```
+.testdriver/
+  .cache/
+    click-the-submit-button-a1b2c3d4.yaml
+    find-login-form-e5f6a7b8.yaml
+    verify-dashboard-c9d0e1f2.yaml
+```
+
+Files are named using:
+- Sanitized prompt (first 50 chars, alphanumeric)
+- MD5 hash of full prompt for uniqueness
+
+## Cache Matching
+
+The prompt cache uses **exact text matching**:
+- Case-insensitive comparison
+- Whitespace trimmed
+- No screenshot comparison
+
+```javascript
+// These all match the same cache entry:
+await testdriver.ai('click the submit button');
+await testdriver.ai('CLICK THE SUBMIT BUTTON');
+await testdriver.ai('  click the submit button  ');
+
+// This creates a new cache entry:
+await testdriver.ai('click the submit btn'); // Different text
+```
+
+## Disabling Prompt Cache
+
+Bypass the cache for a specific call:
+
+```javascript
+// Force fresh AI call, bypass cache
+await testdriver.ai('click the submit button', false);
+
+// These use cache (default)
+await testdriver.ai('click the submit button');
+await testdriver.ai('click the submit button', true);
+```
+
+## Clearing Prompt Cache
+
+Clear all cached prompts:
+
+```bash
+rm -rf .testdriver/.cache/*.yaml
+```
+
+Or programmatically:
+
+```javascript
+const promptCache = require('testdriverai/agent/lib/cache.js');
+promptCache.clearCache();
+```
+
+## Usage Examples
+
+### Basic Caching
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('login flow', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/login'
+  });
+  
+  // First call: AI generates commands, saves to cache
+  await testdriver.ai('click the login button');
+  
+  // Run test again - uses cache (instant)
+  // Look for: "(using cached response)" in output
+});
+```
+
+### Bypassing Cache
+
+```javascript
+test('always fresh', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+  
+  // Always get fresh AI response
+  await testdriver.ai('analyze the current state', false);
+});
+```
+
+## Best Practices
+
+### 1. Use Consistent Prompts
+
+```javascript
+// ✅ Good - consistent prompt
+await testdriver.ai('fill out the login form');
+await testdriver.ai('fill out the login form'); // Cache hit
+
+// ❌ Bad - different prompts
+await testdriver.ai('fill out the login form');
+await testdriver.ai('complete the login form'); // Cache miss
+```
+
+### 2. Clear Cache When Test Logic Changes
+
+If you update your test prompts, clear the cache:
+
+```bash
+rm -rf .testdriver/.cache/*.yaml
+```
+
+### 3. Don't Commit Cache to Git
+
+Add to `.gitignore`:
+
+```gitignore
+.testdriver/.cache/
+```
+
+### 4. Version Control Consideration
+
+While you _can_ commit cached prompts for team consistency, it's generally not recommended because:
+- AI responses may improve over time
+- Different team members may need different cached results
+- Cache files can become stale
+
+## Cache Storage Details
+
+| Property | Value |
+|----------|-------|
+| Location | Local (`.testdriver/.cache/`) |
+| Persistence | Until manually cleared |
+| Scope | Per-project |
+| Matching | Exact prompt text (case-insensitive) |
+| Expiration | Never |
+
+## Troubleshooting
+
+### Cache Not Working
+
+Check:
+1. Prompts match exactly (case-insensitive)
+2. `.testdriver/.cache/` directory exists and is writable
+3. `TD_NO_PROMPT_CACHE` environment variable is not set
+
+### Stale Cache Data
+
+If AI responses seem outdated:
+
+```bash
+# Clear all cached prompts
+rm -rf .testdriver/.cache/*.yaml
+```
+
+Or clear specific prompts:
+
+```bash
+# Find cache files
+ls -la .testdriver/.cache/
+
+# Delete specific cache file
+rm .testdriver/.cache/click-the-submit-button-*.yaml
+```
+
+## See Also
+
+- [Selector Caching](/v7/guides/caching-selectors) - Cache element locations
+- [`.ai()` Method](/v7/api/ai) - AI command generation
+- [Vitest Integration](/v7/guides/vitest) - Testing with TestDriver

@@ -1,0 +1,282 @@
+---
+title: "exec"
+sidebarTitle: "exec"
+description: "Execute custom shell or Node.js scripts within your tests."
+icon: "code"
+mode: "wide"
+---
+
+import Replay from "/snippets/tests/exec-shell-replay.mdx";
+import Example from "/snippets/tests/exec-shell-yaml.mdx";
+
+<Replay />
+<Example />
+
+## Description
+
+The `exec` command allows you to execute custom Node.js scripts within your TestDriver tests. This is useful for tasks like generating dynamic data, interacting with APIs, or performing custom logic during a test. The output of the script can be stored in a variable for use in subsequent steps. It's important to note that the output from `exec` must be a `string`.
+
+## Arguments
+
+| Argument |   Type   | Description                                                                                                                                                                        |
+| :------: | :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  `lang`  | `string` | The language of the script to execute. Supported values are `pwsh` and `js`.                                                                                                       |
+| `output` | `string` | The variable name to store the result of the script. This variable can be accessed as `${OUTPUT.<var>}` in future steps.                                                           |
+|  `code`  | `string` | The script to execute on Windows systems. For `js`, the script must define the output as `result`.                                                                                 |
+| `silent` | `string` | Defaults to `false`. The command will print the output of the script. This is useful for suppressing unnecessary or private output in the test logs and it's useful for debugging. |
+
+## Example usage
+
+This example demonstrates how to use the `exec` command to generate a TOTP (Time-based One-Time Password) using the `totp-generator` library.
+
+```yaml otp-generator.yaml
+version: 6.0.0
+steps:
+  - commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          npm install totp-generator
+      - command: exec
+        lang: js
+        output: totp
+        code: |
+          const { TOTP } = require("totp-generator");
+          let otp = TOTP.generate("JBSWY3DPEB3W64TMMQQQ").otp;
+          console.log(otp);
+          result = otp;
+      - command: type
+        text: ${OUTPUT.totp}
+```
+
+## Additional details
+
+- Supported `lang` values are `js` or `pwsh`:
+  - `js` code is executed in a Node.js [VM](https://nodejs.org/api/vm.html) internally on the host machine (for example the machine where your CI/CD runs, or your computer if using the local agent).
+  - `pwsh` code is executed in the shell on target runner (which can be the cloud runner, local sandbox, or local machine, depending on where you run your tests).
+    - **Note:** You can also use `pwsh` in [lifecycle](/guide/lifecycle) scripts to install npm packages if you need them.
+    - Otherwise, the `pwsh` code can be used within test steps to launch applications or perform simple commands (like writing text to a file on the machine to perform a simple file upload).
+- The `output`argument is assigned automatically by setting `result = somestringvalue` in the script you run.
+
+## Protips
+
+- The `result` variable is already available in your script, overwrite it to store the output as shown in the examples.
+- Do any handling of arrays or nested objects within your `js` script:
+  - ✅ `result = users[1].profile.firstName`
+  - ✅ `result = data.length > 0 ? data[0].userEmail : 'no user found'` if no data is found the value of output will be `null`
+  - ✅ `result = someTestUserEmail`
+  - ✅ `result = someTextToAssert`
+  - ✅ `result = someDescriptionOfAnImageToScrollTo`
+- Don't try to pass any non-string values to `output`:
+  - ❌ `result = [...users, ...values]`
+  - ❌ `result = {name: "Dale Earnhardt", starts: 676, wins: 76}`
+  - ❌ `result = [{user1: ...}, {user2: ...}]`
+
+---
+
+## Ways to use `exec`
+
+Here is an example using both `pwsh` and `js` contexts within a `prerun.yaml` script which creates a temporary email account and automatically clicks links found in received emails.
+
+```yaml ./lifecycle/prerun.yaml [expandable]
+version: 6.0.0
+steps:
+  - commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          npm install @sendgrid/mail
+      - command: exec
+        lang: js
+        output: accountData
+        code: |
+          const Mailjs = require("@cemalgnlts/mailjs");
+          const mailjs = new Mailjs();
+          let account = await mailjs.createOneAccount()
+          console.log("Account created:", account);
+          result = JSON.stringify(account.data)
+      - command: exec
+        lang: js
+        output: emailAddress
+        code: |
+          const accountData = ${OUTPUT.accountData};
+          result = accountData.username
+  - prompt: Enter the generated email into the email field
+    commands:
+      - command: hover-text
+        text: standard_user
+        description: email input field label
+        action: click
+      - command: type
+        text: ${OUTPUT.emailAddress}
+  - prompt: Wait for an email, extract links, and open each link
+    commands:
+      - command: exec
+        lang: js
+        code: |
+          const Mailjs = require("@cemalgnlts/mailjs");
+          const { JSDOM } = require('jsdom'); // To parse HTML and extract links
+
+          const accountData = ${OUTPUT.accountData};
+
+          const getLatestEmailAndClickLinks = async () => {
+            try {
+              // Initialize the Mailjs client
+              const mailjs = new Mailjs();
+
+              // Login to your account
+              await mailjs.login(accountData.username, accountData.password);
+
+              // Fetch list of messages
+              const messages = await mailjs.getMessages();
+
+              if (messages.length === 0) {
+                console.log('No emails found.');
+                return;
+              }
+
+              // Assuming the latest email is the first one in the list
+              const latestMessage = messages[0];
+
+              // Fetch the full details of the latest email
+              const fullMessage = await mailjs.getMessage(latestMessage.id);
+
+              console.log('Latest Email Details:', fullMessage);
+
+              // Parse the HTML content to extract links
+              const dom = new JSDOM(fullMessage.html);
+              const links = Array.from(dom.window.document.querySelectorAll('a')).map(a => a.href);
+
+              console.log('Found Links:', links);
+
+              // Click (fetch) every link using native fetch
+              for (const link of links) {
+                try {
+                  const response = await fetch(link);
+                  console.log('Clicked ${link}: ${response.status}');
+                } catch (linkError) {
+                  console.error('Error clicking ${link}:', linkError);
+                }
+              }
+
+            } catch (error) {
+              console.error('Error fetching latest email or clicking links:', error);
+            }
+          };
+
+          getLatestEmailAndClickLinks();
+```
+
+### Using `exec` pwsh commands in a test file
+
+In a test file, you can use the `pwsh` context directly:
+
+```yaml calculator.yaml highlight={5-8} [expandable]
+version: 6.0.0
+steps:
+  - prompt: launch a calculator
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          start /B calc.exe
+          timeout /t 5
+      - command: wait-for-text
+        text: "calculator"
+        timeout: 30000
+  - prompt: performing the operation 2 + 2 = on the calculator that is opened
+    commands:
+      - command: focus-application
+        name: galculator
+      - command: hover-image
+        description: button with number 2 on the calculator
+        action: click
+      - command: hover-image
+        description: plus button on the calculator
+        action: click
+      - command: hover-image
+        description: button with number 2 on the calculator
+        action: click
+      - command: hover-image
+        description: equals button on the calculator
+        action: click
+```
+
+### One more option
+
+You can also save reusable snippets (like launching the calculator) to be inserted into a script later with the [`run`](/commands/run) command. That version would look something like this:
+
+```yaml snippets/launch-calculator.yaml [expandable]
+version: 6.0.0
+steps:
+  - prompt: launch a calculator
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+        start /B calc.exe
+          timeout /t 5
+      - command: wait-for-text
+        text: "calculator"
+        timeout: 30000
+```
+
+Then in the test:
+
+```yaml calculator.yaml highlight={5-6} [expandable]
+version: 6.0.0
+steps:
+  - prompt: launch a calculator
+    commands:
+      - command: run
+        file: snippets/launch-calculator.yaml
+  - prompt: performing the operation 2 + 2 = on the calculator that is opened
+    commands:
+      - command: focus-application
+        name: galculator
+      - command: hover-image
+        description: button with number 2 on the calculator
+        action: click
+      - command: hover-image
+        description: plus button on the calculator
+        action: click
+      - command: hover-image
+        description: button with number 2 on the calculator
+        action: click
+      - command: hover-image
+        description: equals button on the calculator
+        action: click
+```
+
+### Don't try to run `js` within a test field
+
+This example will fail at runtime, so don't try to execute `js` context directly in a test file. Remember - use this in `prerun` to setup your test!
+
+```yaml badtestfile.yaml [expandable]
+version: 6.0.0
+commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          npm install -g axios json2csv
+  - prompt: fetch user data from API
+    commands:
+      - command: exec
+        output: user
+        lang: js
+        code: |
+          const axios = require('axios');
+          const { Parser } = require('json2csv');
+          const fs = require('fs');
+
+          const response = await axios.get('https://jsonplaceholder.typicode.com/users');
+          const parser = new Parser();
+          const csv = parser.parse(response.data);
+          fs.writeFileSync('users.csv', csv);
+          const user = response.data[0].name;
+          result = user;
+          console.log('username', user);
+    ...
+```
+
+This example will produce errors in the TestDriver output or CLI since the runner won't have access to the Node.js VM context.

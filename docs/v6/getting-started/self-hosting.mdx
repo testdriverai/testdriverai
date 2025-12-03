@@ -1,0 +1,408 @@
+---
+title: "Self-Hosting TestDriver"
+sidebarTitle: "Self-Hosting"
+description: "Complete guide to self-hosting TestDriver instances on AWS"
+icon: "server"
+---
+
+```mermaid
+graph LR
+    A[CLI] <--> B[api.testdriver.ai]
+    B <--> C[Your AWS EC2 Instance]
+```
+
+Self-hosting TestDriver allows you to run tests on your own infrastructure, giving you full control over the environment, security, and configurations. This guide walks you through setting up and managing self-hosted TestDriver instances using AWS.
+
+## Why self host?
+
+Self-hosting TestDriver gives you complete control over your test execution environment:
+
+- **Enhanced security**: Get complete control over ingress and egress rules.
+- **Complete customization**: Modify the TestDriver Golden Image (our pre-configured AMI) to include custom dependencies, software, and configurations at launch time.
+- **Powerful Infrastructure**: Run tests on bare metal infrastructure that support emulators and simulators.
+
+You'll use the [TestDriver CLI repository](https://github.com/testdriverai/cli) which contains all the infrastructure templates and setup scripts needed for self-hosting.
+
+## Overview
+
+By the end of this guide, you'll have a complete self-hosted testing infrastructure that can:
+
+- Spawn TestDriver instances on-demand in your AWS account
+- Run tests on your own AWS infrastructure with custom configurations
+- Integrate seamlessly with GitHub Actions CI/CD workflows
+- Automatically clean up resources after test completion
+
+The setup process involves three main steps:
+
+1. **CloudFormation Infrastructure**: Deploy our `setup/aws/cloudformation.yaml` template to create the foundational AWS resources (VPC, security groups, IAM roles, and a launch template for instance creation).
+2. **On-Demand Instance Spawning**: Use `setup/aws/spawn-runner.sh` with your Launch Template ID to programmatically spawn TestDriver instances whenever you need to run tests.
+3. **GitHub Actions Integration**: Use `.github/workflows/self-hosted.yml` as a template for running tests in CI. This workflow demonstrates the complete lifecycle: spawning an instance, running tests, and shutting down the instance to minimize costs.
+
+## Prerequisites
+
+- AWS account with permissions to run CloudFormation.
+- [AWS CLI](https://aws.amazon.com/cli/) installed locally.
+
+  <Tip>
+    Be sure to run `aws configure` with your credentials
+  </Tip>
+- Access to the TestDriver AMI (Golden Image is `ami-086b5b4b86d78987c`)\
+  [Contact us with your preferred AWS Region for access](https://form.typeform.com/to/UECf9rDx?typeform-source=testdriver.ai).
+- A GitHub repository for committing your tests & workflow.
+
+## Step 1: Set Up AWS Infrastructure
+
+### Deploy CloudFormation Stack
+
+Our [`setup/aws/cloudformation.yaml`](https://github.com/testdriverai/cli/tree/main/setup/aws/cloudformation.yaml) template creates:
+
+- Dedicated VPC with public subnet
+- Security group with proper port access
+- IAM roles and instance profiles
+- EC2 launch template for programmatic instance creation
+
+This is a one-time setup used to generate a template ID for launching instances.
+
+```bash
+# Deploy the CloudFormation stack
+aws cloudformation deploy \
+  --template-file setup/aws/cloudformation.yaml \
+  --stack-name my-testdriver-infrastructure \
+  --parameter-overrides \
+    ProjectTag=testdriver \
+    AllowedIngressCidr=0.0.0.0/0 \
+    InstanceType=c5.xlarge \
+    CreateKeyPair=true \
+  --capabilities CAPABILITY_IAM
+```
+
+<Danger>
+  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to lock down access to your VPC.
+</Danger>
+
+### Get Launch Template ID
+
+After CloudFormation completes, find the launch template ID in the stack outputs:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name my-testdriver-infrastructure \
+  --query 'Stacks[0].Outputs[?OutputKey==`LaunchTemplateId`].OutputValue' \
+  --output text
+```
+
+<Tip>
+  **Save this ID** – you'll need it for the next step.
+</Tip>
+
+## Step 2: Spawn a New TestDriver Runner
+
+This step is performed **every time you want to run tests**. The `spawn-runner.sh` script launches a new EC2 instance on-demand for test execution.
+
+### Using spawn-runner.sh
+
+Our [`setup/aws/spawn-runner.sh`](https://github.com/testdriverai/cli/tree/main/setup/aws/spawn-runner.sh) script:
+
+- Launches a new EC2 instance using your launch template from Step 1
+- Waits for the instance to become ready
+- Completes the TestDriver handshake
+- Returns instance details (IP, instance ID) for CLI usage
+
+The script accepts parameters as either environment variables or CLI arguments:
+
+```bash
+# Launch an instance using environment variables
+export AWS_REGION=us-east-2
+export AMI_ID=ami-••••••••••  # Your TestDriver AMI (contact us to get one)
+export AWS_LAUNCH_TEMPLATE_ID=lt-••••••••••  # From CloudFormation output from step 1
+export RESOLUTION=1440x900 # Change screen resolution if desired (default is 1440x900)
+
+/bin/bash ./setup/aws/spawn-runner.sh
+```
+
+The script outputs:
+
+```
+PUBLIC_IP=1.2.3.4
+INSTANCE_ID=i-1234567890abcdef0
+AWS_REGION=us-east-2
+```
+
+<Note>
+  **Instance Lifecycle**: Instances spawned by this script will continue running until you manually terminate them. They are automatically tagged with `Name=TestDriverRunner` and `Project=[your ProjectTag value]` for easy identification in the AWS console.
+</Note>
+
+#### Changing Resolution in Lifecycle Files
+
+You can also change the resolution before running tests by adding an [`exec`](/commands/exec) command in your `lifecycle/provision.yaml` file:
+
+```yaml lifecycle/provision.yaml
+version: 6.0.0
+steps:
+  - prompt: set screen resolution
+    commands:
+      - command: exec
+        lang: pwsh
+        code: |
+          C:\testdriver\SetResolution.ps1 -Width 1920 -Height 1080
+```
+
+This approach is useful when you need different resolutions for different test scenarios. See the [Lifecycle Files documentation](/guide/lifecycle) for more information about provision scripts.
+
+### CLI Usage
+
+Once you have an instance IP, run tests directly:
+
+```bash
+# Basic test execution
+npx testdriverai@latest run test.yaml --ip=1.2.3.4
+```
+
+You can use the `PUBLIC_IP` to target the instance you just spawned via `./setup/aws/spawn-runner.sh`:
+
+```sh
+npx testdriverai@latest run testdriver/your-test.yaml \
+  --ip="$PUBLIC_IP" \
+```
+
+### Terminating Instances
+
+After your tests complete, terminate the instance to avoid unnecessary costs:
+
+```bash
+# Terminate the instance
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region $AWS_REGION
+```
+
+You can also terminate instances manually through the AWS console by searching for instances tagged with `Name=TestDriverRunner`.
+
+## Step 3: GitHub Actions Integration
+
+This step shows you how to automate the entire test lifecycle in CI/CD.
+
+### Example Workflow
+
+Our [`.github/workflows/self-hosted.yml`](https://github.com/testdriverai/cli/tree/main/.github/workflows/self-hosted.yml) demonstrates the complete workflow: spawning an EC2 instance, running your tests, and shutting down the instance automatically to minimize costs.
+
+The workflow uses the GitHub secrets you configure (see below) to authenticate with AWS and spawn instances on-demand:
+
+```yaml
+name: TestDriver Self-Hosted
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup AWS Instance
+        id: aws-setup
+        run: |
+          OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr)
+          PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
+          INSTANCE_ID=$(echo "$OUTPUT" | grep "INSTANCE_ID=" | cut -d'=' -f2)
+          echo "public-ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "instance-id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_LAUNCH_TEMPLATE_ID: ${{ secrets.AWS_LAUNCH_TEMPLATE_ID }}
+          AMI_ID: ${{ secrets.AMI_ID }}
+
+      - name: Run TestDriver
+        run: |
+          npx testdriverai run your-test.yaml \
+            --ip="${{ steps.aws-setup.outputs.public-ip }}"
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+      - name: Shutdown AWS Instance
+        if: always()
+        run: |
+          aws ec2 terminate-instances \
+            --region ${{ secrets.AWS_REGION }}
+            --instance-ids ${{ steps.aws-setup.outputs.instance-id }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+		  AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+```
+
+### Required Secrets
+
+Configure these secrets in your GitHub repository:
+
+| Secret                   | Description                         | Example                                                      |
+| ------------------------ | ----------------------------------- | ------------------------------------------------------------ |
+| `AWS_ACCESS_KEY_ID`      | AWS access key                      | `AKIAIOSFODNN7EXAMPLE`                                       |
+| `AWS_REGION`             | AWS Region                          | `us-east-2`                                                  |
+| `AWS_SECRET_ACCESS_KEY`  | AWS secret key                      | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`                   |
+| `AWS_LAUNCH_TEMPLATE_ID` | Launch template from CloudFormation | `lt-07c53ce8349b958d1`                                       |
+| `AMI_ID`                 | TestDriver AMI ID                   | `ami-086b5b4b86d78987c`                                      |
+| `TD_API_KEY`             | TestDriver API key                  | Your API key from [the dashboard](https://app.testdriver.ai) |
+
+## AMI Customization
+
+### Using the Base AMI
+
+Our TestDriver Golden Image (AMI) comes pre-configured with everything you need to run tests:
+
+**Operating System & Environment:**
+
+- Windows Server with desktop environment
+- VNC + web server for remote desktop access through the browser
+
+**Development Tools:**
+
+- Python (with pip)
+- Node.js (with npm)
+- Git
+
+**Test Infrastructure:**
+
+- TestDriver agent and dependencies
+- Optimized settings for test execution
+- Pre-configured networking for TestDriver CLI communication
+
+### Modifying the AMI
+
+<Danger>
+  **Change Default Password First**: The TestDriver AMI includes a default password for initial access. You MUST change this password before saving a new AMI. Never use the default password in production environments.
+</Danger>
+
+You can customize the AMI for your specific needs. Follow these steps carefully:
+
+#### Step 1: Initial Access
+
+Connect to your instance via RDP using the default credentials:
+
+- **Username**: `testdriver`
+- **Default Password**: `changemeABC123`
+
+#### Step 2: Change the Password
+
+Before doing anything else, change the default password:
+
+1. Open PowerShell on the instance
+2. Run the password rotation script:
+
+   ```powershell
+   C:\testdriver\RotateLocalPasswords.ps1
+   ```
+3. **Save the new password securely** - you'll need it for all future access to this instance
+
+<Note>
+  The password rotation script will generate a secure password for the `testdriver` account. Make sure to save this password in a secure location (password manager, secrets vault, etc.) before proceeding.
+</Note>
+
+#### Step 3: Make Your Customizations
+
+Now that you've secured the instance with a new password:
+
+1. **Make your changes** using the `testdriver` account with your new password
+2. Install additional software as needed
+3. Configure settings specific to your environment
+
+<Tip>
+  **Need to make further customizations or debug issues?** RDP back into the instance using the `testdriver` account with the new password you set in Step 2. This gives you full desktop access to install software, modify configurations, or troubleshoot problems before saving your custom AMI.
+</Tip>
+
+#### Step 4: Save Your Custom AMI
+
+1. **Create a new AMI** from your modified instance using the AWS console or CLI
+2. **Update your workflow** to use the new AMI ID
+
+### Amazon Image Builder
+
+For automated AMI builds, use [Amazon EC2 Image Builder](https://aws.amazon.com/image-builder/):
+
+```yaml
+# Example Image Builder pipeline
+Components:
+  - Name: testdriver-base
+    Version: 1.0.0
+    Platform: Windows
+    Type: BUILD
+    Data: |
+      name: TestDriver Custom Setup
+      description: Custom TestDriver AMI with additional software
+      schemaVersion: 1.0
+      phases:
+        - name: build
+          steps:
+            - name: InstallSoftware
+              action: ExecutePowerShell
+              inputs:
+                commands:
+                  - "# Your custom installation commands here"
+```
+
+## Security Considerations
+
+### Network Security
+
+1. **Restrict CIDR blocks**: Only allow access from your known IP ranges
+2. **Use VPC endpoints**: For private communication with AWS services
+3. **Enable VPC Flow Logs**: For network monitoring and debugging
+
+### AWS Authentication
+
+Use [OIDC for GitHub Actions](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect) instead of long-term credentials:
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - name: Configure AWS credentials
+    uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole
+      aws-region: us-east-2
+```
+
+### Instance Security
+
+- **Terminate instances** immediately after use
+- **Monitor costs** with AWS billing alerts
+- **Use least-privilege IAM roles** for instance profiles
+- **Enable CloudTrail** for audit logging
+
+## Troubleshooting
+
+### Common Issues
+
+**Instance not responding in TestDriver CLI:**
+
+When the CLI displays connection errors or timeouts, check:
+
+- **Security group rules**: The CloudFormation template configures all necessary ports (RDP 3389, VNC 5900, and TestDriver communication ports). Verify your security group hasn't been modified.
+- **Instance status checks**: Ensure the instance has passed both system and instance status checks in the AWS console.
+- **AMI compatibility**: Verify the AMI is compatible with your selected instance type (some instance types don't support certain AMIs).
+
+**Connection timeouts:**
+
+- Verify network connectivity from runner to instance
+- Check VPC routing and internet gateway configuration
+- Confirm instance is in correct subnet
+
+**AWS CLI errors:**
+
+- Validate AWS credentials and permissions
+- Check AWS service quotas and limits
+- Verify region consistency across all resources
+
+### Getting Help
+
+For enterprise customers:
+
+- Contact your account manager for AMI access issues
+- Use support channels for infrastructure questions
+- Check the TestDriver documentation for CLI usage

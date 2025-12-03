@@ -1,0 +1,430 @@
+---
+title: "Windows"
+description: "Run TestDriver tests on Windows sandboxes (Enterprise)"
+icon: "windows"
+---
+
+<Info>
+Windows sandboxes are available on **Enterprise plans only**. [Contact sales](https://testdriver.ai/contact) to enable Windows testing.
+</Info>
+
+## Overview
+
+Windows sandboxes enable testing of Windows-specific applications, desktop software, and Windows-only workflows.
+
+Windows sandboxes provide:
+- Windows Server 2019/2022
+- Full desktop environment
+- PowerShell and Command Prompt
+- Support for all TestDriver commands
+- Custom AMI support for pre-installed software
+- RDP access for debugging
+
+## Usage
+
+Specify Windows as the operating system:
+
+```javascript
+import { TestDriver } from '@testdriverai/testdriver';
+
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'windows'  // Requires Enterprise plan
+});
+```
+
+### With Lifecycle Helpers
+
+```javascript
+import { chrome } from './setup/lifecycleHelpers.mjs';
+import { test } from 'vitest';
+
+test('windows app test', async (context) => {
+  const { testdriver } = await chrome(context, { 
+    url: 'https://example.com',
+    os: 'windows'
+  });
+  
+  await testdriver.find('login button').then(el => el.click());
+});
+```
+
+## System Details
+
+### Operating System
+- **OS**: Windows Server 2019 or 2022
+- **Architecture**: x86_64 (64-bit)
+- **Desktop**: Windows Desktop Experience
+
+### Pre-installed Software
+- **Browsers**: Chrome, Edge, Firefox
+- **Runtimes**: .NET Framework, .NET Core
+- **Languages**: Node.js, Python (optional)
+- **Tools**: PowerShell 5.1+, Git, Visual Studio Build Tools (optional)
+
+### Default Resolution
+- **1920x1080** (configurable via `resolution` parameter)
+
+## Configuration
+
+### Custom Resolution
+
+Set screen resolution:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'windows',
+  resolution: '1280x720'
+});
+```
+
+### Environment Variables
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'windows',
+  env: {
+    NODE_ENV: 'test',
+    DEBUG: 'true'
+  }
+});
+```
+
+## Custom AMI
+
+Enterprise plans support **custom Windows AMIs** with pre-installed software, reducing test setup time.
+
+### Benefits
+- Pre-install proprietary software
+- Configure system settings
+- Install custom certificates
+- Set up development tools
+
+### Setup
+
+1. Contact TestDriver support to create custom AMI
+2. Provide installation scripts and requirements
+3. Reference AMI in tests:
+
+```javascript
+const testdriver = await TestDriver.create({
+  apiKey: process.env.TD_API_KEY,
+  os: 'windows',
+  ami: 'ami-custom-windows-123'  // Your custom AMI ID
+});
+```
+
+See [Self-Hosting Guide](/v7/guides/self-hosting) for details on managing custom AMIs.
+
+## Common Use Cases
+
+### Windows Desktop Applications
+
+Test native Windows applications:
+
+```javascript
+import { test } from 'vitest';
+
+test('windows desktop app', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'windows' });
+  
+  // Launch application
+  await testdriver.exec('pwsh', 
+    'Start-Process "C:\\Program Files\\MyApp\\MyApp.exe"',
+    5000
+  );
+  
+  // Wait for app to load
+  await new Promise(r => setTimeout(r, 3000));
+  
+  // Interact with app
+  await testdriver.find('main menu').then(el => el.click());
+  await testdriver.find('file open').then(el => el.click());
+});
+```
+
+### .NET Applications
+
+Test .NET Framework or .NET Core apps:
+
+```javascript
+test('dotnet app', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'windows' });
+  
+  // Run .NET application
+  await testdriver.exec('pwsh',
+    'dotnet run --project C:\\app\\MyApp.csproj',
+    10000
+  );
+  
+  await testdriver.find('window title').then(el => el.click());
+});
+```
+
+### Registry Operations
+
+Modify Windows Registry:
+
+```javascript
+test('registry test', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'windows' });
+  
+  // Set registry value
+  await testdriver.exec('pwsh',
+    'Set-ItemProperty -Path "HKCU:\\Software\\MyApp" -Name "Setting" -Value "Test"',
+    5000
+  );
+  
+  // Read registry value
+  const result = await testdriver.exec('pwsh',
+    'Get-ItemProperty -Path "HKCU:\\Software\\MyApp" -Name "Setting"',
+    5000
+  );
+  console.log('Registry value:', result);
+});
+```
+
+### File Operations
+
+Work with Windows file system:
+
+```javascript
+test('file operations', async (context) => {
+  const { testdriver } = await chrome(context, { os: 'windows' });
+  
+  // Create directory
+  await testdriver.exec('pwsh', 'New-Item -Path "C:\\Test" -ItemType Directory', 5000);
+  
+  // Download file
+  await testdriver.exec('pwsh',
+    'Invoke-WebRequest -Uri "https://example.com/file.zip" -OutFile "C:\\Test\\file.zip"',
+    30000
+  );
+  
+  // Extract archive
+  await testdriver.exec('pwsh',
+    'Expand-Archive -Path "C:\\Test\\file.zip" -DestinationPath "C:\\Test"',
+    10000
+  );
+});
+```
+
+## Command Execution
+
+### PowerShell
+
+Execute PowerShell commands:
+
+```javascript
+// PowerShell Core (pwsh)
+await testdriver.exec('pwsh', 'Get-Process', 5000);
+
+// PowerShell 5.1 (powershell)
+await testdriver.exec('powershell', 'Get-Service', 5000);
+```
+
+### Command Prompt
+
+Execute CMD commands:
+
+```javascript
+await testdriver.exec('cmd', 'dir C:\\', 5000);
+```
+
+### Batch Scripts
+
+Run batch files:
+
+```javascript
+// Create batch file
+await testdriver.exec('cmd', 
+  'echo @echo off > C:\\test.bat && echo echo Hello >> C:\\test.bat',
+  5000
+);
+
+// Execute batch file
+await testdriver.exec('cmd', 'C:\\test.bat', 5000);
+```
+
+## Package Management
+
+### Chocolatey
+
+Install packages with Chocolatey (if pre-installed on AMI):
+
+```javascript
+// Install package
+await testdriver.exec('pwsh',
+  'choco install -y git',
+  60000
+);
+
+// Use installed software
+await testdriver.exec('pwsh', 'git --version', 5000);
+```
+
+### NPM
+
+Install Node.js packages:
+
+```javascript
+await testdriver.exec('pwsh', 'npm install -g typescript', 30000);
+```
+
+### NuGet
+
+Install .NET packages:
+
+```javascript
+await testdriver.exec('pwsh',
+  'Install-Package Newtonsoft.Json -Force',
+  30000
+);
+```
+
+## Debugging
+
+### RDP Access
+
+Connect via Remote Desktop Protocol:
+
+```javascript
+const instance = testdriver.getInstance();
+console.log('RDP:', `${instance.ip}:${instance.rdpPort || 3389}`);
+
+// Use RDP client to connect and watch tests
+```
+
+### Screenshots
+
+Capture screenshots:
+
+```javascript
+// Windows screenshot via PowerShell
+await testdriver.exec('pwsh',
+  'Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait("{PRTSC}"); Start-Sleep -Seconds 1',
+  5000
+);
+```
+
+### Event Logs
+
+Access Windows Event Logs:
+
+```javascript
+const logs = await testdriver.exec('pwsh',
+  'Get-EventLog -LogName Application -Newest 10',
+  5000
+);
+console.log('Event logs:', logs);
+```
+
+## Performance
+
+### Startup Time
+- **First test**: 60-120s (Windows boots slower than Linux)
+- **Subsequent tests**: 0s (sandbox reuse)
+- **Custom AMI**: Faster (pre-installed software)
+
+### Optimization Tips
+- Use custom AMI with pre-installed software
+- Reuse sandboxes across tests
+- Enable caching
+- Minimize software installation during tests
+
+See [Performance Guide](/v7/guides/performance) for details.
+
+## Limitations
+
+### Slower Startup
+Windows sandboxes take longer to boot than Linux (60-120s vs 20-60s).
+
+### Higher Cost
+Windows sandboxes consume more test minutes due to licensing.
+
+### Limited Free Tier
+Windows sandboxes not available on free tier.
+
+## Troubleshooting
+
+### Application Won't Launch
+
+```javascript
+// Try launching with full path
+await testdriver.exec('pwsh',
+  'Start-Process -FilePath "C:\\Program Files\\App\\app.exe"',
+  5000
+);
+
+// Or use cmd
+await testdriver.exec('cmd',
+  'start "" "C:\\Program Files\\App\\app.exe"',
+  5000
+);
+```
+
+### Permission Denied
+
+```javascript
+// Run as administrator (if AMI configured)
+await testdriver.exec('pwsh',
+  'Start-Process -FilePath "app.exe" -Verb RunAs',
+  5000
+);
+```
+
+### Timeout Issues
+
+Increase timeout for slower Windows operations:
+
+```javascript
+await testdriver.exec('pwsh', 'command', 120000);  // 2 minutes
+```
+
+## Enterprise Features
+
+### Custom AMI Management
+- Pre-install proprietary software
+- Configure system settings
+- Install certificates and licenses
+- Set up development environments
+
+### Dedicated Sandboxes
+- Reserved Windows instances
+- Faster startup (always-on)
+- Guaranteed availability
+
+### Support
+- Priority support for Windows issues
+- Custom AMI creation assistance
+- Windows-specific troubleshooting
+
+## Contact Sales
+
+Ready to enable Windows testing?
+
+<Card title="Contact Sales" icon="envelope" href="https://testdriver.ai/contact">
+  Get Enterprise access to Windows sandboxes
+</Card>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Linux" icon="linux" href="/v7/platforms/linux">
+    Linux sandboxes (default)
+  </Card>
+  
+  <Card title="macOS" icon="apple" href="/v7/platforms/macos">
+    macOS sandboxes (Beta)
+  </Card>
+  
+  <Card title="Self-Hosting" icon="server" href="/v7/guides/self-hosting">
+    Custom AMI management
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/v7/getting-started/configuration">
+    Sandbox configuration
+  </Card>
+</CardGroup>
