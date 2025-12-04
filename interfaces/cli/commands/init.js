@@ -236,6 +236,7 @@ export default defineConfig({
       "",
       "# TestDriver.ai",
       ".env",
+      "sandbox.*.json",
       "node_modules/",
       "test-results/",
       "*.log",

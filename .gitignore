@@ -1,5 +1,6 @@
 # Created by https://www.toptal.com/developers/gitignore/api/node
 testdriver.yaml
+sandbox.*.json
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
 
 ### Node ###
@@ -153,8 +154,7 @@ dist
 
 .DS_Store
 .envrc
-.testdriver/screenshots/mac/*
-.tmp/*
+.testdriver/
 entrypoint
 entrypoint.js
 index-K4K5CPUZ.html

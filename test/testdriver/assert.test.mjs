@@ -8,14 +8,12 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Assert Test", () => {
   it("should assert the testdriver login page shows", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
     
-    // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({
       url: 'http://testdriver-sandbox.vercel.app/login',
     });
 
-    // Assert the TestDriver.ai Sandbox login page is displayed
     const result = await testdriver.assert(
       "the TestDriver.ai Sandbox login page is displayed",
     );

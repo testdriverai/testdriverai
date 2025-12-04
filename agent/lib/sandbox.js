@@ -90,6 +90,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
       if (reply.success) {
         this.instanceSocketConnected = true;
+        // Cache the full create.reply response for reconnection
+        this._lastCreateReply = reply;
         emitter.emit(events.sandbox.connected);
         // Return the full reply (includes url and sandbox)
         return reply;
@@ -167,6 +169,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
                   ...pendingMessage.message,
                 },
               });
+            }
+
+            // Cache create.reply responses for reconnection
+            if (message.type === 'create.reply' && message.success) {
+              this._lastCreateReply = message;
             }
 
             this.ps[message.requestId]?.resolve(message);
