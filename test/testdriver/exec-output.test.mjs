@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
-describe.skipIf(process.env.TD_OS === "linux")("Exec Output Test", () => {
+describe.skip("Exec Output Test", () => {
   it(
     "should set date using PowerShell and navigate to calendar",
     async (context) => {

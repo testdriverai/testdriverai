@@ -123,7 +123,7 @@ export async function launchChrome(
 }
 
 /**
- * Launch Chrome for Testing browser with guest mode
+ * Launch Chrome for Testing browser with custom profile
  * @param {TestDriver} client - TestDriver client
  * @param {string} url - URL to open (default: https://testdriver-sandbox.vercel.app/)
  */
@@ -132,19 +132,69 @@ export async function launchChromeForTesting(
   url = "http://testdriver-sandbox.vercel.app/",
 ) {
   const shell = client.os === "windows" ? "pwsh" : "sh";
+  const userDataDir = client.os === "windows" 
+    ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
+    : "/tmp/testdriver-chrome-profile";
+  
+  // Create user data directory and Default profile directory
+  const defaultProfileDir = client.os === "windows"
+    ? `${userDataDir}\\Default`
+    : `${userDataDir}/Default`;
+  
+  const createDirCmd = client.os === "windows"
+    ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+    : `mkdir -p "${defaultProfileDir}"`;
+  
+  await client.exec(shell, createDirCmd, 10000, true);
+  
+  // Write Chrome preferences
+  const chromePrefs = {
+    credentials_enable_service: false,
+    profile: {
+      password_manager_enabled: false,
+      default_content_setting_values: {}
+    },
+    signin: {
+      allowed: false
+    },
+    sync: {
+      requested: false,
+      first_setup_complete: true,
+      sync_all_os_types: false
+    },
+    autofill: {
+      enabled: false
+    },
+    local_state: {
+      browser: {
+        has_seen_welcome_page: true
+      }
+    }
+  };
+  
+  const prefsPath = client.os === "windows"
+    ? `${defaultProfileDir}\\Preferences`
+    : `${defaultProfileDir}/Preferences`;
+  
+  const prefsJson = JSON.stringify(chromePrefs, null, 2);
+  const writePrefCmd = client.os === "windows"
+    ? `Set-Content -Path "${prefsPath}" -Value '${prefsJson.replace(/'/g, "''")}'`
+    : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+  
+  await client.exec(shell, writePrefCmd, 10000, true);
 
   if (client.os === "windows") {
     // Windows Chrome for Testing path would need to be determined
     // For now, fallback to regular Chrome on Windows
     await client.exec(
       "pwsh",
-      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--guest", "${url}"`,
+      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--user-data-dir=${userDataDir}", "--disable-fre", "--no-default-browser-check", "--no-first-run", "${url}"`,
       30000,
     );
   } else {
     await client.exec(
       shell,
-      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "${url}" >/dev/null 2>&1 &`,
+      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --user-data-dir=${userDataDir} "${url}" >/dev/null 2>&1 &`,
       30000,
     );
   }
@@ -168,19 +218,69 @@ export async function launchChromeExtension(
   url = "http://testdriver-sandbox.vercel.app/",
 ) {
   const shell = client.os === "windows" ? "pwsh" : "sh";
+  const userDataDir = client.os === "windows" 
+    ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
+    : "/tmp/testdriver-chrome-profile";
+  
+  // Create user data directory and Default profile directory
+  const defaultProfileDir = client.os === "windows"
+    ? `${userDataDir}\\Default`
+    : `${userDataDir}/Default`;
+  
+  const createDirCmd = client.os === "windows"
+    ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+    : `mkdir -p "${defaultProfileDir}"`;
+  
+  await client.exec(shell, createDirCmd, 10000, true);
+  
+  // Write Chrome preferences
+  const chromePrefs = {
+    credentials_enable_service: false,
+    profile: {
+      password_manager_enabled: false,
+      default_content_setting_values: {}
+    },
+    signin: {
+      allowed: false
+    },
+    sync: {
+      requested: false,
+      first_setup_complete: true,
+      sync_all_os_types: false
+    },
+    autofill: {
+      enabled: false
+    },
+    local_state: {
+      browser: {
+        has_seen_welcome_page: true
+      }
+    }
+  };
+  
+  const prefsPath = client.os === "windows"
+    ? `${defaultProfileDir}\\Preferences`
+    : `${defaultProfileDir}/Preferences`;
+  
+  const prefsJson = JSON.stringify(chromePrefs, null, 2);
+  const writePrefCmd = client.os === "windows"
+    ? `Set-Content -Path "${prefsPath}" -Value '${prefsJson.replace(/'/g, "''")}'`
+    : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+  
+  await client.exec(shell, writePrefCmd, 10000, true);
 
   if (client.os === "windows") {
     // Windows Chrome for Testing path would need to be determined
     // For now, fallback to regular Chrome on Windows
     await client.exec(
       "pwsh",
-      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--load-extension=${extensionId}", "${url}"`,
+      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--user-data-dir=${userDataDir}", "--load-extension=${extensionId}", "${url}"`,
       30000,
     );
   } else {
     await client.exec(
       shell,
-      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --load-extension=${extensionId} "${url}" >/dev/null 2>&1 &`,
+      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --user-data-dir=${userDataDir} --load-extension=${extensionId} "${url}" >/dev/null 2>&1 &`,
       30000,
     );
   }

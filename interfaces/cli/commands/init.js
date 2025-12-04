@@ -202,8 +202,8 @@ dotenv.config();
 export default defineConfig({
   plugins: [TestDriver()],
   test: {
-    testTimeout: 120000,
-    hookTimeout: 120000,
+    testTimeout: 300000,
+    hookTimeout: 300000,
   },
 });
 `;

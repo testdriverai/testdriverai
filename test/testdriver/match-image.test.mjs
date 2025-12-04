@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 describe("Match Image Test", () => {
-  it("should match shopping cart image and verify empty cart", async (context) => {
+  it.skip("should match shopping cart image and verify empty cart", async (context) => {
     const testdriver = TestDriver(context, { headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 

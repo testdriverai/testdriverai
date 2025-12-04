@@ -283,6 +283,11 @@ const createCommands = (
    * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
    */
   const scroll = async (direction = 'down', options = {}) => {
+    // Convert number to object format
+    if (typeof options === 'number') {
+      options = { amount: options };
+    }
+    
     let { amount = 300 } = options;
     const redrawOptions = extractRedrawOptions(options);
     
@@ -1151,7 +1156,7 @@ const createCommands = (
             ),
             true,
           );
-          await scroll({ direction, amount: incrementDistance });
+          await scroll(direction, { amount: incrementDistance });
           scrollDistance = scrollDistance + incrementDistance;
         }
       }
@@ -1231,7 +1236,7 @@ const createCommands = (
             theme.dim(`scrolling ${direction} ${incrementDistance} pixels...`),
             true,
           );
-          await scroll({ direction, amount: incrementDistance });
+          await scroll(direction, { amount: incrementDistance });
           scrollDistance = scrollDistance + incrementDistance;
         }
       }

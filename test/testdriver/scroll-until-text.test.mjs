@@ -18,7 +18,24 @@ describe("Scroll Until Text Test", () => {
 
     // Scroll until text appears
     await testdriver.focusApplication("Google Chrome");
-    await testdriver.scrollUntilText({ text: "testdriver socks", direction: "down" });
+    // Scroll until text appears
+    let found = false;
+    let scrollCount = 0;
+    const maxScrolls = 10;
+    
+    while (!found && scrollCount < maxScrolls) {
+      const findResult = await testdriver.find("testdriver socks");
+      if (findResult) {
+      found = true;
+      } else {
+      await testdriver.scroll({ direction: "down" });
+      scrollCount++;
+      }
+    }
+    
+    if (!found) {
+      throw new Error(`Failed to find "testdriver socks" after ${maxScrolls} scrolls`);
+    }
 
     // Assert testdriver socks appears on screen
     await testdriver.focusApplication("Google Chrome");

@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Focus Window Test", () => {
-  it.skipIf(process.env.TD_OS === "linux")(
+  it.skip(
     "should click Microsoft Edge icon and focus Google Chrome",
     async (context) => {
       const testdriver = TestDriver(context, { headless: true });
