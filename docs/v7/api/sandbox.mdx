@@ -277,7 +277,7 @@ describe('Sandbox Operations', () => {
     });
     
     await testdriver.auth();
-    await testdriver.connect({ newSandbox: true });
+    await testdriver.connect();
   });
 
   afterAll(async () => {

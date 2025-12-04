@@ -311,13 +311,16 @@ await testdriver.exec('pwsh', 'Get-Process');
 
 **Sandboxes stay alive for a few minutes after test runs.** This is EXTREMELY useful for iterative test development.
 
-### The TD_RECONNECT Pattern
+### The Reconnect Pattern
 
-When developing tests, use `TD_RECONNECT=true` to reconnect to the same sandbox:
+When developing tests, use `reconnect: true` option to reconnect to the same sandbox:
 
 ```javascript
 test('iterative development', async (context) => {
-  const testdriver = TestDriver(context, { headless: true });
+  const testdriver = TestDriver(context, { 
+    headless: true,
+    reconnect: true  // Reconnect to existing sandbox
+  });
   
   // STEP 1: Initial setup (run once)
   // await testdriver.provision.chrome({ url: 'https://example.com' });
@@ -339,9 +342,10 @@ test('iterative development', async (context) => {
 2. Test fails at step 3
 3. Comment out steps 1-2 (already completed in sandbox)
 4. Add/fix step 3
-5. Run again with reconnect: `TD_RECONNECT=true npm test`
-6. Sandbox reconnects, skips commented steps, runs new code
-7. Repeat until test passes
+5. Add `reconnect: true` to TestDriver options
+6. Run again: `npm test`
+7. Sandbox reconnects, skips commented steps, runs new code
+8. Repeat until test passes
 
 **Benefits:**
 - Don't waste time re-running working steps
@@ -481,8 +485,7 @@ import { TestDriver } from "testdriverai/vitest/hooks";
 describe("Hover Text Test", () => {
   it("should click Sign In and verify error message", async (context) => {
     const testdriver = TestDriver(context, { 
-      headless: true, 
-      newSandbox: true 
+      headless: true
     });
     
     await testdriver.provision.chrome({ 
@@ -607,10 +610,15 @@ console.log(`Similarity: ${button.similarity}`);
 console.log(`Strategy: ${button.strategy}`);
 ```
 
-### ✅ DO: Use TD_RECONNECT for Iteration
+### ✅ DO: Use reconnect for Iteration
 
 ```javascript
-// ✅ Good - Comment out working steps
+// ✅ Good - Comment out working steps, use reconnect: true
+const testdriver = TestDriver(context, { 
+  headless: true,
+  reconnect: true 
+});
+
 // await testdriver.provision.chrome({ url: 'https://example.com' });
 // await testdriver.find('login').click();
 
@@ -665,7 +673,7 @@ await button.click();
 TestDriver(context, {
   headless: true,           // Headless mode (default: false)
   platform: 'linux',        // Platform: 'linux' or 'windows'
-  newSandbox: true,         // Force new sandbox (default: false)
+  reconnect: true,          // Reconnect to existing sandbox (default: false)
   cacheKey: 'my-test',      // Cache key for element caching
   apiKey: 'tdai-xxx',       // API key (or use TD_API_KEY env var)
 });
@@ -678,7 +686,6 @@ TestDriver(context, {
 TD_API_KEY=tdai-1234567890abcdef
 
 # Optional
-TD_RECONNECT=true          # Reconnect to existing sandbox
 VERBOSE=true               # Enable verbose logging
 ```
 
@@ -764,7 +771,7 @@ test('test name', async (context) => {
 4. **Prefer Linux**: Faster and cheaper than Windows
 5. **Use find()**: Natural language element finding with rich debug info
 6. **Take Screenshots**: Essential for debugging (`screenshot()`)
-7. **Use TD_RECONNECT**: Comment out working code, iterate on failing steps
+7. **Use reconnect: true**: Comment out working code, iterate on failing steps
 8. **Be Descriptive**: Detailed element descriptions work better
 9. **Check Examples**: `test/testdriver/*.test.mjs` has many patterns
 10. **Read Docs**: `docs/v7/` has comprehensive guides

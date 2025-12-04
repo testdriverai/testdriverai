@@ -49,7 +49,7 @@ const client = await TestDriver.create({
   // Sandbox Configuration
   os: 'linux',
   resolution: '1920x1080',
-  newSandbox: true,
+  reconnect: false,  // Reconnect to existing sandbox (default: false)
   sandboxId: null,
   
   // API Configuration
@@ -204,6 +204,113 @@ const { testdriver, dashcam } = await electron(context, {
   // macOS-specific settings
 }
 ```
+
+## Reconnect to Existing Sandbox
+
+<Info>
+  **New in v7:** The `reconnect` parameter replaces the old `newSandbox` parameter with clearer, inverted logic.
+</Info>
+
+Reconnect to an existing sandbox instead of creating a new one. This is extremely useful for iterative test development:
+
+```javascript
+import { TestDriver } from 'testdriverai/vitest/hooks';
+
+test('iterative development', async (context) => {
+  const testdriver = TestDriver(context, {
+    headless: true,
+    reconnect: true  // Reconnect to existing sandbox
+  });
+
+  // Comment out working code, only run new code
+  // await testdriver.provision.chrome({ url: 'https://example.com' });
+  // await testdriver.find('login button').click();
+  
+  // New code to test
+  await testdriver.find('submit').click();
+});
+```
+
+### When to Use Reconnect
+
+<AccordionGroup>
+  <Accordion title="Iterative Development">
+    When developing a test, you can comment out working steps and only run the new code:
+
+    ```javascript
+    // First run: Create sandbox and run all steps
+    const testdriver = TestDriver(context, { headless: true });
+    await testdriver.provision.chrome({ url });
+    await testdriver.find('login').click();  // ✓ Works
+    await testdriver.find('email').click();  // ✓ Works
+    await testdriver.find('submit').click(); // ✗ Fails
+
+    // Second run: Reconnect and skip working steps
+    const testdriver = TestDriver(context, {
+      headless: true,
+      reconnect: true  // Reuse existing sandbox
+    });
+    // await testdriver.provision.chrome({ url });  // Skip
+    // await testdriver.find('login').click();       // Skip
+    // await testdriver.find('email').click();       // Skip
+    await testdriver.find('submit').click();       // Test fix
+    ```
+
+    **Benefits:**
+    - Skip slow provisioning steps
+    - Preserve sandbox state
+    - Faster iteration cycles
+    - Debug specific failing steps
+  </Accordion>
+
+  <Accordion title="Manual Testing">
+    Connect to a manually-created sandbox for exploratory testing:
+
+    ```javascript
+    const testdriver = TestDriver(context, {
+      headless: false,
+      reconnect: true,
+      sandboxId: 'i-abc123def'  // Specific sandbox ID
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="CI Debugging">
+    Reconnect to a failed CI sandbox for debugging:
+
+    ```javascript
+    // Get sandbox ID from CI logs
+    const testdriver = TestDriver(context, {
+      headless: false,
+      reconnect: true,
+      sandboxId: process.env.CI_SANDBOX_ID
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Default Behavior
+
+```javascript
+// Default: Create new sandbox (reconnect: false)
+const testdriver = TestDriver(context, { headless: true });
+
+// Explicitly create new sandbox
+const testdriver = TestDriver(context, {
+  headless: true,
+  reconnect: false
+});
+
+// Reconnect to existing sandbox
+const testdriver = TestDriver(context, {
+  headless: true,
+  reconnect: true
+});
+```
+
+<Warning>
+  Sandboxes stay alive for only a few minutes after tests complete. If the sandbox has been terminated, `reconnect: true` will automatically create a new one.
+</Warning>
 
 ## Cache Configuration
 

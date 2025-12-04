@@ -450,7 +450,7 @@ test('reconnect to same sandbox', async () => {
   // Reconnect using the sandbox ID
   await testdriver.connect({
     sandboxId: lastSandboxId, // or use manually saved ID
-    newSandbox: false
+    reconnect: true
   });
   
   // Try different selector on the same sandbox state

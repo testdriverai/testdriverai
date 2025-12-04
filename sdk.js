@@ -1067,9 +1067,10 @@ class TestDriverSDK {
     this.os = options.os || "linux";
     this.resolution = options.resolution || "1366x768";
 
-    // Store newSandbox preference from options
-    this.newSandbox =
-      options.newSandbox !== undefined ? options.newSandbox : true;
+    // Store reconnect preference from options (inverted from old newSandbox)
+    // reconnect: true means reuse sandbox, reconnect: false means create new
+    this.reconnect =
+      options.reconnect !== undefined ? options.reconnect : false;
 
     // Store headless preference from options
     this.headless = options.headless !== undefined ? options.headless : false;
@@ -1421,7 +1422,7 @@ class TestDriverSDK {
    * Connect to a sandbox environment
    * @param {Object} options - Connection options
    * @param {string} options.sandboxId - Existing sandbox ID to reconnect to
-   * @param {boolean} options.newSandbox - Force creation of a new sandbox
+   * @param {boolean} options.reconnect - Reconnect to existing sandbox instead of creating new (default: false)
    * @param {string} options.ip - Direct IP address to connect to
    * @param {string} options.sandboxAmi - AMI to use for the sandbox
    * @param {string} options.sandboxInstance - Instance type for the sandbox
@@ -1446,7 +1447,7 @@ class TestDriverSDK {
     await this._initializeDebugger();
 
     // Map SDK connect options to agent buildEnv options
-    // Use connectOptions.newSandbox if provided, otherwise fall back to this.newSandbox
+    // Use connectOptions.reconnect if provided, otherwise fall back to this.reconnect
     // Use connectOptions.headless if provided, otherwise fall back to this.headless
     const buildEnvOptions = {
       headless:
@@ -1454,9 +1455,9 @@ class TestDriverSDK {
           ? connectOptions.headless
           : this.headless,
       new:
-        connectOptions.newSandbox !== undefined
-          ? connectOptions.newSandbox
-          : this.newSandbox,
+        connectOptions.reconnect !== undefined
+          ? !connectOptions.reconnect  // Invert: reconnect: true means new: false
+          : !this.reconnect,
     };
 
     // Set agent properties for buildEnv to use

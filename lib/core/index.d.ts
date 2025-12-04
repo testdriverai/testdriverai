@@ -119,9 +119,9 @@ export interface TestDriverOptions {
   os?: 'linux' | 'mac' | 'windows';
   
   /**
-   * Create new sandbox
+   * Reconnect to existing sandbox instead of creating new
    */
-  newSandbox?: boolean;
+  reconnect?: boolean;
   
   /**
    * Screen resolution

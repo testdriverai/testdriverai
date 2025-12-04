@@ -42,7 +42,7 @@ const client = new TestDriver(apiKey, options);
   os: 'linux',              // Target OS: 'linux', 'mac', 'windows'
   apiRoot: 'https://...',   // API endpoint
   resolution: '1366x768',   // Screen resolution
-  newSandbox: true,         // Create new sandbox
+  reconnect: false,         // Reconnect to existing sandbox (default: false)
   analytics: true,          // Enable analytics
   cacheThresholds: {
     find: 0.05,
@@ -389,7 +389,7 @@ import { TestDriver, Dashcam, TestDriverOptions, DashcamOptions } from 'testdriv
 const options: TestDriverOptions = {
   os: 'linux',
   resolution: '1366x768',
-  newSandbox: true,
+  reconnect: false,
   analytics: true
 };
 

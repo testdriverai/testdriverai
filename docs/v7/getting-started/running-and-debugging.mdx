@@ -310,6 +310,82 @@ Suggestions:
   </Accordion>
 </AccordionGroup>
 
+## Iterative Test Development
+
+<Tip>
+  **Pro tip:** Use `reconnect: true` to skip working code and only test new changes.
+</Tip>
+
+When developing a complex test, you can use the `reconnect` parameter to dramatically speed up iteration:
+
+<Steps>
+  <Step title="Run Full Test">
+    First, run your test normally:
+
+    ```javascript
+    test('checkout flow', async (context) => {
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url: 'https://shop.example.com' });
+      await testdriver.find('product').click();  // ✓ Works
+      await testdriver.find('add to cart').click();  // ✓ Works
+      await testdriver.find('checkout').click();  // ✗ Fails here
+    });
+    ```
+  </Step>
+
+  <Step title="Comment Working Code">
+    Comment out the steps that work:
+
+    ```javascript
+    test('checkout flow', async (context) => {
+      const testdriver = TestDriver(context, {
+        headless: true,
+        reconnect: true  // Reconnect to existing sandbox
+      });
+      
+      // Skip these - already done in sandbox
+      // await testdriver.provision.chrome({ url: 'https://shop.example.com' });
+      // await testdriver.find('product').click();
+      // await testdriver.find('add to cart').click();
+      
+      // Only test the failing step
+      await testdriver.find('checkout button in cart').click();
+    });
+    ```
+  </Step>
+
+  <Step title="Iterate Quickly">
+    Now you can iterate on the failing step without re-running the slow setup:
+
+    1. Fix the selector
+    2. Run test (reconnects to existing sandbox)
+    3. See if fix works immediately
+    4. Repeat until it passes
+
+    **Time saved:** Instead of 30s setup + 5s test = 35s per iteration, now just 5s!
+  </Step>
+
+  <Step title="Uncomment for Final Run">
+    Once everything works, uncomment all code for final validation:
+
+    ```javascript
+    test('checkout flow', async (context) => {
+      const testdriver = TestDriver(context, { headless: true });
+      
+      await testdriver.provision.chrome({ url: 'https://shop.example.com' });
+      await testdriver.find('product').click();
+      await testdriver.find('add to cart').click();
+      await testdriver.find('checkout button in cart').click();
+    });
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  Remember to remove `reconnect: true` before committing! Each test should create a fresh sandbox in CI/CD.
+</Warning>
+
 ## Debugging Tools
 
 ### 1. Console Logging
@@ -447,15 +523,20 @@ When tests fail in CI:
   <Step title="Reconnect to Sandbox">
     If test failed, reconnect to same sandbox to debug:
 
-    ```bash
-    # Get sandbox ID from CI logs
-    export TESTDRIVER_SANDBOX_ID=i-abc123def
+    ```javascript
+    test('debug CI failure', async (context) => {
+      const testdriver = TestDriver(context, {
+        headless: false,
+        reconnect: true,
+        sandboxId: 'i-abc123def'  // From CI logs
+      });
 
-    # Run tests locally against same sandbox
-    npx vitest run
+      // Re-run failing test against same sandbox
+      await testdriver.find('element').click();
+    });
     ```
 
-    [Sandbox management guide](/agents.md#sandbox-management)
+    [Learn more about reconnect parameter](/v7/getting-started/configuration#reconnect-to-existing-sandbox)
   </Step>
 </Steps>
 

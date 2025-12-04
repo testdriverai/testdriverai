@@ -101,8 +101,8 @@ await testdriver.connect(options)
   Connection options
   
   <Expandable title="properties">
-    <ParamField path="newSandbox" type="boolean" default="false">
-      Force creation of a new sandbox instead of reusing an existing one
+    <ParamField path="reconnect" type="boolean" default="false">
+      Reconnect to existing sandbox instead of creating a new one. Useful for iterative test development.
     </ParamField>
     
     <ParamField path="sandboxId" type="string">
@@ -133,12 +133,13 @@ await testdriver.connect(options)
 
 **Basic connection:**
 ```javascript
-await testdriver.connect({ newSandbox: true });
+await testdriver.connect();
 ```
 
 **Reconnect to existing sandbox:**
 ```javascript
 const instance = await testdriver.connect({ 
+  reconnect: true,
   sandboxId: 'existing-sandbox-id-123' 
 });
 ```
@@ -273,7 +274,7 @@ describe('My Test Suite', () => {
     
     // Authenticate and connect
     await testdriver.auth();
-    const instance = await testdriver.connect({ newSandbox: true });
+    const instance = await testdriver.connect();
     
     console.log('Connected to sandbox:', instance.instanceId);
   });
@@ -300,7 +301,7 @@ describe('My Test Suite', () => {
     
     ```javascript
     try {
-      await testdriver.connect({ newSandbox: true });
+      await testdriver.connect();
     } catch (error) {
       console.error('Failed to connect:', error.message);
       throw error;

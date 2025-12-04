@@ -61,7 +61,7 @@ describe('Login Test', () => {
       os: 'windows'
     });
     await testdriver.auth();
-    await testdriver.connect({ newSandbox: true });
+    await testdriver.connect();
   });
 
   afterAll(async () => {
@@ -489,7 +489,7 @@ describe('Login Flow', () => {
     });
     
     await testdriver.auth();
-    await testdriver.connect({ newSandbox: true });
+    await testdriver.connect();
     
     // Prerun
     await testdriver.exec('pwsh', 'dashcam start', 5000, true);
