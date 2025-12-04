@@ -1,0 +1,10 @@
+{
+  "sandbox": {
+    "sandboxId": "irt54lo3zd5f3y2hbh946",
+    "url": "https://6080-irt54lo3zd5f3y2hbh946.e2b.app/vnc_lite.html?autoconnect=true&resize=scale"
+  },
+  "os": "linux",
+  "ami": null,
+  "instanceType": null,
+  "timestamp": "2025-12-04T06:48:27.698Z"
+}
