@@ -315,7 +315,7 @@ jobs:
     console.log(chalk.cyan("\n  Installing dependencies...\n"));
 
     try {
-      execSync("npm install -D vitest testdriverai && npm install dotenv", {
+      execSync("npm install -D vitest testdriverai@beta && npm install dotenv", {
         cwd: process.cwd(),
         stdio: "inherit"
       });
@@ -326,7 +326,7 @@ jobs:
           "\n⚠️  Failed to install dependencies automatically. Please run:",
         ),
       );
-      console.log(chalk.gray("     npm install -D vitest testdriverai"));
+      console.log(chalk.gray("     npm install -D vitest testdriverai@beta"));
       console.log(chalk.gray("     npm install dotenv\n"));
     }
   }
