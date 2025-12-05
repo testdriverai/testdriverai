@@ -17,21 +17,18 @@ describe("Hover Text With Description Test", () => {
     await performLogin(testdriver);
 
     // Click on "Add to Cart" under TestDriver Hat
-    await testdriver.focusApplication("Google Chrome");
     const addToCartButton = await testdriver.find(
       "Add to Cart, add to cart button under TestDriver Hat",
     );
     await addToCartButton.click();
 
     // Click on the cart
-    await testdriver.focusApplication("Google Chrome");
     const cartButton = await testdriver.find(
       "Cart, cart button in the top right corner",
     );
     await cartButton.click();
 
     // Assert the TestDriver Hat is in the cart
-    await testdriver.focusApplication("Google Chrome");
     const result = await testdriver.assert("TestDriver Hat is in the cart");
     expect(result).toBeTruthy();
   });

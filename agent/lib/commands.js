@@ -1276,11 +1276,11 @@ const createCommands = (
       return "The application was focused.";
     },
     /**
-     * Extract and remember information from the screen using AI
+     * Extract information from the screen using AI
      * @param {Object|string} options - Options object or description (for backward compatibility)
-     * @param {string} options.description - What to remember
+     * @param {string} options.description - What to extract
      */
-    "remember": async (...args) => {
+    "extract": async (...args) => {
       const rememberStartTime = Date.now();
       let description;
       

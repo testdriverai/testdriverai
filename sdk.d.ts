@@ -433,9 +433,9 @@ export interface FocusApplicationOptions {
   name: string;
 }
 
-/** Options for remember command */
-export interface RememberOptions {
-  /** What to remember */
+/** Options for extract command */
+export interface ExtractOptions {
+  /** What to extract */
   description: string;
 }
 
@@ -919,15 +919,15 @@ export default class TestDriverSDK {
   assert(assertion: string, options?: object): Promise<boolean>;
 
   /**
-   * Extract and remember information from the screen using AI
+   * Extract information from the screen using AI
    * @param options - Options object with description
    */
-  remember(options: RememberOptions): Promise<string>;
+  extract(options: { description: string }): Promise<string>;
   /**
-   * Extract and remember information from the screen using AI (positional arguments - legacy)
-   * @param description - What to remember
+   * Extract information from the screen using AI (positional arguments - legacy)
+   * @param description - What to extract
    */
-  remember(description: string): Promise<string>;
+  extract(description: string): Promise<string>;
 
   // Code Execution
 

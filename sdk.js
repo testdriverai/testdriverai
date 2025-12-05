@@ -2101,15 +2101,15 @@ class TestDriverSDK {
          */
         doc: "Focus an application by name",
       },
-      remember: {
-        name: "remember",
+      extract: {
+        name: "extract",
         /**
-         * Extract and remember information from the screen using AI
+         * Extract information from the screen using AI
          * @param {Object|string} options - Options object or description (legacy positional)
-         * @param {string} options.description - What to remember
+         * @param {string} options.description - What to extract
          * @returns {Promise<string>}
          */
-        doc: "Extract and remember information from the screen",
+        doc: "Extract information from the screen",
       },
       assert: {
         name: "assert",

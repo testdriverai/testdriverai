@@ -618,7 +618,7 @@
           }
         }
       },
-      "remember": {
+      "extract": {
         "type": "object",
         "required": [
           "description",
@@ -628,7 +628,7 @@
         "properties": {
           "command": {
             "type": "string",
-            "const": "remember"
+            "const": "extract"
           },
           "description": {
             "type": "string"
@@ -783,7 +783,7 @@
               "scroll-until-text",
               "scroll-until-image",
               "focus-application",
-              "remember",
+              "extract",
               "assert",
               "exec",
               "if",
@@ -971,12 +971,12 @@
             "if": {
               "properties": {
                 "command": {
-                  "const": "remember"
+                  "const": "extract"
                 }
               }
             },
             "then": {
-              "$ref": "#/$defs/commandsAvailable/remember"
+              "$ref": "#/$defs/commandsAvailable/extract"
             }
           },
           {

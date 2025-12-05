@@ -77,12 +77,12 @@ await waitForAssertion(testdriver, 'results are displayed', 10000);
 
 ## Extracting Information
 
-### remember()
+### extract()
 
-Extract and remember information from the screen using AI.
+Extract information from the screen using AI.
 
 ```javascript
-await testdriver.remember(description)
+await testdriver.extract(description)
 ```
 
 **Parameters:**
@@ -94,17 +94,17 @@ await testdriver.remember(description)
 
 ```javascript
 // Extract text from screen
-const password = await testdriver.remember('the password displayed on screen');
-const total = await testdriver.remember('the order total amount');
-const errorMessage = await testdriver.remember('the error message text');
+const password = await testdriver.extract('the password displayed on screen');
+const total = await testdriver.extract('the order total amount');
+const errorMessage = await testdriver.extract('the error message text');
 
 // Extract structured data
-const email = await testdriver.remember('the email address in the confirmation');
-const orderId = await testdriver.remember('the order ID number');
-const phoneNumber = await testdriver.remember('the phone number');
+const email = await testdriver.extract('the email address in the confirmation');
+const orderId = await testdriver.extract('the order ID number');
+const phoneNumber = await testdriver.extract('the phone number');
 
 // Use extracted data
-const password = await testdriver.remember('the password for standard_user');
+const password = await testdriver.extract('the password for standard_user');
 const passwordField = await testdriver.find('password input');
 await passwordField.click();
 await testdriver.type(password);
@@ -114,8 +114,8 @@ await testdriver.type(password);
 
 **Dynamic Content:**
 ```javascript
-// Remember generated values
-const confirmationCode = await testdriver.remember('the 6-digit confirmation code');
+// Extract generated values
+const confirmationCode = await testdriver.extract('the 6-digit confirmation code');
 console.log('Code:', confirmationCode);
 
 // Use it later in the test
@@ -125,7 +125,7 @@ await testdriver.type(confirmationCode);
 **Verification:**
 ```javascript
 // Extract and verify
-const displayedTotal = await testdriver.remember('the cart total');
+const displayedTotal = await testdriver.extract('the cart total');
 const expectedTotal = '$99.99';
 
 expect(displayedTotal).toBe(expectedTotal);
@@ -134,7 +134,7 @@ expect(displayedTotal).toBe(expectedTotal);
 **Conditional Logic:**
 ```javascript
 // Extract state and make decisions
-const status = await testdriver.remember('the order status');
+const status = await testdriver.extract('the order status');
 
 if (status.includes('Pending')) {
   // Wait for processing

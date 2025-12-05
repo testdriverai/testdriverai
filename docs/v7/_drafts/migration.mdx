@@ -207,16 +207,16 @@ await testdriver.focusApplication('Google Chrome');
 ```
 </CodeGroup>
 
-### Remember
+### Extract
 
 <CodeGroup>
 ```yaml YAML
-- command: remember
+- command: extract
   description: the order number
 ```
 
 ```javascript SDK
-const orderNumber = await testdriver.remember('the order number');
+const orderNumber = await testdriver.extract('the order number');
 ```
 </CodeGroup>
 
