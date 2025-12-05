@@ -68,24 +68,24 @@
                     "group": "Apps",
                     "icon": "laptop",
                     "pages": [
-                      "apps/static-websites",
-                      "apps/desktop-apps",
-                      "apps/chrome-extensions",
-                      "apps/mobile-apps",
-                      "apps/tauri-apps"
+                      "/v6/apps/static-websites",
+                      "/v6/apps/desktop-apps",
+                      "/v6/apps/chrome-extensions",
+                      "/v6/apps/mobile-apps",
+                      "/v6/apps/tauri-apps"
                     ]
                   },
                   {
                     "group": "Scenarios",
                     "icon": "computer-mouse",
                     "pages": [
-                      "scenarios/ai-chatbot",
-                      "scenarios/cookie-banner",
-                      "scenarios/file-upload",
-                      "scenarios/form-filling",
-                      "scenarios/log-in",
-                      "scenarios/pdf-generation",
-                      "scenarios/spell-check"
+                      "/v6/scenarios/ai-chatbot",
+                      "/v6/scenarios/cookie-banner",
+                      "/v6/scenarios/file-upload",
+                      "/v6/scenarios/form-filling",
+                      "/v6/scenarios/log-in",
+                      "/v6/scenarios/pdf-generation",
+                      "/v6/scenarios/spell-check"
                     ]
                   },
                   {
@@ -156,7 +156,7 @@
                   {
                     "group": "Reporting",
                     "icon": "chart-simple",
-                    "pages": ["exporting/junit", "/v6/bugs/jira"]
+                    "pages": ["/v6/exporting/junit", "/v6/bugs/jira"]
                   }
                 ]
               },
@@ -307,15 +307,75 @@
   "redirects": [
     {
       "source": "/guides/github-actions",
-      "destination": "/action/setup"
+      "destination": "/v6/action/setup"
     },
     {
       "source": "/reference/test-steps",
-      "destination": "/features/selectorless"
+      "destination": "/v6/features/selectorless"
     },
     {
       "source": "/guides/debugging-test-runs",
-      "destination": "/getting-started/editing"
+      "destination": "/v6/getting-started/editing"
+    },
+    {
+      "source": "/overview/:slug*",
+      "destination": "/v6/overview/:slug*"
+    },
+    {
+      "source": "/features/:slug*",
+      "destination": "/v6/features/:slug*"
+    },
+    {
+      "source": "/getting-started/:slug*",
+      "destination": "/v6/getting-started/:slug*"
+    },
+    {
+      "source": "/cli/:slug*",
+      "destination": "/v6/cli/:slug*"
+    },
+    {
+      "source": "/interactive/:slug*",
+      "destination": "/v6/interactive/:slug*"
+    },
+    {
+      "source": "/guide/:slug*",
+      "destination": "/v6/guide/:slug*"
+    },
+    {
+      "source": "/action/:slug*",
+      "destination": "/v6/action/:slug*"
+    },
+    {
+      "source": "/account/:slug*",
+      "destination": "/v6/account/:slug*"
+    },
+    {
+      "source": "/apps/:slug*",
+      "destination": "/v6/apps/:slug*"
+    },
+    {
+      "source": "/scenarios/:slug*",
+      "destination": "/v6/scenarios/:slug*"
+    },
+    {
+      "source": "/integrations/:slug*",
+      "destination": "/v6/integrations/:slug*"
+    },
+    {
+      "source": "/importing/:slug*",
+      "destination": "/v6/importing/:slug*"
+    },
+    {
+      "source": "/exporting/:slug*",
+      "destination": "/v6/exporting/:slug*"
+    },
+    {
+      "source": "/bugs/:slug*",
+      "destination": "/v6/bugs/:slug*"
+    },
+    {
+      "source": "/commands/:slug*",
+      "destination": "/v6/commands/:slug*"
     }
   ],
   "integrations": {
