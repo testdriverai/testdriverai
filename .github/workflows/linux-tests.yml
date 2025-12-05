@@ -23,6 +23,6 @@ jobs:
       run: npm ci
     
     - name: Run Linux tests
-      run: npx vitest run test/testdriver/assert.test.mjs
+      run: npx vitest run test/testdriver/*.test.mjs
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
