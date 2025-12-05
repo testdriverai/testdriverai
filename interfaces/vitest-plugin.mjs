@@ -423,7 +423,7 @@ export default function testDriverPlugin(options = {}) {
     options.apiRoot || process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
   pluginState.ciProvider = detectCI();
   pluginState.gitInfo = getGitInfo();
-  
+
   // Store TestDriver-specific options (excluding plugin-specific ones)
   const { apiKey, apiRoot, ...testDriverOptions } = options;
   pluginState.testDriverOptions = testDriverOptions;
@@ -441,7 +441,13 @@ export default function testDriverPlugin(options = {}) {
     logger.debug("Global TestDriver options:", testDriverOptions);
   }
 
-  return new TestDriverReporter(options);
+  // Create reporter instance
+  const reporter = new TestDriverReporter(options);
+  
+  // Add name property for Vitest
+  reporter.name = 'testdriver';
+  
+  return reporter;
 }
 
 /**
@@ -457,6 +463,10 @@ class TestDriverReporter {
   async onInit(ctx) {
     this.ctx = ctx;
     logger.debug("onInit called - UPDATED VERSION");
+
+    // Store project root for making file paths relative
+    pluginState.projectRoot = ctx.config.root || process.cwd();
+    logger.debug("Project root:", pluginState.projectRoot);
 
     // NOW read the API key and API root (after setupFiles have run, including dotenv/config)
     pluginState.apiKey = this.options.apiKey || process.env.TD_API_KEY;
@@ -668,11 +678,15 @@ class TestDriverReporter {
         dashcamUrl = testResult.dashcamUrl || null;
         const platform = testResult.platform || null;
         sessionId = testResult.sessionId || null;
-        testFile =
+        const absolutePath =
           testResult.testFile ||
           test.file?.filepath ||
           test.file?.name ||
           "unknown";
+        // Make path relative to project root
+        testFile = pluginState.projectRoot && absolutePath !== "unknown"
+          ? path.relative(pluginState.projectRoot, absolutePath)
+          : absolutePath;
         testOrder =
           testResult.testOrder !== undefined ? testResult.testOrder : 0;
         // Don't override duration from file - use Vitest's result.duration
@@ -696,7 +710,7 @@ class TestDriverReporter {
         logger.debug(`No result file found for test: ${test.id}`);
         // Fallback to test object properties - try multiple sources
         // In Vitest, the file path is on test.module.task.filepath
-        testFile =
+        const absolutePath =
           test.module?.task?.filepath ||
           test.module?.file?.filepath ||
           test.module?.file?.name ||
@@ -706,13 +720,17 @@ class TestDriverReporter {
           test.suite?.file?.name ||
           test.location?.file ||
           "unknown";
+        // Make path relative to project root
+        testFile = pluginState.projectRoot && absolutePath !== "unknown"
+          ? path.relative(pluginState.projectRoot, absolutePath)
+          : absolutePath;
         logger.debug(`Resolved testFile: ${testFile}`);
       }
     } catch (error) {
       logger.error("Failed to read test result file:", error.message);
       // Fallback to test object properties - try multiple sources
       // In Vitest, the file path is on test.module.task.filepath
-      testFile =
+      const absolutePath =
         test.module?.task?.filepath ||
         test.module?.file?.filepath ||
         test.module?.file?.name ||
@@ -722,6 +740,10 @@ class TestDriverReporter {
         test.suite?.file?.name ||
         test.location?.file ||
         "unknown";
+      // Make path relative to project root
+      testFile = pluginState.projectRoot && absolutePath !== "unknown"
+        ? path.relative(pluginState.projectRoot, absolutePath)
+        : absolutePath;
       logger.debug(`Resolved testFile from fallback: ${testFile}`);
     }
 
@@ -901,8 +923,9 @@ function getGitInfo() {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "ignore"]
       }).trim();
+      logger.debug("Git commit from local:", info.commit);
     } catch (e) {
-      // Git command failed, ignore
+      logger.debug("Failed to get git commit:", e.message);
     }
   }
 
@@ -912,8 +935,9 @@ function getGitInfo() {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "ignore"]
       }).trim();
+      logger.debug("Git branch from local:", info.branch);
     } catch (e) {
-      // Git command failed, ignore
+      logger.debug("Failed to get git branch:", e.message);
     }
   }
 
@@ -923,8 +947,9 @@ function getGitInfo() {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "ignore"]
       }).trim();
+      logger.debug("Git author from local:", info.author);
     } catch (e) {
-      // Git command failed, ignore
+      logger.debug("Failed to get git author:", e.message);
     }
   }
 
@@ -941,12 +966,14 @@ function getGitInfo() {
       const match = remoteUrl.match(/[:/]([^/:]+\/[^/:]+?)(\.git)?$/);
       if (match) {
         info.repo = match[1];
+        logger.debug("Git repo from local:", info.repo);
       }
     } catch (e) {
-      // Git command failed, ignore
+      logger.debug("Failed to get git repo:", e.message);
     }
   }
 
+  logger.info("Collected git info:", info);
   return info;
 }
 

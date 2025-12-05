@@ -178,9 +178,9 @@ commands:
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["focus-application"](object.name);
           break;
-        case "remember": {
+        case "extract": {
           emitter.emit(events.log.log, generator.jsonToManual(object));
-          let value = await commands["remember"](object.description);
+          let value = await commands["extract"](object.description);
           emitter.emit(events.log.log, value);
           outputsInstance.set(object.output, value);
           break;

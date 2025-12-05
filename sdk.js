@@ -339,12 +339,12 @@ class Element {
       }
 
       // Determine threshold: 
-      // - If cacheKey is provided, enable cache (threshold = 0.05 or custom)
+      // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
       // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
       let threshold;
       if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? 0.05;
+        threshold = cacheThreshold ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = cacheThreshold;
@@ -1256,11 +1256,65 @@ class TestDriverSDK {
           console.log('[provision.chrome] ✅ Dashcam started');
         }
 
+        // Set up Chrome profile with preferences
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        const userDataDir = this.os === 'windows' 
+          ? 'C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome'
+          : '/tmp/testdriver-chrome-profile';
+        
+        // Create user data directory and Default profile directory
+        const defaultProfileDir = this.os === 'windows'
+          ? `${userDataDir}\\Default`
+          : `${userDataDir}/Default`;
+        
+        const createDirCmd = this.os === 'windows'
+          ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+          : `mkdir -p "${defaultProfileDir}"`;
+        
+        await this.exec(shell, createDirCmd, 10000, true);
+        
+        // Write Chrome preferences
+        const chromePrefs = {
+          credentials_enable_service: false,
+          profile: {
+            password_manager_enabled: false,
+            default_content_setting_values: {}
+          },
+          signin: {
+            allowed: false
+          },
+          sync: {
+            requested: false,
+            first_setup_complete: true,
+            sync_all_os_types: false
+          },
+          autofill: {
+            enabled: false
+          },
+          local_state: {
+            browser: {
+              has_seen_welcome_page: true
+            }
+          }
+        };
+        
+        const prefsPath = this.os === 'windows'
+          ? `${defaultProfileDir}\\Preferences`
+          : `${defaultProfileDir}/Preferences`;
+        
+        const prefsJson = JSON.stringify(chromePrefs, null, 2);
+        const writePrefCmd = this.os === 'windows'
+          ? `Set-Content -Path "${prefsPath}" -Value '${prefsJson.replace(/'/g, "''")}'`
+          : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+        
+        await this.exec(shell, writePrefCmd, 10000, true);
+        console.log('[provision.chrome] ✅ Chrome preferences configured');
+
         // Build Chrome launch command
         const chromeArgs = [];
         if (maximized) chromeArgs.push('--start-maximized');
         if (guest) chromeArgs.push('--guest');
-        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run');
+        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--disable-infobars', `--user-data-dir=${userDataDir}`);
         
         // Add dashcam-chrome extension on Linux
         if (this.os === 'linux') {
@@ -1268,7 +1322,6 @@ class TestDriverSDK {
         }
 
         // Launch Chrome
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
         
         if (this.os === 'windows') {
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
@@ -1666,12 +1719,12 @@ class TestDriverSDK {
       }
 
       // Determine threshold: 
-      // - If cacheKey is provided, enable cache (threshold = 0.05 or custom)
+      // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
       // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
       let threshold;
       if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? 0.05;
+        threshold = cacheThreshold ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = cacheThreshold;
@@ -2049,15 +2102,15 @@ class TestDriverSDK {
          */
         doc: "Focus an application by name",
       },
-      remember: {
-        name: "remember",
+      extract: {
+        name: "extract",
         /**
-         * Extract and remember information from the screen using AI
+         * Extract information from the screen using AI
          * @param {Object|string} options - Options object or description (legacy positional)
-         * @param {string} options.description - What to remember
+         * @param {string} options.description - What to extract
          * @returns {Promise<string>}
          */
-        doc: "Extract and remember information from the screen",
+        doc: "Extract information from the screen",
       },
       assert: {
         name: "assert",

@@ -130,7 +130,7 @@ class SDKLogFormatter {
       // Validation
       assert: chalk.green("✅"),
       verify: chalk.green("🔍"),
-      remember: chalk.blue("🧠"),
+      extract: chalk.blue("🧠"),
 
       // System
       connect: chalk.green("🔌"),

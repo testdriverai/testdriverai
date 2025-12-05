@@ -511,9 +511,13 @@ export async function teardownTest(client, options = {}) {
           fs.mkdirSync(dir, { recursive: true });
         }
 
-        // Get test file path
-        const testFile =
+        // Get test file path - make it relative to project root
+        const absolutePath =
           options.task.file?.filepath || options.task.file?.name || "unknown";
+        const projectRoot = process.cwd();
+        const testFile = absolutePath !== "unknown"
+          ? path.relative(projectRoot, absolutePath)
+          : absolutePath;
 
         // Calculate test order (index within parent suite)
         let testOrder = 0;

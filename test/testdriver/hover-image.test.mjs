@@ -9,7 +9,7 @@ import { performLogin } from "./setup/testHelpers.mjs";
 
 describe("Hover Image Test", () => {
   it("should click on shopping cart icon and verify empty cart", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { headless: false });
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({

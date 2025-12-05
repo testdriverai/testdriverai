@@ -143,7 +143,10 @@ class InitCommand extends BaseCommand {
         },
         keywords: ["testdriver", "testing", "e2e"],
         author: "",
-        license: "ISC"
+        license: "ISC",
+        engines: {
+          node: ">=20.19.0"
+        }
       };
 
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
@@ -159,6 +162,7 @@ class InitCommand extends BaseCommand {
   async createVitestExample() {
     const testDir = path.join(process.cwd(), "tests");
     const testFile = path.join(testDir, "example.test.js");
+    const loginSnippetFile = path.join(testDir, "login.js");
     const configFile = path.join(process.cwd(), "vitest.config.js");
 
     // Create test directory if it doesn't exist
@@ -167,23 +171,73 @@ class InitCommand extends BaseCommand {
       console.log(chalk.gray(`  Created directory: ${testDir}`));
     }
 
-    // Create example Vitest test
+    // Create login snippet file
+    const loginSnippetContent = `/**
+ * Login snippet - reusable login function
+ * 
+ * This demonstrates how to create reusable test snippets that can be
+ * imported and used across multiple test files.
+ */
+export async function login(testdriver) {
+
+  // The password is displayed on screen, have TestDriver extract it
+  const password = await testdriver.extract('the password');
+
+  // Find the username field
+  const usernameField = await testdriver.find(
+    'Username, label above the username input field on the login form'
+  );
+  await usernameField.click();
+
+  // Type username
+  await testdriver.type('standard_user');
+
+  // Enter password form earlier 
+  // Marked as secret so it's not logged or stored
+  await testdriver.pressKeys(['tab']);
+  await testdriver.type(password, { secret: true });
+
+  // Submit the form
+  await testdriver.find('submit button on the login form').click();
+}
+`;
+
+    fs.writeFileSync(loginSnippetFile, loginSnippetContent);
+    console.log(chalk.green(`  Created login snippet: ${loginSnippetFile}`));
+
+    // Create example Vitest test that uses the login snippet
     const vitestContent = `import { test, expect } from 'vitest';
-import { chrome } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/vitest/hooks';
+import { login } from './login.js';
 
-test('should navigate to example.com and find elements', async (context) => {
-  // The chrome preset handles connection, browser launch, and cleanup automatically
-  const { testdriver } = await chrome(context, {
-    url: 'https://example.com'
-    // apiKey automatically read from process.env.TD_API_KEY via .env file
-  });
+test('should login and add item to cart', async (context) => {
 
-  // Find and verify elements
-  const heading = await testdriver.find('heading that says Example Domain');
-  expect(heading.found()).toBe(true);
+  // Create TestDriver instance - automatically connects to sandbox
+  const testdriver = TestDriver(context);
 
-  const link = await testdriver.find('More information link');
-  expect(link.found()).toBe(true);
+  // Launch chrome and navigate to demo app
+  await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+  // Use the login snippet to handle authentication
+  // This demonstrates how to reuse test logic across multiple tests
+  await login(testdriver);
+
+  // Add item to cart
+  const addToCartButton = await testdriver.find(
+    'add to cart button under TestDriver Hat'
+  );
+  await addToCartButton.click();
+
+  // Open cart
+  const cartButton = await testdriver.find(
+    'cart button in the top right corner'
+  );
+  await cartButton.click();
+
+  // Verify item in cart
+  const result = await testdriver.assert('TestDriver Hat is in the cart');
+  expect(result).toBeTruthy();
+  
 });
 `;
 
@@ -194,16 +248,20 @@ test('should navigate to example.com and find elements', async (context) => {
     if (!fs.existsSync(configFile)) {
       const configContent = `import { defineConfig } from 'vitest/config';
 import TestDriver from 'testdriverai/vitest';
-import dotenv from 'dotenv';
+import { config } from 'dotenv';
 
 // Load environment variables from .env file
-dotenv.config();
+config();
 
 export default defineConfig({
-  plugins: [TestDriver()],
   test: {
-    testTimeout: 120000,
-    hookTimeout: 120000,
+    testTimeout: 300000,
+    hookTimeout: 300000,
+    reporters: [
+      'default',
+      TestDriver(),
+    ],
+    setupFiles: ['testdriverai/vitest/setup'],
   },
 });
 `;
@@ -315,7 +373,7 @@ jobs:
     console.log(chalk.cyan("\n  Installing dependencies...\n"));
 
     try {
-      execSync("npm install -D vitest testdriverai && npm install dotenv", {
+      execSync("npm install -D vitest testdriverai@beta && npm install dotenv", {
         cwd: process.cwd(),
         stdio: "inherit"
       });
@@ -326,7 +384,7 @@ jobs:
           "\n⚠️  Failed to install dependencies automatically. Please run:",
         ),
       );
-      console.log(chalk.gray("     npm install -D vitest testdriverai"));
+      console.log(chalk.gray("     npm install -D vitest testdriverai@beta"));
       console.log(chalk.gray("     npm install dotenv\n"));
     }
   }

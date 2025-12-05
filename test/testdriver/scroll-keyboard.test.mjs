@@ -27,7 +27,7 @@ describe("Scroll Keyboard Test", () => {
       "The Hamster Dance, large heading at top of page",
     );
     await heading.click();
-    await testdriver.scroll("down", 1000);
+    await testdriver.scroll("down", { amount: 1000 });
 
     // Assert the page is scrolled down
     const result = await testdriver.assert(
