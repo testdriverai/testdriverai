@@ -26,10 +26,10 @@ describe("Scroll Until Text Test", () => {
     while (!found && scrollCount < maxScrolls) {
       const findResult = await testdriver.find("testdriver socks");
       if (findResult) {
-      found = true;
+        found = true;
       } else {
-      await testdriver.scroll({ direction: "down" });
-      scrollCount++;
+        await testdriver.scroll();
+        scrollCount++;
       }
     }
     
