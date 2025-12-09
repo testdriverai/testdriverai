@@ -2,7 +2,7 @@
 title: "What is TestDriver?"
 description: "AI-powered end-to-end testing for web, desktop, and mobile applications"
 icon: "circle-info"
-wide: true
+mode: "wide"
 ---
 
 TestDriver is an AI-native testing platform that lets you write tests in natural language. It uses computer vision and AI to understand your application like a human would, eliminating brittle selectors and making tests easy to write and maintain.
@@ -11,24 +11,11 @@ TestDriver is an AI-native testing platform that lets you write tests in natural
 
 Traditional E2E testing tools require:
 
-<CardGroup cols={3}>
+<CardGroup cols={1}>
   <Card title="Brittle Selectors" icon="triangle-exclamation">
     ```javascript
     // ❌ Breaks when DOM changes
     await page.click('#root > div > form > div:nth-child(2) > button')
-    ```
-  </Card>
-
-  <Card title="Complex Setup" icon="wrench">
-    ```javascript
-    // ❌ Manual lifecycle management
-    await browser.launch()
-    await page.goto(url)
-    try {
-      // Test code
-    } finally {
-      await browser.close()
-    }
     ```
   </Card>
 

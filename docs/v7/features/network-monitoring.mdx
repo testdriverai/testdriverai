@@ -1,0 +1,568 @@
+---
+title: "Network Monitoring"
+description: "HTTP requests, responses, timing, and HAR file analysis"
+icon: "network-wired"
+---
+
+Track all network activity including HTTP requests, responses, status codes, timing waterfall, and data transfer for complete visibility into API calls and resource loading.
+
+## Network Activity Dashboard
+
+View all HTTP requests in your test:
+
+```
+Network Activity:
+┌────────────────────────────────────────────────────────────────────┐
+│ Method  URL                              Status  Time    Size      │
+├────────────────────────────────────────────────────────────────────┤
+│ GET     /api/user/123                    200     234ms   2.4 KB    │
+│ POST    /api/login                       200     156ms   1.1 KB    │
+│ GET     /api/dashboard/data              200     445ms   12.3 KB   │
+│ GET     /assets/app.js                   200     89ms    234 KB    │
+│ GET     /assets/styles.css               200     67ms    45 KB     │
+│ GET     /api/notifications               304     123ms   0 B       │
+│ POST    /api/settings                    400     201ms   0.8 KB    │
+│ GET     /api/profile/avatar.jpg          200     334ms   156 KB    │
+│ WS      ws://api.example.com/live        101     -       -         │
+└────────────────────────────────────────────────────────────────────┘
+
+Total Requests: 9
+Downloaded: 451.6 KB
+Uploaded: 5.2 KB
+Total Time: 1.649s
+```
+
+## Request Details
+
+Complete information for each request:
+
+```
+Request Details: POST /api/login
+┌────────────────────────────────────────────────────┐
+│ General Information:                               │
+│ URL: https://api.example.com/api/login             │
+│ Method: POST                                       │
+│ Status: 200 OK                                     │
+│ Remote Address: 172.217.14.206:443                 │
+│ Protocol: HTTP/2.0                                 │
+│                                                    │
+│ Timing:                                            │
+│ ├─ DNS Lookup:        12ms                        │
+│ ├─ TCP Connect:       45ms                        │
+│ ├─ TLS Handshake:     67ms                        │
+│ ├─ Request Sent:      3ms                         │
+│ ├─ Waiting (TTFB):    89ms                        │
+│ └─ Content Download:  12ms                        │
+│ Total:                156ms                        │
+│                                                    │
+│ Request Headers:                                   │
+│ Accept: application/json                           │
+│ Content-Type: application/json                     │
+│ Authorization: Bearer eyJ0eXAiOiJKV1Q...          │
+│ User-Agent: Mozilla/5.0...                         │
+│                                                    │
+│ Request Payload:                                   │
+│ {                                                  │
+│   "email": "user@example.com",                     │
+│   "password": "********"                           │
+│ }                                                  │
+│                                                    │
+│ Response Headers:                                  │
+│ Content-Type: application/json; charset=utf-8      │
+│ Cache-Control: no-cache, no-store                  │
+│ Set-Cookie: session=abc123; HttpOnly; Secure       │
+│ X-RateLimit-Remaining: 98                          │
+│                                                    │
+│ Response Body:                                     │
+│ {                                                  │
+│   "success": true,                                 │
+│   "user": {                                        │
+│     "id": 123,                                     │
+│     "email": "user@example.com",                   │
+│     "name": "John Doe"                             │
+│   },                                               │
+│   "token": "eyJ0eXAiOiJKV1QiL..."                  │
+│ }                                                  │
+└────────────────────────────────────────────────────┘
+```
+
+## Network Waterfall
+
+Visual timeline of all requests:
+
+```
+Network Waterfall (0s → 2s):
+┌────────────────────────────────────────────────────────────────────┐
+│ 0.0s    0.5s    1.0s    1.5s    2.0s                               │
+│ │       │       │       │       │                                  │
+│ ████████                                     /api/login (156ms)    │
+│   ████████████                               /assets/app.js        │
+│     ██████                                   /assets/styles.css    │
+│         ██████████████                       /api/user/123         │
+│             ████████████████████             /api/dashboard/data   │
+│                 ██████                       /api/notifications    │
+│                   ████████                   /api/profile/avatar   │
+│                       ████████               /api/settings (400)   │
+│                                                                    │
+│ Legend:                                                            │
+│ ▓ Queued/Stalled  █ Request  █ Response  █ Download               │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+## HTTP Status Codes
+
+Track response status codes:
+
+<CardGroup cols={2}>
+  <Card title="2xx Success" icon="check" color="green">
+    ```
+    200 OK           (6 requests)
+    201 Created      (1 request)
+    204 No Content   (0 requests)
+    304 Not Modified (1 request)
+    ```
+  </Card>
+
+  <Card title="3xx Redirects" icon="arrows-turn-right" color="blue">
+    ```
+    301 Moved Permanently (0)
+    302 Found             (0)
+    304 Not Modified      (1)
+    307 Temporary Redirect (0)
+    ```
+  </Card>
+
+  <Card title="4xx Client Errors" icon="triangle-exclamation" color="yellow">
+    ```
+    400 Bad Request      (1 request)
+    401 Unauthorized     (0 requests)
+    403 Forbidden        (0 requests)
+    404 Not Found        (0 requests)
+    429 Too Many Requests (0)
+    ```
+  </Card>
+
+  <Card title="5xx Server Errors" icon="circle-xmark" color="red">
+    ```
+    500 Internal Server Error (0)
+    502 Bad Gateway           (0)
+    503 Service Unavailable   (0)
+    504 Gateway Timeout       (0)
+    ```
+  </Card>
+</CardGroup>
+
+## Request/Response Types
+
+Monitor different content types:
+
+<Tabs>
+  <Tab title="API Calls (JSON)">
+    ```
+    API Requests:
+    ┌────────────────────────────────────────────────┐
+    │ POST /api/login                    156ms  200  │
+    │ GET  /api/user/123                 234ms  200  │
+    │ GET  /api/dashboard/data           445ms  200  │
+    │ POST /api/settings                 201ms  400  │
+    │ GET  /api/notifications            123ms  304  │
+    └────────────────────────────────────────────────┘
+    
+    Total API Calls: 5
+    Average Response Time: 231.8ms
+    Success Rate: 80% (4/5)
+    ```
+  </Tab>
+
+  <Tab title="Static Assets">
+    ```
+    Static Assets:
+    ┌────────────────────────────────────────────────┐
+    │ JS    /assets/app.js            89ms   234 KB  │
+    │ CSS   /assets/styles.css        67ms   45 KB   │
+    │ IMG   /profile/avatar.jpg       334ms  156 KB  │
+    │ FONT  /fonts/roboto.woff2       112ms  78 KB   │
+    │ IMG   /logo.svg                 45ms   12 KB   │
+    └────────────────────────────────────────────────┘
+    
+    Total Downloaded: 525 KB
+    Cache Hit Rate: 20% (1/5 from cache)
+    ```
+  </Tab>
+
+  <Tab title="WebSocket">
+    ```
+    WebSocket Connections:
+    ┌────────────────────────────────────────────────┐
+    │ ws://api.example.com/live                      │
+    │                                                │
+    │ Status: Connected                              │
+    │ Protocol: WS                                   │
+    │ Duration: 2.5s                                 │
+    │                                                │
+    │ Messages Sent: 3                               │
+    │ Messages Received: 7                           │
+    │                                                │
+    │ [0:12] → {"type":"subscribe","channel":"user"} │
+    │ [0:13] ← {"type":"welcome","version":"2.0"}    │
+    │ [0:15] ← {"type":"notification","count":3}     │
+    └────────────────────────────────────────────────┘
+    ```
+  </Tab>
+
+  <Tab title="GraphQL">
+    ```
+    GraphQL Operations:
+    ┌────────────────────────────────────────────────┐
+    │ Query: GetUserProfile              234ms  200  │
+    │   Fields: id, name, email, avatar              │
+    │   Variables: { userId: 123 }                   │
+    │                                                │
+    │ Mutation: UpdateSettings           201ms  400  │
+    │   Fields: theme, notifications                 │
+    │   Error: "Invalid theme value"                 │
+    │                                                │
+    │ Query: GetDashboard                445ms  200  │
+    │   Fields: stats, recentActivity                │
+    │   Cached: false                                │
+    └────────────────────────────────────────────────┘
+    ```
+  </Tab>
+</Tabs>
+
+## Failed Requests
+
+Identify and debug failures:
+
+```
+Failed Requests:
+┌────────────────────────────────────────────────────────────────────┐
+│ POST /api/settings - 400 Bad Request                              │
+│                                                                    │
+│ Request:                                                           │
+│ {                                                                  │
+│   "theme": "invalid_theme",                                        │
+│   "notifications": true                                            │
+│ }                                                                  │
+│                                                                    │
+│ Response:                                                          │
+│ {                                                                  │
+│   "error": "Validation failed",                                    │
+│   "message": "Invalid theme value: invalid_theme",                 │
+│   "validValues": ["light", "dark", "auto"]                         │
+│ }                                                                  │
+│                                                                    │
+│ Occurred at: 0:35 in test execution                               │
+│ Impact: Settings not saved, user preferences unchanged             │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+## CORS Errors
+
+Track cross-origin issues:
+
+```
+CORS Errors:
+┌────────────────────────────────────────────────────────────────────┐
+│ ❌ Cross-Origin Request Blocked                                   │
+│                                                                    │
+│ Request URL: https://api.external.com/data                         │
+│ Origin: https://example.com                                        │
+│                                                                    │
+│ Issue:                                                             │
+│ The CORS policy blocked this request. No 'Access-Control-Allow-    │
+│ Origin' header is present on the requested resource.               │
+│                                                                    │
+│ Missing Header:                                                    │
+│ Access-Control-Allow-Origin                                        │
+│                                                                    │
+│ Required Fix:                                                      │
+│ Server must include:                                               │
+│ Access-Control-Allow-Origin: https://example.com                   │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+## Performance Metrics
+
+Analyze request performance:
+
+```
+Performance Summary:
+┌────────────────────────────────────────────────────┐
+│ Total Requests:          9                         │
+│ Total Time:              1.649s                    │
+│ Downloaded:              451.6 KB                  │
+│ Uploaded:                5.2 KB                    │
+│                                                    │
+│ Response Times:                                    │
+│ Fastest:                 45ms   (/logo.svg)        │
+│ Slowest:                 445ms  (/api/dashboard)   │
+│ Average:                 183ms                     │
+│ Median:                  156ms                     │
+│                                                    │
+│ API Performance:                                   │
+│ Average API Time:        231.8ms                   │
+│ API Success Rate:        80%                       │
+│ Failed API Calls:        1                         │
+│                                                    │
+│ Caching:                                           │
+│ Cache Hit Rate:          11% (1/9)                 │
+│ Cached Data Saved:       0 B                       │
+│                                                    │
+│ Recommendations:                                   │
+│ ⚠️ Slow API: /api/dashboard/data (445ms)          │
+│ ⚠️ Low cache hit rate - consider caching headers  │
+│ ⚠️ Failed request: POST /api/settings              │
+└────────────────────────────────────────────────────┘
+```
+
+## Rate Limiting
+
+Monitor API rate limits:
+
+```
+Rate Limit Tracking:
+┌────────────────────────────────────────────────────┐
+│ API: https://api.example.com                       │
+│                                                    │
+│ X-RateLimit-Limit:        100 requests/hour        │
+│ X-RateLimit-Remaining:    98 requests              │
+│ X-RateLimit-Reset:        2024-01-15 15:30:00      │
+│                                                    │
+│ Current Usage:            2/100 (2%)               │
+│ Estimated Time to Reset:  45 minutes               │
+│                                                    │
+│ Status: ✓ Healthy                                  │
+└────────────────────────────────────────────────────┘
+```
+
+## Request Filtering
+
+Find specific network activity:
+
+<Tabs>
+  <Tab title="By Method">
+    ```
+    Show only:
+    ☑ GET
+    ☑ POST
+    ☐ PUT
+    ☐ PATCH
+    ☐ DELETE
+    ☐ OPTIONS
+    ```
+  </Tab>
+
+  <Tab title="By Status">
+    ```
+    Filter by status:
+    ☑ 2xx (Success)
+    ☑ 3xx (Redirect)
+    ☑ 4xx (Client Error)
+    ☑ 5xx (Server Error)
+    
+    Specific codes:
+    200, 400, 404, 500
+    ```
+  </Tab>
+
+  <Tab title="By URL Pattern">
+    ```
+    URL contains:
+    "/api/"
+    "/assets/"
+    ".jpg"
+    
+    Regex supported:
+    ^/api/(user|settings)
+    \.(js|css|png)$
+    ```
+  </Tab>
+
+  <Tab title="By Timing">
+    ```
+    Response time:
+    < 100ms     (Fast)
+    100-500ms   (Normal)
+    > 500ms     (Slow)
+    
+    Custom range:
+    200ms - 400ms
+    ```
+  </Tab>
+</Tabs>
+
+## HAR File Export
+
+Export complete network data:
+
+```json
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "TestDriver",
+      "version": "7.0"
+    },
+    "entries": [
+      {
+        "startedDateTime": "2024-01-15T14:30:12.345Z",
+        "time": 156,
+        "request": {
+          "method": "POST",
+          "url": "https://api.example.com/api/login",
+          "httpVersion": "HTTP/2.0",
+          "headers": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer ..." }
+          ],
+          "postData": {
+            "mimeType": "application/json",
+            "text": "{\"email\":\"user@example.com\",\"password\":\"...\"}"
+          }
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": [
+            { "name": "Content-Type", "value": "application/json" }
+          ],
+          "content": {
+            "size": 1100,
+            "mimeType": "application/json",
+            "text": "{\"success\":true,\"user\":{...}}"
+          }
+        },
+        "timings": {
+          "dns": 12,
+          "connect": 45,
+          "ssl": 67,
+          "send": 3,
+          "wait": 89,
+          "receive": 12
+        }
+      }
+    ]
+  }
+}
+```
+
+<Tip>
+Import HAR files into Chrome DevTools, Firefox, or online analyzers like Google's HAR Analyzer for advanced visualization.
+</Tip>
+
+## Sensitive Data Protection
+
+Credentials automatically redacted:
+
+```
+Request Headers (Sanitized):
+Authorization: Bearer ████████████████
+Cookie: session=████████████████
+X-API-Key: ████████████████
+
+Request Body (Sanitized):
+{
+  "email": "user@example.com",
+  "password": "████████"
+}
+
+Response Headers (Sanitized):
+Set-Cookie: session=████████████████; HttpOnly; Secure
+```
+
+<Warning>
+TestDriver automatically redacts sensitive headers like `Authorization`, `Cookie`, and password fields in request bodies.
+</Warning>
+
+## Network Mocking
+
+Verify mocked requests:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('mock API response', async (context) => {
+  const { testdriver, page } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  // Mock API endpoint
+  await page.route('**/api/user/**', route => {
+    route.fulfill({
+      status: 200,
+      body: JSON.stringify({ id: 123, name: 'Mock User' })
+    });
+  });
+
+  await testdriver.find('profile button').click();
+  
+  // Network monitoring shows mocked request
+  // Replay indicates which requests were mocked
+});
+```
+
+**Replay Indication:**
+```
+Network Activity:
+┌────────────────────────────────────────────────────┐
+│ GET  /api/user/123  200  12ms  🎭 MOCKED           │
+└────────────────────────────────────────────────────┘
+```
+
+## Integration with Other Logs
+
+Correlate network with other events:
+
+```
+Timeline View (0:15 - 0:30):
+┌────────────────────────────────────────────────────┐
+│ [0:15] 🔵 Application: Click login button          │
+│ [0:16] 🌐 Network: POST /api/login (started)       │
+│ [0:17] 📝 Browser: console.log('Logging in...')    │
+│ [0:18] 🌐 Network: POST /api/login (200 OK, 156ms) │
+│ [0:19] 📝 Browser: console.log('Login successful') │
+│ [0:20] 🔵 Application: Navigate to /dashboard      │
+│ [0:21] 🌐 Network: GET /api/dashboard/data         │
+│ [0:25] ⚠️ Browser: console.warn('Slow API')        │
+│ [0:28] 🌐 Network: GET /api/dashboard (200, 445ms) │
+│ [0:30] 🔵 Application: Dashboard rendered          │
+└────────────────────────────────────────────────────┘
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Application Logs"
+    icon="terminal"
+    href="/v7/features/application-logs"
+  >
+    TestDriver SDK logs
+  </Card>
+
+  <Card
+    title="Browser Logs"
+    icon="browser"
+    href="/v7/features/browser-logs"
+  >
+    Console output and errors
+  </Card>
+
+  <Card
+    title="System Performance"
+    icon="chart-line"
+    href="/v7/features/system-performance"
+  >
+    CPU, memory, and resource usage
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    Complete test execution videos
+  </Card>
+</CardGroup>

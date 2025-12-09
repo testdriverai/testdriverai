@@ -1,0 +1,393 @@
+---
+title: "Test Cases"
+description: "Individual test case reports with history, trends, and pass rates"
+icon: "file-lines"
+---
+
+View detailed information for every test case including execution history, pass rate trends, recent runs, and replay links.
+
+## Test Cases Dashboard
+
+Access all test cases at [app.testdriver.ai/tests](https://app.testdriver.ai/tests):
+
+<Card title="Test Cases" icon="list" href="https://app.testdriver.ai/tests">
+  View all test cases with filtering and historical data
+</Card>
+
+### Test Case Information
+
+Each test case displays:
+
+- **Test Name** - Full descriptive name
+- **File** - Source file location (e.g., `test/testdriver.test.js`)
+- **Passed** - Number of successful runs
+- **Failed** - Number of failed runs
+- **Pass Rate** - Success percentage with visual indicator
+- **Trend** - Sparkline showing recent pass/fail history
+- **Change** - Comparison to previous period
+- **Last Run** - Most recent execution time
+- **Replay** - Quick link to latest test replay
+
+## Filtering & Search
+
+Find specific test cases quickly:
+
+<Tabs>
+  <Tab title="Time Period">
+    ```
+    Last 24 hours (default)
+    Last week
+    Last month
+    Custom date range
+    ```
+  </Tab>
+
+  <Tab title="Branch">
+    ```
+    main (default)
+    All branches
+    Specific branch
+    ```
+  </Tab>
+
+  <Tab title="Repository">
+    ```
+    All repositories
+    frontend
+    backend
+    Specific repo
+    ```
+  </Tab>
+
+  <Tab title="Suite/File">
+    ```
+    All test files
+    test/login.test.js
+    test/checkout.test.js
+    Search by filename
+    ```
+  </Tab>
+
+  <Tab title="Test Name">
+    ```
+    Search test names
+    "should login"
+    "checkout flow"
+    Partial matching
+    ```
+  </Tab>
+</Tabs>
+
+## Pass Rate Indicators
+
+Visual status at a glance:
+
+<CardGroup cols={3}>
+  <Card title="100% Pass Rate" icon="check" color="green">
+    Green bar - All runs passed
+  </Card>
+
+  <Card title="Partial Pass Rate" icon="minus" color="yellow">
+    Yellow/Orange bar - Some failures
+  </Card>
+
+  <Card title="0% Pass Rate" icon="xmark" color="red">
+    Red bar - All runs failed
+  </Card>
+</CardGroup>
+
+## Test History
+
+View complete execution history for any test:
+
+```
+Test: "should demonstrate formatted log in dashcam replay"
+File: test/testdriver.test.js
+
+Recent Runs:
+┌─────────────┬────────┬──────────┬──────────┬─────────────────────┐
+│ Run ID      │ Status │ Duration │ Platform │ Timestamp           │
+├─────────────┼────────┼──────────┼──────────┼─────────────────────┤
+│ run_abc123  │ PASSED │ 1.2s     │ Linux    │ 2 hours ago         │
+│ run_abc122  │ PASSED │ 1.1s     │ Linux    │ 3 hours ago         │
+│ run_abc121  │ FAILED │ 0.8s     │ Linux    │ 5 hours ago         │
+│ run_abc120  │ PASSED │ 1.3s     │ Linux    │ 6 hours ago         │
+└─────────────┴────────┴──────────┴──────────┴─────────────────────┘
+
+Pass Rate: 75% (3/4 passed)
+Avg Duration: 1.1s
+```
+
+## Trend Visualization
+
+See pass/fail patterns over time:
+
+```
+Sparkline Chart (Past 7 Days):
+█ = Passed
+▁ = Failed
+  = Not run
+
+Day:  1  2  3  4  5  6  7
+     [█][█][▁][█][█][█][█]
+
+Pass Rate Trend: ↑ 85% → 100% (improving)
+```
+
+**Insights:**
+- Identify flaky tests (inconsistent patterns)
+- Track stabilization efforts
+- Spot recent regressions
+- Validate fixes
+
+## Recent Test Runs
+
+Quick access to latest executions:
+
+<Tabs>
+  <Tab title="Passed Run">
+    ```
+    Status: PASSED ✓
+    Duration: 54s
+    Platform: Linux + Chrome
+    Branch: main
+    Commit: 8cbef48
+    Timestamp: about 1 hour ago
+    
+    [View Replay] [View Logs]
+    ```
+  </Tab>
+
+  <Tab title="Failed Run">
+    ```
+    Status: FAILED ✗
+    Duration: 2m 36s
+    Platform: Linux + Chrome
+    Branch: main
+    Commit: 8cbef48
+    Error: Element not found
+    Timestamp: 12 minutes ago
+    
+    [View Replay] [View Logs] [Debug]
+    ```
+  </Tab>
+
+  <Tab title="Running">
+    ```
+    Status: RUNNING ⟳
+    Elapsed: 1m 23s
+    Platform: Linux + Chrome
+    Branch: feature/checkout
+    Commit: a1b2c3d
+    Started: just now
+    
+    [Watch Live] [Cancel]
+    ```
+  </Tab>
+</Tabs>
+
+## Flaky Test Identification
+
+Tests with inconsistent results are flagged:
+
+```
+⚠️ FLAKY TEST DETECTED
+
+Test: "should click Sign in and verify error message"
+Flakiness Score: 42%
+
+Last 10 Runs:
+✓ ✗ ✓ ✓ ✗ ✓ ✗ ✓ ✓ ✓
+
+Recommendation:
+- Add explicit waits
+- Check for race conditions
+- Review network dependencies
+- Enable anti-flake features
+
+[View Flaky Run Comparison] [See Debugging Tips]
+```
+
+## Pass/Fail History Chart
+
+Detailed historical view:
+
+```
+Bar Chart (Last 30 Days):
+- Green bars: Number of passed runs per day
+- Red bars: Number of failed runs per day
+- Height indicates total runs
+
+Day  Passed  Failed  Total
+Dec 1   5      0      5
+Dec 2   8      2     10
+Dec 3   6      1      7
+...
+Dec 9  12      3     15
+
+Overall: 85% pass rate
+```
+
+## Test Comparison
+
+Compare test performance across branches or time periods:
+
+<Tabs>
+  <Tab title="Branch Comparison">
+    ```
+    Test: "should login successfully"
+    
+    Branch: main
+    - Pass Rate: 95%
+    - Avg Duration: 1.2s
+    - Runs: 100
+    
+    Branch: feature/new-auth
+    - Pass Rate: 87%
+    - Avg Duration: 1.8s
+    - Runs: 45
+    
+    Difference:
+    - Pass Rate: -8% (regression)
+    - Duration: +50% (slower)
+    ```
+  </Tab>
+
+  <Tab title="Time Comparison">
+    ```
+    Test: "should complete checkout"
+    
+    Last Week:
+    - Pass Rate: 78%
+    - Avg Duration: 3.2s
+    
+    This Week:
+    - Pass Rate: 92%
+    - Avg Duration: 2.1s
+    
+    Improvement:
+    - Pass Rate: +14% (better)
+    - Duration: -34% (faster)
+    ```
+  </Tab>
+</Tabs>
+
+## Export Test Cases
+
+Download test case data:
+
+<Tabs>
+  <Tab title="CSV">
+    ```csv
+    Test Name,File,Passed,Failed,Pass Rate,Avg Duration,Last Run
+    should login,test/auth.test.js,45,5,90%,1.2s,2024-12-09T10:30:00Z
+    should checkout,test/shop.test.js,38,12,76%,3.4s,2024-12-09T10:25:00Z
+    ```
+  </Tab>
+
+  <Tab title="JSON">
+    ```json
+    {
+      "testCases": [
+        {
+          "name": "should login successfully",
+          "file": "test/auth.test.js",
+          "stats": {
+            "passed": 45,
+            "failed": 5,
+            "passRate": 0.90,
+            "avgDuration": 1.2
+          },
+          "lastRun": {
+            "status": "PASSED",
+            "timestamp": "2024-12-09T10:30:00Z",
+            "replayUrl": "https://app.testdriver.ai/replay/abc123"
+          }
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Bulk Actions
+
+Manage multiple tests at once:
+
+<CardGroup cols={2}>
+  <Card title="Re-run Selected" icon="rotate-right">
+    Re-execute failed or flaky tests
+  </Card>
+
+  <Card title="Mark as Known Issue" icon="flag">
+    Track expected failures
+  </Card>
+
+  <Card title="Add to Watch List" icon="eye">
+    Monitor specific tests
+  </Card>
+
+  <Card title="Export Selection" icon="download">
+    Download filtered results
+  </Card>
+</CardGroup>
+
+## Integration with Replays
+
+Quick access to debugging tools:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('trackable test case', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  await testdriver.find('button').click();
+  
+  // After test completes:
+  // - Test case appears in dashboard
+  // - Replay automatically linked
+  // - History updated
+  // - Pass rate recalculated
+  console.log('Replay URL:', dashcam.url);
+});
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Test Reports"
+    icon="list-check"
+    href="/v7/features/test-reports"
+  >
+    View all test run reports
+  </Card>
+
+  <Card
+    title="Test Analytics"
+    icon="chart-line"
+    href="/v7/features/test-analytics"
+  >
+    Analyze trends and metrics
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    Watch test execution videos
+  </Card>
+
+  <Card
+    title="Flake Prevention"
+    icon="shield-check"
+    href="/v7/features/stable"
+  >
+    Eliminate flaky tests
+  </Card>
+</CardGroup>

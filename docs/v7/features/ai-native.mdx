@@ -1,5 +1,5 @@
 ---
-title: "AI-Native"
+title: "AI Test Generation"
 description: "Built specifically for AI agents and autonomous testing"
 icon: "robot"
 ---
@@ -74,48 +74,65 @@ AI-powered element location, assertions, and instructions:
   </Tab>
 </Tabs>
 
-## Iterative Selector Refinement
+## Test Generation with Claude Code
 
-AI agents can iteratively refine selectors when initial attempts fail:
+Feed natural language requirements directly to Claude Code to generate complete test suites:
 
-```javascript
-test('iterative debugging', async (context) => {
-  const testdriver = new TestDriver({
-    apiKey: process.env.TD_API_KEY
-  });
+<Steps>
 
-  const instance = await testdriver.connect();
-  const sandboxId = instance.instanceId;
+  <Step title="Ask Claude Code to Generate Tests">
+    Provide the requirements to Claude Code with context about your testing setup:
 
-  // Try multiple selector variations
-  const selectors = [
-    'submit button',
-    'blue submit button',
-    'submit button in bottom right',
-    'button with "Submit" text',
-    'primary action button'
-  ];
+    ```text
+    Generate a TestDriver test using Vitest for these requirements:
 
-  for (const selector of selectors) {
-    try {
-      console.log(`Trying: ${selector}`);
-      const element = await testdriver.find(selector);
-      console.log(`✓ Found with: ${selector}`);
-      await element.click();
-      break; // Success!
-    } catch (error) {
-      console.log(`✗ Failed with: ${selector}`);
-      console.log(`  Similarity: ${error.similarity}`);
-      console.log(`  Confidence: ${error.confidence}`);
-    }
-  }
+    Test the login flow:
+    1. Navigate to login page
+    2. Enter valid credentials
+    3. Click submit
+    4. Verify dashboard appears
 
-  await testdriver.disconnect();
-});
-```
+    Use the chrome preset and target https://myapp.com/login
+    ```
+  </Step>
+
+  <Step title="Claude Generates Complete Tests">
+    Claude Code will create production-ready test files:
+
+    ```javascript
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+
+    test('user can login', async (context) => {
+      const { testdriver } = await chrome(context, {
+        url: 'https://myapp.com/login'
+      });
+
+      await testdriver.find('email input').type('user@example.com');
+      await testdriver.find('password input').type('password', { secret: true });
+      await testdriver.find('Login button').click();
+
+      await testdriver.assert('Dashboard is visible');
+    });
+    ```
+  </Step>
+
+  <Step title="Run Tests and Iterate">
+    Ask Claude Code to run the tests and refine based on results:
+
+    ```text
+    Run these tests and fix any failures. Then add tests for:
+    - Invalid credentials
+    - Empty form submission
+    - Password visibility toggle
+    ```
+
+    Claude will execute the tests, analyze failures, and automatically refine the test code.
+  </Step>
+</Steps>
 
 <Tip>
-  AI agents can analyze error similarity scores to refine subsequent selector attempts intelligently.
+  Claude Code understands TestDriver's natural language API and will automatically use appropriate selectors, assertions, and best practices like `secret: true` for passwords.
 </Tip>
 
 ## Sandbox Reconnection
@@ -147,12 +164,9 @@ test('reconnect attempt', async () => {
     apiKey: process.env.TD_API_KEY
   });
 
-  // Read last sandbox ID
-  const lastSandboxId = testdriver.getLastSandboxId();
-
-  // Reconnect
+  // Manually specify the sandbox ID from previous test
   await testdriver.connect({
-    sandboxId: lastSandboxId,
+    sandboxId: 'your-sandbox-id-here',
     newSandbox: false
   });
 
@@ -164,7 +178,7 @@ test('reconnect attempt', async () => {
 ```
 
 <Card title="Automatic Sandbox Tracking" icon="bookmark">
-  TestDriver saves the last sandbox ID to `.testdriver/last-sandbox` automatically. AI agents can read this file to reconnect without manual ID tracking.
+  TestDriver automatically saves the last sandbox ID to `~/.testdriverai-last-sandbox`. By default, `newSandbox: true`, so each connection creates a new sandbox. Set `newSandbox: false` and provide a `sandboxId` to reconnect to an existing sandbox.
 </Card>
 
 ## Error Analysis
@@ -193,34 +207,6 @@ try {
     await testdriver.find('primary action button').click();
   }
 }
-```
-
-## Autonomous Test Generation
-
-AI agents can generate entire test suites:
-
-```javascript
-// AI agent generates tests from requirements
-const requirements = `
-  Test the login flow:
-  1. Navigate to login page
-  2. Enter valid credentials
-  3. Click submit
-  4. Verify dashboard appears
-`;
-
-// Agent generates:
-test('user can login', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://myapp.com/login'
-  });
-
-  await testdriver.find('email input').type('user@example.com');
-  await testdriver.find('password input').type('password', { secret: true });
-  await testdriver.find('Login button').click();
-
-  await testdriver.assert('Dashboard is visible');
-});
 ```
 
 ## MCP Integration (Coming Soon)

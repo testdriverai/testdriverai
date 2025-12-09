@@ -1,32 +1,36 @@
 ---
-title: "Fast Performance"
+title: "Intelligent Caching"
 description: "1.7x faster test execution with intelligent caching and optimization"
 icon: "bolt"
 ---
 
-Speed matters when you're running hundreds or thousands of tests. TestDriver is engineered for performance with intelligent caching that delivers up to **1.7x faster** test execution.
+Speed matters when you're running hundreds or thousands of tests. TestDriver is engineered for performance with intelligent caching that delivers up to **1.7x faster** test execution by skipping redundant AI vision analysis.
 
 ## Test Caching Performance
 
 Selector caching dramatically reduces test execution time by skipping redundant AI vision analysis:
 
-<Card title="Real Performance Results" icon="chart-line">
-  **First run (no cache):**
-  ```
-  ⏱️  Test duration: 45.2s
-  🔍 AI vision calls: 12
-  💰 Cost: $0.048
-  ```
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'xyChart': {'backgroundColor': 'transparent', 'titleColor': '#ffffff', 'xAxisLabelColor': '#ffffff', 'xAxisTitleColor': '#ffffff', 'xAxisTickColor': '#ffffff', 'xAxisLineColor': '#ffffff', 'yAxisLabelColor': '#ffffff', 'yAxisTitleColor': '#ffffff', 'yAxisTickColor': '#ffffff', 'yAxisLineColor': '#ffffff', 'plotColorPalette': '#b3d334, #b3d334'}}}}%%
+xychart-beta
+    title "Test Execution Time Comparison"
+    x-axis ["First Run (No Cache)", "Cached Run"]
+    y-axis "Duration (seconds)" 0 --> 10
+    bar [8.2, 4.8]
+```
 
-  **Cached run:**
-  ```
-  ⚡ Test duration: 26.6s (1.7x faster)
-  ✅ Cache hits: 11/12
-  💰 Cost: $0.004 (92% savings)
-  ```
-</Card>
+```javascript
+// First run: builds cache
+await testdriver.find('submit button');
 
-The more you run your tests, the faster they get. Cache hits are nearly instant, turning slow AI analysis into millisecond lookups.
+// Second run: exact match
+await testdriver.find('submit button');
+``` 
+
+**Performance Improvement: 1.7x faster** – The more you run your tests, the faster they get. Cache hits are nearly instant, turning slow AI analysis into millisecond lookups.
+
+- **First run:** 45.2s with 12 AI vision calls
+- **Cached run:** 26.6s with 11/12 cache hits
 
 ## Intelligent Cache Strategy
 
@@ -40,13 +44,6 @@ TestDriver uses a sophisticated three-tier matching system to maximize cache hit
     - **Accuracy:** 100%
     - **Use case:** Repeat test runs
 
-    ```javascript
-    // First run: builds cache
-    await testdriver.find('submit button'); // 2.3s (AI analysis)
-
-    // Second run: exact match
-    await testdriver.find('submit button'); // 8ms (cache hit) ⚡
-    ```
   </Step>
 
   <Step title="Pixel Diff Match (Fast)">
@@ -55,13 +52,6 @@ TestDriver uses a sophisticated three-tier matching system to maximize cache hit
     - **Speed:** Very fast (< 50ms)
     - **Accuracy:** 95%+ similarity threshold
     - **Use case:** Minor UI changes (hover states, animations)
-
-    ```javascript
-    // Cache works even with small visual changes
-    await testdriver.find('button', {
-      cacheThreshold: 0.05 // Allow 5% difference
-    });
-    ```
   </Step>
 
   <Step title="Template Match (Fallback)">
@@ -70,13 +60,6 @@ TestDriver uses a sophisticated three-tier matching system to maximize cache hit
     - **Speed:** Fast (< 200ms)
     - **Accuracy:** 75%+ confidence
     - **Use case:** Layout changes, responsive design
-
-    ```javascript
-    // Still uses cache even when layout shifts
-    await testdriver.find('submit button', {
-      cacheThreshold: 0.10 // More lenient
-    });
-    ```
   </Step>
 </Steps>
 
@@ -102,8 +85,18 @@ test('auto-cached test', async (context) => {
 ```
 
 <Tip>
-  TestDriver automatically generates cache keys based on your test file hash. Each file has isolated caching, preventing cross-test pollution.
+  **File-Based Cache Keys:** TestDriver automatically generates cache keys from a hash of the test file calling the TestDriver methods. This means each test file has its own isolated cache namespace, preventing cache pollution between different tests while enabling fast lookups within the same test file.
 </Tip>
+
+### How Cache Keys Work
+
+The cache key is computed from:
+- **File hash**: SHA-256 hash of the test file contents
+- **Selector prompt**: The exact text description passed to `find()`
+- **Screenshot context**: Perceptual hash of the current screen state
+- **Platform**: Operating system and browser version
+
+When you modify your test file, the hash changes automatically, invalidating stale cache entries and ensuring fresh AI analysis with your updated test logic.
 
 ## Cache Hit Monitoring
 
@@ -186,47 +179,6 @@ Fine-tune cache behavior for your application:
     - First-time debugging
   </Tab>
 </Tabs>
-
-## Parallel Execution
-
-Run tests concurrently for maximum throughput:
-
-```javascript vitest.config.mjs
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    testTimeout: 120000,
-    maxConcurrency: 10, // Run 10 tests simultaneously
-  },
-});
-```
-
-<CardGroup cols={2}>
-  <Card title="Sequential Execution" icon="arrow-right">
-    ```
-    Test 1: 30s
-    Test 2: 30s
-    Test 3: 30s
-    Total: 90s
-    ```
-  </Card>
-
-  <Card title="Parallel Execution (3x)" icon="arrows-split-up-and-left">
-    ```
-    Test 1: 30s
-    Test 2: 30s  } concurrent
-    Test 3: 30s
-    Total: 30s
-    ```
-  </Card>
-</CardGroup>
-
-With caching + parallelization:
-```
-✅ Cache-accelerated parallel execution:
-   Total: 15s (6x faster than sequential, no cache)
-```
 
 ## Cache Persistence
 
@@ -390,6 +342,14 @@ const testdriver = new TestDriver({
 ## Learn More
 
 <CardGroup cols={2}>
+  <Card
+    title="Parallel Execution"
+    icon="layer-group"
+    href="/v7/features/parallel-execution"
+  >
+    Run tests concurrently for maximum speed
+  </Card>
+
   <Card
     title="Selector Caching Guide"
     icon="crosshairs"

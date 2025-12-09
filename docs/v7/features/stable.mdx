@@ -1,5 +1,5 @@
 ---
-title: "Stable & Reliable"
+title: "Flake Prevention"
 description: "Anti-flake technology that eliminates test instability"
 icon: "shield-check"
 ---
@@ -51,7 +51,6 @@ TestDriver's redraw detection system automatically waits for the UI to stabilize
 <Card title="What Redraw Detects" icon="eye">
   The system monitors multiple stability signals:
 
-  - **DOM Mutations** - Element additions, removals, or attribute changes
   - **Layout Reflows** - Position or size changes
   - **CSS Animations** - Running animations and transitions
   - **Network Activity** - Pending XHR/fetch requests
@@ -96,19 +95,23 @@ Fine-tune stability detection for your application's needs:
 // Default stability settings (recommended)
 await testdriver.find('button').click();
 
-// Custom stability delay
-await testdriver.find('animated button', {
-  stabilityDelay: 500 // Wait 500ms of stability before acting
+// Disable redraw detection for specific actions (advanced)
+await testdriver.find('element', {
+  redraw: {
+    enabled: false // Skip stability detection
+  }
 }).click();
 
-// Bypass stability (advanced)
-await testdriver.find('element', {
-  stabilityDelay: 0 // Act immediately
+// Adjust screen diff sensitivity
+await testdriver.find('animated button', {
+  redraw: {
+    diffThreshold: 0.05 // Higher threshold = less sensitive to changes
+  }
 }).click();
 ```
 
 <Tip>
-  The default 200ms stability delay works for 95% of applications. Only adjust if you have unusually long animations or need instant actions.
+  The default redraw settings work for 95% of applications. Only adjust if you have unusually subtle animations or need to bypass stability checks.
 </Tip>
 
 ## Network Monitoring
@@ -150,13 +153,21 @@ TestDriver waits for network activity to complete before asserting or locating e
     Common loading indicators are recognized and waited for automatically.
   </Accordion>
 
-  <Accordion title="Custom Network Conditions">
+  <Accordion title="Custom Polling for Slow Elements">
     ```javascript
-    // For slow networks or long-running requests
-    await testdriver.find('submit button', {
-      timeout: 60000, // Wait up to 60 seconds
-      networkTimeout: 30000 // Allow 30s for network requests
-    }).click();
+    // For elements that take time to appear, use polling
+    async function waitForElement(description, timeoutMs = 60000) {
+      const startTime = Date.now();
+      while (Date.now() - startTime < timeoutMs) {
+        const element = await testdriver.find(description);
+        if (element.found()) return element;
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      throw new Error(`Element "${description}" not found`);
+    }
+    
+    const button = await waitForElement('submit button');
+    await button.click();
     ```
   </Accordion>
 </AccordionGroup>
@@ -191,135 +202,92 @@ await testdriver.find('animated element').click();
   ```
 </Card>
 
-## Retry Logic
+## Debugging Element Location
 
-TestDriver includes intelligent retry logic that adapts to your application:
+When elements aren't found, TestDriver provides detailed debugging information to help you understand why:
 
 <Steps>
-  <Step title="Initial Attempt">
-    Try to locate the element immediately.
+  <Step title="Check Element Existence">
+    Verify if the element was found before interacting with it.
 
     ```javascript
     const element = await testdriver.find('button');
-    // Attempts location immediately
-    ```
-  </Step>
-
-  <Step title="Wait for Stability">
-    If not found, wait for UI stability and retry.
-
-    ```javascript
-    // Waits for:
-    // - DOM mutations to stop
-    // - Network requests to complete
-    // - Animations to finish
-    ```
-  </Step>
-
-  <Step title="Retry with Interval">
-    Continue retrying at regular intervals until timeout.
-
-    ```javascript
-    await testdriver.find('button', {
-      timeout: 30000,      // Try for up to 30 seconds
-      retryInterval: 500   // Check every 500ms
-    });
-    ```
-  </Step>
-
-  <Step title="Provide Debug Info">
-    If still not found, provide detailed debugging information.
-
-    ```javascript
-    try {
-      await testdriver.find('missing button');
-    } catch (error) {
-      console.log('Debug screenshot:', error.debugScreenshot);
-      console.log('Similarity score:', error.similarity);
-      console.log('Cache info:', error.cacheInfo);
+    if (element.found()) {
+      await element.click();
+    } else {
+      console.log('Button not found on page');
     }
+    ```
+  </Step>
+
+  <Step title="Review Debug Information">
+    Access detailed debugging data from the element response.
+
+    ```javascript
+    const element = await testdriver.find('submit button');
+    
+    console.log('Found:', element.found());
+    console.log('Similarity:', element.aiResponse?.similarity);
+    console.log('Cache hit:', element.aiResponse?.cacheHit);
+    console.log('Screenshot:', element.screenshotPath);
+    ```
+  </Step>
+
+  <Step title="Analyze Visual Differences">
+    Compare what TestDriver saw vs. what you expected.
+
+    ```javascript
+    const element = await testdriver.find('login button');
+    
+    if (!element.found()) {
+      // Screenshot shows what TestDriver analyzed
+      console.log('Check screenshot:', element.screenshotPath);
+      
+      // Similarity score indicates how close it got
+      console.log('Best match similarity:', element.aiResponse?.similarity);
+      
+      // Review the description for clarity
+      console.log('Search description:', 'login button');
+    }
+    ```
+  </Step>
+
+  <Step title="Refine Your Description">
+    Use debug insights to improve element descriptions.
+
+    ```javascript
+    // Too vague
+    const btn = await testdriver.find('button');
+    
+    // Better - more specific
+    const loginBtn = await testdriver.find('blue login button in header');
+    
+    // Best - unique identifying features
+    const submitBtn = await testdriver.find('submit button with arrow icon');
     ```
   </Step>
 </Steps>
 
-## Configurable Timeouts
+## Polling for Dynamic Elements
 
-Customize retry behavior for different scenarios:
+For elements that may take time to appear, implement polling:
 
-<Tabs>
-  <Tab title="Fast Elements">
-    ```javascript
-    // For elements that appear quickly
-    await testdriver.find('header logo', {
-      timeout: 5000 // 5 seconds (faster failure)
-    });
-    ```
-  </Tab>
+```javascript
+// Standard polling for normal elements
+const timeoutMs = 30000; // 30 seconds
+const startTime = Date.now();
+let results;
 
-  <Tab title="Slow Elements">
-    ```javascript
-    // For elements that take time to load
-    await testdriver.find('search results', {
-      timeout: 30000, // 30 seconds
-      retryInterval: 1000 // Check every second
-    });
-    ```
-  </Tab>
+while (Date.now() - startTime < timeoutMs) {
+  results = await testdriver.find('search results');
+  if (results.found()) break;
+  await new Promise(r => setTimeout(r, 1000)); // Check every second
+}
 
-  <Tab title="Critical Elements">
-    ```javascript
-    // For absolutely critical elements
-    await testdriver.find('payment confirmation', {
-      timeout: 60000, // 1 minute
-      retryInterval: 2000, // Check every 2 seconds
-      stabilityDelay: 1000 // Wait 1 second of stability
-    });
-    ```
-  </Tab>
-</Tabs>
-
-## Real-World Stability Improvements
-
-Compare flake rates before and after TestDriver:
-
-<CardGroup cols={2}>
-  <Card title="Before TestDriver" icon="triangle-exclamation">
-    ```
-    Test Suite: E2E Tests
-    Total: 100 tests
-    Passed: 87
-    Failed: 13
-
-    Flaky tests:
-    - login_test (timing)
-    - dropdown_test (animation)
-    - modal_test (async content)
-    - search_test (debounce)
-
-    Flake rate: 13%
-    CI reruns needed: 3-5x
-    ```
-  </Card>
-
-  <Card title="After TestDriver" icon="circle-check">
-    ```
-    Test Suite: E2E Tests
-    Total: 100 tests
-    Passed: 100
-    Failed: 0
-
-    Flaky tests: None
-
-    Flake rate: 0%
-    CI reruns needed: 0
-    Stable builds: 100%
-    ```
-  </Card>
-</CardGroup>
-
-<Check>
-  **Result: 100% stability** - Eliminated all flaky tests without changing test code.
-</Check>
+if (results.found()) {
+  await results.click();
+}
+```
 
 ## Advanced: Redraw Configuration
 
@@ -330,13 +298,10 @@ The redraw system is configurable through [redraw.js](/agent/lib/redraw.js):
 const testdriver = new TestDriver({
   apiKey: process.env.TD_API_KEY,
   redraw: {
-    enabled: true,
-    stabilityDelay: 200,      // Default stability wait (ms)
-    maxStabilityWait: 5000,   // Maximum time to wait for stability
-    checkInterval: 50,        // How often to check for stability
-    networkIdle: true,        // Wait for network idle
-    domIdle: true,            // Wait for DOM mutations to stop
-    animationIdle: true,      // Wait for CSS animations
+    enabled: true,            // Master switch for redraw detection
+    screenRedraw: true,       // Enable screen change detection
+    networkMonitor: true,     // Enable network activity monitoring
+    diffThreshold: 0.01,      // Screen diff threshold (0.01 = 0.01%)
   }
 });
 ```
@@ -351,10 +316,10 @@ await testdriver.find('fast element', {
   }
 }).click();
 
-await testdriver.find('slow element', {
+await testdriver.find('element with subtle changes', {
   redraw: {
-    stabilityDelay: 1000, // Wait longer for stability
-    networkIdle: true
+    diffThreshold: 0.05, // Less sensitive to screen changes
+    networkMonitor: false // Skip network monitoring
   }
 }).click();
 ```
@@ -364,22 +329,17 @@ await testdriver.find('slow element', {
 If you encounter stability issues, TestDriver provides detailed diagnostics:
 
 ```javascript
-try {
-  await testdriver.find('unstable element', {
-    debug: true // Enable debug logging
-  });
-} catch (error) {
-  console.log('Stability info:', error.stabilityInfo);
-  // Output:
-  // {
-  //   domMutations: 15,
-  //   layoutReflows: 3,
-  //   networkRequests: 2,
-  //   animations: ['fade-in', 'slide-up'],
-  //   waitedMs: 5000,
-  //   stableMs: 150
-  // }
-}
+// Enable verbose logging to see redraw detection in action
+const testdriver = new TestDriver({
+  apiKey: process.env.TD_API_KEY,
+  verbosity: 2 // Show detailed redraw logs
+});
+
+await testdriver.find('element').click();
+// Console output will show:
+// [redraw] Screen change detected: 0.15% (threshold: 0.01%)
+// [redraw] Network activity: 1250 b/s
+// [redraw] Waiting for stability...
 ```
 
 ## Common Stability Patterns
@@ -445,13 +405,13 @@ try {
 ## Best Practices
 
 <Card title="Let TestDriver Handle Timing" icon="clock">
-  **Don't:**
+  Don't:
   ```javascript
   await testdriver.find('button').click();
   await new Promise(resolve => setTimeout(resolve, 1000)); // ❌
   ```
 
-  **Do:**
+  Do:
   ```javascript
   await testdriver.find('button').click();
   await testdriver.find('next element').click(); // ✅
@@ -461,14 +421,14 @@ try {
 </Card>
 
 <Card title="Use Natural Assertions" icon="check">
-  **Don't:**
+  Don't:
   ```javascript
   await testdriver.find('button').click();
   const element = await testdriver.find('result');
   expect(element).toBeTruthy(); // ❌ Redundant
   ```
 
-  **Do:**
+  Do:
   ```javascript
   await testdriver.find('button').click();
   await testdriver.assert('result is visible'); // ✅ Natural

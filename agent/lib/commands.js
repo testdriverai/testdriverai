@@ -1405,7 +1405,7 @@ const createCommands = (
           type: "commands.run",
           command: code,
           timeout,
-        }, timeout || 30000);
+        }, timeout || 300000);
 
         console.log(result)
 

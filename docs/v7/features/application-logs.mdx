@@ -1,0 +1,353 @@
+---
+title: "Application Logs"
+description: "TestDriver SDK logs and test execution output"
+icon: "terminal"
+---
+
+View detailed TestDriver application logs including test execution steps, AI vision analysis results, cache hits/misses, and debugging information.
+
+## Application Log Output
+
+TestDriver logs every action and decision during test execution:
+
+```
+Test Execution Logs:
+┌────────────────────────────────────────────────────┐
+│ [0:00] ℹ️ System info configured                  │
+│ [0:00] ℹ️ Response cache: /Users/.../cache.json   │
+│ [0:05] ✓ Connected to sandbox i-0abc123def        │
+│ [0:08] ℹ️ Browser launched: Chrome 120.0          │
+│ [0:12] ✓ Navigated to https://example.com         │
+│ [0:15] 🔍 Finding: "login button"                 │
+│ [0:18] ✓ Cache hit: login button (fe68cfe...)     │
+│ [0:18] ✓ Element found at (512, 387)              │
+│ [0:19] ✓ Clicked login button                     │
+│ [0:22] 🔍 Finding: "email input"                  │
+│ [0:25] ⚡ Cache miss: analyzing with AI vision     │
+│ [0:28] ✓ Element found at (450, 290)              │
+│ [0:28] ℹ️ Cached for future runs                  │
+│ [0:29] ✓ Typed "user@example.com"                 │
+│ [0:32] ✓ Response was successful!                 │
+│ [0:35] ✓ Test completed: PASSED                   │
+└────────────────────────────────────────────────────┘
+```
+
+## Log Levels
+
+TestDriver uses standard log levels:
+
+<CardGroup cols={2}>
+  <Card title="INFO" icon="circle-info" color="blue">
+    General information about test execution
+    - Configuration loaded
+    - Sandbox connection
+    - Navigation events
+    - Cache operations
+  </Card>
+
+  <Card title="SUCCESS" icon="check" color="green">
+    Successful operations
+    - Element found
+    - Action completed
+    - Assertion passed
+    - Test passed
+  </Card>
+
+  <Card title="WARNING" icon="triangle-exclamation" color="yellow">
+    Non-critical issues
+    - Slow operations
+    - Retry attempts
+    - Deprecated API usage
+    - Cache near limit
+  </Card>
+
+  <Card title="ERROR" icon="circle-xmark" color="red">
+    Failures and exceptions
+    - Element not found
+    - Timeout errors
+    - Assertion failures
+    - Test failures
+  </Card>
+
+  <Card title="DEBUG" icon="bug" color="gray">
+    Detailed debugging information
+    - AI vision analysis details
+    - Screenshot hashes
+    - Cache key generation
+    - Internal SDK operations
+  </Card>
+</CardGroup>
+
+## AI Vision Analysis Logs
+
+See how TestDriver finds elements:
+
+```
+AI Vision Analysis:
+┌────────────────────────────────────────────────────┐
+│ [0:22] 🔍 Finding: "submit button in login form"  │
+│ [0:23] ℹ️ Taking screenshot...                    │
+│ [0:24] ℹ️ Screenshot hash: a8f3c21b4e9d7f...      │
+│ [0:24] ℹ️ Cache lookup: MISS                      │
+│ [0:25] ℹ️ Sending to AI vision model...           │
+│ [0:26] ℹ️ AI analysis in progress...              │
+│ [0:28] ✓ Element identified with 98.5% confidence │
+│ [0:28] ✓ Bounding box: (450, 370, 124, 34)        │
+│ [0:28] ✓ Coordinates: (512, 387)                  │
+│ [0:28] ℹ️ Saving to cache (key: fe68cfe6...)     │
+│ [0:29] ✓ Element found and ready for interaction  │
+└────────────────────────────────────────────────────┘
+```
+
+**Logged Information:**
+- Screenshot capture timing
+- Cache lookup results
+- AI model inference time
+- Confidence scores
+- Element coordinates
+- Cache storage
+
+## Cache Hit/Miss Tracking
+
+Monitor cache performance in logs:
+
+```
+Cache Performance Logs:
+┌────────────────────────────────────────────────────┐
+│ [0:15] ⚡ Cache HIT: "login button" (12ms)        │
+│ [0:22] ⚡ Cache MISS: "email input" (analyzing...) │
+│ [0:35] ⚡ Cache HIT: "password field" (8ms)       │
+│ [0:42] ⚡ Cache HIT: "submit button" (10ms)       │
+│                                                    │
+│ Cache Summary:                                     │
+│ • Hits: 3 (75%)                                   │
+│ • Misses: 1 (25%)                                 │
+│ • Time saved: ~6.2 seconds                        │
+└────────────────────────────────────────────────────┘
+```
+
+## Test Step Logs
+
+Detailed action execution:
+
+```
+Action Execution:
+┌────────────────────────────────────────────────────┐
+│ [0:19] ➤ testdriver.find('login button')          │
+│ [0:19] ℹ️ Locating element...                     │
+│ [0:19] ✓ Found at (512, 387)                      │
+│                                                    │
+│ [0:19] ➤ .click()                                 │
+│ [0:19] ℹ️ Moving mouse to (512, 387)              │
+│ [0:20] ℹ️ Mouse button down                       │
+│ [0:20] ℹ️ Mouse button up                         │
+│ [0:20] ✓ Click completed                          │
+│                                                    │
+│ [0:22] ➤ testdriver.find('email input')           │
+│ [0:25] ✓ Found at (450, 290)                      │
+│                                                    │
+│ [0:25] ➤ .type('user@example.com')                │
+│ [0:26] ℹ️ Typing: u                               │
+│ [0:26] ℹ️ Typing: s                               │
+│ [0:27] ℹ️ Typing: e                               │
+│ [0:27] ℹ️ Typing: r                               │
+│ ... (truncated for brevity)                        │
+│ [0:29] ✓ Typed 17 characters                      │
+└────────────────────────────────────────────────────┘
+```
+
+## Assertion Logs
+
+Track test assertions:
+
+```
+Assertions:
+┌────────────────────────────────────────────────────┐
+│ [0:32] ➤ testdriver.assert('login successful')    │
+│ [0:32] ℹ️ Taking screenshot for assertion...      │
+│ [0:33] ℹ️ Sending to AI for verification...       │
+│ [0:35] ✓ Assertion passed with 96.2% confidence   │
+│ [0:35] ℹ️ Evidence: "Welcome, User" text visible  │
+│                                                    │
+│ [0:40] ➤ testdriver.assert('error message shows') │
+│ [0:41] ℹ️ Taking screenshot for assertion...      │
+│ [0:42] ℹ️ Sending to AI for verification...       │
+│ [0:44] ✗ Assertion failed                         │
+│ [0:44] ℹ️ Reason: No error message found          │
+│ [0:44] ℹ️ Screenshot saved for debugging          │
+└────────────────────────────────────────────────────┘
+```
+
+## Error and Stack Traces
+
+Detailed error information:
+
+```
+Error Details:
+┌────────────────────────────────────────────────────┐
+│ [0:44] ✗ AssertionError: Element not found        │
+│                                                    │
+│ Expected: "error message"                          │
+│ Context: Login form after submission               │
+│ Timeout: 30000ms                                   │
+│                                                    │
+│ Stack Trace:                                       │
+│   at TestDriver.assert (sdk.js:456)               │
+│   at login.test.js:23:18                          │
+│   at async Test.fn (vitest/run.js:125)            │
+│                                                    │
+│ Screenshot: /tmp/screenshot-abc123.png             │
+│ Replay URL: https://app.testdriver.ai/replay/...  │
+└────────────────────────────────────────────────────┘
+```
+
+## Configuring Log Output
+
+Control log verbosity:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('with custom logging', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    logLevel: 'debug',  // 'error' | 'warn' | 'info' | 'debug'
+    verbose: true       // Show detailed AI analysis logs
+  });
+
+  await testdriver.find('button').click();
+});
+```
+
+## Log Filtering
+
+Filter logs in the dashboard:
+
+<Tabs>
+  <Tab title="By Level">
+    ```
+    Show only:
+    ☑ Errors
+    ☑ Warnings
+    ☐ Info
+    ☐ Debug
+    ```
+  </Tab>
+
+  <Tab title="By Category">
+    ```
+    Filter by:
+    ☑ AI Vision
+    ☑ Cache Operations
+    ☑ Actions
+    ☑ Assertions
+    ☐ Screenshots
+    ```
+  </Tab>
+
+  <Tab title="By Timestamp">
+    ```
+    Time range:
+    Full test duration
+    Last 30 seconds
+    Around error (±10s)
+    Custom range
+    ```
+  </Tab>
+
+  <Tab title="By Search">
+    ```
+    Search logs:
+    "element not found"
+    "cache hit"
+    "assertion"
+    Regular expressions supported
+    ```
+  </Tab>
+</Tabs>
+
+## Export Logs
+
+Download application logs:
+
+<Tabs>
+  <Tab title="Plain Text">
+    ```
+    [0:00] INFO System info configured
+    [0:05] SUCCESS Connected to sandbox
+    [0:15] INFO Finding: "login button"
+    [0:18] SUCCESS Cache hit: login button
+    [0:19] SUCCESS Clicked login button
+    ```
+  </Tab>
+
+  <Tab title="JSON">
+    ```json
+    {
+      "logs": [
+        {
+          "timestamp": "0:00",
+          "level": "INFO",
+          "message": "System info configured"
+        },
+        {
+          "timestamp": "0:18",
+          "level": "SUCCESS",
+          "message": "Cache hit: login button",
+          "metadata": {
+            "cacheKey": "fe68cfe6...",
+            "matchTime": "12ms"
+          }
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="CSV">
+    ```csv
+    Timestamp,Level,Category,Message
+    0:00,INFO,System,System info configured
+    0:05,SUCCESS,Sandbox,Connected to sandbox
+    0:15,INFO,Vision,Finding: "login button"
+    0:18,SUCCESS,Cache,Cache hit: login button
+    ```
+  </Tab>
+</Tabs>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Browser Logs"
+    icon="browser"
+    href="/v7/features/browser-logs"
+  >
+    Console output and JavaScript errors
+  </Card>
+
+  <Card
+    title="Network Monitoring"
+    icon="network-wired"
+    href="/v7/features/network-monitoring"
+  >
+    HTTP requests and responses
+  </Card>
+
+  <Card
+    title="System Performance"
+    icon="chart-line"
+    href="/v7/features/system-performance"
+  >
+    CPU, memory, and resource usage
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    Complete test execution videos
+  </Card>
+</CardGroup>

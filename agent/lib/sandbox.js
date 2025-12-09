@@ -18,7 +18,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.sessionInstance = sessionInstance; // Store session instance to include in messages
     }
 
-    send(message, timeout = 30000) {
+    send(message, timeout = 300000) {
       let resolvePromise;
       let rejectPromise;
 

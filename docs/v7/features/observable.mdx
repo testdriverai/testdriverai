@@ -1,33 +1,14 @@
 ---
-title: "Observable & Debuggable"
+title: "Dashcam Replays"
 description: "Complete visibility into test execution with replays, logs, and analytics"
-icon: "microscope"
+icon: "video"
 ---
 
-Debugging test failures is effortless with TestDriver's comprehensive observability features - video replays, detailed logs, network monitoring, and performance metrics.
+Debugging test failures is effortless with TestDriver's comprehensive test replay features - video replays, detailed logs, network monitoring, and performance metrics.
 
 ## Video Replays with Dashcam
 
 Every test automatically records a video replay for easy debugging:
-
-```javascript
-import { test } from 'vitest';
-import { chrome } from 'testdriverai/presets';
-
-test('with automatic replay', async (context) => {
-  const { testdriver, dashcam } = await chrome(context, {
-    url: 'https://example.com'
-  });
-
-  await testdriver.find('button').click();
-  await testdriver.find('input').type('test data');
-  await testdriver.find('submit').click();
-
-  // After test completes, view replay
-  console.log('Watch replay:', dashcam.url);
-  // Output: https://console.testdriver.ai/dashcam/abc123def456
-});
-```
 
 <Card title="Dashcam Features" icon="video">
   **Every replay includes:**

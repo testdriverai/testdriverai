@@ -1,0 +1,616 @@
+---
+title: "System Performance"
+description: "CPU usage, memory consumption, and resource monitoring"
+icon: "chart-line"
+---
+
+Monitor system resources during test execution including CPU usage, memory consumption, network traffic, and process-level diagnostics for performance optimization and troubleshooting.
+
+## Performance Overview
+
+Real-time system metrics during test execution:
+
+```
+System Performance (Test Duration: 45s):
+┌────────────────────────────────────────────────────┐
+│ CPU Usage:                                         │
+│ Average: 42%  Peak: 78%  Current: 35%              │
+│ ████████████████████░░░░░░░░░░░░░░░ 42%           │
+│                                                    │
+│ Memory Usage:                                      │
+│ Used: 2.4 GB / 8 GB (30%)                          │
+│ ██████████████░░░░░░░░░░░░░░░░░░░░░ 30%           │
+│                                                    │
+│ Network Traffic:                                   │
+│ Downloaded: 451 KB  Uploaded: 12 KB                │
+│ Bandwidth: ▂▃▅▇▅▃▂▁▂▃▅▇▅▃▂                         │
+│                                                    │
+│ Disk I/O:                                          │
+│ Read: 12 MB  Write: 3.4 MB                         │
+│ ▂▁▂▃▂▁▂▁▁▂▃▅▃▂▁▂                                   │
+└────────────────────────────────────────────────────┘
+```
+
+## CPU Usage Timeline
+
+Track CPU utilization over test duration:
+
+```
+CPU Usage (0s → 45s):
+┌────────────────────────────────────────────────────┐
+│ 100%│                                              │
+│  90%│                                              │
+│  80%│        ██                                    │
+│  70%│       ████                                   │
+│  60%│      ██████                                  │
+│  50%│     ████████                                 │
+│  40%│   ████████████  ████                         │
+│  30%│  ██████████████████████                      │
+│  20%│ ████████████████████████████                 │
+│  10%│██████████████████████████████████           │
+│   0%└──────┬──────┬──────┬──────┬──────┬──────    │
+│          0s     10s    20s    30s    40s           │
+│                                                    │
+│ Key Events:                                        │
+│ [0:08] CPU spike: Page load (78%)                  │
+│ [0:15] CPU spike: API processing (65%)             │
+│ [0:25] CPU spike: Dashboard render (72%)           │
+│                                                    │
+│ Statistics:                                        │
+│ Average: 42%                                       │
+│ Peak: 78% at 0:08                                  │
+│ Lowest: 12% at 0:35                                │
+│ Std Dev: 18.5%                                     │
+└────────────────────────────────────────────────────┘
+```
+
+## Memory Usage
+
+Monitor RAM consumption:
+
+```
+Memory Usage (0s → 45s):
+┌────────────────────────────────────────────────────┐
+│ 8 GB│                                              │
+│ 7 GB│                                              │
+│ 6 GB│                                              │
+│ 5 GB│                                              │
+│ 4 GB│                                              │
+│ 3 GB│                            ████████████████  │
+│ 2 GB│              ██████████████████████████████  │
+│ 1 GB│    ██████████████████████████████████████    │
+│ 0 GB└──────┬──────┬──────┬──────┬──────┬──────    │
+│          0s     10s    20s    30s    40s           │
+│                                                    │
+│ Memory Breakdown:                                  │
+│ Browser Process:     1.8 GB (75%)                  │
+│ Renderer Process:    456 MB (19%)                  │
+│ GPU Process:         89 MB (4%)                    │
+│ TestDriver:          45 MB (2%)                    │
+│                                                    │
+│ Heap Statistics:                                   │
+│ Total Heap Size:     234 MB                        │
+│ Used Heap:           187 MB (80%)                  │
+│ Heap Limit:          2048 MB                       │
+│                                                    │
+│ Warnings:                                          │
+│ ⚠️ Memory increased 800MB during test              │
+│ ⚠️ Possible memory leak detected                   │
+└────────────────────────────────────────────────────┘
+```
+
+<Warning>
+Sustained memory growth may indicate memory leaks in the application. Check for unreleased event listeners or DOM references.
+</Warning>
+
+## Process-Level Metrics
+
+Detailed breakdown by process:
+
+<Tabs>
+  <Tab title="Browser Process">
+    ```
+    Chrome Browser Process:
+    ┌────────────────────────────────────────────────┐
+    │ PID: 12345                                     │
+    │ CPU: 25%  (Average: 22%, Peak: 45%)            │
+    │ Memory: 1.8 GB                                 │
+    │ Threads: 24                                    │
+    │                                                │
+    │ Resource Usage:                                │
+    │ CPU Time: 12.3s                                │
+    │ Handles: 2,456                                 │
+    │ GDI Objects: 234                               │
+    │                                                │
+    │ Network:                                       │
+    │ Connections: 8 active                          │
+    │ Downloaded: 451 KB                             │
+    │ Uploaded: 12 KB                                │
+    └────────────────────────────────────────────────┘
+    ```
+  </Tab>
+
+  <Tab title="Renderer Process">
+    ```
+    Chrome Renderer Process:
+    ┌────────────────────────────────────────────────┐
+    │ PID: 12346                                     │
+    │ CPU: 15%  (Average: 18%, Peak: 56%)            │
+    │ Memory: 456 MB                                 │
+    │ Threads: 8                                     │
+    │                                                │
+    │ JavaScript Heap:                               │
+    │ Total: 234 MB                                  │
+    │ Used: 187 MB (80%)                             │
+    │ Limit: 2048 MB                                 │
+    │                                                │
+    │ DOM Nodes:                                     │
+    │ Total: 3,456 nodes                             │
+    │ Listeners: 892                                 │
+    │                                                │
+    │ Frames:                                        │
+    │ FPS: 60 (target)                               │
+    │ Actual: 58 avg                                 │
+    └────────────────────────────────────────────────┘
+    ```
+  </Tab>
+
+  <Tab title="GPU Process">
+    ```
+    GPU Process:
+    ┌────────────────────────────────────────────────┐
+    │ PID: 12347                                     │
+    │ CPU: 8%  (Average: 6%, Peak: 22%)              │
+    │ Memory: 89 MB                                  │
+    │ Threads: 4                                     │
+    │                                                │
+    │ Graphics:                                      │
+    │ GPU Usage: 12%                                 │
+    │ Video Memory: 89 MB / 2 GB                     │
+    │                                                │
+    │ Rendering:                                     │
+    │ Frames Rendered: 2,700                         │
+    │ Compositor: Active                             │
+    │ Hardware Acceleration: Enabled                 │
+    └────────────────────────────────────────────────┘
+    ```
+  </Tab>
+
+  <Tab title="TestDriver">
+    ```
+    TestDriver Process:
+    ┌────────────────────────────────────────────────┐
+    │ PID: 12348                                     │
+    │ CPU: 2%  (Average: 3%, Peak: 8%)               │
+    │ Memory: 45 MB                                  │
+    │ Threads: 3                                     │
+    │                                                │
+    │ Test Execution:                                │
+    │ Commands Executed: 24                          │
+    │ AI Vision Calls: 8                             │
+    │ Cache Hits: 12                                 │
+    │                                                │
+    │ Resource Usage:                                │
+    │ Screenshot Count: 8                            │
+    │ Screenshots Size: 12 MB                        │
+    │ Dashcam Recording: 23 MB                       │
+    └────────────────────────────────────────────────┘
+    ```
+  </Tab>
+</Tabs>
+
+## Network Bandwidth
+
+Track network throughput:
+
+```
+Network Bandwidth (0s → 45s):
+┌────────────────────────────────────────────────────┐
+│ Download Speed:                                    │
+│ 50 KB/s│        ▇▇                                 │
+│ 40 KB/s│       ███▇                                │
+│ 30 KB/s│      ██████                               │
+│ 20 KB/s│     ████████▇                             │
+│ 10 KB/s│   ██████████████                          │
+│   0    └──────┬──────┬──────┬──────┬──────         │
+│             0s     10s    20s    30s    40s        │
+│                                                    │
+│ Upload Speed:                                      │
+│  5 KB/s│  ▇                                        │
+│  4 KB/s│  █▇                                       │
+│  3 KB/s│  ██▇                                      │
+│  2 KB/s│  ████▇                                    │
+│  1 KB/s│▇▇█████▇                                   │
+│   0    └──────┬──────┬──────┬──────┬──────         │
+│             0s     10s    20s    30s    40s        │
+│                                                    │
+│ Total Traffic:                                     │
+│ Downloaded: 451.6 KB                               │
+│ Uploaded: 12.3 KB                                  │
+│ Ratio: 37:1                                        │
+└────────────────────────────────────────────────────┘
+```
+
+## Disk I/O
+
+Monitor disk read/write activity:
+
+```
+Disk I/O Operations:
+┌────────────────────────────────────────────────────┐
+│ Read Operations:                                   │
+│ Total: 12.4 MB                                     │
+│ Files Read: 234                                    │
+│ Average Speed: 45 MB/s                             │
+│                                                    │
+│ Top Read Operations:                               │
+│ app.js              234 KB                         │
+│ vendor.bundle.js    1.2 MB                         │
+│ images/hero.jpg     456 KB                         │
+│ styles.css          89 KB                          │
+│                                                    │
+│ Write Operations:                                  │
+│ Total: 3.4 MB                                      │
+│ Files Written: 12                                  │
+│ Average Speed: 67 MB/s                             │
+│                                                    │
+│ Top Write Operations:                              │
+│ dashcam-replay.webm     2.1 MB                     │
+│ screenshots/*.png       892 KB                     │
+│ cache/*.json           234 KB                      │
+│ test-log.txt           89 KB                       │
+└────────────────────────────────────────────────────┘
+```
+
+## Performance Bottlenecks
+
+Identify performance issues:
+
+<CardGroup cols={2}>
+  <Card title="High CPU Usage" icon="microchip" color="red">
+    ```
+    ❌ CPU spike detected
+    
+    Time: 0:08
+    Peak: 78% CPU
+    Duration: 2.3s
+    
+    Cause:
+    Heavy JavaScript execution
+    during page load
+    
+    Recommendation:
+    Consider code splitting
+    or lazy loading
+    ```
+  </Card>
+
+  <Card title="Memory Growth" icon="memory" color="yellow">
+    ```
+    ⚠️ Memory leak suspected
+    
+    Start: 1.2 GB
+    End: 2.0 GB
+    Growth: +800 MB
+    
+    Potential Causes:
+    - Unreleased listeners
+    - Cached DOM nodes
+    - Global variables
+    
+    Action: Profile memory
+    ```
+  </Card>
+
+  <Card title="Slow Network" icon="wifi" color="orange">
+    ```
+    ⚠️ Slow API response
+    
+    Endpoint: /api/dashboard
+    Time: 445ms
+    Expected: <200ms
+    
+    Impact:
+    Dashboard load delayed
+    
+    Recommendation:
+    Add caching or optimize
+    database queries
+    ```
+  </Card>
+
+  <Card title="Disk Bottleneck" icon="hard-drive" color="blue">
+    ```
+    ℹ️ High disk I/O
+    
+    Operation: Write
+    File: dashcam-replay.webm
+    Size: 2.1 MB
+    Time: 1.2s
+    
+    Impact: Minimal
+    Expected for recording
+    ```
+  </Card>
+</CardGroup>
+
+## Frame Rate (FPS)
+
+Monitor rendering performance:
+
+```
+Frame Rate (60 FPS target):
+┌────────────────────────────────────────────────────┐
+│  60 │███████████████████████████████░░████████████  │
+│  55 │                            ████              │
+│  50 │                                              │
+│  45 │                                              │
+│  40 │                                              │
+│  35 │                                              │
+│  30 │                                              │
+│     └──────┬──────┬──────┬──────┬──────┬──────    │
+│          0s     10s    20s    30s    40s           │
+│                                                    │
+│ Statistics:                                        │
+│ Average FPS: 58.4                                  │
+│ Minimum FPS: 52 at 0:25                            │
+│ Dropped Frames: 34 (2.5%)                          │
+│                                                    │
+│ Frame Drops:                                       │
+│ [0:25] 8 frames dropped (Dashboard render)         │
+│ Impact: Minor jank noticed                         │
+└────────────────────────────────────────────────────┘
+```
+
+<Tip>
+Frame rates below 30 FPS may cause visible jank. Target 60 FPS for smooth animations and interactions.
+</Tip>
+
+## Resource Warnings
+
+Performance alerts and recommendations:
+
+```
+Performance Warnings:
+┌────────────────────────────────────────────────────┐
+│ ⚠️ High CPU Usage (0:08)                           │
+│    Peak: 78% for 2.3 seconds                       │
+│    Cause: Heavy JavaScript execution               │
+│    Recommendation: Profile and optimize code       │
+│                                                    │
+│ ⚠️ Memory Increase (0:00 → 0:45)                   │
+│    Growth: +800 MB during test                     │
+│    Potential leak: Check event listeners           │
+│    Action: Run heap snapshot comparison            │
+│                                                    │
+│ ⚠️ Slow Network Request (0:21)                     │
+│    Endpoint: /api/dashboard/data                   │
+│    Time: 445ms (target: <200ms)                    │
+│    Recommendation: Add caching or optimize query   │
+│                                                    │
+│ ℹ️ Frame Drops (0:25)                              │
+│    Count: 8 frames                                 │
+│    Context: Dashboard render                       │
+│    Impact: Minor visual jank                       │
+│    Recommendation: Optimize render logic           │
+└────────────────────────────────────────────────────┘
+```
+
+## Performance Comparison
+
+Compare across test runs:
+
+```
+Performance Comparison (Last 5 runs):
+┌────────────────────────────────────────────────────┐
+│ Metric          Run 1   Run 2   Run 3   Run 4  Now │
+├────────────────────────────────────────────────────┤
+│ Avg CPU         38%     42%     35%     40%    42% │
+│ Peak CPU        72%     78%     65%     70%    78% │
+│ Memory End      1.9GB   2.0GB   1.7GB   1.8GB  2.0GB│
+│ Network DL      445KB   451KB   423KB   438KB  451KB│
+│ Test Duration   42s     45s     39s     43s    45s │
+│ FPS Average     59      58      60      59     58  │
+│                                                    │
+│ Trends:                                            │
+│ 📈 CPU usage increasing (↑4% vs avg)              │
+│ 📈 Memory usage increasing (↑100MB vs avg)        │
+│ → Network stable                                   │
+│ → Performance stable overall                       │
+└────────────────────────────────────────────────────┘
+```
+
+## Export Performance Data
+
+Download metrics for analysis:
+
+<Tabs>
+  <Tab title="JSON">
+    ```json
+    {
+      "testId": "test-123",
+      "duration": 45000,
+      "performance": {
+        "cpu": {
+          "average": 42,
+          "peak": 78,
+          "timeline": [
+            { "time": 0, "usage": 15 },
+            { "time": 1000, "usage": 35 },
+            { "time": 8000, "usage": 78 }
+          ]
+        },
+        "memory": {
+          "start": 1200,
+          "end": 2000,
+          "peak": 2100,
+          "growth": 800,
+          "timeline": [
+            { "time": 0, "mb": 1200 },
+            { "time": 10000, "mb": 1600 },
+            { "time": 45000, "mb": 2000 }
+          ]
+        },
+        "network": {
+          "downloaded": 451600,
+          "uploaded": 12300,
+          "requests": 9
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="CSV">
+    ```csv
+    Time,CPU%,Memory MB,Network Down KB,Network Up KB
+    0,15,1200,0,0
+    5,35,1350,123,2
+    10,42,1600,289,5
+    15,38,1750,367,8
+    20,45,1850,401,10
+    25,72,1920,445,11
+    30,35,1980,451,12
+    45,25,2000,451,12
+    ```
+  </Tab>
+
+  <Tab title="Summary Report">
+    ```
+    Performance Report - Test #123
+    ========================================
+    
+    Test Duration: 45 seconds
+    Execution Date: 2024-01-15 14:30:12
+    
+    CPU Performance:
+    - Average Usage: 42%
+    - Peak Usage: 78% at 0:08
+    - CPU Time: 18.9 seconds
+    
+    Memory Usage:
+    - Starting: 1.2 GB
+    - Ending: 2.0 GB
+    - Growth: +800 MB (67%)
+    - Peak: 2.1 GB
+    
+    Network Activity:
+    - Downloaded: 451.6 KB
+    - Uploaded: 12.3 KB
+    - Requests: 9 total
+    - Average Response: 183ms
+    
+    Performance Issues:
+    ⚠️ High CPU spike at 0:08 (78%)
+    ⚠️ Memory growth +800MB
+    ⚠️ Slow API: /api/dashboard (445ms)
+    
+    Recommendations:
+    1. Profile JavaScript to reduce CPU usage
+    2. Investigate memory leak
+    3. Optimize slow API endpoint
+    ```
+  </Tab>
+</Tabs>
+
+## Performance Profiling Integration
+
+Connect with browser DevTools:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('profile performance', async (context) => {
+  const { testdriver, page } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  // Start performance profiling
+  await page.evaluate(() => {
+    performance.mark('test-start');
+  });
+
+  await testdriver.find('dashboard link').click();
+  
+  // End profiling
+  await page.evaluate(() => {
+    performance.mark('test-end');
+    performance.measure('test', 'test-start', 'test-end');
+  });
+
+  // Performance metrics automatically captured in dashcam
+});
+```
+
+**Replay Shows:**
+```
+Performance Marks:
+[0:00] 🏁 test-start
+[0:15] 🏁 test-end
+Duration: 15.234s
+
+User Timing:
+Measure: test (15.234s)
+```
+
+## System Resource Alerts
+
+Configure thresholds:
+
+```
+Alert Configuration:
+┌────────────────────────────────────────────────────┐
+│ CPU Threshold:                                     │
+│ ⚠️ Warning at 70%                                  │
+│ ❌ Critical at 90%                                 │
+│                                                    │
+│ Memory Threshold:                                  │
+│ ⚠️ Warning at 80% (6.4 GB / 8 GB)                  │
+│ ❌ Critical at 95% (7.6 GB / 8 GB)                 │
+│                                                    │
+│ Network Latency:                                   │
+│ ⚠️ Warning at 500ms                                │
+│ ❌ Critical at 1000ms                              │
+│                                                    │
+│ Frame Rate:                                        │
+│ ⚠️ Warning at <45 FPS                              │
+│ ❌ Critical at <30 FPS                             │
+└────────────────────────────────────────────────────┘
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Application Logs"
+    icon="terminal"
+    href="/v7/features/application-logs"
+  >
+    TestDriver SDK logs
+  </Card>
+
+  <Card
+    title="Browser Logs"
+    icon="browser"
+    href="/v7/features/browser-logs"
+  >
+    Console output and errors
+  </Card>
+
+  <Card
+    title="Network Monitoring"
+    icon="network-wired"
+    href="/v7/features/network-monitoring"
+  >
+    HTTP requests and responses
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    Complete test execution videos
+  </Card>
+</CardGroup>

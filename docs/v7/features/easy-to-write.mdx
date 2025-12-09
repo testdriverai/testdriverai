@@ -1,5 +1,5 @@
 ---
-title: "Easy to Write"
+title: "Natural Language Syntax"
 description: "Natural language testing that feels like describing what you want, not programming"
 icon: "feather"
 ---
@@ -61,7 +61,7 @@ All element methods are chainable:
 
 ## Familiar Syntax
 
-TestDriver integrates seamlessly with the test frameworks you already know and love:
+TestDriver uses `vitest` to run tests with a familiar syntax you already know and love:
 
 <Tabs>
   <Tab title="Vitest">
@@ -75,36 +75,6 @@ TestDriver integrates seamlessly with the test frameworks you already know and l
       });
 
       await testdriver.find('button').click();
-    });
-    ```
-  </Tab>
-
-  <Tab title="Jest">
-    ```javascript
-    import { chrome } from 'testdriverai/presets';
-
-    test('my test', async () => {
-      const { testdriver } = await chrome({
-        url: 'https://example.com'
-      });
-
-      await testdriver.find('button').click();
-    });
-    ```
-  </Tab>
-
-  <Tab title="Mocha">
-    ```javascript
-    import { chrome } from 'testdriverai/presets';
-
-    describe('My Suite', () => {
-      it('should work', async function() {
-        const { testdriver } = await chrome(this, {
-          url: 'https://example.com'
-        });
-
-        await testdriver.find('button').click();
-      });
     });
     ```
   </Tab>
@@ -216,47 +186,6 @@ test('user can login', async () => {
 });
 ```
 </CodeGroup>
-
-## Progressive Complexity
-
-Choose your level of control:
-
-<CardGroup cols={3}>
-  <Card title="Presets (Easiest)" icon="rocket">
-    One-line setup for common scenarios:
-
-    ```javascript
-    const { testdriver } = await chrome(context, {
-      url: 'https://example.com'
-    });
-    ```
-
-    [Learn more](/v7/progressive-apis/PROVISION)
-  </Card>
-
-  <Card title="Hooks (Flexible)" icon="link">
-    More control with composable hooks:
-
-    ```javascript
-    const client = useTestDriver(context);
-    const dashcam = useDashcam(context, client);
-    ```
-
-    [Learn more](/v7/progressive-apis/HOOKS)
-  </Card>
-
-  <Card title="Core (Full Control)" icon="code">
-    Manual control over everything:
-
-    ```javascript
-    const client = new TestDriver(apiKey);
-    await client.connect();
-    await client.find('button');
-    ```
-
-    [Learn more](/v7/progressive-apis/PROGRESSIVE_DISCLOSURE)
-  </Card>
-</CardGroup>
 
 ## Zero Boilerplate
 

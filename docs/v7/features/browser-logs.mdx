@@ -1,0 +1,414 @@
+---
+title: "Browser Logs"
+description: "Console output, JavaScript errors, and browser debugging information"
+icon: "browser"
+---
+
+View complete browser console output including JavaScript errors, warnings, info logs, and custom application logging from your tests.
+
+## Browser Console Output
+
+Access all browser console logs in test replays:
+
+```
+Browser Console:
+┌────────────────────────────────────────────────────┐
+│ [0:05] ℹ️ Application started v2.1.4             │
+│ [0:08] ℹ️ API endpoint: https://api.example.com  │
+│ [0:12] ✓ User session initialized                │
+│ [0:15] ⚠️ Deprecated function used: getUserId()  │
+│ [0:18] ℹ️ Fetching user data...                  │
+│ [0:22] ✓ User data loaded                        │
+│ [0:25] ❌ TypeError: Cannot read property 'id'   │
+│        at UserProfile.render (app.js:234:15)     │
+│ [0:28] ⚠️ Re-rendering component                 │
+│ [0:30] ℹ️ Navigation: /dashboard                 │
+└────────────────────────────────────────────────────┘
+```
+
+## Log Types
+
+Browser console captures all standard log levels:
+
+<CardGroup cols={2}>
+  <Card title="console.log()" icon="circle-info" color="blue">
+    General information
+    - Application state
+    - Debug messages
+    - Custom logging
+    - Development info
+  </Card>
+
+  <Card title="console.info()" icon="info" color="cyan">
+    Informational messages
+    - API calls
+    - User actions
+    - State changes
+    - System events
+  </Card>
+
+  <Card title="console.warn()" icon="triangle-exclamation" color="yellow">
+    Warnings
+    - Deprecated APIs
+    - Performance issues
+    - Missing data
+    - Validation warnings
+  </Card>
+
+  <Card title="console.error()" icon="circle-xmark" color="red">
+    Errors
+    - JavaScript errors
+    - API failures
+    - Runtime exceptions
+    - Unhandled rejections
+  </Card>
+
+  <Card title="console.debug()" icon="bug" color="gray">
+    Debug information
+    - Detailed traces
+    - Internal state
+    - Development logs
+    - Verbose output
+  </Card>
+
+  <Card title="console.table()" icon="table" color="purple">
+    Tabular data
+    - Array display
+    - Object properties
+    - Data structures
+    - Formatted output
+  </Card>
+</CardGroup>
+
+## JavaScript Errors
+
+Catch runtime errors and exceptions:
+
+```
+JavaScript Errors:
+┌────────────────────────────────────────────────────┐
+│ [0:25] ❌ TypeError: Cannot read property 'id'    │
+│                                                    │
+│ Error Details:                                     │
+│ Type: TypeError                                    │
+│ Message: Cannot read property 'id' of undefined    │
+│                                                    │
+│ Stack Trace:                                       │
+│   at UserProfile.render (app.js:234:15)           │
+│   at App.renderProfile (app.js:56:8)              │
+│   at HTMLButtonElement.<anonymous> (app.js:42:12) │
+│                                                    │
+│ Source Location:                                   │
+│ File: app.js                                       │
+│ Line: 234                                          │
+│ Column: 15                                         │
+│                                                    │
+│ Context:                                           │
+│ 232:   renderProfile() {                          │
+│ 233:     const user = this.getUser();             │
+│ 234:     console.log(user.id);  // Error here     │
+│ 235:     return `<div>${user.name}</div>`;        │
+│ 236:   }                                           │
+└────────────────────────────────────────────────────┘
+```
+
+## Unhandled Promise Rejections
+
+Track async errors:
+
+```
+Promise Rejections:
+┌────────────────────────────────────────────────────┐
+│ [0:32] ❌ Unhandled Promise Rejection              │
+│                                                    │
+│ Reason: NetworkError: Failed to fetch              │
+│ Promise: Promise {<rejected>}                      │
+│                                                    │
+│ Origin:                                            │
+│   at fetchUserData (api.js:45)                    │
+│   at async loadDashboard (app.js:123)             │
+│                                                    │
+│ Request Details:                                   │
+│ URL: https://api.example.com/user/123              │
+│ Method: GET                                        │
+│ Status: Network failure                            │
+└────────────────────────────────────────────────────┘
+```
+
+## Custom Application Logging
+
+Your application's console output:
+
+```javascript
+// Your application code
+console.log('User logged in:', user.email);
+console.info('Loading dashboard data...');
+console.warn('API response time exceeded 2s');
+console.error('Failed to save user preferences');
+
+// Debug complex objects
+console.table([
+  { id: 1, name: 'Alice', role: 'Admin' },
+  { id: 2, name: 'Bob', role: 'User' }
+]);
+
+// All captured in TestDriver replays
+```
+
+**Replay Console Output:**
+```
+[0:15] ℹ️ User logged in: alice@example.com
+[0:18] ℹ️ Loading dashboard data...
+[0:25] ⚠️ API response time exceeded 2s
+[0:30] ❌ Failed to save user preferences
+
+[0:35] 📊 Table:
+┌─────┬───────┬────────┐
+│ id  │ name  │ role   │
+├─────┼───────┼────────┤
+│ 1   │ Alice │ Admin  │
+│ 2   │ Bob   │ User   │
+└─────┴───────┴────────┘
+```
+
+## React DevTools Logs
+
+Framework-specific debugging:
+
+```
+React Logs:
+┌────────────────────────────────────────────────────┐
+│ [0:12] ⚛️ React component mounted: <UserProfile> │
+│ [0:15] ⚛️ Props changed: { userId: 123 }         │
+│ [0:18] ⚛️ State updated: { loading: true }       │
+│ [0:22] ⚛️ Effect ran: useEffect (deps: [userId]) │
+│ [0:25] ⚛️ Component re-rendered                  │
+│ [0:28] ⚛️ Effect cleanup executed                │
+│ [0:30] ⚛️ Component unmounted                    │
+└────────────────────────────────────────────────────┘
+```
+
+## Third-Party Library Logs
+
+Monitor external dependencies:
+
+```
+Library Logs:
+┌────────────────────────────────────────────────────┐
+│ [0:08] 📦 axios: Request sent to /api/user        │
+│ [0:10] 📦 axios: Response received (200 OK)       │
+│ [0:15] 📦 lodash: _.debounce called               │
+│ [0:20] 📦 moment: Date formatted (YYYY-MM-DD)     │
+│ [0:25] 📦 analytics: Event tracked: button_click  │
+│ [0:30] ⚠️ analytics: Network request failed       │
+└────────────────────────────────────────────────────┘
+```
+
+## Browser Warnings
+
+Security and performance warnings:
+
+```
+Browser Warnings:
+┌────────────────────────────────────────────────────┐
+│ [0:05] ⚠️ Mixed Content: Insecure resource loaded │
+│        https://example.com loaded http://cdn...   │
+│                                                    │
+│ [0:12] ⚠️ Cookie without SameSite attribute       │
+│        Set-Cookie: session=abc123                 │
+│                                                    │
+│ [0:18] ⚠️ Synchronous XMLHttpRequest deprecated   │
+│        Use async requests instead                 │
+│                                                    │
+│ [0:25] ⚠️ localStorage quota exceeded (5MB limit) │
+│        Consider using IndexedDB for large data    │
+└────────────────────────────────────────────────────┘
+```
+
+## Filter Console Logs
+
+Find specific log messages:
+
+<Tabs>
+  <Tab title="By Level">
+    ```
+    Show only:
+    ☑ Errors
+    ☑ Warnings
+    ☐ Info
+    ☐ Log
+    ☐ Debug
+    ```
+  </Tab>
+
+  <Tab title="By Source">
+    ```
+    Filter by source:
+    All sources
+    app.js
+    vendor.js
+    analytics.js
+    React DevTools
+    ```
+  </Tab>
+
+  <Tab title="By Message">
+    ```
+    Search messages:
+    "TypeError"
+    "API"
+    "user"
+    Regular expressions supported
+    ```
+  </Tab>
+
+  <Tab title="By Timestamp">
+    ```
+    Time range:
+    Full test duration
+    Around error (±10s)
+    Last 30 seconds
+    Custom range
+    ```
+  </Tab>
+</Tabs>
+
+## Console API Coverage
+
+All console methods captured:
+
+```javascript
+// Standard logging
+console.log('Basic log');
+console.info('Info message');
+console.warn('Warning');
+console.error('Error');
+console.debug('Debug info');
+
+// Grouping
+console.group('User Actions');
+console.log('Click button');
+console.log('Submit form');
+console.groupEnd();
+
+// Timing
+console.time('API Call');
+// ... some operation ...
+console.timeEnd('API Call');  // "API Call: 234.5ms"
+
+// Assertions
+console.assert(user.id, 'User ID is required');
+
+// Counting
+console.count('render');  // "render: 1"
+console.count('render');  // "render: 2"
+
+// Stack traces
+console.trace('Trace point');
+
+// Clear (noted but not cleared in replay)
+console.clear();
+```
+
+## Export Browser Logs
+
+Download console output:
+
+<Tabs>
+  <Tab title="Plain Text">
+    ```
+    [0:05] INFO Application started v2.1.4
+    [0:15] WARN Deprecated function used: getUserId()
+    [0:25] ERROR TypeError: Cannot read property 'id'
+           at UserProfile.render (app.js:234:15)
+    ```
+  </Tab>
+
+  <Tab title="JSON">
+    ```json
+    {
+      "consoleLogs": [
+        {
+          "timestamp": "0:05",
+          "level": "info",
+          "message": "Application started v2.1.4",
+          "source": "app.js:12"
+        },
+        {
+          "timestamp": "0:25",
+          "level": "error",
+          "message": "TypeError: Cannot read property 'id'",
+          "stack": "at UserProfile.render (app.js:234:15)...",
+          "source": "app.js:234"
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="CSV">
+    ```csv
+    Timestamp,Level,Message,Source
+    0:05,INFO,Application started v2.1.4,app.js:12
+    0:15,WARN,Deprecated function used,app.js:89
+    0:25,ERROR,TypeError: Cannot read property 'id',app.js:234
+    ```
+  </Tab>
+</Tabs>
+
+## Integration with Test Assertions
+
+Verify console output in tests:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('check for console errors', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  await testdriver.find('submit button').click();
+  
+  // After test, check dashcam for console errors
+  // Replay will show any JavaScript errors
+  console.log('Check console:', dashcam.url);
+});
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Application Logs"
+    icon="terminal"
+    href="/v7/features/application-logs"
+  >
+    TestDriver SDK logs
+  </Card>
+
+  <Card
+    title="Network Monitoring"
+    icon="network-wired"
+    href="/v7/features/network-monitoring"
+  >
+    HTTP requests and responses
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    Complete test execution videos
+  </Card>
+
+  <Card
+    title="Observability"
+    icon="microscope"
+    href="/v7/features/observable"
+  >
+    Complete debugging guide
+  </Card>
+</CardGroup>

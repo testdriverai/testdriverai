@@ -1,0 +1,402 @@
+---
+title: "Cache Management"
+description: "Browse cached selectors, view found targets, and manage cache entries"
+icon: "database"
+---
+
+View and manage the intelligent cache that powers TestDriver's fast test execution. Browse all cached element locations, see visual previews, and clear cache when needed.
+
+## Selector Cache Dashboard
+
+Access cache management at [app.testdriver.ai/cache](https://app.testdriver.ai/cache):
+
+<Card title="Selector Cache" icon="database" href="https://app.testdriver.ai/cache">
+  Browse all cached selector entries with visual previews
+</Card>
+
+### Cache Overview
+
+The cache stores AI vision analysis results for faster test execution:
+
+<CardGroup cols={2}>
+  <Card title="Cache Hit Rate" icon="percent">
+    Percentage of selectors found in cache
+    - Higher is better
+    - Typical: 80-95% after a few runs
+    - Shows cache effectiveness
+  </Card>
+
+  <Card title="Total Entries" icon="hashtag">
+    Number of cached selectors
+    - Grows with test diversity
+    - Automatically managed
+    - Cleared on code changes
+  </Card>
+
+  <Card title="Cache Size" icon="hard-drive">
+    Storage used by cache
+    - Screenshots + metadata
+    - Typical: 10-500 MB
+    - Automatic cleanup
+  </Card>
+
+  <Card title="Minimum Hits" icon="filter">
+    Filter by cache usage
+    - 0 = Show all entries
+    - 5+ = Show frequently used
+    - Optimize cache value
+  </Card>
+</CardGroup>
+
+## Viewing Cache Entries
+
+Each cached entry shows:
+
+```
+Cache Entry Example:
+┌────────────────────────────────────────────────────┐
+│ Selector: "Sign in, black button below password"  │
+│                                                    │
+│ [Screenshot Preview]                               │
+│ ┌─────────────────┐                               │
+│ │                 │                               │
+│ │  [Found Element]│  ← Visual target              │
+│ │                 │                               │
+│ └─────────────────┘                               │
+│                                                    │
+│ File: test/testdriver.test.js                     │
+│ Context: by "standard_user" password field        │
+│ Hash: a8f3c21b...                                 │
+│ Status: ✓ Passed                                   │
+│                                                    │
+│ [TEST] [single] [windows] [s blac]                │
+│ [fe68cfe63c784b2a47...] [hover:start-test]       │
+└────────────────────────────────────────────────────┘
+```
+
+### Entry Information
+
+- **Selector Text** - Natural language description used
+- **Screenshot** - Visual preview showing found element
+- **File** - Which test file used this selector
+- **Context** - Additional selector context
+- **Hash** - Unique cache key identifier
+- **Status** - Whether element was found
+- **Tags** - Test metadata and labels
+
+## Cache Key Generation
+
+Understanding how cache keys work:
+
+```
+Cache Key Components:
+1. Test File Hash: SHA-256 of test file contents
+2. Selector Text: "submit button"
+3. Screenshot Hash: Perceptual hash of screen
+4. Platform: linux, windows, mac
+
+Combined Key: 
+fe68cfe63c784b2a47bcd8a8f3c21b7e
+```
+
+**Cache Invalidation:**
+- Test file changes → New hash → Fresh cache
+- UI changes → Different screenshot → New entry
+- Selector changes → Different text → New entry
+- Platform changes → Separate cache per OS
+
+## Gallery View
+
+Visual browse mode for cache entries:
+
+```
+[Selector Cache - Gallery View]
+┌──────────┬──────────┬──────────┬──────────┐
+│          │          │          │          │
+│  [IMG]   │  [IMG]   │  [IMG]   │  [IMG]   │
+│  login   │  submit  │  menu    │  cart    │
+│  button  │  button  │  icon    │  button  │
+│          │          │          │          │
+├──────────┼──────────┼──────────┼──────────┤
+│          │          │          │          │
+│  [IMG]   │  [IMG]   │  [IMG]   │  [IMG]   │
+│  search  │  profile │  logout  │  save    │
+│  input   │  avatar  │  link    │  button  │
+│          │          │          │          │
+└──────────┴──────────┴──────────┴──────────┘
+```
+
+**Features:**
+- Click to enlarge screenshot
+- Hover to see full selector text
+- Color-coded by status (green = found, red = not found)
+- Sort by usage frequency
+
+## Table View
+
+Detailed list with sortable columns:
+
+```
+[Selector Cache - Table View]
+┌─────────────────────┬──────────┬─────────┬────────┬──────────┐
+│ Selector            │ Preview  │ File    │ Status │ Cache Key│
+├─────────────────────┼──────────┼─────────┼────────┼──────────┤
+│ Sign in, black btn  │ [thumb]  │ test.js │ PASSED │ fe68cfe..│
+│ password input      │ [thumb]  │ test.js │ PASSED │ a8f3c21..│
+│ username field      │ [thumb]  │ test.js │ PASSED │ 7b2d4e9..│
+│ submit button       │ [thumb]  │ test.js │ NOTFND │ c5a1f8e..│
+└─────────────────────┴──────────┴─────────┴────────┴──────────┘
+
+Sort by: ▼ Selector | File | Status | Usage
+```
+
+## Filtering Cache Entries
+
+Find specific cached items:
+
+<Tabs>
+  <Tab title="By Cache Key">
+    ```
+    Filter by Cache Key:
+    All cache keys
+    fe68cfe6... (specific hash)
+    a8f3c21b... (specific hash)
+    ```
+  </Tab>
+
+  <Tab title="By Test File">
+    ```
+    Filter by File:
+    All files
+    test/login.test.js
+    test/checkout.test.js
+    test/search.test.js
+    ```
+  </Tab>
+
+  <Tab title="By Status">
+    ```
+    Filter by Status:
+    All statuses
+    ✓ Passed only
+    ✗ Not found only
+    ```
+  </Tab>
+
+  <Tab title="By Selector Text">
+    ```
+    Search selectors:
+    "button"
+    "Sign in"
+    "password"
+    Partial text matching
+    ```
+  </Tab>
+</Tabs>
+
+## Cache Statistics
+
+Per-file and global metrics:
+
+```
+Cache Performance:
+┌────────────────────────────────────────────────────┐
+│ test/login.test.js                                │
+│ • Entries: 12                                     │
+│ • Hit Rate: 95%                                   │
+│ • Avg Match Time: 15ms                            │
+│ • Total Saves: ~28 seconds per run                │
+├────────────────────────────────────────────────────┤
+│ test/checkout.test.js                             │
+│ • Entries: 23                                     │
+│ • Hit Rate: 87%                                   │
+│ • Avg Match Time: 18ms                            │
+│ • Total Saves: ~52 seconds per run                │
+└────────────────────────────────────────────────────┘
+
+Global Stats:
+• Total Cached Selectors: 156
+• Overall Hit Rate: 91%
+• Total Time Saved: 8.5 minutes per full suite
+• Cache Size: 143 MB
+```
+
+## Clear Cache
+
+Manage cache storage:
+
+<CardGroup cols={2}>
+  <Card title="Clear All" icon="trash">
+    Remove all cache entries
+    - Fresh start
+    - Reclaim storage
+    - Force re-analysis
+  </Card>
+
+  <Card title="Clear by File" icon="file-slash">
+    Remove specific test file cache
+    - After UI changes
+    - Test refactoring
+    - Targeted cleanup
+  </Card>
+
+  <Card title="Clear Failed" icon="xmark">
+    Remove not-found entries
+    - Clean up misses
+    - Reduce cache size
+    - Keep only successful matches
+  </Card>
+
+  <Card title="Clear Old" icon="clock-rotate-left">
+    Remove entries older than X days
+    - Automatic cleanup
+    - Keep recent only
+    - Configurable threshold
+  </Card>
+</CardGroup>
+
+<Warning>
+  Clearing cache will slow down the next test run as TestDriver rebuilds the cache with AI vision analysis.
+</Warning>
+
+## Cache Configuration
+
+Customize caching behavior:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('cache configuration', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    cache: {
+      enabled: true,           // Enable/disable caching
+      ttl: 30 * 24 * 60 * 60, // 30 days in seconds
+      threshold: 0.85,         // 85% similarity threshold
+      maxSize: 500 * 1024 * 1024 // 500 MB max cache size
+    }
+  });
+});
+```
+
+### Cache Matching Strategies
+
+TestDriver uses three-tier matching:
+
+<Steps>
+  <Step title="Exact Hash Match">
+    **Fastest** - Perceptual hash comparison
+    
+    - Speed: < 1ms
+    - Accuracy: 100%
+    - Use case: Identical screenshots
+  </Step>
+
+  <Step title="Pixel Diff Match">
+    **Fast** - Pixel-by-pixel comparison
+    
+    - Speed: < 50ms
+    - Accuracy: 95%+ similarity
+    - Use case: Minor UI changes (hover states)
+  </Step>
+
+  <Step title="Template Match">
+    **Fallback** - Edge detection and structure
+    
+    - Speed: < 200ms
+    - Accuracy: 75%+ confidence
+    - Use case: Layout changes, responsive design
+  </Step>
+</Steps>
+
+## Found Targets Preview
+
+See exactly what elements were cached:
+
+```
+Target Details:
+┌────────────────────────────────────────────────────┐
+│ Element Found: ✓                                  │
+│                                                    │
+│ Coordinates: (512, 387)                           │
+│ Bounding Box:                                     │
+│   X: 450, Y: 370                                  │
+│   Width: 124, Height: 34                          │
+│                                                    │
+│ Visual Preview:                                    │
+│ [Screenshot with highlight box around element]    │
+│                                                    │
+│ Confidence: 98.5%                                 │
+│ Match Type: Exact Hash                            │
+│ Match Time: 12ms                                  │
+└────────────────────────────────────────────────────┘
+```
+
+## Export Cache Data
+
+Download cache information:
+
+<Tabs>
+  <Tab title="JSON">
+    ```json
+    {
+      "cache": [
+        {
+          "selector": "Sign in, black button below password",
+          "file": "test/testdriver.test.js",
+          "cacheKey": "fe68cfe63c784b2a",
+          "status": "PASSED",
+          "coordinates": { "x": 512, "y": 387 },
+          "timestamp": "2024-12-09T10:30:00Z",
+          "hits": 45
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="CSV">
+    ```csv
+    Selector,File,Cache Key,Status,Hits,Last Used
+    Sign in button,test.js,fe68cfe...,PASSED,45,2024-12-09
+    password input,test.js,a8f3c21...,PASSED,38,2024-12-09
+    ```
+  </Tab>
+</Tabs>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Intelligent Caching"
+    icon="bolt"
+    href="/v7/features/fast"
+  >
+    How caching speeds up tests
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    View cache hits in action
+  </Card>
+
+  <Card
+    title="Performance"
+    icon="gauge-high"
+    href="/v7/guides/performance"
+  >
+    Optimize cache settings
+  </Card>
+
+  <Card
+    title="Dashboard"
+    icon="chart-simple"
+    href="https://app.testdriver.ai"
+  >
+    Access cache management
+  </Card>
+</CardGroup>

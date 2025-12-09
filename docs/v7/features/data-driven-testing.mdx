@@ -1,10 +1,10 @@
 ---
-title: "Scalability"
-description: "From small projects to enterprise test suites with thousands of tests"
-icon: "arrow-up-right-dots"
+title: "Data-Driven Testing"
+description: "Build maintainable test suites with reusable code and dynamic test data"
+icon: "table"
 ---
 
-TestDriver scales effortlessly from your first test to enterprise suites with thousands of tests running in parallel across multiple platforms.
+Scale your test suite with reusable code patterns and dynamic data to reduce duplication and maintain consistency across thousands of tests.
 
 ## Code Snippets for Reusability
 
@@ -221,58 +221,73 @@ Scale your testing with dynamic data to cover more scenarios:
   - **CI/CD integration:** Pass dynamic values via environment variables
 </Card>
 
-## Works with Vitest
+## Secure Secrets Management
 
-Full integration with Vitest's powerful features:
-
-```javascript vitest.config.mjs
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    testTimeout: 120000,
-    hookTimeout: 120000,
-    maxConcurrency: 10,      // Run 10 tests in parallel
-    minThreads: 2,
-    maxThreads: 10,
-  },
-});
-```
-
-<CardGroup cols={2}>
-  <Card title="Parallel Execution" icon="layer-group">
-    Run multiple tests simultaneously for maximum throughput:
-
-    ```bash
-    # Run all tests in parallel
-    npx vitest run
-
-    # Control concurrency
-    npx vitest run --max-concurrency=5
-    ```
-  </Card>
-
-  <Card title="Watch Mode" icon="eye">
-    Instant feedback during development:
-
-    ```bash
-    # Run in watch mode
-    npx vitest
-
-    # Only run changed tests
-    npx vitest --changed
-    ```
-  </Card>
-</CardGroup>
-
-[See complete Vitest integration guide](/v7/guides/vitest)
-
-## CI/CD Compatible
-
-TestDriver integrates seamlessly with all major CI/CD platforms:
+Protect sensitive data in your tests with built-in secrets handling:
 
 <Tabs>
-  <Tab title="GitHub Actions">
+  <Tab title="Secret Type Option">
+    ```javascript
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+
+    test('login with secret password', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+
+      await testdriver.find('email input').type('user@example.com');
+      
+      // Password is never logged or cached
+      await testdriver.find('password input').type(process.env.TEST_PASSWORD, { 
+        secret: true 
+      });
+      
+      await testdriver.find('login button').click();
+      await testdriver.assert('logged in successfully');
+    });
+    ```
+
+    <Check>
+      The `secret: true` option prevents sensitive data from appearing in logs, dashcam replays, or cache entries.
+    </Check>
+  </Tab>
+
+  <Tab title="Environment Variables">
+    ```javascript
+    // .env.test
+    TEST_PASSWORD=my-secret-password
+    TEST_API_KEY=sk-1234567890abcdef
+    TEST_CREDIT_CARD=4111111111111111
+
+    // test/auth.test.js
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+
+    test('secure authentication', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+
+      // Load secrets from environment
+      await testdriver.find('password input').type(
+        process.env.TEST_PASSWORD, 
+        { secret: true }
+      );
+
+      await testdriver.find('api key input').type(
+        process.env.TEST_API_KEY,
+        { secret: true }
+      );
+    });
+    ```
+
+    ```bash
+    # Install dotenv for local development
+    npm install --save-dev dotenv
+
+    # Load in test setup
+    import 'dotenv/config';
+    ```
+  </Tab>
+
+  <Tab title="CI/CD Secrets">
     ```yaml .github/workflows/test.yml
     name: E2E Tests
 
@@ -288,84 +303,51 @@ TestDriver integrates seamlessly with all major CI/CD platforms:
           - run: npx vitest run
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
+              TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+              TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
     ```
 
-    [GitHub Actions guide](/v7/guides/ci-cd/github-actions)
+    Configure secrets in your CI/CD platform:
+    - **GitHub:** Settings → Secrets and variables → Actions
+    - **GitLab:** Settings → CI/CD → Variables
+    - **CircleCI:** Project Settings → Environment Variables
   </Tab>
 
-  <Tab title="GitLab CI">
-    ```yaml .gitlab-ci.yml
-    test:
-      image: node:20
-      script:
-        - npm install
-        - npx vitest run
-      variables:
-        TD_API_KEY: $TD_API_KEY
-    ```
-
-    [GitLab CI guide](/v7/guides/ci-cd/gitlab)
-  </Tab>
-
-  <Tab title="CircleCI">
-    ```yaml .circleci/config.yml
-    version: 2.1
-    jobs:
-      test:
-        docker:
-          - image: cimg/node:20.0
-        steps:
-          - checkout
-          - run: npm install
-          - run: npx vitest run
-    ```
-
-    [CircleCI guide](/v7/guides/ci-cd/circleci)
-  </Tab>
-
-  <Tab title="Jenkins">
-    ```groovy Jenkinsfile
-    pipeline {
-      agent any
-      stages {
-        stage('Test') {
-          steps {
-            sh 'npm install'
-            sh 'npx vitest run'
-          }
-        }
+  <Tab title="Helper Functions">
+    ```javascript test/helpers/secrets.js
+    // Centralized secret handling
+    export function getSecret(key) {
+      const value = process.env[key];
+      if (!value) {
+        throw new Error(`Secret ${key} not found in environment`);
       }
+      return value;
+    }
+
+    export async function typeSecret(testdriver, selector, secretKey) {
+      const value = getSecret(secretKey);
+      await testdriver.find(selector).type(value, { secret: true });
     }
     ```
 
-    [Jenkins guide](/v7/guides/ci-cd/jenkins)
+    ```javascript test/payment.test.js
+    import { typeSecret } from './helpers/secrets.js';
+
+    test('payment form', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+
+      await typeSecret(testdriver, 'credit card input', 'TEST_CREDIT_CARD');
+      await typeSecret(testdriver, 'cvv input', 'TEST_CVV');
+      
+      await testdriver.find('submit payment').click();
+    });
+    ```
   </Tab>
 </Tabs>
 
-## JUnit Reports
-
-Generate JUnit XML reports for test result aggregation:
-
-```bash
-# Generate JUnit report
-npx vitest run --reporter=junit --outputFile=test-results.xml
-```
-
-```xml test-results.xml
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="vitest tests" tests="12" failures="0" errors="0" time="125.3">
-  <testsuite name="login.test.js" tests="3" failures="0" time="31.2">
-    <testcase name="user can login" time="12.4" />
-    <testcase name="invalid credentials show error" time="9.8" />
-    <testcase name="password reset works" time="9.0" />
-  </testsuite>
-  <!-- More test suites -->
-</testsuites>
-```
-
-<Check>
-  JUnit reports integrate with Jenkins, Azure DevOps, TeamCity, and other CI platforms for test result visualization.
-</Check>
+<Warning>
+  Never hardcode secrets in test files or commit them to version control. Always use environment variables or secure secret management systems.
+</Warning>
 
 ## Familiar Test Syntax
 
@@ -438,163 +420,6 @@ test('integrates with existing assertions', async (context) => {
 });
 ```
 
-## Scale to Thousands of Tests
-
-TestDriver handles large test suites efficiently:
-
-<Card title="Enterprise Test Suite Example" icon="building">
-  ```
-  Project: E-commerce Platform
-  Total tests: 3,847
-  Test files: 412
-  Parallel runners: 20
-  Total duration: 18 minutes
-
-  Breakdown:
-  - Unit tests: 2,134 (3 min)
-  - Integration: 891 (7 min)
-  - E2E (TestDriver): 822 (18 min)
-
-  Cost per run: $4.32
-  Runs per day: 50
-  Monthly cost: $6,480
-  ```
-
-  With caching enabled:
-  ```
-  E2E duration: 8 minutes (2.25x faster)
-  Cost per run: $1.89 (56% reduction)
-  Monthly cost: $2,835 (saves $3,645/month)
-  ```
-</Card>
-
-## Test Sharding
-
-Distribute tests across multiple machines:
-
-<Tabs>
-  <Tab title="GitHub Actions Matrix">
-    ```yaml .github/workflows/test.yml
-    strategy:
-      matrix:
-        shard: [1, 2, 3, 4, 5]
-    steps:
-      - run: npx vitest run --shard=${{ matrix.shard }}/5
-    ```
-
-    Runs 5 parallel jobs, each handling 1/5 of tests.
-  </Tab>
-
-  <Tab title="GitLab CI Parallel">
-    ```yaml .gitlab-ci.yml
-    test:
-      parallel: 5
-      script:
-        - npx vitest run --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
-    ```
-  </Tab>
-
-  <Tab title="Manual Sharding">
-    ```bash
-    # Machine 1
-    npx vitest run --shard=1/4
-
-    # Machine 2
-    npx vitest run --shard=2/4
-
-    # Machine 3
-    npx vitest run --shard=3/4
-
-    # Machine 4
-    npx vitest run --shard=4/4
-    ```
-  </Tab>
-</Tabs>
-
-## Team Collaboration
-
-Built for teams with multiple developers:
-
-<AccordionGroup>
-  <Accordion title="Shared Test Cache">
-    Tests automatically benefit from each other's cache entries:
-
-    ```javascript
-    // Developer A runs test
-    await testdriver.find('submit button').click();
-    // Creates cache entry
-
-    // Developer B runs test later
-    await testdriver.find('submit button').click();
-    // Uses Developer A's cache ⚡
-    ```
-
-    Per-team cache sharing accelerates everyone's tests.
-  </Accordion>
-
-  <Accordion title="Dashcam Replays">
-    Share test replays with your team:
-
-    ```javascript
-    test('shareable replay', async (context) => {
-      const { testdriver, dashcam } = await chrome(context, { url });
-
-      await testdriver.find('button').click();
-
-      // Share replay URL with team
-      console.log('Replay:', dashcam.url);
-      // https://console.testdriver.ai/dashcam/abc123
-    });
-    ```
-
-    View replays at [app.testdriver.ai](https://app.testdriver.ai)
-  </Accordion>
-
-  <Accordion title="Sandbox Management">
-    Long-running sandboxes for team debugging:
-
-    ```bash
-    # Spawn a sandbox for the team
-    testdriver sandbox spawn --timeout 7200000
-
-    # Team members can connect
-    export TESTDRIVER_SANDBOX_ID=i-0abc123def
-    npx vitest run
-    ```
-
-    [Learn about sandbox management](/agents.md#sandbox-management)
-  </Accordion>
-</AccordionGroup>
-
-## Cost Optimization
-
-TestDriver scales cost-effectively:
-
-<Card title="Pricing Model" icon="dollar-sign">
-  - **API calls:** Pay per AI vision analysis
-  - **Sandbox time:** Pay per minute of VM usage
-  - **Caching:** Reduces both costs dramatically
-  - **Shared cache:** Team benefits from collective cache
-
-  **Example costs:**
-  - Single test run: $0.04 - $0.12
-  - 100-test suite: $4 - $12 (first run)
-  - Cached suite: $0.50 - $2 (90%+ savings)
-</Card>
-
-## Enterprise Scale
-
-TestDriver supports the largest testing operations:
-
-- **Unlimited tests** in enterprise plans
-- **Unlimited sandbox hours** for large suites
-- **Unlimited team members** for collaboration
-- **Priority infrastructure** for faster execution
-- **Dedicated support** for optimization help
-- **Custom SLA** for guaranteed uptime
-
-[Contact sales](https://testdriver.ai/enterprise) for enterprise pricing.
-
 ## Learn More
 
 <CardGroup cols={2}>
@@ -607,26 +432,10 @@ TestDriver supports the largest testing operations:
   </Card>
 
   <Card
-    title="CI/CD Setup"
+    title="Continuous Testing"
     icon="arrows-spin"
-    href="/v7/guides/ci-cd/overview"
+    href="/v7/features/continuous-testing"
   >
-    CI/CD integration guides
-  </Card>
-
-  <Card
-    title="Performance Optimization"
-    icon="gauge-high"
-    href="/v7/guides/performance"
-  >
-    Optimize test performance
-  </Card>
-
-  <Card
-    title="Self-Hosting"
-    icon="server"
-    href="/v7/guides/self-hosting"
-  >
-    Run on your infrastructure
+    CI/CD integration and scaling
   </Card>
 </CardGroup>

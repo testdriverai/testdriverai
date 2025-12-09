@@ -1,0 +1,408 @@
+---
+title: "Test Replays"
+description: "Video replays with logs, network data, and performance metrics for debugging"
+icon: "video"
+---
+
+Every test automatically records a complete replay with video, step-by-step logs, browser console output, network requests, and performance metrics. Perfect for debugging failures and sharing with your team.
+
+## Dashcam Replays
+
+Access test replays at [app.testdriver.ai/replays](https://app.testdriver.ai/replays):
+
+<Card title="Test Replays" icon="video" href="https://app.testdriver.ai/replays">
+  View all test replays with video and debugging information
+</Card>
+
+### What's Included
+
+Every replay captures:
+
+<CardGroup cols={2}>
+  <Card title="Video Recording" icon="video">
+    - Full screen recording
+    - Playback controls (play, pause, skip)
+    - Adjustable speed (0.5x to 3x)
+    - Frame-by-frame navigation
+  </Card>
+
+  <Card title="Action Steps" icon="list">
+    - Every TestDriver command
+    - Timestamps for each action
+    - Element coordinates found
+    - AI vision analysis results
+  </Card>
+
+  <Card title="Console Logs" icon="terminal">
+    - Browser console output
+    - JavaScript errors
+    - Warnings and info logs
+    - Custom console.log() statements
+  </Card>
+
+  <Card title="Network Activity" icon="network-wired">
+    - All HTTP requests
+    - Response status codes
+    - Request/response timing
+    - Downloaded/uploaded data
+  </Card>
+
+  <Card title="Performance Charts" icon="chart-line">
+    - CPU usage over time
+    - Memory usage trends
+    - Top 10 processes
+    - Resource utilization
+  </Card>
+
+  <Card title="Environment Info" icon="server">
+    - Operating system
+    - Browser version
+    - Screen resolution
+    - Sandbox details
+  </Card>
+</CardGroup>
+
+## Video Player
+
+Interactive video playback with timeline:
+
+```
+Replay Interface:
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│         [Video of test execution]                   │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+
+[◀◀] [▶/⏸] [▶▶]     0:45 / 2:30     [0.5x][1x][2x][3x]
+
+Timeline:
+|─────────○────────────────────────|
+        Current position
+
+Speed Controls:
+- Skip downtime: ON [toggle]
+- Playback speed: 1x
+```
+
+### Timeline Features
+
+Navigate test execution:
+
+- **Action Markers** - Click to jump to specific TestDriver commands
+- **Error Markers** - Red indicators show where failures occurred
+- **Screenshot Points** - View captured screenshots at each step
+- **Skip Downtime** - Automatically fast-forward through idle periods
+
+## Action Log Panel
+
+Step-by-step test execution details:
+
+```
+Steps:
+┌────────────────────────────────────────────────────┐
+│ [0:00] 🟢 Find                                    │
+│   "testdriver-sandbox.vercel.app" not found       │
+│   Text: Element not found                         │
+│   [Screenshot]                                     │
+├────────────────────────────────────────────────────┤
+│ [0:15] 🟢 Find                                    │
+│   "testdriver-sandbox.vercel.app"                 │
+│   Text: [Passed]                                   │
+│   [Screenshot]                                     │
+├────────────────────────────────────────────────────┤
+│ [0:32] 🟢 Find                                    │
+│   "Sign in, black button below the password fld"  │
+│   Text: [Passed]                                   │
+│   Coordinates: (512, 387)                         │
+│   [Screenshot]                                     │
+└────────────────────────────────────────────────────┘
+```
+
+Each step shows:
+- **Timestamp** - When action occurred
+- **Status** - Pass/fail indicator
+- **Command** - TestDriver action
+- **Description** - Natural language selector
+- **Result** - Element found or error message
+- **Screenshot** - Visual confirmation
+
+## Console Logs Tab
+
+View browser console output:
+
+```
+Console Output:
+┌────────────────────────────────────────────────────┐
+│ [0:05] ℹ️ System info configured                  │
+│ [0:08] ℹ️ Response cache: /Users/...cache.json    │
+│ [0:12] ✓ Response was successful!                 │
+│ [0:18] ⚠️ Warning: Deprecated API usage           │
+│ [0:25] ❌ TypeError: Cannot read property 'id'    │
+│        at checkout.js:42:15                       │
+└────────────────────────────────────────────────────┘
+
+Filters:
+□ Errors  □ Warnings  ☑ Info  □ Debug
+```
+
+**Debugging Value:**
+- Catch JavaScript errors
+- Monitor application state
+- Track API responses
+- Debug timing issues
+
+## Browser Tab
+
+Access browser-specific debugging:
+
+```
+Browser Information:
+┌────────────────────────────────────────────────────┐
+│ User Agent:                                        │
+│ Mozilla/5.0 (X11; Linux x86_64) Chrome/120.0      │
+│                                                    │
+│ Viewport: 1280 x 720                              │
+│ Device Scale: 1.0                                  │
+│ Color Depth: 24-bit                               │
+│                                                    │
+│ Cookies: 12 stored                                │
+│ Local Storage: 3 items                            │
+│ Session Storage: 1 item                           │
+└────────────────────────────────────────────────────┘
+```
+
+## Performance Charts Tab
+
+Monitor system resource usage:
+
+### CPU Usage
+
+```
+CPU Usage Over Time:
+┌────────────────────────────────────────────────────┐
+│ 60% │                    ╱╲                        │
+│     │                  ╱    ╲                      │
+│ 40% │              ╱╲╱        ╲                    │
+│     │          ╱╲╱              ╲╱╲                │
+│ 20% │      ╱╲╱                      ╲              │
+│     │  ╱╱                              ╲╱╲         │
+│  0% └────────────────────────────────────────────  │
+│     0s    10s   20s   30s   40s   50s   60s       │
+└────────────────────────────────────────────────────┘
+
+System CPU Usage (%)
+Peak: 58.5% at 35s
+```
+
+### Memory Usage
+
+```
+Memory Usage Over Time:
+┌────────────────────────────────────────────────────┐
+│ 72 │                                              │
+│ GB │                              ╱─────          │
+│ 68 │                        ╱────╱                │
+│    │                  ╱────╱                      │
+│ 64 │            ╱────╱                            │
+│    │      ╱────╱                                  │
+│ 60 │─────╱                                        │
+│     └────────────────────────────────────────────  │
+│     0s    10s   20s   30s   40s   50s   60s       │
+└────────────────────────────────────────────────────┘
+
+System Memory Usage (%)
+Peak: 71.2% (68.8 GB used)
+```
+
+### Network Traffic
+
+```
+Network Traffic:
+┌────────────────────────────────────────────────────┐
+│ Download (MB/s): ▂▃▅▇▇▃▂▁                        │
+│ Upload (MB/s):   ▁▁▂▂▁▁▁▁                        │
+│                                                    │
+│ Total Downloaded: 2.8 MB                          │
+│ Total Uploaded: 0.4 MB                            │
+└────────────────────────────────────────────────────┘
+```
+
+### Top Processes by CPU
+
+```
+Top 10 CPU-Intensive Processes:
+┌────────────────────────────────────────────────────┐
+│ chromium (PID 2766)        ████████████ 45%       │
+│ python (PID 2845)          ██████ 22%             │
+│ Xvfb (PID 2634)            ████ 15%               │
+│ testdriver (PID 3012)      ███ 10%                │
+│ node (PID 2890)            ██ 5%                  │
+│ bash (PID 2521)            ▌ 1.5%                 │
+│ systemd (PID 1)            ▌ 0.8%                 │
+│ sshd (PID 1234)            ▌ 0.5%                 │
+└────────────────────────────────────────────────────┘
+```
+
+**Performance Insights:**
+- Identify resource bottlenecks
+- Monitor browser performance
+- Track memory leaks
+- Optimize heavy operations
+
+## Environment Tab
+
+Complete test environment details:
+
+```
+Environment Information:
+┌────────────────────────────────────────────────────┐
+│ Operating System: Ubuntu 22.04 LTS                │
+│ Kernel: 5.15.0-91-generic                         │
+│                                                    │
+│ Browser: Google Chrome 120.0.6099.109            │
+│ WebDriver: ChromeDriver 120.0.6099.71            │
+│                                                    │
+│ TestDriver SDK: v7.2.1                            │
+│ Node.js: v20.10.0                                 │
+│ Python: 3.11.6                                    │
+│                                                    │
+│ Sandbox ID: i-0abc123def456789                   │
+│ Instance Type: t3.medium                          │
+│ Region: us-east-1                                 │
+│                                                    │
+│ Screen Resolution: 1280x720                       │
+│ Color Depth: 24-bit                               │
+│ Timezone: UTC                                     │
+└────────────────────────────────────────────────────┘
+```
+
+## Sharing Replays
+
+Share debugging information with your team:
+
+<Tabs>
+  <Tab title="Public Link">
+    ```javascript
+    const { dashcam } = await chrome(context, { url });
+    
+    console.log('Public replay:', dashcam.url);
+    // https://app.testdriver.ai/replay/abc123
+    
+    // Anyone with link can view
+    ```
+  </Tab>
+
+  <Tab title="Team Link">
+    ```javascript
+    const { dashcam } = await chrome(context, { url });
+    
+    console.log('Team only:', dashcam.privateUrl);
+    // https://app.testdriver.ai/replay/abc123?access=team
+    
+    // Requires team authentication
+    ```
+  </Tab>
+
+  <Tab title="Embed Link">
+    ```javascript
+    const { dashcam } = await chrome(context, { url });
+    
+    console.log('Embed URL:', dashcam.embedUrl);
+    // https://app.testdriver.ai/embed/abc123
+    
+    // Use in iframe for documentation
+    ```
+  </Tab>
+</Tabs>
+
+## Download Replay
+
+Export replay data:
+
+<CardGroup cols={2}>
+  <Card title="Video File" icon="file-video">
+    Download MP4 video file
+    - Full test execution
+    - Shareable format
+    - Offline viewing
+  </Card>
+
+  <Card title="HAR File" icon="file-code">
+    HTTP Archive format
+    - All network requests
+    - Chrome DevTools compatible
+    - Performance analysis
+  </Card>
+
+  <Card title="Screenshots" icon="images">
+    ZIP file of all screenshots
+    - PNG format
+    - Timestamped filenames
+    - Step-by-step visuals
+  </Card>
+
+  <Card title="JSON Data" icon="file-lines">
+    Complete replay data
+    - Action log
+    - Console logs
+    - Metrics and timing
+  </Card>
+</CardGroup>
+
+## Replay API Access
+
+Programmatic access to replays:
+
+```javascript
+// Fetch replay data
+const response = await fetch(
+  'https://api.testdriver.ai/v1/replays/abc123',
+  {
+    headers: {
+      'Authorization': `Bearer ${TD_API_KEY}`
+    }
+  }
+);
+
+const replay = await response.json();
+console.log(replay.actions);      // Step-by-step log
+console.log(replay.videoUrl);     // MP4 download URL
+console.log(replay.performance);  // Metrics data
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Observability & Debugging"
+    icon="microscope"
+    href="/v7/features/observable"
+  >
+    Complete debugging guide
+  </Card>
+
+  <Card
+    title="Test Reports"
+    icon="list-check"
+    href="/v7/features/test-reports"
+  >
+    View test run summaries
+  </Card>
+
+  <Card
+    title="Test Cases"
+    icon="file-lines"
+    href="/v7/features/test-cases"
+  >
+    Individual test histories
+  </Card>
+
+  <Card
+    title="Performance"
+    icon="gauge-high"
+    href="/v7/features/fast"
+  >
+    Optimize test speed
+  </Card>
+</CardGroup>

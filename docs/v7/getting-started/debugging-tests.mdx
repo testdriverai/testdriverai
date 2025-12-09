@@ -1,97 +1,10 @@
 ---
-title: "Running & Debugging Tests"
-description: "Run tests with Vitest and debug failures with Dashcam replays"
-icon: "play"
+title: "Debugging Tests"
+description: "Debug test failures with Dashcam replays, logs, and error analysis"
+icon: "bug"
 ---
 
-Learn how to run TestDriver tests efficiently and debug failures using video replays, logs, and error analysis.
-
-## Running Tests
-
-TestDriver works with Vitest's powerful test runner:
-
-<Tabs>
-  <Tab title="Run All Tests">
-    ```bash
-    # Run all tests once
-    npx vitest run
-
-    # Run in watch mode
-    npx vitest
-
-    # Run with coverage
-    npx vitest run --coverage
-    ```
-  </Tab>
-
-  <Tab title="Run Specific Tests">
-    ```bash
-    # Run specific file
-    npx vitest run login.test.js
-
-    # Run multiple files
-    npx vitest run login.test.js checkout.test.js
-
-    # Run tests matching pattern
-    npx vitest run --grep "login"
-
-    # Run tests in specific folder
-    npx vitest run tests/e2e/
-    ```
-  </Tab>
-
-  <Tab title="Watch Mode">
-    ```bash
-    # Watch mode - reruns on file changes
-    npx vitest
-
-    # Watch only changed tests
-    npx vitest --changed
-
-    # Watch specific file
-    npx vitest login.test.js
-    ```
-  </Tab>
-
-  <Tab title="Parallel Execution">
-    ```bash
-    # Control concurrency
-    npx vitest run --maxConcurrency=5
-
-    # Run with specific thread count
-    npx vitest run --threads --minThreads=2 --maxThreads=8
-    ```
-  </Tab>
-</Tabs>
-
-## Test Output
-
-Understanding test output:
-
-```bash
-$ npx vitest run
-
- ✓ login.test.js (3) 23.4s
-   ✓ user can login with valid credentials 12.3s
-   ✓ shows error for invalid email 5.6s
-   ✓ shows error for wrong password 5.5s
-
- ✓ checkout.test.js (2) 34.7s
-   ✓ user can complete checkout 28.9s
-   ✓ validates credit card format 5.8s
-
-Test Files  2 passed (2)
-     Tests  5 passed (5)
-  Duration  58.12s
-
-📹 Dashcam Replays:
-  - https://console.testdriver.ai/dashcam/abc123
-  - https://console.testdriver.ai/dashcam/def456
-```
-
-<Tip>
-  Click the Dashcam URLs to watch video replays of your tests!
-</Tip>
+Learn how to debug TestDriver test failures using video replays, logs, and rich error information.
 
 ## Debugging with Dashcam
 
@@ -389,33 +302,6 @@ test('check network', async (context) => {
 });
 ```
 
-## Performance Profiling
-
-Identify slow tests:
-
-```bash
-# Run with reporter showing timing
-npx vitest run --reporter=verbose
-
-# Output shows duration per test:
-✓ slow-test.test.js > user can checkout (34.7s)
-  → find('product') (2.1s)
-  → click() (0.4s)
-  → find('add to cart') (1.8s)
-  → click() (0.3s)
-  → find('checkout') (28.9s) ← SLOW!
-  → click() (0.5s)
-```
-
-Optimize slow operations:
-
-1. **Enable caching** - First run is slow, subsequent runs are fast
-2. **Use parallel execution** - Run tests concurrently
-3. **Check network delays** - Look for slow API calls in Dashcam
-4. **Optimize selectors** - More specific = faster matching
-
-[Performance optimization guide](/v7/guides/performance)
-
 ## Debugging in CI/CD
 
 When tests fail in CI:
@@ -459,39 +345,23 @@ When tests fail in CI:
   </Step>
 </Steps>
 
-## Vitest UI
-
-Use Vitest UI for interactive debugging:
-
-```bash
-# Start Vitest UI
-npx vitest --ui
-```
-
-Open http://localhost:51204 to see:
-- Test file tree
-- Test status and duration
-- Console output
-- Re-run individual tests
-- Filter and search tests
-
 ## Next Steps
 
 <CardGroup cols={2}>
+  <Card
+    title="Running Tests"
+    icon="play"
+    href="/v7/getting-started/running-tests"
+  >
+    Learn how to run tests efficiently
+  </Card>
+
   <Card
     title="Setting Up in CI"
     icon="arrows-spin"
     href="/v7/getting-started/setting-up-in-ci"
   >
     Run tests in CI/CD pipelines
-  </Card>
-
-  <Card
-    title="Debugging Guide"
-    icon="bug"
-    href="/v7/guides/debugging"
-  >
-    Advanced debugging techniques
   </Card>
 
   <Card

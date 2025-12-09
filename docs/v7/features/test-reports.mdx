@@ -1,0 +1,308 @@
+---
+title: "Test Reports"
+description: "Comprehensive test run reports with pass/fail status and CI/CD integration"
+icon: "list-check"
+---
+
+View all test runs, their status, and detailed execution information in the TestDriver dashboard. Track test results across branches, commits, and CI/CD pipelines.
+
+## Test Runs Dashboard
+
+Access all test runs at [app.testdriver.ai/runs](https://app.testdriver.ai/runs):
+
+<Card title="Test Runs" icon="list" href="https://app.testdriver.ai/runs">
+  View all test executions with filtering and search
+</Card>
+
+### Available Information
+
+Each test run displays:
+
+- **Test Suite** - Which test file or suite ran
+- **Status** - PASSED, FAILED, RUNNING, or SKIPPED
+- **Platform** - OS and browser used (e.g., Linux + Chrome)
+- **Tests** - Number of test cases (e.g., 13 / 23)
+- **Pass Rate** - Success percentage (e.g., 55%)
+- **Duration** - Total execution time
+- **CI/CD** - Branch and commit information
+- **Timestamp** - When the test ran
+
+### Test Run Statuses
+
+<CardGroup cols={2}>
+  <Card title="PASSED" icon="check" color="green">
+    All tests in the suite passed successfully
+  </Card>
+
+  <Card title="FAILED" icon="xmark" color="red">
+    One or more tests failed
+  </Card>
+
+  <Card title="RUNNING" icon="spinner" color="yellow">
+    Test suite is currently executing
+  </Card>
+
+  <Card title="SKIPPED" icon="forward" color="gray">
+    Tests were skipped or not run
+  </Card>
+</CardGroup>
+
+## Filtering & Search
+
+Find specific test runs quickly:
+
+<Tabs>
+  <Tab title="Time Period">
+    ```
+    Last 24 hours
+    Last week
+    Last month
+    Custom date range
+    ```
+  </Tab>
+
+  <Tab title="Branch">
+    ```
+    main
+    develop
+    feature/new-checkout
+    Custom branch name
+    ```
+  </Tab>
+
+  <Tab title="Repository">
+    ```
+    All repositories
+    my-app
+    frontend
+    backend
+    ```
+  </Tab>
+
+  <Tab title="Suite">
+    ```
+    All suites
+    test/login.test.js
+    test/checkout.test.js
+    Custom test file
+    ```
+  </Tab>
+
+  <Tab title="Status">
+    ```
+    All statuses
+    PASSED only
+    FAILED only
+    RUNNING only
+    ```
+  </Tab>
+</Tabs>
+
+## JUnit XML Integration
+
+Export test results in JUnit format for CI/CD platforms:
+
+```bash
+# Generate JUnit report
+npx vitest run --reporter=junit --outputFile=test-results.xml
+```
+
+```xml test-results.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="vitest tests" tests="23" failures="2" errors="0" time="125.3">
+  <testsuite name="login.test.js" tests="5" failures="1" time="31.2">
+    <testcase name="user can login" time="12.4" />
+    <testcase name="invalid credentials show error" time="9.8">
+      <failure message="AssertionError: Element not found">
+        at TestDriver.find (sdk.js:234)
+        at login.test.js:15
+      </failure>
+    </testcase>
+    <testcase name="password reset works" time="9.0" />
+  </testsuite>
+  <testsuite name="checkout.test.js" tests="8" failures="0" time="45.6">
+    <!-- More test cases -->
+  </testsuite>
+</testsuites>
+```
+
+<Check>
+  JUnit reports integrate with Jenkins, GitHub Actions, GitLab CI, CircleCI, Azure DevOps, and TeamCity.
+</Check>
+
+## CI/CD Integration
+
+TestDriver automatically captures CI/CD context:
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml .github/workflows/test.yml
+    name: E2E Tests
+
+    on: [push, pull_request]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions/setup-node@v3
+          - run: npm install
+          - run: npx vitest run
+            env:
+              TD_API_KEY: ${{ secrets.TD_API_KEY }}
+              GITHUB_SHA: ${{ github.sha }}
+              GITHUB_REF: ${{ github.ref }}
+    ```
+
+    Test runs show:
+    - Branch name
+    - Commit SHA
+    - Pull request number
+    - Workflow run ID
+  </Tab>
+
+  <Tab title="GitLab CI">
+    ```yaml .gitlab-ci.yml
+    test:
+      image: node:20
+      script:
+        - npm install
+        - npx vitest run
+      variables:
+        TD_API_KEY: $TD_API_KEY
+      artifacts:
+        reports:
+          junit: junit.xml
+    ```
+
+    Test runs show:
+    - Branch/tag name
+    - Commit SHA
+    - Pipeline ID
+    - Job ID
+  </Tab>
+
+  <Tab title="CircleCI">
+    ```yaml .circleci/config.yml
+    version: 2.1
+    jobs:
+      test:
+        docker:
+          - image: cimg/node:20.0
+        steps:
+          - checkout
+          - run: npm install
+          - run: npx vitest run
+        environment:
+          TD_API_KEY: ${TD_API_KEY}
+    ```
+
+    Test runs show:
+    - Branch name
+    - Build number
+    - Workflow ID
+  </Tab>
+</Tabs>
+
+## Branch & Commit Tracking
+
+Track test results across your development workflow:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('tracked test run', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    // CI/CD info automatically captured from environment
+  });
+
+  await testdriver.find('button').click();
+});
+```
+
+Dashboard displays:
+- **Branch:** `feature/new-checkout`
+- **Commit:** `a1b2c3d` (first 7 chars of SHA)
+- **Commit Message:** "Add new checkout flow"
+- **Author:** john@example.com
+
+## Export Test Reports
+
+Download test results in multiple formats:
+
+<Tabs>
+  <Tab title="CSV">
+    ```csv
+    Test Suite,Status,Platform,Tests,Pass Rate,Duration,Branch,Commit,Timestamp
+    login.test.js,FAILED,Linux+Chrome,5,80%,31.2s,main,a1b2c3d,2024-12-09T10:30:00Z
+    checkout.test.js,PASSED,Linux+Chrome,8,100%,45.6s,main,a1b2c3d,2024-12-09T10:31:00Z
+    ```
+  </Tab>
+
+  <Tab title="JSON">
+    ```json
+    {
+      "runs": [
+        {
+          "suite": "login.test.js",
+          "status": "FAILED",
+          "platform": "Linux+Chrome",
+          "tests": { "total": 5, "passed": 4, "failed": 1 },
+          "passRate": 0.80,
+          "duration": 31.2,
+          "branch": "main",
+          "commit": "a1b2c3d",
+          "timestamp": "2024-12-09T10:30:00Z"
+        }
+      ]
+    }
+    ```
+  </Tab>
+
+  <Tab title="PDF">
+    Generate executive reports with:
+    - Summary statistics
+    - Test run table
+    - Failure details
+    - Trend charts
+  </Tab>
+</Tabs>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Test Analytics"
+    icon="chart-line"
+    href="/v7/features/test-analytics"
+  >
+    View trends and performance metrics
+  </Card>
+
+  <Card
+    title="Test Cases"
+    icon="file-lines"
+    href="/v7/features/test-cases"
+  >
+    Detailed test case reports
+  </Card>
+
+  <Card
+    title="Test Replays"
+    icon="video"
+    href="/v7/features/test-replays"
+  >
+    Video replays and debugging
+  </Card>
+
+  <Card
+    title="Continuous Testing"
+    icon="arrows-spin"
+    href="/v7/features/continuous-testing"
+  >
+    CI/CD integration guide
+  </Card>
+</CardGroup>

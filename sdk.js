@@ -408,7 +408,7 @@ class Element {
     // Track find interaction once at the end (fire-and-forget, don't block)
     const sessionId = this.sdk.getSessionId();
     if (sessionId && this.sdk.sandbox?.send) {
-      this.sdk.sandbox.send({
+      await this.sdk.sandbox.send({
         type: "trackInteraction",
         interactionType: "find",
         session: sessionId,

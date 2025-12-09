@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "willow",
+  "theme": "aspen",
   "name": "TestDriver",
   "colors": {
     "primary": "#b3d334",
@@ -12,12 +12,9 @@
   },
   "favicon": "/images/template/icon.png",
   "navigation": {
-    "tabs": [
-      {
-        "tab": "Computer-Use SDK",
         "versions": [
           {
-            "version": "v6 (YAML)",
+            "version": "v6",
             "groups": [
               {
                 "group": "Overview",
@@ -190,87 +187,139 @@
               }
             ]
           },
-          {
-            "version": "v7 (JS Beta)",
-            "groups": [
-              {
-                "group": "Overview",
-                "icon": "circle-info",
-                "pages": [
-                  "/v7/overview/what-is-testdriver",
-                  {
-                    "group": "Features",
-                    "icon": "star",
-                    "pages": [
-                      "/v7/features/easy-to-write",
-                      "/v7/features/fast",
-                      "/v7/features/stable",
-                      "/v7/features/scalable",
-                      "/v7/features/ai-native",
-                      "/v7/features/powerful",
-                      "/v7/features/observable",
-                      "/v7/features/enterprise"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "Getting Started",
-                "icon": "rocket",
-                "pages": [
-                  "/v7/getting-started/installation",
-                  "/v7/getting-started/writing-tests",
-                  "/v7/getting-started/generating-tests",
-                  "/v7/getting-started/running-and-debugging",
-                  "/v7/getting-started/setting-up-in-ci"
-                ]
-              },
-              {
-                "group": "Examples",
-                "icon": "code",
-                "pages": [
-                  "/v7/presets/chrome",
-                  "/v7/presets/chrome-extension",
-                  "/v7/presets/vscode",
-                  "/v7/presets/electron"
-                ]
-              },
-              {
-                "group": "Actions",
-                "icon": "bolt",
-                "pages": [
-                  "/v7/api/act",
-                  "/v7/api/assert",
-                  "/v7/api/assertions",
-                  "/v7/api/click",
-                  "/v7/api/doubleClick",
-                  "/v7/api/exec",
-                  "/v7/api/find",
-                  "/v7/api/focusApplication",
-                  "/v7/api/hover",
-                  "/v7/api/mouseDown",
-                  "/v7/api/mouseUp",
-                  "/v7/api/pressKeys",
-                  "/v7/api/rightClick",
-                  "/v7/api/type",
-                  "/v7/api/scroll"
-                ]
-              },
-              {
-                "group": "API Reference",
-                "icon": "book",
-                "pages": [
-                  "/v7/api/client",
-                  "/v7/api/elements",
-                  "/v7/api/sandbox",
-                  "/v7/api/dashcam"
-                ]
-              }
-            ]
-          }
+        {
+  "version": "v7",
+  "groups": [
+    {
+      "group": "Getting Started",
+      "icon": "rocket",
+      "pages": [
+        "/v7/getting-started/quickstart"
+      ]
+    },
+    {
+      "group": "Guides",
+      "icon": "book",
+      "pages": [
+        "/v7/getting-started/writing-tests",
+        "/v7/getting-started/running-tests",
+        "/v7/getting-started/debugging-tests",
+        "/v7/getting-started/setting-up-in-ci"
+      ]
+    },
+    {
+      "group": "Examples",
+      "icon": "code",
+      "pages": [
+        "/v7/presets/chrome",
+        "/v7/presets/chrome-extension",
+        "/v7/presets/vscode",
+        "/v7/presets/electron"
+      ]
+    },
+    {
+      "group": "Features",
+      "icon": "layer-group",
+      "pages": [
+        {
+          "group": "Selectorless Testing",
+          "icon": "sparkles",
+          "pages": [
+            "/v7/features/easy-to-write",
+            "/v7/features/coverage",
+            "/v7/features/powerful",
+            "/v7/features/ai-native"
+          ]
+        },
+        {
+          "group": "Sandbox Environments",
+          "icon": "cube",
+          "pages": [
+            "/v7/features/managed-sandboxes",
+            "/v7/features/enterprise"
+          ]
+        },
+        {
+          "group": "Test Observability",
+          "icon": "microscope",
+          "pages": [
+            "/v7/features/application-logs",
+            "/v7/features/browser-logs",
+            "/v7/features/network-monitoring",
+            "/v7/features/system-performance"
+          ]
+        },
+        {
+          "group": "Performance & Reliability",
+          "icon": "gauge-high",
+          "pages": [
+            "/v7/features/fast",
+            "/v7/features/stable",
+            "/v7/features/parallel-execution",
+            "/v7/features/cache-management"
+          ]
+        },
+        {
+          "group": "Testing at Scale",
+          "icon": "arrow-up-right-dots",
+          "pages": [
+            "/v7/features/data-driven-testing",
+            "/v7/features/continuous-testing"
+          ]
+        },
+        {
+          "group": "Reports & Analytics",
+          "icon": "chart-line",
+          "pages": [
+            "/v7/features/test-reports",
+            "/v7/features/test-analytics",
+            "/v7/features/test-cases",
+            "/v7/features/test-replays"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Reference",
+      "icon": "book",
+      "pages": [
+        {
+          "group": "Actions",
+          "icon": "bolt",
+          "pages": [
+            "/v7/api/act",
+            "/v7/api/assert",
+            "/v7/api/assertions",
+            "/v7/api/click",
+            "/v7/api/doubleClick",
+            "/v7/api/exec",
+            "/v7/api/find",
+            "/v7/api/focusApplication",
+            "/v7/api/hover",
+            "/v7/api/mouseDown",
+            "/v7/api/mouseUp",
+            "/v7/api/pressKeys",
+            "/v7/api/rightClick",
+            "/v7/api/type",
+            "/v7/api/scroll"
+          ]
+        },
+        {
+          "group": "Client SDK",
+          "icon": "code",
+          "pages": [
+            "/v7/api/client",
+            "/v7/api/elements",
+            "/v7/api/sandbox",
+            "/v7/api/dashcam"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
         ]
-      }
-    ]
   },
   "logo": {
     "light": "/images/template/light.png",

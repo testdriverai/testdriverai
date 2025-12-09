@@ -1,0 +1,414 @@
+---
+title: "Test Reports & Analytics"
+description: "Comprehensive test reporting and analytics for teams"
+icon: "chart-line"
+---
+
+TestDriver provides detailed test reports and analytics through the web dashboard at [app.testdriver.ai](https://app.testdriver.ai), giving you complete visibility into test runs, failures, and trends.
+
+## Web Dashboard
+
+Access comprehensive test analytics and reports:
+
+<Card title="TestDriver Dashboard" icon="chart-simple" href="https://app.testdriver.ai">
+  View all test runs, replays, and analytics at app.testdriver.ai
+</Card>
+
+### Dashboard Features
+
+<CardGroup cols={2}>
+  <Card title="Test Runs" icon="list">
+    - All test executions
+    - Pass/fail status
+    - Duration and timing
+    - Filter by date, project, or status
+  </Card>
+
+  <Card title="Dashcam Replays" icon="video">
+    - Video replays of every test
+    - Step-by-step action logs
+    - Screenshots at each step
+    - Shareable replay links
+  </Card>
+
+  <Card title="Analytics" icon="chart-line">
+    - Success rate trends
+    - Test duration over time
+    - Flaky test detection
+    - Cache hit rates
+  </Card>
+
+  <Card title="Team Collaboration" icon="users">
+    - Share replays with team
+    - Comment on test runs
+    - Tag team members
+    - Export reports
+  </Card>
+</CardGroup>
+
+## Test Run Details
+
+Each test run includes comprehensive information:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('detailed test run', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  await testdriver.find('login button').click();
+  await testdriver.assert('login form is visible');
+
+  // After test completes, view detailed report at:
+  console.log('Replay URL:', dashcam.url);
+  // https://app.testdriver.ai/replay/abc123
+});
+```
+
+### Available Report Data
+
+<AccordionGroup>
+  <Accordion title="Execution Details">
+    - Test name and file
+    - Start and end time
+    - Total duration
+    - Pass/fail status
+    - Error messages and stack traces
+    - Exit code
+  </Accordion>
+
+  <Accordion title="Action Log">
+    - Every TestDriver command executed
+    - Timestamp for each action
+    - AI vision analysis results
+    - Element coordinates found
+    - Screenshots before/after each action
+  </Accordion>
+
+  <Accordion title="Performance Metrics">
+    - Time per command
+    - AI inference latency
+    - Cache hit/miss ratio
+    - Network request timing
+    - Screenshot capture time
+  </Accordion>
+
+  <Accordion title="Environment Info">
+    - Operating system
+    - Browser version
+    - Screen resolution
+    - Sandbox ID
+    - API version
+  </Accordion>
+</AccordionGroup>
+
+## JUnit XML Reports
+
+Generate JUnit-compatible XML reports for CI/CD integration:
+
+```bash
+# Generate JUnit report
+npx vitest run --reporter=junit --outputFile=test-results.xml
+```
+
+```xml test-results.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="vitest tests" tests="12" failures="1" errors="0" time="125.3">
+  <testsuite name="login.test.js" tests="3" failures="1" time="31.2">
+    <testcase name="user can login" time="12.4" />
+    <testcase name="invalid credentials show error" time="9.8">
+      <failure message="AssertionError: expected login to fail">
+        Stack trace details...
+      </failure>
+    </testcase>
+    <testcase name="password reset works" time="9.0" />
+  </testsuite>
+</testsuites>
+```
+
+<Check>
+  JUnit reports integrate with Jenkins, Azure DevOps, TeamCity, CircleCI, and GitHub Actions for test result visualization.
+</Check>
+
+## CI/CD Integration
+
+TestDriver reports integrate seamlessly with popular CI/CD platforms:
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml .github/workflows/test.yml
+    name: E2E Tests
+
+    on: [push, pull_request]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions/setup-node@v3
+          - run: npm install
+          - run: npx vitest run --reporter=junit --outputFile=test-results.xml
+            env:
+              TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          
+          # Upload test results
+          - uses: actions/upload-artifact@v3
+            if: always()
+            with:
+              name: test-results
+              path: test-results.xml
+    ```
+
+    Test results appear in the GitHub Actions UI with pass/fail status.
+  </Tab>
+
+  <Tab title="GitLab CI">
+    ```yaml .gitlab-ci.yml
+    test:
+      image: node:20
+      script:
+        - npm install
+        - npx vitest run --reporter=junit --outputFile=junit.xml
+      artifacts:
+        when: always
+        reports:
+          junit: junit.xml
+      variables:
+        TD_API_KEY: $TD_API_KEY
+    ```
+
+    GitLab automatically parses JUnit reports and displays test results in merge requests.
+  </Tab>
+
+  <Tab title="CircleCI">
+    ```yaml .circleci/config.yml
+    version: 2.1
+    jobs:
+      test:
+        docker:
+          - image: cimg/node:20.0
+        steps:
+          - checkout
+          - run: npm install
+          - run: npx vitest run --reporter=junit --outputFile=test-results/junit.xml
+          - store_test_results:
+              path: test-results
+          - store_artifacts:
+              path: test-results
+    ```
+
+    CircleCI displays test insights on the Tests tab.
+  </Tab>
+
+  <Tab title="Jenkins">
+    ```groovy Jenkinsfile
+    pipeline {
+      agent any
+      stages {
+        stage('Test') {
+          steps {
+            sh 'npm install'
+            sh 'npx vitest run --reporter=junit --outputFile=test-results.xml'
+          }
+        }
+      }
+      post {
+        always {
+          junit 'test-results.xml'
+        }
+      }
+    }
+    ```
+
+    Jenkins publishes test results with trends and history.
+  </Tab>
+</Tabs>
+
+## Custom Reporting
+
+Access raw test data programmatically:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+import fs from 'fs';
+
+test('custom reporting', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+
+  const startTime = Date.now();
+  
+  await testdriver.find('button').click();
+  await testdriver.assert('page loaded');
+
+  const duration = Date.now() - startTime;
+
+  // Build custom report
+  const report = {
+    testName: 'custom reporting',
+    duration,
+    replayUrl: dashcam.url,
+    status: 'passed',
+    timestamp: new Date().toISOString()
+  };
+
+  // Save to custom format
+  fs.writeFileSync(
+    'custom-report.json',
+    JSON.stringify(report, null, 2)
+  );
+});
+```
+
+## Analytics & Trends
+
+View historical trends in the web dashboard:
+
+<CardGroup cols={2}>
+  <Card title="Success Rate" icon="percent">
+    Track test stability over time
+    - Daily/weekly/monthly success rates
+    - Identify flaky tests
+    - Compare across branches
+  </Card>
+
+  <Card title="Performance Trends" icon="gauge">
+    Monitor test performance
+    - Average test duration
+    - Slowest tests
+    - Cache effectiveness
+  </Card>
+
+  <Card title="Usage Metrics" icon="chart-bar">
+    Track team usage
+    - Tests run per day
+    - Active team members
+    - API usage
+  </Card>
+
+  <Card title="Cost Analysis" icon="dollar-sign">
+    Optimize spending
+    - Cost per test
+    - Sandbox usage
+    - Cache savings
+  </Card>
+</CardGroup>
+
+## Export Options
+
+Download reports in multiple formats:
+
+<Tabs>
+  <Tab title="JSON">
+    ```json
+    {
+      "testRuns": [
+        {
+          "id": "run_abc123",
+          "name": "login test",
+          "status": "passed",
+          "duration": 12400,
+          "timestamp": "2024-12-09T10:30:00Z",
+          "replayUrl": "https://app.testdriver.ai/replay/abc123"
+        }
+      ],
+      "summary": {
+        "total": 100,
+        "passed": 95,
+        "failed": 5,
+        "successRate": 0.95
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="CSV">
+    ```csv
+    Test Name,Status,Duration (ms),Timestamp,Replay URL
+    login test,passed,12400,2024-12-09T10:30:00Z,https://app.testdriver.ai/replay/abc123
+    checkout test,passed,18200,2024-12-09T10:31:00Z,https://app.testdriver.ai/replay/def456
+    search test,failed,5600,2024-12-09T10:32:00Z,https://app.testdriver.ai/replay/ghi789
+    ```
+  </Tab>
+
+  <Tab title="PDF">
+    Generate PDF reports with:
+    - Executive summary
+    - Test results table
+    - Embedded screenshots
+    - Trend charts
+    - Recommendations
+  </Tab>
+</Tabs>
+
+## Slack/Teams Integration
+
+Get test notifications in your team chat:
+
+```yaml .github/workflows/test.yml
+- name: Notify Slack
+  if: failure()
+  uses: slackapi/slack-github-action@v1
+  with:
+    payload: |
+      {
+        "text": "E2E Tests Failed",
+        "blocks": [
+          {
+            "type": "section",
+            "text": {
+              "type": "mrkdwn",
+              "text": "❌ E2E tests failed on ${{ github.ref }}\n<${{ env.REPLAY_URL }}|View Replay>"
+            }
+          }
+        ]
+      }
+  env:
+    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+```
+
+<Card title="Notifications Setup" icon="bell" href="/v7/guides/notifications">
+  Configure Slack, Teams, Discord, and email notifications
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Observability & Debugging"
+    icon="microscope"
+    href="/v7/features/observable"
+  >
+    Learn about Dashcam replays and debugging
+  </Card>
+
+  <Card
+    title="Continuous Testing"
+    icon="arrows-spin"
+    href="/v7/features/continuous-testing"
+  >
+    CI/CD integration guide
+  </Card>
+
+  <Card
+    title="Dashboard"
+    icon="chart-simple"
+    href="https://app.testdriver.ai"
+  >
+    View your test reports
+  </Card>
+
+  <Card
+    title="API Documentation"
+    icon="code"
+    href="/v7/api/overview"
+  >
+    Programmatic access to reports
+  </Card>
+</CardGroup>
