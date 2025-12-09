@@ -21,5 +21,6 @@ describe("Element Not Found Test", () => {
     // Should return an element that is not found
     expect(element.found()).toBe(false);
     expect(element.coordinates).toBeNull();
-  }, 90000); // 90 second timeout for the test (should complete much faster)
+  }); // 90 second timeout for the test (should complete much faster)
 });
+

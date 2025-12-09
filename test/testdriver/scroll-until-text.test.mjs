@@ -9,7 +9,7 @@ import { performLogin } from "./setup/testHelpers.mjs";
 
 describe("Scroll Until Text Test", () => {
   it('should scroll until "testdriver socks" appears', async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { headless: false });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
@@ -18,6 +18,9 @@ describe("Scroll Until Text Test", () => {
 
     // Scroll until text appears
     await testdriver.focusApplication("Google Chrome");
+
+    await testdriver.find('TestDriver.ai Sandbox heading').click();
+
     // Scroll until text appears
     let found = false;
     let scrollCount = 0;

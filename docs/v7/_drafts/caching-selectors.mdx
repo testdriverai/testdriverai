@@ -51,6 +51,30 @@ const button = await testdriver.find('submit button', {
 });
 ```
 
+**Use Case - Variables in Test Steps:**
+
+Custom cache keys are especially useful when you use variables in your test steps, ensuring consistent caching regardless of the variable values:
+
+```javascript
+// Without custom cache key - each variable value creates a new cache entry
+const userName = 'john.doe@example.com';
+await testdriver.find(`input field for ${userName}`); // Cache miss every time
+
+// With custom cache key - all values share the same cache
+const userName = 'john.doe@example.com';
+await testdriver.find(`input field for ${userName}`, {
+  cacheKey: 'email-input-field'  // Same cache key regardless of userName value
+});
+
+// Another example with dynamic data
+const productId = '12345';
+await testdriver.find(`product card for ${productId}`, {
+  cacheKey: 'product-card'  // Reuses cache for any productId
+});
+```
+
+This prevents cache pollution and improves cache hit rates when your prompts include dynamic values.
+
 ### Global Cache Key
 
 Enable caching for all finds in your test:

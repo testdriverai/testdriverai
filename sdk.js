@@ -290,6 +290,44 @@ class Element {
   }
 
   /**
+   * Serialize element to JSON safely (removes circular references)
+   * This is automatically called by JSON.stringify()
+   * @returns {Object} Serializable representation of the element
+   */
+  toJSON() {
+    const result = {
+      description: this.description,
+      coordinates: this.coordinates,
+      found: this._found,
+      threshold: this._threshold,
+      x: this.coordinates?.x,
+      y: this.coordinates?.y,
+    };
+
+    // Include response metadata if available
+    if (this._response) {
+      result.cache = {
+        hit: this._response.cacheHit || this._response.cache_hit || this._response.cached || false,
+        strategy: this._response.cacheStrategy,
+        createdAt: this._response.cacheCreatedAt,
+        diffPercent: this._response.cacheDiffPercent,
+        imageUrl: this._response.cachedImageUrl,
+      };
+      
+      result.similarity = this._response.similarity;
+      result.confidence = this._response.confidence;
+      result.selector = this._response.selector;
+      
+      // Include AI response text if available
+      if (this._response.response?.content?.[0]?.text) {
+        result.aiResponse = this._response.response.content[0].text;
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Find the element on screen
    * @param {string} [newDescription] - Optional new description to search for
    * @param {Object} [options] - Optional options object with cacheThreshold and/or cacheKey

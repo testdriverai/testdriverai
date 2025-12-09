@@ -283,6 +283,7 @@ const createCommands = (
    * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
    */
   const scroll = async (direction = 'down', options = {}) => {
+    const scrollStartTime = Date.now();
     // Convert number to object format
     if (typeof options === 'number') {
       options = { amount: options };
@@ -301,39 +302,92 @@ const createCommands = (
     amount = parseInt(amount, 10);
 
     const before = await system.captureScreenBase64();
-    switch (direction) {
-      case "up":
-        await sandbox.send({
-          type: "scroll",
-          amount,
-          direction,
-        });
-        await redraw.wait(2500, redrawOptions);
-        break;
-      case "down":
-        await sandbox.send({
-          type: "scroll",
-          amount,
-          direction,
-        });
-        await redraw.wait(2500, redrawOptions);
-        break;
-      case "left":
-        console.error("Not Supported");
-        break;
-      case "right":
-        console.error("Not Supported");
-        break;
-      default:
-        throw new CommandError("Direction not found");
-    }
-    const after = await system.captureScreenBase64();
+    let scrollSuccess = true;
+    let scrollError;
+    
+    try {
+      switch (direction) {
+        case "up":
+          await sandbox.send({
+            type: "scroll",
+            amount,
+            direction,
+          });
+          await redraw.wait(2500, redrawOptions);
+          break;
+        case "down":
+          await sandbox.send({
+            type: "scroll",
+            amount,
+            direction,
+          });
+          await redraw.wait(2500, redrawOptions);
+          break;
+        case "left":
+          console.error("Not Supported");
+          scrollSuccess = false;
+          scrollError = "Left scroll not supported";
+          break;
+        case "right":
+          console.error("Not Supported");
+          scrollSuccess = false;
+          scrollError = "Right scroll not supported";
+          break;
+        default:
+          scrollSuccess = false;
+          scrollError = "Direction not found";
+          throw new CommandError("Direction not found");
+      }
+      
+      const after = await system.captureScreenBase64();
 
-    if (before === after) {
-      emitter.emit(
-        events.log.warn,
-        "Attempted to scroll, but the screen did not change.  You may need to click a non-interactive element to focus the scrollable area first.",
-      );
+      if (before === after) {
+        emitter.emit(
+          events.log.warn,
+          "Attempted to scroll, but the screen did not change.  You may need to click a non-interactive element to focus the scrollable area first.",
+        );
+      }
+      
+      // Track interaction success
+      const sessionId = sessionInstance?.get();
+      if (sessionId) {
+        try {
+          const scrollDuration = Date.now() - scrollStartTime;
+          await sandbox.send({
+            type: "trackInteraction",
+            interactionType: "scroll",
+            session: sessionId,
+            input: { direction, amount },
+            timestamp: scrollStartTime,
+            duration: scrollDuration,
+            success: scrollSuccess,
+            error: scrollError,
+          });
+        } catch (err) {
+          console.warn("Failed to track scroll interaction:", err.message);
+        }
+      }
+    } catch (error) {
+      // Track interaction failure
+      const sessionId = sessionInstance?.get();
+      if (sessionId) {
+        try {
+          const scrollDuration = Date.now() - scrollStartTime;
+          await sandbox.send({
+            type: "trackInteraction",
+            interactionType: "scroll",
+            session: sessionId,
+            input: { direction, amount },
+            timestamp: scrollStartTime,
+            duration: scrollDuration,
+            success: false,
+            error: error.message,
+          });
+        } catch (err) {
+          console.warn("Failed to track scroll interaction:", err.message);
+        }
+      }
+      throw error;
     }
   };
 
@@ -1360,6 +1414,7 @@ const createCommands = (
      * @param {boolean} [options.silent=false] - Suppress output
      */
     "exec": async (...args) => {
+      const execStartTime = Date.now();
       let language, code, timeout, silent;
       
       // Handle both object and positional argument styles
@@ -1410,6 +1465,26 @@ const createCommands = (
         console.log(result)
 
         if (result.out && result.out.returncode !== 0) {
+          // Track interaction failure
+          const sessionId = sessionInstance?.get();
+          if (sessionId) {
+            try {
+              const execDuration = Date.now() - execStartTime;
+              await sandbox.send({
+                type: "trackInteraction",
+                interactionType: "exec",
+                session: sessionId,
+                input: { language, code: code.substring(0, 100) }, // Truncate code for tracking
+                timestamp: execStartTime,
+                duration: execDuration,
+                success: false,
+                error: `Exit code ${result.out.returncode}: ${result.out.stderr}`,
+              });
+            } catch (err) {
+              console.warn("Failed to track exec interaction:", err.message);
+            }
+          }
+          
           throw new MatchError(
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
@@ -1422,6 +1497,25 @@ const createCommands = (
           if (!silent && result.out.stderr) {
             emitter.emit(events.log.log, theme.dim(`stderr:`), true);
             emitter.emit(events.log.log, `${result.out.stderr}`, true);
+          }
+
+          // Track interaction success
+          const sessionId = sessionInstance?.get();
+          if (sessionId) {
+            try {
+              const execDuration = Date.now() - execStartTime;
+              await sandbox.send({
+                type: "trackInteraction",
+                interactionType: "exec",
+                session: sessionId,
+                input: { language, code: code.substring(0, 100) }, // Truncate code for tracking
+                timestamp: execStartTime,
+                duration: execDuration,
+                success: true,
+              });
+            } catch (err) {
+              console.warn("Failed to track exec interaction:", err.message);
+            }
           }
 
           return result.out?.stdout?.trim();
@@ -1481,6 +1575,25 @@ const createCommands = (
           if (!silent) {
             emitter.emit(events.log.log, theme.dim(`Result:`), true);
             emitter.emit(events.log.log, stepResult, true);
+          }
+        }
+
+        // Track interaction success for JS execution
+        const sessionId = sessionInstance?.get();
+        if (sessionId) {
+          try {
+            const execDuration = Date.now() - execStartTime;
+            await sandbox.send({
+              type: "trackInteraction",
+              interactionType: "exec",
+              session: sessionId,
+              input: { language: 'js', code: code.substring(0, 100) }, // Truncate code for tracking
+              timestamp: execStartTime,
+              duration: execDuration,
+              success: true,
+            });
+          } catch (err) {
+            console.warn("Failed to track exec interaction:", err.message);
           }
         }
 

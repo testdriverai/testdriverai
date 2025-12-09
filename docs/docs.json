@@ -236,6 +236,7 @@
           "icon": "cube",
           "pages": [
             "/v7/features/managed-sandboxes",
+            "/v7/features/sandbox-customization",
             "/v7/features/enterprise"
           ]
         },

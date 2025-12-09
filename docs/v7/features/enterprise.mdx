@@ -1,53 +1,169 @@
 ---
-title: "Self-Hosted Sandboxes"
-description: "Run TestDriver sandboxes in your own infrastructure with complete control"
-icon: "server"
+title: 'Enterprise'
+description: 'Enterprise-grade testing infrastructure with enhanced security, dedicated support, and custom environments'
+icon: 'building'
 ---
 
-Deploy and manage TestDriver sandboxes in your own infrastructure for maximum security, compliance, and control.
+## Overview
 
-## On-Premise Deployment
+TestDriver Enterprise provides organizations with a comprehensive testing platform that includes advanced security controls, dedicated onboarding, priority support, and custom environment provisioning.
 
-Run TestDriver entirely within your infrastructure:
+## Security & Infrastructure
 
-<Card title="Deployment Options" icon="server">
-  - **Air-Gapped Installation** - No external connectivity required
-  - **Custom VPC** - Deploy in your AWS/Azure/GCP environment
-  - **Kubernetes** - Helm charts for container orchestration
-  - **Docker Compose** - Simple self-hosted deployment
-  - **Bare Metal** - Install on your own hardware
-</Card>
+### Controlled Ingress/Egress
 
-```yaml docker-compose.yml
-version: '3.8'
-services:
-  testdriver-api:
-    image: testdriver/api:latest
-    environment:
-      - LICENSE_KEY=${TESTDRIVER_LICENSE}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-    ports:
-      - "3000:3000"
+Enterprise customers have full control over network traffic in their testing environments:
 
-  testdriver-worker:
-    image: testdriver/worker:latest
-    environment:
-      - API_URL=http://testdriver-api:3000
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+- Configure custom firewall rules and network policies
+- Whitelist specific domains and IP ranges
+- Monitor and audit all network activity
+- Implement zero-trust network architecture
 
-  testdriver-scheduler:
-    image: testdriver/scheduler:latest
-    environment:
-      - API_URL=http://testdriver-api:3000
-```
+### Bring Your Own Key (BYOK)
 
-[Complete self-hosting guide](/v7/guides/self-hosting)
+Maintain complete control over your AI model access:
 
-## Hardened Security
+- **AWS Integration**: Use your own AWS credentials and keys
+- **Claude/Anthropic**: Connect using your own Anthropic API keys
+- **OpenAI**: Integrate with your existing OpenAI account
+- All AI requests use your keys, ensuring data sovereignty
 
-Enterprise-grade security features:
+### Your Own VPC on AWS
+
+Deploy TestDriver infrastructure directly in your AWS environment:
+
+- Complete isolation within your own Virtual Private Cloud
+- Full control over networking, security groups, and access policies
+- Compliance with internal security requirements
+- Integration with existing AWS infrastructure
+
+### CloudFormation Deployment
+
+Quick deployment using infrastructure as code:
+
+- Pre-configured CloudFormation templates for self-hosted setup
+- Automated provisioning of all required resources
+- See our [Self-Hosting Guide](/v6/getting-started/self-hosting) for deployment instructions
+- Customizable templates to match your infrastructure standards
+
+## Onboarding & Training Program
+
+### Guided Onboarding
+
+Our team works directly with yours to ensure success:
+
+1. **Initial Setup**: We help configure your first test environment
+2. **First Tests**: Walk through creating your first automated tests together
+3. **Best Practices**: Learn TestDriver patterns and techniques specific to your application
+4. **Knowledge Transfer**: Educational sessions tailored to your team's needs
+
+### Continuous Education
+
+Ongoing training as your testing needs evolve:
+
+- Regular check-ins and training sessions
+- Access to advanced feature workshops
+- Early access to new capabilities and features
+- Custom training materials for your use cases
+
+## Support & Roadmap Influence
+
+### Priority Support
+
+Get help when you need it:
+
+- **Private Slack Channels**: Direct access to TestDriver engineers
+- Faster response times for critical issues
+- Dedicated support team familiar with your setup
+- Screen sharing and pair programming sessions
+
+### Roadmap Influence
+
+Help shape the future of TestDriver:
+
+- Input on feature prioritization
+- Early access to beta features
+- Custom feature development consideration
+- Quarterly roadmap review sessions
+
+## Pricing Advantages
+
+### Self-Hosted Sandboxes
+
+Reduce costs by running tests in your own infrastructure:
+
+- No sandbox usage fees for self-hosted environments
+- Unlimited parallel test execution
+- Pay only for your AWS infrastructure costs
+
+### Unlimited Compute Credits
+
+No surprise bills based on usage:
+
+- Fixed pricing regardless of test volume
+- Unlimited AI model usage for test generation and maintenance
+- Predictable monthly costs
+
+### Per-Parallel Pricing Model
+
+Simple, scalable pricing:
+
+- Pay based on concurrent test runners, not usage
+- Scale up or down based on your needs
+- No per-test or per-minute charges
+
+## Custom Environments
+
+### Custom VM Configuration
+
+We help you create and maintain customized test environments:
+
+- Install specific applications and dependencies
+- Configure system settings and preferences
+- Set up authentication and certificates
+- Prepare baseline snapshots
+
+### AWS AMI Management
+
+Custom Amazon Machine Images for your testing needs:
+
+- We work with you to build custom AMIs
+- Regular updates and security patches
+- Version control for environment changes
+- Rollback capabilities for stability
+
+### Provisioning API
+
+Programmatic environment customization:
+
+- Use the [provisioning API](/v7/features/sandbox-customization#provisioning-api) to install software
+- Run setup scripts before tests
+- Configure applications dynamically
+- Learn more in our [Sandbox Customization](/v7/features/sandbox-customization) guide
+
+### Environment Templates
+
+Reusable environment configurations:
+
+- Create templates for different application types
+- Share configurations across teams
+- Version control for environment specs
+- Quick provisioning of standardized environments
+
+## Getting Started
+
+To learn more about TestDriver Enterprise:
+
+1. [Book a demo](https://form.typeform.com/to/UECf9rDx?typeform-source=docs.testdriver.ai) with our team
+2. Join our [Discord community](https://discord.com/invite/cWDFW8DzPm)
+3. Contact us through your private Slack channel (existing customers)
+
+## Learn More
+
+- [Managed Sandboxes](/v7/features/managed-sandboxes)
+- [Sandbox Customization](/v7/features/sandbox-customization)
+- [Self-Hosting Guide](/v6/getting-started/self-hosting)
+
 
 <AccordionGroup>
   <Accordion title="SOC 2 Type II Certified">

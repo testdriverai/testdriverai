@@ -263,7 +263,29 @@ View cache performance in the TestDriver console:
     Automatic file-based cache keys prevent cross-test issues while enabling caching.
   </Accordion>
 
-  <Accordion title="4. Monitor Cache Hit Rates">
+  <Accordion title="4. Use Custom Cache Keys with Variables">
+    ```javascript
+    // ❌ Without cache key - creates new cache for each variable value
+    const email = 'user@example.com';
+    await testdriver.find(`input for ${email}`); // Cache miss every time
+
+    // ✅ With cache key - reuses cache regardless of variable
+    const email = 'user@example.com';
+    await testdriver.find(`input for ${email}`, {
+      cacheKey: 'email-input'
+    });
+
+    // Also useful for dynamic IDs, names, or other changing data
+    const orderId = generateOrderId();
+    await testdriver.find(`order ${orderId} status`, {
+      cacheKey: 'order-status'  // Same cache for all orders
+    });
+    ```
+
+    Custom cache keys prevent cache pollution when using variables in prompts, dramatically improving cache hit rates.
+  </Accordion>
+
+  <Accordion title="5. Monitor Cache Hit Rates">
     ```javascript
     test('track cache performance', async (context) => {
       const { testdriver } = await chrome(context, { url });

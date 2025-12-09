@@ -103,6 +103,44 @@ The returned `Element` object provides:
 
 See [Elements Reference](/v7/api/elements) for complete details.
 
+### JSON Serialization
+
+Elements can be safely serialized using `JSON.stringify()` for logging and debugging. Circular references are automatically removed:
+
+```javascript
+const element = await testdriver.find('login button');
+
+// Safe to stringify - no circular reference errors
+console.log(JSON.stringify(element, null, 2));
+
+// Output includes useful debugging info:
+// {
+//   "description": "login button",
+//   "coordinates": { "x": 100, "y": 200, "centerX": 150, "centerY": 225 },
+//   "found": true,
+//   "threshold": 0.01,
+//   "x": 100,
+//   "y": 200,
+//   "cache": {
+//     "hit": true,
+//     "strategy": "pixel-diff",
+//     "createdAt": "2025-12-09T10:30:00Z",
+//     "diffPercent": 0.0023,
+//     "imageUrl": "https://..."
+//   },
+//   "similarity": 0.98,
+//   "confidence": 0.95,
+//   "selector": "button#login",
+//   "aiResponse": "Found the blue login button..."
+// }
+```
+
+This is useful for:
+- Debugging element detection issues
+- Logging test execution details
+- Sharing element information across processes
+- Analyzing cache performance
+
 ## Best Practices
 
 <Check>

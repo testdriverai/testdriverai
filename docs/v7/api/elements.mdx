@@ -418,6 +418,84 @@ if (element.confidence !== null) {
   Properties marked with ⚠️ may be `null` depending on what the AI could detect from the screenshot.
 </Note>
 
+## JSON Serialization
+
+Element objects can be safely serialized using `JSON.stringify()` for logging, debugging, and data storage. Circular references are automatically removed:
+
+```javascript
+const element = await testdriver.find('login button');
+
+// Safe to stringify - no circular reference errors!
+console.log(JSON.stringify(element, null, 2));
+```
+
+**Serialized output includes:**
+
+```json
+{
+  "description": "login button",
+  "coordinates": { "x": 100, "y": 200, "centerX": 150, "centerY": 225 },
+  "found": true,
+  "threshold": 0.01,
+  "x": 100,
+  "y": 200,
+  "cache": {
+    "hit": true,
+    "strategy": "pixel-diff",
+    "createdAt": "2025-12-09T10:30:00.000Z",
+    "diffPercent": 0.0023,
+    "imageUrl": "https://cache.testdriver.ai/..."
+  },
+  "similarity": 0.98,
+  "confidence": 0.95,
+  "selector": "button#login",
+  "aiResponse": "Found the blue login button in the center of the form..."
+}
+```
+
+**Serialized properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `description` | string | Element search description |
+| `coordinates` | object | Full coordinate object `{x, y, centerX, centerY}` |
+| `found` | boolean | Whether element was located |
+| `threshold` | number | Cache threshold used for this find |
+| `x`, `y` | number | Top-left coordinates |
+| `cache.hit` | boolean | Whether cache was used |
+| `cache.strategy` | string | Cache strategy (e.g., "pixel-diff") |
+| `cache.createdAt` | string | ISO timestamp when cache was created |
+| `cache.diffPercent` | number | Pixel difference from cached image |
+| `cache.imageUrl` | string | URL to cached screenshot |
+| `similarity` | number | Similarity score (0-1) |
+| `confidence` | number | AI confidence score (0-1) |
+| `selector` | string | CSS/XPath selector if available |
+| `aiResponse` | string | AI's explanation of what it found |
+
+**Use cases:**
+
+```javascript
+// Debugging element detection
+const element = await testdriver.find('submit button');
+if (!element.found()) {
+  console.error('Element not found:', JSON.stringify(element, null, 2));
+}
+
+// Logging cache performance
+const data = JSON.parse(JSON.stringify(element));
+if (data.cache.hit) {
+  console.log(`Cache hit! Diff: ${(data.cache.diffPercent * 100).toFixed(2)}%`);
+}
+
+// Sharing element data across processes
+const elementData = JSON.stringify(element);
+// Send to another process, log to file, etc.
+```
+
+<Tip>
+  Use JSON serialization when you need to log element data or when debugging why an element wasn't found. The serialized output excludes large binary data (screenshots) and circular references.
+</Tip>
+
 ## Polling for Elements
 
 Use polling to wait for elements that may not be immediately visible:

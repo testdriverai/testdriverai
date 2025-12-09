@@ -61,10 +61,9 @@ Parameters:
 
   InstanceType:
     Type: String
-    Default: c5.large
+    Default: c5.xlarge
     AllowedValues:
-      - c5.large
-      - c5.large
+      - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
       - c5.9xlarge
@@ -73,7 +72,7 @@ Parameters:
       - c5.24xlarge
       - c5.metal
       - i3.metal
-    Description: Instance type - only c5.large or larger, plus c5.metal and i3.metal allowed
+    Description: Instance type - only c5.xlarge or larger, plus c5.metal and i3.metal allowed
 
   AllowedIngressCidr:
     Type: String
