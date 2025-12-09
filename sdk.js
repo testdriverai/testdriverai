@@ -402,27 +402,26 @@ class Element {
       this._found = false;
       findError = error.message;
       response = error.response;
+      console.error("Error during find():", error);
     }
 
-    // Track find interaction once at the end
+    // Track find interaction once at the end (fire-and-forget, don't block)
     const sessionId = this.sdk.getSessionId();
     if (sessionId && this.sdk.sandbox?.send) {
-      try {
-        await this.sdk.sandbox.send({
-          type: "trackInteraction",
-          interactionType: "find",
-          session: sessionId,
-          prompt: description,
-          timestamp: startTime,
-          success: this._found,
-          error: findError,
-          cacheHit: response?.cacheHit || response?.cache_hit || response?.cached || false,
-          selector: response?.selector,
-          selectorUsed: !!response?.selector,
-        });
-      } catch (err) {
+      this.sdk.sandbox.send({
+        type: "trackInteraction",
+        interactionType: "find",
+        session: sessionId,
+        prompt: description,
+        timestamp: startTime,
+        success: this._found,
+        error: findError,
+        cacheHit: response?.cacheHit || response?.cache_hit || response?.cached || false,
+        selector: response?.selector,
+        selectorUsed: !!response?.selector,
+      }).catch(err => {
         console.warn("Failed to track find interaction:", err.message);
-      }
+      });
     }
 
     return this;
@@ -1065,6 +1064,7 @@ class TestDriverSDK {
 
     // Store os and resolution for API requests
     this.os = options.os || "linux";
+    console.log(`[SDK Constructor] Setting this.os = ${this.os} (from options.os = ${options.os})`);
     this.resolution = options.resolution || "1366x768";
 
     // Store newSandbox preference from options
@@ -1079,7 +1079,6 @@ class TestDriverSDK {
 
     // Store sandbox configuration options
     this.sandboxAmi = options.sandboxAmi || null;
-    this.sandboxOs = options.sandboxOs || null;
     this.sandboxInstance = options.sandboxInstance || null;
 
     // Cache threshold configuration
@@ -1303,7 +1302,8 @@ class TestDriverSDK {
         
         const prefsJson = JSON.stringify(chromePrefs, null, 2);
         const writePrefCmd = this.os === 'windows'
-          ? `Set-Content -Path "${prefsPath}" -Value '${prefsJson.replace(/'/g, "''")}'`
+          // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
+          ? `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
           : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
         
         await this.exec(shell, writePrefCmd, 10000, true);
@@ -1341,7 +1341,6 @@ class TestDriverSDK {
         // Wait for Chrome to be ready
         await this.focusApplication('Google Chrome');
 
-
         // Wait for URL to load
         try {
           const urlObj = new URL(url);
@@ -1350,16 +1349,16 @@ class TestDriverSDK {
           console.log(`[provision.chrome] Waiting for domain "${domain}" to appear in URL bar...`);
           
           for (let attempt = 0; attempt < 30; attempt++) {
-            try {
-              const result = await this.find(`${domain}`);
-              if (result.found()) {
-                console.log(`[provision.chrome] ✅ Chrome ready at ${url}`);
-                break;
-              }
-            } catch (e) {
-              // Not found yet, continue polling
+            const result = await this.find(`${domain}`);
+
+            console.log(`[provision.chrome] Checking for domain in URL bar (attempt ${attempt + 1}/30)...`);
+
+            if (result.found()) {
+              console.log(`[provision.chrome] ✅ Chrome ready at ${url}`);
+              break;
+            } else {
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
-            await new Promise(resolve => setTimeout(resolve, 1000));
           }
           
           await this.focusApplication('Google Chrome');
@@ -1534,13 +1533,11 @@ class TestDriverSDK {
     } else if (this.sandboxInstance) {
       this.agent.sandboxInstance = this.sandboxInstance;
     }
-    // Use os from connectOptions if provided, otherwise fall back to constructor value
+    // Use os from connectOptions if provided, otherwise fall back to this.os
     if (connectOptions.os !== undefined) {
       this.agent.sandboxOs = connectOptions.os;
-    } else if (this.sandboxOs) {
-      this.agent.sandboxOs = this.sandboxOs;
+      this.os = connectOptions.os; // Update this.os to match
     } else {
-      // Fall back to this.os (which defaults to "linux")
       this.agent.sandboxOs = this.os;
     }
 
@@ -1552,6 +1549,19 @@ class TestDriverSDK {
 
     // Get the instance from the agent
     this.instance = this.agent.instance;
+
+    // Ensure this.os reflects the actual sandbox OS (important for vitest reporter)
+    // After buildEnv, agent.sandboxOs should contain the correct OS value
+    console.log(`[SDK] After buildEnv: this.agent.sandboxOs = ${this.agent.sandboxOs}, this.os (before) = ${this.os}`);
+    if (this.agent.sandboxOs) {
+      this.os = this.agent.sandboxOs;
+    }
+    console.log(`[SDK] After buildEnv: this.os (after) = ${this.os}`);
+    
+    // Also ensure sandbox.os is set for consistency
+    if (this.agent.sandbox && this.os) {
+      this.agent.sandbox.os = this.os;
+    }
 
     // Expose the agent's commands, parser, and commander
     this.commands = this.agent.commands;
@@ -1798,25 +1808,23 @@ class TestDriverSDK {
           return element;
         });
 
-        // Track successful findAll interaction
+        // Track successful findAll interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
         if (sessionId && this.sandbox?.send) {
-          try {
-            await this.sandbox.send({
-              type: "trackInteraction",
-              interactionType: "findAll",
-              session: sessionId,
-              prompt: description,
-              timestamp: startTime,
-              success: true,
-              input: { count: elements.length },
-              cacheHit: response.cached || false,
-              selector: response.selector,
-              selectorUsed: !!response.selector,
-            });
-          } catch (err) {
+          this.sandbox.send({
+            type: "trackInteraction",
+            interactionType: "findAll",
+            session: sessionId,
+            prompt: description,
+            timestamp: startTime,
+            success: true,
+            input: { count: elements.length },
+            cacheHit: response.cached || false,
+            selector: response.selector,
+            selectorUsed: !!response.selector,
+          }).catch(err => {
             console.warn("Failed to track findAll interaction:", err.message);
-          }
+          });
         }
 
         // Log debug information when elements are found
@@ -1835,49 +1843,45 @@ class TestDriverSDK {
 
         return elements;
       } else {
-        // No elements found - track interaction
+        // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
         if (sessionId && this.sandbox?.send) {
-          try {
-            await this.sandbox.send({
-              type: "trackInteraction",
-              interactionType: "findAll",
-              session: sessionId,
-              prompt: description,
-              timestamp: startTime,
-              success: false,
-              error: "No elements found",
-              input: { count: 0 },
-              cacheHit: response?.cached || false,
-              selector: response?.selector,
-              selectorUsed: !!response?.selector,
-            });
-          } catch (err) {
-            console.warn("Failed to track findAll interaction:", err.message);
-          }
-        }
-
-        // No elements found - return empty array
-        return [];
-      }
-    } catch (error) {
-      // Track findAll error interaction
-      const sessionId = this.getSessionId();
-      if (sessionId && this.sandbox?.send) {
-        try {
-          await this.sandbox.send({
+          this.sandbox.send({
             type: "trackInteraction",
             interactionType: "findAll",
             session: sessionId,
             prompt: description,
             timestamp: startTime,
             success: false,
-            error: error.message,
+            error: "No elements found",
             input: { count: 0 },
+            cacheHit: response?.cached || false,
+            selector: response?.selector,
+            selectorUsed: !!response?.selector,
+          }).catch(err => {
+            console.warn("Failed to track findAll interaction:", err.message);
           });
-        } catch (err) {
-          console.warn("Failed to track findAll interaction:", err.message);
         }
+
+        // No elements found - return empty array
+        return [];
+      }
+    } catch (error) {
+      // Track findAll error interaction (fire-and-forget, don't block)
+      const sessionId = this.getSessionId();
+      if (sessionId && this.sandbox?.send) {
+        this.sandbox.send({
+          type: "trackInteraction",
+          interactionType: "findAll",
+          session: sessionId,
+          prompt: description,
+          timestamp: startTime,
+          success: false,
+          error: error.message,
+          input: { count: 0 },
+        }).catch(err => {
+          console.warn("Failed to track findAll interaction:", err.message);
+        });
       }
 
       const { events } = require("./agent/events.js");

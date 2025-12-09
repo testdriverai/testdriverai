@@ -18,7 +18,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.sessionInstance = sessionInstance; // Store session instance to include in messages
     }
 
-    send(message) {
+    send(message, timeout = 30000) {
       let resolvePromise;
       let rejectPromise;
 
@@ -55,10 +55,33 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           rejectPromise = reject;
         });
 
-        this.ps[message.requestId] = {
+        const requestId = message.requestId;
+        
+        // Set up timeout to prevent hanging requests
+        const timeoutId = setTimeout(() => {
+          if (this.ps[requestId]) {
+            const pendingMessage = this.ps[requestId];
+            // Stop the timing marker to prevent memory leak
+            try {
+              marky.stop(pendingMessage.timingKey);
+            } catch (e) {
+              // Ignore timing errors
+            }
+            delete this.ps[requestId];
+            rejectPromise(new Error(`Sandbox message '${message.type}' timed out after ${timeout}ms`));
+          }
+        }, timeout);
+
+        this.ps[requestId] = {
           promise: p,
-          resolve: resolvePromise,
-          reject: rejectPromise,
+          resolve: (result) => {
+            clearTimeout(timeoutId);
+            resolvePromise(result);
+          },
+          reject: (error) => {
+            clearTimeout(timeoutId);
+            rejectPromise(error);
+          },
           message,
           timingKey,
           startTime: Date.now(),
@@ -66,6 +89,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         return p;
       }
+      
+      // Return a rejected promise if socket is not available
+      return Promise.reject(new Error('Sandbox socket not connected'));
     }
 
     async auth(apiKey) {

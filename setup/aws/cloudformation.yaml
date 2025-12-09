@@ -61,9 +61,10 @@ Parameters:
 
   InstanceType:
     Type: String
-    Default: c5.xlarge
+    Default: c5.large
     AllowedValues:
-      - c5.xlarge
+      - c5.large
+      - c5.large
       - c5.2xlarge
       - c5.4xlarge
       - c5.9xlarge
@@ -72,7 +73,7 @@ Parameters:
       - c5.24xlarge
       - c5.metal
       - i3.metal
-    Description: Instance type - only c5.xlarge or larger, plus c5.metal and i3.metal allowed
+    Description: Instance type - only c5.large or larger, plus c5.metal and i3.metal allowed
 
   AllowedIngressCidr:
     Type: String
@@ -168,14 +169,14 @@ Resources:
             IpProtocol: tcp,
             FromPort: 8765,
             ToPort: 8765,
-            CidrIp: 35.171.123.200/32,
+            CidrIp: 74.220.58.0/24,
             Description: "pyautogui-cli WebSockets - Static IP 1",
           }
         - {
             IpProtocol: tcp,
             FromPort: 8765,
             ToPort: 8765,
-            CidrIp: 52.201.199.222/32,
+            CidrIp: 74.220.50.0/24,
             Description: "pyautogui-cli WebSockets - Static IP 2",
           }
         - {

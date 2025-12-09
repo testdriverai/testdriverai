@@ -2170,7 +2170,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       sandboxConfig.instanceType = this.sandboxInstance;
     }
 
-    let instance = await this.sandbox.send(sandboxConfig);
+    let instance = await this.sandbox.send(sandboxConfig, 60000 * 8);
 
     // Save the sandbox ID for reconnection with the correct OS type
     if (instance.sandbox && instance.sandbox.sandboxId) {

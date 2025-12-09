@@ -1405,7 +1405,9 @@ const createCommands = (
           type: "commands.run",
           command: code,
           timeout,
-        });
+        }, timeout || 30000);
+
+        console.log(result)
 
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(

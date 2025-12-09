@@ -8,8 +8,8 @@ config();
 
 export default defineConfig({
   test: {
-    testTimeout: 300000,
-    hookTimeout: 300000,
+    testTimeout: 900000,
+    hookTimeout: 900000,
     reporters: [
       'default',
       // Don't pass apiKey/apiRoot here - they'll be read from env at runtime

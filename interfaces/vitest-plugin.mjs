@@ -249,6 +249,12 @@ export async function createTestDriver(options = {}) {
   // Merge options: plugin global options < test-specific options
   const mergedOptions = { ...pluginOptions, ...options };
   
+  // Support TD_OS environment variable for specifying target OS (linux, mac, windows)
+  // Priority: test options > plugin options > environment variable > default (linux)
+  if (!mergedOptions.os && process.env.TD_OS) {
+    mergedOptions.os = process.env.TD_OS;
+  }
+  
   // Extract TestDriver-specific options
   const apiKey = mergedOptions.apiKey || process.env.TD_API_KEY;
   
@@ -599,9 +605,12 @@ class TestDriverReporter {
 
       // Update platform if detected from test results
       const platform = getPlatform();
+      logger.info(`Platform detection result: ${platform}, detectedPlatform in state: ${pluginState.detectedPlatform}`);
       if (platform) {
         completeData.platform = platform;
-        logger.debug(`Updating test run with platform: ${platform}`);
+        logger.info(`Updating test run with platform: ${platform}`);
+      } else {
+        logger.warn(`No platform detected, test run will keep default platform`);
       }
 
       // Wait for any pending operations (shouldn't be any, but just in case)
@@ -633,9 +642,6 @@ class TestDriverReporter {
       test,
       startTime: Date.now(),
     });
-
-    // Try to detect platform from test context
-    detectPlatformFromTest(test);
   }
 
   async onTestCaseResult(test) {
@@ -692,12 +698,12 @@ class TestDriverReporter {
         // Don't override duration from file - use Vitest's result.duration
         // duration is already set above from result.duration
 
-        logger.debug(`Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`);
+        logger.info(`Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`);
 
         // Update test run platform from first test that reports it
         if (platform && !pluginState.detectedPlatform) {
           pluginState.detectedPlatform = platform;
-          logger.debug(`Detected platform from test: ${platform}`);
+          logger.info(`✅ Detected platform from test result file: ${platform}`);
         }
 
         // Clean up the file after reading
@@ -838,25 +844,16 @@ function getPlatform() {
     return pluginState.detectedPlatform;
   }
 
+  // Try to get platform from dashcam URLs (registered during test cleanup)
+  for (const [, data] of pluginState.dashcamUrls) {
+    if (data.platform) {
+      logger.debug(`Using platform from dashcam URL registration: ${data.platform}`);
+      return data.platform;
+    }
+  }
+
   logger.debug("Platform not yet detected from client");
   return null;
-}
-
-function detectPlatformFromTest(test) {
-  // Check if testdriver client is accessible via test context
-  const client = test.context?.testdriver || test.meta?.testdriver;
-
-  if (client && client.os) {
-    // Normalize platform value
-    let platform = client.os.toLowerCase();
-    if (platform === "darwin" || platform === "mac") platform = "mac";
-    else if (platform === "win32" || platform === "windows")
-      platform = "windows";
-    else if (platform === "linux") platform = "linux";
-
-    pluginState.detectedPlatform = platform;
-    logger.debug(`Detected platform from test context: ${platform}`);
-  }
 }
 
 function calculateStatsFromModules(testModules) {
