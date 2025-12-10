@@ -1838,6 +1838,9 @@ ${regression}
       }
     }
 
+    // Create session first so session ID is available for Sentry tracing in WebSocket connection
+    await this.newSession();
+
     // order is important!
     await this.connectToSandboxService();
 
@@ -1856,7 +1859,6 @@ ${regression}
 
       this.instance = instance.instance;
       await this.renderSandbox(this.instance, headless);
-      await this.newSession();
       await this.runLifecycle("provision");
 
       return;
@@ -1877,7 +1879,6 @@ ${regression}
         this.instance = instance;
 
         await this.renderSandbox(instance, headless);
-        await this.newSession();
         return;
       } catch (error) {
         // If connection fails, fall through to creating a new sandbox
@@ -1909,7 +1910,6 @@ ${regression}
         this.instance = instance;
 
         await this.renderSandbox(instance, headless);
-        await this.newSession();
         return;
       } catch (error) {
         // If connection fails, fall through to creating a new sandbox
@@ -1949,7 +1949,6 @@ ${regression}
       );
       this.instance = instance;
       await this.renderSandbox(instance, headless);
-      await this.newSession();
       await this.runLifecycle("provision");
 
       console.log("provision run");
@@ -2184,10 +2183,13 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 
   async newSession() {
     // should be start of new session
+    // If sandbox is connected, get system info; otherwise pass empty objects
+    const isSandboxConnected = this.sandbox.apiSocketConnected;
+    
     const sessionRes = await this.sdk.req("session/start", {
-      systemInformationOsInfo: await this.system.getSystemInformationOsInfo(),
-      mousePosition: await this.system.getMousePosition(),
-      activeWindow: await this.system.activeWin(),
+      systemInformationOsInfo: isSandboxConnected ? await this.system.getSystemInformationOsInfo() : {},
+      mousePosition: isSandboxConnected ? await this.system.getMousePosition() : {},
+      activeWindow: isSandboxConnected ? await this.system.activeWin() : {},
     });
 
     if (!sessionRes) {

@@ -1,6 +1,26 @@
 const WebSocket = require("ws");
 const marky = require("marky");
+const crypto = require("crypto");
 const { events } = require("../events");
+
+/**
+ * Generate Sentry trace headers for distributed tracing
+ * Uses the same trace ID derivation as the API (MD5 hash of session ID)
+ * @param {string} sessionId - The session ID
+ * @returns {Object} Headers object with sentry-trace and baggage
+ */
+function getSentryTraceHeaders(sessionId) {
+  if (!sessionId) return {};
+  
+  // Same logic as API: derive trace ID from session ID
+  const traceId = crypto.createHash('md5').update(sessionId).digest('hex');
+  const spanId = crypto.randomBytes(8).toString('hex');
+  
+  return {
+    'sentry-trace': `${traceId}-${spanId}-1`,
+    'baggage': `sentry-trace_id=${traceId},sentry-sample_rate=1.0,sentry-sampled=true`
+  };
+}
 
 const createSandbox = (emitter, analytics, sessionInstance) => {
   class Sandbox {
@@ -127,7 +147,25 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
     async boot(apiRoot) {
       return new Promise((resolve, reject) => {
-        this.socket = new WebSocket(apiRoot.replace("https://", "wss://"));
+        // Get session ID for Sentry trace headers
+        const sessionId = this.sessionInstance?.get();
+        
+        if (!sessionId) {
+          console.warn('[Sandbox] No session ID available at boot time - Sentry tracing will not be available');
+        }
+        
+        const sentryHeaders = getSentryTraceHeaders(sessionId);
+
+        // Build WebSocket URL with Sentry trace headers as query params
+        const wsUrl = new URL(apiRoot.replace("https://", "wss://"));
+        if (sentryHeaders['sentry-trace']) {
+          wsUrl.searchParams.set('sentry-trace', sentryHeaders['sentry-trace']);
+        }
+        if (sentryHeaders['baggage']) {
+          wsUrl.searchParams.set('baggage', sentryHeaders['baggage']);
+        }
+
+        this.socket = new WebSocket(wsUrl.toString());
 
         // handle errors
         this.socket.on("close", () => {
