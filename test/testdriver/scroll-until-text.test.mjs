@@ -9,7 +9,7 @@ import { performLogin } from "./setup/testHelpers.mjs";
 
 describe("Scroll Until Text Test", () => {
   it('should scroll until "testdriver socks" appears', async (context) => {
-    const testdriver = TestDriver(context, { headless: false });
+    const testdriver = TestDriver(context, { headless: false, reconnect: false });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
@@ -28,7 +28,8 @@ describe("Scroll Until Text Test", () => {
     
     while (!found && scrollCount < maxScrolls) {
       const findResult = await testdriver.find("testdriver socks");
-      if (findResult) {
+
+      if (findResult.found()) {
         found = true;
       } else {
         await testdriver.scroll();

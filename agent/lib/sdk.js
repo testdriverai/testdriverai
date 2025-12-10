@@ -156,8 +156,6 @@ const createSDK = (emitter, config, sessionInstance) => {
       },
     };
 
-    console.log("SDK REQ:", url, c);
-
     try {
       let response;
 

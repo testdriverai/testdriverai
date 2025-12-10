@@ -165,18 +165,18 @@ const createRedraw = (
     // Merge base options with per-call options
     currentOptions = { ...baseOptions, ...options };
     
-    console.log('[redraw] start() called with options:', JSON.stringify(currentOptions));
+    emitter.emit(events.log.debug, `[redraw] start() called with options: ${JSON.stringify(currentOptions)}`);
     
     // If redraw is completely disabled, return early
     if (!currentOptions.enabled) {
-      console.log('[redraw] start() - redraw disabled, returning null');
+      emitter.emit(events.log.debug, '[redraw] start() - redraw disabled, returning null');
       return null;
     }
     
     // If both screenRedraw and networkMonitor are disabled, disable redraw
     if (!currentOptions.screenRedraw && !currentOptions.networkMonitor) {
       currentOptions.enabled = false;
-      console.log('[redraw] start() - both screenRedraw and networkMonitor disabled, returning null');
+      emitter.emit(events.log.debug, '[redraw] start() - both screenRedraw and networkMonitor disabled, returning null');
       return null;
     }
     
@@ -190,7 +190,7 @@ const createRedraw = (
     // Only capture start image if screen redraw is enabled
     if (currentOptions.screenRedraw) {
       startImage = await system.captureScreenPNG(0.25, true);
-      console.log('[redraw] start() - captured startImage:', startImage);
+      emitter.emit(events.log.debug, `[redraw] start() - captured startImage: ${startImage}`);
     }
     
     return startImage;
@@ -212,14 +212,14 @@ const createRedraw = (
 
     // Check screen redraw if enabled and we have a start image to compare against
     if (screenRedraw && !screenHasRedrawn && startImage && nowImage) {
-      console.log('[redraw] checkCondition() - comparing images:', { startImage, nowImage });
+      emitter.emit(events.log.debug, `[redraw] checkCondition() - comparing images: ${JSON.stringify({ startImage, nowImage })}`);
       diffPercent = await imageDiffPercent(startImage, nowImage);
-      console.log('[redraw] checkCondition() - diffPercent:', diffPercent, 'threshold:', diffThreshold);
+      emitter.emit(events.log.debug, `[redraw] checkCondition() - diffPercent: ${diffPercent}, threshold: ${diffThreshold}`);
       screenHasRedrawn = diffPercent > diffThreshold;
-      console.log('[redraw] checkCondition() - screenHasRedrawn:', screenHasRedrawn);
+      emitter.emit(events.log.debug, `[redraw] checkCondition() - screenHasRedrawn: ${screenHasRedrawn}`);
     } else if (screenRedraw && !startImage) {
       // If no start image was captured, capture one now and wait for next check
-      console.log('[redraw] checkCondition() - no startImage, capturing now');
+      emitter.emit(events.log.debug, '[redraw] checkCondition() - no startImage, capturing now');
       startImage = await system.captureScreenPNG(0.25, true);
     }
     

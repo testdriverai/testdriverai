@@ -2351,7 +2351,8 @@ class TestDriverSDK {
 
     // Handle redraw status for debugging scroll and other async operations
     this.emitter.on("redraw:status", (status) => {
-      if (this.loggingEnabled) {
+      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      if (this.loggingEnabled && debugMode) {
         console.log(
           `[redraw] screen:${status.redraw.text} network:${status.network.text} timeout:${status.timeout.text}`,
         );
@@ -2359,7 +2360,8 @@ class TestDriverSDK {
     });
 
     this.emitter.on("redraw:complete", (info) => {
-      if (this.loggingEnabled) {
+      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      if (this.loggingEnabled && debugMode) {
         console.log(
           `[redraw complete] screen:${info.screenHasRedrawn} network:${info.networkSettled} timeout:${info.isTimeout} elapsed:${info.timeElapsed}ms`,
         );

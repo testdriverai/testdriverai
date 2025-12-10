@@ -1462,7 +1462,10 @@ const createCommands = (
           timeout,
         }, timeout || 300000);
 
-        console.log(result)
+        const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+        if (debugMode) {
+          console.log(result);
+        }
 
         if (result.out && result.out.returncode !== 0) {
           // Track interaction failure
