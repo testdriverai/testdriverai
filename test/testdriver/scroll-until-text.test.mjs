@@ -9,7 +9,7 @@ import { performLogin } from "./setup/testHelpers.mjs";
 
 describe("Scroll Until Text Test", () => {
   it('should scroll until "testdriver socks" appears', async (context) => {
-    const testdriver = TestDriver(context, { headless: false, reconnect: false });
+    const testdriver = TestDriver(context, { headless: true, reconnect: false });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //

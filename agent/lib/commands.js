@@ -469,6 +469,7 @@ const createCommands = (
       if (action !== "hover") {
         // Update timestamp for the actual click action
         elementData.timestamp = Date.now();
+        
 
         if (action === "click" || action === "left-click") {
           await sandbox.send({ type: "leftClick", x, y, ...elementData });
@@ -928,7 +929,7 @@ const createCommands = (
             interactionType: "wait",
             session: sessionId,
             input: { timeout },
-            timestamp: waitTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
             duration: waitDuration,
             success: true,
           });

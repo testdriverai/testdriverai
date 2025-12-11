@@ -73,12 +73,13 @@ class BaseCommand extends Command {
     };
 
     let isConnected = false;
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
 
-    // Use pattern matching for log events, but skip log:Debug
+    // Use pattern matching for log events, but skip log:Debug unless debug mode is enabled
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
 
-      if (event === events.log.debug) return;
+      if (event === events.log.debug && !debugMode) return;
 
       if (event === events.log.narration && isConnected) return;
       console.log(message);

@@ -102,10 +102,10 @@ await testdriver.find('element', {
   }
 }).click();
 
-// Adjust screen diff sensitivity
-await testdriver.find('animated button', {
+// Disable only screen monitoring (keep network monitoring)
+await testdriver.find('animated element', {
   redraw: {
-    diffThreshold: 0.05 // Higher threshold = less sensitive to changes
+    screenRedraw: false // Skip screen stability, still wait for network
   }
 }).click();
 ```
@@ -299,9 +299,8 @@ const testdriver = new TestDriver({
   apiKey: process.env.TD_API_KEY,
   redraw: {
     enabled: true,            // Master switch for redraw detection
-    screenRedraw: true,       // Enable screen change detection
+    screenRedraw: true,       // Enable screen stability detection
     networkMonitor: true,     // Enable network activity monitoring
-    diffThreshold: 0.01,      // Screen diff threshold (0.01 = 0.01%)
   }
 });
 ```
@@ -312,14 +311,14 @@ const testdriver = new TestDriver({
 // Override redraw settings for specific actions
 await testdriver.find('fast element', {
   redraw: {
-    enabled: false // Skip redraw detection
+    enabled: false // Skip redraw detection entirely
   }
 }).click();
 
-await testdriver.find('element with subtle changes', {
+await testdriver.find('element with animation', {
   redraw: {
-    diffThreshold: 0.05, // Less sensitive to screen changes
-    networkMonitor: false // Skip network monitoring
+    screenRedraw: false, // Skip screen stability check
+    networkMonitor: true // Still wait for network to settle
   }
 }).click();
 ```
@@ -337,7 +336,7 @@ const testdriver = new TestDriver({
 
 await testdriver.find('element').click();
 // Console output will show:
-// [redraw] Screen change detected: 0.15% (threshold: 0.01%)
+// [redraw] Screen diff: 0.15%
 // [redraw] Network activity: 1250 b/s
 // [redraw] Waiting for stability...
 ```

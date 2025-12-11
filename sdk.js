@@ -2297,6 +2297,7 @@ class TestDriverSDK {
   _setupLogging() {
     // Track the last fatal error message to throw on exit
     let lastFatalError = null;
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
 
     // Set up markdown logger
     createMarkdownLogger(this.emitter);
@@ -2304,7 +2305,7 @@ class TestDriverSDK {
     // Set up basic event logging
     this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
-      if (event === events.log.debug) return;
+      if (event === events.log.debug && !debugMode) return;
       if (this.loggingEnabled && message) {
         const prefixedMessage = this.testContext
           ? `[${this.testContext}] ${message}`

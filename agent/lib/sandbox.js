@@ -36,6 +36,25 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.uniqueId = Math.random().toString(36).substring(7);
       this.os = null; // Store OS value to send with every message
       this.sessionInstance = sessionInstance; // Store session instance to include in messages
+      this.traceId = null; // Sentry trace ID for debugging
+    }
+
+    /**
+     * Get the Sentry trace ID for this session
+     * Useful for debugging with customers - they can share this ID to look up their traces
+     * @returns {string|null} The trace ID or null if not authenticated
+     */
+    getTraceId() {
+      return this.traceId;
+    }
+
+    /**
+     * Get the Sentry trace URL for this session
+     * @returns {string|null} The full Sentry trace URL or null if no trace ID
+     */
+    getTraceUrl() {
+      if (!this.traceId) return null;
+      return `https://testdriver.sentry.io/trace/${this.traceId}`;
     }
 
     send(message, timeout = 300000) {
@@ -122,7 +141,15 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
       if (reply.success) {
         this.authenticated = true;
-        emitter.emit(events.sandbox.authenticated);
+        
+        // Log and store the Sentry trace ID for debugging
+        if (reply.traceId) {
+          this.traceId = reply.traceId;
+          console.log(`[Sandbox] Sentry Trace ID: ${reply.traceId}`);
+          console.log(`[Sandbox] View trace: https://testdriver.sentry.io/trace/${reply.traceId}`);
+        }
+        
+        emitter.emit(events.sandbox.authenticated, { traceId: reply.traceId });
         return true;
       }
     }
