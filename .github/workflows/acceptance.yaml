@@ -1,5 +1,6 @@
 name: Acceptance Tests
-
+permissions:
+    id-token: write
 on:
   push:
     branches: [ main, develop ]
@@ -34,5 +35,3 @@ jobs:
     - name: Upload test results to Sentry Prevent
       if: ${{ !cancelled() }}
       uses: getsentry/prevent-action@v0
-      with:
-        token: ${{ secrets.SENTRY_PREVENT_TOKEN }}
