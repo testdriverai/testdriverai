@@ -27,7 +27,7 @@ describe("Scroll Until Text Test", () => {
     const maxScrolls = 10;
     
     while (!found && scrollCount < maxScrolls) {
-      const findResult = await testdriver.find("testdriver socks");
+      const findResult = await testdriver.find("testdriver socks product text is fully visible");
 
       if (findResult.found()) {
         found = true;
