@@ -12,8 +12,8 @@ export default defineConfig({
     hookTimeout: 900000,
     reporters: [
       'default',
-      // Don't pass apiKey/apiRoot here - they'll be read from env at runtime
       TestDriver(),
+      ['junit', { outputFile: 'test-report.junit.xml' }]
     ],
     setupFiles: ['testdriverai/vitest/setup'],
   },
