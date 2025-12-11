@@ -1102,7 +1102,7 @@ class TestDriverSDK {
 
     // Store os and resolution for API requests
     this.os = options.os || "linux";
-    this.emitter.emit(events.log.debug, `Setting this.os = ${this.os} (from options.os = ${options.os})`);
+    console.log(`[SDK Constructor] Setting this.os = ${this.os} (from options.os = ${options.os})`);
     this.resolution = options.resolution || "1366x768";
 
     // Store newSandbox preference from options
@@ -1270,26 +1270,26 @@ class TestDriverSDK {
             
             await this.exec(shell, createLogCmd, 10000, true);
           
-          this.emitter.emit(events.log.debug, 'Adding web logs to dashcam...');
+          console.log('[provision.chrome] Adding web logs to dashcam...');
           try {
             const urlObj = new URL(url);
             const domain = urlObj.hostname;
             const pattern = `*${domain}*`;
             await this._dashcam.addWebLog(pattern, 'Web Logs');
-            this.emitter.emit(events.log.debug, `✅ Web logs added to dashcam (pattern: ${pattern})`);
+            console.log(`[provision.chrome] ✅ Web logs added to dashcam (pattern: ${pattern})`);
 
             await this._dashcam.addFileLog(logPath, "TestDriver Log");
 
           } catch (error) {
-            this.emitter.emit(events.log.warn, `⚠️  Failed to add web logs: ${error.message}`);
+            console.warn('[provision.chrome] ⚠️  Failed to add web logs:', error.message);
           }
         }
         
         // Automatically start dashcam if not already recording
         if (!this._dashcam || !this._dashcam.recording) {
-          this.emitter.emit(events.log.debug, 'Starting dashcam...');
+          console.log('[provision.chrome] Starting dashcam...');
           await this.dashcam.start();
-          this.emitter.emit(events.log.debug, '✅ Dashcam started');
+          console.log('[provision.chrome] ✅ Dashcam started');
         }
 
         // Set up Chrome profile with preferences
@@ -1345,7 +1345,7 @@ class TestDriverSDK {
           : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
         
         await this.exec(shell, writePrefCmd, 10000, true);
-        this.emitter.emit(events.log.debug, '✅ Chrome preferences configured');
+        console.log('[provision.chrome] ✅ Chrome preferences configured');
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1384,15 +1384,15 @@ class TestDriverSDK {
           const urlObj = new URL(url);
           const domain = urlObj.hostname;
           
-          this.emitter.emit(events.log.debug, `Waiting for domain "${domain}" to appear in URL bar...`);
+          console.log(`[provision.chrome] Waiting for domain "${domain}" to appear in URL bar...`);
           
           for (let attempt = 0; attempt < 30; attempt++) {
             const result = await this.find(`${domain}`);
 
-            this.emitter.emit(events.log.debug, `Checking for domain in URL bar (attempt ${attempt + 1}/30)...`);
+            console.log(`[provision.chrome] Checking for domain in URL bar (attempt ${attempt + 1}/30)...`);
 
             if (result.found()) {
-              this.emitter.emit(events.log.debug, `✅ Chrome ready at ${url}`);
+              console.log(`[provision.chrome] ✅ Chrome ready at ${url}`);
               break;
             } else {
               await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1451,7 +1451,7 @@ class TestDriverSDK {
 
         // Wait for VS Code to be ready
         await this.focusApplication('Visual Studio Code');
-        this.emitter.emit(events.log.debug, '✅ VS Code ready');
+        console.log('[provision.vscode] ✅ VS Code ready');
       },
 
       /**
@@ -1488,7 +1488,7 @@ class TestDriverSDK {
         }
 
         await this.focusApplication('Electron');
-        this.emitter.emit(events.log.debug, '✅ Electron app ready');
+        console.log('[provision.electron] ✅ Electron app ready');
       },
     };
   }
@@ -1590,11 +1590,11 @@ class TestDriverSDK {
 
     // Ensure this.os reflects the actual sandbox OS (important for vitest reporter)
     // After buildEnv, agent.sandboxOs should contain the correct OS value
-    this.emitter.emit(events.log.debug, `After buildEnv: this.agent.sandboxOs = ${this.agent.sandboxOs}, this.os (before) = ${this.os}`);
+    console.log(`[SDK] After buildEnv: this.agent.sandboxOs = ${this.agent.sandboxOs}, this.os (before) = ${this.os}`);
     if (this.agent.sandboxOs) {
       this.os = this.agent.sandboxOs;
     }
-    this.emitter.emit(events.log.debug, `After buildEnv: this.os (after) = ${this.os}`);
+    console.log(`[SDK] After buildEnv: this.os (after) = ${this.os}`);
     
     // Also ensure sandbox.os is set for consistency
     if (this.agent.sandbox && this.os) {
