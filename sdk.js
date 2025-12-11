@@ -339,7 +339,10 @@ class Element {
       this.description = newDescription;
     }
 
-    const startTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const absoluteTimestamp = Date.now();
+    const startTime = absoluteTimestamp;
     let response = null;
     let findError = null;
 
@@ -418,8 +421,6 @@ class Element {
 
       const duration = Date.now() - startTime;
 
-      console.log("AI Response Text:", response?.response.content[0]?.text);
-
       if (response && response.coordinates) {
         // Store response but clear large base64 data to prevent memory leaks
         this._response = this._sanitizeResponse(response);
@@ -451,7 +452,7 @@ class Element {
         interactionType: "find",
         session: sessionId,
         prompt: description,
-        timestamp: startTime,
+        timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
         success: this._found,
         error: findError,
         cacheHit: response?.cacheHit || response?.cache_hit || response?.cached || false,
@@ -1102,7 +1103,6 @@ class TestDriverSDK {
 
     // Store os and resolution for API requests
     this.os = options.os || "linux";
-    console.log(`[SDK Constructor] Setting this.os = ${this.os} (from options.os = ${options.os})`);
     this.resolution = options.resolution || "1366x768";
 
     // Store newSandbox preference from options
@@ -1270,26 +1270,18 @@ class TestDriverSDK {
             
             await this.exec(shell, createLogCmd, 10000, true);
           
-          console.log('[provision.chrome] Adding web logs to dashcam...');
-          try {
             const urlObj = new URL(url);
             const domain = urlObj.hostname;
             const pattern = `*${domain}*`;
             await this._dashcam.addWebLog(pattern, 'Web Logs');
-            console.log(`[provision.chrome] ✅ Web logs added to dashcam (pattern: ${pattern})`);
 
             await this._dashcam.addFileLog(logPath, "TestDriver Log");
 
-          } catch (error) {
-            console.warn('[provision.chrome] ⚠️  Failed to add web logs:', error.message);
-          }
         }
         
         // Automatically start dashcam if not already recording
         if (!this._dashcam || !this._dashcam.recording) {
-          console.log('[provision.chrome] Starting dashcam...');
           await this.dashcam.start();
-          console.log('[provision.chrome] ✅ Dashcam started');
         }
 
         // Set up Chrome profile with preferences
@@ -1345,7 +1337,6 @@ class TestDriverSDK {
           : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
         
         await this.exec(shell, writePrefCmd, 10000, true);
-        console.log('[provision.chrome] ✅ Chrome preferences configured');
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1383,16 +1374,11 @@ class TestDriverSDK {
         try {
           const urlObj = new URL(url);
           const domain = urlObj.hostname;
-          
-          console.log(`[provision.chrome] Waiting for domain "${domain}" to appear in URL bar...`);
-          
+                    
           for (let attempt = 0; attempt < 30; attempt++) {
             const result = await this.find(`${domain}`);
 
-            console.log(`[provision.chrome] Checking for domain in URL bar (attempt ${attempt + 1}/30)...`);
-
             if (result.found()) {
-              console.log(`[provision.chrome] ✅ Chrome ready at ${url}`);
               break;
             } else {
               await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1451,7 +1437,6 @@ class TestDriverSDK {
 
         // Wait for VS Code to be ready
         await this.focusApplication('Visual Studio Code');
-        console.log('[provision.vscode] ✅ VS Code ready');
       },
 
       /**
@@ -1488,7 +1473,6 @@ class TestDriverSDK {
         }
 
         await this.focusApplication('Electron');
-        console.log('[provision.electron] ✅ Electron app ready');
       },
     };
   }
@@ -1590,11 +1574,9 @@ class TestDriverSDK {
 
     // Ensure this.os reflects the actual sandbox OS (important for vitest reporter)
     // After buildEnv, agent.sandboxOs should contain the correct OS value
-    console.log(`[SDK] After buildEnv: this.agent.sandboxOs = ${this.agent.sandboxOs}, this.os (before) = ${this.os}`);
     if (this.agent.sandboxOs) {
       this.os = this.agent.sandboxOs;
     }
-    console.log(`[SDK] After buildEnv: this.os (after) = ${this.os}`);
     
     // Also ensure sandbox.os is set for consistency
     if (this.agent.sandbox && this.os) {
@@ -1737,7 +1719,10 @@ class TestDriverSDK {
   async findAll(description, options) {
     this._ensureConnected();
 
-    const startTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const absoluteTimestamp = Date.now();
+    const startTime = absoluteTimestamp;
 
     // Log finding all action
     const { events } = require("./agent/events.js");
@@ -1854,7 +1839,7 @@ class TestDriverSDK {
             interactionType: "findAll",
             session: sessionId,
             prompt: description,
-            timestamp: startTime,
+            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             success: true,
             input: { count: elements.length },
             cacheHit: response.cached || false,
@@ -1889,7 +1874,7 @@ class TestDriverSDK {
             interactionType: "findAll",
             session: sessionId,
             prompt: description,
-            timestamp: startTime,
+            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             success: false,
             error: "No elements found",
             input: { count: 0 },
@@ -1913,7 +1898,7 @@ class TestDriverSDK {
           interactionType: "findAll",
           session: sessionId,
           prompt: description,
-          timestamp: startTime,
+          timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
           success: false,
           error: error.message,
           input: { count: 0 },
@@ -2346,25 +2331,6 @@ class TestDriverSDK {
     this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
         console.log(`- ${message}`);
-      }
-    });
-
-    // Handle redraw status for debugging scroll and other async operations
-    this.emitter.on("redraw:status", (status) => {
-      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-      if (this.loggingEnabled && debugMode) {
-        console.log(
-          `[redraw] screen:${status.redraw.text} network:${status.network.text} timeout:${status.timeout.text}`,
-        );
-      }
-    });
-
-    this.emitter.on("redraw:complete", (info) => {
-      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-      if (this.loggingEnabled && debugMode) {
-        console.log(
-          `[redraw complete] screen:${info.screenHasRedrawn} network:${info.networkSettled} timeout:${info.isTimeout} elapsed:${info.timeElapsed}ms`,
-        );
       }
     });
 

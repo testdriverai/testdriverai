@@ -1950,8 +1950,6 @@ ${regression}
       this.instance = instance;
       await this.renderSandbox(instance, headless);
       await this.runLifecycle("provision");
-
-      console.log("provision run");
     }
   }
 
@@ -2072,7 +2070,6 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
-    console.log("renderSandbox", instance);
 
     if (!headless) {
       let url;

@@ -239,7 +239,11 @@ const createCommands = (
 
     emitter.emit(events.log.narration, `thinking...`);
 
-    const assertStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const assertTimestamp = Date.now();
+    const assertStartTime = assertTimestamp;
+    
     let response = await sdk.req("assert", {
       expect: assertion,
       image: await system.captureScreenBase64(),
@@ -258,7 +262,7 @@ const createCommands = (
           interactionType: "assert",
           session: sessionId,
           prompt: assertion,
-          timestamp: assertStartTime,
+          timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
           duration: assertDuration,
           success: assertionPassed,
           error: assertionPassed ? undefined : response.data,
@@ -283,7 +287,10 @@ const createCommands = (
    * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
    */
   const scroll = async (direction = 'down', options = {}) => {
-    const scrollStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const scrollTimestamp = Date.now();
+    const scrollStartTime = scrollTimestamp;
     // Convert number to object format
     if (typeof options === 'number') {
       options = { amount: options };
@@ -358,7 +365,7 @@ const createCommands = (
             interactionType: "scroll",
             session: sessionId,
             input: { direction, amount },
-            timestamp: scrollStartTime,
+            timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: scrollDuration,
             success: scrollSuccess,
             error: scrollError,
@@ -378,7 +385,7 @@ const createCommands = (
             interactionType: "scroll",
             session: sessionId,
             input: { direction, amount },
-            timestamp: scrollStartTime,
+            timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: scrollDuration,
             success: false,
             error: error.message,
@@ -408,7 +415,10 @@ const createCommands = (
    * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
    */
   const click = async (...args) => {
-    const clickStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const clickTimestamp = Date.now();
+    const clickStartTime = clickTimestamp;
     let x, y, action, elementData, redrawOptions;
     
     // Handle both object and positional argument styles
@@ -447,13 +457,8 @@ const createCommands = (
       x = parseInt(x);
       y = parseInt(y);
 
-      // Add dashcam timestamp if available
-      if (getDashcamElapsedTime) {
-        const elapsed = getDashcamElapsedTime();
-        if (elapsed !== null) {
-          elementData.timestamp = elapsed;
-        }
-      }
+      // Add absolute timestamp for sandbox events
+      elementData.timestamp = Date.now();
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
@@ -463,12 +468,7 @@ const createCommands = (
 
       if (action !== "hover") {
         // Update timestamp for the actual click action
-        if (getDashcamElapsedTime) {
-          const elapsed = getDashcamElapsedTime();
-          if (elapsed !== null) {
-            elementData.timestamp = elapsed;
-          }
-        }
+        elementData.timestamp = Date.now();
 
         if (action === "click" || action === "left-click") {
           await sandbox.send({ type: "leftClick", x, y, ...elementData });
@@ -503,7 +503,7 @@ const createCommands = (
               session: sessionId,
               prompt: elementData.prompt,
               input: { x, y, action },
-              timestamp: clickStartTime,
+              timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: clickDuration,
               success: true,
               cacheHit: elementData.cacheHit,
@@ -531,7 +531,7 @@ const createCommands = (
             session: sessionId,
             prompt: elementData.prompt,
             input: { x, y, action },
-            timestamp: clickStartTime,
+            timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: clickDuration,
             success: false,
             error: error.message,
@@ -558,7 +558,10 @@ const createCommands = (
    * @param {boolean} [options.selectorUsed] - Whether selector was used
    */
   const hover = async (...args) => {
-    const hoverStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const hoverTimestamp = Date.now();
+    const hoverStartTime = hoverTimestamp;
     let x, y, elementData, redrawOptions;
     
     // Handle both object and positional argument styles
@@ -582,13 +585,8 @@ const createCommands = (
       x = parseInt(x);
       y = parseInt(y);
 
-      // Add dashcam timestamp if available
-      if (getDashcamElapsedTime) {
-        const elapsed = getDashcamElapsedTime();
-        if (elapsed !== null) {
-          elementData.timestamp = elapsed;
-        }
-      }
+      // Add absolute timestamp for sandbox events
+      elementData.timestamp = Date.now();
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
@@ -603,7 +601,7 @@ const createCommands = (
             session: sessionId,
             prompt: elementData.prompt,
             input: { x, y },
-            timestamp: hoverStartTime,
+            timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: hoverDuration,
             success: true,
             cacheHit: elementData.cacheHit,
@@ -630,7 +628,7 @@ const createCommands = (
             session: sessionId,
             prompt: elementData.prompt,
             input: { x, y },
-            timestamp: hoverStartTime,
+            timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: hoverDuration,
             success: false,
             error: error.message,
@@ -808,7 +806,10 @@ const createCommands = (
      * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
      */
     "type": async (text, options = {}) => {
-      const typeStartTime = Date.now();
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const typeTimestamp = Date.now();
+      const typeStartTime = typeTimestamp;
       const { delay = 250, secret = false, redraw: redrawOpts, ...elementData } = options;
       const redrawOptions = extractRedrawOptions({ redraw: redrawOpts, ...options });
       
@@ -823,13 +824,8 @@ const createCommands = (
 
       text = text.toString();
 
-      // Add dashcam timestamp if available
-      if (getDashcamElapsedTime) {
-        const elapsed = getDashcamElapsedTime();
-        if (elapsed !== null) {
-          elementData.timestamp = elapsed;
-        }
-      }
+      // Add absolute timestamp for sandbox events
+      elementData.timestamp = Date.now();
 
       // Actually type the text in the sandbox
       await sandbox.send({ type: "write", text, delay, ...elementData });
@@ -845,7 +841,7 @@ const createCommands = (
             session: sessionId,
             // Store masked text if secret, otherwise store actual text
             input: { text: secret ? "****" : text, delay },
-            timestamp: typeStartTime,
+            timestamp: typeTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: typeDuration,
             success: true,
             isSecret: secret, // Flag this interaction if it contains a secret
@@ -869,7 +865,10 @@ const createCommands = (
      * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
      */
     "press-keys": async (keys, options = {}) => {
-      const pressKeysStartTime = Date.now();
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const pressKeysTimestamp = Date.now();
+      const pressKeysStartTime = pressKeysTimestamp;
       const redrawOptions = extractRedrawOptions(options);
       emitter.emit(
         events.log.narration,
@@ -893,7 +892,7 @@ const createCommands = (
             interactionType: "pressKeys",
             session: sessionId,
             input: { keys },
-            timestamp: pressKeysStartTime,
+            timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: pressKeysDuration,
             success: true,
           });
@@ -912,7 +911,10 @@ const createCommands = (
      * @param {Object} [options] - Additional options (reserved for future use)
      */
     "wait": async (timeout = 3000, options = {}) => {
-      const waitStartTime = Date.now();
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const waitTimestamp = Date.now();
+      const waitStartTime = waitTimestamp;
       emitter.emit(events.log.narration, theme.dim(`waiting ${timeout}ms...`));
       const result = await delay(timeout);
       
@@ -926,7 +928,7 @@ const createCommands = (
             interactionType: "wait",
             session: sessionId,
             input: { timeout },
-            timestamp: waitStartTime,
+            timestamp: waitTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: waitDuration,
             success: true,
           });
@@ -944,6 +946,9 @@ const createCommands = (
      * @param {number} [options.timeout=10000] - Timeout in milliseconds
      */
     "wait-for-image": async (...args) => {
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const waitForImageTimestamp = Date.now();
       let description, timeout;
       
       // Handle both object and positional argument styles
@@ -1005,7 +1010,7 @@ const createCommands = (
               session: sessionId,
               prompt: description,
               input: { timeout },
-              timestamp: startTime,
+              timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: waitForImageDuration,
               success: true,
             });
@@ -1028,7 +1033,7 @@ const createCommands = (
               session: sessionId,
               prompt: description,
               input: { timeout },
-              timestamp: startTime,
+              timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: waitForImageDuration,
               success: false,
               error: errorMsg,
@@ -1053,6 +1058,9 @@ const createCommands = (
      * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
      */
     "wait-for-text": async (...args) => {
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const waitForTextTimestamp = Date.now();
       let text, timeout, redrawOptions;
       
       // Handle both object and positional argument styles
@@ -1115,7 +1123,7 @@ const createCommands = (
               session: sessionId,
               prompt: text,
               input: { timeout },
-              timestamp: startTime,
+              timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: waitForTextDuration,
               success: true,
             });
@@ -1138,7 +1146,7 @@ const createCommands = (
               session: sessionId,
               prompt: text,
               input: { timeout },
-              timestamp: startTime,
+              timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: waitForTextDuration,
               success: false,
               error: errorMsg,
@@ -1335,7 +1343,10 @@ const createCommands = (
      * @param {string} options.description - What to extract
      */
     "extract": async (...args) => {
-      const rememberStartTime = Date.now();
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const rememberTimestamp = Date.now();
+      const rememberStartTime = rememberTimestamp;
       let description;
       
       // Handle both object and positional argument styles
@@ -1362,7 +1373,7 @@ const createCommands = (
               interactionType: "remember",
               session: sessionId,
               prompt: description,
-              timestamp: rememberStartTime,
+              timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: rememberDuration,
               success: true,
             });
@@ -1383,7 +1394,7 @@ const createCommands = (
               interactionType: "remember",
               session: sessionId,
               prompt: description,
-              timestamp: rememberStartTime,
+              timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: rememberDuration,
               success: false,
               error: error.message,
@@ -1414,7 +1425,6 @@ const createCommands = (
      * @param {boolean} [options.silent=false] - Suppress output
      */
     "exec": async (...args) => {
-      const execStartTime = Date.now();
       let language, code, timeout, silent;
       
       // Handle both object and positional argument styles
@@ -1468,26 +1478,6 @@ const createCommands = (
         }
 
         if (result.out && result.out.returncode !== 0) {
-          // Track interaction failure
-          const sessionId = sessionInstance?.get();
-          if (sessionId) {
-            try {
-              const execDuration = Date.now() - execStartTime;
-              await sandbox.send({
-                type: "trackInteraction",
-                interactionType: "exec",
-                session: sessionId,
-                input: { language, code: code.substring(0, 100) }, // Truncate code for tracking
-                timestamp: execStartTime,
-                duration: execDuration,
-                success: false,
-                error: `Exit code ${result.out.returncode}: ${result.out.stderr}`,
-              });
-            } catch (err) {
-              console.warn("Failed to track exec interaction:", err.message);
-            }
-          }
-          
           throw new MatchError(
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
@@ -1500,25 +1490,6 @@ const createCommands = (
           if (!silent && result.out.stderr) {
             emitter.emit(events.log.log, theme.dim(`stderr:`), true);
             emitter.emit(events.log.log, `${result.out.stderr}`, true);
-          }
-
-          // Track interaction success
-          const sessionId = sessionInstance?.get();
-          if (sessionId) {
-            try {
-              const execDuration = Date.now() - execStartTime;
-              await sandbox.send({
-                type: "trackInteraction",
-                interactionType: "exec",
-                session: sessionId,
-                input: { language, code: code.substring(0, 100) }, // Truncate code for tracking
-                timestamp: execStartTime,
-                duration: execDuration,
-                success: true,
-              });
-            } catch (err) {
-              console.warn("Failed to track exec interaction:", err.message);
-            }
           }
 
           return result.out?.stdout?.trim();
@@ -1578,25 +1549,6 @@ const createCommands = (
           if (!silent) {
             emitter.emit(events.log.log, theme.dim(`Result:`), true);
             emitter.emit(events.log.log, stepResult, true);
-          }
-        }
-
-        // Track interaction success for JS execution
-        const sessionId = sessionInstance?.get();
-        if (sessionId) {
-          try {
-            const execDuration = Date.now() - execStartTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "exec",
-              session: sessionId,
-              input: { language: 'js', code: code.substring(0, 100) }, // Truncate code for tracking
-              timestamp: execStartTime,
-              duration: execDuration,
-              success: true,
-            });
-          } catch (err) {
-            console.warn("Failed to track exec interaction:", err.message);
           }
         }
 
