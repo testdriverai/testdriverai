@@ -1,4 +1,4 @@
-name: Linux Tests
+name: Acceptance Tests
 
 on:
   push:
@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [linux, windows]
+      fail-fast: false
     
     steps:
     - uses: actions/checkout@v4
