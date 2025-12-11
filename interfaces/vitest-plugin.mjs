@@ -580,13 +580,16 @@ class TestDriverReporter {
 
       logger.debug("Stats:", stats);
 
-      // Determine overall status based on reason and stats
+      // Determine overall status based on stats (not reason, which is unreliable in parallel runs)
       let status = "passed";
-      if (reason === "failed" || stats.failedTests > 0) {
+      if (stats.failedTests > 0) {
         status = "failed";
       } else if (reason === "interrupted") {
         status = "cancelled";
       } else if (stats.totalTests === 0) {
+        status = "cancelled";
+      } else if (stats.passedTests === 0 && stats.skippedTests === 0) {
+        // No tests actually ran (all were filtered/excluded)
         status = "cancelled";
       }
 
