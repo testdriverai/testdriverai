@@ -116,7 +116,7 @@ export async function launchChrome(
   } else {
     await client.exec(
       shell,
-      `google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --guest "${url}" >/dev/null 2>&1 &`,
+      `google-chrome --start-maximized --disable-fre --no-default-browser-check --no-first-run --no-experiments --guest "${url}" >/dev/null 2>&1 &`,
       30000,
     );
   }
@@ -188,13 +188,13 @@ export async function launchChromeForTesting(
     // For now, fallback to regular Chrome on Windows
     await client.exec(
       "pwsh",
-      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--user-data-dir=${userDataDir}", "--disable-fre", "--no-default-browser-check", "--no-first-run", "${url}"`,
+      `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList "--start-maximized", "--user-data-dir=${userDataDir}", "--disable-fre", "--no-default-browser-check", "--no-first-run", "--no-experiments", "${url}"`,
       30000,
     );
   } else {
     await client.exec(
       shell,
-      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --user-data-dir=${userDataDir} "${url}" >/dev/null 2>&1 &`,
+      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --no-experiments --user-data-dir=${userDataDir} "${url}" >/dev/null 2>&1 &`,
       30000,
     );
   }
@@ -281,7 +281,7 @@ export async function launchChromeExtension(
     const extensionsToLoad = `${extensionPath},/usr/lib/node_modules/dashcam-chrome/build`;
     await client.exec(
       shell,
-      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --user-data-dir=${userDataDir} --load-extension=${extensionsToLoad} "${url}" >/dev/null 2>&1 &`,
+      `chrome-for-testing --start-maximized --disable-fre --no-default-browser-check --no-first-run --no-experiments --user-data-dir=${userDataDir} --load-extension=${extensionsToLoad} "${url}" >/dev/null 2>&1 &`,
       30000,
     );
   }

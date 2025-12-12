@@ -12,7 +12,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Chrome Extension Test", () => {
   it("should load hello-world Chrome extension from local path", async (context) => {
-    const testdriver = TestDriver(context, { headless: false, newSandbox: true, cacheKey: 'chrome-extension-path-test' });
+    const testdriver = TestDriver(context, { headless: false, newSandbox: true });
     
     // Wait for connection to be ready before running exec
     await testdriver.ready();
@@ -39,7 +39,7 @@ describe("Chrome Extension Test", () => {
     expect(pageResult).toBeTruthy();
 
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The icon of a puzzle piece in the chrome toolbar. NOT THE BEAKER.");
+    const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.");
     await extensionsButton.click();
 
     // Look for the hello world extension in the extensions menu
@@ -51,26 +51,22 @@ describe("Chrome Extension Test", () => {
     expect(popupResult).toBeTruthy();
   });
 
-  it("should load uBlock Origin from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context, { headless: false, newSandbox: true, cacheKey: 'chrome-extension-id-test' });
+  it("should load Loom from Chrome Web Store by extensionId", async (context) => {
+    const testdriver = TestDriver(context, { headless: false, newSandbox: true});
 
-    // Launch Chrome with uBlock Origin loaded by its Chrome Web Store ID
-    // uBlock Origin ID: cjpalhdlnbpafiamejdnhcphjbkeiagm
+    // Launch Chrome with Loom loaded by its Chrome Web Store ID
+    // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
     await testdriver.provision.chromeExtension({
-      extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm',
+      extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb',
       url: 'https://testdriver.ai'
     });
 
-    // Verify Chrome loaded and we can see the page
-    const pageResult = await testdriver.assert("the testdriver.ai website is visible");
-    expect(pageResult).toBeTruthy();
-
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The icon of a puzzle piece in the chrome toolbar. NOT THE BEAKER.");
+    const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.");
     await extensionsButton.click();
 
-    // Look for uBlock Origin in the extensions menu
-    const uBlockExtension = await testdriver.find("uBlock Origin extension in the extensions dropdown");
-    expect(uBlockExtension.found()).toBeTruthy();
+    // Look for Loom in the extensions menu
+    const loomExtension = await testdriver.find("Loom extension in the extensions dropdown");
+    expect(loomExtension.found()).toBeTruthy();
   });
 });

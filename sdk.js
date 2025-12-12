@@ -1342,7 +1342,7 @@ class TestDriverSDK {
         const chromeArgs = [];
         if (maximized) chromeArgs.push('--start-maximized');
         if (guest) chromeArgs.push('--guest');
-        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--disable-infobars', `--user-data-dir=${userDataDir}`);
+        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', `--user-data-dir=${userDataDir}`);
         
         // Add dashcam-chrome extension on Linux
         if (this.os === 'linux') {
@@ -1620,7 +1620,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         // Build Chrome launch command
         const chromeArgs = [];
         if (maximized) chromeArgs.push('--start-maximized');
-        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--disable-infobars', `--user-data-dir=${userDataDir}`);
+        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', '--disable-features=ChromeLabs', `--user-data-dir=${userDataDir}`);
         
         // Add user extension and dashcam-chrome extension
         if (this.os === 'linux') {

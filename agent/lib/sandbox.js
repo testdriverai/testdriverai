@@ -54,7 +54,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
      */
     getTraceUrl() {
       if (!this.traceId) return null;
-      return `https://testdriver.sentry.io/trace/${this.traceId}`;
+      return `https://testdriver.sentry.io/explore/traces/trace/${this.traceId}`;
     }
 
     send(message, timeout = 300000) {
@@ -146,7 +146,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         if (reply.traceId) {
           this.traceId = reply.traceId;
           console.log(`[Sandbox] Sentry Trace ID: ${reply.traceId}`);
-          console.log(`[Sandbox] View trace: https://testdriver.sentry.io/trace/${reply.traceId}`);
+          console.log(`[Sandbox] View trace: https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
         }
         
         emitter.emit(events.sandbox.authenticated, { traceId: reply.traceId });
