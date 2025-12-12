@@ -1392,6 +1392,287 @@ class TestDriverSDK {
       },
 
       /**
+       * Launch Chrome browser with a custom extension loaded
+       * @param {Object} options - Chrome extension launch options
+       * @param {string} [options.extensionPath] - Local filesystem path to the unpacked extension directory
+       * @param {string} [options.extensionId] - Chrome Web Store extension ID (e.g., "cjpalhdlnbpafiamejdnhcphjbkeiagm" for uBlock Origin)
+       * @param {string} [options.url='http://testdriver-sandbox.vercel.app/'] - URL to navigate to
+       * @param {boolean} [options.maximized=true] - Start maximized
+       * @returns {Promise<void>}
+       * @example
+       * // Load extension from local path
+       * await testdriver.exec('sh', 'git clone https://github.com/user/extension.git /tmp/extension');
+       * await testdriver.provision.chromeExtension({
+       *   extensionPath: '/tmp/extension',
+       *   url: 'https://example.com'
+       * });
+       * 
+       * @example
+       * // Load extension by Chrome Web Store ID
+       * await testdriver.provision.chromeExtension({
+       *   extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm', // uBlock Origin
+       *   url: 'https://example.com'
+       * });
+       */
+      chromeExtension: async (options = {}) => {
+        // Automatically wait for connection to be ready
+        await this.ready();
+        
+        const {
+          extensionPath: providedExtensionPath,
+          extensionId,
+          url = 'http://testdriver-sandbox.vercel.app/',
+          maximized = true,
+        } = options;
+
+        if (!providedExtensionPath && !extensionId) {
+          throw new Error('[provision.chromeExtension] Either extensionPath or extensionId is required');
+        }
+
+        let extensionPath = providedExtensionPath;
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+
+        // If extensionId is provided, download and extract the extension from Chrome Web Store
+        if (extensionId && !extensionPath) {
+          console.log(`[provision.chromeExtension] Downloading extension ${extensionId} from Chrome Web Store...`);
+          
+          const extensionDir = this.os === 'windows'
+            ? `C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Extensions\\${extensionId}`
+            : `/tmp/testdriver-extensions/${extensionId}`;
+          
+          // Create extension directory
+          const mkdirCmd = this.os === 'windows'
+            ? `New-Item -ItemType Directory -Path "${extensionDir}" -Force | Out-Null`
+            : `mkdir -p "${extensionDir}"`;
+          await this.exec(shell, mkdirCmd, 10000, true);
+          
+          // Download CRX from Chrome Web Store
+          // The CRX download URL format for Chrome Web Store
+          const crxUrl = `https://clients2.google.com/service/update2/crx?response=redirect&prodversion=131.0.0.0&acceptformat=crx2,crx3&x=id%3D${extensionId}%26installsource%3Dondemand%26uc`;
+          const crxPath = this.os === 'windows'
+            ? `${extensionDir}\\extension.crx`
+            : `${extensionDir}/extension.crx`;
+          
+          if (this.os === 'windows') {
+            await this.exec(
+              'pwsh',
+              `Invoke-WebRequest -Uri "${crxUrl}" -OutFile "${crxPath}"`,
+              60000,
+              true
+            );
+          } else {
+            await this.exec(
+              'sh',
+              `curl -L -o "${crxPath}" "${crxUrl}"`,
+              60000,
+              true
+            );
+          }
+          
+          // Extract the CRX file (CRX is a ZIP with a header)
+          // Skip the CRX header and extract as ZIP
+          if (this.os === 'windows') {
+            // PowerShell: Read CRX, skip header, extract ZIP
+            await this.exec(
+              'pwsh',
+              `
+$crxBytes = [System.IO.File]::ReadAllBytes("${crxPath}")
+# CRX3 header: 4 bytes magic + 4 bytes version + 4 bytes header length + header
+$magic = [System.Text.Encoding]::ASCII.GetString($crxBytes[0..3])
+if ($magic -eq "Cr24") {
+  $headerLen = [BitConverter]::ToUInt32($crxBytes, 8)
+  $zipStart = 12 + $headerLen
+} else {
+  # CRX2 format
+  $zipStart = 16 + [BitConverter]::ToUInt32($crxBytes, 8) + [BitConverter]::ToUInt32($crxBytes, 12)
+}
+$zipBytes = $crxBytes[$zipStart..($crxBytes.Length - 1)]
+$zipPath = "${extensionDir}\\extension.zip"
+[System.IO.File]::WriteAllBytes($zipPath, $zipBytes)
+Expand-Archive -Path $zipPath -DestinationPath "${extensionDir}\\unpacked" -Force
+              `,
+              30000,
+              true
+            );
+            extensionPath = `${extensionDir}\\unpacked`;
+          } else {
+            // Linux: Use unzip with offset or python to extract
+            await this.exec(
+              'sh',
+              `
+cd "${extensionDir}"
+# Extract CRX (skip header and unzip)
+# CRX3 format: magic(4) + version(4) + header_length(4) + header + zip
+python3 -c "
+import struct
+import zipfile
+import io
+import os
+
+with open('extension.crx', 'rb') as f:
+    data = f.read()
+
+# Check magic number
+magic = data[:4]
+if magic == b'Cr24':
+    # CRX3 format
+    header_len = struct.unpack('<I', data[8:12])[0]
+    zip_start = 12 + header_len
+else:
+    # CRX2 format  
+    pub_key_len = struct.unpack('<I', data[8:12])[0]
+    sig_len = struct.unpack('<I', data[12:16])[0]
+    zip_start = 16 + pub_key_len + sig_len
+
+zip_data = data[zip_start:]
+os.makedirs('unpacked', exist_ok=True)
+with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
+    zf.extractall('unpacked')
+"
+              `,
+              30000,
+              true
+            );
+            extensionPath = `${extensionDir}/unpacked`;
+          }
+          
+          console.log(`[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`);
+        }
+
+        // If dashcam is available and recording, add web logs for this domain
+        if (this._dashcam) {
+          // Create the log file on the remote machine
+          const logPath = this.os === "windows" 
+            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
+            : "/tmp/testdriver.log";
+          
+          const createLogCmd = this.os === "windows"
+            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
+            : `touch ${logPath}`;
+          
+          await this.exec(shell, createLogCmd, 10000, true);
+        
+          const urlObj = new URL(url);
+          const domain = urlObj.hostname;
+          const pattern = `*${domain}*`;
+          await this._dashcam.addWebLog(pattern, 'Web Logs');
+          await this._dashcam.addFileLog(logPath, "TestDriver Log");
+        }
+        
+        // Automatically start dashcam if not already recording
+        if (!this._dashcam || !this._dashcam.recording) {
+          await this.dashcam.start();
+        }
+
+        // Set up Chrome profile with preferences
+        const userDataDir = this.os === 'windows' 
+          ? 'C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome'
+          : '/tmp/testdriver-chrome-profile';
+        
+        // Create user data directory and Default profile directory
+        const defaultProfileDir = this.os === 'windows'
+          ? `${userDataDir}\\Default`
+          : `${userDataDir}/Default`;
+        
+        const createDirCmd = this.os === 'windows'
+          ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+          : `mkdir -p "${defaultProfileDir}"`;
+        
+        await this.exec(shell, createDirCmd, 10000, true);
+        
+        // Write Chrome preferences
+        const chromePrefs = {
+          credentials_enable_service: false,
+          profile: {
+            password_manager_enabled: false,
+            default_content_setting_values: {}
+          },
+          signin: {
+            allowed: false
+          },
+          sync: {
+            requested: false,
+            first_setup_complete: true,
+            sync_all_os_types: false
+          },
+          autofill: {
+            enabled: false
+          },
+          local_state: {
+            browser: {
+              has_seen_welcome_page: true
+            }
+          }
+        };
+        
+        const prefsPath = this.os === 'windows'
+          ? `${defaultProfileDir}\\Preferences`
+          : `${defaultProfileDir}/Preferences`;
+        
+        const prefsJson = JSON.stringify(chromePrefs, null, 2);
+        const writePrefCmd = this.os === 'windows'
+          // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
+          ? `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
+          : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+        
+        await this.exec(shell, writePrefCmd, 10000, true);
+
+        // Build Chrome launch command
+        const chromeArgs = [];
+        if (maximized) chromeArgs.push('--start-maximized');
+        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--disable-infobars', `--user-data-dir=${userDataDir}`);
+        
+        // Add user extension and dashcam-chrome extension
+        if (this.os === 'linux') {
+          // Load both user extension and dashcam-chrome for web log capture
+          chromeArgs.push(`--load-extension=${extensionPath},/usr/lib/node_modules/dashcam-chrome/build`);
+        } else if (this.os === 'windows') {
+          // On Windows, just load the user extension (dashcam-chrome not available)
+          chromeArgs.push(`--load-extension=${extensionPath}`);
+        }
+
+        // Launch Chrome
+        if (this.os === 'windows') {
+          const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
+          await this.exec(
+            shell,
+            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
+            30000
+          );
+        } else {
+          const argsString = chromeArgs.join(' ');
+          await this.exec(
+            shell,
+            `chrome-for-testing ${argsString} "${url}" >/dev/null 2>&1 &`,
+            30000
+          );
+        }
+
+        // Wait for Chrome to be ready
+        await this.focusApplication('Google Chrome');
+
+        // Wait for URL to load
+        try {
+          const urlObj = new URL(url);
+          const domain = urlObj.hostname;
+                    
+          for (let attempt = 0; attempt < 30; attempt++) {
+            const result = await this.find(`${domain}`);
+
+            if (result.found()) {
+              break;
+            } else {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+          
+          await this.focusApplication('Google Chrome');
+        } catch (e) {
+          console.warn(`[provision.chromeExtension] ⚠️  Could not parse URL "${url}":`, e.message);
+        }
+      },
+
+      /**
        * Launch VS Code
        * @param {Object} options - VS Code launch options
        * @param {string} [options.workspace] - Workspace/folder to open

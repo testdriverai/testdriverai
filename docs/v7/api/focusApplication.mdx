@@ -113,7 +113,7 @@ await testdriver.focusApplication('Google Chrome');
     ```javascript
     // Test workflow across multiple apps
     await testdriver.focusApplication('Google Chrome');
-    const data = await testdriver.remember('the order number');
+    const data = await testdriver.extract('the order number');
     
     await testdriver.focusApplication('Notepad');
     await testdriver.type(data);
@@ -221,7 +221,7 @@ describe('Multi-Application Workflow', () => {
     await testdriver.focusApplication('Google Chrome');
     
     // Get data from web page
-    const orderNumber = await testdriver.remember('the order number');
+    const orderNumber = await testdriver.extract('the order number');
     console.log('Order:', orderNumber);
     
     // Open Notepad

@@ -98,7 +98,7 @@ await testdriver.assert('the modal dialog is open');
   expect(result).toBeTruthy();
   
   // Extract for detailed comparison
-  const message = await testdriver.remember('the success message text');
+  const message = await testdriver.extract('the success message text');
   expect(message).toContain('successfully');
   ```
 </Check>

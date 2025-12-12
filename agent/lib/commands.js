@@ -1371,7 +1371,7 @@ const createCommands = (
             const rememberDuration = Date.now() - rememberStartTime;
             await sandbox.send({
               type: "trackInteraction",
-              interactionType: "remember",
+              interactionType: "extract",
               session: sessionId,
               prompt: description,
               timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
@@ -1379,7 +1379,7 @@ const createCommands = (
               success: true,
             });
           } catch (err) {
-            console.warn("Failed to track remember interaction:", err.message);
+            console.warn("Failed to track extract interaction:", err.message);
           }
         }
         
@@ -1392,7 +1392,7 @@ const createCommands = (
             const rememberDuration = Date.now() - rememberStartTime;
             await sandbox.send({
               type: "trackInteraction",
-              interactionType: "remember",
+              interactionType: "extract",
               session: sessionId,
               prompt: description,
               timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
@@ -1401,7 +1401,7 @@ const createCommands = (
               error: error.message,
             });
           } catch (err) {
-            console.warn("Failed to track remember interaction:", err.message);
+            console.warn("Failed to track extract interaction:", err.message);
           }
         }
         throw error;

@@ -45,11 +45,11 @@ const types = () =>
         command: '"focus-application"',
         name: "string",
       },
-      // - command: remember # Remember a string value without needing to interact with the desktop.
-      //   description: My dog's name # The key of the memory value to store.
-      //   value: Roofus # The value of the memory to store
-      RememberCommand: {
-        command: '"remember"',
+      // - command: extract # Extract a string value from the screen without needing to interact with the desktop.
+      //   description: My dog's name # The key of the value to extract.
+      //   value: Roofus # The value to extract
+      ExtractCommand: {
+        command: '"extract"',
         description: "string",
         value: "string",
       },
@@ -125,7 +125,7 @@ const types = () =>
       },
 
       Command:
-        "PressKeysCommand | HoverTextCommand | TypeCommand | WaitCommand | HoverImageCommand | FocusApplicationCommand | RememberCommand | GetEmailUrlCommand | ScrollCommand | ScrollUntilTextCommand | ScrollUntilImageCommand | WaitForTextCommand | WaitForImageCommand | AssertCommand | IfCommand",
+        "PressKeysCommand | HoverTextCommand | TypeCommand | WaitCommand | HoverImageCommand | FocusApplicationCommand | ExtractCommand | GetEmailUrlCommand | ScrollCommand | ScrollUntilTextCommand | ScrollUntilImageCommand | WaitForTextCommand | WaitForImageCommand | AssertCommand | IfCommand",
 
       CommandList: "Command[]",
 

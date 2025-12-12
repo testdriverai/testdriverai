@@ -264,9 +264,9 @@ describe('E2E Shopping Flow', () => {
     // Verify cart updated
     await testdriver.assert('cart badge shows 1 item');
     
-    // Remember product details
-    const productName = await testdriver.remember('the name of the product just added');
-    const price = await testdriver.remember('the price of the product');
+    // Extract product details
+    const productName = await testdriver.extract('the name of the product just added');
+    const price = await testdriver.extract('the price of the product');
     
     console.log(`Added ${productName} at ${price}`);
     
@@ -302,7 +302,7 @@ describe('E2E Shopping Flow', () => {
     await testdriver.assert('success message is shown');
     
     // Extract order number
-    const orderNumber = await testdriver.remember('the order number');
+    const orderNumber = await testdriver.extract('the order number');
     console.log('Order placed:', orderNumber);
     expect(orderNumber).toBeTruthy();
   });
@@ -377,10 +377,10 @@ describe('E2E Shopping Flow', () => {
   </Accordion>
   
   <Accordion title="Extract before comparing">
-    Use `remember()` to extract values for detailed comparisons:
+    Use `extract()` to extract values for detailed comparisons:
     
     ```javascript
-    const actualTotal = await testdriver.remember('the cart total');
+    const actualTotal = await testdriver.extract('the cart total');
     const expectedTotal = '$99.99';
     
     expect(actualTotal).toBe(expectedTotal);
@@ -395,7 +395,7 @@ describe('E2E Shopping Flow', () => {
     await testdriver.assert('success message is displayed');
     
     // Extract and use traditional assertion for exact values
-    const message = await testdriver.remember('the success message text');
+    const message = await testdriver.extract('the success message text');
     expect(message).toContain('successfully');
     expect(message).toMatch(/order #\d+/i);
     ```

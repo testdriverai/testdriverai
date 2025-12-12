@@ -7,38 +7,85 @@ icon: "puzzle-piece"
 
 ## Overview
 
-Test Chrome extensions by loading them into Chrome for Testing. This preset uses the `launchChromeExtension()` helper to launch Chrome with a specific extension loaded by its Chrome Web Store ID.
+Test Chrome extensions by loading them into Chrome for Testing. Use `testdriver.provision.chromeExtension()` to launch Chrome with either:
+- A **local unpacked extension** via `extensionPath`
+- A **Chrome Web Store extension** via `extensionId`
+
+The dashcam-chrome extension is automatically included on Linux for web log capture.
 
 ## Quick Start
 
+### Using a Local Extension Path
+
 ```javascript
-import { test } from 'vitest';
-import TestDriver from 'testdriverai';
-import { 
-  runPrerunChromeExtension, 
-  runPostrun 
-} from 'testdriverai/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs';
+import { describe, it, expect } from 'vitest';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
-test('test chrome extension', async () => {
-  const client = await TestDriver.create({
-    apiKey: process.env.TD_API_KEY,
-    os: "linux",
-    verbosity: 1,
+describe('Chrome Extension Test', () => {
+  it('should load and test a Chrome extension', async (context) => {
+    const testdriver = TestDriver(context, { headless: true });
+    
+    // Wait for connection
+    await testdriver.ready();
+    
+    // Clone an extension repo
+    await testdriver.exec(
+      'sh',
+      'git clone --depth 1 https://github.com/GoogleChrome/chrome-extensions-samples.git /tmp/chrome-extensions-samples',
+      60000,
+      true
+    );
+
+    // Launch Chrome with the extension loaded
+    await testdriver.provision.chromeExtension({
+      extensionPath: '/tmp/chrome-extensions-samples/functional-samples/tutorial.hello-world',
+      url: 'https://example.com'
+    });
+
+    // Your test code here
+    const result = await testdriver.assert("the page is visible");
+    expect(result).toBeTruthy();
   });
-
-  // Launch Chrome with extension loaded
-  // Extension ID from Chrome Web Store
-  await runPrerunChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm");
-
-  // Your test code here
-  await client.focusApplication("Google Chrome");
-  
-  // ... test extension functionality
-
-  await runPostrun(client);
-  await client.cleanup();
 });
 ```
+
+### Using a Chrome Web Store Extension ID
+
+```javascript
+import { describe, it, expect } from 'vitest';
+import { TestDriver } from 'testdriverai/vitest/hooks';
+
+describe('Chrome Extension Test', () => {
+  it('should load uBlock Origin and verify it works', async (context) => {
+    const testdriver = TestDriver(context, { headless: true });
+
+    // Launch Chrome with uBlock Origin loaded by its Chrome Web Store ID
+    await testdriver.provision.chromeExtension({
+      extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm', // uBlock Origin
+      url: 'https://example.com'
+    });
+
+    // Your test code here
+    const result = await testdriver.assert("the page is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## API Reference
+
+### `testdriver.provision.chromeExtension(options)`
+
+Launches Chrome for Testing with a custom extension loaded.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `extensionPath` | `string` | - | Local filesystem path to the unpacked extension directory |
+| `extensionId` | `string` | - | Chrome Web Store extension ID (e.g., `cjpalhdlnbpafiamejdnhcphjbkeiagm`) |
+| `url` | `string` | `'http://testdriver-sandbox.vercel.app/'` | URL to navigate to after launch |
+| `maximized` | `boolean` | `true` | Start Chrome maximized |
+
+**Note:** Either `extensionPath` or `extensionId` is required. On Linux, the dashcam-chrome extension is automatically loaded alongside your extension for web log capture.
 
 ## Finding Extension IDs
 
@@ -46,11 +93,11 @@ Extension IDs can be found in the Chrome Web Store URL:
 
 ```
 https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm
-                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                                                      This is the extension ID
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                       This is the extension ID
 ```
 
-## Popular Extensions
+### Popular Extensions
 
 | Extension | ID |
 |-----------|---|
@@ -59,73 +106,67 @@ https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcph
 | Redux DevTools | `lmhkpmbekcpmknklioeibfkpmmfibljd` |
 | Bitwarden | `nngceckbapebfimnlniiiahkandclblb` |
 
-## Loading Multiple Extensions
+## Using Your Own Extension
 
-Load multiple extensions by separating IDs with commas:
+To test your own extension, you can either:
 
+1. **Clone from a repository:**
 ```javascript
-await launchChromeExtension(
-  client, 
-  "cjpalhdlnbpafiamejdnhcphjbkeiagm,nngceckbapebfimnlniiiahkandclblb"
-);
+await testdriver.ready();
+await testdriver.exec('sh', 'git clone https://github.com/your/extension.git /tmp/my-extension', 60000, true);
+await testdriver.provision.chromeExtension({
+  extensionPath: '/tmp/my-extension',
+  url: 'https://example.com'
+});
 ```
+
+2. **Upload your extension files** (if supported by your test setup)
+
+3. **Use a pre-built extension** in a known location
 
 ## Complete Example
 
 ```javascript
-import { describe, it, beforeAll, afterAll } from 'vitest';
-import TestDriver from 'testdriverai';
-import { 
-  runPrerunChromeExtension, 
-  runPostrun 
-} from 'testdriverai/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs';
+import { describe, it, expect } from 'vitest';
+import { TestDriver } from 'testdriverai/vitest/hooks';
 
-describe('Chrome Extension Testing', () => {
-  let client;
-  let dashcamUrl;
-
-  beforeAll(async () => {
-    client = await TestDriver.create({
-      apiKey: process.env.TD_API_KEY,
-      os: "linux",
-      verbosity: 1,
+describe('Chrome Extension - Hello World', () => {
+  it('should load extension and verify popup', async (context) => {
+    const testdriver = TestDriver(context, { 
+      headless: true, 
+      newSandbox: true, 
+      cacheKey: 'chrome-extension-test' 
     });
-
-    // Load uBlock Origin extension
-    await runPrerunChromeExtension(client, "cjpalhdlnbpafiamejdnhcphjbkeiagm");
-  });
-
-  afterAll(async () => {
-    if (client) {
-      dashcamUrl = await runPostrun(client);
-      await client.cleanup();
-    }
-  });
-
-  it('should verify extension is loaded', async () => {
-    await client.focusApplication("Google Chrome");
-
-    // Navigate to a page
-    const element = await client.find("TestDriver.ai Sandbox");
-    expect(element.found()).toBe(true);
-
-    // Test extension-specific functionality
-    // For example, checking if ads are blocked with uBlock
-  });
-
-  it('should access extension popup', async () => {
-    await client.focusApplication("Google Chrome");
     
-    // Open extension management
-    await client.exec(
-      "sh",
-      `xdotool key --clearmodifiers ctrl+shift+e`,
-      5000,
+    // Clone the Chrome extensions samples repo
+    await testdriver.exec(
+      'sh',
+      'git clone --depth 1 https://github.com/GoogleChrome/chrome-extensions-samples.git /tmp/chrome-extensions-samples',
+      60000,
       true
     );
 
-    // Wait for extensions page
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Launch Chrome with the hello-world extension loaded
+    await testdriver.provision.chromeExtension({
+      extensionPath: '/tmp/chrome-extensions-samples/functional-samples/tutorial.hello-world',
+      url: 'https://testdriver.ai'
+    });
+
+    // Verify the page loaded
+    const pageResult = await testdriver.assert("the testdriver.ai website is visible");
+    expect(pageResult).toBeTruthy();
+
+    // Click on the extensions button in Chrome toolbar
+    const extensionsButton = await testdriver.find("Extensions button, puzzle piece icon in Chrome toolbar");
+    await extensionsButton.click();
+
+    // Find and click the hello world extension
+    const helloExtension = await testdriver.find("Hello World extension in the extensions dropdown");
+    await helloExtension.click();
+
+    // Verify the extension popup shows
+    const popupResult = await testdriver.assert("a popup shows with the text 'Hello Extensions'");
+    expect(popupResult).toBeTruthy();
   });
 });
 ```
@@ -139,19 +180,9 @@ Chrome for Testing is pre-installed in the E2B sandbox environment at:
 /usr/local/bin/chrome-for-testing (symlink)
 ```
 
-## Direct API Usage
-
-Use the lower-level API for more control:
-
-```javascript
-import { launchChromeExtension } from 'testdriverai/testdriver/acceptance-sdk/setup/lifecycleHelpers.mjs';
-
-// Launch with specific extension and URL
-await launchChromeExtension(
-  client,
-  "cjpalhdlnbpafiamejdnhcphjbkeiagm",
-  "https://example.com"
-);
+The dashcam-chrome extension is pre-installed at:
+```
+/usr/lib/node_modules/dashcam-chrome/build
 ```
 
 ## Testing Extension Features
@@ -159,44 +190,39 @@ await launchChromeExtension(
 ### Test Extension Popup
 
 ```javascript
-it('opens extension popup', async () => {
-  // Click extension icon (varies by extension)
-  await client.click('extension icon in toolbar');
+it('opens extension popup', async (context) => {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  // Setup extension...
+  await testdriver.provision.chromeExtension({
+    extensionPath: '/path/to/extension',
+    url: 'https://example.com'
+  });
+  
+  // Click extension icon in toolbar
+  const extensionIcon = await testdriver.find('extension icon in toolbar');
+  await extensionIcon.click();
   
   // Interact with popup
-  const popup = await client.find('extension popup window');
-  expect(popup.found()).toBe(true);
-});
-```
-
-### Test Extension Settings
-
-```javascript
-it('configures extension settings', async () => {
-  // Right-click extension icon
-  await client.rightClick('extension icon');
-  
-  // Click options
-  await client.click('Options');
-  
-  // Configure settings
-  await client.click('Enable feature X');
-  await client.click('Save');
+  const result = await testdriver.assert('extension popup is visible');
+  expect(result).toBeTruthy();
 });
 ```
 
 ### Test Content Scripts
 
 ```javascript
-it('verifies content script injection', async () => {
-  // Navigate to a page
-  await client.exec('sh', 'xdotool key ctrl+l', 5000, true);
-  await client.type('https://example.com');
-  await client.pressKeys('Enter');
+it('verifies content script injection', async (context) => {
+  const testdriver = TestDriver(context, { headless: true });
+  
+  await testdriver.provision.chromeExtension({
+    extensionPath: '/path/to/extension',
+    url: 'https://example.com'
+  });
   
   // Check for extension-injected elements
-  const injected = await client.find('element added by extension');
-  expect(injected.found()).toBe(true);
+  const result = await testdriver.assert('element added by extension is visible');
+  expect(result).toBeTruthy();
 });
 ```
 
@@ -204,9 +230,9 @@ it('verifies content script injection', async () => {
 
 ### Extension Not Loading
 
-1. Verify the extension ID is correct
+1. Verify the extension path exists and contains a valid `manifest.json`
 2. Check Chrome for Testing is installed in the sandbox
-3. Ensure extension is compatible with Chrome for Testing version
+3. Ensure extension is compatible with Chrome for Testing version (Manifest V3 recommended)
 
 ### Extension Permissions
 
@@ -219,5 +245,4 @@ Some extensions may require additional permissions or setup. You may need to:
 ## See Also
 
 - [Web Apps (Chrome)](/v7/presets/chrome) - Regular Chrome browser testing
-- [Desktop Apps (Electron)](/v7/presets/electron) - Electron app testing
-- [Lifecycle Helpers](/v7/guides/lifecycle) - Prerun/postrun functions
+- [Desktop Apps (Electron)](/v7/presets/electron) - Electron app testing- [Lifecycle Helpers](/v7/guides/lifecycle) - Prerun/postrun functions

@@ -184,7 +184,7 @@ describe('E-commerce Flow with AI', () => {
     const cartIcon = await testdriver.find('shopping cart icon');
     await cartIcon.click();
     
-    const total = await testdriver.remember('the cart total amount');
+    const total = await testdriver.extract('the cart total amount');
     console.log('Cart total:', total);
     
     // Use AI for checkout flow

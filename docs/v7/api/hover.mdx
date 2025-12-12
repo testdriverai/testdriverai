@@ -130,7 +130,7 @@ await new Promise(r => setTimeout(r, 1000));
     await new Promise(r => setTimeout(r, 1000));
     
     // Read tooltip content
-    const tooltipText = await testdriver.remember('the tooltip text');
+    const tooltipText = await testdriver.extract('the tooltip text');
     console.log('Tooltip:', tooltipText);
     ```
   </Accordion>
@@ -225,7 +225,7 @@ describe('Hover Interactions', () => {
     await testdriver.assert('tooltip is displayed');
     
     // Extract tooltip text
-    const tooltipText = await testdriver.remember('the tooltip message');
+    const tooltipText = await testdriver.extract('the tooltip message');
     console.log('Tooltip says:', tooltipText);
   });
 
