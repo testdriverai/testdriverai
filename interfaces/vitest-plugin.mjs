@@ -270,10 +270,8 @@ export async function createTestDriver(options = {}) {
   const testdriver = new TestDriverSDK(apiKey, config);
   
   // Connect to sandbox
-  console.log('[testdriver] Connecting to sandbox...');
   await testdriver.auth();
   await testdriver.connect();
-  console.log('[testdriver] ✅ Connected to sandbox');
   
   return testdriver;
 }
@@ -318,9 +316,7 @@ export async function cleanupTestDriver(testdriver) {
   if (!testdriver) {
     return;
   }
-  
-  console.log('[testdriver] Cleaning up TestDriver client...');
-  
+    
   try {
     // Stop dashcam if it was started
     if (testdriver._dashcam && testdriver._dashcam.recording) {
@@ -343,7 +339,6 @@ export async function cleanupTestDriver(testdriver) {
     }
     
     await testdriver.disconnect();
-    console.log('✅ Client disconnected');
   } catch (error) {
     console.error('Error disconnecting client:', error);
   }
@@ -357,7 +352,7 @@ async function handleProcessExit() {
     return;
   }
 
-  logger.info("Process interrupted, marking test run as cancelled...");
+  logger.debug("Process interrupted, marking test run as cancelled...");
 
   try {
     const stats = {
@@ -384,7 +379,7 @@ async function handleProcessExit() {
     }
 
     await completeTestRun(completeData);
-    logger.info("✅ Test run marked as cancelled");
+    logger.debug("✅ Test run marked as cancelled");
   } catch (error) {
     logger.error("Failed to mark test run as cancelled:", error.message);
   }
@@ -500,8 +495,6 @@ class TestDriverReporter {
       return;
     }
 
-    logger.info("Starting test run initialization with API key...");
-
     try {
       // Exchange API key for JWT token
       logger.debug("Authenticating with API...");
@@ -550,7 +543,7 @@ class TestDriverReporter {
         startTime: pluginState.startTime,
       });
 
-      logger.info(`Test run created: ${pluginState.testRunId}`);
+      logger.debug(`Test run created: ${pluginState.testRunId}`);
     } catch (error) {
       logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;
@@ -572,7 +565,7 @@ class TestDriverReporter {
       return;
     }
 
-    logger.info("Completing test run...");
+    logger.debug("Completing test run...");
 
     try {
       // Calculate statistics from testModules
@@ -608,10 +601,10 @@ class TestDriverReporter {
 
       // Update platform if detected from test results
       const platform = getPlatform();
-      logger.info(`Platform detection result: ${platform}, detectedPlatform in state: ${pluginState.detectedPlatform}`);
+      logger.debug(`Platform detection result: ${platform}, detectedPlatform in state: ${pluginState.detectedPlatform}`);
       if (platform) {
         completeData.platform = platform;
-        logger.info(`Updating test run with platform: ${platform}`);
+        logger.debug(`Updating test run with platform: ${platform}`);
       } else {
         logger.warn(`No platform detected, test run will keep default platform`);
       }
@@ -631,7 +624,17 @@ class TestDriverReporter {
       // Mark test run as completed to prevent duplicate completion
       pluginState.testRunCompleted = true;
 
-      logger.info(`✅ Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
+      // Output the test run URL for CI to capture
+      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const consoleUrl = getConsoleUrl(pluginState.apiRoot);
+      if (testRunDbId) {
+        const testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
+        logger.debug(`🔗 View test run: ${testRunUrl}`);
+        // Output in a parseable format for CI
+        console.log(`TESTDRIVER_RUN_URL=${testRunUrl}`);
+      }
+
+      logger.debug(`✅ Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
     } catch (error) {
       logger.error("Failed to complete test run:", error.message);
       logger.debug("Error stack:", error.stack);
@@ -658,7 +661,7 @@ class TestDriverReporter {
           ? "skipped"
           : "failed";
 
-    logger.info(`Test case completed: ${test.name} (${status})`);
+    logger.debug(`Test case completed: ${test.name} (${status})`);
 
     // Calculate duration from tracked start time
     const testCase = pluginState.testCases.get(test.id);
@@ -817,8 +820,8 @@ class TestDriverReporter {
       const testCaseDbId = testCaseResponse.data?.id;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
-      logger.debug(`Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`);
-      logger.info(`🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "console.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`);
+      console.log('');
+      console.log(`🔗 Test Report: ${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`);
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }
@@ -828,6 +831,33 @@ class TestDriverReporter {
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Maps an API root URL to its corresponding web console URL.
+ * The API and web console are served from different domains/ports.
+ * 
+ * @param {string} apiRoot - The API root URL (e.g., https://testdriver-api.onrender.com)
+ * @returns {string} The corresponding web console URL
+ */
+function getConsoleUrl(apiRoot) {
+
+  if (!apiRoot) return 'https://console.testdriver.ai';
+  
+  // Production: API on render.com -> Console on testdriver.ai
+  if (apiRoot.includes('testdriver-api.onrender.com')) {
+    return 'https://console.testdriver.ai';
+  }
+  
+  // Local development: API on localhost:1337 -> Web on localhost:3001
+  if (apiRoot.includes('ngrok.io')) {
+    return `http://localhost:3001`;
+  }
+  
+  // Ngrok or other tunnels: assume same host, different path structure
+  // For ngrok, the API and web might be on same domain or user needs to configure
+  // Return as-is since we can't reliably determine the mapping
+  return apiRoot;
+}
 
 function generateRunId() {
   return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
@@ -970,7 +1000,7 @@ function getGitInfo() {
     }
   }
 
-  logger.info("Collected git info:", info);
+  logger.debug("Collected git info:", info);
   return info;
 }
 

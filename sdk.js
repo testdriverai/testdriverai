@@ -433,6 +433,14 @@ class Element {
         this._response = this._sanitizeResponse(response);
         this._found = false;
         findError = "Element not found";
+        
+        // Log not found
+        const duration = Date.now() - startTime;
+        const { events } = require("./agent/events.js");
+        const notFoundMessage = formatter.formatElementNotFound(description, {
+          duration: `${duration}ms`,
+        });
+        this.sdk.emitter.emit(events.log.log, notFoundMessage);
       }
     } catch (error) {
       this._response = error.response
@@ -441,6 +449,16 @@ class Element {
       this._found = false;
       findError = error.message;
       response = error.response;
+      
+      // Log not found with error
+      const duration = Date.now() - startTime;
+      const { events } = require("./agent/events.js");
+      const notFoundMessage = formatter.formatElementNotFound(description, {
+        duration: `${duration}ms`,
+        error: error.message,
+      });
+      this.sdk.emitter.emit(events.log.log, notFoundMessage);
+      
       console.error("Error during find():", error);
     }
 
@@ -508,11 +526,15 @@ class Element {
 
     // Emit element found as log:log event
     const { events } = require("./agent/events.js");
+    const Dashcam = require("./lib/core/Dashcam");
+    const consoleUrl = Dashcam.getConsoleUrl(this.sdk.config?.TD_API_ROOT);
     const formattedMessage = formatter.formatElementFound(this.description, {
       x: this.coordinates.x,
       y: this.coordinates.y,
       duration: debugInfo.duration,
       cacheHit: debugInfo.cacheHit,
+      selectorId: this._response?.selector,
+      consoleUrl: consoleUrl,
     });
     this.sdk.emitter.emit(events.log.log, formattedMessage);
 
@@ -2633,7 +2655,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     this.emitter.on("show-window", async (url) => {
       if (this.loggingEnabled) {
         console.log("");
-        console.log("Live test execution:");
+        console.log("🔗 Live test execution:");
         if (this.config.CI) {
           // In CI mode, just print the view-only URL
           const u = new URL(url);
@@ -2648,6 +2670,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           console.log(url);
           await this._openBrowser(url);
         }
+        
       }
     });
   }

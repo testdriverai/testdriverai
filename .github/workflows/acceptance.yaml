@@ -2,11 +2,17 @@ name: Acceptance Tests
 permissions:
     id-token: write
     contents: write
+    pull-requests: write
+    checks: write
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -29,13 +35,83 @@ jobs:
       run: npm ci
     
     - name: Run tests
-      run: npx vitest run test/testdriver/*.test.mjs
+      id: run-tests
+      run: |
+        npx vitest run test/testdriver/*.test.mjs --reporter=junit --reporter=default --outputFile=test-results.xml 2>&1 | tee test-output.log
+        # Extract TestDriver run URL from output
+        TESTDRIVER_URL=$(grep -o 'TESTDRIVER_RUN_URL=.*' test-output.log | cut -d= -f2 | tail -1)
+        echo "testdriver_url=$TESTDRIVER_URL" >> $GITHUB_OUTPUT
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
         TD_OS: ${{ matrix.os }}
+    
+    - name: Save TestDriver URL
+      if: always()
+      run: echo "${{ steps.run-tests.outputs.testdriver_url }}" > testdriver-url.txt
+    
+    - name: Upload test results artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}
+        path: |
+          test-results.xml
+          testdriver-url.txt
+    
     - name: Upload test results to Sentry Prevent
       if: ${{ !cancelled() }}
       uses: getsentry/prevent-action@v0
+
+  report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    
+    steps:
+    - name: Download all test results
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Collect TestDriver URLs
+      id: collect-urls
+      run: |
+        URLS=""
+        for dir in artifacts/test-results-*; do
+          os=$(basename "$dir" | sed 's/test-results-//')
+          if [ -f "$dir/testdriver-url.txt" ]; then
+            url=$(cat "$dir/testdriver-url.txt")
+            if [ -n "$url" ]; then
+              URLS="$URLS- **$os**: $url"$'\n'
+            fi
+          fi
+        done
+        echo "urls<<EOF" >> $GITHUB_OUTPUT
+        echo "$URLS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Publish Test Results as PR Comment
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: 'artifacts/**/*.xml'
+        comment_mode: always
+        check_name: Acceptance Test Results
+        comment_title: Acceptance Test Results
+    
+    - name: Add TestDriver URLs Comment
+      if: steps.collect-urls.outputs.urls != ''
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const urls = `${{ steps.collect-urls.outputs.urls }}`;
+          if (urls.trim()) {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### 🎬 TestDriver Replays\n\n${urls}\n\nView detailed test execution recordings in the TestDriver console.`
+            });
+          }
 
   publish-beta:
     needs: test
