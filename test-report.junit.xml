@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="82.837058791">
-    <testsuite name="test/testdriver/hover-text.test.mjs" timestamp="2025-12-15T20:02:09.005Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="82.837058791">
-        <testcase classname="test/testdriver/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="82.835895209">
+<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="127.084438917">
+    <testsuite name="test/testdriver/scroll-until-text.test.mjs" timestamp="2025-12-15T21:58:52.469Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="127.084438917">
+        <testcase classname="test/testdriver/scroll-until-text.test.mjs" name="Scroll Until Text Test &gt; should scroll until &quot;testdriver socks&quot; appears" time="127.083370834">
             <system-out>
 [testdriver] Connecting to sandbox...
 
@@ -9,31 +9,19 @@
 
 [2mestablishing connection...[22m
 
-[2mauthenticating...[22m
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
 
-[Debug] View trace: https://testdriver.sentry.io/explore/traces/trace/0c7e6d363f0b523990fb233ae1d2ea27
+[Debug] View trace: https://testdriver.sentry.io/explore/traces/trace/f384b94e99d8ddc36ae418a9d2aae9cd
 
-[2mcreating new sandbox...[22m
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
 
-[2mconnecting...[22m
-
-No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml
-
-[testdriver] ✅ Connected to sandbox
-
-[DASHCAM] Auto-authenticating dashcam...
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
 
 [DASHCAM] Starting dashcam recording on Linux/Mac...
 
 [DASHCAM] Dashcam recording started
 
 [DASHCAM] Failed to update session with dashcam start time: Not Found
-
-[DASHCAM] Stopping dashcam and retrieving URL...
-
-[DASHCAM] Found dashcam URL: http://localhost:3001/replay/6940693e2be305fe8673c1a4?share=ZxrGi9ONX73qGeblBWaHg
-
-✅ Client disconnected
 
             </system-out>
         </testcase>

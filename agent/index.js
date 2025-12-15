@@ -183,7 +183,8 @@ class TestDriverAgent extends EventEmitter2 {
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
-    this.emitter.emit(events.log.narration, theme.dim("exiting..."), true);
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(events.log.narration, formatter.getPrefix("disconnect") + " " + theme.yellow.bold("Exiting") + theme.dim("..."), true);
 
     // Clean up redraw interval
     if (this.redraw && this.redraw.cleanup) {
@@ -1923,9 +1924,10 @@ ${regression}
     
     // Create new sandbox (either because createNew is true, or no existing sandbox to connect to)
     if (!this.instance) {
+      const { formatter } = require("../sdk-log-formatter.js");
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`creating new sandbox...`),
+        formatter.getPrefix("connect") + " " + theme.green.bold("Creating") + " " + theme.cyan(`new sandbox...`),
       );
       // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
       // to see if that fixes the issue.
@@ -2122,7 +2124,8 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       );
     }
 
-    this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(events.log.narration, formatter.getPrefix("connect") + " " + theme.green.bold("Authenticating") + theme.dim("..."));
     let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
 
     if (!ableToAuth) {
@@ -2135,7 +2138,8 @@ Please check your network connection, TD_API_KEY, or the service status.`,
   }
 
   async connectToSandboxDirect(sandboxId, persist = false) {
-    this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(events.log.narration, formatter.getPrefix("connect") + " " + theme.green.bold("Connecting") + " " + theme.cyan(`to sandbox...`));
     let reply = await this.sandbox.connect(sandboxId, persist);
 
     // reply includes { success, url, sandbox: {...} }
