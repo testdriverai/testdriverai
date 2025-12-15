@@ -8,6 +8,15 @@ const chalk = require("chalk");
  * Now with full UTF-8 and emoji support! 🚀
  */
 
+// Duration threshold configurations for different contexts
+const DURATION_THRESHOLDS = {
+  default: { fast: 3000, medium: 10000 },
+  action: { fast: 100, medium: 500 },
+  redraw: { fast: 5000, medium: 10000 },
+  quickAction: { fast: 50, medium: 200 },
+  test: { fast: 1000, medium: 5000 },
+};
+
 class SDKLogFormatter {
   constructor(options = {}) {
     this.testContext = {
@@ -42,6 +51,156 @@ class SDKLogFormatter {
   }
 
   /**
+   * Add elapsed time to parts array if available
+   * @param {Array} parts - Array to push time string to
+   * @param {boolean} dim - Whether to dim the time string
+   */
+  addTimestamp(parts, dim = true) {
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(dim ? chalk.dim(timeStr) : timeStr);
+    }
+  }
+
+  /**
+   * Get color function based on duration and thresholds
+   * @param {number} durationMs - Duration in milliseconds
+   * @param {string} thresholdKey - Key from DURATION_THRESHOLDS
+   * @returns {Function} Chalk color function
+   */
+  getDurationColor(durationMs, thresholdKey = "default") {
+    const thresholds = DURATION_THRESHOLDS[thresholdKey] || DURATION_THRESHOLDS.default;
+    if (durationMs < thresholds.fast) return chalk.green;
+    if (durationMs < thresholds.medium) return chalk.yellow;
+    return chalk.red;
+  }
+
+  /**
+   * Format duration with appropriate color
+   * @param {number|string} duration - Duration in ms
+   * @param {string} thresholdKey - Key from DURATION_THRESHOLDS
+   * @param {boolean} showSeconds - Show as seconds (true) or raw (false)
+   * @returns {string} Formatted duration string
+   */
+  formatDurationColored(duration, thresholdKey = "default", showSeconds = true) {
+    const durationMs = parseInt(duration);
+    const color = this.getDurationColor(durationMs, thresholdKey);
+    const display = showSeconds ? `(${(durationMs / 1000).toFixed(1)}s)` : `(${duration})`;
+    return color(display);
+  }
+
+  /**
+   * Join metadata parts with separator
+   * @param {Array} metaParts - Array of metadata strings
+   * @returns {string} Joined metadata string with separators
+   */
+  joinMetaParts(metaParts) {
+    if (metaParts.length === 0) return "";
+    return chalk.dim("·") + " " + metaParts.join(chalk.dim(" · "));
+  }
+
+  /**
+   * Create an indented result line prefix (for child results)
+   * @returns {string} Indented arrow prefix
+   */
+  getResultPrefix() {
+    return "   " + chalk.dim("→");
+  }
+
+  /**
+   * Format a nested action result line (scrolled, clicked, typed, pressed keys, etc.)
+   * @param {string} message - The action message (e.g., "scrolled down 300px", "pressed keys: tab")
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted nested result line
+   */
+  formatNestedAction(message, durationMs) {
+    return this.getResultPrefix() + " " + chalk.dim(message) + " " + this.formatDurationColored(durationMs);
+  }
+
+  /**
+   * Format a redraw/idle wait completion line
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted redraw complete line
+   */
+  formatRedrawComplete(durationMs) {
+    return this.formatNestedAction("flake protection", durationMs);
+  }
+
+  /**
+   * Format a scroll action result
+   * @param {string} direction - Scroll direction (up, down, left, right)
+   * @param {number} amount - Scroll amount in pixels
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted scroll result line
+   */
+  formatScrollResult(direction, amount, durationMs) {
+    return this.formatNestedAction(`scrolled ${direction} ${amount}px`, durationMs);
+  }
+
+  /**
+   * Format a click action result
+   * @param {string} button - Button type (left, right, middle)
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted click result line
+   */
+  formatClickResult(button, x, y, durationMs) {
+    return this.formatNestedAction(`click ${button} clicking at ${x}, ${y}`, durationMs);
+  }
+
+  /**
+   * Format a type action result
+   * @param {string} text - Text that was typed (or "****" for secrets)
+   * @param {boolean} isSecret - Whether the text is a secret
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted type result line
+   */
+  formatTypeResult(text, isSecret, durationMs) {
+    const displayText = isSecret ? "secret ****" : `"${text}"`;
+    return this.formatNestedAction(`typed ${displayText}`, durationMs);
+  }
+
+  /**
+   * Format a press keys action result
+   * @param {string} keysDisplay - Keys that were pressed (comma-separated)
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted press keys result line
+   */
+  formatPressKeysResult(keysDisplay, durationMs) {
+    return this.formatNestedAction(`pressed keys: ${keysDisplay}`, durationMs);
+  }
+
+  /**
+   * Format a nested code display line (for exec commands)
+   * @param {string} codeDisplay - The code to display
+   * @returns {string} Formatted code line
+   */
+  formatCodeLine(codeDisplay) {
+    return this.getResultPrefix() + " " + chalk.dim(codeDisplay);
+  }
+
+  /**
+   * Format an exec complete result
+   * @param {number} exitCode - The exit code
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted exec result line
+   */
+  formatExecComplete(exitCode, durationMs) {
+    const statusText = exitCode !== 0 
+      ? `failed (exit code ${exitCode})` 
+      : `complete (exit code 0)`;
+    const statusColor = exitCode !== 0 ? chalk.red : chalk.green;
+    
+    return this.formatResultLine(
+      statusText, 
+      statusColor, 
+      { duration: durationMs }, 
+      "action"
+    );
+  }
+
+  /**
    * Format a log message in Vitest style
    * @param {string} type - Log type (info, success, error, action, debug)
    * @param {string} message - The message to format
@@ -54,8 +213,7 @@ class SDKLogFormatter {
     const parts = [];
 
     // Add timestamp/elapsed time
-    const timeStr = this.getElapsedTime();
-    if (timeStr) parts.push(timeStr);
+    this.addTimestamp(parts, false);
 
     // Add type prefix with color
     const prefix = this.getPrefix(type);
@@ -118,7 +276,7 @@ class SDKLogFormatter {
       drag: chalk.cyan("✊"),
 
       // Keyboard actions
-      type: chalk.yellow("⌨️"),
+      type: chalk.yellow("⌨️ "),
       pressKeys: chalk.yellow("🎹"),
 
       // Navigation
@@ -149,7 +307,7 @@ class SDKLogFormatter {
       debug: chalk.gray("🔧"),
 
       // Default
-      action: chalk.cyan("▶️"),
+      action: chalk.cyan("▶️ "),
     };
     return prefixes[type] || chalk.gray("•");
   }
@@ -173,24 +331,79 @@ class SDKLogFormatter {
   }
 
   /**
+   * Format a "finding" style message (when search starts) 🔍
+   * @param {string} prefixType - Prefix type for getPrefix
+   * @param {string} label - Action label (e.g., "Finding", "Finding All", "Asserting")
+   * @param {string} description - Element/assertion description
+   * @returns {string} Formatted message
+   */
+  formatFindingStyle(prefixType, label, description) {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getPrefix(prefixType));
+    parts.push(chalk.bold.cyan(label));
+    parts.push(chalk.cyan(`"${description}"`));
+    return parts.join(" ");
+  }
+
+  /**
    * Format an element finding message (when search starts) 🔍
    * @param {string} description - Element description
    * @returns {string} Formatted message
    */
   formatElementFinding(description) {
-    const parts = [];
+    return this.formatFindingStyle("find", "Finding", description);
+  }
 
-    // Time and icon on same line
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
+  /**
+   * Build common metadata parts for result messages
+   * @param {Object} meta - Metadata object
+   * @param {string} thresholdKey - Duration threshold key
+   * @returns {Array} Array of formatted metadata strings
+   */
+  buildResultMetaParts(meta, thresholdKey = "default") {
+    const metaParts = [];
+    
+    if (meta.x !== undefined && meta.y !== undefined) {
+      metaParts.push(chalk.dim.gray(`📍 (${meta.x}, ${meta.y})`));
     }
-    parts.push(this.getPrefix("find"));
+    if (meta.selectorId && meta.consoleUrl) {
+      const cacheUrl = `${meta.consoleUrl}/cache/${meta.selectorId}`;
+      metaParts.push(chalk.blue.underline(cacheUrl));
+    }
+    if (meta.error) {
+      metaParts.push(chalk.dim.red(meta.error));
+    }
+    if (meta.cacheHit) {
+      metaParts.push(chalk.bold.yellow("⚡ cached"));
+    }
+    // Duration always last
+    if (meta.duration) {
+      metaParts.push(this.formatDurationColored(meta.duration, thresholdKey));
+    }
+    
+    return metaParts;
+  }
 
-    // Main message with emphasis
-    parts.push(chalk.bold.cyan("Finding"));
-    parts.push(chalk.cyan(`"${description}"`));
-
+  /**
+   * Format a result line (indented child result)
+   * @param {string} statusText - Status text (e.g., "found", "not found")
+   * @param {Function} statusColor - Chalk color function for status
+   * @param {Object} meta - Metadata object
+   * @param {string} thresholdKey - Duration threshold key
+   * @returns {string} Formatted result line
+   */
+  formatResultLine(statusText, statusColor, meta = {}, thresholdKey = "default") {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getResultPrefix());
+    parts.push(statusColor(statusText));
+    
+    const metaParts = this.buildResultMetaParts(meta, thresholdKey);
+    if (metaParts.length > 0) {
+      parts.push(this.joinMetaParts(metaParts));
+    }
+    
     return parts.join(" ");
   }
 
@@ -201,44 +414,17 @@ class SDKLogFormatter {
    * @returns {string} Formatted message
    */
   formatElementFound(description, meta = {}) {
-    const parts = [];
+    return this.formatResultLine("found", chalk.green, meta);
+  }
 
-    // Time and icon on same line
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-    parts.push(this.getPrefix("find"));
-
-    // Main message with emphasis
-    parts.push(chalk.bold.green("Found"));
-    parts.push(chalk.cyan(`"${description}"`));
-
-    // Metadata on same line with subtle styling
-    const metaParts = [];
-    if (meta.x !== undefined && meta.y !== undefined) {
-      metaParts.push(chalk.dim.gray(`📍 (${meta.x}, ${meta.y})`));
-    }
-    if (meta.duration) {
-      const durationMs = parseInt(meta.duration);
-      const durationColor =
-        durationMs < 100
-          ? chalk.green
-          : durationMs < 500
-            ? chalk.yellow
-            : chalk.red;
-      metaParts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
-    }
-    if (meta.cacheHit) {
-      metaParts.push(chalk.bold.yellow("⚡ cached"));
-    }
-
-    if (metaParts.length > 0) {
-      parts.push(chalk.dim("·"));
-      parts.push(metaParts.join(chalk.dim(" · ")));
-    }
-
-    return parts.join(" ");
+  /**
+   * Format an element not found message with styling ❌
+   * @param {string} description - Element description
+   * @param {Object} meta - Metadata (duration, error)
+   * @returns {string} Formatted message
+   */
+  formatElementNotFound(description, meta = {}) {
+    return this.formatResultLine("not found", chalk.red, meta);
   }
 
   /**
@@ -247,20 +433,7 @@ class SDKLogFormatter {
    * @returns {string} Formatted message
    */
   formatElementsFinding(description) {
-    const parts = [];
-
-    // Time and icon on same line
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-    parts.push(this.getPrefix("findAll"));
-
-    // Main message with emphasis
-    parts.push(chalk.bold.cyan("Finding All"));
-    parts.push(chalk.cyan(`"${description}"`));
-
-    return parts.join(" ");
+    return this.formatFindingStyle("findAll", "Finding All", description);
   }
 
   /**
@@ -272,38 +445,20 @@ class SDKLogFormatter {
    */
   formatElementsFound(description, count, meta = {}) {
     const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getResultPrefix());
+    parts.push(chalk.green(`found ${count} elements`));
 
-    // Time and icon on same line
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-    parts.push(this.getPrefix("findAll"));
-
-    // Main message with emphasis
-    parts.push(chalk.bold.green("Found"));
-    parts.push(chalk.cyan(`${count}`));
-    parts.push(chalk.cyan(`"${description}"`));
-
-    // Metadata on same line with subtle styling
     const metaParts = [];
-    if (meta.duration) {
-      const durationMs = parseInt(meta.duration);
-      const durationColor =
-        durationMs < 100
-          ? chalk.green
-          : durationMs < 500
-            ? chalk.yellow
-            : chalk.red;
-      metaParts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
-    }
     if (meta.cacheHit) {
       metaParts.push(chalk.bold.yellow("⚡ cached"));
     }
+    if (meta.duration) {
+      metaParts.push(this.formatDurationColored(meta.duration));
+    }
 
     if (metaParts.length > 0) {
-      parts.push(chalk.dim("·"));
-      parts.push(metaParts.join(chalk.dim(" · ")));
+      parts.push(this.joinMetaParts(metaParts));
     }
 
     return parts.join(" ");
@@ -315,19 +470,72 @@ class SDKLogFormatter {
    * @returns {string} Formatted message
    */
   formatAsserting(assertion) {
+    return this.formatFindingStyle("assert", "Asserting", assertion);
+  }
+  /**
+   * Format the assertion result as a subtask line
+   * @param {boolean} passed - Whether assertion passed
+   * @param {string} response - The AI response message
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted result line
+   */
+  formatAssertResult(passed, response, durationMs) {
     const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getResultPrefix());
+    
+    if (passed) {
+      parts.push(chalk.green("passed"));
+    } else {
+      parts.push(chalk.red("failed"));
+    }
+    
+    // Add the response message (trimmed)
+    if (response) {
+      const trimmedResponse = response.trim().split('\n')[0]; // First line only
+      parts.push(chalk.dim(trimmedResponse));
+    }
+    
+    // Add duration
+    if (durationMs) {
+      parts.push(this.formatDurationColored(durationMs, "action"));
+    }
+    
+    return parts.join(" ");
+  }
 
-    // Time and icon
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
+  // Action color mapping (shared between formatAction and formatActionComplete)
+  static ACTION_COLORS = {
+    click: chalk.bold.cyan,
+    hover: chalk.bold.blue,
+    type: chalk.bold.yellow,
+    scroll: chalk.bold.magenta,
+    assert: chalk.bold.green,
+    wait: chalk.bold.yellow,
+  };
+
+  /**
+   * Build action message parts (shared logic for formatAction and formatActionComplete)
+   * @param {string} action - Action type
+   * @param {string} description - Description or target
+   * @returns {Array} Array of formatted parts
+   */
+  buildActionParts(action, description) {
+    const parts = [];
+    this.addTimestamp(parts);
+
+    const actionKey = action.toLowerCase().replace(/\s+/g, "");
+    parts.push(this.getPrefix(actionKey));
+
+    const actionText = action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
+    const colorFn = SDKLogFormatter.ACTION_COLORS[actionKey] || chalk.bold.white;
+    parts.push(colorFn(actionText));
+
+    if (description) {
+      parts.push(chalk.cyan(`"${description}"`));
     }
 
-    parts.push(this.getPrefix("assert"));
-    parts.push(chalk.bold.cyan("Asserting"));
-    parts.push(chalk.cyan(`"${assertion}"`));
-
-    return parts.join(" ");
+    return { parts, actionKey };
   }
 
   /**
@@ -338,56 +546,18 @@ class SDKLogFormatter {
    * @returns {string} Formatted message
    */
   formatAction(action, description, meta = {}) {
-    const parts = [];
+    const { parts } = this.buildActionParts(action, description);
 
-    // Time and icon
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-
-    // Use action-specific prefix
-    const actionKey = action.toLowerCase().replace(/\s+/g, "");
-    parts.push(this.getPrefix(actionKey));
-
-    // Action text with emphasis and color coding
-    const actionText =
-      action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
-    const actionColors = {
-      click: chalk.bold.cyan,
-      hover: chalk.bold.blue,
-      type: chalk.bold.yellow,
-      scroll: chalk.bold.magenta,
-      assert: chalk.bold.green,
-      wait: chalk.bold.yellow,
-    };
-    const colorFn = actionColors[actionKey] || chalk.bold.white;
-    parts.push(colorFn(actionText));
-
-    // Target with color
-    if (description) {
-      parts.push(chalk.cyan(`"${description}"`));
-    }
-
-    // Additional metadata
     const metaParts = [];
     if (meta.text) {
       metaParts.push(chalk.gray(`→ ${chalk.white(meta.text)}`));
     }
     if (meta.duration) {
-      const durationMs = parseInt(meta.duration);
-      const durationColor =
-        durationMs < 50
-          ? chalk.green
-          : durationMs < 200
-            ? chalk.yellow
-            : chalk.red;
-      metaParts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
+      metaParts.push(chalk.dim(`⏱️  ${this.formatDurationColored(meta.duration, "quickAction", false)}`));
     }
 
     if (metaParts.length > 0) {
-      parts.push(chalk.dim("·"));
-      parts.push(metaParts.join(chalk.dim(" · ")));
+      parts.push(this.joinMetaParts(metaParts));
     }
 
     return parts.join(" ");
@@ -404,60 +574,22 @@ class SDKLogFormatter {
    * @returns {string} Formatted message
    */
   formatActionComplete(action, description, meta = {}) {
-    const parts = [];
+    const { parts } = this.buildActionParts(action, description);
 
-    // Time and icon
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-
-    // Use action-specific prefix
-    const actionKey = action.toLowerCase().replace(/\s+/g, "");
-    parts.push(this.getPrefix(actionKey));
-
-    // Action text with emphasis and color coding
-    const actionText =
-      action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
-    const actionColors = {
-      click: chalk.bold.cyan,
-      hover: chalk.bold.blue,
-      type: chalk.bold.yellow,
-      scroll: chalk.bold.magenta,
-      assert: chalk.bold.green,
-      wait: chalk.bold.yellow,
-    };
-    const colorFn = actionColors[actionKey] || chalk.bold.white;
-    parts.push(colorFn(actionText));
-
-    // Target with color
-    if (description) {
-      parts.push(chalk.cyan(`"${description}"`));
-    }
-
-    // Metadata with separate action and redraw durations
     const metaParts = [];
     
     if (meta.actionDuration !== undefined) {
       const durationMs = parseInt(meta.actionDuration);
-      const durationColor =
-        durationMs < 100
-          ? chalk.green
-          : durationMs < 500
-            ? chalk.yellow
-            : chalk.red;
-      metaParts.push(chalk.dim(`⚡ ${durationColor(`${durationMs}ms`)}`));
+      const durationSec = (durationMs / 1000).toFixed(1) + 's';
+      const color = this.getDurationColor(durationMs, "action");
+      metaParts.push(chalk.dim(`⚡ ${color(durationSec)}`));
     }
     
     if (meta.redrawDuration !== undefined) {
       const durationMs = parseInt(meta.redrawDuration);
-      const durationColor =
-        durationMs < 500
-          ? chalk.green
-          : durationMs < 2000
-            ? chalk.yellow
-            : chalk.red;
-      metaParts.push(chalk.dim(`🔄 ${durationColor(`${durationMs}ms`)}`));
+      const durationSec = (durationMs / 1000).toFixed(1) + 's';
+      const color = this.getDurationColor(durationMs, "redraw");
+      metaParts.push(chalk.dim(`🔄 ${color(durationSec)}`));
     }
     
     if (meta.cacheHit) {
@@ -465,8 +597,7 @@ class SDKLogFormatter {
     }
 
     if (metaParts.length > 0) {
-      parts.push(chalk.dim("·"));
-      parts.push(metaParts.join(chalk.dim(" · ")));
+      parts.push(this.joinMetaParts(metaParts));
     }
 
     return parts.join(" ");
@@ -481,12 +612,7 @@ class SDKLogFormatter {
    */
   formatAssertion(assertion, passed, meta = {}) {
     const parts = [];
-
-    // Time and icon
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
+    this.addTimestamp(parts);
 
     if (passed) {
       parts.push(this.getPrefix("success"));
@@ -503,15 +629,8 @@ class SDKLogFormatter {
     }
 
     if (meta.duration) {
-      const durationMs = parseInt(meta.duration);
-      const durationColor =
-        durationMs < 100
-          ? chalk.green
-          : durationMs < 500
-            ? chalk.yellow
-            : chalk.red;
       parts.push(chalk.dim("·"));
-      parts.push(chalk.dim(`⏱️  ${durationColor(meta.duration)}`));
+      parts.push(chalk.dim(`⏱️  ${this.formatDurationColored(meta.duration, "action", false)}`));
     }
 
     return parts.join(" ");
@@ -525,12 +644,7 @@ class SDKLogFormatter {
    */
   formatError(message, error) {
     const parts = [];
-
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-
+    this.addTimestamp(parts);
     parts.push(this.getPrefix("error"));
     parts.push(chalk.red.bold(message));
 
@@ -550,12 +664,7 @@ class SDKLogFormatter {
    */
   formatConnection(type, meta = {}) {
     const parts = [];
-
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-
+    this.addTimestamp(parts);
     parts.push(this.getPrefix(type));
 
     if (type === "connect") {
@@ -582,12 +691,7 @@ class SDKLogFormatter {
    */
   formatScreenshot(meta = {}) {
     const parts = [];
-
-    const timeStr = this.getElapsedTime();
-    if (timeStr) {
-      parts.push(chalk.dim(timeStr));
-    }
-
+    this.addTimestamp(parts);
     parts.push(this.getPrefix("screenshot"));
     parts.push(chalk.bold.blue("Screenshot"));
 
@@ -612,7 +716,6 @@ class SDKLogFormatter {
    */
   formatCacheStatus(hit, meta = {}) {
     const parts = [];
-
     parts.push(this.getPrefix(hit ? "cacheHit" : "cacheMiss"));
 
     if (hit) {
@@ -644,9 +747,7 @@ class SDKLogFormatter {
     const width = Math.min(60, Math.max(title.length + 4, 40));
     const topLine = chalk.dim("╭" + "─".repeat(width - 2) + "╮");
     const titleLine =
-      `${chalk.dim("│")} ${emoji} ${chalk.bold.white(title)}`.padEnd(
-        width + 20,
-      ) + chalk.dim("│");
+      `${chalk.dim("│")} ${emoji} ${chalk.bold.white(title)}`.padEnd(width + 20) + chalk.dim("│");
     const bottomLine = chalk.dim("╰" + "─".repeat(width - 2) + "╯");
     return `\n${topLine}\n${titleLine}\n${bottomLine}\n`;
   }
@@ -684,8 +785,9 @@ class SDKLogFormatter {
       parts.push(chalk.dim(`⏱️  ${stats.duration}`));
     }
 
+    const divider = this.formatDivider();
     const separator = chalk.dim(" │ ");
-    return `\n${chalk.dim("─".repeat(60))}\n${parts.join(separator)}\n${chalk.dim("─".repeat(60))}\n`;
+    return `\n${divider}\n${parts.join(separator)}\n${divider}\n`;
   }
 
   /**
@@ -727,7 +829,6 @@ class SDKLogFormatter {
    */
   formatWaiting(message, elapsed) {
     const parts = [];
-
     parts.push(this.getPrefix("wait"));
     parts.push(chalk.bold.yellow("Waiting"));
     parts.push(chalk.cyan(message));
@@ -770,14 +871,9 @@ class SDKLogFormatter {
 
     if (duration) {
       const seconds = (duration / 1000).toFixed(2);
-      const durationColor =
-        duration < 1000
-          ? chalk.green
-          : duration < 5000
-            ? chalk.yellow
-            : chalk.red;
+      const color = this.getDurationColor(duration, "test");
       parts.push(chalk.dim("·"));
-      parts.push(durationColor(`${seconds}s`));
+      parts.push(color(`${seconds}s`));
     }
 
     return `\n${parts.join(" ")}\n`;

@@ -86,13 +86,6 @@ export async function stopDashcam(client) {
   const dashcam = getDashcam(client);
   const url = await dashcam.stop();
   
-  if (url) {
-    console.log("✅ Found dashcam URL:", url);
-    console.log("🎥 Dashcam URL:", url);
-  } else {
-    console.warn("⚠️  No replay URL found in dashcam output");
-  }
-  
   return url;
 }
 
