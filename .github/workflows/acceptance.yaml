@@ -2,19 +2,15 @@ name: Acceptance Tests
 permissions:
     id-token: write
     contents: write
+    pull-requests: write
+    checks: write
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, windows]
-      fail-fast: false
     
     steps:
     - uses: actions/checkout@v4
@@ -28,50 +24,54 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Run tests
+    - name: Run Linux tests
       run: npx vitest run test/testdriver/*.test.mjs
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        TD_OS: ${{ matrix.os }}
+        TD_OS: linux
+
     - name: Upload test results to Sentry Prevent
       if: ${{ !cancelled() }}
       uses: getsentry/prevent-action@v0
 
-  publish-beta:
-    needs: test
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: test-report.junit.xml
+        comment_mode: always
+        check_name: Test Results (Linux)
+
+  test-windows:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: contains(github.event.pull_request.labels.*.name, 'test-windows')
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        registry-url: 'https://registry.npmjs.org/'
-    
-    - name: Configure Git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        cache: 'npm'
     
     - name: Install dependencies
       run: npm ci
     
-    - name: Bump version (prerelease beta)
-      run: npm version prerelease --preid=beta --no-git-tag-version
-    
-    - name: Commit and push version bump
-      run: |
-        git add package.json package-lock.json
-        git commit -m "chore: bump beta version to $(node -p "require('./package.json').version")"
-        git push
-    
-    - name: Publish to npm under beta tag
-      run: npm publish --tag beta
+    - name: Run Windows tests
+      run: npx vitest run test/testdriver/*.test.mjs
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        TD_OS: windows
+
+    - name: Upload test results to Sentry Prevent
+      if: ${{ !cancelled() }}
+      uses: getsentry/prevent-action@v0
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: test-report.junit.xml
+        comment_mode: always
+        check_name: Test Results (Windows)
