@@ -394,6 +394,85 @@ class SDKLogFormatter {
   }
 
   /**
+   * Format an action complete message with separate action and redraw durations 🎬
+   * @param {string} action - Action type
+   * @param {string} description - Description or target
+   * @param {Object} meta - Action metadata
+   * @param {number} meta.actionDuration - Duration of the action itself in ms
+   * @param {number} meta.redrawDuration - Duration of the redraw wait in ms
+   * @param {boolean} meta.cacheHit - Whether cache was hit
+   * @returns {string} Formatted message
+   */
+  formatActionComplete(action, description, meta = {}) {
+    const parts = [];
+
+    // Time and icon
+    const timeStr = this.getElapsedTime();
+    if (timeStr) {
+      parts.push(chalk.dim(timeStr));
+    }
+
+    // Use action-specific prefix
+    const actionKey = action.toLowerCase().replace(/\s+/g, "");
+    parts.push(this.getPrefix(actionKey));
+
+    // Action text with emphasis and color coding
+    const actionText =
+      action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
+    const actionColors = {
+      click: chalk.bold.cyan,
+      hover: chalk.bold.blue,
+      type: chalk.bold.yellow,
+      scroll: chalk.bold.magenta,
+      assert: chalk.bold.green,
+      wait: chalk.bold.yellow,
+    };
+    const colorFn = actionColors[actionKey] || chalk.bold.white;
+    parts.push(colorFn(actionText));
+
+    // Target with color
+    if (description) {
+      parts.push(chalk.cyan(`"${description}"`));
+    }
+
+    // Metadata with separate action and redraw durations
+    const metaParts = [];
+    
+    if (meta.actionDuration !== undefined) {
+      const durationMs = parseInt(meta.actionDuration);
+      const durationColor =
+        durationMs < 100
+          ? chalk.green
+          : durationMs < 500
+            ? chalk.yellow
+            : chalk.red;
+      metaParts.push(chalk.dim(`⚡ ${durationColor(`${durationMs}ms`)}`));
+    }
+    
+    if (meta.redrawDuration !== undefined) {
+      const durationMs = parseInt(meta.redrawDuration);
+      const durationColor =
+        durationMs < 500
+          ? chalk.green
+          : durationMs < 2000
+            ? chalk.yellow
+            : chalk.red;
+      metaParts.push(chalk.dim(`🔄 ${durationColor(`${durationMs}ms`)}`));
+    }
+    
+    if (meta.cacheHit) {
+      metaParts.push(chalk.bold.yellow("⚡ cached"));
+    }
+
+    if (metaParts.length > 0) {
+      parts.push(chalk.dim("·"));
+      parts.push(metaParts.join(chalk.dim(" · ")));
+    }
+
+    return parts.join(" ");
+  }
+
+  /**
    * Format an assertion message with beautiful status indicators 🎯
    * @param {string} assertion - What is being asserted
    * @param {boolean} passed - Whether assertion passed

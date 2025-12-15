@@ -21,8 +21,6 @@ class CustomTransport extends Transport {
         this.sandbox = require("../agent/lib/sandbox");
       }
 
-      console.log("CustomTransport log message:", message);
-
       if (this.sandbox && this.sandbox.instanceSocketConnected) {
         if (typeof message === "object") {
           console.log(chalk.cyan("protecting against base64 error"));

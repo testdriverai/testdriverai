@@ -701,12 +701,9 @@ class TestDriverReporter {
         // Don't override duration from file - use Vitest's result.duration
         // duration is already set above from result.duration
 
-        logger.info(`Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`);
-
         // Update test run platform from first test that reports it
         if (platform && !pluginState.detectedPlatform) {
           pluginState.detectedPlatform = platform;
-          logger.info(`✅ Detected platform from test result file: ${platform}`);
         }
 
         // Clean up the file after reading

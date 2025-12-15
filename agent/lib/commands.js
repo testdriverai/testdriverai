@@ -311,6 +311,7 @@ const createCommands = (
     const before = await system.captureScreenBase64();
     let scrollSuccess = true;
     let scrollError;
+    let actionEndTime;
     
     try {
       switch (direction) {
@@ -320,7 +321,7 @@ const createCommands = (
             amount,
             direction,
           });
-          await redraw.wait(2500, redrawOptions);
+          actionEndTime = Date.now();
           break;
         case "down":
           await sandbox.send({
@@ -328,7 +329,7 @@ const createCommands = (
             amount,
             direction,
           });
-          await redraw.wait(2500, redrawOptions);
+          actionEndTime = Date.now();
           break;
         case "left":
           console.error("Not Supported");
@@ -346,6 +347,13 @@ const createCommands = (
           throw new CommandError("Direction not found");
       }
       
+      const actionDuration = actionEndTime ? actionEndTime - scrollStartTime : Date.now() - scrollStartTime;
+      
+      // Wait for redraw and track duration
+      const redrawStartTime = Date.now();
+      await redraw.wait(2500, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
       const after = await system.captureScreenBase64();
 
       if (before === after) {
@@ -354,6 +362,14 @@ const createCommands = (
           "Attempted to scroll, but the screen did not change.  You may need to click a non-interactive element to focus the scrollable area first.",
         );
       }
+      
+      // Log action completion with separate durations
+      const { formatter } = require("../../sdk-log-formatter.js");
+      const completionMessage = formatter.formatActionComplete("scroll", `${direction} ${amount}px`, {
+        actionDuration,
+        redrawDuration,
+      });
+      emitter.emit(events.log.log, completionMessage);
       
       // Track interaction success
       const sessionId = sessionInstance?.get();
@@ -493,11 +509,14 @@ const createCommands = (
 
         emitter.emit(events.mouseClick, { x, y, button, click, double });
         
+        // Track action duration (before redraw wait)
+        const actionEndTime = Date.now();
+        const actionDuration = actionEndTime - clickStartTime;
+        
         // Track interaction
         const sessionId = sessionInstance?.get();
         if (sessionId && elementData.prompt) {
           try {
-            const clickDuration = Date.now() - clickStartTime;
             await sandbox.send({
               type: "trackInteraction",
               interactionType: "click",
@@ -505,7 +524,7 @@ const createCommands = (
               prompt: elementData.prompt,
               input: { x, y, action },
               timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: clickDuration,
+              duration: actionDuration,
               success: true,
               cacheHit: elementData.cacheHit,
               selector: elementData.selector,
@@ -515,9 +534,36 @@ const createCommands = (
             console.warn("Failed to track click interaction:", err.message);
           }
         }
+        
+        // Wait for redraw and track duration
+        const redrawStartTime = Date.now();
+        await redraw.wait(5000, redrawOptions);
+        const redrawDuration = Date.now() - redrawStartTime;
+        
+        // Log action completion with separate durations
+        const { formatter } = require("../../sdk-log-formatter.js");
+        const completionMessage = formatter.formatActionComplete(action, elementData.prompt, {
+          actionDuration,
+          redrawDuration,
+          cacheHit: elementData.cacheHit,
+        });
+        emitter.emit(events.log.log, completionMessage);
+      } else {
+        // For hover action (within click function)
+        const redrawStartTime = Date.now();
+        await redraw.wait(5000, redrawOptions);
+        const redrawDuration = Date.now() - redrawStartTime;
+        const actionDuration = Date.now() - clickStartTime - redrawDuration;
+        
+        // Log action completion with separate durations
+        const { formatter } = require("../../sdk-log-formatter.js");
+        const completionMessage = formatter.formatActionComplete(action, elementData.prompt, {
+          actionDuration,
+          redrawDuration,
+          cacheHit: elementData.cacheHit,
+        });
+        emitter.emit(events.log.log, completionMessage);
       }
-
-      await redraw.wait(5000, redrawOptions);
 
       return;
     } catch (error) {
@@ -593,9 +639,11 @@ const createCommands = (
 
       // Track interaction
       const sessionId = sessionInstance?.get();
+      const actionEndTime = Date.now();
+      const actionDuration = actionEndTime - hoverStartTime;
+      
       if (sessionId && elementData.prompt) {
         try {
-          const hoverDuration = Date.now() - hoverStartTime;
           await sandbox.send({
             type: "trackInteraction",
             interactionType: "hover",
@@ -603,7 +651,7 @@ const createCommands = (
             prompt: elementData.prompt,
             input: { x, y },
             timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: hoverDuration,
+            duration: actionDuration,
             success: true,
             cacheHit: elementData.cacheHit,
             selector: elementData.selector,
@@ -614,7 +662,19 @@ const createCommands = (
         }
       }
 
+      // Wait for redraw and track duration
+      const redrawStartTime = Date.now();
       await redraw.wait(2500, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Log action completion with separate durations
+      const { formatter } = require("../../sdk-log-formatter.js");
+      const completionMessage = formatter.formatActionComplete("hover", elementData.prompt, {
+        actionDuration,
+        redrawDuration,
+        cacheHit: elementData.cacheHit,
+      });
+      emitter.emit(events.log.log, completionMessage);
 
       return;
     } catch (error) {
@@ -1473,10 +1533,10 @@ const createCommands = (
           timeout,
         }, timeout || 300000);
 
-        const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-        if (debugMode) {
-          console.log(result);
-        }
+        // const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+        // if (debugMode) {
+        //   console.log(result);
+        // }
 
         if (result.out && result.out.returncode !== 0) {
           throw new MatchError(
@@ -1547,10 +1607,13 @@ const createCommands = (
         if (!stepResult) {
           emitter.emit(events.log.log, `No result returned from script`, true);
         } else {
-          if (!silent) {
-            emitter.emit(events.log.log, theme.dim(`Result:`), true);
-            emitter.emit(events.log.log, stepResult, true);
-          }
+        /* The above JavaScript code is checking if the variable `silent` is falsy (not true) and if
+        so, it emits log events using an emitter. The emitted log events include the
+        theme.dim(`Result:`) and the value of the `stepResult` variable. */
+          // if (!silent) {
+          //   emitter.emit(events.log.log, theme.dim(`Result:`), true);
+          //   emitter.emit(events.log.log, stepResult, true);
+          // }
         }
 
         return stepResult;

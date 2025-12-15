@@ -43,7 +43,7 @@ describe("Chrome Extension Test", () => {
     await extensionsButton.click();
 
     // Look for the hello world extension in the extensions menu
-    const helloExtension = await testdriver.find("Hello World extension in the extensions dropdown");
+    const helloExtension = await testdriver.find("Hello Extensions extension in the extensions dropdown");
     await helloExtension.click();
 
     // Verify the extension popup shows "Hello Extensions" text

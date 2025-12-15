@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="1" failures="1" errors="0" time="72.9688135">
+    <testsuite name="test/testdriver/hover-text.test.mjs" timestamp="2025-12-15T18:26:52.879Z" hostname="Ians-MBP.lan" tests="1" failures="1" errors="0" skipped="0" time="72.9688135">
+        <testcase classname="test/testdriver/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="72.968030916">
+            <system-out>
+[testdriver] Final mergedOptions.os = undefined
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[2mauthenticating...[22m
+
+[Sandbox] Sentry Trace ID: 2cf4237df1c3e39f9539ad5ca8567a84
+[Sandbox] View trace: https://testdriver.sentry.io/explore/traces/trace/2cf4237df1c3e39f9539ad5ca8567a84
+
+[2mcreating new sandbox...[22m
+
+[2mconnecting...[22m
+
+Running lifecycle: provision
+No currentFilePath found, using fallback: /Users/ianjennings/Development/cli/testdriver/testdriver.yaml
+
+[testdriver] ✅ Connected to sandbox
+
+[DASHCAM] Auto-authenticating dashcam...
+
+[DASHCAM] Starting dashcam recording on Linux/Mac...
+
+[DASHCAM] Dashcam recording started
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+[DASHCAM] Stopping dashcam and retrieving URL...
+
+[DASHCAM] Found dashcam URL: http://localhost:3001/replay/694052eadfcab84cd6bb96af?share=qRmOjt9dkdl8tSY6mPkpKw
+
+✅ Client disconnected
+
+            </system-out>
+            <failure message="AI Assertion failed: an error shows that fields are required
+The task failed. No error message about required fields is displayed on the screen." type="Error">
+Error: AI Assertion failed: an error shows that fields are required
+The task failed. No error message about required fields is displayed on the screen.
+ ❯ TestDriverSDK.&lt;anonymous&gt; sdk.js:2465:15
+ ❯ test/testdriver/hover-text.test.mjs:22:37
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { fatal: true, attachScreenshot: true }
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>
