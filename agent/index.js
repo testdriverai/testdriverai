@@ -2264,9 +2264,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
 
-    this.emitter.emit(events.log.log, ``);
-    this.emitter.emit(events.log.log, "Running lifecycle: " + lifecycleName);
-
     // If we still don't have a currentFilePath, fall back to the default testdriver directory
     if (!currentFilePath) {
       currentFilePath = path.join(
@@ -2274,7 +2271,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
         "testdriver",
         "testdriver.yaml",
       );
-      console.log("No currentFilePath found, using fallback:", currentFilePath);
     }
 
     // Ensure we have an absolute path
