@@ -5,8 +5,6 @@ permissions:
     pull-requests: write
     checks: write
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -15,12 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [linux, windows]
-      fail-fast: false
     
     steps:
     - uses: actions/checkout@v4
@@ -34,120 +28,54 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Run tests
-      id: run-tests
-      run: |
-        npx vitest run test/testdriver/*.test.mjs --reporter=junit --reporter=default --outputFile=test-results.xml 2>&1 | tee test-output.log
-        # Extract TestDriver run URL from output
-        TESTDRIVER_URL=$(grep -o 'TESTDRIVER_RUN_URL=.*' test-output.log | cut -d= -f2 | tail -1)
-        echo "testdriver_url=$TESTDRIVER_URL" >> $GITHUB_OUTPUT
+    - name: Run Linux tests
+      run: npx vitest run test/testdriver/*.test.mjs
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        TD_OS: ${{ matrix.os }}
-    
-    - name: Save TestDriver URL
-      if: always()
-      run: echo "${{ steps.run-tests.outputs.testdriver_url }}" > testdriver-url.txt
-    
-    - name: Upload test results artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.os }}
-        path: |
-          test-results.xml
-          testdriver-url.txt
-    
+        TD_OS: linux
+
     - name: Upload test results to Sentry Prevent
       if: ${{ !cancelled() }}
       uses: getsentry/prevent-action@v0
 
-  report:
-    needs: test
-    runs-on: ubuntu-latest
-    if: always() && github.event_name == 'pull_request'
-    
-    steps:
-    - name: Download all test results
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-    
-    - name: Collect TestDriver URLs
-      id: collect-urls
-      run: |
-        URLS=""
-        for dir in artifacts/test-results-*; do
-          os=$(basename "$dir" | sed 's/test-results-//')
-          if [ -f "$dir/testdriver-url.txt" ]; then
-            url=$(cat "$dir/testdriver-url.txt")
-            if [ -n "$url" ]; then
-              URLS="$URLS- **$os**: $url"$'\n'
-            fi
-          fi
-        done
-        echo "urls<<EOF" >> $GITHUB_OUTPUT
-        echo "$URLS" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-    
-    - name: Publish Test Results as PR Comment
+    - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
       with:
-        files: 'artifacts/**/*.xml'
+        files: test-report.junit.xml
         comment_mode: always
-        check_name: Acceptance Test Results
-        comment_title: Acceptance Test Results
-    
-    - name: Add TestDriver URLs Comment
-      if: steps.collect-urls.outputs.urls != ''
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const urls = `${{ steps.collect-urls.outputs.urls }}`;
-          if (urls.trim()) {
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `### 🎬 TestDriver Replays\n\n${urls}\n\nView detailed test execution recordings in the TestDriver console.`
-            });
-          }
+        check_name: Test Results (Linux)
 
-  publish-beta:
-    needs: test
+  test-windows:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: contains(github.event.pull_request.labels.*.name, 'test-windows')
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        registry-url: 'https://registry.npmjs.org/'
-    
-    - name: Configure Git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        cache: 'npm'
     
     - name: Install dependencies
       run: npm ci
     
-    - name: Bump version (prerelease beta)
-      run: npm version prerelease --preid=beta --no-git-tag-version
-    
-    - name: Commit and push version bump
-      run: |
-        git add package.json package-lock.json
-        git commit -m "chore: bump beta version to $(node -p "require('./package.json').version")"
-        git push
-    
-    - name: Publish to npm under beta tag
-      run: npm publish --tag beta
+    - name: Run Windows tests
+      run: npx vitest run test/testdriver/*.test.mjs
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        TD_OS: windows
+
+    - name: Upload test results to Sentry Prevent
+      if: ${{ !cancelled() }}
+      uses: getsentry/prevent-action@v0
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: test-report.junit.xml
+        comment_mode: always
+        check_name: Test Results (Windows)
