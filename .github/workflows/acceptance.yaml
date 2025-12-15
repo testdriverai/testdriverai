@@ -2,11 +2,12 @@ name: Acceptance Tests
 permissions:
     id-token: write
     contents: write
+    pull-requests: write
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   test:
@@ -29,13 +30,40 @@ jobs:
       run: npm ci
     
     - name: Run tests
-      run: npx vitest run test/testdriver/*.test.mjs
+      run: npx vitest run test/testdriver/*.test.mjs --reporter=junit --outputFile=test-results.xml
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
         TD_OS: ${{ matrix.os }}
+    
+    - name: Upload test results artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}
+        path: test-results.xml
+    
     - name: Upload test results to Sentry Prevent
       if: ${{ !cancelled() }}
       uses: getsentry/prevent-action@v0
+
+  report:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    
+    steps:
+    - name: Download all test results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: test-results-*
+        merge-multiple: true
+    
+    - name: Publish Test Results as PR Comment
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      with:
+        files: '*.xml'
+        comment_mode: always
+        check_name: Acceptance Test Results
 
   publish-beta:
     needs: test
