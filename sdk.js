@@ -2655,7 +2655,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     this.emitter.on("show-window", async (url) => {
       if (this.loggingEnabled) {
         console.log("");
-        console.log("Live test execution:");
+        console.log("🔗 Live test execution:");
         if (this.config.CI) {
           // In CI mode, just print the view-only URL
           const u = new URL(url);
@@ -2670,6 +2670,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           console.log(url);
           await this._openBrowser(url);
         }
+        
       }
     });
   }

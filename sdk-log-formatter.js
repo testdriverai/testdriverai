@@ -472,6 +472,37 @@ class SDKLogFormatter {
   formatAsserting(assertion) {
     return this.formatFindingStyle("assert", "Asserting", assertion);
   }
+  /**
+   * Format the assertion result as a subtask line
+   * @param {boolean} passed - Whether assertion passed
+   * @param {string} response - The AI response message
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted result line
+   */
+  formatAssertResult(passed, response, durationMs) {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getResultPrefix());
+    
+    if (passed) {
+      parts.push(chalk.green("passed"));
+    } else {
+      parts.push(chalk.red("failed"));
+    }
+    
+    // Add the response message (trimmed)
+    if (response) {
+      const trimmedResponse = response.trim().split('\n')[0]; // First line only
+      parts.push(chalk.dim(trimmedResponse));
+    }
+    
+    // Add duration
+    if (durationMs) {
+      parts.push(this.formatDurationColored(durationMs, "action"));
+    }
+    
+    return parts.join(" ");
+  }
 
   // Action color mapping (shared between formatAction and formatActionComplete)
   static ACTION_COLORS = {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="1" failures="0" errors="0" time="127.084438917">
-    <testsuite name="test/testdriver/scroll-until-text.test.mjs" timestamp="2025-12-15T21:58:52.469Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="127.084438917">
-        <testcase classname="test/testdriver/scroll-until-text.test.mjs" name="Scroll Until Text Test &gt; should scroll until &quot;testdriver socks&quot; appears" time="127.083370834">
+<testsuites name="vitest tests" tests="21" failures="0" errors="0" time="1127.957527584">
+    <testsuite name="test/testdriver/assert.test.mjs" timestamp="2025-12-15T22:35:46.790Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="39.657407625">
+        <testcase classname="test/testdriver/assert.test.mjs" name="Assert Test &gt; should assert the testdriver login page shows" time="39.656335416">
             <system-out>
 [testdriver] Connecting to sandbox...
 
@@ -11,15 +11,368 @@
 
 [32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
 
-[Debug] View trace: https://testdriver.sentry.io/explore/traces/trace/f384b94e99d8ddc36ae418a9d2aae9cd
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/ce67de5ee3699196fcd6944666c045ac
 
 [32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
 
 [32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
 
-[DASHCAM] Starting dashcam recording on Linux/Mac...
 
-[DASHCAM] Dashcam recording started
+🔗 Live test execution:
+http://localhost:63258?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwczovLzYwODAtaXZkeno1eHRtemRlNnBxMGJreTVlLmUyYi5hcHAvdm5jX2xpdGUuaHRtbD9hdXRvY29ubmVjdD10cnVlJnJlc2l6ZT1zY2FsZSIsInRva2VuIjoiVjNiOHdHOSJ9
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/chrome-extension.test.mjs" timestamp="2025-12-15T22:35:46.791Z" hostname="Ians-MBP.lan" tests="2" failures="0" errors="0" skipped="0" time="148.813060875">
+        <testcase classname="test/testdriver/chrome-extension.test.mjs" name="Chrome Extension Test &gt; should load hello-world Chrome extension from local path" time="83.496224167">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/9ca7263161f302831e6899dde742be0c
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+
+🔗 Live test execution:
+http://localhost:61045?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwczovLzYwODAtaXFhbWtjeTd6ZWRsYnphb3B2M2VoLmUyYi5hcHAvdm5jX2xpdGUuaHRtbD9hdXRvY29ubmVjdD10cnVlJnJlc2l6ZT1zY2FsZSIsInRva2VuIjoiVjNiOHdHOSJ9
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+        <testcase classname="test/testdriver/chrome-extension.test.mjs" name="Chrome Extension Test &gt; should load Loom from Chrome Web Store by extensionId" time="65.314068875">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/c0badb52126af17f641565e766d2f70e
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+
+🔗 Live test execution:
+http://localhost:64546?data=eyJyZXNvbHV0aW9uIjpbMTM2Niw3NjhdLCJ1cmwiOiJodHRwczovLzYwODAtaXBtNHg3eml5emxzZG12Yjl5MG92LmUyYi5hcHAvdm5jX2xpdGUuaHRtbD9hdXRvY29ubmVjdD10cnVlJnJlc2l6ZT1zY2FsZSIsInRva2VuIjoiVjNiOHdHOSJ9
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/drag-and-drop.test.mjs" timestamp="2025-12-15T22:35:46.792Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/drag-and-drop.test.mjs" name="Drag and Drop Test &gt; should drag &quot;New Text Document&quot; to &quot;Recycle Bin&quot;" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/element-not-found.test.mjs" timestamp="2025-12-15T22:35:46.793Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="47.55543775">
+        <testcase classname="test/testdriver/element-not-found.test.mjs" name="Element Not Found Test &gt; should handle non-existent element gracefully without timing out" time="47.55441225">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/82fbdf6b45927caf1e921593365a4305
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/exec-output.test.mjs" timestamp="2025-12-15T22:35:46.793Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/exec-output.test.mjs" name="Exec Output Test &gt; should set date using PowerShell and navigate to calendar" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/exec-pwsh.test.mjs" timestamp="2025-12-15T22:35:46.793Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/exec-pwsh.test.mjs" name="Exec PowerShell Test &gt; should generate random email using PowerShell and enter it" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/focus-window.test.mjs" timestamp="2025-12-15T22:35:46.794Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/focus-window.test.mjs" name="Focus Window Test &gt; should click Microsoft Edge icon and focus Google Chrome" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/formatted-logging.test.mjs" timestamp="2025-12-15T22:35:46.794Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="51.122264875">
+        <testcase classname="test/testdriver/formatted-logging.test.mjs" name="Formatted Logging Test &gt; should demonstrate formatted logs in dashcam replay" time="51.121144209">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/d54e9ad30efed98703588463ee8f4c11
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/hover-image.test.mjs" timestamp="2025-12-15T22:35:46.794Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="107.256010167">
+        <testcase classname="test/testdriver/hover-image.test.mjs" name="Hover Image Test &gt; should click on shopping cart icon and verify empty cart" time="107.254999542">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/a717eb7f3f0f4346abd494b97289b47e
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/hover-text-with-description.test.mjs" timestamp="2025-12-15T22:35:46.794Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="121.018106042">
+        <testcase classname="test/testdriver/hover-text-with-description.test.mjs" name="Hover Text With Description Test &gt; should add TestDriver Hat to cart and verify" time="121.016724208">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/3ed51bd90c4773fd469d24a1149266dc
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/hover-text.test.mjs" timestamp="2025-12-15T22:35:46.795Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="49.434723875">
+        <testcase classname="test/testdriver/hover-text.test.mjs" name="Hover Text Test &gt; should click Sign In and verify error message" time="49.433774292">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/9a3dc5770c0f4b7f69d83539412b4632
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/match-image.test.mjs" timestamp="2025-12-15T22:35:46.795Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/match-image.test.mjs" name="Match Image Test &gt; should match shopping cart image and verify empty cart" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/press-keys.test.mjs" timestamp="2025-12-15T22:35:46.795Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="110.216598">
+        <testcase classname="test/testdriver/press-keys.test.mjs" name="Press Keys Test &gt; should create tabs and navigate using keyboard shortcuts" time="110.215762042">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/0c9332c8896074a06b4f1b8128ef5630
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/prompt.test.mjs" timestamp="2025-12-15T22:35:46.795Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/prompt.test.mjs" name="Prompt Test &gt; should execute AI-driven prompts" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/scroll-keyboard.test.mjs" timestamp="2025-12-15T22:35:46.795Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="97.245463083">
+        <testcase classname="test/testdriver/scroll-keyboard.test.mjs" name="Scroll Keyboard Test &gt; should navigate to webhamster.com and scroll with keyboard" time="97.244255084">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/29d0addf092de54b68fa6752223aa993
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/scroll-until-image.test.mjs" timestamp="2025-12-15T22:35:46.796Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="1" time="0">
+        <testcase classname="test/testdriver/scroll-until-image.test.mjs" name="Scroll Until Image Test &gt; should scroll until brown colored house image appears" time="0">
+            <skipped/>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/scroll-until-text.test.mjs" timestamp="2025-12-15T22:35:46.796Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="124.6890175">
+        <testcase classname="test/testdriver/scroll-until-text.test.mjs" name="Scroll Until Text Test &gt; should scroll until &quot;testdriver socks&quot; appears" time="124.688159875">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/d61fd1f0ed269c2640f804cfc94293ba
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/scroll.test.mjs" timestamp="2025-12-15T22:35:46.796Z" hostname="Ians-MBP.lan" tests="1" failures="0" errors="0" skipped="0" time="102.055685375">
+        <testcase classname="test/testdriver/scroll.test.mjs" name="Scroll Test &gt; should navigate and scroll down the page" time="102.054484292">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/402663abce8bea5c817bf98bd86de797
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="test/testdriver/type.test.mjs" timestamp="2025-12-15T22:35:46.797Z" hostname="Ians-MBP.lan" tests="2" failures="0" errors="0" skipped="0" time="128.893752417">
+        <testcase classname="test/testdriver/type.test.mjs" name="Type Test &gt; should enter standard_user in username field" time="55.932309791">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/51379b0fddb86aa6a9e4482823eceba4
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
+
+[DASHCAM] Failed to update session with dashcam start time: Not Found
+
+            </system-out>
+        </testcase>
+        <testcase classname="test/testdriver/type.test.mjs" name="Type Test &gt; should show validation message when clicking Sign In without password" time="72.960122334">
+            <system-out>
+[testdriver] Connecting to sandbox...
+
+[2m--`new` flag detected, will create a new sandbox[22m
+
+[2mestablishing connection...[22m
+
+[32m🔌[39m [38;2;179;211;52m[1mAuthenticating[22m[39m[2m...[22m
+
+
+🔗 View Trace:
+https://testdriver.sentry.io/explore/traces/trace/4cf00cef72762752ff575966d2fa2a72
+
+[32m🔌[39m [38;2;179;211;52m[1mCreating[22m[39m [38;2;52;211;211mnew sandbox...[39m
+
+[32m🔌[39m [38;2;179;211;52m[1mConnecting[22m[39m [38;2;52;211;211mto sandbox...[39m
 
 [DASHCAM] Failed to update session with dashcam start time: Not Found
 

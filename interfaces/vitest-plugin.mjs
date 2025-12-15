@@ -820,7 +820,8 @@ class TestDriverReporter {
       const testCaseDbId = testCaseResponse.data?.id;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
-      logger.info(`🔗 View test: ${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`);
+      console.log('');
+      console.log(`🔗 Test Report: ${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`);
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }
@@ -839,6 +840,7 @@ class TestDriverReporter {
  * @returns {string} The corresponding web console URL
  */
 function getConsoleUrl(apiRoot) {
+
   if (!apiRoot) return 'https://console.testdriver.ai';
   
   // Production: API on render.com -> Console on testdriver.ai
@@ -847,8 +849,8 @@ function getConsoleUrl(apiRoot) {
   }
   
   // Local development: API on localhost:1337 -> Web on localhost:3001
-  if (apiRoot.includes('localhost:1337') || apiRoot.includes('127.0.0.1:1337')) {
-    return apiRoot.replace(':1337', ':3001');
+  if (apiRoot.includes('ngrok.io')) {
+    return `http://localhost:3001`;
   }
   
   // Ngrok or other tunnels: assume same host, different path structure

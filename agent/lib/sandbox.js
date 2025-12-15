@@ -145,7 +145,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         // Log and store the Sentry trace ID for debugging
         if (reply.traceId) {
           this.traceId = reply.traceId;
-          console.log(`[Debug] View trace: https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
+          console.log('');
+          console.log(`🔗 View Trace:`);
+          console.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
         }
         
         emitter.emit(events.sandbox.authenticated, { traceId: reply.traceId });

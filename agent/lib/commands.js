@@ -215,12 +215,15 @@ const createCommands = (
   };
 
   const assert = async (assertion, shouldThrow = false) => {
+    let assertStartTimeForHandler;
     const handleAssertResponse = (response) => {
-      emitter.emit(events.log.log, response);
+      const { formatter } = require("../../sdk-log-formatter.js");
+      const passed = response.indexOf("The task passed") > -1;
+      const duration = assertStartTimeForHandler ? Date.now() - assertStartTimeForHandler : undefined;
+      
+      emitter.emit(events.log.narration, formatter.formatAssertResult(passed, response, duration), true);
 
-      let valid = response.indexOf("The task passed") > -1;
-
-      if (valid) {
+      if (passed) {
         return true;
       } else {
         if (shouldThrow) {
@@ -238,12 +241,11 @@ const createCommands = (
     const assertingMessage = formatter.formatAsserting(assertion);
     emitter.emit(events.log.log, assertingMessage);
 
-    emitter.emit(events.log.narration, `thinking...`);
-
     // Capture absolute timestamp at the very start of the command
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
     const assertTimestamp = Date.now();
     const assertStartTime = assertTimestamp;
+    assertStartTimeForHandler = assertStartTime;
     
     let response = await sdk.req("assert", {
       expect: assertion,
