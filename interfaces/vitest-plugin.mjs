@@ -631,6 +631,16 @@ class TestDriverReporter {
       // Mark test run as completed to prevent duplicate completion
       pluginState.testRunCompleted = true;
 
+      // Output the test run URL for CI to capture
+      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const consoleUrl = pluginState.apiRoot.replace("testdriver-api.onrender.com", "console.testdriver.ai");
+      if (testRunDbId) {
+        const testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
+        logger.info(`🔗 View test run: ${testRunUrl}`);
+        // Output in a parseable format for CI
+        console.log(`TESTDRIVER_RUN_URL=${testRunUrl}`);
+      }
+
       logger.info(`✅ Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
     } catch (error) {
       logger.error("Failed to complete test run:", error.message);
