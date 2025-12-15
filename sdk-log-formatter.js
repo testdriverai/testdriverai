@@ -187,11 +187,17 @@ class SDKLogFormatter {
    * @returns {string} Formatted exec result line
    */
   formatExecComplete(exitCode, durationMs) {
-    const durationSec = (durationMs / 1000).toFixed(1) + "s";
-    if (exitCode !== 0) {
-      return this.getResultPrefix() + " " + chalk.red(`failed (exit code ${exitCode})`) + " " + chalk.green(`(${durationSec})`);
-    }
-    return this.getResultPrefix() + " " + chalk.green(`complete (exit code 0)`) + " " + chalk.green(`(${durationSec})`);
+    const statusText = exitCode !== 0 
+      ? `failed (exit code ${exitCode})` 
+      : `complete (exit code 0)`;
+    const statusColor = exitCode !== 0 ? chalk.red : chalk.green;
+    
+    return this.formatResultLine(
+      statusText, 
+      statusColor, 
+      { duration: durationMs }, 
+      "action"
+    );
   }
 
   /**
