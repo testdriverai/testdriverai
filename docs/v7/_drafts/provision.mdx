@@ -1,266 +1,329 @@
 # Provision API
 
-The `provision()` function is the easiest way to set up TestDriver for common applications. It automatically handles TestDriver initialization, application launching, and Dashcam recording.
+The `provision` object provides easy setup methods for common applications. These methods automatically handle TestDriver initialization, Dashcam recording, and application launching.
 
 ## Quick Start
 
 ```javascript
-import { test } from 'vitest';
-import { provision } from 'testdriverai/presets';
-
-test('my test', async (context) => {
-  const { testdriver } = await provision('chrome', {
-    url: 'https://example.com'
-  }, context);
-  
-  await testdriver.find('Login button').click();
-});
-```
-
-## API
-
-```typescript
-provision(appType, options, context)
-```
-
-**Parameters:**
-- `appType` - Application type: `'chrome'`, `'vscode'`, `'electron'`, or `'webapp'`
-- `options` - Configuration options (varies by app type)
-- `context` - Vitest test context (from your test function parameter)
-
-**Returns:**
-- `testdriver` - TestDriver instance ready to use
-- `dashcam` - Dashcam instance (if enabled)
-- Additional app-specific properties (like `vscode`, `app`)
-
-## Application Types
-
-### Chrome Browser
-
-```javascript
-const { testdriver } = await provision('chrome', {
-  url: 'https://myapp.com',
-  maximized: true,      // Start maximized (default: true)
-  guest: true,          // Use guest mode (default: true)
-  dashcam: true,        // Enable Dashcam (default: true)
-  os: 'linux'          // Target OS (default: 'linux')
-}, context);
-
-await testdriver.find('username').type('user@example.com');
-await testdriver.find('Login').click();
-```
-
-**Options:**
-- `url` - URL to navigate to (default: 'http://testdriver-sandbox.vercel.app/')
-- `maximized` - Start browser maximized (default: `true`)
-- `guest` - Use guest/incognito mode (default: `true`)
-- `dashcam` - Enable Dashcam recording (default: `true`)
-- `os` - Target OS: `'linux'`, `'mac'`, or `'windows'` (default: `'linux'`)
-
-**Returns:**
-- `testdriver` - TestDriver instance
-- `dashcam` - Dashcam instance (if enabled)
-
-### VS Code
-
-```javascript
-const { testdriver, vscode } = await provision('vscode', {
-  workspace: '/path/to/project',
-  extensions: ['ms-python.python'],
-  dashcam: true,
-  os: 'linux'
-}, context);
-
-await vscode.find('File menu').click();
-await vscode.find('New File').click();
-```
-
-**Options:**
-- `workspace` - Workspace/folder path to open (optional)
-- `extensions` - Array of extension IDs to install (optional)
-- `dashcam` - Enable Dashcam recording (default: `true`)
-- `os` - Target OS (default: `'linux'`)
-
-**Returns:**
-- `testdriver` - TestDriver instance
-- `vscode` - Alias for testdriver (semantic clarity)
-- `dashcam` - Dashcam instance (if enabled)
-
-### Electron
-
-```javascript
-const { testdriver, app } = await provision('electron', {
-  appPath: '/path/to/app',
-  args: ['--enable-logging'],
-  dashcam: true,
-  os: 'linux'
-}, context);
-
-await app.find('main window').click();
-```
-
-**Options:**
-- `appPath` - Path to Electron application (required)
-- `args` - Additional command-line arguments (optional)
-- `dashcam` - Enable Dashcam recording (default: `true`)
-- `os` - Target OS (default: `'linux'`)
-
-**Returns:**
-- `testdriver` - TestDriver instance
-- `app` - Alias for testdriver (semantic clarity)
-- `dashcam` - Dashcam instance (if enabled)
-
-### Web App
-
-Generic wrapper for web applications (currently uses Chrome):
-
-```javascript
-const { testdriver } = await provision('webapp', {
-  url: 'https://example.com',
-  browser: 'chrome'  // Only 'chrome' supported currently
-}, context);
-```
-
-## Complete Example
-
-```javascript
 import { describe, it, expect } from 'vitest';
-import { provision } from 'testdriverai/presets';
+import { TestDriver } from 'testdriverai/lib/vitest/hooks.mjs';
 
-describe('Login Flow', () => {
-  it('should login successfully', async (context) => {
-    // Provision Chrome with your app
-    const { testdriver, dashcam } = await provision('chrome', {
-      url: 'https://myapp.com/login',
-      maximized: true
-    }, context);
+describe('My Test Suite', () => {
+  it('should test Chrome browser', async (context) => {
+    const testdriver = TestDriver(context, { newSandbox: true });
     
-    // Interact with the application
-    await testdriver.find('email input').type('user@example.com');
-    await testdriver.find('password input').type('password123');
+    await testdriver.provision.chrome({
+      url: 'https://example.com'
+    });
+    
     await testdriver.find('Login button').click();
-    
-    // Verify results
-    const result = await testdriver.assert('Welcome message is visible');
-    expect(result).toBeTruthy();
-    
-    // Dashcam automatically stops and saves replay at test end
-    // No cleanup needed - handled automatically!
   });
 });
 ```
 
-## How It Works
+## Available Methods
 
-When you call `provision()`:
+- `provision.chrome()` - Launch Chrome browser with URL
+- `provision.vscode()` - Launch VS Code with optional extensions
+- `provision.installer()` - Download and install applications
+- `provision.electron()` - Launch Electron applications
 
-1. **Creates TestDriver client** - Initializes and connects to sandbox
-2. **Sets up Dashcam** - Authenticates and starts recording (if enabled)
-3. **Launches application** - Opens the specified app with your configuration
-4. **Focuses window** - Ensures the app is ready for interaction
-5. **Returns ready-to-use instances** - Everything is set up and ready
+---
+
+## provision.chrome()
+
+Launch Google Chrome with automatic Dashcam recording.
+
+```javascript
+await testdriver.provision.chrome({
+  url: 'https://myapp.com',
+  maximized: true,
+  extensionPath: '/path/to/extension'
+});
+```
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | string | `'http://testdriver-sandbox.vercel.app/'` | URL to navigate to |
+| `maximized` | boolean | `true` | Start browser maximized |
+| `extensionPath` | string | - | Path to Chrome extension to load |
+
+**Example:**
+
+```javascript
+it('should login to my app', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  await testdriver.provision.chrome({
+    url: 'https://myapp.com/login'
+  });
+  
+  await testdriver.find('email input').type('user@example.com');
+  await testdriver.find('password input').type('password123');
+  await testdriver.find('Login button').click();
+  
+  const result = await testdriver.assert('Dashboard is visible');
+  expect(result).toBeTruthy();
+});
+```
+
+---
+
+## provision.vscode()
+
+Launch Visual Studio Code with optional extension installation. Automatically starts Dashcam recording.
+
+```javascript
+await testdriver.provision.vscode({
+  workspace: '/path/to/project',
+  extensions: ['esbenp.prettier-vscode', 'ms-python.python']
+});
+```
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `workspace` | string | - | Workspace/folder path to open |
+| `extensions` | string[] | `[]` | VS Code extension IDs to install |
+
+**Example - Basic Launch:**
+
+```javascript
+it('should launch VS Code', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  await testdriver.provision.vscode();
+  
+  const result = await testdriver.assert(
+    'Visual Studio Code window is visible on screen'
+  );
+  expect(result).toBeTruthy();
+});
+```
+
+**Example - Install Extensions:**
+
+```javascript
+it('should install and use a VS Code extension', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  // Launch VS Code with extensions installed
+  await testdriver.provision.vscode({
+    extensions: ['esbenp.prettier-vscode']
+  });
+  
+  // Open the extensions panel
+  await testdriver.pressKeys(['ctrl', 'shift', 'x']);
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  const result = await testdriver.assert(
+    'Prettier extension is visible in the extensions panel'
+  );
+  expect(result).toBeTruthy();
+});
+```
+
+---
+
+## provision.installer()
+
+Download and install applications from a URL. Automatically detects file type and runs the appropriate install command.
+
+```javascript
+const filePath = await testdriver.provision.installer({
+  url: 'https://example.com/app.deb',
+  appName: 'MyApp'
+});
+```
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | string | **required** | URL to download the installer from |
+| `filename` | string | auto-detected | Filename to save as |
+| `appName` | string | - | Application name to focus after install |
+| `launch` | boolean | `true` | Whether to launch/focus the app after installation |
+
+**Returns:** `Promise<string>` - Path to the downloaded file
+
+**Supported File Types:**
+
+| Platform | Extensions | Install Command |
+|----------|------------|-----------------|
+| Linux | `.deb` | `sudo dpkg -i && apt-get install -f -y` |
+| Linux | `.rpm` | `sudo rpm -i` |
+| Linux | `.appimage` | `chmod +x` |
+| Linux | `.sh` | `chmod +x && execute` |
+| Windows | `.msi` | `msiexec /i /quiet /norestart` |
+| Windows | `.exe` | `Start-Process /S` |
+| macOS | `.dmg` | `hdiutil attach && cp to /Applications` |
+| macOS | `.pkg` | `installer -pkg -target /` |
+
+**Example - Install .deb Package:**
+
+```javascript
+it('should install a .deb package', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  const filePath = await testdriver.provision.installer({
+    url: 'https://github.com/sharkdp/bat/releases/download/v0.24.0/bat_0.24.0_amd64.deb'
+  });
+  
+  // Verify installation
+  await testdriver.exec('sh', 'bat --version', 10000);
+});
+```
+
+**Example - Download Only (No Auto-Launch):**
+
+```javascript
+it('should download a script', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  const filePath = await testdriver.provision.installer({
+    url: 'https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh',
+    launch: false
+  });
+  
+  // Run custom post-download commands
+  await testdriver.exec('sh', `source "${filePath}"`, 30000);
+});
+```
+
+**Example - Custom Post-Install:**
+
+```javascript
+it('should run AppImage with custom flags', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  const filePath = await testdriver.provision.installer({
+    url: 'https://example.com/app.AppImage',
+    launch: false
+  });
+  
+  // Run with custom arguments
+  await testdriver.exec('sh', `"${filePath}" --no-sandbox &`, 10000);
+  
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  const result = await testdriver.assert('App window is visible');
+  expect(result).toBeTruthy();
+});
+```
+
+---
+
+## provision.electron()
+
+Launch an Electron application.
+
+```javascript
+await testdriver.provision.electron({
+  appPath: '/path/to/app',
+  args: ['--enable-logging']
+});
+```
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `appPath` | string | **required** | Path to Electron application |
+| `args` | string[] | `[]` | Additional command-line arguments |
+
+**Example:**
+
+```javascript
+it('should launch Electron app', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  
+  await testdriver.provision.electron({
+    appPath: '/path/to/my-electron-app',
+    args: ['--enable-logging']
+  });
+  
+  await testdriver.find('main window').click();
+});
+```
+
+---
+
+## How Provision Methods Work
+
+When you call a provision method:
+
+1. **Waits for connection** - Calls `ready()` to ensure sandbox is connected
+2. **Sets up Dashcam** - Creates log file and adds to Dashcam monitoring
+3. **Starts recording** - Automatically starts Dashcam if not already recording
+4. **Launches application** - Opens the specified app with your configuration
+5. **Focuses window** - Ensures the app is ready for interaction
 
 At test end:
 - Dashcam automatically stops and saves replay URL
 - TestDriver automatically disconnects
 - All cleanup is handled for you
 
-## Automatic Lifecycle
-
-The `provision()` function uses Vitest hooks under the hood to manage the entire lifecycle:
+## Complete Example
 
 ```javascript
-// ✅ This:
-const { testdriver } = await provision('chrome', { url }, context);
+import { describe, it, expect } from 'vitest';
+import { TestDriver } from 'testdriverai/lib/vitest/hooks.mjs';
 
-// Is equivalent to manually doing:
-const client = new TestDriver(apiKey, { os: 'linux' });
-await client.auth();
-await client.connect();
+describe('Application Testing', () => {
+  it('should test Chrome login flow', async (context) => {
+    const testdriver = TestDriver(context, { newSandbox: true });
+    
+    await testdriver.provision.chrome({
+      url: 'https://myapp.com/login'
+    });
+    
+    await testdriver.find('email').type('user@example.com');
+    await testdriver.find('password').type('password123');
+    await testdriver.find('Login').click();
+    
+    const result = await testdriver.assert('Welcome message is visible');
+    expect(result).toBeTruthy();
+  });
 
-const dashcam = new Dashcam(client);
-await dashcam.auth();
-await dashcam.start();
+  it('should test VS Code extension', async (context) => {
+    const testdriver = TestDriver(context, { newSandbox: true });
+    
+    await testdriver.provision.vscode({
+      extensions: ['ms-python.python']
+    });
+    
+    await testdriver.pressKeys(['ctrl', 'shift', 'p']);
+    await testdriver.type('Python: Select Interpreter');
+    await testdriver.pressKeys(['enter']);
+    
+    const result = await testdriver.assert('Python interpreter selector is visible');
+    expect(result).toBeTruthy();
+  });
 
-await client.exec('sh', 'google-chrome --start-maximized --guest "https://example.com" &', 30000);
-await client.focusApplication('Google Chrome');
-
-// ... your test code ...
-
-await dashcam.stop();
-await client.disconnect();
-```
-
-That's **15+ lines of boilerplate** reduced to **1 line**!
-
-## TypeScript Support
-
-Full TypeScript definitions included:
-
-```typescript
-import { provision } from 'testdriverai/presets';
-
-test('typed test', async (context) => {
-  const { testdriver } = await provision('chrome', {
-    url: 'https://example.com',
-    maximized: true,
-    os: 'linux' // ✅ Type-safe: only 'linux' | 'mac' | 'windows'
-  }, context);
-  
-  // ✅ Full autocomplete for testdriver methods
-  await testdriver.find('button').click();
+  it('should install and test CLI tool', async (context) => {
+    const testdriver = TestDriver(context, { newSandbox: true });
+    
+    await testdriver.provision.installer({
+      url: 'https://github.com/sharkdp/bat/releases/download/v0.24.0/bat_0.24.0_amd64.deb'
+    });
+    
+    // Verify the tool works
+    await testdriver.exec('sh', 'bat --help', 10000);
+  });
 });
 ```
-
-## Direct Preset Functions
-
-You can also use the individual preset functions directly:
-
-```javascript
-import { chrome, vscode, electron } from 'testdriverai/presets';
-
-// Same as provision('chrome', options, context)
-const { testdriver } = await chrome(context, {
-  url: 'https://example.com'
-});
-
-// Same as provision('vscode', options, context)
-const { vscode } = await vscode(context, {
-  workspace: '/path/to/project'
-});
-```
-
-These are available for when you prefer explicit function names.
 
 ## Best Practices
 
-1. **Always pass context** - Required for automatic cleanup
-2. **Enable dashcam** - Great for debugging test failures
-3. **Use descriptive variables** - `testdriver`, `vscode`, `app` based on what you're testing
-4. **Leverage TypeScript** - Get autocomplete and type safety
-5. **Keep URLs in config** - Use environment variables for different environments
-
-## Error Handling
-
-```javascript
-test('handles errors gracefully', async (context) => {
-  try {
-    const { testdriver } = await provision('chrome', {
-      url: 'https://example.com'
-    }, context);
-    
-    await testdriver.find('button').click();
-  } catch (error) {
-    // Cleanup still happens automatically
-    console.error('Test failed:', error);
-    throw error; // Re-throw to mark test as failed
-  }
-});
-```
+1. **Use `newSandbox: true`** - Each test gets a clean environment
+2. **Enable Dashcam** - Great for debugging test failures (enabled by default)
+3. **Check assertions** - Always verify the expected state after actions
+4. **Use appropriate provision method** - Match the method to your test target
+5. **Handle async properly** - All provision methods return Promises
 
 ## See Also
 
-- [Hooks API](./HOOKS.md) - For more control over lifecycle
-- [Core Classes](./CORE.md) - For full manual control
-- [Migration Guide](../MIGRATION.md) - Upgrading from v6
-- [Examples](../../testdriver/acceptance-sdk/presets-example.test.mjs) - Working examples
+- [Hooks API](./hooks.mdx) - TestDriver initialization
+- [Find API](../api/find.mdx) - Element finding
+- [Exec API](../api/exec.mdx) - Running shell commands
+- [Assert API](../api/assert.mdx) - AI-powered assertions
