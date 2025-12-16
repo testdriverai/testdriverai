@@ -243,6 +243,10 @@ function createCommandDefinitions(agent) {
         "sandbox-instance": Flags.string({
           description: "Specify EC2 instance type for sandbox (e.g., i3.metal)",
         }),
+        ip: Flags.string({
+          description:
+            "Connect directly to a sandbox at the specified IP address",
+        }),
         os: Flags.string({
           description: "Operating system for the sandbox (windows or linux)",
           options: ["windows", "linux"],
