@@ -70,8 +70,6 @@ export function storeTestResult(
   dashcamUrl,
   sessionInfo = {},
 ) {
-  console.log(`📝 Storing test result: ${testName}`);
-  console.log(`   Dashcam URL: ${dashcamUrl || "none"}`);
 
   // Extract replay object ID from dashcam URL
   let replayObjectId = null;
@@ -548,9 +546,7 @@ export async function teardownTest(client, options = {}) {
         };
 
         fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
-        console.log(
-          `[TestHelpers] ✅ Wrote test result to file: ${testResultFile} (testFile: ${testFile}, testOrder: ${testOrder})`,
-        );
+   
       } catch (error) {
         console.error(
           `[TestHelpers] ❌ Failed to write test result file:`,
@@ -570,7 +566,6 @@ export async function teardownTest(client, options = {}) {
       console.log("🔌 Disconnecting client...");
       try {
         await client.disconnect();
-        console.log("✅ Client disconnected");
       } catch (disconnectError) {
         console.error("❌ Error disconnecting:", disconnectError.message);
         // Don't throw - we're already in cleanup

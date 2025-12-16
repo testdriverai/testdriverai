@@ -114,6 +114,7 @@ const createCommands = (
   const niceSeconds = (ms) => {
     return Math.round(ms / 1000);
   };
+  
   const delay = (t) => new Promise((resolve) => setTimeout(resolve, t));
 
   const findImageOnScreen = async (
@@ -214,12 +215,15 @@ const createCommands = (
   };
 
   const assert = async (assertion, shouldThrow = false) => {
+    let assertStartTimeForHandler;
     const handleAssertResponse = (response) => {
-      emitter.emit(events.log.log, response);
+      const { formatter } = require("../../sdk-log-formatter.js");
+      const passed = response.indexOf("The task passed") > -1;
+      const duration = assertStartTimeForHandler ? Date.now() - assertStartTimeForHandler : undefined;
+      
+      emitter.emit(events.log.narration, formatter.formatAssertResult(passed, response, duration), true);
 
-      let valid = response.indexOf("The task passed") > -1;
-
-      if (valid) {
+      if (passed) {
         return true;
       } else {
         if (shouldThrow) {
@@ -237,12 +241,11 @@ const createCommands = (
     const assertingMessage = formatter.formatAsserting(assertion);
     emitter.emit(events.log.log, assertingMessage);
 
-    emitter.emit(events.log.narration, `thinking...`);
-
     // Capture absolute timestamp at the very start of the command
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
     const assertTimestamp = Date.now();
     const assertStartTime = assertTimestamp;
+    assertStartTimeForHandler = assertStartTime;
     
     let response = await sdk.req("assert", {
       expect: assertion,
@@ -298,11 +301,6 @@ const createCommands = (
     
     let { amount = 300 } = options;
     const redrawOptions = extractRedrawOptions(options);
-    
-    emitter.emit(
-      events.log.narration,
-      theme.dim(`scrolling ${direction} ${amount}px...`),
-    );
 
     await redraw.start(redrawOptions);
 
@@ -349,6 +347,14 @@ const createCommands = (
       
       const actionDuration = actionEndTime ? actionEndTime - scrollStartTime : Date.now() - scrollStartTime;
       
+      // Log nested scroll action completion
+      const { formatter } = require("../../sdk-log-formatter.js");
+      emitter.emit(
+        events.log.narration,
+        formatter.formatScrollResult(direction, amount, actionDuration),
+        true,
+      );
+      
       // Wait for redraw and track duration
       const redrawStartTime = Date.now();
       await redraw.wait(2500, redrawOptions);
@@ -363,13 +369,12 @@ const createCommands = (
         );
       }
       
-      // Log action completion with separate durations
-      const { formatter } = require("../../sdk-log-formatter.js");
-      const completionMessage = formatter.formatActionComplete("scroll", `${direction} ${amount}px`, {
-        actionDuration,
-        redrawDuration,
-      });
-      emitter.emit(events.log.log, completionMessage);
+      // Log nested redraw completion
+      emitter.emit(
+        events.log.narration,
+        formatter.formatRedrawComplete(redrawDuration),
+        true,
+      );
       
       // Track interaction success
       const sessionId = sessionInstance?.get();
@@ -464,11 +469,9 @@ const createCommands = (
         double = true;
       }
 
-      emitter.emit(
-        events.log.narration,
-        theme.dim(`${action} ${button} clicking at ${x}, ${y}...`),
-        true,
-      );
+      // Show nested action details
+      const actionText = action.split("-").join("");
+      const clickActionLogStart = Date.now();
 
       x = parseInt(x);
       y = parseInt(y);
@@ -481,6 +484,15 @@ const createCommands = (
       emitter.emit(events.mouseMove, { x, y });
 
       await delay(2500); // wait for the mouse to move
+      
+      // Update the action log with duration
+      const clickMoveEndTime = Date.now();
+      const { formatter } = require("../../sdk-log-formatter.js");
+      emitter.emit(
+        events.log.narration,
+        formatter.formatClickResult(button, x, y, clickMoveEndTime - clickActionLogStart),
+        true,
+      );
 
       if (action !== "hover") {
         // Update timestamp for the actual click action
@@ -540,14 +552,12 @@ const createCommands = (
         await redraw.wait(5000, redrawOptions);
         const redrawDuration = Date.now() - redrawStartTime;
         
-        // Log action completion with separate durations
-        const { formatter } = require("../../sdk-log-formatter.js");
-        const completionMessage = formatter.formatActionComplete(action, elementData.prompt, {
-          actionDuration,
-          redrawDuration,
-          cacheHit: elementData.cacheHit,
-        });
-        emitter.emit(events.log.log, completionMessage);
+        // Log nested redraw completion
+        emitter.emit(
+          events.log.narration,
+          formatter.formatRedrawComplete(redrawDuration),
+          true,
+        );
       } else {
         // For hover action (within click function)
         const redrawStartTime = Date.now();
@@ -555,14 +565,12 @@ const createCommands = (
         const redrawDuration = Date.now() - redrawStartTime;
         const actionDuration = Date.now() - clickStartTime - redrawDuration;
         
-        // Log action completion with separate durations
-        const { formatter } = require("../../sdk-log-formatter.js");
-        const completionMessage = formatter.formatActionComplete(action, elementData.prompt, {
-          actionDuration,
-          redrawDuration,
-          cacheHit: elementData.cacheHit,
-        });
-        emitter.emit(events.log.log, completionMessage);
+        // Log nested redraw completion
+        emitter.emit(
+          events.log.narration,
+          formatter.formatRedrawComplete(redrawDuration),
+          true,
+        );
       }
 
       return;
@@ -867,6 +875,7 @@ const createCommands = (
      * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
      */
     "type": async (text, options = {}) => {
+      const { formatter } = require("../../sdk-log-formatter.js");
       // Capture absolute timestamp at the very start of the command
       // Frontend will calculate relative time using: timestamp - replay.clientStartDate
       const typeTimestamp = Date.now();
@@ -874,11 +883,11 @@ const createCommands = (
       const { delay = 250, secret = false, redraw: redrawOpts, ...elementData } = options;
       const redrawOptions = extractRedrawOptions({ redraw: redrawOpts, ...options });
       
-      // Log masked version if secret, otherwise show actual text
+      // Log parent action with text
       if (secret) {
-        emitter.emit(events.log.narration, theme.dim(`typing secret "****"...`));
+        emitter.emit(events.log.narration, formatter.getPrefix("type") + " " + theme.yellow.bold("Type") + " " + theme.dim(`secret "****"`));
       } else {
-        emitter.emit(events.log.narration, theme.dim(`typing "${text}"...`));
+        emitter.emit(events.log.narration, formatter.getPrefix("type") + " " + theme.yellow.bold("Type") + " " + theme.cyan(`"${text}"`));
       }
 
       await redraw.start(redrawOptions);
@@ -890,6 +899,10 @@ const createCommands = (
 
       // Actually type the text in the sandbox
       await sandbox.send({ type: "write", text, delay, ...elementData });
+      
+      // Update the action log with duration
+      const typeActionEndTime = Date.now();
+      emitter.emit(events.log.narration, formatter.formatTypeResult(text, secret, typeActionEndTime - typeStartTime), true);
       
       // Track interaction
       const sessionId = sessionInstance?.get();
@@ -912,7 +925,17 @@ const createCommands = (
         }
       }
       
+      const redrawStartTime = Date.now();
       await redraw.wait(5000, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Log nested redraw completion
+      emitter.emit(
+        events.log.narration,
+        formatter.formatRedrawComplete(redrawDuration),
+        true,
+      );
+      
       return;
     },
     /**
@@ -926,22 +949,35 @@ const createCommands = (
      * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
      */
     "press-keys": async (keys, options = {}) => {
+      const { formatter } = require("../../sdk-log-formatter.js");
       // Capture absolute timestamp at the very start of the command
       // Frontend will calculate relative time using: timestamp - replay.clientStartDate
       const pressKeysTimestamp = Date.now();
       const pressKeysStartTime = pressKeysTimestamp;
       const redrawOptions = extractRedrawOptions(options);
+      const keysDisplay = Array.isArray(keys) ? keys.join(", ") : keys;
+      
+      // Log parent action
       emitter.emit(
         events.log.narration,
-        theme.dim(
-          `pressing keys: ${Array.isArray(keys) ? keys.join(", ") : keys}...`,
-        ),
+        formatter.getPrefix("pressKeys") + " " + theme.yellow.bold("PressKeys") + " " + theme.cyan(`${keysDisplay}`),
       );
 
       await redraw.start(redrawOptions);
 
+      // Log nested action details
+      const pressKeysActionLogStart = Date.now();
+
       // finally, press the keys
       await sandbox.send({ type: "press", keys });
+      
+      // Update the action log with duration
+      const pressKeysActionEndTime = Date.now();
+      emitter.emit(
+        events.log.narration,
+        formatter.formatPressKeysResult(keysDisplay, pressKeysActionEndTime - pressKeysActionLogStart),
+        true,
+      );
       
       // Track interaction
       const sessionId = sessionInstance?.get();
@@ -962,7 +998,16 @@ const createCommands = (
         }
       }
 
+      const redrawStartTime = Date.now();
       await redraw.wait(5000, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Log nested redraw completion
+      emitter.emit(
+        events.log.narration,
+        formatter.formatRedrawComplete(redrawDuration),
+        true,
+      );
 
       return;
     },
@@ -1486,6 +1531,7 @@ const createCommands = (
      * @param {boolean} [options.silent=false] - Suppress output
      */
     "exec": async (...args) => {
+      const { formatter } = require("../../sdk-log-formatter.js");
       let language, code, timeout, silent;
       
       // Handle both object and positional argument styles
@@ -1496,9 +1542,13 @@ const createCommands = (
         [language = 'pwsh', code, timeout, silent = false] = args;
       }
       
-      emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);
+      // Log parent action
+      emitter.emit(events.log.narration, formatter.getPrefix("action") + " " + theme.cyan.bold("Exec") + " " + theme.magenta(`[${language}]`), true);
 
-      emitter.emit(events.log.log, code);
+      // Log nested command details (truncate to first line)
+      const firstLine = code.split('\n')[0];
+      const codeDisplay = code.includes('\n') ? firstLine + '...' : firstLine;
+      emitter.emit(events.log.log, formatter.formatCodeLine(codeDisplay));
 
       let plat = system.platform();
 
@@ -1525,6 +1575,8 @@ const createCommands = (
           language = "pwsh";
         }
 
+        const execActionLogStart = Date.now();
+
         let result = null;
 
         result = await sandbox.send({
@@ -1532,6 +1584,9 @@ const createCommands = (
           command: code,
           timeout,
         }, timeout || 300000);
+        
+        const execActionEndTime = Date.now();
+        const execDuration = execActionEndTime - execActionLogStart;
 
         // const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
         // if (debugMode) {
@@ -1539,18 +1594,29 @@ const createCommands = (
         // }
 
         if (result.out && result.out.returncode !== 0) {
+          emitter.emit(
+            events.log.narration,
+            formatter.formatExecComplete(result.out.returncode, execDuration),
+            true,
+          );
           throw new MatchError(
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
         } else {
+          emitter.emit(
+            events.log.narration,
+            formatter.formatExecComplete(0, execDuration),
+            true,
+          );
+          
           if (!silent && result.out?.stdout) {
-            emitter.emit(events.log.log, theme.dim(`stdout:`), true);
-            emitter.emit(events.log.log, `${result.out.stdout}`, true);
+            emitter.emit(events.log.log, theme.dim(`  stdout:`), true);
+            emitter.emit(events.log.log, theme.dim(`  ${result.out.stdout}`), true);
           }
 
           if (!silent && result.out.stderr) {
-            emitter.emit(events.log.log, theme.dim(`stderr:`), true);
-            emitter.emit(events.log.log, `${result.out.stderr}`, true);
+            emitter.emit(events.log.log, theme.dim(`  stderr:`), true);
+            emitter.emit(events.log.log, theme.dim(`  ${result.out.stderr}`), true);
           }
 
           return result.out?.stdout?.trim();

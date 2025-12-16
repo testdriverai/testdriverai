@@ -348,7 +348,7 @@ jobs:
     - name: Run TestDriver.ai tests
       env:
         TD_API_KEY: \${{ secrets.TD_API_KEY }}
-      run: npm test
+      run: npx vitest run
 
     - name: Upload test results
       if: always()
@@ -395,11 +395,11 @@ jobs:
   printNextSteps() {
     console.log(chalk.cyan("Next steps:\n"));
     console.log("  1. Run your tests:");
-    console.log(chalk.gray("     npm test\n"));
+    console.log(chalk.gray("     npx vitest run\n"));
     console.log("  2. For CI/CD, add TD_API_KEY to your GitHub repository secrets");
     console.log(chalk.gray("     Settings → Secrets → Actions → New repository secret\n"));
     console.log(
-      chalk.cyan("Learn more at https://docs.testdriver.ai/getting-started\n"),
+      chalk.cyan("Learn more at https://docs.testdriver.ai/v7/getting-started/\n"),
     );
   }
 }

@@ -166,3 +166,4 @@ saves/*
 test-results
 test-results/*
 .vscode
+*.xml
