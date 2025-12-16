@@ -215,6 +215,8 @@ export interface TestDriverOptions {
   apiRoot?: string;
   /** Sandbox resolution (default: '1366x768') */
   resolution?: string;
+  /** Operating system for the sandbox (default: 'linux') */
+  os?: 'windows' | 'linux';
   /** Enable analytics tracking (default: true) */
   analytics?: boolean;
   /** Enable console logging output (default: true) */
@@ -228,6 +230,31 @@ export interface TestDriverOptions {
     /** Threshold for findAll operations (default: 0.05 = 5% difference, 95% similarity) */
     findAll?: number;
   };
+  /** Force creation of a new sandbox (default: true) */
+  newSandbox?: boolean;
+  /** Run in headless mode (default: false) */
+  headless?: boolean;
+  /** Direct IP address to connect to a running sandbox instance */
+  ip?: string;
+  /** Custom AMI ID for sandbox instance (e.g., 'ami-1234') */
+  sandboxAmi?: string;
+  /** EC2 instance type for sandbox (e.g., 'i3.metal') */
+  sandboxInstance?: string;
+  /** Cache key for element finding operations. If provided, enables caching tied to this key */
+  cacheKey?: string;
+  /** Redraw configuration for screen change detection */
+  redraw?: boolean | {
+    /** Enable redraw detection (default: true) */
+    enabled?: boolean;
+    /** Pixel difference threshold for redraw detection */
+    diffThreshold?: number;
+    /** Enable screen redraw detection */
+    screenRedraw?: boolean;
+    /** Enable network activity monitoring */
+    networkMonitor?: boolean;
+  };
+  /** @deprecated Use redraw.diffThreshold instead */
+  redrawThreshold?: number | object;
   /** Additional environment variables */
   environment?: Record<string, any>;
 }
@@ -237,12 +264,18 @@ export interface ConnectOptions {
   sandboxId?: string;
   /** Force creation of a new sandbox */
   newSandbox?: boolean;
-  /** Direct IP address to connect to */
+  /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
-  /** Custom AMI for sandbox */
+  /** Custom AMI ID for sandbox instance (e.g., 'ami-1234') */
   sandboxAmi?: string;
-  /** Instance type for sandbox */
+  /** EC2 instance type for sandbox (e.g., 'i3.metal') */
   sandboxInstance?: string;
+  /** Operating system for the sandbox (default: 'linux') */
+  os?: 'windows' | 'linux';
+  /** Run in headless mode (default: false) */
+  headless?: boolean;
+  /** Reuse recent connection if available (default: true) */
+  reuseConnection?: boolean;
 }
 
 export interface SandboxInstance {
