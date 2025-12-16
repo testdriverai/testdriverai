@@ -1702,26 +1702,49 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
        * @returns {Promise<void>}
        */
       vscode: async (options = {}) => {
-        this._ensureConnected();
+        // Automatically wait for connection to be ready
+        await this.ready();
         
         const {
           workspace = null,
           extensions = [],
         } = options;
 
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+
+        // If dashcam is available, set up file logging
+        if (this._dashcam) {
+          // Create the log file on the remote machine
+          const logPath = this.os === "windows" 
+            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
+            : "/tmp/testdriver.log";
+          
+          const createLogCmd = this.os === "windows"
+            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
+            : `touch ${logPath}`;
+          
+          await this.exec(shell, createLogCmd, 10000, true);
+          await this._dashcam.addFileLog(logPath, "TestDriver Log");
+        }
+        
+        // Automatically start dashcam if not already recording
+        if (!this._dashcam || !this._dashcam.recording) {
+          await this.dashcam.start();
+        }
+
         // Install extensions if provided
         for (const extension of extensions) {
-          const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+          console.log(`[provision.vscode] Installing extension: ${extension}`);
           await this.exec(
             shell,
-            `code --install-extension ${extension}`,
-            60000,
+            `code --install-extension ${extension} --force`,
+            120000,
             true
           );
+          console.log(`[provision.vscode] ✅ Extension installed: ${extension}`);
         }
 
         // Launch VS Code
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
         const workspaceArg = workspace ? `"${workspace}"` : '';
         
         if (this.os === 'windows') {
@@ -1738,8 +1761,146 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           );
         }
 
+        // Wait for VS Code to start up
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
         // Wait for VS Code to be ready
         await this.focusApplication('Visual Studio Code');
+      },
+
+      /**
+       * Download and install an application
+       * @param {Object} options - Installer options
+       * @param {string} options.url - URL to download the installer from
+       * @param {string} [options.filename] - Filename to save as (auto-detected from URL if not provided)
+       * @param {string} [options.appName] - Application name to focus after install
+       * @param {boolean} [options.launch=true] - Whether to launch the app after installation
+       * @returns {Promise<string>} Path to the downloaded file
+       * @example
+       * // Install a .deb package on Linux (auto-detected)
+       * await testdriver.provision.installer({
+       *   url: 'https://example.com/app.deb',
+       *   appName: 'MyApp'
+       * });
+       * 
+       * @example
+       * // Download and run custom commands
+       * const filePath = await testdriver.provision.installer({
+       *   url: 'https://example.com/app.AppImage',
+       *   launch: false
+       * });
+       * await testdriver.exec('sh', `chmod +x "${filePath}" && "${filePath}" &`, 10000);
+       */
+      installer: async (options = {}) => {
+        // Automatically wait for connection to be ready
+        await this.ready();
+        
+        const {
+          url,
+          filename,
+          appName,
+          launch = true,
+        } = options;
+
+        if (!url) {
+          throw new Error('[provision.installer] url is required');
+        }
+
+        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+
+        // If dashcam is available, set up file logging
+        if (this._dashcam) {
+          const logPath = this.os === "windows" 
+            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
+            : "/tmp/testdriver.log";
+          
+          const createLogCmd = this.os === "windows"
+            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
+            : `touch ${logPath}`;
+          
+          await this.exec(shell, createLogCmd, 10000, true);
+          await this._dashcam.addFileLog(logPath, "TestDriver Log");
+        }
+        
+        // Automatically start dashcam if not already recording
+        if (!this._dashcam || !this._dashcam.recording) {
+          await this.dashcam.start();
+        }
+
+        // Determine filename from URL if not provided
+        const urlObj = new URL(url);
+        const detectedFilename = filename || urlObj.pathname.split('/').pop() || 'installer';
+        
+        // Determine download directory and full path
+        const downloadDir = this.os === 'windows' 
+          ? 'C:\\Users\\testdriver\\Downloads'
+          : '/tmp';
+        const filePath = this.os === 'windows'
+          ? `${downloadDir}\\${detectedFilename}`
+          : `${downloadDir}/${detectedFilename}`;
+
+        console.log(`[provision.installer] Downloading ${url}...`);
+
+        // Download the file
+        if (this.os === 'windows') {
+          await this.exec(
+            shell,
+            `Invoke-WebRequest -Uri "${url}" -OutFile "${filePath}"`,
+            300000, // 5 min timeout for download
+            true
+          );
+        } else {
+          await this.exec(
+            shell,
+            `curl -L -o "${filePath}" "${url}"`,
+            300000,
+            true
+          );
+        }
+
+        console.log(`[provision.installer] ✅ Downloaded to ${filePath}`);
+
+        // Auto-detect install command based on file extension
+        const ext = detectedFilename.split('.').pop()?.toLowerCase();
+        let installCommand = null;
+        
+        if (this.os === 'windows') {
+          if (ext === 'msi') {
+            installCommand = `Start-Process msiexec -ArgumentList '/i', '"${filePath}"', '/quiet', '/norestart' -Wait`;
+          } else if (ext === 'exe') {
+            installCommand = `Start-Process "${filePath}" -ArgumentList '/S' -Wait`;
+          }
+        } else if (this.os === 'linux') {
+          if (ext === 'deb') {
+            installCommand = `sudo dpkg -i "${filePath}" && sudo apt-get install -f -y`;
+          } else if (ext === 'rpm') {
+            installCommand = `sudo rpm -i "${filePath}"`;
+          } else if (ext === 'appimage') {
+            installCommand = `chmod +x "${filePath}"`;
+          } else if (ext === 'sh') {
+            installCommand = `chmod +x "${filePath}" && "${filePath}"`;
+          }
+        } else if (this.os === 'darwin') {
+          if (ext === 'dmg') {
+            installCommand = `hdiutil attach "${filePath}" -mountpoint /Volumes/installer && cp -R /Volumes/installer/*.app /Applications/ && hdiutil detach /Volumes/installer`;
+          } else if (ext === 'pkg') {
+            installCommand = `sudo installer -pkg "${filePath}" -target /`;
+          }
+        }
+
+        if (installCommand) {
+          console.log(`[provision.installer] Installing...`);
+          await this.exec(shell, installCommand, 300000, true);
+          console.log(`[provision.installer] ✅ Installation complete`);
+        }
+
+        // Launch and focus the app if appName is provided and launch is true
+        if (appName && launch) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          await this.focusApplication(appName);
+        }
+
+        return filePath;
       },
 
       /**
@@ -2606,6 +2767,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     createMarkdownLogger(this.emitter);
 
     // Set up basic event logging
+    // Note: We only console.log here - the console spy in vitest/hooks.mjs 
+    // handles forwarding to sandbox. This prevents duplicate output to server.
     this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
       if (event === events.log.debug && !debugMode) return;
@@ -2614,9 +2777,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           ? `[${this.testContext}] ${message}`
           : message;
         console.log(prefixedMessage);
-        
-        // Also forward to sandbox for dashcam
-        this._forwardLogToSandbox(prefixedMessage);
       }
     });
 
@@ -2673,36 +2833,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         
       }
     });
-  }
-
-  /**
-   * Forward log message to sandbox for debugger display
-   * @private
-   * @param {string} message - Log message to forward
-   */
-  _forwardLogToSandbox(message) {
-    try {
-      // Only forward if sandbox is connected
-      if (this.sandbox && this.sandbox.instanceSocketConnected) {
-        // Don't send objects as they cause base64 encoding errors
-        if (typeof message === "object") {
-          return;
-        }
-
-        // Add test context prefix if available
-        const prefixedMessage = this.testContext
-          ? `[${this.testContext}] ${message}`
-          : message;
-
-        this.sandbox.send({
-          type: "output",
-          output: Buffer.from(prefixedMessage).toString("base64"),
-        });
-      }
-    } catch {
-      // Silently fail to avoid breaking the log flow
-      // console.error("Error forwarding log to sandbox:", error);
-    }
   }
 
   /**

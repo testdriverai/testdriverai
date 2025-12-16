@@ -192,15 +192,8 @@
   "groups": [
     {
       "group": "Getting Started",
-      "icon": "rocket",
       "pages": [
-        "/v7/getting-started/quickstart"
-      ]
-    },
-    {
-      "group": "Guides",
-      "icon": "book",
-      "pages": [
+        "/v7/getting-started/quickstart",
         "/v7/getting-started/writing-tests",
         "/v7/getting-started/running-tests",
         "/v7/getting-started/debugging-tests",
@@ -209,7 +202,6 @@
     },
     {
       "group": "Examples",
-      "icon": "code",
       "pages": [
         "/v7/presets/chrome",
         "/v7/presets/chrome-extension",
@@ -218,8 +210,7 @@
       ]
     },
     {
-      "group": "Features",
-      "icon": "layer-group",
+      "group": "Guides",
       "pages": [
         {
           "group": "Selectorless Testing",
