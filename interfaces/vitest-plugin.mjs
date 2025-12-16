@@ -403,14 +403,7 @@ function registerExitHandlers() {
     await handleProcessExit();
     process.exit(143); // Standard exit code for SIGTERM
   });
-
-  // Handle unexpected exits
-  process.on("beforeExit", async () => {
-    // Only handle if test run is still running (hasn't been completed normally)
-    if (pluginState.testRun && !pluginState.testRunCompleted) {
-      await handleProcessExit();
-    }
-  });
+  
 }
 
 /**
