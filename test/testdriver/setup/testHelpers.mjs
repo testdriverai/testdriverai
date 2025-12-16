@@ -6,7 +6,6 @@
 import crypto from "crypto";
 import { config } from "dotenv";
 import fs from "fs";
-import os from "os";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";
@@ -50,85 +49,6 @@ console.log(
   "   TD_OS:",
   process.env.TD_OS || "Not set (will default to linux)",
 );
-
-// Global test results storage
-const testResults = {
-  tests: [],
-  startTime: Date.now(),
-};
-
-/**
- * Store test result with dashcam URL
- * @param {string} testName - Name of the test
- * @param {string} testFile - Test file path
- * @param {string|null} dashcamUrl - Dashcam URL if available
- * @param {Object} sessionInfo - Session information
- */
-export function storeTestResult(
-  testName,
-  testFile,
-  dashcamUrl,
-  sessionInfo = {},
-) {
-
-  // Extract replay object ID from dashcam URL
-  let replayObjectId = null;
-  if (dashcamUrl) {
-    const replayIdMatch = dashcamUrl.match(/\/replay\/([^?]+)/);
-    replayObjectId = replayIdMatch ? replayIdMatch[1] : null;
-    if (replayObjectId) {
-      console.log(`   Replay Object ID: ${replayObjectId}`);
-    }
-  }
-
-  testResults.tests.push({
-    name: testName,
-    file: testFile,
-    dashcamUrl,
-    replayObjectId,
-    sessionId: sessionInfo.sessionId,
-    timestamp: new Date().toISOString(),
-  });
-}
-
-/**
- * Get all test results
- * @returns {Object} All collected test results
- */
-export function getTestResults() {
-  return {
-    ...testResults,
-    endTime: Date.now(),
-    duration: Date.now() - testResults.startTime,
-  };
-}
-
-/**
- * Save test results to a JSON file
- * @param {string} outputPath - Path to save the results
- */
-export function saveTestResults(outputPath = "test-results/sdk-summary.json") {
-  const results = getTestResults();
-  const dir = path.dirname(outputPath);
-
-  // Create directory if it doesn't exist
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
-  console.log(`\n📊 Test results saved to: ${outputPath}`);
-
-  // Also print dashcam URLs to console
-  console.log("\n🎥 Dashcam URLs:");
-  results.tests.forEach((test) => {
-    if (test.dashcamUrl) {
-      console.log(`  ${test.name}: ${test.dashcamUrl}`);
-    }
-  });
-
-  return results;
-}
 
 /**
  * Intercept console logs and forward to TestDriver sandbox
@@ -494,21 +414,9 @@ export async function teardownTest(client, options = {}) {
       console.log("⏭️  Postrun skipped (disabled in options)");
     }
 
-    // Write test result to a file for the reporter to pick up (cross-process communication)
+    // Use Vitest's task.meta for cross-process communication with the reporter
     if (options.task) {
-      const testResultFile = path.join(
-        os.tmpdir(),
-        "testdriver-results",
-        `${options.task.id}.json`,
-      );
-
       try {
-        // Ensure directory exists
-        const dir = path.dirname(testResultFile);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-
         // Get test file path - make it relative to project root
         const absolutePath =
           options.task.file?.filepath || options.task.file?.name || "unknown";
@@ -523,33 +431,15 @@ export async function teardownTest(client, options = {}) {
           testOrder = options.task.suite.tasks.indexOf(options.task);
         }
 
-        // Note: Duration is calculated by Vitest and passed via result.duration
-        // We include it in the test result file so the reporter can use it
-
-        // Get duration from Vitest result
-        const result = options.task.result?.();
-        const duration = result?.duration || 0;
-
-        // Write test result with dashcam URL, platform, and metadata
-        const testResult = {
-          testId: options.task.id,
-          testName: options.task.name,
-          testFile: testFile,
-          testOrder: testOrder,
-          dashcamUrl: dashcamUrl,
-          replayObjectId: dashcamUrl
-            ? dashcamUrl.match(/\/replay\/([^?]+)/)?.[1]
-            : null,
-          platform: client.os, // Include platform from SDK client (source of truth)
-          timestamp: Date.now(),
-          duration: duration, // Include duration from Vitest
-        };
-
-        fs.writeFileSync(testResultFile, JSON.stringify(testResult, null, 2));
-   
+        // Set metadata on task for the reporter to pick up
+        options.task.meta.dashcamUrl = dashcamUrl;
+        options.task.meta.platform = client.os; // Include platform from SDK client (source of truth)
+        options.task.meta.testFile = testFile;
+        options.task.meta.testOrder = testOrder;
+        options.task.meta.sessionId = client.getSessionId?.() || null;
       } catch (error) {
         console.error(
-          `[TestHelpers] ❌ Failed to write test result file:`,
+          `[TestHelpers] ❌ Failed to set test metadata:`,
           error.message,
         );
       }

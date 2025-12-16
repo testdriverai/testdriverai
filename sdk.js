@@ -2188,10 +2188,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     const absoluteTimestamp = Date.now();
     const startTime = absoluteTimestamp;
 
-    // Log finding all action
     const { events } = require("./agent/events.js");
-    const findingMessage = formatter.formatElementsFinding(description);
-    this.emitter.emit(events.log.log, findingMessage);
 
     try {
       const screenshot = await this.system.captureScreenBase64();
@@ -2257,16 +2254,16 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       const duration = Date.now() - startTime;
 
       if (response && response.elements && response.elements.length > 0) {
-        // Log found elements
-        const foundMessage = formatter.formatElementsFound(
+        // Single log at the end - found elements
+        const formattedMessage = formatter.formatFindAllSingleLine(
           description,
           response.elements.length,
           {
-            duration: `${duration}ms`,
+            duration: duration,
             cacheHit: response.cached || false,
           },
         );
-        this.emitter.emit(events.log.log, foundMessage);
+        this.emitter.emit(events.log.narration, formattedMessage, true);
 
         // Create Element instances for each found element
         const elements = response.elements.map((elementData) => {
@@ -2316,7 +2313,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         // Log debug information when elements are found
         if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
-          const { events } = require("./agent/events.js");
           this.emitter.emit(
             events.log.debug,
             `✓ Found ${elements.length} element(s): "${description}"`,
@@ -2330,6 +2326,19 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         return elements;
       } else {
+        const duration = Date.now() - startTime;
+        
+        // Single log at the end - no elements found
+        const formattedMessage = formatter.formatFindAllSingleLine(
+          description,
+          0,
+          {
+            duration: duration,
+            cacheHit: response?.cached || false,
+          },
+        );
+        this.emitter.emit(events.log.narration, formattedMessage, true);
+
         // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
         if (sessionId && this.sandbox?.send) {
@@ -2354,6 +2363,18 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         return [];
       }
     } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      // Single log at the end - error
+      const formattedMessage = formatter.formatFindAllSingleLine(
+        description,
+        0,
+        {
+          duration: duration,
+        },
+      );
+      this.emitter.emit(events.log.narration, formattedMessage, true);
+
       // Track findAll error interaction (fire-and-forget, don't block)
       const sessionId = this.getSessionId();
       if (sessionId && this.sandbox?.send) {
@@ -2371,8 +2392,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         });
       }
 
-      const { events } = require("./agent/events.js");
-      this.emitter.emit(events.log.log, `Error in findAll: ${error.message}`);
       return [];
     }
   }
@@ -2771,6 +2790,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     // handles forwarding to sandbox. This prevents duplicate output to server.
     this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
+
+      if (event.includes("markdown")) {
+        return;
+      }
+
       if (event === events.log.debug && !debugMode) return;
       if (this.loggingEnabled && message) {
         const prefixedMessage = this.testContext
@@ -2924,35 +2948,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
     // Get or create session ID using the agent's newSession method
     let sessionId = this.agent?.sessionInstance?.get() || null;
-    
-    // If no session exists, create one using the agent's method
-    if (!sessionId && this.agent?.newSession) {
-      try {
-        await this.agent.newSession();
-        sessionId = this.agent.sessionInstance.get();
-        
-        // Save session ID to file for reuse across test runs
-        if (sessionId) {
-          const sessionFile = path.join(os.homedir(), '.testdriverai-session');
-          fs.writeFileSync(sessionFile, sessionId, { encoding: 'utf-8' });
-        }
-      } catch (error) {
-        // Log but don't fail - tests can run without a session
-        console.warn('Failed to create session:', error.message);
-      }
-    }
-    
-    // If still no session, try reading from file (for reporter/separate processes)
-    if (!sessionId) {
-      try {
-        const sessionFile = path.join(os.homedir(), '.testdriverai-session');
-        if (fs.existsSync(sessionFile)) {
-          sessionId = fs.readFileSync(sessionFile, 'utf-8').trim();
-        }
-      } catch (error) {
-        // Ignore file read errors
-      }
-    }
 
     const data = {
       runId: options.runId,
@@ -3094,8 +3089,25 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
     this.analytics.track("sdk.act", { task });
 
-    // Use the agent's exploratoryLoop method directly
-    return await this.agent.exploratoryLoop(task, false, true, false);
+    const { events } = require("./agent/events.js");
+    const startTime = Date.now();
+
+    // Emit scoped start marker for act()
+    this.emitter.emit(events.log.log, formatter.formatActStart(task));
+
+    try {
+      // Use the agent's exploratoryLoop method directly
+      const result = await this.agent.exploratoryLoop(task, false, true, false);
+      
+      const duration = Date.now() - startTime;
+      this.emitter.emit(events.log.log, formatter.formatActComplete(duration, true));
+      
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.emitter.emit(events.log.log, formatter.formatActComplete(duration, false, error.message));
+      throw error;
+    }
   }
 
   /**

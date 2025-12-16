@@ -300,6 +300,9 @@ marked.use(
 );
 
 const createMarkdownLogger = (emitter) => {
+  // Indent prefix for streaming AI thoughts - makes it visually distinct and scoped
+  const streamIndent = "   ";
+
   const markedParsePartial = (markdown, start = 0, end = 0) => {
     let result = markdown.trimEnd().split("\n").slice(start, end);
     if (end <= 0) {
@@ -307,7 +310,8 @@ const createMarkdownLogger = (emitter) => {
     }
     result = result.join("\n");
 
-    return marked.parse(result).replace(/^/gm, spaceChar).trimEnd();
+    // Use streamIndent for streaming output to make it visually scoped
+    return marked.parse(result).replace(/^/gm, streamIndent).trimEnd();
   };
 
   // Event-based markdown streaming with buffering
@@ -360,7 +364,8 @@ const createMarkdownLogger = (emitter) => {
       diff = censorSensitiveDataDeep(diff);
       process.stdout.write(diff);
     }
-    process.stdout.write("\n\n");
+    // Use console.log for the final newlines so it gets captured by vitest
+    console.log("");
 
     // Clean up the stream
     activeStreams.delete(streamId);
