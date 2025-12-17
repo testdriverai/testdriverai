@@ -355,7 +355,7 @@ class TestDriverAgent extends EventEmitter2 {
           image,
         },
         (chunk) => {
-          if (chunk.type === "data") {
+          if (chunk.type === "data" && chunk.data) {
             this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
           }
         },
@@ -419,9 +419,6 @@ class TestDriverAgent extends EventEmitter2 {
     let mousePosition = await this.system.getMousePosition();
     let activeWindow = await this.system.activeWin();
 
-    const streamId = `check-${Date.now()}`;
-    this.emitter.emit(events.log.markdown.start, streamId);
-
     let response = await this.sdk.req(
       "check",
       {
@@ -429,15 +426,10 @@ class TestDriverAgent extends EventEmitter2 {
         images,
         mousePosition,
         activeWindow,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
+      }
     );
 
-    this.emitter.emit(events.log.markdown.end, streamId);
+    this.emitter.emit(events.log.markdown.static, response.data);
 
     this.lastScreenshot = thisScreenshot;
 
@@ -891,9 +883,6 @@ commands:
 
     this.lastScreenshot = await this.system.captureScreenBase64();
 
-    const streamId = `input-${Date.now()}`;
-    this.emitter.emit(events.log.markdown.start, streamId);
-
     let message = await this.sdk.req(
       "input",
       {
@@ -901,15 +890,10 @@ commands:
         mousePosition: await this.system.getMousePosition(),
         activeWindow: await this.system.activeWin(),
         image: this.lastScreenshot,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
+      }
     );
 
-    this.emitter.emit(events.log.markdown.end, streamId);
+    this.emitter.emit(events.log.log, message.data);
 
     if (message && message.data) {
       await this.aiExecute(message.data, validateAndLoop, dry, shouldSave);

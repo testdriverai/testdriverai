@@ -301,7 +301,7 @@ marked.use(
 
 const createMarkdownLogger = (emitter) => {
   // Indent prefix for streaming AI thoughts - makes it visually distinct and scoped
-  const streamIndent = "   ";
+  const streamIndent = "";
 
   const markedParsePartial = (markdown, start = 0, end = 0) => {
     let result = markdown.trimEnd().split("\n").slice(start, end);
@@ -389,7 +389,7 @@ const createMarkdownLogger = (emitter) => {
   });
 };
 
-const spaceChar = "    ";
+const spaceChar = "   ";
 
 module.exports = {
   logger,

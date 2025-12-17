@@ -1,6 +1,5 @@
 import { execSync } from "child_process";
 import crypto from "crypto";
-import fs from "fs";
 import { createRequire } from "module";
 import path from "path";
 import { setTestRunInfo } from "./shared-test-state.mjs";
@@ -668,6 +667,7 @@ class TestDriverReporter {
     const dashcamUrl = meta.dashcamUrl || null;
     const sessionId = meta.sessionId || null;
     const platform = meta.platform || null;
+    const sandboxId = meta.sandboxId || null;
     let testFile = meta.testFile || "unknown";
     const testOrder = meta.testOrder !== undefined ? meta.testOrder : 0;
 
@@ -736,6 +736,11 @@ class TestDriverReporter {
       // Add sessionId if available
       if (sessionId) {
         testCaseData.sessionId = sessionId;
+      }
+
+      // Add sandboxId if available (for linking to TdSandbox)
+      if (sandboxId) {
+        testCaseData.sandboxId = sandboxId;
       }
 
       // Only include replayUrl if we have a valid dashcam URL

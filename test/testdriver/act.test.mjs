@@ -16,7 +16,9 @@ describe("Act Test", () => {
     });
 
     // Use act to search for testdriver
-    await testdriver.act("click on the empty search box, type 'testdriver', and hit enter");
+    let actRes = await testdriver.act("click on the empty search box, type 'testdriver', and hit enter. do not click the plus button in the search bar");
+
+    console.log("Act response:", actRes);
 
     // Assert the search results are displayed
     const result = await testdriver.assert(
