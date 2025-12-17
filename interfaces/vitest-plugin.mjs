@@ -1,8 +1,6 @@
 import { execSync } from "child_process";
 import crypto from "crypto";
-import fs from "fs";
 import { createRequire } from "module";
-import os from "os";
 import path from "path";
 import { setTestRunInfo } from "./shared-test-state.mjs";
 
@@ -662,76 +660,19 @@ class TestDriverReporter {
     
     logger.debug(`Calculated duration: ${duration}ms (startTime: ${testCase?.startTime}, now: ${Date.now()})`);
 
-    // Read test metadata from file (cross-process communication)
-    let dashcamUrl = null;
-    let sessionId = null;
-    let testFile = "unknown";
-    let testOrder = 0;
+    // Read test metadata from Vitest's task.meta (set in test hooks)
+    const meta = test.meta();
+    logger.debug(`Test meta for ${test.id}:`, meta);
 
-    const testResultFile = path.join(
-      os.tmpdir(),
-      "testdriver-results",
-      `${test.id}.json`,
-    );
+    const dashcamUrl = meta.dashcamUrl || null;
+    const sessionId = meta.sessionId || null;
+    const platform = meta.platform || null;
+    const sandboxId = meta.sandboxId || null;
+    let testFile = meta.testFile || "unknown";
+    const testOrder = meta.testOrder !== undefined ? meta.testOrder : 0;
 
-    logger.debug(`Looking for test result file with test.id: ${test.id}`);
-    logger.debug(`Test result file path: ${testResultFile}`);
-
-    try {
-      if (fs.existsSync(testResultFile)) {
-        const testResult = JSON.parse(fs.readFileSync(testResultFile, "utf-8"));
-        dashcamUrl = testResult.dashcamUrl || null;
-        const platform = testResult.platform || null;
-        sessionId = testResult.sessionId || null;
-        const absolutePath =
-          testResult.testFile ||
-          test.file?.filepath ||
-          test.file?.name ||
-          "unknown";
-        // Make path relative to project root
-        testFile = pluginState.projectRoot && absolutePath !== "unknown"
-          ? path.relative(pluginState.projectRoot, absolutePath)
-          : absolutePath;
-        testOrder =
-          testResult.testOrder !== undefined ? testResult.testOrder : 0;
-        // Don't override duration from file - use Vitest's result.duration
-        // duration is already set above from result.duration
-
-        // Update test run platform from first test that reports it
-        if (platform && !pluginState.detectedPlatform) {
-          pluginState.detectedPlatform = platform;
-        }
-
-        // Clean up the file after reading
-        try {
-          fs.unlinkSync(testResultFile);
-        } catch {
-          // Ignore cleanup errors
-        }
-      } else {
-        logger.debug(`No result file found for test: ${test.id}`);
-        // Fallback to test object properties - try multiple sources
-        // In Vitest, the file path is on test.module.task.filepath
-        const absolutePath =
-          test.module?.task?.filepath ||
-          test.module?.file?.filepath ||
-          test.module?.file?.name ||
-          test.file?.filepath ||
-          test.file?.name ||
-          test.suite?.file?.filepath ||
-          test.suite?.file?.name ||
-          test.location?.file ||
-          "unknown";
-        // Make path relative to project root
-        testFile = pluginState.projectRoot && absolutePath !== "unknown"
-          ? path.relative(pluginState.projectRoot, absolutePath)
-          : absolutePath;
-        logger.debug(`Resolved testFile: ${testFile}`);
-      }
-    } catch (error) {
-      logger.error("Failed to read test result file:", error.message);
-      // Fallback to test object properties - try multiple sources
-      // In Vitest, the file path is on test.module.task.filepath
+    // If testFile not in meta, fallback to test object properties
+    if (testFile === "unknown") {
       const absolutePath =
         test.module?.task?.filepath ||
         test.module?.file?.filepath ||
@@ -742,11 +683,15 @@ class TestDriverReporter {
         test.suite?.file?.name ||
         test.location?.file ||
         "unknown";
-      // Make path relative to project root
       testFile = pluginState.projectRoot && absolutePath !== "unknown"
         ? path.relative(pluginState.projectRoot, absolutePath)
         : absolutePath;
       logger.debug(`Resolved testFile from fallback: ${testFile}`);
+    }
+
+    // Update test run platform from first test that reports it
+    if (platform && !pluginState.detectedPlatform) {
+      pluginState.detectedPlatform = platform;
     }
 
     // Get test run info from environment variables
@@ -791,6 +736,11 @@ class TestDriverReporter {
       // Add sessionId if available
       if (sessionId) {
         testCaseData.sessionId = sessionId;
+      }
+
+      // Add sandboxId if available (for linking to TdSandbox)
+      if (sandboxId) {
+        testCaseData.sandboxId = sandboxId;
       }
 
       // Only include replayUrl if we have a valid dashcam URL

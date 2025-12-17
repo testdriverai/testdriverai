@@ -17,7 +17,6 @@ const diff = require("diff");
 
 // global utilities
 const generator = require("./lib/generator.js");
-const promptCache = require("./lib/cache.js");
 const theme = require("./lib/theme.js");
 const SourceMapper = require("./lib/source-mapper.js");
 
@@ -356,7 +355,7 @@ class TestDriverAgent extends EventEmitter2 {
           image,
         },
         (chunk) => {
-          if (chunk.type === "data") {
+          if (chunk.type === "data" && chunk.data) {
             this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
           }
         },
@@ -420,9 +419,6 @@ class TestDriverAgent extends EventEmitter2 {
     let mousePosition = await this.system.getMousePosition();
     let activeWindow = await this.system.activeWin();
 
-    const streamId = `check-${Date.now()}`;
-    this.emitter.emit(events.log.markdown.start, streamId);
-
     let response = await this.sdk.req(
       "check",
       {
@@ -430,15 +426,10 @@ class TestDriverAgent extends EventEmitter2 {
         images,
         mousePosition,
         activeWindow,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
+      }
     );
 
-    this.emitter.emit(events.log.markdown.end, streamId);
+    this.emitter.emit(events.log.markdown.static, response.data);
 
     this.lastScreenshot = thisScreenshot;
 
@@ -869,8 +860,7 @@ commands:
     currentTask,
     dry = false,
     validateAndLoop = false,
-    shouldSave = true,
-    useCache = true,
+    shouldSave = true
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
@@ -889,55 +879,9 @@ commands:
 
     this.tasks.push(currentTask);
 
-    // Check cache first (if enabled via parameter)
-    const cachedYaml = useCache ? promptCache.readCache(currentTask) : null;
-
-    if (cachedYaml) {
-      // Cache hit - load and execute the cached YAML file
-      this.emitter.emit(
-        events.log.debug,
-        `Using cached response for prompt: "${currentTask}"`,
-      );
-      this.emitter.emit(events.log.log, theme.dim("(using cached response)"));
-
-      try {
-        // Load the YAML using hydrateFromYML
-        const parsed = await generator.hydrateFromYML(
-          cachedYaml,
-          this.sessionInstance,
-        );
-
-        // Execute the commands from the first step
-        if (parsed.steps && parsed.steps.length > 0) {
-          const step = parsed.steps[0];
-          if (step.commands) {
-            await this.executeCommands(
-              step.commands,
-              0,
-              false,
-              dry,
-              shouldSave,
-            );
-          }
-        }
-      } catch (err) {
-        this.emitter.emit(
-          events.log.debug,
-          `Error loading cached YAML: ${err.message}, falling back to API`,
-        );
-        // Fall through to make API call if cache is invalid
-      }
-
-      return;
-    }
-
-    // Cache miss - call the API
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
     this.lastScreenshot = await this.system.captureScreenBase64();
-
-    const streamId = `input-${Date.now()}`;
-    this.emitter.emit(events.log.markdown.start, streamId);
 
     let message = await this.sdk.req(
       "input",
@@ -946,59 +890,12 @@ commands:
         mousePosition: await this.system.getMousePosition(),
         activeWindow: await this.system.activeWin(),
         image: this.lastScreenshot,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
+      }
     );
 
-    this.emitter.emit(events.log.markdown.end, streamId);
+    this.emitter.emit(events.log.log, message.data);
 
     if (message && message.data) {
-      // Save the YAML to cache (if enabled)
-      if (useCache) {
-        try {
-          // Extract YAML code blocks from the markdown response
-          const codeblocks = await this.parser.findCodeBlocks(message.data);
-          if (codeblocks && codeblocks.length > 0) {
-            // Parse commands from all code blocks
-            const allCommands = [];
-            for (const block of codeblocks) {
-              const commands = await this.parser.getCommands(block);
-              allCommands.push(...commands);
-            }
-
-            // Create a proper step with prompt
-            const step = {
-              prompt: currentTask,
-              commands: allCommands,
-            };
-
-            // Use dumpToYML to create a valid testdriver yaml file
-            const yamlContent = await generator.dumpToYML(
-              [step],
-              this.sessionInstance,
-            );
-
-            const cachePath = promptCache.writeCache(currentTask, yamlContent);
-            if (cachePath) {
-              this.emitter.emit(
-                events.log.debug,
-                `Cached YAML saved to: ${cachePath}`,
-              );
-            }
-          }
-        } catch (err) {
-          // If we can't extract YAML, just skip caching
-          this.emitter.emit(
-            events.log.debug,
-            `Could not cache response: ${err.message}`,
-          );
-        }
-      }
-
       await this.aiExecute(message.data, validateAndLoop, dry, shouldSave);
       this.emitter.emit(
         events.log.debug,

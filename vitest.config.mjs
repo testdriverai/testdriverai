@@ -10,8 +10,9 @@ export default defineConfig({
   test: {
     testTimeout: 900000,
     hookTimeout: 900000,
+    disableConsoleIntercept: true,
     reporters: [
-      'verbose',
+      'default',
       TestDriver(),
       ['junit', { outputFile: 'test-report.junit.xml' }]
     ],

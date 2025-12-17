@@ -264,6 +264,48 @@ class ElementNotFoundError extends Error {
 }
 
 /**
+ * Custom error class for act() failures
+ * Includes task execution details and retry information
+ */
+class ActError extends Error {
+  /**
+   * @param {string} message - Error message
+   * @param {Object} details - Additional details about the failure
+   * @param {string} details.task - The task that was attempted
+   * @param {number} details.tries - Number of check attempts made
+   * @param {number} details.maxTries - Maximum tries that were allowed
+   * @param {number} details.duration - Total execution time in milliseconds
+   * @param {Error} [details.cause] - The underlying error that caused the failure
+   */
+  constructor(message, details = {}) {
+    super(message);
+    this.name = "ActError";
+    this.task = details.task;
+    this.tries = details.tries;
+    this.maxTries = details.maxTries;
+    this.duration = details.duration;
+    this.cause = details.cause;
+    this.timestamp = new Date().toISOString();
+
+    // Capture stack trace
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ActError);
+    }
+
+    // Enhance error message with execution details
+    this.message += `\n\n=== Act Execution Details ===`;
+    this.message += `\nTask: "${this.task}"`;
+    this.message += `\nTries: ${this.tries}/${this.maxTries}`;
+    this.message += `\nDuration: ${this.duration}ms`;
+    this.message += `\nTimestamp: ${this.timestamp}`;
+    
+    if (this.cause) {
+      this.message += `\nUnderlying error: ${this.cause.message}`;
+    }
+  }
+}
+
+/**
  * Element class representing a located or to-be-located element
  */
 class Element {
@@ -2188,10 +2230,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     const absoluteTimestamp = Date.now();
     const startTime = absoluteTimestamp;
 
-    // Log finding all action
     const { events } = require("./agent/events.js");
-    const findingMessage = formatter.formatElementsFinding(description);
-    this.emitter.emit(events.log.log, findingMessage);
 
     try {
       const screenshot = await this.system.captureScreenBase64();
@@ -2257,16 +2296,16 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       const duration = Date.now() - startTime;
 
       if (response && response.elements && response.elements.length > 0) {
-        // Log found elements
-        const foundMessage = formatter.formatElementsFound(
+        // Single log at the end - found elements
+        const formattedMessage = formatter.formatFindAllSingleLine(
           description,
           response.elements.length,
           {
-            duration: `${duration}ms`,
+            duration: duration,
             cacheHit: response.cached || false,
           },
         );
-        this.emitter.emit(events.log.log, foundMessage);
+        this.emitter.emit(events.log.narration, formattedMessage, true);
 
         // Create Element instances for each found element
         const elements = response.elements.map((elementData) => {
@@ -2316,7 +2355,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         // Log debug information when elements are found
         if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
-          const { events } = require("./agent/events.js");
           this.emitter.emit(
             events.log.debug,
             `✓ Found ${elements.length} element(s): "${description}"`,
@@ -2330,6 +2368,19 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         return elements;
       } else {
+        const duration = Date.now() - startTime;
+        
+        // Single log at the end - no elements found
+        const formattedMessage = formatter.formatFindAllSingleLine(
+          description,
+          0,
+          {
+            duration: duration,
+            cacheHit: response?.cached || false,
+          },
+        );
+        this.emitter.emit(events.log.narration, formattedMessage, true);
+
         // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
         if (sessionId && this.sandbox?.send) {
@@ -2354,6 +2405,18 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         return [];
       }
     } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      // Single log at the end - error
+      const formattedMessage = formatter.formatFindAllSingleLine(
+        description,
+        0,
+        {
+          duration: duration,
+        },
+      );
+      this.emitter.emit(events.log.narration, formattedMessage, true);
+
       // Track findAll error interaction (fire-and-forget, don't block)
       const sessionId = this.getSessionId();
       if (sessionId && this.sandbox?.send) {
@@ -2371,8 +2434,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         });
       }
 
-      const { events } = require("./agent/events.js");
-      this.emitter.emit(events.log.log, `Error in findAll: ${error.message}`);
       return [];
     }
   }
@@ -2771,6 +2832,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     // handles forwarding to sandbox. This prevents duplicate output to server.
     this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
+
+      if (event.includes("markdown")) {
+        return;
+      }
+
       if (event === events.log.debug && !debugMode) return;
       if (this.loggingEnabled && message) {
         const prefixedMessage = this.testContext
@@ -2920,39 +2986,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     const platform = options.platform || this.config.TD_PLATFORM || "linux";
 
     // Auto-detect sandbox ID from the active sandbox if not provided
-    const sandboxId = options.sandboxId || this.agent?.sandbox?.id || null;
+    // For E2B (Linux), the instance has sandboxId; for AWS (Windows), it has instanceId
+    const sandboxId = options.sandboxId || this.instance?.sandboxId || this.instance?.instanceId || this.agent?.sandboxId || null;
 
     // Get or create session ID using the agent's newSession method
     let sessionId = this.agent?.sessionInstance?.get() || null;
-    
-    // If no session exists, create one using the agent's method
-    if (!sessionId && this.agent?.newSession) {
-      try {
-        await this.agent.newSession();
-        sessionId = this.agent.sessionInstance.get();
-        
-        // Save session ID to file for reuse across test runs
-        if (sessionId) {
-          const sessionFile = path.join(os.homedir(), '.testdriverai-session');
-          fs.writeFileSync(sessionFile, sessionId, { encoding: 'utf-8' });
-        }
-      } catch (error) {
-        // Log but don't fail - tests can run without a session
-        console.warn('Failed to create session:', error.message);
-      }
-    }
-    
-    // If still no session, try reading from file (for reporter/separate processes)
-    if (!sessionId) {
-      try {
-        const sessionFile = path.join(os.homedir(), '.testdriverai-session');
-        if (fs.existsSync(sessionFile)) {
-          sessionId = fs.readFileSync(sessionFile, 'utf-8').trim();
-        }
-      } catch (error) {
-        // Ignore file read errors
-      }
-    }
 
     const data = {
       runId: options.runId,
@@ -3076,26 +3114,98 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    * This is the SDK equivalent of the CLI's exploratory loop
    *
    * @param {string} task - Natural language description of what to do
-   * @param {Object} options - Execution options
-   * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
-   * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
+   * @param {Object} [options] - Execution options
+   * @param {number} [options.tries=7] - Maximum number of check/retry attempts before giving up
+   * @returns {Promise<ActResult>} Result object with success status and details
+   * @throws {ActError} When the task fails after all tries are exhausted
+   *
+   * @typedef {Object} ActResult
+   * @property {boolean} success - Whether the task completed successfully
+   * @property {string} task - The original task that was executed
+   * @property {number} tries - Number of check attempts made
+   * @property {number} maxTries - Maximum tries that were allowed
+   * @property {number} duration - Total execution time in milliseconds
+   * @property {string} [response] - AI's final response if available
    *
    * @example
    * // Simple execution
-   * await client.act('Click the submit button');
+   * const result = await client.act('Click the submit button');
+   * console.log(result.success); // true
    *
    * @example
-   * // With validation loop
-   * const result = await client.act('Fill out the contact form', { validateAndLoop: true });
-   * console.log(result); // AI's final assessment
+   * // With custom retry limit
+   * const result = await client.act('Fill out the contact form', { tries: 10 });
+   * console.log(`Completed in ${result.tries} tries`);
+   *
+   * @example
+   * // Handle failures
+   * try {
+   *   await client.act('Complete the checkout process', { tries: 3 });
+   * } catch (error) {
+   *   console.log(`Failed after ${error.tries} tries: ${error.message}`);
+   * }
    */
-  async act(task) {
+  async act(task, options = {}) {
     this._ensureConnected();
 
-    this.analytics.track("sdk.act", { task });
+    const { tries = 7 } = options;
 
-    // Use the agent's exploratoryLoop method directly
-    return await this.agent.exploratoryLoop(task, false, true, false);
+    this.analytics.track("sdk.act", { task, tries });
+
+    const { events } = require("./agent/events.js");
+    const startTime = Date.now();
+
+    // Store original checkLimit and set custom one if provided
+    const originalCheckLimit = this.agent.checkLimit;
+    this.agent.checkLimit = tries;
+    
+    // Reset check count for this act() call
+    const originalCheckCount = this.agent.checkCount;
+    this.agent.checkCount = 0;
+
+    // Emit scoped start marker for act()
+    this.emitter.emit(events.log.log, formatter.formatActStart(task));
+
+    try {
+      // Use the agent's exploratoryLoop method directly
+      const response = await this.agent.exploratoryLoop(task, false, true, false);
+      
+      const duration = Date.now() - startTime;
+      const triesUsed = this.agent.checkCount;
+      
+      this.emitter.emit(events.log.log, formatter.formatActComplete(duration, true));
+      
+      // Restore original checkLimit
+      this.agent.checkLimit = originalCheckLimit;
+      this.agent.checkCount = originalCheckCount;
+      
+      return {
+        success: true,
+        task,
+        tries: triesUsed,
+        maxTries: tries,
+        duration,
+        response: response || undefined,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const triesUsed = this.agent.checkCount;
+      
+      this.emitter.emit(events.log.log, formatter.formatActComplete(duration, false, error.message));
+      
+      // Restore original checkLimit
+      this.agent.checkLimit = originalCheckLimit;
+      this.agent.checkCount = originalCheckCount;
+      
+      // Create an enhanced error with additional context using ActError class
+      throw new ActError(`Act failed: ${error.message}`, {
+        task,
+        tries: triesUsed,
+        maxTries: tries,
+        duration,
+        cause: error,
+      });
+    }
   }
 
   /**
@@ -3103,15 +3213,16 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    * Execute a natural language task using AI
    *
    * @param {string} task - Natural language description of what to do
-   * @param {Object} options - Execution options
-   * @param {boolean} [options.validateAndLoop=false] - Whether to validate completion and retry if incomplete
-   * @returns {Promise<string|void>} Final AI response if validateAndLoop is true
+   * @param {Object} [options] - Execution options
+   * @param {number} [options.tries=7] - Maximum number of check/retry attempts
+   * @returns {Promise<ActResult>} Result object with success status and details
    */
-  async ai(task) {
-    return await this.act(task);
+  async ai(task, options) {
+    return await this.act(task, options);
   }
 }
 
 module.exports = TestDriverSDK;
 module.exports.Element = Element;
 module.exports.ElementNotFoundError = ElementNotFoundError;
+module.exports.ActError = ActError;
