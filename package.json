@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.2.3-beta.0",
+  "version": "7.2.3-beta.1",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "exports": {
