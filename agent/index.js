@@ -194,6 +194,15 @@ class TestDriverAgent extends EventEmitter2 {
       this.redraw.cleanup();
     }
 
+    // Close sandbox connection to release the connection slot
+    if (this.sandbox) {
+      try {
+        this.sandbox.close();
+      } catch (err) {
+        // Ignore sandbox close errors during exit
+      }
+    }
+
     shouldRunPostrun =
       !this.hasRunPostrun &&
       (shouldRunPostrun || this.cliArgs?.command == "run");
