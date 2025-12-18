@@ -307,9 +307,46 @@
         text-align: center;
         user-select: none;
       }
+
+      .close-button {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid #444;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        pointer-events: auto;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .close-button:hover {
+        background: rgba(220, 53, 69, 0.9);
+        border-color: #dc3545;
+      }
+
+      .close-button svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
     </style>
   </head>
   <body>
+    <!-- Close window button -->
+    <button class="close-button" onclick="window.close()" title="Close this window">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      Close
+    </button>
+
     <!-- Loading screen -->
     <div class="loading-screen" id="loading-screen">
       <div class="testdriver-logo">
