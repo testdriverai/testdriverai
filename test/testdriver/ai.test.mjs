@@ -12,11 +12,11 @@ describe("AI Test", () => {
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({
-      url: 'https://www.google.com',
+      url: 'https://duckduckgo.com',
     });
 
     // Use ai to search for testdriver
-    let aiRes = await testdriver.ai("click on the empty search box, type 'testdriver', and hit enter. do not click the plus button in the search bar");
+    let aiRes = await testdriver.ai("click on the empty search box, type 'testdriver', and hit enter.");
 
     console.log("AI response:", aiRes);
 

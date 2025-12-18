@@ -12,6 +12,7 @@ export default defineConfig({
     hookTimeout: 900000,
     disableConsoleIntercept: true,
     retry: 30,
+    maxConcurrency: 3,
     reporters: [
       'default',
       TestDriver(),
