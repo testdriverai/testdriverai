@@ -23,6 +23,7 @@ async function openBrowser(url) {
     await open(url, {
       // Wait for the app to open
       wait: false,
+      background: true
     });
   } catch (error) {
     console.error("Failed to open browser automatically:", error);

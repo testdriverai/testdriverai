@@ -109,6 +109,10 @@ class TestDriverAgent extends EventEmitter2 {
     // Create sandbox instance with this agent's emitter, analytics, and session
     this.sandbox = createSandbox(this.emitter, this.analytics, this.session);
 
+    // Attach Sentry log listeners to capture CLI logs as breadcrumbs
+      const sentry = require("../lib/sentry");
+      sentry.attachLogListeners(this.emitter);
+
     // Set the OS for the sandbox to use
     this.sandbox.os = this.sandboxOs;
 
@@ -2097,6 +2101,15 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
 
     this.session.set(sessionRes.data.id);
+    
+    // Set Sentry session trace context for distributed tracing
+    // This links CLI errors/logs to the same trace as API calls
+    try {
+      const sentry = require("../lib/sentry");
+      sentry.setSessionTraceContext(sessionRes.data.id);
+    } catch (e) {
+      // Sentry module may not be available, ignore
+    }
   }
 
   // Helper method to find testdriver directory by traversing up from a file path

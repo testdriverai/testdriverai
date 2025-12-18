@@ -44,7 +44,6 @@ This system provides comprehensive test execution tracking, linking test runs wi
 │         │                │                                   │
 │         │ • TdTestRun    │                                   │
 │         │ • TdTestCase   │                                   │
-│         │ • TdSandbox    │                                   │
 │         │ • Replay       │                                   │
 │         └────────────────┘                                   │
 │                                                               │
@@ -95,7 +94,6 @@ Represents a complete test suite execution (e.g., `npx vitest run`).
 
 **Relationships:**
 - `team`: Owner team
-- `sandbox`: TdSandbox where tests ran
 - `testCases`: Collection of TdTestCase
 - `replays`: Associated Replay records
 
@@ -114,36 +112,13 @@ Represents an individual test within a test run.
 
 **Relationships:**
 - `testRun`: Parent TdTestRun
-- `replay`: Associated Replay record
-
-### TdSandbox
-Represents a spawned VM/sandbox instance.
-
-**Key Fields:**
-- `sandboxId`: Unique identifier
-- `platform`: windows | mac | linux
-- `status`: provisioning | ready | running | stopped | terminated
-- `instanceId`, `instanceType`: AWS EC2 details
-- `ipAddress`, `vncUrl`, `wsUrl`: Connection details
-- `spawnTime`, `readyTime`, `terminateTime`: Lifecycle timestamps
-- `dashcamAuth`: Whether dashcam was authenticated
-- `dashcamProjectId`: Dashcam project for replays
-
-**Relationships:**
-- `team`: Owner team
-- `user`: User who spawned it
-- `testRuns`: Tests that ran on this sandbox
-- `replays`: Dashcam recordings from this sandbox
-
-**Note:** Sandbox creation/updates happen via WebSocket (not REST API) as part of the sandbox provisioning flow.
-
+- `replay`: Associated Replay recor
 ### Replay (Extended)
 Existing model extended with test run associations.
 
 **New Fields:**
 - `tdTestRun`: Associated test run
 - `tdTestCase`: Associated test case
-- `tdSandbox`: Sandbox where recorded
 
 ## API Endpoints
 
