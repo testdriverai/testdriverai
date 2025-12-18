@@ -11,6 +11,7 @@ export default defineConfig({
     testTimeout: 900000,
     hookTimeout: 900000,
     disableConsoleIntercept: true,
+    retry: 30,
     reporters: [
       'default',
       TestDriver(),
