@@ -39,7 +39,14 @@ jobs:
         git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
         git push
     
+    - name: Debug NPM Token
+      run: |
+        echo "NPM_TOKEN is set: ${{ secrets.NPM_TOKEN != '' }}"
+        echo "NPM_TOKEN first 4 chars: ${NPM_TOKEN:0:4}..."
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    
     - name: Publish to npm
       run: npm publish --tag beta 
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
