@@ -98,8 +98,8 @@
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3",
-    "testdriverai": "^6.1.11",
-    "vitest": "^4.0.15"
+    "testdriverai": "^7.2.3",
+    "vitest": "^4.0.16"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5"
