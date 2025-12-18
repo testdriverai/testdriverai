@@ -8,11 +8,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Assert Test", () => {
   it("should assert the testdriver login page shows", async (context) => {
-    const testdriver = TestDriver(context, { 
-      newSandbox: true, 
-      headless: false,
-      os: 'windows'
-    });
+    const testdriver = TestDriver(context, { newSandbox: true, headless: false });
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({
