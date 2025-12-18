@@ -738,11 +738,6 @@ class TestDriverReporter {
         testCaseData.sessionId = sessionId;
       }
 
-      // Add sandboxId if available (for linking to TdSandbox)
-      if (sandboxId) {
-        testCaseData.sandboxId = sandboxId;
-      }
-
       // Only include replayUrl if we have a valid dashcam URL
       if (dashcamUrl) {
         testCaseData.replayUrl = dashcamUrl;

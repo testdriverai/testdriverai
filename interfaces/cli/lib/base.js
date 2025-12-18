@@ -23,6 +23,7 @@ async function openBrowser(url) {
     await open(url, {
       // Wait for the app to open
       wait: false,
+      background: true
     });
   } catch (error) {
     console.error("Failed to open browser automatically:", error);
@@ -131,8 +132,31 @@ class BaseCommand extends Command {
     }
 
     this.agent.emitter.on("exit", (exitCode) => {
+      // Ensure sandbox is closed before exiting
+      if (this.agent?.sandbox) {
+        try {
+          this.agent.sandbox.close();
+        } catch (err) {
+          // Ignore close errors
+        }
+      }
       process.exit(exitCode);
     });
+
+    // Handle process signals to ensure clean disconnection
+    const cleanupAndExit = () => {
+      if (this.agent?.sandbox) {
+        try {
+          this.agent.sandbox.close();
+        } catch (err) {
+          // Ignore close errors
+        }
+      }
+      process.exit(1);
+    };
+
+    process.on('SIGINT', cleanupAndExit);
+    process.on('SIGTERM', cleanupAndExit);
 
     // Handle unhandled promise rejections to prevent them from interfering with the exit flow
     // This is particularly important when JavaScript execution in VM contexts leaves dangling promises

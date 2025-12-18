@@ -24,6 +24,7 @@ class InitCommand extends BaseCommand {
 
     console.log(chalk.green("\n✅ Project initialized successfully!\n"));
     this.printNextSteps();
+    process.exit(0);
   }
 
   /**
@@ -79,28 +80,41 @@ class InitCommand extends BaseCommand {
    */
   async promptHidden(question) {
     return new Promise((resolve) => {
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-      });
-
-      // Mute output to hide the input
+      process.stdout.write(question);
+      
       const stdin = process.stdin;
-      const muted = {
-        write: () => {},
+      const wasRaw = stdin.isRaw;
+      stdin.setRawMode(true);
+      stdin.resume();
+      stdin.setEncoding("utf8");
+
+      let input = "";
+
+      const onData = (char) => {
+        // Handle Ctrl+C
+        if (char === "\u0003") {
+          stdin.setRawMode(wasRaw);
+          process.exit();
+        }
+        // Handle Enter
+        if (char === "\r" || char === "\n") {
+          stdin.setRawMode(wasRaw);
+          stdin.removeListener("data", onData);
+          stdin.pause();
+          console.log(""); // New line after hidden input
+          resolve(input);
+          return;
+        }
+        // Handle Backspace
+        if (char === "\u007F" || char === "\b") {
+          input = input.slice(0, -1);
+          return;
+        }
+        // Add character to input (but don't echo it)
+        input += char;
       };
 
-      rl.question(question, (answer) => {
-        rl.close();
-        stdin.removeListener("data", muted.write);
-        console.log(""); // New line after hidden input
-        resolve(answer);
-      });
-
-      // Mute stdin to hide input
-      stdin.on("data", (char) => {
-        // Don't write to output (hides the input)
-      });
+      stdin.on("data", onData);
     });
   }
 

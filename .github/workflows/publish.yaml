@@ -1,4 +1,4 @@
-name: Publish Beta
+name: Publish
 permissions:
     contents: write
 on:
@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  publish-beta:
+  publish:
     runs-on: ubuntu-latest
     
     steps:
@@ -29,16 +29,16 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Bump version (prerelease beta)
-      run: npm version prerelease --preid=beta --no-git-tag-version
+    - name: Bump version (patch)
+      run: npm version patch --no-git-tag-version
     
     - name: Commit and push version bump
       run: |
         git add package.json package-lock.json
-        git commit -m "chore: bump beta version to $(node -p "require('./package.json').version")"
+        git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
         git push
     
-    - name: Publish to npm under beta tag
+    - name: Publish to npm
       run: npm publish --tag beta
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
