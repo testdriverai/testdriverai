@@ -372,10 +372,17 @@ class Element {
   /**
    * Find the element on screen
    * @param {string} [newDescription] - Optional new description to search for
-   * @param {Object} [options] - Optional options object with cacheThreshold and/or cacheKey
+   * @param {Object} [options] - Optional options object with cacheThreshold, cacheKey, and/or timeout
+   * @param {number} [options.timeout] - Max time in ms to poll for element (polls every 5 seconds)
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, options) {
+    // Handle timeout/polling option
+    const timeout = typeof options === 'object' ? options?.timeout : null;
+    if (timeout && timeout > 0) {
+      return this._findWithTimeout(newDescription, options, timeout);
+    }
+
     const description = newDescription || this.description;
     if (newDescription) {
       this.description = newDescription;
@@ -523,6 +530,61 @@ class Element {
       });
     }
 
+    return this;
+  }
+
+  /**
+   * Find element with polling/timeout support
+   * @private
+   * @param {string} [newDescription] - Optional new description to search for
+   * @param {Object} options - Options object
+   * @param {number} timeout - Max time in ms to poll for element
+   * @returns {Promise<Element>} This element instance
+   */
+  async _findWithTimeout(newDescription, options, timeout) {
+    const POLL_INTERVAL = 5000; // 5 seconds between attempts
+    const startTime = Date.now();
+    const description = newDescription || this.description;
+    
+    // Log that we're starting a polling find
+    const { events } = require("./agent/events.js");
+    this.sdk.emitter.emit(events.log.log, `🔄 Polling for "${description}" (timeout: ${timeout}ms)`);
+    
+    // Create options without timeout to avoid infinite recursion
+    const findOptions = typeof options === 'object' ? { ...options } : {};
+    delete findOptions.timeout;
+    
+    let attempts = 0;
+    while (Date.now() - startTime < timeout) {
+      attempts++;
+      
+      // Call the regular find (without timeout option)
+      await this.find(newDescription, findOptions);
+      
+      if (this._found) {
+        this.sdk.emitter.emit(events.log.log, `✅ Found "${description}" after ${attempts} attempt(s)`);
+        return this;
+      }
+      
+      const elapsed = Date.now() - startTime;
+      const remaining = timeout - elapsed;
+      
+      if (remaining > POLL_INTERVAL) {
+        this.sdk.emitter.emit(events.log.log, `⏳ Element not found, retrying in 5s... (${Math.round(remaining / 1000)}s remaining)`);
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+      } else if (remaining > 0) {
+        // Less than 5s remaining, wait the remaining time and try once more
+        await new Promise(resolve => setTimeout(resolve, remaining));
+      }
+    }
+    
+    // Final attempt after timeout
+    await this.find(newDescription, findOptions);
+    
+    if (!this._found) {
+      this.sdk.emitter.emit(events.log.log, `❌ Element "${description}" not found after ${timeout}ms (${attempts} attempts)`);
+    }
+    
     return this;
   }
 
@@ -1182,6 +1244,9 @@ class TestDriverSDK {
     // Store sandbox configuration options
     this.sandboxAmi = options.sandboxAmi || null;
     this.sandboxInstance = options.sandboxInstance || null;
+
+    // Store reconnect preference from options
+    this.reconnect = options.reconnect !== undefined ? options.reconnect : false;
 
     // Cache threshold configuration
     // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
@@ -1900,33 +1965,82 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           );
         }
 
-        console.log(`[provision.installer] ✅ Downloaded to ${filePath}`);
+        // Check if the downloaded file has a proper extension, if not scan the download directory
+        let actualFilePath = filePath;
+        const hasValidExtension = /\.(msi|exe|deb|rpm|appimage|sh|dmg|pkg)$/i.test(detectedFilename);
+        
+        if (!hasValidExtension && this.os === 'windows') {
+          // On Windows, scan the download directory for .msi or .exe files
+          console.log(`[provision.installer] Downloaded file has no extension, scanning for .msi or .exe files...`);
+          const scanResult = await this.exec(
+            shell,
+            `Get-ChildItem -Path "${downloadDir}" -File | Where-Object { $_.Extension -match '\\.(msi|exe)$' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName`,
+            30000,
+            true
+          );
+          
+          if (scanResult && scanResult.trim()) {
+            actualFilePath = scanResult.trim();
+            console.log(`[provision.installer] Found installer: ${actualFilePath}`);
+          }
+        } else if (!hasValidExtension && this.os === 'linux') {
+          // On Linux, scan for common installer extensions
+          console.log(`[provision.installer] Downloaded file has no extension, scanning for installer files...`);
+          const scanResult = await this.exec(
+            shell,
+            `find "${downloadDir}" -maxdepth 1 -type f \\( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.sh" \\) -printf '%T@ %p\\n' | sort -rn | head -1 | cut -d' ' -f2-`,
+            30000,
+            true
+          );
+          
+          if (scanResult && scanResult.trim()) {
+            actualFilePath = scanResult.trim();
+            console.log(`[provision.installer] Found installer: ${actualFilePath}`);
+          }
+        } else if (!hasValidExtension && this.os === 'darwin') {
+          // On macOS, scan for common installer extensions
+          console.log(`[provision.installer] Downloaded file has no extension, scanning for installer files...`);
+          const scanResult = await this.exec(
+            shell,
+            `find "${downloadDir}" -maxdepth 1 -type f \\( -name "*.dmg" -o -name "*.pkg" \\) -print0 | xargs -0 ls -t | head -1`,
+            30000,
+            true
+          );
+          
+          if (scanResult && scanResult.trim()) {
+            actualFilePath = scanResult.trim();
+            console.log(`[provision.installer] Found installer: ${actualFilePath}`);
+          }
+        }
 
-        // Auto-detect install command based on file extension
-        const ext = detectedFilename.split('.').pop()?.toLowerCase();
+        console.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
+
+        // Auto-detect install command based on file extension (use actualFilePath for extension detection)
+        const actualFilename = actualFilePath.split(/[/\\]/).pop() || '';
+        const ext = actualFilename.split('.').pop()?.toLowerCase();
         let installCommand = null;
         
         if (this.os === 'windows') {
           if (ext === 'msi') {
-            installCommand = `Start-Process msiexec -ArgumentList '/i', '"${filePath}"', '/quiet', '/norestart' -Wait`;
+            installCommand = `Start-Process msiexec -ArgumentList '/i', '"${actualFilePath}"', '/quiet', '/norestart' -Wait`;
           } else if (ext === 'exe') {
-            installCommand = `Start-Process "${filePath}" -ArgumentList '/S' -Wait`;
+            installCommand = `Start-Process "${actualFilePath}" -ArgumentList '/S' -Wait`;
           }
         } else if (this.os === 'linux') {
           if (ext === 'deb') {
-            installCommand = `sudo dpkg -i "${filePath}" && sudo apt-get install -f -y`;
+            installCommand = `sudo dpkg -i "${actualFilePath}" && sudo apt-get install -f -y`;
           } else if (ext === 'rpm') {
-            installCommand = `sudo rpm -i "${filePath}"`;
+            installCommand = `sudo rpm -i "${actualFilePath}"`;
           } else if (ext === 'appimage') {
-            installCommand = `chmod +x "${filePath}"`;
+            installCommand = `chmod +x "${actualFilePath}"`;
           } else if (ext === 'sh') {
-            installCommand = `chmod +x "${filePath}" && "${filePath}"`;
+            installCommand = `chmod +x "${actualFilePath}" && "${actualFilePath}"`;
           }
         } else if (this.os === 'darwin') {
           if (ext === 'dmg') {
-            installCommand = `hdiutil attach "${filePath}" -mountpoint /Volumes/installer && cp -R /Volumes/installer/*.app /Applications/ && hdiutil detach /Volumes/installer`;
+            installCommand = `hdiutil attach "${actualFilePath}" -mountpoint /Volumes/installer && cp -R /Volumes/installer/*.app /Applications/ && hdiutil detach /Volumes/installer`;
           } else if (ext === 'pkg') {
-            installCommand = `sudo installer -pkg "${filePath}" -target /`;
+            installCommand = `sudo installer -pkg "${actualFilePath}" -target /`;
           }
         }
 
@@ -1942,7 +2056,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           await this.focusApplication(appName);
         }
 
-        return filePath;
+        return actualFilePath;
       },
 
       /**
@@ -2039,6 +2153,29 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           : this.newSandbox,
     };
 
+    // Handle reconnect option - use last sandbox file
+    // Check both connectOptions and constructor options
+    const shouldReconnect = connectOptions.reconnect !== undefined 
+      ? connectOptions.reconnect 
+      : this.reconnect;
+    
+    if (shouldReconnect) {
+      const lastSandbox = this.agent.getLastSandboxId();
+      if (!lastSandbox || !lastSandbox.sandboxId) {
+        throw new Error(
+          "Cannot reconnect: No previous sandbox found. Run a test first to create a sandbox, or remove the reconnect option."
+        );
+      }
+      this.agent.sandboxId = lastSandbox.sandboxId;
+      buildEnvOptions.new = false;
+      
+      // Use OS from last sandbox if not explicitly specified
+      if (!connectOptions.os && lastSandbox.os) {
+        this.agent.sandboxOs = lastSandbox.os;
+        this.os = lastSandbox.os;
+      }
+    }
+
     // Set agent properties for buildEnv to use
     if (connectOptions.sandboxId) {
       this.agent.sandboxId = connectOptions.sandboxId;
@@ -2067,6 +2204,10 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       this.os = connectOptions.os; // Update this.os to match
     } else {
       this.agent.sandboxOs = this.os;
+    }
+    // Use keepAlive from connectOptions if provided
+    if (connectOptions.keepAlive !== undefined) {
+      this.agent.keepAlive = connectOptions.keepAlive;
     }
 
     // Set redrawThreshold on agent's cliArgs.options
@@ -2148,6 +2289,14 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    */
   getSessionId() {
     return this.session?.get() || null;
+  }
+
+  /**
+   * Get the last sandbox info from the stored file
+   * @returns {Object|null} Last sandbox info including sandboxId, os, ami, instanceType, timestamp, or null if not found
+   */
+  getLastSandboxId() {
+    return this.agent.getLastSandboxId();
   }
 
   // ====================================

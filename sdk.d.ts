@@ -242,6 +242,8 @@ export interface TestDriverOptions {
   sandboxInstance?: string;
   /** Cache key for element finding operations. If provided, enables caching tied to this key */
   cacheKey?: string;
+  /** Reconnect to the last used sandbox (throws error if no last sandbox exists) */
+  reconnect?: boolean;
   /** Redraw configuration for screen change detection */
   redraw?: boolean | {
     /** Enable redraw detection (default: true) */
@@ -264,6 +266,8 @@ export interface ConnectOptions {
   sandboxId?: string;
   /** Force creation of a new sandbox */
   newSandbox?: boolean;
+  /** Reconnect to the last used sandbox (throws error if no last sandbox exists) */
+  reconnect?: boolean;
   /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
   /** Custom AMI ID for sandbox instance (e.g., 'ami-1234') */
@@ -276,6 +280,8 @@ export interface ConnectOptions {
   headless?: boolean;
   /** Reuse recent connection if available (default: true) */
   reuseConnection?: boolean;
+  /** Keep sandbox alive for specified milliseconds after disconnect (default: 60000). Set to 0 to terminate immediately on disconnect. */
+  keepAlive?: number;
 }
 
 export interface SandboxInstance {
@@ -695,6 +701,18 @@ export default class TestDriverSDK {
    */
   disconnect(): Promise<void>;
 
+  /**
+   * Get the last sandbox info from the stored file
+   * @returns Last sandbox info or null if not found
+   */
+  getLastSandboxId(): {
+    sandboxId: string | null;
+    os: 'windows' | 'linux';
+    ami: string | null;
+    instanceType: string | null;
+    timestamp: string | null;
+  } | null;
+
   // Element Finding API
 
   /**
@@ -702,7 +720,7 @@ export default class TestDriverSDK {
    * Automatically locates the element and returns it
    *
    * @param description - Description of the element to find
-   * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
+   * @param options - Cache threshold (number) or options object
    * @returns Chainable promise that resolves to Element instance
    *
    * @example
@@ -719,17 +737,12 @@ export default class TestDriverSDK {
    * const element = await client.find('login button', 0.01);
    *
    * @example
-   * // Poll until element is found
-   * let element;
-   * while (!element?.found()) {
-   *   element = await client.find('login button');
-   *   if (!element.found()) {
-   *     await new Promise(resolve => setTimeout(resolve, 1000));
-   *   }
-   * }
+   * // Poll for element with timeout (retries every 5 seconds)
+   * const element = await client.find('loading complete indicator', { timeout: 30000 });
    * await element.click();
    */
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
+  find(description: string, options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number }): ChainableElementPromise;
 
   /**
    * Find all elements matching a description

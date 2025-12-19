@@ -1619,49 +1619,35 @@ ${regression}
     this.emitter.emit(events.log.log, `${inputFile} (end)`);
   }
 
-  // Returns sandboxId to use (either from file if recent, or null)
-  getRecentSandboxId() {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+  // Returns the path to the last sandbox file
+  getLastSandboxFilePath() {
+    const testdriverDir = path.join(process.cwd(), '.testdriver');
+    return path.join(testdriverDir, 'last-sandbox');
+  }
+
+  // Returns full sandbox info from last-sandbox file (no timeout - let API validate)
+  getLastSandboxId() {
+    const lastSandboxFile = this.getLastSandboxFilePath();
 
     if (fs.existsSync(lastSandboxFile)) {
       try {
-        const stats = fs.statSync(lastSandboxFile);
-        const mtime = new Date(stats.mtime);
-        const now = new Date();
-        const diffMinutes = (now - mtime) / (1000 * 60);
-        if (diffMinutes < 10) {
-          const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+        const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
 
-          // Parse sandbox info (supports both old format and new format)
-          let sandboxInfo;
-          try {
-            sandboxInfo = JSON.parse(fileContent);
-          } catch {
-            return fileContent || null;
-          }
-
-          // Check if AMI and instance type match current requirements
-          const currentAmi = this.sandboxAmi || null;
-          const currentInstance = this.sandboxInstance || null;
-          const storedAmi = sandboxInfo.ami || null;
-          const storedInstance = sandboxInfo.instanceType || null;
-
-          if (currentAmi === storedAmi && currentInstance === storedInstance) {
-            // Return sandboxId (new format) or instanceId (old format for backwards compatibility)
-            return sandboxInfo.sandboxId || sandboxInfo.instanceId;
-          } else {
-            this.emitter.emit(
-              events.log.log,
-              theme.dim(
-                "Recent sandbox found but AMI/instance type doesn't match current requirements",
-              ),
-            );
-            return null;
-          }
+        // Parse sandbox info (supports both old format and new format)
+        let sandboxInfo;
+        try {
+          sandboxInfo = JSON.parse(fileContent);
+        } catch {
+          return { sandboxId: fileContent || null };
         }
+
+        return {
+          sandboxId: sandboxInfo.sandboxId || sandboxInfo.instanceId || null,
+          os: sandboxInfo.os || 'linux',
+          ami: sandboxInfo.ami || null,
+          instanceType: sandboxInfo.instanceType || null,
+          timestamp: sandboxInfo.timestamp || null,
+        };
       } catch {
         // ignore errors
       }
@@ -1669,12 +1655,43 @@ ${regression}
     return null;
   }
 
+  // Returns sandboxId to use if AMI/instance type match current requirements
+  getRecentSandboxId() {
+    const sandboxInfo = this.getLastSandboxId();
+    
+    if (!sandboxInfo || !sandboxInfo.sandboxId) {
+      return null;
+    }
+
+    // Check if AMI and instance type match current requirements
+    const currentAmi = this.sandboxAmi || null;
+    const currentInstance = this.sandboxInstance || null;
+    const storedAmi = sandboxInfo.ami || null;
+    const storedInstance = sandboxInfo.instanceType || null;
+
+    if (currentAmi === storedAmi && currentInstance === storedInstance) {
+      return sandboxInfo.sandboxId;
+    } else {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(
+          "Recent sandbox found but AMI/instance type doesn't match current requirements",
+        ),
+      );
+      return null;
+    }
+  }
+
   saveLastSandboxId(sandboxId, osType = "linux") {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    const lastSandboxFile = this.getLastSandboxFilePath();
+    const testdriverDir = path.dirname(lastSandboxFile);
+    
     try {
+      // Ensure .testdriver directory exists
+      if (!fs.existsSync(testdriverDir)) {
+        fs.mkdirSync(testdriverDir, { recursive: true });
+      }
+      
       const sandboxInfo = {
         sandboxId: sandboxId,
         os: osType,
@@ -1682,7 +1699,7 @@ ${regression}
         instanceType: this.sandboxInstance || null,
         timestamp: new Date().toISOString(),
       };
-      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
+      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo, null, 2), {
         encoding: "utf-8",
       });
     } catch {
@@ -1691,10 +1708,7 @@ ${regression}
   }
 
   clearRecentSandboxId() {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    const lastSandboxFile = this.getLastSandboxFilePath();
     try {
       if (fs.existsSync(lastSandboxFile)) {
         fs.unlinkSync(lastSandboxFile);
@@ -1703,6 +1717,7 @@ ${regression}
       // ignore errors
     }
   }
+
   async buildEnv(options = {}) {
     // If instance already exists, do not build environment again
     if (this.instance) {
@@ -1785,6 +1800,7 @@ ${regression}
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
           true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
         );
 
         this.instance = instance;
@@ -1799,11 +1815,6 @@ ${regression}
         );
         console.error("Failed to reconnect to sandbox:", error);
       }
-    } else if (!createNew && !recentId) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`no recent sandbox found, creating a new one.`),
-      );
     } else if (!createNew && this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
@@ -1816,6 +1827,7 @@ ${regression}
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
           true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
         );
 
         this.instance = instance;
@@ -1858,6 +1870,7 @@ ${regression}
       let instance = await this.connectToSandboxDirect(
         this.sandboxId,
         true, // always persist by default
+        this.keepAlive, // pass keepAlive TTL
       );
       this.instance = instance;
       await this.renderSandbox(instance, headless);
@@ -2047,10 +2060,10 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
   }
 
-  async connectToSandboxDirect(sandboxId, persist = false) {
+  async connectToSandboxDirect(sandboxId, persist = false, keepAlive = null) {
     const { formatter } = require("../sdk-log-formatter.js");
     this.emitter.emit(events.log.narration, formatter.getPrefix("connect") + " " + theme.green.bold("Connecting") + " " + theme.cyan(`to sandbox...`));
-    let reply = await this.sandbox.connect(sandboxId, persist);
+    let reply = await this.sandbox.connect(sandboxId, persist, keepAlive);
 
     // reply includes { success, url, sandbox: {...} }
     // For renderSandbox, we need the sandbox object with url merged in
@@ -2078,6 +2091,10 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
     if (this.sandboxInstance) {
       sandboxConfig.instanceType = this.sandboxInstance;
+    }
+    // Add keepAlive TTL if specified
+    if (this.keepAlive !== undefined && this.keepAlive !== null) {
+      sandboxConfig.keepAlive = this.keepAlive;
     }
 
     let instance = await this.sandbox.send(sandboxConfig, 60000 * 8);

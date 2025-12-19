@@ -188,27 +188,23 @@ This is useful for:
 
 ## Polling for Dynamic Elements
 
-For elements that may not be immediately visible:
+For elements that may not be immediately visible, use the `timeout` option to automatically poll:
 
 ```javascript
-// Poll until element appears
-let loginButton;
-const maxAttempts = 30;
-
-for (let i = 0; i < maxAttempts; i++) {
-  loginButton = await testdriver.find('login button');
-  if (loginButton.found()) break;
-  await new Promise(r => setTimeout(r, 1000));
-}
-
-if (!loginButton.found()) {
-  throw new Error('Login button never appeared');
-}
-
-await loginButton.click();
+// Poll for element (retries every 5 seconds until found or timeout)
+const element = await testdriver.find('login button', { timeout: 30000 });
+await element.click();
 ```
 
-### Helper Function
+The `timeout` option:
+- Retries finding the element every 5 seconds
+- Stops when the element is found or the timeout expires
+- Logs progress during polling
+- Returns the element (check `element.found()` if not throwing on failure)
+
+### Manual Polling (Alternative)
+
+If you need custom polling logic:
 
 ```javascript
 async function waitForElement(testdriver, description, timeout = 30000) {

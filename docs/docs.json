@@ -191,6 +191,28 @@
   "version": "v7",
   "groups": [
     {
+      "group": "Overview",
+      "pages": [
+        "/v7/overview/what-is-testdriver",
+        {
+          "group": "Plans & Pricing",
+          "icon": "credit-card",
+          "pages": [
+            "/v7/plans/cloud",
+            {
+              "group": "Self-Hosted",
+              "icon": "server",
+              "pages": [
+                "/v7/plans/self-hosted",
+                "/v7/plans/self-hosted-aws"
+              ]
+            },
+            "/v7/plans/enterprise"
+          ]
+        }
+      ]
+    },
+    {
       "group": "Getting Started",
       "pages": [
         "/v7/getting-started/quickstart",
