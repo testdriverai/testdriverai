@@ -6,7 +6,7 @@ const { randomUUID } = require("crypto");
 const Jimp = require("jimp");
 const { events } = require("../events.js");
 
-const createSystem = (emitter, sandbox, config) => {
+const createSystem = (emitter, sandbox, _config) => {
   const screenshot = async (options) => {
     let { base64 } = await sandbox.send({
       type: "system.screenshot",
@@ -60,8 +60,8 @@ const createSystem = (emitter, sandbox, config) => {
 
       // Resize the image
       image.resize(
-        Math.floor(config.TD_RESOLUTION[0] * scale),
-        Math.floor(config.TD_RESOLUTION[1] * scale),
+        Math.floor(image.width * scale),
+        Math.floor(image.height * scale),
       );
 
       if (mouse) {
