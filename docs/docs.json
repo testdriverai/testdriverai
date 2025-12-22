@@ -195,31 +195,16 @@
       "pages": [
         "/v7/overview/what-is-testdriver",
         {
-          "group": "Plans & Pricing",
-          "icon": "credit-card",
+          "group": "Getting Started",
+          "icon": "rocket",
           "pages": [
-            "/v7/plans/cloud",
-            {
-              "group": "Self-Hosted",
-              "icon": "server",
-              "pages": [
-                "/v7/plans/self-hosted",
-                "/v7/plans/self-hosted-aws"
-              ]
-            },
-            "/v7/plans/enterprise"
+            "/v7/getting-started/quickstart",
+            "/v7/getting-started/writing-tests",
+            "/v7/getting-started/running-tests",
+            "/v7/getting-started/debugging-tests",
+            "/v7/getting-started/setting-up-in-ci"
           ]
         }
-      ]
-    },
-    {
-      "group": "Getting Started",
-      "pages": [
-        "/v7/getting-started/quickstart",
-        "/v7/getting-started/writing-tests",
-        "/v7/getting-started/running-tests",
-        "/v7/getting-started/debugging-tests",
-        "/v7/getting-started/setting-up-in-ci"
       ]
     },
     {
@@ -245,25 +230,6 @@
           ]
         },
         {
-          "group": "Sandbox Environments",
-          "icon": "cube",
-          "pages": [
-            "/v7/features/managed-sandboxes",
-            "/v7/features/sandbox-customization",
-            "/v7/features/enterprise"
-          ]
-        },
-        {
-          "group": "Test Observability",
-          "icon": "microscope",
-          "pages": [
-            "/v7/features/application-logs",
-            "/v7/features/browser-logs",
-            "/v7/features/network-monitoring",
-            "/v7/features/system-performance"
-          ]
-        },
-        {
           "group": "Performance & Reliability",
           "icon": "gauge-high",
           "pages": [
@@ -274,7 +240,17 @@
           ]
         },
         {
-          "group": "Testing at Scale",
+          "group": "Observability",
+          "icon": "microscope",
+          "pages": [
+            "/v7/features/application-logs",
+            "/v7/features/browser-logs",
+            "/v7/features/network-monitoring",
+            "/v7/features/system-performance"
+          ]
+        },
+        {
+          "group": "Deployment & Scaling",
           "icon": "arrow-up-right-dots",
           "pages": [
             "/v7/features/data-driven-testing",
@@ -289,6 +265,22 @@
             "/v7/features/test-analytics",
             "/v7/features/test-cases",
             "/v7/features/test-replays"
+          ]
+        },
+        {
+          "group": "Hosting Plans",
+          "icon": "server",
+          "pages": [
+            "/v7/plans/cloud",
+            {
+              "group": "Self-Hosted",
+              "icon": "server",
+              "pages": [
+                "/v7/plans/self-hosted",
+                "/v7/plans/self-hosted-aws"
+              ]
+            },
+            "/v7/plans/enterprise"
           ]
         }
       ]

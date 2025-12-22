@@ -1525,22 +1525,19 @@ class TestDriverSDK {
        * @param {Object} options - Chrome extension launch options
        * @param {string} [options.extensionPath] - Local filesystem path to the unpacked extension directory
        * @param {string} [options.extensionId] - Chrome Web Store extension ID (e.g., "cjpalhdlnbpafiamejdnhcphjbkeiagm" for uBlock Origin)
-       * @param {string} [options.url='http://testdriver-sandbox.vercel.app/'] - URL to navigate to
        * @param {boolean} [options.maximized=true] - Start maximized
        * @returns {Promise<void>}
        * @example
        * // Load extension from local path
        * await testdriver.exec('sh', 'git clone https://github.com/user/extension.git /tmp/extension');
        * await testdriver.provision.chromeExtension({
-       *   extensionPath: '/tmp/extension',
-       *   url: 'https://example.com'
+       *   extensionPath: '/tmp/extension'
        * });
        * 
        * @example
        * // Load extension by Chrome Web Store ID
        * await testdriver.provision.chromeExtension({
-       *   extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm', // uBlock Origin
-       *   url: 'https://example.com'
+       *   extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm' // uBlock Origin
        * });
        */
       chromeExtension: async (options = {}) => {
@@ -1550,7 +1547,6 @@ class TestDriverSDK {
         const {
           extensionPath: providedExtensionPath,
           extensionId,
-          url = 'http://testdriver-sandbox.vercel.app/',
           maximized = true,
         } = options;
 
@@ -1668,7 +1664,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           console.log(`[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`);
         }
 
-        // If dashcam is available and recording, add web logs for this domain
+        // If dashcam is available, set up file logging
         if (this._dashcam) {
           // Create the log file on the remote machine
           const logPath = this.os === "windows" 
@@ -1680,11 +1676,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             : `touch ${logPath}`;
           
           await this.exec(shell, createLogCmd, 10000, true);
-        
-          const urlObj = new URL(url);
-          const domain = urlObj.hostname;
-          const pattern = `*${domain}*`;
-          await this._dashcam.addWebLog(pattern, 'Web Logs');
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -1760,19 +1751,19 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           chromeArgs.push(`--load-extension=${extensionPath}`);
         }
 
-        // Launch Chrome
+        // Launch Chrome (opens to New Tab by default)
         if (this.os === 'windows') {
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
+            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}`,
             30000
           );
         } else {
           const argsString = chromeArgs.join(' ');
           await this.exec(
             shell,
-            `chrome-for-testing ${argsString} "${url}" >/dev/null 2>&1 &`,
+            `chrome-for-testing ${argsString} >/dev/null 2>&1 &`,
             30000
           );
         }
@@ -1780,25 +1771,18 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         // Wait for Chrome to be ready
         await this.focusApplication('Google Chrome');
 
-        // Wait for URL to load
-        try {
-          const urlObj = new URL(url);
-          const domain = urlObj.hostname;
-                    
-          for (let attempt = 0; attempt < 30; attempt++) {
-            const result = await this.find(`${domain}`);
+        // Wait for New Tab to appear
+        for (let attempt = 0; attempt < 30; attempt++) {
+          const result = await this.find('New Tab');
 
-            if (result.found()) {
-              break;
-            } else {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+          if (result.found()) {
+            break;
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
-          
-          await this.focusApplication('Google Chrome');
-        } catch (e) {
-          console.warn(`[provision.chromeExtension] ⚠️  Could not parse URL "${url}":`, e.message);
         }
+        
+        await this.focusApplication('Google Chrome');
       },
 
       /**

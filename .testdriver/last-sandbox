@@ -1,7 +1,7 @@
 {
-  "sandboxId": "i1ls6ptwqhexjfema104h",
-  "os": "linux",
+  "sandboxId": "i-034317335b2eb9678",
+  "os": "windows",
   "ami": null,
   "instanceType": null,
-  "timestamp": "2025-12-19T23:02:38.252Z"
+  "timestamp": "2025-12-22T23:09:20.319Z"
 }
