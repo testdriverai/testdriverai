@@ -8,117 +8,172 @@ Learn how to run TestDriver tests efficiently with Vitest's powerful test runner
 
 ## Running Tests
 
-TestDriver works with Vitest's powerful test runner:
+TestDriver works with Vitest's powerful test runner.
 
-<Tabs>
-  <Tab title="Run All Tests">
-    ```bash
-    # Run all tests once
-    npx vitest run
-
-    # Run in watch mode
-    npx vitest
-
-    # Run with coverage
-    npx vitest run --coverage
-    ```
-  </Tab>
-
-  <Tab title="Run Specific Tests">
-    ```bash
-    # Run specific file
-    npx vitest run login.test.js
-
-    # Run multiple files
-    npx vitest run login.test.js checkout.test.js
-
-    # Run tests matching pattern
-    npx vitest run --grep "login"
-
-    # Run tests in specific folder
-    npx vitest run tests/e2e/
-    ```
-  </Tab>
-
-  <Tab title="Watch Mode">
-    ```bash
-    # Watch mode - reruns on file changes
-    npx vitest
-
-    # Watch only changed tests
-    npx vitest --changed
-
-    # Watch specific file
-    npx vitest login.test.js
-    ```
-  </Tab>
-
-  <Tab title="Parallel Execution">
-    ```bash
-    # Control concurrency
-    npx vitest run --maxConcurrency=5
-
-    # Run with specific thread count
-    npx vitest run --threads --minThreads=2 --maxThreads=8
-    ```
-  </Tab>
-</Tabs>
-
-## Test Output
-
-Understanding test output:
+### Run All Tests
 
 ```bash
-$ npx vitest run
+# Run all tests once
+npx vitest run
 
- ✓ login.test.js (3) 23.4s
-   ✓ user can login with valid credentials 12.3s
-   ✓ shows error for invalid email 5.6s
-   ✓ shows error for wrong password 5.5s
-
- ✓ checkout.test.js (2) 34.7s
-   ✓ user can complete checkout 28.9s
-   ✓ validates credit card format 5.8s
-
-Test Files  2 passed (2)
-     Tests  5 passed (5)
-  Duration  58.12s
-
-📹 Dashcam Replays:
-  - https://console.testdriver.ai/dashcam/abc123
-  - https://console.testdriver.ai/dashcam/def456
+# Run with coverage
+npx vitest run --coverage
 ```
 
-<Tip>
-  Click the Dashcam URLs to watch video replays of your tests!
-</Tip>
-
-## Performance Profiling
-
-Identify slow tests:
+### Run Specific Tests
 
 ```bash
-# Run with reporter showing timing
-npx vitest run --reporter=verbose
+# Run specific file
+npx vitest run login.test.js
 
-# Output shows duration per test:
-✓ slow-test.test.js > user can checkout (34.7s)
-  → find('product') (2.1s)
-  → click() (0.4s)
-  → find('add to cart') (1.8s)
-  → click() (0.3s)
-  → find('checkout') (28.9s) ← SLOW!
-  → click() (0.5s)
+# Run multiple files
+npx vitest run login.test.js checkout.test.js
+
+# Run tests matching pattern
+npx vitest run --grep "login"
+
+# Run tests in specific folder
+npx vitest run tests/e2e/
 ```
 
-Optimize slow operations:
+### Parallel Execution
 
-1. **Enable caching** - First run is slow, subsequent runs are fast
-2. **Use parallel execution** - Run tests concurrently
-3. **Check network delays** - Look for slow API calls in Dashcam
-4. **Optimize selectors** - More specific = faster matching
+```bash
+# Control concurrency
+npx vitest run --maxConcurrency=5
 
-[Performance optimization guide](/v7/guides/performance)
+# Run with specific thread count
+npx vitest run --threads --minThreads=2 --maxThreads=8
+```
+
+<Note>
+  Parallel execution limits depend on your TestDriver plan. Check your plan details at [console.testdriver.ai](https://console.testdriver.ai) for your concurrent sandbox limit.
+</Note>
+
+## TestDriver Options
+
+Configure TestDriver behavior with options passed to the `TestDriver()` function:
+
+```javascript
+const testdriver = TestDriver(context, {
+  headless: false,
+  reconnect: false,
+});
+```
+
+### Headless Mode
+
+Run tests without a visible browser window. Useful for CI/CD pipeline or spawning multiple tests locally:
+
+```javascript
+const testdriver = TestDriver(context, {
+  headless: true,  // No visible browser window
+});
+```
+
+### IP Target
+
+If self-hosting TestDriver, use `ip` to specify the device IP. See [Self-Hosting TestDriver](../self-hosting.md) for details.
+
+```javascript
+const testdriver = TestDriver(context, {
+  newSandbox: true,
+  ip: "203.0.113.42",  // Your allowlisted IP
+});
+```
+
+### Operating System
+
+Set the `os` property to run tests on a specific operating system. Available options are `linux` (default) and `windows`.
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: "windows",  // Run on Windows sandbox
+});
+```
+
+#### Using Environment Variables
+
+You can make the operating system configurable via environment variables. This requires adding code to read from `process.env` in your test:
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: process.env.TD_OS || "linux",  // Read from env, default to Linux
+});
+```
+
+Then pass the variable when running tests:
+
+```bash
+# Run tests on Windows
+TD_OS=windows npx vitest run
+
+# Run tests on Linux (default)
+TD_OS=linux npx vitest run
+```
+
+This pattern is useful for running the same test suite across multiple operating systems in CI/CD:
+
+```yaml
+# Example GitHub Actions matrix
+strategy:
+  matrix:
+    os: [linux, windows]
+steps:
+  - run: TD_OS=${{ matrix.os }} npx vitest run
+```
+
+## Keepalive
+
+By default, sandboxes terminate immediately when the test finishes. Set this value to keep the sandbox alive for reconnection.
+
+The `keepAlive` param enables you to keep the sandbox running after the test completes for debugging or reconnection.  This will allow you to use the debugger to inspect the state of the device after the test has finished.
+
+```javascript
+const testdriver = TestDriver(context, {
+  keepAlive: 300000,  // Keep sandbox alive for 5 minutes after test
+});
+```
+
+### Reconnecting to Existing Sandbox
+
+Speed up test development by reconnecting to an existing sandbox instead of starting fresh each time. This lets you iterate quickly on failing steps without re-running the entire test from the beginning.
+
+Split your test into two files: one for known-good steps that set up the desired state, and another for work-in-progress steps you want to debug.
+
+```javascript known-good.test.mjs
+const testdriver = TestDriver(context, {
+  newSandbox: true,
+  headless: false,
+  keepAlive: 60000,  // Keep sandbox alive for 60 seconds after test
+});
+```
+
+```javascript work-in-progress.test.mjs
+// Second test file: experiment.test.mjs (run within keepAlive window)
+const testdriver = TestDriver(context, {
+  newSandbox: true,
+  headless: false,
+  reconnect: true,  // Reconnect to existing sandbox
+});
+```
+
+Then, you can run both tests in sequence:
+
+```bash
+npx vitest run -t known-good.test.mjs -t work-in-progress.test.mjs
+```
+
+And as you make changes to `work-in-progress.test.mjs`, you can re-run just that file to quickly iterate on the failing steps.
+
+```bash
+npx vitest run work-in-progress.test.mjs
+```
+
+<Warning>
+  Reconnect only works if run within the `keepAlive` window of the previous test.
+</Warning>
+
 
 ## Vitest UI
 
@@ -136,38 +191,27 @@ Open http://localhost:51204 to see:
 - Re-run individual tests
 - Filter and search tests
 
-## Next Steps
 
-<CardGroup cols={2}>
-  <Card
-    title="Debugging Tests"
-    icon="bug"
-    href="/v7/getting-started/debugging-tests"
-  >
-    Debug test failures with Dashcam replays
-  </Card>
+## Test Reports
 
-  <Card
-    title="Setting Up in CI"
-    icon="arrows-spin"
-    href="/v7/getting-started/setting-up-in-ci"
-  >
-    Run tests in CI/CD pipelines
-  </Card>
+After running tests, view detailed reports and video replays at [console.testdriver.ai](https://console.testdriver.ai).
 
-  <Card
-    title="Observable Features"
-    icon="microscope"
-    href="/v7/features/observable"
-  >
-    Complete observability guide
-  </Card>
+Reports include:
+- **Video replays** - Watch exactly what happened during each test
+- **Screenshots** - See the state at each step
+- **Timing breakdown** - Identify slow operations
+- **Error details** - Debug failures with full context
 
-  <Card
-    title="Performance Guide"
-    icon="gauge-high"
-    href="/v7/guides/performance"
-  >
-    Optimize test performance
-  </Card>
-</CardGroup>
+```bash
+$ npx vitest run
+
+ ✓ login.test.js (2) 18.4s
+   ✓ user can login 12.3s
+   ✓ shows error for invalid credentials 6.1s
+
+📹 View reports at: https://console.testdriver.ai
+```
+
+<Tip>
+  Bookmark your team's dashboard at [console.testdriver.ai](https://console.testdriver.ai) for quick access to test history and analytics.
+</Tip>
