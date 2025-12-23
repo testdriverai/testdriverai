@@ -13,183 +13,147 @@ TestDriver works with Vitest's powerful test runner.
 ### Run All Tests
 
 ```bash
-# Run all tests once
 npx vitest run
+```
 
-# Run with coverage
+Executes all test files in your project once and exits. Vitest automatically discovers files matching patterns like `*.test.js`, `*.test.mjs`, or `*.spec.js`.
+
+### Run with Coverage
+
+```bash
 npx vitest run --coverage
 ```
+
+Generates a code coverage report showing which lines of your source code were executed during tests. Coverage helps identify untested code paths. Results are displayed in the terminal and saved to a `coverage/` directory.
+
+<Info>
+  Coverage requires the `@vitest/coverage-v8` package. Install it with `npm install -D @vitest/coverage-v8`.
+</Info>
 
 ### Run Specific Tests
 
 ```bash
-# Run specific file
 npx vitest run login.test.js
+```
 
-# Run multiple files
+Runs only the specified test file. Useful when debugging a single test or working on a specific feature.
+
+```bash
 npx vitest run login.test.js checkout.test.js
+```
 
-# Run tests matching pattern
+Runs multiple specific test files. List as many files as needed, separated by spaces.
+
+### Filter Tests by Name
+
+```bash
 npx vitest run --grep "login"
+```
 
-# Run tests in specific folder
+The `--grep` flag filters tests by their name (the string passed to `it()` or `test()`). Only tests whose names match the pattern will run. Supports regex patterns for complex matching.
+
+### Run Tests in a Folder
+
+```bash
 npx vitest run tests/e2e/
 ```
 
-### Parallel Execution
+Runs all test files within a specific directory. Great for organizing tests by type (unit, integration, e2e) and running them separately.
+
+## Parallel Execution
+
+TestDriver runs each test in its own cloud sandbox, enabling true parallel execution. Run your entire test suite in minutes instead of hours.
+
+### Control Concurrency
 
 ```bash
-# Control concurrency
 npx vitest run --maxConcurrency=5
-
-# Run with specific thread count
-npx vitest run --threads --minThreads=2 --maxThreads=8
 ```
 
-<Note>
-  Parallel execution limits depend on your TestDriver plan. Check your plan details at [console.testdriver.ai](https://console.testdriver.ai) for your concurrent sandbox limit.
-</Note>
+The `--maxConcurrency` flag limits how many tests run simultaneously. This should match your TestDriver license slots to avoid failures from exhausted slots.
 
-## TestDriver Options
-
-Configure TestDriver behavior with options passed to the `TestDriver()` function:
-
-```javascript
-const testdriver = TestDriver(context, {
-  headless: false,
-  reconnect: false,
-});
-```
-
-### Headless Mode
-
-Run tests without a visible browser window. Useful for CI/CD pipeline or spawning multiple tests locally:
-
-```javascript
-const testdriver = TestDriver(context, {
-  headless: true,  // No visible browser window
-});
-```
-
-### IP Target
-
-If self-hosting TestDriver, use `ip` to specify the device IP. See [Self-Hosting TestDriver](../self-hosting.md) for details.
-
-```javascript
-const testdriver = TestDriver(context, {
-  newSandbox: true,
-  ip: "203.0.113.42",  // Your allowlisted IP
-});
-```
-
-### Operating System
-
-Set the `os` property to run tests on a specific operating system. Available options are `linux` (default) and `windows`.
-
-```javascript
-const testdriver = TestDriver(context, {
-  os: "windows",  // Run on Windows sandbox
-});
-```
-
-#### Using Environment Variables
-
-You can make the operating system configurable via environment variables. This requires adding code to read from `process.env` in your test:
-
-```javascript
-const testdriver = TestDriver(context, {
-  os: process.env.TD_OS || "linux",  // Read from env, default to Linux
-});
-```
-
-Then pass the variable when running tests:
+### Thread Configuration
 
 ```bash
-# Run tests on Windows
-TD_OS=windows npx vitest run
-
-# Run tests on Linux (default)
-TD_OS=linux npx vitest run
+npx vitest run --pool=threads --minThreads=2 --maxThreads=8
 ```
 
-This pattern is useful for running the same test suite across multiple operating systems in CI/CD:
+Fine-tune thread allocation for optimal performance:
+- `--pool=threads` — Uses worker threads for test isolation
+- `--minThreads` — Minimum number of threads to keep alive (reduces startup overhead)
+- `--maxThreads` — Maximum threads to spawn (limits resource usage)
 
-```yaml
-# Example GitHub Actions matrix
-strategy:
-  matrix:
-    os: [linux, windows]
-steps:
-  - run: TD_OS=${{ matrix.os }} npx vitest run
-```
+### License Slots
 
-## Keepalive
+Your TestDriver plan includes a set number of **license slots** that determine how many tests can run simultaneously. Each running test occupies one slot—when the test completes and the sandbox is destroyed, the slot is immediately available for the next test.
 
-By default, sandboxes terminate immediately when the test finishes. Set this value to keep the sandbox alive for reconnection.
+<Info>
+  View your available slots at [console.testdriver.ai](https://console.testdriver.ai). Upgrade anytime to increase parallelization.
+</Info>
 
-The `keepAlive` param enables you to keep the sandbox running after the test completes for debugging or reconnection.  This will allow you to use the debugger to inspect the state of the device after the test has finished.
+### Configuring Concurrency
 
-```javascript
-const testdriver = TestDriver(context, {
-  keepAlive: 300000,  // Keep sandbox alive for 5 minutes after test
+Set `maxConcurrency` in your Vitest config to match your license slot limit:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+import { TestDriver } from 'testdriverai/vitest';
+
+export default defineConfig({
+  test: {
+    testTimeout: 900000,
+    hookTimeout: 900000,
+    maxConcurrency: 5, // Match your license slot limit
+    reporters: ['default', TestDriver()],
+    setupFiles: ['testdriverai/vitest/setup'],
+  },
 });
-```
-
-### Reconnecting to Existing Sandbox
-
-Speed up test development by reconnecting to an existing sandbox instead of starting fresh each time. This lets you iterate quickly on failing steps without re-running the entire test from the beginning.
-
-Split your test into two files: one for known-good steps that set up the desired state, and another for work-in-progress steps you want to debug.
-
-```javascript known-good.test.mjs
-const testdriver = TestDriver(context, {
-  newSandbox: true,
-  headless: false,
-  keepAlive: 60000,  // Keep sandbox alive for 60 seconds after test
-});
-```
-
-```javascript work-in-progress.test.mjs
-// Second test file: experiment.test.mjs (run within keepAlive window)
-const testdriver = TestDriver(context, {
-  newSandbox: true,
-  headless: false,
-  reconnect: true,  // Reconnect to existing sandbox
-});
-```
-
-Then, you can run both tests in sequence:
-
-```bash
-npx vitest run -t known-good.test.mjs -t work-in-progress.test.mjs
-```
-
-And as you make changes to `work-in-progress.test.mjs`, you can re-run just that file to quickly iterate on the failing steps.
-
-```bash
-npx vitest run work-in-progress.test.mjs
 ```
 
 <Warning>
-  Reconnect only works if run within the `keepAlive` window of the previous test.
+  Setting `maxConcurrency` higher than your license slots will cause tests to fail when slots are exhausted. Always match this value to your plan's limit.
 </Warning>
 
+### Why Parallelization Matters
+
+| Test Suite | Sequential (1 slot) | Parallel (5 slots) | Parallel (10 slots) |
+|------------|--------------------|--------------------|---------------------|
+| 10 tests @ 2min each | 20 min | 4 min | 2 min |
+| 50 tests @ 2min each | 100 min | 20 min | 10 min |
+| 100 tests @ 2min each | 200 min | 40 min | 20 min |
+
+<Tip>
+  **Pro tip:** Upgrading your plan doesn't just increase speed—it enables faster CI/CD feedback loops, letting your team ship with confidence.
+</Tip>
+
+<Card
+  title="View Plans & Pricing"
+  icon="credit-card"
+  href="/v7/plans/cloud"
+>
+  Compare plans and find the right level of parallelization for your team.
+</Card>
 
 ## Vitest UI
 
 Use Vitest UI for interactive debugging:
 
 ```bash
-# Start Vitest UI
 npx vitest --ui
 ```
 
+The `--ui` flag launches a web-based interface for managing your test suite. Unlike `vitest run`, this starts in watch mode by default.
+
 Open http://localhost:51204 to see:
-- Test file tree
-- Test status and duration
-- Console output
-- Re-run individual tests
-- Filter and search tests
+- **Test file tree** — Browse and navigate your test structure
+- **Test status and duration** — See pass/fail states and timing at a glance
+- **Console output** — View logs and errors inline with each test
+- **Re-run individual tests** — Click to re-execute specific tests without restarting
+- **Filter and search** — Quickly find tests by name or status
+
+<Tip>
+  Combine with `--open` to automatically open the UI in your browser: `npx vitest --ui --open`
+</Tip>
 
 
 ## Test Reports

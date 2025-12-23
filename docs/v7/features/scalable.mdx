@@ -344,12 +344,34 @@ TestDriver integrates seamlessly with all major CI/CD platforms:
 
 ## JUnit Reports
 
-Generate JUnit XML reports for test result aggregation:
+Generate JUnit XML reports for test result aggregation and CI/CD integration.
+
+### Basic Setup
+
+Configure Vitest to output JUnit reports by adding a reporter to your config:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000,
+    hookTimeout: 120000,
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: 'test-report.junit.xml'
+    }
+  },
+});
+```
+
+Or run from the command line:
 
 ```bash
-# Generate JUnit report
 npx vitest run --reporter=junit --outputFile=test-results.xml
 ```
+
+This generates a standard JUnit XML report:
 
 ```xml test-results.xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -359,12 +381,112 @@ npx vitest run --reporter=junit --outputFile=test-results.xml
     <testcase name="invalid credentials show error" time="9.8" />
     <testcase name="password reset works" time="9.0" />
   </testsuite>
-  <!-- More test suites -->
 </testsuites>
 ```
 
+### GitHub Actions PR Comments
+
+Use JUnit reports to automatically post test results as comments on pull requests. This provides immediate visibility into test failures without leaving GitHub.
+
+```yaml .github/workflows/test.yml
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          comment_mode: always
+          check_name: Test Results
+```
+
+<Note>
+  The `if: always()` ensures test results are published even when tests fail, so you always see what went wrong.
+</Note>
+
+The [publish-unit-test-result-action](https://github.com/EnricoMi/publish-unit-test-result-action) creates:
+
+- **PR comments** with a summary table of passed/failed tests
+- **Check runs** visible in the GitHub PR checks tab
+- **Annotations** highlighting failed tests in the diff view
+
+### Multi-Platform Testing with JUnit
+
+When testing across multiple platforms, use separate check names to distinguish results:
+
+```yaml .github/workflows/test.yml
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      # ... setup steps ...
+      
+      - name: Run Linux tests
+        run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_OS: linux
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          comment_mode: always
+          check_name: Test Results (Linux)
+
+  test-windows:
+    runs-on: ubuntu-latest
+    steps:
+      # ... setup steps ...
+      
+      - name: Run Windows tests
+        run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_OS: windows
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          comment_mode: always
+          check_name: Test Results (Windows)
+```
+
 <Check>
-  JUnit reports integrate with Jenkins, Azure DevOps, TeamCity, and other CI platforms for test result visualization.
+  JUnit reports integrate with Jenkins, Azure DevOps, TeamCity, GitLab, and other CI platforms for test result visualization.
 </Check>
 
 ## Familiar Test Syntax
