@@ -1,0 +1,754 @@
+---
+title: "Scalability"
+description: "From small projects to enterprise test suites with thousands of tests"
+icon: "arrow-up-right-dots"
+---
+
+TestDriver scales effortlessly from your first test to enterprise suites with thousands of tests running in parallel across multiple platforms.
+
+## Code Snippets for Reusability
+
+Scale your test suite with reusable code snippets to reduce duplication and maintain consistency:
+
+<Tabs>
+  <Tab title="Helper Functions">
+    ```javascript test/helpers/auth.js
+    // Reusable authentication helpers
+    export async function login(testdriver, { email, password }) {
+      await testdriver.find('email input').type(email);
+      await testdriver.find('password input').type(password);
+      await testdriver.find('login button').click();
+      await testdriver.assert('logged in successfully');
+    }
+
+    export async function logout(testdriver) {
+      await testdriver.find('user menu').click();
+      await testdriver.find('logout button').click();
+    }
+    ```
+
+    ```javascript test/checkout.test.js
+    import { login } from './helpers/auth.js';
+
+    test('checkout flow', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+      await login(testdriver, { 
+        email: 'user@example.com',
+        password: 'password123' 
+      });
+      // Continue with checkout test
+    });
+    ```
+  </Tab>
+
+  <Tab title="Page Objects">
+    ```javascript test/pages/LoginPage.js
+    export class LoginPage {
+      constructor(testdriver) {
+        this.testdriver = testdriver;
+      }
+
+      async login(email, password) {
+        await this.testdriver.find('email input').type(email);
+        await this.testdriver.find('password input').type(password);
+        await this.testdriver.find('submit button').click();
+      }
+
+      async assertError(message) {
+        await this.testdriver.assert(`error message shows "${message}"`);
+      }
+    }
+    ```
+
+    ```javascript test/auth.test.js
+    import { LoginPage } from './pages/LoginPage.js';
+
+    test('invalid login shows error', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+      const loginPage = new LoginPage(testdriver);
+      
+      await loginPage.login('invalid@test.com', 'wrong');
+      await loginPage.assertError('Invalid credentials');
+    });
+    ```
+  </Tab>
+
+  <Tab title="Custom Commands">
+    ```javascript test/commands/navigation.js
+    export function addNavigationCommands(testdriver) {
+      testdriver.navigateTo = async (section) => {
+        await testdriver.find(`${section} nav link`).click();
+        await testdriver.assert(`${section} page is loaded`);
+      };
+
+      testdriver.searchFor = async (query) => {
+        await testdriver.find('search input').type(query);
+        await testdriver.find('search button').click();
+        await testdriver.assert('search results are displayed');
+      };
+
+      return testdriver;
+    }
+    ```
+
+    ```javascript test/search.test.js
+    import { addNavigationCommands } from './commands/navigation.js';
+
+    test('search functionality', async (context) => {
+      let { testdriver } = await chrome(context, { url });
+      testdriver = addNavigationCommands(testdriver);
+      
+      await testdriver.searchFor('laptop');
+      // Custom command used
+    });
+    ```
+  </Tab>
+</Tabs>
+
+<Check>
+  Reusable snippets reduce test maintenance time by up to 70% in large test suites.
+</Check>
+
+## Dynamic Variables for Data-Driven Tests
+
+Scale your testing with dynamic data to cover more scenarios:
+
+<Tabs>
+  <Tab title="Environment Variables">
+    ```javascript
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+
+    test('multi-environment testing', async (context) => {
+      const env = process.env.TEST_ENV || 'staging';
+      const urls = {
+        dev: 'https://dev.myapp.com',
+        staging: 'https://staging.myapp.com',
+        production: 'https://myapp.com'
+      };
+
+      const { testdriver } = await chrome(context, { 
+        url: urls[env] 
+      });
+
+      await testdriver.assert('app is running');
+    });
+    ```
+
+    ```bash
+    # Run against different environments
+    TEST_ENV=dev npx vitest run
+    TEST_ENV=staging npx vitest run
+    TEST_ENV=production npx vitest run
+    ```
+  </Tab>
+
+  <Tab title="Test Fixtures">
+    ```javascript test/fixtures/users.js
+    export const testUsers = [
+      { email: 'admin@test.com', role: 'admin' },
+      { email: 'user@test.com', role: 'user' },
+      { email: 'guest@test.com', role: 'guest' }
+    ];
+
+    export const products = [
+      { name: 'Laptop', price: 999 },
+      { name: 'Mouse', price: 29 },
+      { name: 'Keyboard', price: 89 }
+    ];
+    ```
+
+    ```javascript test/permissions.test.js
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+    import { testUsers } from './fixtures/users.js';
+
+    test.each(testUsers)('$role can access dashboard', async ({ email, role }, context) => {
+      const { testdriver } = await chrome(context, { url });
+      
+      await testdriver.find('email input').type(email);
+      await testdriver.find('password input').type('password123');
+      await testdriver.find('login button').click();
+      
+      if (role === 'admin') {
+        await testdriver.assert('admin panel is visible');
+      } else {
+        await testdriver.assert('user dashboard is visible');
+      }
+    });
+    ```
+  </Tab>
+
+  <Tab title="Dynamic Data Generation">
+    ```javascript
+    import { test } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+    import { faker } from '@faker-js/faker';
+
+    test('user registration with dynamic data', async (context) => {
+      const { testdriver } = await chrome(context, { url });
+
+      // Generate unique test data for each run
+      const userData = {
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        email: faker.internet.email(),
+        password: faker.internet.password({ length: 12 })
+      };
+
+      await testdriver.find('first name input').type(userData.firstName);
+      await testdriver.find('last name input').type(userData.lastName);
+      await testdriver.find('email input').type(userData.email);
+      await testdriver.find('password input').type(userData.password);
+      await testdriver.find('register button').click();
+
+      await testdriver.assert('registration successful');
+      console.log('Registered user:', userData.email);
+    });
+    ```
+
+    ```bash
+    npm install --save-dev @faker-js/faker
+    ```
+  </Tab>
+</Tabs>
+
+<Card title="Dynamic Variables Best Practices" icon="lightbulb">
+  - **Environment configs:** Store URLs, credentials, and settings in env vars
+  - **Test fixtures:** Maintain reusable test data in separate files
+  - **Data generators:** Use libraries like Faker for unique test data
+  - **Parameterization:** Test multiple scenarios with `test.each()`
+  - **CI/CD integration:** Pass dynamic values via environment variables
+</Card>
+
+## Works with Vitest
+
+Full integration with Vitest's powerful features:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000,
+    hookTimeout: 120000,
+    maxConcurrency: 10,      // Run 10 tests in parallel
+    minThreads: 2,
+    maxThreads: 10,
+  },
+});
+```
+
+<CardGroup cols={2}>
+  <Card title="Parallel Execution" icon="layer-group">
+    Run multiple tests simultaneously for maximum throughput:
+
+    ```bash
+    # Run all tests in parallel
+    npx vitest run
+
+    # Control concurrency
+    npx vitest run --max-concurrency=5
+    ```
+  </Card>
+
+  <Card title="Watch Mode" icon="eye">
+    Instant feedback during development:
+
+    ```bash
+    # Run in watch mode
+    npx vitest
+
+    # Only run changed tests
+    npx vitest --changed
+    ```
+  </Card>
+</CardGroup>
+
+[See complete Vitest integration guide](/v7/guides/vitest)
+
+## CI/CD Compatible
+
+TestDriver integrates seamlessly with all major CI/CD platforms:
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml .github/workflows/test.yml
+    name: E2E Tests
+
+    on: [push, pull_request]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          - uses: actions/setup-node@v3
+          - run: npm install
+          - run: npx vitest run
+            env:
+              TD_API_KEY: ${{ secrets.TD_API_KEY }}
+    ```
+
+    [GitHub Actions guide](/v7/guides/ci-cd/github-actions)
+  </Tab>
+
+  <Tab title="GitLab CI">
+    ```yaml .gitlab-ci.yml
+    test:
+      image: node:20
+      script:
+        - npm install
+        - npx vitest run
+      variables:
+        TD_API_KEY: $TD_API_KEY
+    ```
+
+    [GitLab CI guide](/v7/guides/ci-cd/gitlab)
+  </Tab>
+
+  <Tab title="CircleCI">
+    ```yaml .circleci/config.yml
+    version: 2.1
+    jobs:
+      test:
+        docker:
+          - image: cimg/node:20.0
+        steps:
+          - checkout
+          - run: npm install
+          - run: npx vitest run
+    ```
+
+    [CircleCI guide](/v7/guides/ci-cd/circleci)
+  </Tab>
+
+  <Tab title="Jenkins">
+    ```groovy Jenkinsfile
+    pipeline {
+      agent any
+      stages {
+        stage('Test') {
+          steps {
+            sh 'npm install'
+            sh 'npx vitest run'
+          }
+        }
+      }
+    }
+    ```
+
+    [Jenkins guide](/v7/guides/ci-cd/jenkins)
+  </Tab>
+</Tabs>
+
+## JUnit Reports
+
+Generate JUnit XML reports for test result aggregation and CI/CD integration.
+
+### Basic Setup
+
+Configure Vitest to output JUnit reports by adding a reporter to your config:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    testTimeout: 120000,
+    hookTimeout: 120000,
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: 'test-report.junit.xml'
+    }
+  },
+});
+```
+
+Or run from the command line:
+
+```bash
+npx vitest run --reporter=junit --outputFile=test-results.xml
+```
+
+This generates a standard JUnit XML report:
+
+```xml test-results.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="vitest tests" tests="12" failures="0" errors="0" time="125.3">
+  <testsuite name="login.test.js" tests="3" failures="0" time="31.2">
+    <testcase name="user can login" time="12.4" />
+    <testcase name="invalid credentials show error" time="9.8" />
+    <testcase name="password reset works" time="9.0" />
+  </testsuite>
+</testsuites>
+```
+
+### GitHub Actions PR Comments
+
+Use JUnit reports to automatically post test results as comments on pull requests. This provides immediate visibility into test failures without leaving GitHub.
+
+```yaml .github/workflows/test.yml
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          comment_mode: always
+          check_name: Test Results
+```
+
+<Note>
+  The `if: always()` ensures test results are published even when tests fail, so you always see what went wrong.
+</Note>
+
+The [publish-unit-test-result-action](https://github.com/EnricoMi/publish-unit-test-result-action) creates:
+
+- **PR comments** with a summary table of passed/failed tests
+- **Check runs** visible in the GitHub PR checks tab
+- **Annotations** highlighting failed tests in the diff view
+
+### Multi-Platform Testing with JUnit
+
+When testing across multiple platforms, use separate check names to distinguish results:
+
+```yaml .github/workflows/test.yml
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      # ... setup steps ...
+      
+      - name: Run Linux tests
+        run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_OS: linux
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          comment_mode: always
+          check_name: Test Results (Linux)
+
+  test-windows:
+    runs-on: ubuntu-latest
+    steps:
+      # ... setup steps ...
+      
+      - name: Run Windows tests
+        run: npx vitest run
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_OS: windows
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          comment_mode: always
+          check_name: Test Results (Windows)
+```
+
+<Check>
+  JUnit reports integrate with Jenkins, Azure DevOps, TeamCity, GitLab, and other CI platforms for test result visualization.
+</Check>
+
+## Familiar Test Syntax
+
+TestDriver works with the test frameworks you already know:
+
+<Tabs>
+  <Tab title="Vitest">
+    ```javascript
+    import { test, describe, beforeAll, afterAll } from 'vitest';
+    import { chrome } from 'testdriverai/presets';
+
+    describe('My Feature', () => {
+      test('should work', async (context) => {
+        const { testdriver } = await chrome(context, { url });
+        await testdriver.find('button').click();
+      });
+    });
+    ```
+  </Tab>
+
+  <Tab title="Jest">
+    ```javascript
+    import { chrome } from 'testdriverai/presets';
+
+    describe('My Feature', () => {
+      test('should work', async () => {
+        const { testdriver } = await chrome({ url });
+        await testdriver.find('button').click();
+      });
+    });
+    ```
+  </Tab>
+
+  <Tab title="Mocha">
+    ```javascript
+    import { chrome } from 'testdriverai/presets';
+
+    describe('My Feature', function() {
+      it('should work', async function() {
+        const { testdriver } = await chrome(this, { url });
+        await testdriver.find('button').click();
+      });
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Existing Systems Integration
+
+Drop TestDriver into your current workflow without disruption:
+
+```javascript
+import { test, expect } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('integrates with existing assertions', async (context) => {
+  const { testdriver } = await chrome(context, { url });
+
+  // Use TestDriver's AI assertions
+  await testdriver.assert('welcome message is visible');
+
+  // Or use traditional assertions
+  const button = await testdriver.find('submit button');
+  expect(button.coordinates).toBeDefined();
+  expect(button.text).toContain('Submit');
+
+  // Mix and match as needed
+  const element = await testdriver.exec('js', 'document.title');
+  expect(element).toBe('My App');
+});
+```
+
+## Scale to Thousands of Tests
+
+TestDriver handles large test suites efficiently:
+
+<Card title="Enterprise Test Suite Example" icon="building">
+  ```
+  Project: E-commerce Platform
+  Total tests: 3,847
+  Test files: 412
+  Parallel runners: 20
+  Total duration: 18 minutes
+
+  Breakdown:
+  - Unit tests: 2,134 (3 min)
+  - Integration: 891 (7 min)
+  - E2E (TestDriver): 822 (18 min)
+
+  Cost per run: $4.32
+  Runs per day: 50
+  Monthly cost: $6,480
+  ```
+
+  With caching enabled:
+  ```
+  E2E duration: 8 minutes (2.25x faster)
+  Cost per run: $1.89 (56% reduction)
+  Monthly cost: $2,835 (saves $3,645/month)
+  ```
+</Card>
+
+## Test Sharding
+
+Distribute tests across multiple machines:
+
+<Tabs>
+  <Tab title="GitHub Actions Matrix">
+    ```yaml .github/workflows/test.yml
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - run: npx vitest run --shard=${{ matrix.shard }}/5
+    ```
+
+    Runs 5 parallel jobs, each handling 1/5 of tests.
+  </Tab>
+
+  <Tab title="GitLab CI Parallel">
+    ```yaml .gitlab-ci.yml
+    test:
+      parallel: 5
+      script:
+        - npx vitest run --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
+    ```
+  </Tab>
+
+  <Tab title="Manual Sharding">
+    ```bash
+    # Machine 1
+    npx vitest run --shard=1/4
+
+    # Machine 2
+    npx vitest run --shard=2/4
+
+    # Machine 3
+    npx vitest run --shard=3/4
+
+    # Machine 4
+    npx vitest run --shard=4/4
+    ```
+  </Tab>
+</Tabs>
+
+## Team Collaboration
+
+Built for teams with multiple developers:
+
+<AccordionGroup>
+  <Accordion title="Shared Test Cache">
+    Tests automatically benefit from each other's cache entries:
+
+    ```javascript
+    // Developer A runs test
+    await testdriver.find('submit button').click();
+    // Creates cache entry
+
+    // Developer B runs test later
+    await testdriver.find('submit button').click();
+    // Uses Developer A's cache ⚡
+    ```
+
+    Per-team cache sharing accelerates everyone's tests.
+  </Accordion>
+
+  <Accordion title="Dashcam Replays">
+    Share test replays with your team:
+
+    ```javascript
+    test('shareable replay', async (context) => {
+      const { testdriver, dashcam } = await chrome(context, { url });
+
+      await testdriver.find('button').click();
+
+      // Share replay URL with team
+      console.log('Replay:', dashcam.url);
+      // https://console.testdriver.ai/dashcam/abc123
+    });
+    ```
+
+    View replays at [app.testdriver.ai](https://app.testdriver.ai)
+  </Accordion>
+
+  <Accordion title="Sandbox Management">
+    Long-running sandboxes for team debugging:
+
+    ```bash
+    # Spawn a sandbox for the team
+    testdriver sandbox spawn --timeout 7200000
+
+    # Team members can connect
+    export TESTDRIVER_SANDBOX_ID=i-0abc123def
+    npx vitest run
+    ```
+
+    [Learn about sandbox management](/agents.md#sandbox-management)
+  </Accordion>
+</AccordionGroup>
+
+## Cost Optimization
+
+TestDriver scales cost-effectively:
+
+<Card title="Pricing Model" icon="dollar-sign">
+  - **API calls:** Pay per AI vision analysis
+  - **Sandbox time:** Pay per minute of VM usage
+  - **Caching:** Reduces both costs dramatically
+  - **Shared cache:** Team benefits from collective cache
+
+  **Example costs:**
+  - Single test run: $0.04 - $0.12
+  - 100-test suite: $4 - $12 (first run)
+  - Cached suite: $0.50 - $2 (90%+ savings)
+</Card>
+
+## Enterprise Scale
+
+TestDriver supports the largest testing operations:
+
+- **Unlimited tests** in enterprise plans
+- **Unlimited sandbox hours** for large suites
+- **Unlimited team members** for collaboration
+- **Priority infrastructure** for faster execution
+- **Dedicated support** for optimization help
+- **Custom SLA** for guaranteed uptime
+
+[Contact sales](https://testdriver.ai/enterprise) for enterprise pricing.
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card
+    title="Vitest Integration"
+    icon="flask-vial"
+    href="/v7/guides/vitest"
+  >
+    Complete Vitest guide
+  </Card>
+
+  <Card
+    title="CI/CD Setup"
+    icon="arrows-spin"
+    href="/v7/guides/ci-cd/overview"
+  >
+    CI/CD integration guides
+  </Card>
+
+  <Card
+    title="Performance Optimization"
+    icon="gauge-high"
+    href="/v7/guides/performance"
+  >
+    Optimize test performance
+  </Card>
+
+  <Card
+    title="Self-Hosting"
+    icon="server"
+    href="/v7/guides/self-hosting"
+  >
+    Run on your infrastructure
+  </Card>
+</CardGroup>

@@ -5,7 +5,6 @@
 
 import crypto from "crypto";
 import { config } from "dotenv";
-import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import TestDriver from "../../../sdk.js";

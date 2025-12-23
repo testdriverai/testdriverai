@@ -155,11 +155,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
     }
 
-    async connect(sandboxId, persist = false) {
+    async connect(sandboxId, persist = false, keepAlive = null) {
       let reply = await this.send({
         type: "connect",
         persist,
         sandboxId,
+        keepAlive,
       });
 
       if (reply.success) {
@@ -226,6 +227,15 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         this.socket.on("message", async (raw) => {
           let message = JSON.parse(raw);
+
+          // Handle progress messages (no requestId needed)
+          if (message.type === 'sandbox.progress') {
+            emitter.emit(events.sandbox.progress, {
+              step: message.step,
+              message: message.message,
+            });
+            return;
+          }
 
           if (!this.ps[message.requestId]) {
             console.warn(

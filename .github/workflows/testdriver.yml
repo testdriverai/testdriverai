@@ -34,3 +34,130 @@ jobs:
         name: test-results
         path: test-results/
         retention-days: 30
+
+    # Init command test - only runs on PRs, not on main/master
+    - name: Create test directory for init
+      if: github.event_name == 'pull_request'
+      run: |
+        mkdir -p /tmp/test-init-project
+        cd /tmp/test-init-project
+
+    - name: Run init command (skip prompts)
+      if: github.event_name == 'pull_request'
+      working-directory: /tmp/test-init-project
+      run: |
+        # Create .env with API key first to skip the prompt
+        echo "TD_API_KEY=${{ secrets.TD_API_KEY }}" > .env
+        
+        # Run init command using the CLI from the repo
+        node ${{ github.workspace }}/bin/testdriverai.js init
+      env:
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+    - name: Verify project structure
+      if: github.event_name == 'pull_request'
+      working-directory: /tmp/test-init-project
+      run: |
+        echo "Checking generated files..."
+        
+        # Check for package.json
+        if [ ! -f "package.json" ]; then
+          echo "❌ package.json not found"
+          exit 1
+        fi
+        echo "✓ package.json exists"
+        
+        # Check for vitest config
+        if [ ! -f "vitest.config.js" ]; then
+          echo "❌ vitest.config.js not found"
+          exit 1
+        fi
+        echo "✓ vitest.config.js exists"
+        
+        # Check for test file
+        if [ ! -f "tests/example.test.js" ]; then
+          echo "❌ tests/example.test.js not found"
+          exit 1
+        fi
+        echo "✓ tests/example.test.js exists"
+        
+        # Check for .env file
+        if [ ! -f ".env" ]; then
+          echo "❌ .env not found"
+          exit 1
+        fi
+        echo "✓ .env exists"
+        
+        # Check for .gitignore
+        if [ ! -f ".gitignore" ]; then
+          echo "❌ .gitignore not found"
+          exit 1
+        fi
+        echo "✓ .gitignore exists"
+        
+        # Check for GitHub workflow
+        if [ ! -f ".github/workflows/testdriver.yml" ]; then
+          echo "❌ .github/workflows/testdriver.yml not found"
+          exit 1
+        fi
+        echo "✓ .github/workflows/testdriver.yml exists"
+
+    - name: Verify vitest config contents
+      if: github.event_name == 'pull_request'
+      working-directory: /tmp/test-init-project
+      run: |
+        echo "Checking vitest.config.js contents..."
+        
+        # Check for TestDriver reporter
+        if ! grep -q "TestDriver()" vitest.config.js; then
+          echo "❌ TestDriver reporter not found in vitest.config.js"
+          cat vitest.config.js
+          exit 1
+        fi
+        echo "✓ TestDriver reporter is configured"
+        
+        # Check for setupFiles
+        if ! grep -q "setupFiles.*testdriverai/vitest/setup" vitest.config.js; then
+          echo "❌ setupFiles not configured correctly"
+          cat vitest.config.js
+          exit 1
+        fi
+        echo "✓ setupFiles is configured"
+
+    - name: Verify test file contents
+      if: github.event_name == 'pull_request'
+      working-directory: /tmp/test-init-project
+      run: |
+        echo "Checking test file contents..."
+        
+        # Check for .provision usage
+        if ! grep -q "\.provision\.chrome" tests/example.test.js; then
+          echo "❌ Test does not use .provision.chrome"
+          cat tests/example.test.js
+          exit 1
+        fi
+        echo "✓ Test uses .provision.chrome"
+        
+        # Check for TestDriver import
+        if ! grep -q "from 'testdriverai/vitest/hooks'" tests/example.test.js; then
+          echo "❌ Test does not import from testdriverai/vitest/hooks"
+          cat tests/example.test.js
+          exit 1
+        fi
+        echo "✓ Test imports TestDriver from vitest/hooks"
+
+    - name: Run the generated test
+      if: github.event_name == 'pull_request'
+      working-directory: /tmp/test-init-project
+      run: npm test
+      env:
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+
+    - name: Upload init test results
+      if: always() && github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-init-results
+        path: /tmp/test-init-project/test-results/
+        retention-days: 7
+        if-no-files-found: warn
