@@ -219,16 +219,8 @@
     {
       "group": "Guides",
       "pages": [
-        {
-          "group": "Selectorless Testing",
-          "icon": "sparkles",
-          "pages": [
             "/v7/features/easy-to-write",
-            "/v7/features/coverage",
             "/v7/features/powerful",
-            "/v7/features/ai-native"
-          ]
-        },
         {
           "group": "Performance & Reliability",
           "icon": "gauge-high",
@@ -293,9 +285,8 @@
           "group": "Actions",
           "icon": "bolt",
           "pages": [
-            "/v7/api/act",
+            "/v7/api/ai",
             "/v7/api/assert",
-            "/v7/api/assertions",
             "/v7/api/click",
             "/v7/api/doubleClick",
             "/v7/api/exec",
@@ -325,7 +316,7 @@
   ]
 }
 
-        ]
+  ]
   },
   "logo": {
     "light": "/images/template/light.png",

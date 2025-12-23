@@ -4,73 +4,102 @@ description: "Learn how to write effective TestDriver tests with natural languag
 icon: "pencil"
 ---
 
-TestDriver makes writing tests intuitive by using natural language to describe interactions. This guide covers everything you need to know to write effective, maintainable tests.
+## Instructions for Coding Agents
 
-## Basic Test Structure
+We recommend starting with [our quickstart](./quickstart) then supplying your coding agent with our [agents.md](https://github.com/testdriverai/testdriverai/agents.md) file.
 
-Every TestDriver test follows this simple pattern:
+Then, you can prompt your coding agent to generate tests:
 
-```javascript
-import { test } from 'vitest';
-import { TestDriver } from 'testdriverai/vitest/hooks';
+```md
+Make me a TestDriver test that does the following steps:
 
-test('descriptive test name', async (context) => {
-  // 1. Setup: Launch and navigate
-  const testdriver = TestDriver(context, { headless: true });
-  await testdriver.provision.chrome({ url: 'https://myapp.com' });
-
-  // 2. Act: Interact with your application
-  await testdriver.find('email input').type('user@example.com');
-  await testdriver.find('submit button').click();
-
-  // 3. Assert: Verify expected state
-  await testdriver.assert('Welcome message is visible');
-});
+Navigate to practicetestautomation.com
+Type username student into Username field
+Type password Password123 into Password field
+Push Submit button
+Verify new page contains expected text 'logged in'
 ```
 
-<Tip>
-  The TestDriver hook handles all setup and cleanup automatically - no need for manual browser management!
-</Tip>
+## AI Exploration Mode
 
-## Finding Elements
+Within a test, the `ai()` method lets TestDriver autonomously figure out how to accomplish a task. It's useful for dynamic or unpredictable UIs where explicit actions may be difficult to define.
 
-Use natural language to describe elements:
+```javascript
+// Handle dynamic or unpredictable UI
+await testdriver.ai('dismiss any popups or modals that appear');
+```
 
-<Tabs>
-  <Tab title="Good Descriptions">
-    ```javascript
-    // ✅ Specific and contextual
-    await testdriver.find('submit button in the login form');
-    await testdriver.find('email input field');
-    await testdriver.find('delete button in the top right corner');
-    await testdriver.find('first product card in the grid');
-    await testdriver.find('dropdown menu labeled "Country"');
-    ```
+<Info>Explicit commands are preferred for production tests, as they are cheaper, faster, and more reliable.</Info>
 
-    These descriptions are:
-    - Specific enough to locate the element
-    - Include context (location, parent container)
-    - Use natural human language
-  </Tab>
+## Locating Single Elements
 
-  <Tab title="Avoid Vague">
-    ```javascript
-    // ❌ Too vague
-    await testdriver.find('button');
-    await testdriver.find('input');
-    await testdriver.find('link');
-    await testdriver.find('text');
+Use natural language to describe elements. Descriptions should be specific enough to locate the element, but not too-specific that they break with minor UI changes. For example:
 
-    // ✅ Better
-    await testdriver.find('submit button');
-    await testdriver.find('email input');
-    await testdriver.find('contact us link');
-    await testdriver.find('welcome message text');
-    ```
+```javascript
+await testdriver.find('email input field');
+await testdriver.find('first product card in the grid');
+await testdriver.find('dropdown menu labeled "Country"');
+```
 
-    Add specificity to help AI locate the exact element.
-  </Tab>
-</Tabs>
+<Info>TestDriver will cache found elements for improved performance on subsequent calls. Learn more about [element caching here](/v7/features/fast).</Info>
+
+## Debugging Found Elements
+
+After finding an element, you can inspect its properties for debugging:
+
+```javascript
+const button = await testdriver.find('submit button');
+console.log(button);
+```
+
+This outputs all element properties:
+
+```javascript
+{
+  description: 'submit button',
+  found: true,
+  x: 150,
+  y: 300,
+  coordinates: { x: 150, y: 300, centerX: 200, centerY: 320 },
+  threshold: 0.8,
+  confidence: 0.95,
+  similarity: 0.92,
+  selector: 'button[type="submit"]',
+  cache: {
+    hit: true,
+    strategy: 'pixel-diff',
+    createdAt: '2025-01-15T10:30:00Z',
+    diffPercent: 0.02,
+    imageUrl: 'https://...'
+  }
+}
+```
+
+## Performing Actions
+
+TestDriver provides a variety of actions you can perform, like [clicking](/v7/api/click), [typing](/v7/api/type), [hovering](/v7/api/hover), and [scrolling](/v7/api/scroll). For a full list, see the [API Reference](/v7/api/click).
+
+```javascript
+// Clicking
+await testdriver.find('submit button').click();
+await testdriver.find('file item').doubleClick();
+await testdriver.find('text area').rightClick();
+
+// Typing
+await testdriver.find('email input').type('user@example.com');
+await testdriver.find('password input').type('secret', { secret: true });
+
+// Keyboard shortcuts
+await testdriver.pressKeys(['enter']);
+await testdriver.pressKeys(['ctrl', 'c']);
+
+// Hovering
+await testdriver.find('dropdown menu').hover();
+
+// Scrolling
+await testdriver.scroll('down', 500);
+await testdriver.scrollUntilText('Footer content');
+```
 
 ## Chaining Actions
 
@@ -78,102 +107,15 @@ TestDriver supports method chaining for cleaner code:
 
 ```javascript
 // Chain find() with actions
-await testdriver.find('Login button').click();
-await testdriver.find('email input').type('user@example.com');
-await testdriver.find('dropdown menu').hover();
-await testdriver.find('menu item').doubleClick();
-await testdriver.find('context option').rightClick();
+const button = await testdriver.find('submit button').click();```
+```
 
-// Or save element reference
+Or save element reference for later use:
+
+```javascript
 const button = await testdriver.find('submit button');
 await button.click();
 ```
-
-## Common Interactions
-
-<AccordionGroup>
-  <Accordion title="Clicking Elements">
-    ```javascript
-    // Regular click
-    await testdriver.find('button').click();
-
-    // Double-click
-    await testdriver.find('file item').doubleClick();
-
-    // Right-click (context menu)
-    await testdriver.find('text area').rightClick();
-
-    // Click at specific coordinates
-    await testdriver.click(500, 300);
-    ```
-  </Accordion>
-
-  <Accordion title="Typing Text">
-    ```javascript
-    // Basic typing
-    await testdriver.find('search input').type('query text');
-
-    // Type sensitive data (won't be logged)
-    await testdriver.find('password input').type('secret', { secret: true });
-
-    // Type with delay between keystrokes
-    await testdriver.find('input').type('slow typing', { delay: 500 });
-
-    // Type numbers
-    await testdriver.find('age input').type(25);
-    ```
-
-    <Warning>
-      Always use `{ secret: true }` for passwords and sensitive data to prevent logging!
-    </Warning>
-  </Accordion>
-
-  <Accordion title="Keyboard Shortcuts">
-    ```javascript
-    // Single keys
-    await testdriver.pressKeys(['enter']);
-    await testdriver.pressKeys(['tab']);
-    await testdriver.pressKeys(['escape']);
-
-    // Combinations
-    await testdriver.pressKeys(['ctrl', 'c']);  // Copy
-    await testdriver.pressKeys(['ctrl', 'v']);  // Paste
-    await testdriver.pressKeys(['ctrl', 's']);  // Save
-
-    // macOS modifiers
-    await testdriver.pressKeys(['cmd', 'c']);   // macOS copy
-    await testdriver.pressKeys(['cmd', 'shift', 'p']); // Command palette
-    ```
-  </Accordion>
-
-  <Accordion title="Hovering">
-    ```javascript
-    // Hover over element to reveal dropdown
-    await testdriver.find('Products menu').hover();
-    await testdriver.find('Laptops submenu').click();
-
-    // Hover at coordinates
-    await testdriver.hover(400, 200);
-    ```
-  </Accordion>
-
-  <Accordion title="Scrolling">
-    ```javascript
-    // Scroll down
-    await testdriver.scroll('down', 500);
-
-    // Scroll up
-    await testdriver.scroll('up', 300);
-
-    // Scroll until text appears
-    await testdriver.scrollUntilText('Footer content');
-
-    // Scroll until element is visible
-    await testdriver.scroll('down', 1000);
-    await testdriver.find('load more button').click();
-    ```
-  </Accordion>
-</AccordionGroup>
 
 ## Making Assertions
 
@@ -200,9 +142,24 @@ await testdriver.assert('submit button is blue');
 await testdriver.assert('form has red border');
 ```
 
-<Tip>
-  Assertions automatically wait for the condition to be true, making tests more stable.
-</Tip>
+<Info>Assertions are not cached and always re-evaluated to ensure accuracy.</Info>
+
+## Waiting for Elements
+
+Use the `timeout` option with `find()` to wait for elements that appear after async operations:
+
+```javascript
+// Wait up to 30 seconds for element to appear (polls every 5 seconds)
+const element = await testdriver.find('Loading complete indicator', { timeout: 30000 });
+await element.click();
+
+// Useful after actions that trigger loading states
+await testdriver.find('submit button').click();
+await testdriver.find('success message', { timeout: 15000 });
+
+// Short timeout for quick checks
+const toast = await testdriver.find('notification toast', { timeout: 5000 });
+```
 
 ## Working with Multiple Elements
 
@@ -226,309 +183,46 @@ const firstProduct = products[0];
 await firstProduct.click();
 ```
 
-## Handling Forms
+## Flake Prevention
 
-Complete form example:
+TestDriver automatically waits for the screen and network to stabilize after each action using **redraw detection**. This prevents flaky tests caused by animations, loading states, or dynamic content updates.
+
+<Note>
+  Redraw detection adds a small delay after each action but significantly reduces test flakiness.
+</Note>
+
+For example, when clicking a submit button that navigates to a new page:
 
 ```javascript
-test('fill out contact form', async (context) => {
-  const { testdriver } = await chrome(context, {
-    url: 'https://example.com/contact'
-  });
+// Click submit - TestDriver automatically waits for the new page to load
+await testdriver.find('submit button').click();
 
-  // Fill text inputs
-  await testdriver.find('name input').type('John Doe');
-  await testdriver.find('email input').type('john@example.com');
-  await testdriver.find('phone input').type('555-1234');
+// By the time this runs, the page has fully loaded and stabilized
+await testdriver.assert('dashboard is displayed');
+await testdriver.find('welcome message');
+```
 
-  // Select from dropdown
-  await testdriver.find('country dropdown').click();
-  await testdriver.find('United States option').click();
+Without redraw detection, you'd need manual waits or retries to handle the page transition. TestDriver handles this automatically by detecting when the screen stops changing and network requests complete.
 
-  // Check checkbox
-  await testdriver.find('newsletter checkbox').click();
+You can disable redraw detection or customize its behavior:
 
-  // Select radio button
-  await testdriver.find('urgent priority radio button').click();
-
-  // Fill textarea
-  await testdriver.find('message textarea').type('This is my message.');
-
-  // Submit
-  await testdriver.find('send message button').click();
-
-  // Verify success
-  await testdriver.assert('thank you message is displayed');
+```javascript
+// Disable redraw detection for faster tests (less reliable)
+const testdriver = TestDriver(context, { 
+  redraw: false 
 });
 ```
 
-## Navigation Patterns
+Here is an example of customizing redraw detection:
 
-<Tabs>
-  <Tab title="Multi-Page Flow">
-    ```javascript
-    test('checkout flow', async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'https://shop.example.com'
-      });
-
-      // Page 1: Browse products
-      await testdriver.find('first product').click();
-      await testdriver.find('add to cart button').click();
-
-      // Page 2: Cart
-      await testdriver.find('cart icon').click();
-      await testdriver.find('checkout button').click();
-
-      // Page 3: Shipping info
-      await testdriver.find('address input').type('123 Main St');
-      await testdriver.find('continue button').click();
-
-      // Page 4: Payment
-      await testdriver.find('card number').type('4242424242424242');
-      await testdriver.find('place order').click();
-
-      // Page 5: Confirmation
-      await testdriver.assert('order confirmation is shown');
-    });
-    ```
-  </Tab>
-
-  <Tab title="Back Navigation">
-    ```javascript
-    // Navigate forward
-    await testdriver.find('next page link').click();
-    await testdriver.assert('page 2 is displayed');
-
-    // Go back
-    await testdriver.pressKeys(['alt', 'left']); // Browser back
-    await testdriver.assert('page 1 is displayed');
-    ```
-  </Tab>
-
-  <Tab title="Opening Links in New Tab">
-    ```javascript
-    // Open link in new tab (cmd+click / ctrl+click)
-    const link = await testdriver.find('external link');
-    await testdriver.pressKeys(['cmd']); // Hold cmd
-    await link.click();
-    // New tab opens
-
-    // Switch between windows
-    await testdriver.focusWindow(1); // Switch to second window
-    ```
-  </Tab>
-</Tabs>
-
-## Best Practices
-
-<CardGroup cols={2}>
-  <Card title="Write Descriptive Selectors" icon="text">
-    ```javascript
-    // ✅ Good
-    await testdriver.find('blue submit button in the bottom right');
-
-    // ❌ Too vague
-    await testdriver.find('button');
-    ```
-  </Card>
-
-  <Card title="Use secret: true for Passwords" icon="lock">
-    ```javascript
-    // ✅ Secure
-    await testdriver.type('password', { secret: true });
-
-    // ❌ Logged in dashcam
-    await testdriver.type('password');
-    ```
-  </Card>
-
-  <Card title="Test User Flows, Not Implementation" icon="route">
-    ```javascript
-    // ✅ User-focused
-    test('user can purchase item', async (context) => {
-      // Test the complete flow
-    });
-
-    // ❌ Implementation-focused
-    test('click button #12345', async (context) => {
-      // Too specific to implementation
-    });
-    ```
-  </Card>
-
-  <Card title="Use Meaningful Test Names" icon="tag">
-    ```javascript
-    // ✅ Clear intent
-    test('user can reset password via email');
-
-    // ❌ Vague
-    test('test login');
-    ```
-  </Card>
-</CardGroup>
-
-## Advanced Patterns
-
-<AccordionGroup>
-  <Accordion title="Conditional Logic">
-    ```javascript
-    // Check if element exists
-    try {
-      await testdriver.find('cookie banner', { timeout: 5000 });
-      // Banner found, dismiss it
-      await testdriver.find('accept cookies button').click();
-    } catch (error) {
-      // Banner not found, continue
-      console.log('No cookie banner');
-    }
-
-    // Conditional actions
-    const loginButton = await testdriver.find('login button');
-    if (loginButton) {
-      await loginButton.click();
-    }
-    ```
-  </Accordion>
-
-  <Accordion title="Data-Driven Tests">
-    ```javascript
-    const testCases = [
-      { email: 'valid@example.com', password: 'pass123', shouldPass: true },
-      { email: 'invalid', password: 'pass123', shouldPass: false },
-      { email: 'user@example.com', password: 'wrong', shouldPass: false },
-    ];
-
-    testCases.forEach(({ email, password, shouldPass }) => {
-      test(`login with ${email}`, async (context) => {
-        const { testdriver } = await chrome(context, { url });
-
-        await testdriver.find('email').type(email);
-        await testdriver.find('password').type(password, { secret: true });
-        await testdriver.find('submit').click();
-
-        if (shouldPass) {
-          await testdriver.assert('dashboard is visible');
-        } else {
-          await testdriver.assert('error message is shown');
-        }
-      });
-    });
-    ```
-  </Accordion>
-
-  <Accordion title="Reusable Helpers">
-    ```javascript
-    // helpers.js
-    export async function login(testdriver, email, password) {
-      await testdriver.find('email input').type(email);
-      await testdriver.find('password input').type(password, { secret: true });
-      await testdriver.find('login button').click();
-      await testdriver.assert('dashboard is visible');
-    }
-
-    // test.test.js
-    import { login } from './helpers';
-
-    test('user can view profile', async (context) => {
-      const { testdriver } = await chrome(context, { url });
-
-      await login(testdriver, 'user@example.com', 'password');
-
-      await testdriver.find('profile link').click();
-      await testdriver.assert('profile page is displayed');
-    });
-    ```
-  </Accordion>
-</AccordionGroup>
-
-## Common Patterns
-
-<Tabs>
-  <Tab title="Login Flow">
-    ```javascript
-    test('user login', async (context) => {
-      const { testdriver } = await chrome(context, {
-        url: 'https://myapp.com/login'
-      });
-
-      await testdriver.find('email input').type('user@example.com');
-      await testdriver.find('password input').type('secret', { secret: true });
-      await testdriver.find('Login button').click();
-
-      await testdriver.assert('Dashboard is visible');
-      await testdriver.assert('Welcome message shows user name');
-    });
-    ```
-  </Tab>
-
-  <Tab title="Search">
-    ```javascript
-    test('search functionality', async (context) => {
-      const { testdriver } = await chrome(context, { url });
-
-      await testdriver.find('search input').type('laptop');
-      await testdriver.pressKeys(['enter']);
-
-      await testdriver.assert('search results are displayed');
-      await testdriver.assert('results contain "laptop"');
-
-      const results = await testdriver.findAll('result item');
-      console.log(`Found ${results.length} results`);
-    });
-    ```
-  </Tab>
-
-  <Tab title="Shopping Cart">
-    ```javascript
-    test('add to cart', async (context) => {
-      const { testdriver } = await chrome(context, { url });
-
-      await testdriver.find('first product').click();
-      await testdriver.find('add to cart button').click();
-
-      await testdriver.assert('cart badge shows 1');
-
-      await testdriver.find('cart icon').click();
-      await testdriver.assert('product is in cart');
-      await testdriver.assert('subtotal is correct');
-    });
-    ```
-  </Tab>
-</Tabs>
-
-## Next Steps
-
-<CardGroup cols={2}>
-  <Card
-    title="Generate Tests with AI"
-    icon="wand-magic-sparkles"
-    href="/v7/getting-started/generating-tests"
-  >
-    Use Claude to write tests automatically
-  </Card>
-
-  <Card
-    title="Running & Debugging"
-    icon="bug"
-    href="/v7/getting-started/running-and-debugging"
-  >
-    Run tests and debug failures
-  </Card>
-
-  <Card
-    title="API Reference"
-    icon="book"
-    href="/v7/api/client"
-  >
-    Complete API documentation
-  </Card>
-
-  <Card
-    title="Examples"
-    icon="code"
-    href="/v7/presets/chrome"
-  >
-    View more examples
-  </Card>
-</CardGroup>
+```javascript
+// Fine-tune redraw detection
+const testdriver = TestDriver(context, { 
+  redraw: {
+    enabled: true,
+    diffThreshold: 0.1,      // Pixel difference threshold (0-1)
+    screenRedraw: true,      // Monitor screen changes
+    networkMonitor: true,    // Wait for network idle
+  }
+});
+```
