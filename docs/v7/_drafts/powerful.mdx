@@ -1,0 +1,419 @@
+---
+title: "Common Patterns"
+description: "Test everything from desktop apps to chatbots to video content"
+icon: "radar"
+---
+
+TestDriver provides unmatched testing coverage across platforms, applications, and content types. From desktop applications to AI chatbots, from PDFs to videos, TestDriver can test it all.
+
+
+### AI Chatbots
+
+Test conversational AI interfaces with multi-turn interactions:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('ai chatbot conversation', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://chatbot.example.com'
+  });
+
+  // Start conversation
+  await testdriver.find('message input').type('What is your return policy?');
+  await testdriver.find('send button').click();
+  
+  // Verify AI response
+  await testdriver.assert('response mentions 30-day return window');
+  
+  // Follow-up question
+  await testdriver.find('message input').type('Do I need the original packaging?');
+  await testdriver.find('send button').click();
+  await testdriver.assert('response mentions packaging requirements');
+  
+  // Verify conversation history
+  await testdriver.assert('both questions and answers are visible in chat history');
+});
+```
+
+### PDF Generation
+
+Test PDF generation and content verification:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('pdf generation and content', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/reports'
+  });
+
+  await testdriver.find('Generate Report button').click();
+  await testdriver.find('PDF format option').click();
+  await testdriver.find('Download button').click();
+  
+  // Wait for PDF to generate
+  await testdriver.assert('Download complete notification appears');
+  
+  // Open PDF
+  await testdriver.find('downloaded file').click();
+  
+  // Verify PDF content
+  await testdriver.assert('Report title is visible');
+  await testdriver.assert('Table with data is present');
+  await testdriver.assert('Page numbers are displayed');
+});
+```
+
+### Spelling & Grammar
+
+Test spell-check and grammar checking functionality:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('spelling and grammar checker', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://editor.example.com'
+  });
+
+  // Type text with intentional errors
+  await testdriver.find('editor').type('This is a tset with grammer errors.');
+  
+  // Verify spell-check highlighting
+  await testdriver.assert('the word "tset" is underlined in red');
+  await testdriver.assert('the word "grammer" is underlined');
+  
+  // Test correction
+  await testdriver.find('underlined word "tset"').rightClick();
+  await testdriver.find('suggestion "test"').click();
+  await testdriver.assert('word is corrected to "test"');
+});
+```
+
+### OAuth Signup & Login
+
+Test OAuth flows with third-party authentication providers:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('oauth login flow', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/login'
+  });
+
+  // Start OAuth flow
+  await testdriver.find('Sign in with Google button').click();
+  
+  // Handle OAuth popup/redirect
+  await testdriver.find('Google email input').type('test@example.com');
+  await testdriver.find('Next button').click();
+  await testdriver.find('password input').type(process.env.TEST_PASSWORD, { secret: true });
+  await testdriver.find('Sign in button').click();
+  
+  // Verify consent screen
+  await testdriver.assert('permission request screen is displayed');
+  await testdriver.find('Allow button').click();
+  
+  // Verify redirect back to app
+  await testdriver.assert('user is logged in');
+  await testdriver.assert('user profile picture is visible');
+});
+```
+
+### File System & Uploads
+
+Test file upload functionality and file system interactions:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('file upload and processing', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/upload'
+  });
+
+  // Click upload button
+  await testdriver.find('Upload file button').click();
+  
+  // Navigate file picker
+  await testdriver.find('Documents folder').doubleClick();
+  await testdriver.find('test-image.png').click();
+  await testdriver.find('Open button').click();
+  
+  // Verify upload
+  await testdriver.assert('test-image.png is listed');
+  await testdriver.assert('Upload progress bar reaches 100%');
+  await testdriver.assert('Upload successful message appears');
+  
+  // Verify file preview
+  await testdriver.assert('Image preview is displayed');
+});
+```
+
+## Content Types
+
+### Image Content
+
+Test applications that work with images, including editing, filtering, and recognition:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('image editor functionality', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://editor.example.com'
+  });
+
+  await testdriver.find('Upload image button').click();
+  await testdriver.find('sample-photo.jpg').click();
+  await testdriver.find('Open').click();
+  
+  // Test image editing
+  await testdriver.find('Filters tab').click();
+  await testdriver.find('Black and white filter').click();
+  await testdriver.assert('Image is displayed in black and white');
+  
+  // Test cropping
+  await testdriver.find('Crop tool').click();
+  await testdriver.find('Square aspect ratio').click();
+  await testdriver.find('Apply crop button').click();
+  await testdriver.assert('Image is cropped to square');
+});
+```
+
+### Video Content
+
+Test video players, editing, and streaming functionality:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('video player controls', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://video.example.com/watch?v=abc123'
+  });
+
+  // Test playback
+  await testdriver.find('play button').click();
+  await testdriver.assert('video is playing');
+  
+  // Test controls
+  await testdriver.find('pause button').click();
+  await testdriver.assert('video is paused');
+  
+  await testdriver.find('volume control').click();
+  await testdriver.find('mute button').click();
+  await testdriver.assert('video is muted');
+  
+  // Test fullscreen
+  await testdriver.find('fullscreen button').click();
+  await testdriver.assert('video is in fullscreen mode');
+  
+  // Test quality settings
+  await testdriver.find('settings button').click();
+  await testdriver.find('quality option').click();
+  await testdriver.find('1080p').click();
+  await testdriver.assert('video quality is set to 1080p');
+});
+```
+
+## Accessibility & UI Features
+
+### OS Accessibility Features
+
+Test applications with screen readers, keyboard navigation, and other accessibility features:
+
+```javascript
+import { test } from 'vitest';
+import { desktop } from 'testdriverai/presets';
+
+test('accessibility features', async (context) => {
+  const { testdriver } = await desktop(context, {
+    appPath: '/Applications/MyApp.app',
+    os: 'mac'
+  });
+
+  // Test keyboard navigation
+  await testdriver.pressKeys(['tab']);
+  await testdriver.assert('first interactive element is focused');
+  
+  await testdriver.pressKeys(['tab']);
+  await testdriver.pressKeys(['tab']);
+  await testdriver.pressKeys(['enter']);
+  
+  // Test ARIA labels
+  await testdriver.assert('close button has accessible name "Close dialog"');
+  
+  // Test high contrast mode
+  await testdriver.find('Settings menu').click();
+  await testdriver.find('Accessibility').click();
+  await testdriver.find('High contrast mode toggle').click();
+  await testdriver.assert('UI is displayed in high contrast');
+});
+```
+
+### Light / Dark Mode
+
+Test theme switching and appearance preferences:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('theme switching', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com'
+  });
+
+  // Check default theme
+  await testdriver.assert('app is in light mode');
+  
+  // Switch to dark mode
+  await testdriver.find('theme toggle').click();
+  await testdriver.assert('app is in dark mode');
+  await testdriver.assert('background is dark');
+  await testdriver.assert('text is light colored');
+  
+  // Verify persistence
+  await testdriver.find('refresh button').click();
+  await testdriver.assert('app is still in dark mode after refresh');
+  
+  // Test auto theme
+  await testdriver.find('settings menu').click();
+  await testdriver.find('Appearance').click();
+  await testdriver.find('Auto theme option').click();
+  await testdriver.assert('theme follows system preference');
+});
+```
+
+## Web Technologies
+
+### `<iframe>` Content
+
+Test embedded content and cross-frame interactions:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('iframe interactions', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/embedded'
+  });
+
+  // Interact with iframe content
+  await testdriver.find('submit button in the payment iframe').click();
+  await testdriver.find('card number input in iframe').type('4242424242424242');
+  await testdriver.find('expiry input in iframe').type('12/25');
+  await testdriver.find('cvc input in iframe').type('123', { secret: true });
+  await testdriver.find('pay button in iframe').click();
+  
+  // Verify iframe response
+  await testdriver.assert('success message appears in iframe');
+  
+  // Verify main page updated
+  await testdriver.assert('order confirmation is displayed on main page');
+});
+```
+
+### `<canvas>` Elements
+
+Test canvas-based applications like drawing tools, charts, and games:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('canvas drawing application', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://drawing.example.com'
+  });
+
+  // Select drawing tool
+  await testdriver.find('brush tool').click();
+  await testdriver.find('red color').click();
+  
+  // Draw on canvas
+  await testdriver.find('canvas in center').click();
+  
+  // Verify canvas state
+  await testdriver.assert('red brush stroke is visible on canvas');
+  
+  // Test undo
+  await testdriver.pressKeys(['cmd', 'z']);
+  await testdriver.assert('canvas is blank');
+  
+  // Test save
+  await testdriver.find('Save button').click();
+  await testdriver.assert('Download dialog appears');
+});
+```
+
+### `<video>` Elements
+
+Test HTML5 video elements and custom video players:
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('html5 video element', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://myapp.com/tutorial'
+  });
+
+  // Test video element directly
+  await testdriver.find('tutorial video').click();
+  await testdriver.assert('video is playing');
+  
+  // Test custom controls
+  await testdriver.find('playback speed button').click();
+  await testdriver.find('1.5x speed option').click();
+  await testdriver.assert('video is playing at 1.5x speed');
+  
+  // Test chapters
+  await testdriver.find('chapters menu').click();
+  await testdriver.find('Chapter 3: Advanced Features').click();
+  await testdriver.assert('video jumped to chapter 3');
+  
+  // Test captions
+  await testdriver.find('captions button').click();
+  await testdriver.assert('captions are displayed');
+});
+```
+
+## Why TestDriver Covers Everything
+
+TestDriver's AI-powered visual understanding and natural language interface means you can test any UI element, regardless of:
+
+- **Technology stack**: React, Angular, Vue, Svelte, vanilla JS, native desktop frameworks
+- **Rendering method**: DOM, Shadow DOM, Canvas, WebGL, native UI
+- **Complexity**: Simple forms, complex dashboards, games, multimedia applications
+- **Platform**: Web, desktop, mobile, extensions, embedded systems
+
+<CardGroup cols={2}>
+  <Card title="Powerful & Versatile" icon="wand-magic-sparkles" href="/v7/features/powerful">
+    Learn about platform support
+  </Card>
+
+  <Card title="AI-Native" icon="robot" href="/v7/features/ai-native">
+    See how AI powers our testing
+  </Card>
+  
+  <Card title="All Presets" icon="layer-group" href="/v7/presets/chrome">
+    Explore all testing presets
+  </Card>
+  
+  <Card title="Getting Started" icon="rocket" href="/v7/getting-started/quickstart">
+    Start testing in 5 minutes
+  </Card>
+</CardGroup>

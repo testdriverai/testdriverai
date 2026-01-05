@@ -1,0 +1,155 @@
+---
+title: "screenshot()"
+sidebarTitle: "screenshot"
+description: "Capture a screenshot of the current screen"
+icon: "camera"
+---
+
+## Overview
+
+Capture a screenshot of the current sandbox screen. Returns a base64 encoded PNG, or saves directly to a file and returns the filepath.
+
+## Syntax
+
+```javascript
+// Options object (recommended)
+await testdriver.screenshot(options)
+
+// Legacy positional arguments
+await testdriver.screenshot(scale, silent, mouse)
+```
+
+## Parameters
+
+<ParamField path="options" type="object">
+  Options object for screenshot capture
+</ParamField>
+
+<ParamField path="options.scale" type="number" default="1">
+  Scale factor for the screenshot (1 = original size, 0.5 = half size, etc.)
+</ParamField>
+
+<ParamField path="options.silent" type="boolean" default="false">
+  Whether to suppress logging output
+</ParamField>
+
+<ParamField path="options.mouse" type="boolean" default="false">
+  Whether to include the mouse cursor in the screenshot
+</ParamField>
+
+<ParamField path="options.path" type="string">
+  File path to save the screenshot. If provided, the screenshot is saved to this file and the filepath is returned instead of base64 data. Directories are created automatically if they don't exist.
+</ParamField>
+
+## Returns
+
+`Promise<string>` - Base64 encoded PNG screenshot, or the filepath if `options.path` was provided.
+
+## Examples
+
+### Basic Screenshot (Base64)
+
+```javascript
+// Capture a screenshot and get base64 data
+const screenshot = await testdriver.screenshot();
+
+// Write to file manually
+import fs from 'fs';
+fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+```
+
+### Save Directly to File
+
+```javascript
+// Save screenshot directly to a file (returns filepath)
+const filepath = await testdriver.screenshot({ path: './screenshots/test.png' });
+console.log(`Screenshot saved to: ${filepath}`);
+```
+
+### With Mouse Cursor
+
+```javascript
+// Include mouse cursor in screenshot
+const screenshot = await testdriver.screenshot({ mouse: true });
+
+// Or save to file with mouse cursor
+const filepath = await testdriver.screenshot({ 
+  path: './debug/with-cursor.png',
+  mouse: true 
+});
+```
+
+### Scaled Screenshot
+
+```javascript
+// Capture at half size (useful for reducing file size)
+const screenshot = await testdriver.screenshot({ scale: 0.5 });
+
+// Capture at double size
+const filepath = await testdriver.screenshot({ 
+  path: './hires.png',
+  scale: 2 
+});
+```
+
+### Silent Mode
+
+```javascript
+// Capture without logging output
+const screenshot = await testdriver.screenshot({ silent: true });
+```
+
+### Legacy Usage
+
+```javascript
+// Legacy positional arguments still work
+const screenshot = await testdriver.screenshot(1, false, true);
+// Equivalent to: screenshot({ scale: 1, silent: false, mouse: true })
+```
+
+## Use Cases
+
+### Debugging Test Failures
+
+```javascript
+it('should complete checkout', async (context) => {
+  const testdriver = TestDriver(context, { newSandbox: true });
+  await testdriver.provision.chrome({ url: 'https://shop.example.com' });
+
+  try {
+    await testdriver.find('Checkout button').click();
+    await testdriver.assert('Order confirmation is visible');
+  } catch (error) {
+    // Save screenshot on failure for debugging
+    await testdriver.screenshot({ path: './failures/checkout-failed.png' });
+    throw error;
+  }
+});
+```
+
+### Visual Documentation
+
+```javascript
+// Capture screenshots at each step for documentation
+await testdriver.screenshot({ path: './docs/step1-login.png' });
+await testdriver.find('Login button').click();
+await testdriver.screenshot({ path: './docs/step2-dashboard.png' });
+```
+
+### Comparing States
+
+```javascript
+// Capture before and after states
+const before = await testdriver.screenshot();
+await testdriver.find('Toggle dark mode').click();
+const after = await testdriver.screenshot();
+
+// Both are base64 - can be compared or stored
+```
+
+## Notes
+
+- Screenshots are captured from the sandbox's virtual display
+- The base64 string does not include a data URI prefix (raw base64)
+- When using `path`, directories are created automatically if they don't exist
+- File format is always PNG regardless of the file extension used

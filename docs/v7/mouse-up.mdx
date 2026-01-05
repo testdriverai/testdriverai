@@ -1,0 +1,164 @@
+---
+title: "mouseUp"
+description: "Release the mouse button"
+icon: "arrow-pointer"
+---
+
+## Overview
+
+The `mouseUp()` method releases the mouse button, completing a drag operation or custom mouse gesture that was started with [`mouseDown()`](/v7/mouse-down). You can call it without parameters to release at the current mouse position.
+
+## Syntax
+
+```javascript
+// Release mouse button at current position
+await ai.mouseUp();
+```
+
+## Parameters
+
+None. The mouse button is released at the current cursor position.
+
+## Returns
+
+Returns a `Promise<void>` that resolves when the mouse button is released.
+
+## Examples
+
+### Complete Drag and Drop
+
+```javascript
+// Start dragging
+await ai.mouseDown('file to drag');
+
+// Move to drop location
+await ai.hover('target folder');
+
+// Complete the drop
+await ai.mouseUp();
+```
+
+### Selecting Multiple Files
+
+```javascript
+import { test } from 'vitest';
+import { vscode } from '@testdriver/sdk';
+
+test('selects range of files', async () => {
+  const { ai } = await vscode();
+  
+  // Click first file
+  await ai.click('first-file.js in explorer');
+  
+  // Hold shift and click last file
+  await ai.pressKeys('Shift');
+  await ai.mouseDown('last-file.js in explorer');
+  await ai.mouseUp();
+  
+  // Verify multiple files selected
+  const selectedCount = await ai.find('status bar showing file count');
+  expect(selectedCount.text).toContain('5 files');
+});
+```
+
+### Drawing Application
+
+```javascript
+test('draws a shape', async () => {
+  const { ai } = await chrome('https://drawing-app.example.com');
+  
+  // Select pencil tool
+  await ai.click('pencil tool');
+  
+  // Draw a line
+  await ai.mouseDown('canvas near top-left');
+  await ai.hover('canvas center');
+  await ai.hover('canvas bottom-right');
+  await ai.mouseUp();
+  
+  // Verify drawing exists
+  const strokes = await ai.exec('canvas.getContext("2d").getImageData(0,0,100,100)');
+  expect(strokes).toBeTruthy();
+});
+```
+
+### Resizing Window Panels
+
+```javascript
+test('resizes editor panel', async () => {
+  const { ai } = await vscode();
+  
+  // Grab the divider
+  await ai.mouseDown('panel resize divider');
+  
+  // Drag to new position
+  await ai.hover('position 400 pixels from left');
+  
+  // Release to complete resize
+  await ai.mouseUp();
+  
+  // Verify new panel size
+  const panel = await ai.find('editor panel');
+  expect(panel.width).toBeGreaterThan(350);
+});
+```
+
+### Drag to Reorder List Items
+
+```javascript
+import { test } from 'vitest';
+import { chrome } from '@testdriver/sdk';
+
+test('reorders tasks in list', async () => {
+  const { ai } = await chrome('https://todo-app.example.com');
+  
+  // Start dragging first task
+  await ai.mouseDown('drag handle on first task');
+  
+  // Move down to third position
+  await ai.hover('third task position');
+  
+  // Drop the task
+  await ai.mouseUp();
+  
+  // Verify new order
+  const thirdTask = await ai.find('third task in list');
+  expect(thirdTask.text).toContain('Original first task');
+});
+```
+
+### Text Selection with Mouse
+
+```javascript
+test('selects text with mouse drag', async () => {
+  const { ai } = await chrome('https://document.example.com');
+  
+  // Start selection at beginning of word
+  await ai.mouseDown('start of "TestDriver" word');
+  
+  // Drag to end of word
+  await ai.hover('end of "TestDriver" word');
+  
+  // Complete selection
+  await ai.mouseUp();
+  
+  // Verify selection
+  const selection = await ai.exec('window.getSelection().toString()');
+  expect(selection).toBe('TestDriver');
+});
+```
+
+## Important Notes
+
+- `mouseUp()` must be preceded by [`mouseDown()`](/v7/mouse-down) to have an effect
+- Releases the button at the current cursor position
+- Completes any drag or selection operation that was in progress
+- For simple clicks, use [`click()`](/v7/click) instead of mouseDown/mouseUp pair
+
+## Related Methods
+
+- [`mouseDown()`](/v7/mouse-down) - Press mouse button without releasing
+- [`hover()`](/v7/hover) - Move mouse to element
+- [`click()`](/v7/click) - Complete click (mouseDown + mouseUp)
+- [`doubleClick()`](/v7/double-click) - Double-click on element
+- [`rightClick()`](/v7/right-click) - Right-click for context menu
