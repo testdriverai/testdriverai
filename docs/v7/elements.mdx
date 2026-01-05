@@ -496,47 +496,6 @@ const elementData = JSON.stringify(element);
   Use JSON serialization when you need to log element data or when debugging why an element wasn't found. The serialized output excludes large binary data (screenshots) and circular references.
 </Tip>
 
-## Polling for Elements
-
-Use polling to wait for elements that may not be immediately visible:
-
-```javascript
-// Poll until element appears
-let loginButton;
-const maxAttempts = 30;
-
-for (let i = 0; i < maxAttempts; i++) {
-  loginButton = await testdriver.find('login button');
-  if (loginButton.found()) break;
-  await new Promise(resolve => setTimeout(resolve, 1000));
-}
-
-if (loginButton.found()) {
-  await loginButton.click();
-} else {
-  throw new Error('Login button never appeared');
-}
-```
-
-**Helper function for polling:**
-```javascript
-async function waitForElement(testdriver, description, timeout = 30000) {
-  const startTime = Date.now();
-  
-  while (Date.now() - startTime < timeout) {
-    const element = await testdriver.find(description);
-    if (element.found()) return element;
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  
-  throw new Error(`Element "${description}" not found after ${timeout}ms`);
-}
-
-// Usage
-const button = await waitForElement(testdriver, 'submit button', 10000);
-await button.click();
-```
-
 ## Examples
 
 ### Basic Element Interaction
@@ -627,19 +586,7 @@ if (notification.found()) {
     await element.click();
     ```
   </Accordion>
-  
-  <Accordion title="Use polling for dynamic content">
-    Don't assume elements are immediately visible:
-    
-    ```javascript
-    let element;
-    for (let i = 0; i < 30; i++) {
-      element = await testdriver.find('loading complete message');
-      if (element.found()) break;
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    ```
-  </Accordion>
+
   
   <Accordion title="Reuse element references when possible">
     If you need to interact with the same element multiple times, reuse the reference:
