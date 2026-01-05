@@ -14,6 +14,91 @@
   "navigation": {
         "versions": [
           {
+            "version": "v7",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "/v7/what-is-testdriver",
+                  "/v7/quickstart",
+                  "/v7/examples",
+                  {
+                    "group": "Plans & Pricing",
+                    "icon": "server",
+                    "pages": [
+                      "/v7/cloud",
+                      "/v7/self-hosted",
+                      "/v7/enterprise"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Creating Tests",
+                "pages": [
+                  "/v7/generating-tests",
+                  "/v7/device-config",
+                  "/v7/locating-elements",
+                  "/v7/waiting-for-elements",
+                  "/v7/performing-actions",
+                  "/v7/making-assertions"
+                ]
+              },
+              {
+                "group": "Running Tests",
+                "pages": [
+                  "/v7/running-tests",
+                  "/v7/caching",
+                  "/v7/ci-cd"
+                ]
+              },
+              {
+                "group": "Scaling",
+                "pages": [
+                  "/v7/variables",
+                  "/v7/secrets",
+                  "/v7/reusable-code",
+                  {
+                    "group": "Self-Hosting Setup",
+                    "icon": "server",
+                    "pages": [
+                      "/v7/aws-setup"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Actions",
+                "pages": [
+                  "/v7/ai",
+                  "/v7/assert",
+                  "/v7/click",
+                  "/v7/double-click",
+                  "/v7/exec",
+                  "/v7/find",
+                  "/v7/focus-application",
+                  "/v7/hover",
+                  "/v7/mouse-down",
+                  "/v7/mouse-up",
+                  "/v7/press-keys",
+                  "/v7/right-click",
+                  "/v7/type",
+                  "/v7/scroll"
+                ]
+              },
+              {
+                "group": "SDK",
+                "pages": 
+                  [
+                      "/v7/elements",
+                      "/v7/client",
+                      "/v7/dashcam"
+                    
+                ]
+              }
+            ]
+          },
+          {
             "version": "v6",
             "groups": [
               {
@@ -181,98 +266,6 @@
                       "/v6/commands/wait",
                       "/v6/commands/wait-for-image",
                       "/v6/commands/wait-for-text"
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "version": "v7",
-            "groups": [
-              {
-                "group": "Overview",
-                "pages": [
-                  "/v7/what-is-testdriver",
-                  "/v7/quickstart",
-                  "/v7/examples",
-                  {
-                    "group": "Plans & Pricing",
-                    "icon": "server",
-                    "pages": [
-                      "/v7/cloud",
-                      {
-                        "group": "Self-Hosted",
-                        "icon": "server",
-                        "pages": [
-                          "/v7/self-hosted",
-                          "/v7/aws-setup"
-                        ]
-                      },
-                      "/v7/enterprise"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "Creating Tests",
-                "pages": [
-                  "/v7/generating-tests",
-                  "/v7/locating-elements",
-                  "/v7/waiting-for-elements",
-                  "/v7/performing-actions",
-                  "/v7/making-assertions"
-                ]
-              },
-              {
-                "group": "Running Tests",
-                "pages": [
-                  "/v7/running-tests",
-                  "/v7/caching",
-                  "/v7/ci-cd"
-                ]
-              },
-              {
-                "group": "Scaling",
-                "pages": [
-                  "/v7/variables",
-                  "/v7/secrets",
-                  "/v7/reusable-code",
-                  "/v7/customizing-devices"
-                ]
-              },
-              {
-                "group": "Reference",
-                "icon": "book",
-                "pages": [
-                  {
-                    "group": "Actions",
-                    "icon": "bolt",
-                    "pages": [
-                      "/v7/ai",
-                      "/v7/assert",
-                      "/v7/click",
-                      "/v7/double-click",
-                      "/v7/exec",
-                      "/v7/find",
-                      "/v7/focus-application",
-                      "/v7/hover",
-                      "/v7/mouse-down",
-                      "/v7/mouse-up",
-                      "/v7/press-keys",
-                      "/v7/right-click",
-                      "/v7/type",
-                      "/v7/scroll"
-                    ]
-                  },
-                  {
-                    "group": "Client SDK",
-                    "icon": "code",
-                    "pages": [
-                      "/v7/client",
-                      "/v7/elements",
-                      "/v7/sandbox",
-                      "/v7/dashcam"
                     ]
                   }
                 ]
