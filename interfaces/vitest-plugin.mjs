@@ -8,6 +8,41 @@ import { setTestRunInfo } from "./shared-test-state.mjs";
 const require = createRequire(import.meta.url);
 
 /**
+ * Minimum required Vitest major version
+ */
+const MINIMUM_VITEST_VERSION = 4;
+
+/**
+ * Check that Vitest version meets minimum requirements
+ * @throws {Error} if Vitest version is below minimum or not installed
+ */
+function checkVitestVersion() {
+  try {
+    const vitestPkg = require('vitest/package.json');
+    const version = vitestPkg.version;
+    const major = parseInt(version.split('.')[0], 10);
+    
+    if (major < MINIMUM_VITEST_VERSION) {
+      throw new Error(
+        `TestDriver requires Vitest >= ${MINIMUM_VITEST_VERSION}.0.0, but found ${version}. ` +
+        `Please upgrade Vitest: npm install vitest@latest`
+      );
+    }
+  } catch (err) {
+    if (err.code === 'MODULE_NOT_FOUND') {
+      throw new Error(
+        'TestDriver requires Vitest to be installed. ' +
+        'Please install it: npm install vitest@latest'
+      );
+    }
+    throw err;
+  }
+}
+
+// Check Vitest version at plugin load time
+checkVitestVersion();
+
+/**
  * Simple logger for the vitest plugin
  * Supports log levels: debug, info, warn, error
  * Control via TD_LOG_LEVEL environment variable (default: "info")

@@ -1,0 +1,44 @@
+name: Scheduled Acceptance Tests (Windows)
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  schedule:
+    # Every day at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  test-windows:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Sentry CLI
+      run: npm install -g @sentry/cli
+
+    - name: Run Windows tests with Sentry Cron monitoring
+      run: |
+        sentry-cli monitors run testdriver-windows-acceptance -- npx vitest run test/testdriver/*.test.mjs
+      env:
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        TD_OS: windows
+
+    - name: Upload test results to Sentry Prevent
+      if: ${{ !cancelled() }}
+      uses: getsentry/prevent-action@v0
+      with:
+        token: ${{ secrets.SENTRY_PREVENT_TOKEN }}
