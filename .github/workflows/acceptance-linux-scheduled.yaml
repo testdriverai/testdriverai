@@ -1,0 +1,70 @@
+name: Scheduled Acceptance Tests (Linux)
+
+permissions:
+  id-token: write
+  contents: read
+
+on:
+  schedule:
+    # Every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Sentry CLI
+      run: npm install -g @sentry/cli
+
+    - name: Sentry Cron Check-in (Start)
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      run: |
+        CHECK_IN_ID=$(sentry-cli monitors checkin testdriver-linux-acceptance --status in_progress 2>&1 | grep -oE '[a-f0-9-]{36}' | head -1)
+        echo "CHECK_IN_ID=$CHECK_IN_ID" >> $GITHUB_ENV
+
+    - name: Run Linux tests
+      id: tests
+      run: npx vitest run test/testdriver/*.test.mjs
+      env:
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        TD_OS: linux
+
+    - name: Sentry Cron Check-in (Success)
+      if: success()
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      run: |
+        sentry-cli monitors checkin testdriver-linux-acceptance --check-in-id ${{ env.CHECK_IN_ID }} --status ok
+
+    - name: Sentry Cron Check-in (Failure)
+      if: failure()
+      env:
+        SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      run: |
+        sentry-cli monitors checkin testdriver-linux-acceptance --check-in-id ${{ env.CHECK_IN_ID }} --status error
+
+    - name: Upload test results to Sentry Prevent
+      if: ${{ !cancelled() }}
+      uses: getsentry/prevent-action@v0
+      with:
+        token: ${{ secrets.SENTRY_PREVENT_TOKEN }}
