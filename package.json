@@ -84,6 +84,14 @@
     "glob": "^11.0.1",
     "rimraf": "^5.0.10"
   },
+  "peerDependencies": {
+    "vitest": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
     "@vitest/ui": "^4.0.15",
