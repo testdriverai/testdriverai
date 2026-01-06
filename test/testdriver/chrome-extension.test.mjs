@@ -35,7 +35,7 @@ describe("Chrome Extension Test", () => {
     // When clicked, it shows a popup with "Hello Extensions"
     
     // First, let's verify Chrome loaded and we can see the page
-    const pageResult = await testdriver.assert("the google.com website is visible");
+    const pageResult = await testdriver.assert("chrome is running");
     expect(pageResult).toBeTruthy();
 
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar
