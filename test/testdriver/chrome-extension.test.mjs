@@ -35,7 +35,7 @@ describe("Chrome Extension Test", () => {
     // When clicked, it shows a popup with "Hello Extensions"
     
     // First, let's verify Chrome loaded and we can see the page
-    const pageResult = await testdriver.assert("the testdriver.ai website is visible");
+    const pageResult = await testdriver.assert("the google.com website is visible");
     expect(pageResult).toBeTruthy();
 
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar
@@ -57,8 +57,7 @@ describe("Chrome Extension Test", () => {
     // Launch Chrome with Loom loaded by its Chrome Web Store ID
     // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
     await testdriver.provision.chromeExtension({
-      extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb',
-      url: 'https://testdriver.ai'
+      extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb'
     });
 
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar

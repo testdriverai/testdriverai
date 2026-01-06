@@ -110,10 +110,8 @@ commands:
         case "hover-text":
           emitter.emit(events.log.log, generator.jsonToManual(object));
           response = await commands["hover-text"](
-            object.text,
             object.description,
             object.action,
-            object.method,
             object.timeout,
           );
           break;

@@ -719,47 +719,40 @@ const createCommands = (
     hover: hover,
     /**
      * Hover over text on screen
-     * @param {Object|string} options - Options object or text (for backward compatibility)
-     * @param {string} options.text - Text to find and hover over
-     * @param {string|null} [options.description] - Optional description of the element
+     * @param {Object|string} options - Options object or description (for backward compatibility)
+     * @param {string} options.description - Description of the element to find
      * @param {string} [options.action='click'] - Action to perform
      * @param {number} [options.timeout=5000] - Timeout in milliseconds
      */
     "hover-text": async (...args) => {
-      let text, description, action, timeout;
+      let description, action, timeout;
       
       // Handle both object and positional argument styles
-      if (isObjectArgs(args, ['text', 'description', 'action', 'timeout'])) {
-        ({ text, description = null, action = 'click', timeout = 5000 } = args[0]);
+      if (isObjectArgs(args, ['description', 'action', 'timeout'])) {
+        ({ description, action = 'click', timeout = 5000 } = args[0]);
       } else {
-        // Legacy positional: hoverText(text, description, action, timeout)
-        [text, description = null, action = 'click', timeout = 5000] = args;
+        // Legacy positional: hoverText(description, action, timeout)
+        [description, action = 'click', timeout = 5000] = args;
       }
+      
+      if (!description) {
+        throw new CommandError("hover-text requires a description parameter");
+      }
+      
+      description = description.toString();
       
       emitter.emit(
         events.log.narration,
-        theme.dim(
-          `searching for "${text}"${description ? ` (${description})` : ""}...`,
-        ),
+        theme.dim(`searching for "${description}"...`),
       );
 
-      text = text ? text.toString() : null;
-
       // wait for the text to appear on screen
-      await commands["wait-for-text"]({ text, timeout });
-
-      description = description ? description.toString() : null;
+      await commands["wait-for-text"]({ text: description, timeout });
 
       emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-      // Combine text and description into element parameter
-      let element = text;
-      if (description) {
-        element = `"${text}" with description ${description}`;
-      }
-
       let response = await sdk.req("find", {
-        element,
+        element: description,
         image: await system.captureScreenBase64(),
       });
 
