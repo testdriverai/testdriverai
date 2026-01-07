@@ -725,18 +725,22 @@ const createCommands = (
      * @param {number} [options.timeout=5000] - Timeout in milliseconds
      */
     "hover-text": async (...args) => {
-      let description, action, timeout;
+      let description, text, action, timeout;
       
       // Handle both object and positional argument styles
-      if (isObjectArgs(args, ['description', 'action', 'timeout'])) {
-        ({ description, action = 'click', timeout = 5000 } = args[0]);
+      if (isObjectArgs(args, ['description', 'text', 'action', 'timeout'])) {
+        ({ description, text, action = 'click', timeout = 5000 } = args[0]);
       } else {
         // Legacy positional: hoverText(description, action, timeout)
         [description, action = 'click', timeout = 5000] = args;
       }
       
+      // Use text if provided, otherwise fall back to description
+      // This handles both the new spec (text + description) and legacy usage (just description)
+      description = text || description;
+      
       if (!description) {
-        throw new CommandError("hover-text requires a description parameter");
+        throw new CommandError("hover-text requires either a text or description parameter");
       }
       
       description = description.toString();
