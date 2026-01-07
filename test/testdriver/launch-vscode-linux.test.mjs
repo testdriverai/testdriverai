@@ -15,11 +15,12 @@ describe("Launch VS Code on Linux", () => {
       // provision.vscode() automatically calls ready() and starts dashcam
       await testdriver.provision.vscode();
 
-      // Assert that VS Code is running
-      const result = await testdriver.assert(
-        "Visual Studio Code window is visible on screen",
+      // Wait for VS Code to launch (polls every 5s until found or timeout)
+      const vsCodeWindow = await testdriver.find(
+        "Visual Studio Code window",
+        { timeout: 60000 }
       );
-      expect(result).toBeTruthy();
+      expect(vsCodeWindow.found()).toBeTruthy();
     },
   );
 
@@ -32,11 +33,12 @@ describe("Launch VS Code on Linux", () => {
       await testdriver.provision.vscode({
         extensions: ["esbenp.prettier-vscode"],
       });
-
-      // Assert that VS Code is running
-      const vsCodeVisible = await testdriver.assert(
-        "Visual Studio Code window is visible on screen",
+Wait for VS Code to launch (polls every 5s until found or timeout)
+      const vsCodeWindow = await testdriver.find(
+        "Visual Studio Code window",
+        { timeout: 60000 }
       );
+      expect(vsCodeWindow.found()
       expect(vsCodeVisible).toBeTruthy();
 
       // Open the extensions panel to verify Prettier is installed
