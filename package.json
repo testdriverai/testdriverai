@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.2.14",
+  "version": "7.2.16",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "exports": {
@@ -83,6 +83,14 @@
   "overrides": {
     "glob": "^11.0.1",
     "rimraf": "^5.0.10"
+  },
+  "peerDependencies": {
+    "vitest": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.10.0",
