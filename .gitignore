@@ -167,3 +167,5 @@ test-results
 test-results/*
 .vscode
 *.xml
+
+.testdriver
