@@ -1,314 +1,225 @@
-<a href="https://testdriver.ai"><img src="https://github.com/dashcamio/testdriver/assets/318295/2a0ad981-8504-46f0-ad97-60cb6c26f1e7"/></a>
+<div align="center">
+  <a href="https://testdriver.ai">
+    <img src="https://github.com/dashcamio/testdriver/assets/318295/2a0ad981-8504-46f0-ad97-60cb6c26f1e7" height="200" alt="TestDriver.ai"/>
+  </a>
+</div>
+<h4 align="center">
+  Reliably test your most difficult flows. Don't ship bugs because flows are too hard to test.
+</h4>
 
-# TestDriver.ai
+<p align="center">
+  TestDriver helps engineering teams easily test, debug, and monitor E2E flows that are hard or impossible to cover with other tools.
+</p>
 
-Automate and scale QA with computer-use agents.
+<div align="center">
+  
+[🚀 **Quick Start**](#-quick-start) • [📖 **Documentation**](https://docs.testdriver.ai) • [💻 **Examples**](https://github.com/testdriverai/testdriverai/tree/main/test/testdriver) • [💬 **Discord**](https://discord.com/invite/cWDFW8DzPm) • [🌐 **Website**](https://testdriver.ai)
 
-[Docs](https://docs.testdriver.ai) | [Website](https://testdriver.ai) | [GitHub Action](https://github.com/marketplace/actions/testdriver-ai) | [Join our Discord](https://discord.com/invite/cWDFW8DzPm)
+</div>
 
-# Install via NPM
+---
 
-[Follow the instructions on our docs for more.](https://docs.testdriver.ai/overview/quickstart).
+## 🎬 What Can You Test?
 
-## v7 SDK - Progressive Disclosure
+<div align="center">
 
-TestDriver v7 introduces **three levels of API** to match your experience level:
+**Third-Party Web Apps** • **Desktop Apps** • **VS Code Extensions** • **Chrome Extensions** • **AI Chatbots** • **OAuth Flows** • **PDF Content** • **Spelling & Grammar** • **File System & Uploads** • **OS Accessibility** • **Visual Content** • **`<iframe>`** • **`<canvas>`** • **`<video>`**
 
-### 🟢 Beginner: Presets (Zero Config)
+</div>
+
+---
+
+## 🎯 Why TestDriver?
+
+TestDriver isn't just another testing framework—it's a **computer-use agent for QA**. Using AI vision and mouse/keyboard emulation, TestDriver can test anything you can see on screen, just like a human QA engineer would.
+
+### The Problem with Traditional Testing
+
+Modern testing tools like Playwright are powerful but limited to selector-based testing in single browser tabs. This breaks down when you need to test:
+
+| Challenge | Traditional Tools | TestDriver |
+|-----------|------------------|------------|
+| **Dynamic AI Content** | ❌ No selectors for chatbots, images, videos | ✅ AI vision sees everything |
+| **Fast-Moving Teams** | ❌ Brittle selectors break constantly | ✅ Natural language adapts to changes |
+| **Desktop Applications** | ❌ Web-only tools | ✅ Full OS control |
+| **Third-Party Software** | ❌ No access to selectors | ✅ Tests anything visible |
+| **Visual States** | ❌ Can't verify layouts, charts, images | ✅ Computer vision validation |
+| **Multi-App Workflows** | ❌ Single-app limitation | ✅ Cross-application testing |
+
+### The TestDriver Solution
 
 ```javascript
-import { test } from 'vitest';
-import { chromePreset } from 'testdriverai/presets';
+// Instead of fragile selectors...
+await page.locator('#user-menu > div.dropdown > button[data-testid="profile-btn"]').click();
 
-test('login test', async (context) => {
-  const { client } = await chromePreset(context, {
-    url: 'https://myapp.com'
-  });
-  
-  await client.find('Login button').click();
-});
+// ...use natural language that adapts to UI changes
+await testdriver.find('profile button in the top right').click();
 ```
 
-**Built-in presets:** Chrome, VS Code, Electron, and create your own!
+---
 
-### 🟡 Intermediate: Hooks (Flexible)
+## 🚀 Quick Start
 
-```javascript
-import { test } from 'vitest';
-import { useTestDriver, useDashcam } from 'testdriverai/vitest/hooks';
+Get your first test running in under 5 minutes:
 
-test('my test', async (context) => {
-  const client = useTestDriver(context, { os: 'linux' });
-  const dashcam = useDashcam(context, client, {
-    autoStart: true,
-    autoStop: true
-  });
-  
-  await client.find('button').click();
-});
-```
+### Step 1: Create a TestDriver Account
 
-**Automatic lifecycle management** - no more forgetting cleanup!
+<a href="https://app.testdriver.ai/team"><img src="https://img.shields.io/badge/Sign_Up-Free_Account-blue?style=for-the-badge" alt="Sign Up"/></a>
 
-### 🔴 Advanced: Core Classes (Full Control)
+*No credit card required!*
 
-```javascript
-import { test } from 'vitest';
-import { TestDriver, Dashcam } from 'testdriverai/core';
-
-test('my test', async () => {
-  const client = new TestDriver(apiKey, { os: 'linux' });
-  const dashcam = new Dashcam(client);
-  
-  await client.auth();
-  await client.connect();
-  await dashcam.start();
-  
-  await client.find('button').click();
-  
-  await dashcam.stop();
-  await client.disconnect();
-});
-```
-
-**Full manual control** for advanced scenarios.
-
-📖 **Learn more:** [MIGRATION.md](./docs/MIGRATION.md) | [PRESETS.md](./docs/PRESETS.md) | [HOOKS.md](./docs/HOOKS.md)
-
-# About
-
-TestDriver isn't like any test framework you've used before. TestDriver is an OS Agent for QA. TestDriver uses AI vision along with mouse and keyboard emulation to control the entire desktop. It's more like a QA employee than a test framework. This kind of black-box testing has some major advantages:
-
-- **Easier set up:** No need to add test IDs or craft complex selectors
-- **Less Maintenance:** Tests don't break when code changes
-- **More Power:** TestDriver can test any application and control any OS setting
-
-### Demo (Playing Balatro Desktop)
-
-https://github.com/user-attachments/assets/7cb9ee5a-0d05-4ff0-a4fa-084bcee12e98
-
-# Examples
-
-- Test any user flow on any website in any browser
-- Clone, build, and test any desktop app
-- Render multiple browser windows and popups like 3rd party auth
-- Test `<canvas>`, `<iframe>`, and `<video>` tags with ease
-- Use file selectors to upload files to the browser
-- Test chrome extensions
-- Test integrations between applications
-- Integrates into CI/CD via GitHub Actions ($)
-
-Check out [the docs](https://docs.testdriver.ai/).
-
-# Workflow
-
-1. Tell TestDriver what to do in natural language on your local machine using `npm i testdriverai -g`
-2. TestDriver looks at the screen and uses mouse and keyboard emulation to accomplish the goal
-3. Run TestDriver tests on our test infrastructure
-
-# Quickstart
-
-## Initialize TestDriver
-
-In your project directory:
-
-```sh
-npx testdriverai@latest init
-```
-
-## Teach TestDriver a test
-
-Let's show TestDriver what we want to test. Run the following command:
-
-```sh
-npx testdriverai@latest .testdriver/test.yaml
-```
-
-## Reset the test state
-
-TestDriver best practice is to start instructing TestDriver with your app in it's initial state. For browsers, this means creating a new tab with the website you want to test.
-
-If you have multiple monitors, make sure you do this on your primary display.
-
-## Instruct TestDriver
-
-Now, just tell TestDriver what you want it to do. For now, stick with single commands like "click sign up" and "scroll down."
-
-Later, try to perform higher level objectives like "complete the onboarding."
-
-```yaml
-> Click on sign up
-TestDriver Generates a Test
-TestDriver will look at your screen and generate a test script. TestDriver can see the screen, control the mouse, keyboard, and more!
-TestDriver can only see your primary display!
-To navigate to testdriver.ai, we need to focus on the
-Google Chrome application, click on the search bar, type
-the URL, and then press Enter.
-
-Here are the steps:
-
-1. Focus on the Google Chrome application.
-2. Click on the search bar.
-3. Type "testdriver.ai".
-4. Press Enter.
-
-Let's start with focusing on the Google Chrome application
-and clicking on the search bar.
-
-commands:
-  - command: focus-application
-    name: Google Chrome
-  - command: hover-text
-    text: Search Google or type a URL
-    description: main google search
-    action: click
-
-After this, we will type the URL and press Enter.
-```
-
-## TestDriver executes the test script
-
-TestDriver will execute the commands found in the yml codeblocks of the response.
-
-See the yml TestDriver generated? That's our own schema. You can learn more about it in the [reference](https://docs.testdriver.ai/getting-started/editing).
-
-> Take your hands off the mouse and keyboard while TestDriver executes! TestDriver is not a fan of backseat drivers.
-
-## Keep going!
-
-Feel free to ask TestDriver to perform some more tasks. Every time you prompt TestDriver it will look at your screen and generate more test step to complete your goal.
-
-```sh
-> navigate to airbnb.com
-> search for destinations in austin tx
-> click check in
-> select august 8
-```
-
-If something didn't work, you can use `/undo` to remove all of the test steps added since the last prompt.
-
-## Test the test locally
-
-Now it's time to make sure the test plan works before we deploy it. Use testdriver run to run the test file you just created with /save .
-
-```sh
-npx testdriverai@latest run testdriver/test.yaml
-```
-
-Make sure to reset the test state!
-
-## Deploy
-
-Now it's time to deploy your test using our GitHub action! `testdriver init` already did the work for you and will start triggering tests once you commit the new files to your repository.
-
-```sh
-git add .
-git commit -am "Add TestDriver tests"
-gh pr create --web
-```
-
-Your test will run on every commit and the results will be posted as a Dashcam.io video within your GitHub summary! Learn more about deploying on CI [here](https://docs.testdriver.ai/action/setup).
-
-## Using as a Module
-
-TestDriver can also be used programmatically as a Node.js module. This is useful when you want to integrate TestDriver into your own applications or customize the test file paths.
-
-### Custom Test File Paths
-
-By default, TestDriver looks for test files at `testdriver/testdriver.yaml` relative to the current working directory. You can customize this:
-
-```javascript
-const TestDriverAgent = require("testdriverai");
-
-// Option 1: Set default via environment variable
-const agent1 = new TestDriverAgent({
-  TD_DEFAULT_TEST_FILE: "my-tests/integration.yaml",
-});
-
-// Option 2: Explicitly specify test file
-const agent2 = new TestDriverAgent(
-  {},
-  {
-    args: ["path/to/specific/test.yaml"],
-  },
-);
-
-// Option 3: Custom working directory + relative path
-const agent3 = new TestDriverAgent(
-  { TD_DEFAULT_TEST_FILE: "tests/smoke.yaml" },
-  { options: { workingDir: "/path/to/your/project" } },
-);
-
-// Run the test
-await agent1.run();
-```
-
-### Environment Variables
-
-You can also set the default test file path using environment variables:
+### Step 2: Initialize Your Project
 
 ```bash
-export TD_DEFAULT_TEST_FILE="custom/path/test.yaml"
-node your-script.js
+npx testdriverai@beta init
 ```
 
-## MCP Server for AI Agents
+This will:
+- Create a project folder
+- Install dependencies (Vitest + TestDriver)
+- Set up your API key
+- Generate an example test
 
-TestDriver includes a Model Context Protocol (MCP) server that enables AI agents to **interactively create Vitest test files**.
-
-### How It Works
-
-1. **AI agent connects** to a persistent TestDriver sandbox
-2. **User describes** what they want to test
-3. **AI explores** the application using TestDriver commands
-4. **AI generates** Vitest test code from successful interactions
-
-### Quick Start
+### Step 3: Run Your First Test
 
 ```bash
-cd mcp-server
-npm install && npm run build
-npm run deploy  # Install to ~/.mcp/testdriver
+vitest run
 ```
 
-### Configuration
+Watch as TestDriver:
+1. Spawns a cloud sandbox
+2. Launches Chrome
+3. Runs your test using AI vision
+4. Returns results with video replay
 
-Add to your MCP client configuration:
+<div align="center">
+<a href="https://docs.testdriver.ai/v7/quickstart"><img src="https://img.shields.io/badge/📖_Read_Full_Quickstart-4A90E2?style=for-the-badge" alt="Full Quickstart"/></a>
+</div>
 
-```json
-{
-  "servers": {
-    "testdriverai": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/cli/mcp-server/dist/index.js"]
-    }
-  }
-}
+---
+
+## �️ Core Concepts
+
+### Real-World Examples
+
+#### Web Applications
+
+```javascript
+// Test dynamic AI chatbots (no selectors needed!)
+test('chatbot conversation', async (context) => {
+  const { testdriver } = await chrome(context, { url: 'https://chatapp.com' });
+  
+  await testdriver.find('message input').type('What is TestDriver?');
+  await testdriver.find('send button').click();
+  
+  const response = await testdriver.assert('AI response is visible');
+  expect(response).toBeTruthy();
+});
+
+// Test OAuth flows across multiple domains
+test('OAuth login', async (context) => {
+  const { testdriver } = await chrome(context, { url: 'https://myapp.com' });
+  
+  await testdriver.find('Login with Google').click();
+  // Handles popup, enters credentials, returns to app
+  await testdriver.find('email input').type('user@gmail.com');
+  await testdriver.find('password input').type('password');
+  await testdriver.find('Sign in').click();
+  
+  await testdriver.assert('successfully logged into the app');
+});
 ```
 
-### Example Workflow
+#### Desktop Applications
 
+```javascript
+// Install and test native desktop apps
+test('desktop app', async (context) => {
+  const testdriver = TestDriver(context, { os: 'windows' });
+  
+  await testdriver.provision.installer({
+    url: 'https://example.com/MyApp.msi',
+    launch: true
+  });
+  
+  await testdriver.find('main window').assert('app launched successfully');
+});
 ```
-User: "Create a test that logs into the app"
 
-AI: [Connects to sandbox with user's API key]
-AI: [Takes screenshot to see login page]
-AI: [Finds username field: await testdriver_find({ description: "username field" })]
-AI: [Clicks and types: await testdriver_type({ text: "test_user" })]
-AI: [Finds password field, enters password]
-AI: [Clicks login button]
-AI: [Asserts login succeeded]
-AI: [Generates Vitest test file from these steps]
-AI: [Saves test/login.test.mjs]
+#### Browser Extensions
+
+```javascript
+// Test Chrome extensions from the Web Store
+test('chrome extension', async (context) => {
+  const { testdriver } = await chrome(context);
+  
+  await testdriver.provision.chromeExtension({
+    extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb' // Loom
+  });
+  
+  const button = await testdriver.find('extension icon in toolbar');
+  await button.click();
+  
+  const panel = await testdriver.find('extension popup');
+  expect(panel.found()).toBeTruthy();
+});
 ```
 
-### Key Features
+#### Visual Validation
 
-- **Persistent sandbox** - Connection stays alive throughout test creation
-- **Live debugger URL** - User can watch the AI test in real-time
-- **Full SDK access** - All v7 SDK methods available
-- **Code generation** - AI translates interactions into proper Vitest code
+```javascript
+// Verify visual states, charts, images
+test('dashboard chart', async (context) => {
+  const { testdriver } = await chrome(context, { url: 'https://analytics.example.com' });
+  
+  await testdriver.assert('line chart shows upward trend');
+  await testdriver.assert('data points are visible on the graph');
+  
+  // Extract text from images/PDFs
+  const value = await testdriver.extract('the total revenue number');
+  console.log('Revenue:', value);
+});
 
-See [mcp-server/TEST_CREATION_GUIDE.md](mcp-server/TEST_CREATION_GUIDE.md) for the complete guide.
+// Test spelling and grammar checking
+test('content validation', async (context) => {
+  const { testdriver } = await chrome(context, { url: 'https://docs.example.com' });
+  
+  await testdriver.assert('there are no spelling errors on the page');
+  await testdriver.assert('all headings use title case');
+});
 
+// Test canvas and video elements
+test('canvas rendering', async (context) => {
+  const { testdriver } = await chrome(context, { url: 'https://canvas-app.com' });
+  
+  await testdriver.find('draw tool').click();
+  await testdriver.assert('canvas shows a red circle');
+  
+  // Video content validation
+  await testdriver.assert('video is playing');
+  await testdriver.assert('video progress bar shows 50% complete');
+});
+```
+
+#### Multi-Application Workflows
+
+```javascript
+// Test interactions across multiple apps
+test('copy from browser to VS Code', async (context) => {
+  const testdriver = TestDriver(context, { os: 'linux' });
+  
+  await testdriver.provision.chrome({ url: 'https://example.com' });
+  await testdriver.find('code snippet').click();
+  await testdriver.pressKeys(['ctrl', 'c']);
+  
+  await testdriver.provision.vscode();
+  await testdriver.find('editor').click();
+  await testdriver.pressKeys(['ctrl', 'v']);
+  
+  await testdriver.assert('code is pasted in editor');
+});
+```
+
+<div align="center">
+<a href="https://github.com/testdriverai/testdriverai/tree/main/test/testdriver"><img src="https://img.shields.io/badge/💻_Browse_More_Examples-gray?style=for-the-badge" alt="More Examples"/></a>
+</div>
