@@ -880,27 +880,27 @@ class SDKLogFormatter {
   }
 
   /**
-   * Format act() start message - provides visual scope boundary
+   * Format ai() start message - provides visual scope boundary
    * @param {string} task - The task being executed
-   * @returns {string} Formatted act start message
+   * @returns {string} Formatted ai start message
    */
-  formatActStart(task) {
+  formatAIStart(task) {
     const parts = [];
     this.addTimestamp(parts);
     parts.push(this.getPrefix("action"));
-    parts.push(chalk.bold.cyan("Act"));
+    parts.push(chalk.bold.cyan("AI"));
     parts.push(chalk.cyan(`"${task}"`));
     return parts.join(" ");
   }
 
   /**
-   * Format act() completion message - provides visual scope boundary
+   * Format ai() completion message - provides visual scope boundary
    * @param {number} durationMs - Duration in milliseconds
-   * @param {boolean} success - Whether the act completed successfully
+   * @param {boolean} success - Whether the ai completed successfully
    * @param {string} [error] - Error message if failed
-   * @returns {string} Formatted act complete message
+   * @returns {string} Formatted ai complete message
    */
-  formatActComplete(durationMs, success, error = null) {
+  formatAIComplete(durationMs, success, error = null) {
     const parts = [];
     this.addTimestamp(parts);
     parts.push(this.getResultPrefix());
