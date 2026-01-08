@@ -10,8 +10,11 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
+const isLinux = (process.env.TD_OS || "linux") === "linux";
+
+
 describe("Chrome Extension Test", () => {
-  it("should load hello-world Chrome extension from local path", async (context) => {
+    it.skipIf(!isLinux)("should load hello-world Chrome extension from local path", async (context) => {
     const testdriver = TestDriver(context, { headless: false, newSandbox: true });
     
     // Wait for connection to be ready before running exec
@@ -51,7 +54,7 @@ describe("Chrome Extension Test", () => {
     expect(popupResult).toBeTruthy();
   });
 
-  it("should load Loom from Chrome Web Store by extensionId", async (context) => {
+    it.skipIf(!isLinux)("should load Loom from Chrome Web Store by extensionId", async (context) => {
     const testdriver = TestDriver(context, { headless: false, newSandbox: true});
 
     // Launch Chrome with Loom loaded by its Chrome Web Store ID

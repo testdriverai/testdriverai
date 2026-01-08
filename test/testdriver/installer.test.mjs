@@ -6,8 +6,10 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
+const isLinux = (process.env.TD_OS || "linux") === "linux";
+
 describe("Provision Installer", () => {
-  it(
+  it.skipIf(!isLinux)(
     "should download and install a .deb package on Linux",
     async (context) => {
       const testdriver = TestDriver(context, { newSandbox: true });
@@ -25,7 +27,7 @@ describe("Provision Installer", () => {
     },
   );
 
-  it(
+  it.skipIf(!isLinux)(
     "should download a shell script and verify it exists",
     async (context) => {
       const testdriver = TestDriver(context, { newSandbox: true });

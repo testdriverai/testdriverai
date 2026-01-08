@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
+const isLinux = (process.env.TD_OS || "linux") === "linux";
+
 describe("Launch VS Code on Linux", () => {
-  it(
+  it.skipIf(!isLinux)(
     "should launch VS Code on Debian/Ubuntu",
     async (context) => {
       const testdriver = TestDriver(context, { newSandbox: true });
@@ -19,7 +21,7 @@ describe("Launch VS Code on Linux", () => {
     },
   );
 
-  it(
+  it.skipIf(!isLinux)(
     "should install and use a VS Code extension",
     async (context) => {
       const testdriver = TestDriver(context, { newSandbox: true });
