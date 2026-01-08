@@ -19,8 +19,8 @@
               {
                 "group": "Overview",
                 "pages": [
-                  "/v7/what-is-testdriver",
                   "/v7/quickstart",
+                  "/v7/what-is-testdriver",
                   "/v7/examples",
                   {
                     "group": "Plans & Pricing",
