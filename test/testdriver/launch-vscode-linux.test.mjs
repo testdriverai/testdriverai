@@ -1,8 +1,3 @@
-/**
- * TestDriver SDK - Launch VS Code on Linux Test (Vitest)
- * Tests launching Visual Studio Code on Debian/Ubuntu using provision.vscode()
- */
-
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
@@ -33,13 +28,13 @@ describe("Launch VS Code on Linux", () => {
       await testdriver.provision.vscode({
         extensions: ["esbenp.prettier-vscode"],
       });
-Wait for VS Code to launch (polls every 5s until found or timeout)
+
       const vsCodeWindow = await testdriver.find(
         "Visual Studio Code window",
         { timeout: 60000 }
       );
-      expect(vsCodeWindow.found()
-      expect(vsCodeVisible).toBeTruthy();
+
+      expect(vsCodeWindow.found()).toBeTruthy();
 
       // Open the extensions panel to verify Prettier is installed
       await testdriver.pressKeys(["ctrl", "shift", "x"]);
