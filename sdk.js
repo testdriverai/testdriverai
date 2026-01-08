@@ -264,10 +264,10 @@ class ElementNotFoundError extends Error {
 }
 
 /**
- * Custom error class for act() failures
+ * Custom error class for ai() failures
  * Includes task execution details and retry information
  */
-class ActError extends Error {
+class AIError extends Error {
   /**
    * @param {string} message - Error message
    * @param {Object} details - Additional details about the failure
@@ -279,7 +279,7 @@ class ActError extends Error {
    */
   constructor(message, details = {}) {
     super(message);
-    this.name = "ActError";
+    this.name = "AIError";
     this.task = details.task;
     this.tries = details.tries;
     this.maxTries = details.maxTries;
@@ -289,11 +289,11 @@ class ActError extends Error {
 
     // Capture stack trace
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ActError);
+      Error.captureStackTrace(this, AIError);
     }
 
     // Enhance error message with execution details
-    this.message += `\n\n=== Act Execution Details ===`;
+    this.message += `\n\n=== AI Execution Details ===`;
     this.message += `\nTask: "${this.task}"`;
     this.message += `\nTries: ${this.tries}/${this.maxTries}`;
     this.message += `\nDuration: ${this.duration}ms`;
@@ -1397,7 +1397,7 @@ class TestDriverSDK {
             ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
             : `touch ${logPath}`;
             
-            await this.exec(shell, createLogCmd, 10000, true);
+            await this.exec(shell, createLogCmd, 60000, true);
           
             const urlObj = new URL(url);
             const domain = urlObj.hostname;
@@ -1428,7 +1428,7 @@ class TestDriverSDK {
           ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
           : `mkdir -p "${defaultProfileDir}"`;
         
-        await this.exec(shell, createDirCmd, 10000, true);
+        await this.exec(shell, createDirCmd, 60000, true);
         
         // Write Chrome preferences
         const chromePrefs = {
@@ -1465,7 +1465,7 @@ class TestDriverSDK {
           ? `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
           : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
         
-        await this.exec(shell, writePrefCmd, 10000, true);
+        await this.exec(shell, writePrefCmd, 60000, true);
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1569,7 +1569,7 @@ class TestDriverSDK {
           const mkdirCmd = this.os === 'windows'
             ? `New-Item -ItemType Directory -Path "${extensionDir}" -Force | Out-Null`
             : `mkdir -p "${extensionDir}"`;
-          await this.exec(shell, mkdirCmd, 10000, true);
+          await this.exec(shell, mkdirCmd, 60000, true);
           
           // Download CRX from Chrome Web Store
           // The CRX download URL format for Chrome Web Store
@@ -1675,7 +1675,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
             : `touch ${logPath}`;
           
-          await this.exec(shell, createLogCmd, 10000, true);
+          await this.exec(shell, createLogCmd, 60000, true);
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -1698,7 +1698,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
           : `mkdir -p "${defaultProfileDir}"`;
         
-        await this.exec(shell, createDirCmd, 10000, true);
+        await this.exec(shell, createDirCmd, 60000, true);
         
         // Write Chrome preferences
         const chromePrefs = {
@@ -1735,7 +1735,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           ? `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
           : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
         
-        await this.exec(shell, writePrefCmd, 10000, true);
+        await this.exec(shell, writePrefCmd, 60000, true);
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1814,7 +1814,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
             : `touch ${logPath}`;
           
-          await this.exec(shell, createLogCmd, 10000, true);
+          await this.exec(shell, createLogCmd, 60000, true);
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -1909,7 +1909,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
             : `touch ${logPath}`;
           
-          await this.exec(shell, createLogCmd, 10000, true);
+          await this.exec(shell, createLogCmd, 60000, true);
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -3250,7 +3250,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    * @param {Object} [options] - Execution options
    * @param {number} [options.tries=7] - Maximum number of check/retry attempts before giving up
    * @returns {Promise<ActResult>} Result object with success status and details
-   * @throws {ActError} When the task fails after all tries are exhausted
+   * @throws {AIError} When the task fails after all tries are exhausted
    *
    * @typedef {Object} ActResult
    * @property {boolean} success - Whether the task completed successfully
@@ -3296,8 +3296,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
 
-    // Emit scoped start marker for act()
-    this.emitter.emit(events.log.log, formatter.formatActStart(task));
+    // Emit scoped start marker for ai()
+    this.emitter.emit(events.log.log, formatter.formatAIStart(task));
 
     try {
       // Use the agent's exploratoryLoop method directly
@@ -3306,7 +3306,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       const duration = Date.now() - startTime;
       const triesUsed = this.agent.checkCount;
       
-      this.emitter.emit(events.log.log, formatter.formatActComplete(duration, true));
+      this.emitter.emit(events.log.log, formatter.formatAIComplete(duration, true));
       
       // Restore original checkLimit
       this.agent.checkLimit = originalCheckLimit;
@@ -3324,14 +3324,14 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       const duration = Date.now() - startTime;
       const triesUsed = this.agent.checkCount;
       
-      this.emitter.emit(events.log.log, formatter.formatActComplete(duration, false, error.message));
+      this.emitter.emit(events.log.log, formatter.formatAIComplete(duration, false, error.message));
       
       // Restore original checkLimit
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
       
-      // Create an enhanced error with additional context using ActError class
-      throw new ActError(`Act failed: ${error.message}`, {
+      // Create an enhanced error with additional context using AIError class
+      throw new AIError(`AI failed: ${error.message}`, {
         task,
         tries: triesUsed,
         maxTries: tries,
@@ -3358,4 +3358,4 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 module.exports = TestDriverSDK;
 module.exports.Element = Element;
 module.exports.ElementNotFoundError = ElementNotFoundError;
-module.exports.ActError = ActError;
+module.exports.AIError = AIError;
