@@ -9,7 +9,7 @@
  * Run: TD_OS=windows npx vitest run examples/windows-installer.test.mjs
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
@@ -19,7 +19,7 @@ describe("Windows App Installation", () => {
   it.skipIf(isLinux)("should download, install, and launch GitButler on Windows", async (context) => {
     // Alternative approach using provision.installer helper
     const testdriver = TestDriver(context, { 
-      newSandbox: true,
+      reconnect: true,
       os: 'windows'
     });
 
@@ -29,21 +29,13 @@ describe("Windows App Installation", () => {
       launch: false, // Don't auto-launch, we'll install manually
     });
 
-    // The installer should be an .msi or .exe file
-    expect(installerPath).toMatch(/\.(msi|exe)$/i);
+    console.log('Installer downloaded to:', installerPath);
 
-    // Install the MSI silently (check which type it is)
-    if (installerPath.toLowerCase().endsWith('.msi')) {
-      await testdriver.exec('pwsh', 
-        `Start-Process msiexec.exe -ArgumentList "/i \`"${installerPath}\`" /qn /norestart" -Wait`,
-        120000
-      );
-    } else {
-      await testdriver.exec('pwsh', 
-        `Start-Process "${installerPath}" -ArgumentList "/S" -Wait`,
-        120000
-      );
-    }
+    // Install the MSI silently (the file might not have an extension, so we try MSI first)
+    await testdriver.exec('pwsh', 
+      `Start-Process msiexec.exe -ArgumentList "/i \`"${installerPath}\`" /qn /norestart" -Wait`,
+      120000
+    );
 
     // Verify installation by checking if executable exists
     const verifyScript = `

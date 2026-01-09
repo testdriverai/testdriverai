@@ -1918,82 +1918,76 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           await this.dashcam.start();
         }
 
-        // Determine filename from URL if not provided
-        const urlObj = new URL(url);
-        const detectedFilename = filename || urlObj.pathname.split('/').pop() || 'installer';
-        
-        // Determine download directory and full path
+        // Determine download directory
         const downloadDir = this.os === 'windows' 
           ? 'C:\\Users\\testdriver\\Downloads'
           : '/tmp';
-        const filePath = this.os === 'windows'
-          ? `${downloadDir}\\${detectedFilename}`
-          : `${downloadDir}/${detectedFilename}`;
 
         console.log(`[provision.installer] Downloading ${url}...`);
 
-        // Download the file
-        if (this.os === 'windows') {
-          await this.exec(
-            shell,
-            `Invoke-WebRequest -Uri "${url}" -OutFile "${filePath}"`,
-            300000, // 5 min timeout for download
-            true
-          );
-        } else {
-          await this.exec(
-            shell,
-            `curl -L -o "${filePath}" "${url}"`,
-            300000,
-            true
-          );
-        }
+        let actualFilePath;
 
-        // Check if the downloaded file has a proper extension, if not scan the download directory
-        let actualFilePath = filePath;
-        const hasValidExtension = /\.(msi|exe|deb|rpm|appimage|sh|dmg|pkg)$/i.test(detectedFilename);
-        
-        if (!hasValidExtension && this.os === 'windows') {
-          // On Windows, scan the download directory for .msi or .exe files
-          console.log(`[provision.installer] Downloaded file has no extension, scanning for .msi or .exe files...`);
-          const scanResult = await this.exec(
-            shell,
-            `Get-ChildItem -Path "${downloadDir}" -File | Where-Object { $_.Extension -match '\\.(msi|exe)$' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName`,
-            30000,
-            true
-          );
+        // Download the file and get the actual filename (handles redirects)
+        if (this.os === 'windows') {
+          // Simple approach: download first, then get the actual filename from the response
+          const tempFile = `${downloadDir}\\installer_temp_${Date.now()}`;
           
-          if (scanResult && scanResult.trim()) {
-            actualFilePath = scanResult.trim();
-            console.log(`[provision.installer] Found installer: ${actualFilePath}`);
+          const downloadScript = `
+            $ProgressPreference = 'SilentlyContinue'
+            $response = Invoke-WebRequest -Uri "${url}" -OutFile "${tempFile}" -PassThru -UseBasicParsing
+            
+            # Try to get filename from Content-Disposition header
+            $filename = $null
+            if ($response.Headers['Content-Disposition']) {
+              if ($response.Headers['Content-Disposition'] -match 'filename=\\"?([^\\"]+)\\"?') {
+                $filename = $matches[1]
+              }
+            }
+            
+            # If no filename from header, try to get from URL or use default
+            if (-not $filename) {
+              $uri = [System.Uri]"${url}"
+              $filename = [System.IO.Path]::GetFileName($uri.LocalPath)
+              if (-not $filename -or $filename -eq '') {
+                $filename = "installer"
+              }
+            }
+            
+            # Move temp file to final location with proper filename
+            $finalPath = Join-Path "${downloadDir}" $filename
+            Move-Item -Path "${tempFile}" -Destination $finalPath -Force
+            Write-Output $finalPath
+          `;
+          
+          const result = await this.exec(shell, downloadScript, 300000, true);
+          actualFilePath = result ? result.trim() : null;
+          
+          if (!actualFilePath) {
+            throw new Error('[provision.installer] Failed to download file');
           }
-        } else if (!hasValidExtension && this.os === 'linux') {
-          // On Linux, scan for common installer extensions
-          console.log(`[provision.installer] Downloaded file has no extension, scanning for installer files...`);
-          const scanResult = await this.exec(
-            shell,
-            `find "${downloadDir}" -maxdepth 1 -type f \\( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.sh" \\) -printf '%T@ %p\\n' | sort -rn | head -1 | cut -d' ' -f2-`,
-            30000,
-            true
-          );
+        } else {
+          // Use curl with options to get the final filename
+          const tempMarker = `installer_${Date.now()}`;
+          const downloadScript = `
+            cd "${downloadDir}"
+            curl -L -J -O -w "%{filename_effective}" "${url}" 2>/dev/null || echo "${tempMarker}"
+          `;
           
-          if (scanResult && scanResult.trim()) {
-            actualFilePath = scanResult.trim();
-            console.log(`[provision.installer] Found installer: ${actualFilePath}`);
-          }
-        } else if (!hasValidExtension && this.os === 'darwin') {
-          // On macOS, scan for common installer extensions
-          console.log(`[provision.installer] Downloaded file has no extension, scanning for installer files...`);
-          const scanResult = await this.exec(
-            shell,
-            `find "${downloadDir}" -maxdepth 1 -type f \\( -name "*.dmg" -o -name "*.pkg" \\) -print0 | xargs -0 ls -t | head -1`,
-            30000,
-            true
-          );
+          const result = await this.exec(shell, downloadScript, 300000, true);
+          const downloadedFile = result ? result.trim() : null;
           
-          if (scanResult && scanResult.trim()) {
-            actualFilePath = scanResult.trim();
-            console.log(`[provision.installer] Found installer: ${actualFilePath}`);
+          if (downloadedFile && downloadedFile !== tempMarker) {
+            actualFilePath = `${downloadDir}/${downloadedFile}`;
+          } else {
+            // Fallback: use curl without -J and specify output file
+            const fallbackFilename = filename || 'installer';
+            actualFilePath = `${downloadDir}/${fallbackFilename}`;
+            await this.exec(
+              shell,
+              `curl -L -o "${actualFilePath}" "${url}"`,
+              300000,
+              true
+            );
           }
         }
 
