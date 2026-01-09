@@ -294,7 +294,7 @@
       {
         "icon": "gauge-high",
         "label": "Dashboard",
-        "href": "https://app.testdriver.ai"
+        "href": "https://console.testdriver.ai"
       }
     ]
   },

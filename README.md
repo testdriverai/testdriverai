@@ -49,7 +49,7 @@ expect(result).toBeTruthy();
 
 ### Step 1: Create a TestDriver Account
 
-<a href="https://app.testdriver.ai/team"><img src="https://img.shields.io/badge/Sign_Up-Free_Account-blue?style=for-the-badge" alt="Sign Up"/></a>
+<a href="https://console.testdriver.ai/team"><img src="https://img.shields.io/badge/Sign_Up-Free_Account-blue?style=for-the-badge" alt="Sign Up"/></a>
 
 *No credit card required!*
 
