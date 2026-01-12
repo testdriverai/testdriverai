@@ -356,8 +356,9 @@ const createCommands = (
       );
       
       // Wait for redraw and track duration
+      // Increase timeout for scroll operations as they can take 1-2 seconds to complete
       const redrawStartTime = Date.now();
-      await redraw.wait(2500, redrawOptions);
+      await redraw.wait(5000, redrawOptions);
       const redrawDuration = Date.now() - redrawStartTime;
       
       const after = await system.captureScreenBase64();

@@ -35,7 +35,7 @@ describe("Scroll Test", () => {
     await testdriver.scroll("down", { amount: 1000 });
 
     // Assert page is scrolled
-    const result = await testdriver.assert("the page is scrolled down, the hamster dance heading is not visible on the page");
+    const result = await testdriver.assert("the page is scrolled down, the hamster dance h1 text heading is not visible on the webpage");
     expect(result).toBeTruthy();
   });
 });
