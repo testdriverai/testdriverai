@@ -273,7 +273,7 @@ Posts or updates a GitHub comment with test results.
   - `prNumber` (number): PR number (optional)
   - `commitSha` (string): Commit SHA (optional)
 
-**Returns:** Promise<Object> - GitHub API response
+**Returns:** `Promise<Object>` - GitHub API response
 
 ## Examples
 

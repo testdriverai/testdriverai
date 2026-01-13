@@ -31,7 +31,7 @@ describe("Scroll Keyboard Test", () => {
 
     // Assert the page is scrolled down
     const result = await testdriver.assert(
-      "the hamster dance heading is not visible",
+      "the text 'the hamster dance' is not visible on the webpage",
     );
     expect(result).toBeTruthy();
   });
