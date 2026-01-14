@@ -1,5 +1,4 @@
 const WebSocket = require("ws");
-const marky = require("marky");
 const crypto = require("crypto");
 const { events } = require("../events");
 
@@ -83,10 +82,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           }
         }
 
-        // Start timing for this message
-        const timingKey = `sandbox-${message.type}`;
-        marky.mark(timingKey);
-
         let p = new Promise((resolve, reject) => {
           this.socket.send(JSON.stringify(message));
           emitter.emit(events.sandbox.sent, message);
@@ -99,13 +94,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         // Set up timeout to prevent hanging requests
         const timeoutId = setTimeout(() => {
           if (this.ps[requestId]) {
-            const pendingMessage = this.ps[requestId];
-            // Stop the timing marker to prevent memory leak
-            try {
-              marky.stop(pendingMessage.timingKey);
-            } catch (e) {
-              // Ignore timing errors
-            }
             delete this.ps[requestId];
             rejectPromise(new Error(`Sandbox message '${message.type}' timed out after ${timeout}ms`));
           }
@@ -122,7 +110,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             rejectPromise(error);
           },
           message,
-          timingKey,
           startTime: Date.now(),
         };
 
@@ -243,13 +230,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
               message.requestId,
             );
             return;
-          }
-
-          // Stop the timing marker to prevent memory leak
-          try {
-            marky.stop(this.ps[message.requestId].timingKey);
-          } catch (e) {
-            // Ignore timing errors
           }
 
           if (message.error) {
