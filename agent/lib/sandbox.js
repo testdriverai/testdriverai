@@ -254,23 +254,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             emitter.emit(events.sandbox.received);
 
             // Get timing information for this message
-            const pendingMessage = this.ps[message.requestId];
-            if (pendingMessage) {
-              const timing = marky.stop(pendingMessage.timingKey);
-
-              // Track timing for each message type
-              await analytics.track("sandbox", {
-                operation: pendingMessage.message.type,
-                timing,
-                requestId: message.requestId,
-                timestamp: Date.now(),
-                data: {
-                  messageType: pendingMessage.message.type,
-                  ...pendingMessage.message,
-                },
-              });
-            }
-
             this.ps[message.requestId]?.resolve(message);
           }
           delete this.ps[message.requestId];
