@@ -245,6 +245,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             return;
           }
 
+          // Stop the timing marker to prevent memory leak
+          try {
+            marky.stop(this.ps[message.requestId].timingKey);
+          } catch (e) {
+            // Ignore timing errors
+          }
+
           if (message.error) {
             emitter.emit(events.error.sandbox, message.errorMessage);
             const error = new Error(message.errorMessage || "Sandbox error");
@@ -252,8 +259,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             this.ps[message.requestId].reject(error);
           } else {
             emitter.emit(events.sandbox.received);
-
-            // Get timing information for this message
             this.ps[message.requestId]?.resolve(message);
           }
           delete this.ps[message.requestId];
