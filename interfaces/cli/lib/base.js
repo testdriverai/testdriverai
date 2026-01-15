@@ -143,20 +143,43 @@ class BaseCommand extends Command {
       process.exit(exitCode);
     });
 
-    // Handle process signals to ensure clean disconnection
-    const cleanupAndExit = () => {
-      if (this.agent?.sandbox) {
+    // Handle process signals to ensure clean disconnection and proper status reporting
+    let isExiting = false;
+    const cleanupAndExit = async (signal) => {
+      // Prevent multiple cleanup attempts
+      if (isExiting) return;
+      isExiting = true;
+
+      console.log(`\n\nReceived ${signal}, cleaning up...`);
+
+      if (this.agent) {
         try {
-          this.agent.sandbox.close();
+          // Stop the agent execution
+          this.agent.stop();
+          
+          // Call the agent's exit method which handles proper cleanup,
+          // including updating test status via the API
+          await this.agent.exit(true, false, false);
         } catch (err) {
-          // Ignore close errors
+          // If exit fails, at least try to close the sandbox
+          console.error("Error during cleanup:", err.message);
+          if (this.agent?.sandbox) {
+            try {
+              this.agent.sandbox.close();
+            } catch (sandboxErr) {
+              // Ignore sandbox close errors
+            }
+          }
         }
       }
-      process.exit(1);
+
+      // Exit with appropriate code (130 for SIGINT, 143 for SIGTERM)
+      const exitCode = signal === 'SIGINT' ? 130 : 143;
+      process.exit(exitCode);
     };
 
-    process.on('SIGINT', cleanupAndExit);
-    process.on('SIGTERM', cleanupAndExit);
+    process.on('SIGINT', () => cleanupAndExit('SIGINT'));
+    process.on('SIGTERM', () => cleanupAndExit('SIGTERM'));
 
     // Handle unhandled promise rejections to prevent them from interfering with the exit flow
     // This is particularly important when JavaScript execution in VM contexts leaves dangling promises
@@ -172,7 +195,7 @@ class BaseCommand extends Command {
       console.log(`Live test execution: `);
       if (this.agent.config.CI) {
         let u = new URL(url);
-        try {
+        try {k
           u = JSON.parse(u.searchParams.get("data"));
           console.log(`${u.url}&view_only=true`);
         } catch {

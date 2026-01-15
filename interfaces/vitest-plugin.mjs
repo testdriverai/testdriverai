@@ -422,21 +422,37 @@ async function handleProcessExit() {
 
 // Set up process exit handlers
 let exitHandlersRegistered = false;
+let isExiting = false;
 
 function registerExitHandlers() {
   if (exitHandlersRegistered) return;
   exitHandlersRegistered = true;
 
   // Handle Ctrl+C
-  process.on("SIGINT", async () => {
-    await handleProcessExit();
-    process.exit(130); // Standard exit code for SIGINT
+  process.on("SIGINT", () => {
+    if (isExiting) return;
+    isExiting = true;
+    
+    // Log immediately so user knows we're handling the signal
+    console.log("\n\nReceived SIGINT, marking test run as cancelled...");
+    
+    handleProcessExit()
+      .finally(() => {
+        process.exit(130); // Standard exit code for SIGINT
+      });
   });
 
   // Handle kill command
-  process.on("SIGTERM", async () => {
-    await handleProcessExit();
-    process.exit(143); // Standard exit code for SIGTERM
+  process.on("SIGTERM", () => {
+    if (isExiting) return;
+    isExiting = true;
+    
+    console.log("\n\nReceived SIGTERM, marking test run as cancelled...");
+    
+    handleProcessExit()
+      .finally(() => {
+        process.exit(143); // Standard exit code for SIGTERM
+      });
   });
   
 }
