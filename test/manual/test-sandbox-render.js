@@ -5,7 +5,6 @@ async function test() {
 
   const client = new TestDriver(process.env.TD_API_KEY, {
     os: process.env.TEST_PLATFORM || "linux",
-    headless: false, // Should open browser
     logging: true,
   });
 

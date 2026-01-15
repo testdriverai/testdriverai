@@ -26,7 +26,7 @@ describe("Reconnect Test - Part 1: Provision", () => {
 
   it("should provision sandbox and navigate to login page", async (context) => {
 
-    const testdriver = TestDriver(context, { newSandbox: true, headless: false });
+    const testdriver = TestDriver(context);
     
     // Provision Chrome and navigate to login page
     await testdriver.provision.chrome({

@@ -19,7 +19,7 @@ describe("Reconnect Test - Part 2: Sign In", () => {
 
   it("should reconnect to existing sandbox and click Sign In", async (context) => {
 
-    const testdriver = TestDriver(context, { newSandbox: true, headless: false, reconnect: true });
+    const testdriver = TestDriver(context, { reconnect: true });
     
     // Provision Chrome and navigate to login page
     await testdriver.provision.chrome({

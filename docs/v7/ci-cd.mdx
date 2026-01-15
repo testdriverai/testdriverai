@@ -578,9 +578,8 @@ describe("Cross-platform tests", () => {
   it("should work on both Linux and Windows", async (context) => {
     const os = process.env.TD_OS || 'linux';
     
-    const testdriver = TestDriver(context, { 
-      newSandbox: true, 
-      headless: false,
+    const testdriver = TestDriver(context, {
+      headless: true,
       os: os  // 'linux' or 'windows'
     });
     

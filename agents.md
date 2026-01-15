@@ -42,7 +42,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 describe("My Test Suite", () => {
   it("should do something", async (context) => {
     // Initialize TestDriver with options
-    const testdriver = TestDriver(context, { newSandbox: true, headless: false });
+    const testdriver = TestDriver(context);
     
     // Start with provision - this launches the sandbox and browser
     await testdriver.provision.chrome({
@@ -175,10 +175,7 @@ describe("Setup State", () => {
   });
 
   it("should set up the application state", async (context) => {
-    const testdriver = TestDriver(context, { 
-      newSandbox: true, 
-      headless: false 
-    });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://your-app.com/login',
@@ -219,8 +216,6 @@ describe("Experiment", () => {
 
   it("should continue from existing state", async (context) => {
     const testdriver = TestDriver(context, { 
-      newSandbox: true, 
-      headless: false,
       reconnect: true  // ← Key: reconnects to last sandbox
     });
     
@@ -274,7 +269,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("Login Flow", () => {
   it("should log in and open settings", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true, headless: false });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({ url: 'https://your-app.com/login' });
 
@@ -306,7 +301,7 @@ describe("Login Flow", () => {
 ```javascript
 // Development workflow example
 it("should incrementally build test", async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: 'https://example.com' });
 
   // Step 1: Find and inspect
@@ -336,7 +331,6 @@ const testdriver = TestDriver(context, {
   reconnect: false,       // Reconnect to last sandbox (default: false)
   keepAlive: 30000,       // Keep sandbox alive after test (default: 30000ms / 30 seconds)
   os: 'linux',            // 'linux' | 'windows' (default: 'linux')
-  resolution: '1366x768', // Sandbox resolution
   cache: true,            // Enable element caching (default: true)
   cacheKey: 'my-test',    // Cache key for element finding
 });

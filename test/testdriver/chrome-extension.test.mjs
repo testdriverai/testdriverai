@@ -15,7 +15,7 @@ const isLinux = (process.env.TD_OS || "linux") === "linux";
 
 describe("Chrome Extension Test", () => {
     it.skipIf(!isLinux)("should load hello-world Chrome extension from local path", async (context) => {
-    const testdriver = TestDriver(context, { headless: false, newSandbox: true });
+    const testdriver = TestDriver(context);
     
     // Wait for connection to be ready before running exec
     await testdriver.ready();
@@ -55,7 +55,7 @@ describe("Chrome Extension Test", () => {
   });
 
     it.skipIf(!isLinux)("should load Loom from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context, { headless: false, newSandbox: true});
+    const testdriver = TestDriver(context);
 
     // Launch Chrome with Loom loaded by its Chrome Web Store ID
     // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb

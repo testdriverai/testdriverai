@@ -49,7 +49,7 @@ const client = await TestDriver.create({
   // Sandbox Configuration
   os: 'linux',
   resolution: '1920x1080',
-  newSandbox: true,
+  // newSandbox: true,  // (default: true)
   sandboxId: null,
   
   // API Configuration
@@ -137,7 +137,6 @@ const { testdriver, dashcam } = await chrome(context, {
   resolution: '1920x1080',
   
   // Chrome-specific options
-  headless: false,
   incognito: false,
 });
 ```

@@ -10,7 +10,7 @@ import { TestDriver } from 'testdriverai/lib/vitest/hooks.mjs';
 
 describe('My Test Suite', () => {
   it('should test Chrome browser', async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://example.com'
@@ -53,7 +53,7 @@ await testdriver.provision.chrome({
 
 ```javascript
 it('should login to my app', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   await testdriver.provision.chrome({
     url: 'https://myapp.com/login'
@@ -91,7 +91,7 @@ await testdriver.provision.vscode({
 
 ```javascript
 it('should launch VS Code', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   await testdriver.provision.vscode();
   
@@ -106,7 +106,7 @@ it('should launch VS Code', async (context) => {
 
 ```javascript
 it('should install and use a VS Code extension', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   // Launch VS Code with extensions installed
   await testdriver.provision.vscode({
@@ -164,7 +164,7 @@ const filePath = await testdriver.provision.installer({
 
 ```javascript
 it('should install a .deb package', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   const filePath = await testdriver.provision.installer({
     url: 'https://github.com/sharkdp/bat/releases/download/v0.24.0/bat_0.24.0_amd64.deb'
@@ -179,7 +179,7 @@ it('should install a .deb package', async (context) => {
 
 ```javascript
 it('should download a script', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   const filePath = await testdriver.provision.installer({
     url: 'https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh',
@@ -195,7 +195,7 @@ it('should download a script', async (context) => {
 
 ```javascript
 it('should run AppImage with custom flags', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   const filePath = await testdriver.provision.installer({
     url: 'https://example.com/app.AppImage',
@@ -235,7 +235,7 @@ await testdriver.provision.electron({
 
 ```javascript
 it('should launch Electron app', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   
   await testdriver.provision.electron({
     appPath: '/path/to/my-electron-app',
@@ -271,7 +271,7 @@ import { TestDriver } from 'testdriverai/lib/vitest/hooks.mjs';
 
 describe('Application Testing', () => {
   it('should test Chrome login flow', async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://myapp.com/login'
@@ -286,7 +286,7 @@ describe('Application Testing', () => {
   });
 
   it('should test VS Code extension', async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.vscode({
       extensions: ['ms-python.python']
@@ -301,7 +301,7 @@ describe('Application Testing', () => {
   });
 
   it('should install and test CLI tool', async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.installer({
       url: 'https://github.com/sharkdp/bat/releases/download/v0.24.0/bat_0.24.0_amd64.deb'
@@ -315,7 +315,7 @@ describe('Application Testing', () => {
 
 ## Best Practices
 
-1. **Use `newSandbox: true`** - Each test gets a clean environment
+1. **Use clean sandboxes** - Each test gets a fresh environment by default
 2. **Enable Dashcam** - Great for debugging test failures (enabled by default)
 3. **Check assertions** - Always verify the expected state after actions
 4. **Use appropriate provision method** - Match the method to your test target
