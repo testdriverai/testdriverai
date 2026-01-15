@@ -683,8 +683,138 @@ export class Element {
   readonly label: string | null;
 }
 
+// ====================================
+// Provision API Interfaces
+// ====================================
+
+/** Options for provision.chrome */
+export interface ProvisionChromeOptions {
+  /** URL to navigate to (default: 'http://testdriver-sandbox.vercel.app/') */
+  url?: string;
+  /** Start maximized (default: true) */
+  maximized?: boolean;
+  /** Use guest mode (default: false) */
+  guest?: boolean;
+}
+
+/** Options for provision.chromeExtension */
+export interface ProvisionChromeExtensionOptions {
+  /** Local filesystem path to the unpacked extension directory */
+  extensionPath?: string;
+  /** Chrome Web Store extension ID */
+  extensionId?: string;
+  /** Start maximized (default: true) */
+  maximized?: boolean;
+}
+
+/** Options for provision.vscode */
+export interface ProvisionVSCodeOptions {
+  /** Path to workspace or folder to open */
+  workspace?: string;
+  /** Array of extension IDs to install */
+  extensions?: string[];
+}
+
+/** Options for provision.installer */
+export interface ProvisionInstallerOptions {
+  /** URL to download the installer from */
+  url: string;
+  /** Filename to save as (auto-detected from URL if not provided) */
+  filename?: string;
+  /** Application name to focus after install */
+  appName?: string;
+  /** Whether to launch the app after installation (default: true) */
+  launch?: boolean;
+}
+
+/** Options for provision.electron */
+export interface ProvisionElectronOptions {
+  /** Path to Electron app (required) */
+  appPath: string;
+  /** Additional electron args */
+  args?: string[];
+}
+
+/** Provision API for launching applications */
+export interface ProvisionAPI {
+  /**
+   * Launch Chrome browser
+   * @param options - Chrome launch options
+   */
+  chrome(options?: ProvisionChromeOptions): Promise<void>;
+
+  /**
+   * Launch Chrome browser with a custom extension loaded
+   * @param options - Chrome extension launch options
+   */
+  chromeExtension(options?: ProvisionChromeExtensionOptions): Promise<void>;
+
+  /**
+   * Launch VS Code
+   * @param options - VS Code launch options
+   */
+  vscode(options?: ProvisionVSCodeOptions): Promise<void>;
+
+  /**
+   * Download and install an application
+   * @param options - Installer options
+   * @returns Path to the downloaded file
+   */
+  installer(options: ProvisionInstallerOptions): Promise<string>;
+
+  /**
+   * Launch Electron app
+   * @param options - Electron launch options
+   */
+  electron(options: ProvisionElectronOptions): Promise<void>;
+}
+
+/** Dashcam API for screen recording */
+export interface DashcamAPI {
+  /**
+   * Start recording
+   */
+  start(): Promise<void>;
+
+  /**
+   * Stop recording and get replay URL
+   */
+  stop(): Promise<string | null>;
+
+  /**
+   * Check if currently recording
+   */
+  isRecording(): boolean;
+}
+
 export default class TestDriverSDK {
   constructor(apiKey: string, options?: TestDriverOptions);
+
+  /**
+   * Whether the SDK is currently connected to a sandbox
+   */
+  readonly connected: boolean;
+
+  /**
+   * The operating system of the sandbox
+   */
+  readonly os: 'windows' | 'linux';
+
+  /**
+   * Provision API for launching applications
+   */
+  readonly provision: ProvisionAPI;
+
+  /**
+   * Dashcam API for screen recording
+   */
+  readonly dashcam: DashcamAPI;
+
+  /**
+   * Wait for the sandbox to be ready
+   * Called automatically by provision methods
+   */
+  ready(): Promise<void>;
 
   /**
    * Authenticate with TestDriver API
