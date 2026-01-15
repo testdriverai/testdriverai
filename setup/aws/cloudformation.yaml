@@ -81,8 +81,8 @@ Parameters:
 
   CreateKeyPair:
     Type: String
-    AllowedValues: [yes, no]
-    Default: yes
+    AllowedValues: ["yes", "no"]
+    Default: "yes"
     Description: Create a new key pair for instance access? (If 'no', you must provide an existing key name)
   ExistingKeyName:
     Type: String
