@@ -235,10 +235,7 @@ commands:
       timestamp: Date.now(),
     });
 
-    await Promise.all([
-      sdk.req("ran", { command: object.command, data: object }),
-      analytics.track("command", { data: object, depth, timing }),
-    ]);
+    analytics.track("command", { data: object, depth, timing });
 
     return response;
   };
