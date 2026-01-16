@@ -144,19 +144,35 @@ class BaseCommand extends Command {
     });
 
     // Handle process signals to ensure clean disconnection
-    const cleanupAndExit = () => {
-      if (this.agent?.sandbox) {
+    let isExiting = false;
+    const cleanupAndExit = async (signal) => {
+      if (isExiting) return;
+      isExiting = true;
+      
+      console.log(`\nReceived ${signal}, cleaning up...`);
+      
+      // Use the agent's exit method for proper cleanup
+      if (this.agent) {
         try {
-          this.agent.sandbox.close();
+          await this.agent.exit(true, false, false);
         } catch (err) {
-          // Ignore close errors
+          console.error("Error during cleanup:", err.message);
         }
+      } else {
+        // Fallback if no agent
+        if (this.agent?.sandbox) {
+          try {
+            this.agent.sandbox.close();
+          } catch (err) {
+            // Ignore close errors
+          }
+        }
+        process.exit(1);
       }
-      process.exit(1);
     };
 
-    process.on('SIGINT', cleanupAndExit);
-    process.on('SIGTERM', cleanupAndExit);
+    process.on('SIGINT', () => cleanupAndExit('SIGINT'));
+    process.on('SIGTERM', () => cleanupAndExit('SIGTERM'));
 
     // Handle unhandled promise rejections to prevent them from interfering with the exit flow
     // This is particularly important when JavaScript execution in VM contexts leaves dangling promises
