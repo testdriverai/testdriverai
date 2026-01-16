@@ -13,6 +13,18 @@ graph LR
     B <--> C[Your AWS EC2 Instance]
 ```
 
+# Quickstart
+
+<Card 
+  title="Launch Stack" 
+  icon="aws" 
+  href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://v7-cloudformation-template.s3.us-east-2.amazonaws.com/cloudformation.yaml" 
+  horizontal 
+  arrow
+>
+  Deploy TestDriver infrastructure with one click
+</Card>
+
 ## Overview
 
 The setup process involves three main steps:
@@ -20,6 +32,7 @@ The setup process involves three main steps:
 1. **CloudFormation Infrastructure** — Deploy our template to create VPC, security groups, IAM roles, and launch templates
 2. **On-Demand Instance Spawning** — Use `spawn-runner.sh` to launch TestDriver instances when you need to run tests
 3. **CI/CD Integration** — Automate the lifecycle in GitHub Actions: spawn instance → run tests → terminate instance
+
 
 ## Prerequisites
 
@@ -31,7 +44,7 @@ Before you begin, ensure you have:
 - A GitHub repository for your tests
 
 <Tip>
-  The TestDriver Golden Image AMI ID is `ami-086b5b4b86d78987c`. Contact us to get access in your preferred AWS region.
+  The TestDriver Golden Image AMI ID is `ami-0504bf50fad62f312`. Contact us to get access in your preferred AWS region.
 </Tip>
 
 ## Step 1: Deploy CloudFormation Stack
@@ -43,57 +56,88 @@ Our CloudFormation template creates all the AWS infrastructure you need:
 - IAM roles and instance profiles
 - EC2 launch template for instance creation
 
-Download the template from the [TestDriver CLI repository](https://github.com/testdriverai/testdriverai/tree/main/setup/aws/cloudformation.yaml), then deploy:
+<Tabs>
+  <Tab title="GUI">
+    Click the button below to launch the CloudFormation stack in your AWS Console:
 
-```bash
-aws cloudformation deploy \
-  --template-file setup/aws/cloudformation.yaml \
-  --stack-name testdriver-infrastructure \
-  --parameter-overrides \
-    ProjectTag=testdriver \
-    AllowedIngressCidr=0.0.0.0/0 \
-    InstanceType=c5.xlarge \
-    CreateKeyPair=true \
-  --capabilities CAPABILITY_IAM
-```
+    <Card 
+      title="Launch Stack" 
+      icon="aws" 
+      href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://v7-cloudformation-template.s3.us-east-2.amazonaws.com/cloudformation.yaml" 
+      horizontal 
+      arrow
+    >
+      Deploy TestDriver infrastructure with one click
+    </Card>
 
-<Warning>
-  **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to restrict VPC access.
-</Warning>
+    Configure the stack parameters:
+    - **Stack name**: `testdriver-infrastructure` (or your preferred name)
+    - **ProjectTag**: `testdriver`
+    - **AllowedIngressCidr**: Your IP range (e.g., `203.0.113.0/24`)
+    - **InstanceType**: `c5.xlarge` (recommended)
+    - **CreateKeyPair**: `true`
 
-### Get Your Launch Template ID
+    <Warning>
+      **Security**: Replace `AllowedIngressCidr` with your specific IP ranges to restrict VPC access. Avoid using `0.0.0.0/0` in production.
+    </Warning>
 
-After deployment completes, retrieve the launch template ID:
+    ### Get Your Launch Template ID
 
-```bash
-aws cloudformation describe-stacks \
-  --stack-name testdriver-infrastructure \
-  --query 'Stacks[0].Outputs[?OutputKey==`LaunchTemplateId`].OutputValue' \
-  --output text
-```
+    After the stack creation completes, navigate to the **Outputs** tab to find your `LaunchTemplateId`:
 
-<Tip>
-  **Save this ID** — you'll need it for spawning instances and CI configuration.
-</Tip>
+    ![Launch Template ID](/images/content/self-hosted/launchtemplateid.png)
+
+    <Tip>
+      **Save this ID** — you'll need it for spawning instances and CI configuration.
+    </Tip>
+  </Tab>
+  <Tab title="CLI">
+    Download the template from the [TestDriver CLI repository](https://github.com/testdriverai/testdriverai/blob/main/setup/aws/cloudformation.yaml), then deploy:
+
+    ```bash
+    aws cloudformation deploy \
+      --template-file setup/aws/cloudformation.yaml \
+      --stack-name testdriver-infrastructure \
+      --parameter-overrides \
+        ProjectTag=testdriver \
+        AllowedIngressCidr=0.0.0.0/0 \
+        InstanceType=c5.xlarge \
+        CreateKeyPair=true \
+      --capabilities CAPABILITY_IAM
+    ```
+
+    <Warning>
+      **Security**: Replace `AllowedIngressCidr=0.0.0.0/0` with your specific IP ranges to restrict VPC access.
+    </Warning>
+
+    ### Get Your Launch Template ID
+
+    After deployment completes, retrieve the launch template ID:
+
+    ```bash
+    aws cloudformation describe-stacks \
+      --stack-name testdriver-infrastructure \
+      --query 'Stacks[0].Outputs[?OutputKey==`LaunchTemplateId`].OutputValue' \
+      --output text
+    ```
+
+    <Tip>
+      **Save this ID** — you'll need it for spawning instances and CI configuration.
+    </Tip>
+  </Tab>
+</Tabs>
 
 ## Step 2: Spawn Test Instances
 
-Use the `spawn-runner.sh` script to launch instances on-demand. This script:
+Use the [`spawn-runner.sh`](https://github.com/testdriverai/testdriverai/blob/main/setup/aws/spawn-runner.sh) script to launch instances on-demand. This script:
 
 - Launches a new EC2 instance using your launch template
 - Waits for the instance to be ready
-- Completes the TestDriver handshake
+- Validates SSM connectivity
 - Returns instance details for test execution
 
 ```bash
-# Set environment variables
-export AWS_REGION=us-east-2
-export AMI_ID=ami-086b5b4b86d78987c
-export AWS_LAUNCH_TEMPLATE_ID=lt-your-template-id
-export RESOLUTION=1440x900  # Optional, default is 1440x900
-
-# Spawn an instance
-./setup/aws/spawn-runner.sh
+AWS_REGION=us-east-2 AMI_ID=ami-0504bf50fad62f312 AWS_LAUNCH_TEMPLATE_ID=lt-your-template-id sh setup/aws/spawn-runner.sh
 ```
 
 Output:
@@ -105,10 +149,28 @@ AWS_REGION=us-east-2
 
 ### Run Tests Against Your Instance
 
-With Vitest, specify the instance IP using the `TD_VM` environment variable:
+Specify the instance IP using the `TD_IP` environment variable:
 
 ```bash
-TD_API_KEY=your-api-key TD_VM=1.2.3.4 npx vitest run
+TD_API_KEY=your-api-key TD_IP=1.2.3.4 npx vitest run
+```
+
+In your test file, pass the IP to TestDriver:
+
+```javascript
+import { describe, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("My Test", () => {
+  it("should run on self-hosted instance", async (context) => {
+    const testdriver = TestDriver(context, {
+      ip: process.env.TD_IP,
+    });
+
+    await testdriver.provision.chrome({ url: "https://example.com" });
+    // ... your test steps
+  });
+});
 ```
 
 ### Terminate Instances
@@ -176,7 +238,7 @@ jobs:
         run: npx vitest run
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-          TD_VM: ${{ steps.aws-setup.outputs.public-ip }}
+          TD_IP: ${{ steps.aws-setup.outputs.public-ip }}
 
       - name: Shutdown AWS Instance
         if: always()
@@ -198,8 +260,59 @@ jobs:
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key | `wJalrXUtnFEMI/K7MDENG...` |
 | `AWS_REGION` | AWS region | `us-east-2` |
 | `AWS_LAUNCH_TEMPLATE_ID` | From CloudFormation output | `lt-07c53ce8349b958d1` |
-| `AMI_ID` | TestDriver AMI ID | `ami-086b5b4b86d78987c` |
+| `AMI_ID` | TestDriver AMI ID | `ami-0504bf50fad62f312` |
 | `TD_API_KEY` | Your TestDriver API key | From [console.testdriver.ai](https://console.testdriver.ai) |
+
+### Example Workflow
+
+For a complete real-world example with matrix-based test execution and dynamic test file discovery, see the [`self-hosted.yml`](https://github.com/testdriverai/testdriverai/blob/main/setup/aws/self-hosted.yml) workflow in the TestDriver repository.
+
+<Tip>
+  **Local Testing**: You can test your GitHub Actions workflow locally using [nektos/act](https://github.com/nektos/act). The `self-hosted.yml` workflow includes commented lines for installing the AWS CLI when running with `act`.
+</Tip>
+
+## Manual Instance Management
+
+You can manage TestDriver instances manually through the AWS Console or CLI. This is useful for debugging, development, or running tests outside of CI/CD.
+
+### Starting an Instance
+
+```bash
+aws ec2 run-instances \
+  --region us-east-2 \
+  --image-id ami-0504bf50fad62f312 \
+  --launch-template LaunchTemplateId=lt-your-template-id \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=testdriver-manual}]'
+```
+
+### Stopping an Instance
+
+```bash
+aws ec2 stop-instances --region us-east-2 --instance-ids i-1234567890abcdef0
+```
+
+### Starting a Stopped Instance
+
+```bash
+aws ec2 start-instances --region us-east-2 --instance-ids i-1234567890abcdef0
+```
+
+### Terminating Instances
+
+```bash
+aws ec2 terminate-instances --region us-east-2 --instance-ids i-1234567890abcdef0
+```
+
+### Connecting to an Instance
+
+You can connect to running instances via:
+- **RDP** — Use the public IP on port 3389
+- **VNC** — Access via web browser at `http://<public-ip>:5900`
+- **AWS Console** — Use EC2 Instance Connect or Session Manager
+
+<Note>
+  Stopped instances retain their EBS volumes and can be restarted later. Terminated instances are permanently deleted. Always terminate instances when done to avoid storage costs.
+</Note>
 
 ## AMI Customization
 
