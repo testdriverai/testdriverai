@@ -2,8 +2,8 @@ import { execSync } from "child_process";
 import crypto from "crypto";
 import { createRequire } from "module";
 import path from "path";
+import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
 import { setTestRunInfo } from "./shared-test-state.mjs";
-import { generateGitHubComment, postOrUpdateTestResults } from "../lib/github-comment.mjs";
 
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
@@ -383,11 +383,23 @@ export async function cleanupTestDriver(testdriver) {
  * Handle process termination and mark test run as cancelled
  */
 async function handleProcessExit() {
+  logger.debug("handleProcessExit called");
+  logger.debug("testRun:", !!pluginState.testRun);
+  logger.debug("testRunId:", pluginState.testRunId);
+  logger.debug("testRunCompleted:", pluginState.testRunCompleted);
+  
   if (!pluginState.testRun || !pluginState.testRunId) {
+    logger.debug("No test run to cancel - skipping cleanup");
     return;
   }
 
-  logger.debug("Process interrupted, marking test run as cancelled...");
+  // Prevent duplicate completion
+  if (pluginState.testRunCompleted) {
+    logger.debug("Test run already completed - skipping cancellation");
+    return;
+  }
+
+  logger.debug("Marking test run as cancelled...");
 
   try {
     const stats = {
@@ -413,8 +425,10 @@ async function handleProcessExit() {
       completeData.platform = platform;
     }
 
+    logger.debug("Calling completeTestRun with:", JSON.stringify(completeData));
     await completeTestRun(completeData);
-    logger.debug("✅ Test run marked as cancelled");
+    pluginState.testRunCompleted = true;
+    logger.info("Test run marked as cancelled");
   } catch (error) {
     logger.error("Failed to mark test run as cancelled:", error.message);
   }
@@ -422,21 +436,77 @@ async function handleProcessExit() {
 
 // Set up process exit handlers
 let exitHandlersRegistered = false;
+let isExiting = false;
+let isCancelling = false; // Track if we're in the process of cancelling due to SIGINT/SIGTERM
 
 function registerExitHandlers() {
   if (exitHandlersRegistered) return;
   exitHandlersRegistered = true;
 
-  // Handle Ctrl+C
-  process.on("SIGINT", async () => {
-    await handleProcessExit();
-    process.exit(130); // Standard exit code for SIGINT
+  // Handle Ctrl+C - use 'once' and prepend to run before Vitest's handler
+  process.prependOnceListener("SIGINT", () => {
+    logger.debug("SIGINT received, cleaning up...");
+    if (isExiting) {
+      logger.debug("Already exiting, skipping duplicate handler");
+      return;
+    }
+    isExiting = true;
+    isCancelling = true; // Mark that we're cancelling
+    
+    // Temporarily override process.exit to prevent Vitest from exiting before we're done
+    const originalExit = process.exit;
+    let exitCalled = false;
+    let exitCode = 130;
+    
+    process.exit = (code) => {
+      if (!exitCalled) {
+        exitCalled = true;
+        exitCode = code ?? 130;
+        logger.debug(`process.exit(${exitCode}) called, waiting for cleanup...`);
+      }
+    };
+    
+    handleProcessExit()
+      .then(() => {
+        logger.debug("Cleanup completed successfully");
+      })
+      .catch((err) => {
+        logger.error("Error during SIGINT cleanup:", err.message);
+      })
+      .finally(() => {
+        logger.debug(`Exiting with code ${exitCode}`);
+        // Restore and call original exit
+        process.exit = originalExit;
+        process.exit(exitCode);
+      });
   });
 
   // Handle kill command
-  process.on("SIGTERM", async () => {
-    await handleProcessExit();
-    process.exit(143); // Standard exit code for SIGTERM
+  process.prependOnceListener("SIGTERM", () => {
+    logger.debug("SIGTERM received, cleaning up...");
+    if (isExiting) return;
+    isExiting = true;
+    isCancelling = true;
+    
+    const originalExit = process.exit;
+    let exitCode = 143;
+    
+    process.exit = (code) => {
+      exitCode = code ?? 143;
+    };
+    
+    handleProcessExit()
+      .then(() => {
+        logger.debug("Cleanup completed successfully");
+      })
+      .catch((err) => {
+        logger.error("Error during SIGTERM cleanup:", err.message);
+      })
+      .finally(() => {
+        logger.debug(`Exiting with code ${exitCode}`);
+        process.exit = originalExit;
+        process.exit(exitCode);
+      });
   });
   
 }
@@ -512,9 +582,9 @@ class TestDriverReporter {
   }
 
   async initializeTestRun() {
-    logger.debug("Initializing test run...");
-    logger.debug("Current API key in pluginState:", !!pluginState.apiKey);
-    logger.debug("Current API root in pluginState:", pluginState.apiRoot);
+    logger.debug("initializeTestRun called");
+    logger.debug("API key present:", !!pluginState.apiKey);
+    logger.debug("API root:", pluginState.apiRoot);
 
     // Check if we should enable the reporter
     if (!pluginState.apiKey) {
@@ -552,9 +622,9 @@ class TestDriverReporter {
       // Default to linux if no tests write platform info
       testRunData.platform = "linux";
 
-      logger.debug("Creating test run with data:", testRunData);
+      logger.debug("Creating test run with data:", JSON.stringify(testRunData));
       pluginState.testRun = await createTestRun(testRunData);
-      logger.debug("Test run created successfully:", pluginState.testRun);
+      logger.debug("Test run created:", JSON.stringify(pluginState.testRun));
 
       // Store in environment variables for worker processes to access
       process.env.TD_TEST_RUN_ID = pluginState.testRunId;
@@ -571,7 +641,7 @@ class TestDriverReporter {
         startTime: pluginState.startTime,
       });
 
-      logger.debug(`Test run created: ${pluginState.testRunId}`);
+      logger.info(`Test run created: ${pluginState.testRunId}`);
     } catch (error) {
       logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;
@@ -580,8 +650,24 @@ class TestDriverReporter {
   }
 
   async onTestRunEnd(testModules, unhandledErrors, reason) {
-    logger.debug("Test run ending with reason:", reason);
-    logger.debug("Plugin state - API key present:", !!pluginState.apiKey, "Test run present:", !!pluginState.testRun);
+    logger.debug("onTestRunEnd called with reason:", reason);
+    logger.debug("API key present:", !!pluginState.apiKey);
+    logger.debug("Test run present:", !!pluginState.testRun);
+    logger.debug("Test run ID:", pluginState.testRunId);
+    logger.debug("isCancelling:", isCancelling);
+    logger.debug("testRunCompleted:", pluginState.testRunCompleted);
+
+    // If we're cancelling due to SIGINT/SIGTERM, skip - handleProcessExit will handle it
+    if (isCancelling) {
+      logger.debug("Cancellation in progress via signal handler, skipping onTestRunEnd");
+      return;
+    }
+
+    // If already completed (by handleProcessExit), skip
+    if (pluginState.testRunCompleted) {
+      logger.debug("Test run already completed, skipping");
+      return;
+    }
 
     if (!pluginState.apiKey) {
       logger.warn("Skipping completion - no API key (was it cleared after init failure?)");
@@ -644,10 +730,11 @@ class TestDriverReporter {
       }
 
       // Test cases are reported directly from teardownTest
-      logger.debug("All test cases reported from teardown");
+      logger.debug("Calling completeTestRun API...");
+      logger.debug("Complete data:", JSON.stringify(completeData));
 
       const completeResponse = await completeTestRun(completeData);
-      logger.debug("Test run completion API response:", completeResponse);
+      logger.debug("API response:", JSON.stringify(completeResponse));
 
       // Mark test run as completed to prevent duplicate completion
       pluginState.testRunCompleted = true;
@@ -657,7 +744,7 @@ class TestDriverReporter {
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
       if (testRunDbId) {
         const testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
-        logger.debug(`🔗 View test run: ${testRunUrl}`);
+        logger.info(`View test run: ${testRunUrl}`);
         // Output in a parseable format for CI
         console.log(`TESTDRIVER_RUN_URL=${testRunUrl}`);
         
@@ -665,7 +752,7 @@ class TestDriverReporter {
         await postGitHubCommentIfEnabled(testRunUrl, stats, completeData);
       }
 
-      logger.debug(`✅ Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
+      logger.info(`Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
     } catch (error) {
       logger.error("Failed to complete test run:", error.message);
       logger.debug("Error stack:", error.stack);
@@ -1134,27 +1221,38 @@ async function createTestRun(data) {
 
 async function completeTestRun(data) {
   const url = `${pluginState.apiRoot}/api/v1/testdriver/test-run-complete`;
-  const response = await withTimeout(
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${pluginState.token}`,
-      },
-      body: JSON.stringify(data),
-    }),
-    10000,
-    "Internal Complete Test Run",
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `API error: ${response.status} ${response.statusText} - ${errorText}`,
+  logger.debug(`completeTestRun: POSTing to ${url}`);
+  
+  try {
+    const response = await withTimeout(
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${pluginState.token}`,
+        },
+        body: JSON.stringify(data),
+      }),
+      10000,
+      "Internal Complete Test Run",
     );
-  }
 
-  return await response.json();
+    logger.debug(`completeTestRun: Response status ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `API error: ${response.status} ${response.statusText} - ${errorText}`,
+      );
+    }
+
+    const result = await response.json();
+    logger.debug(`completeTestRun: Success`);
+    return result;
+  } catch (error) {
+    logger.error(`completeTestRun: Error - ${error.message}`);
+    throw error;
+  }
 }
 
 // Global state setup moved to setup file (vitestSetup.mjs)

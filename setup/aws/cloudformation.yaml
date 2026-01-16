@@ -168,8 +168,8 @@ Resources:
             IpProtocol: tcp,
             FromPort: 8765,
             ToPort: 8765,
-            CidrIp: 0.0.0.0/0,
-            Description: "pyautogui-cli WebSockets - Open for testing",
+            CidrIp: !Ref AllowedIngressCidr,
+            Description: "pyautogui-cli WebSockets"
           }
         - {
             IpProtocol: tcp,

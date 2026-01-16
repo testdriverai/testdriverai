@@ -9,6 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write  # Required to post comments on PRs
 
     steps:
     - uses: actions/checkout@v4
@@ -25,6 +29,8 @@ jobs:
     - name: Run TestDriver.ai tests
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
       run: npx vitest run
 
     - name: Upload test results
