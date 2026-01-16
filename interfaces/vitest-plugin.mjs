@@ -2,8 +2,8 @@ import { execSync } from "child_process";
 import crypto from "crypto";
 import { createRequire } from "module";
 import path from "path";
+import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
 import { setTestRunInfo } from "./shared-test-state.mjs";
-import { generateGitHubComment, postOrUpdateTestResults } from "../lib/github-comment.mjs";
 
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
