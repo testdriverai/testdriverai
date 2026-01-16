@@ -3,7 +3,7 @@
  * @module testdriverai/vitest/hooks
  */
 
-import { Dashcam, DashcamOptions, TestDriver, TestDriverOptions } from '../core/index';
+import TestDriverSDK, { TestDriverOptions } from '../../sdk';
 
 /**
  * Vitest test context (from test function parameter)
@@ -21,99 +21,49 @@ export interface VitestContext {
 }
 
 /**
- * Options for useTestDriver hook
+ * Options for TestDriver hook
  */
-export interface UseTestDriverOptions extends TestDriverOptions {
+export interface TestDriverHookOptions extends TestDriverOptions {
   /**
-   * Automatically connect to sandbox (default: true)
+   * Force creation of a new sandbox (default: true)
    */
-  autoConnect?: boolean;
+  newSandbox?: boolean;
   
   /**
-   * Create new sandbox (default: true)
+   * Reconnect to the last used sandbox
    */
-  new?: boolean;
+  reconnect?: boolean;
+  
+  /**
+   * Direct IP address to connect to a running sandbox instance
+   */
+  ip?: string;
 }
 
 /**
- * Options for useDashcam hook
- */
-export interface UseDashcamOptions extends DashcamOptions {
-  /**
-   * Automatically authenticate (default: true)
-   */
-  autoAuth?: boolean;
-  
-  /**
-   * Automatically start recording (default: false)
-   */
-  autoStart?: boolean;
-  
-  /**
-   * Automatically stop recording at test end (default: false)
-   */
-  autoStop?: boolean;
-}
-
-/**
- * Use TestDriver client in a test
- * Creates and manages TestDriver instance for the current test
+ * Create a TestDriver client for use in Vitest tests
+ * Manages lifecycle automatically (connects on first use, disconnects after test)
  * 
  * @param context - Vitest test context (from async (context) => {})
  * @param options - TestDriver options
- * @returns TestDriver client instance
+ * @returns TestDriver SDK instance
  * 
  * @example
- * test('my test', async (context) => {
- *   const client = useTestDriver(context, { os: 'linux' });
- *   await client.find('Login button').click();
- * });
- */
-export function useTestDriver(context: VitestContext, options?: UseTestDriverOptions): TestDriver;
-
-/**
- * Use Dashcam in a test
- * Creates and manages Dashcam instance for the current test
+ * import { describe, expect, it } from "vitest";
+ * import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
  * 
- * @param context - Vitest test context
- * @param client - TestDriver client instance (from useTestDriver)
- * @param options - Dashcam options
- * @returns Dashcam instance
- * 
- * @example
- * test('my test', async (context) => {
- *   const client = useTestDriver(context);
- *   const dashcam = useDashcam(context, client, {
- *     autoStart: true,
- *     autoStop: true
+ * describe("My Test Suite", () => {
+ *   it("should do something", async (context) => {
+ *     const testdriver = TestDriver(context, { newSandbox: true, headless: false });
+ *     
+ *     await testdriver.provision.chrome({ url: 'https://example.com' });
+ *     
+ *     const button = await testdriver.find("Sign In button");
+ *     await button.click();
+ *     
+ *     const result = await testdriver.assert("the dashboard is visible");
+ *     expect(result).toBeTruthy();
  *   });
- *   
- *   await client.find('button').click();
  * });
  */
-export function useDashcam(context: VitestContext, client: TestDriver, options?: UseDashcamOptions): Dashcam;
-
-/**
- * Use TestDriver with Dashcam in one call
- * Combined hook for the simplest usage pattern
- * 
- * @param context - Vitest test context
- * @param options - Combined options for TestDriver and Dashcam
- * @returns Object with client and dashcam instances
- * 
- * @example
- * test('my test', async (context) => {
- *   const { client, dashcam } = useTestDriverWithDashcam(context, {
- *     os: 'linux'
- *   });
- *   
- *   await client.find('button').click();
- * });
- */
-export function useTestDriverWithDashcam(
-  context: VitestContext,
-  options?: UseTestDriverOptions & UseDashcamOptions
-): {
-  client: TestDriver;
-  dashcam: Dashcam;
-};
+export function TestDriver(context: VitestContext, options?: TestDriverHookOptions): TestDriverSDK;
