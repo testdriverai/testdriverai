@@ -30,9 +30,8 @@ describe("Scroll Keyboard Test", () => {
     await testdriver.scroll("down", { amount: 1000 });
 
     // Assert the page is scrolled down
-    const result = await testdriver.assert(
-      "the text 'the hamster dance' is not visible on the webpage",
-    );
+    const result = await testdriver.assert("the page is scrolled down, the hamster dance h1 text heading is not visible on the webpage");
+
     expect(result).toBeTruthy();
   });
 });
