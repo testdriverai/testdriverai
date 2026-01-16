@@ -1362,10 +1362,13 @@ class TestDriverSDK {
 
   /**
    * Create the provision API with methods for launching applications
+   * Automatically skips provisioning when reconnect mode is enabled
    * @private
    */
   _createProvisionAPI() {
-    return {
+    const self = this;
+    
+    const provisionMethods = {
       /**
        * Launch Chrome browser
        * @param {Object} options - Chrome launch options
@@ -2073,6 +2076,24 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         await this.focusApplication('Electron');
       },
     };
+
+    // Wrap all provision methods with reconnect check using Proxy
+    return new Proxy(provisionMethods, {
+      get(target, prop) {
+        const method = target[prop];
+        if (typeof method === 'function') {
+          return async (...args) => {
+            // Skip provisioning if reconnecting to existing sandbox
+            if (self.reconnect) {
+              console.log(`[provision.${prop}] Skipping provisioning (reconnect mode)`);
+              return;
+            }
+            return method(...args);
+          };
+        }
+        return method;
+      }
+    });
   }
 
   /**

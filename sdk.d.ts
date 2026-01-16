@@ -242,7 +242,7 @@ export interface TestDriverOptions {
   sandboxInstance?: string;
   /** Cache key for element finding operations. If provided, enables caching tied to this key */
   cacheKey?: string;
-  /** Reconnect to the last used sandbox (throws error if no last sandbox exists) */
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
   /** Redraw configuration for screen change detection */
   redraw?: boolean | {
@@ -266,7 +266,7 @@ export interface ConnectOptions {
   sandboxId?: string;
   /** Force creation of a new sandbox */
   newSandbox?: boolean;
-  /** Reconnect to the last used sandbox (throws error if no last sandbox exists) */
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
   /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
