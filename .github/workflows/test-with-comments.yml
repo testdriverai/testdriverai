@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run assert test with GitHub comments
+      - name: Run TestDriver tests with GitHub comments
         env:
           # TestDriver API key (from repository secrets)
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
@@ -43,11 +43,11 @@ jobs:
           # GITHUB_SHA, GITHUB_REF, GITHUB_REPOSITORY are already set
           
         run: |
-          echo "🚀 Running TestDriver assert test..."
+          echo "🚀 Running TestDriver tests..."
           echo "📍 Repository: $GITHUB_REPOSITORY"
           echo "🔢 PR Number: ${{ github.event.pull_request.number || 'N/A (not a PR)' }}"
-          echo "📦 Running test..."
-          npm run test:sdk -- test/testdriver/assert.test.mjs
+          echo "📦 Running all tests..."
+          npm run test:sdk
         
       - name: Upload test results (on failure)
         if: failure()
