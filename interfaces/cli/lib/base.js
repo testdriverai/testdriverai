@@ -145,28 +145,27 @@ class BaseCommand extends Command {
 
     // Handle process signals to ensure clean disconnection
     let isExiting = false;
-    const cleanupAndExit = async (signal) => {
+    const cleanupAndExit = (signal) => {
       if (isExiting) return;
       isExiting = true;
       
       console.log(`\nReceived ${signal}, cleaning up...`);
       
       // Use the agent's exit method for proper cleanup
+      // Note: agent.exit() returns a promise that never resolves by design.
+      // The actual process.exit() is triggered by the 'exit' event listener above.
+      // We must NOT await this promise, as that would block the event loop
+      // and prevent the 'exit' event listener from running.
       if (this.agent) {
-        try {
-          await this.agent.exit(true, false, false);
-        } catch (err) {
+        // Call exit without await - the 'exit' event listener handles process.exit()
+        // The catch handler is a fallback for errors that occur before the exit event is emitted
+        this.agent.exit(true, false, false).catch((err) => {
           console.error("Error during cleanup:", err.message);
-        }
+          // Only exit here if error occurred before exit event was emitted
+          // The isExiting flag ensures this won't interfere with normal exit flow
+          process.exit(1);
+        });
       } else {
-        // Fallback if no agent
-        if (this.agent?.sandbox) {
-          try {
-            this.agent.sandbox.close();
-          } catch (err) {
-            // Ignore close errors
-          }
-        }
         process.exit(1);
       }
     };
