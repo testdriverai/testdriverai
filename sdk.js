@@ -1365,6 +1365,47 @@ class TestDriverSDK {
    * Automatically skips provisioning when reconnect mode is enabled
    * @private
    */
+  /**
+   * Get the path to the dashcam-chrome extension on Windows
+   * Installs it via npm if not already installed
+   * @returns {Promise<string>} Path to dashcam-chrome/build directory
+   * @private
+   */
+  async _getDashcamChromeExtensionPath() {
+    if (this.os !== 'windows') {
+      return '/usr/lib/node_modules/dashcam-chrome/build';
+    }
+
+    const shell = 'pwsh';
+    const extensionsDir = 'C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Extensions';
+    const dashcamDir = `${extensionsDir}\\dashcam-chrome-install`;
+    
+    try {
+      // Create extensions directory if it doesn't exist
+      await this.exec(shell, `New-Item -ItemType Directory -Path "${dashcamDir}" -Force | Out-Null`, 60000, true);
+      
+      // Check if dashcam-chrome is already installed
+      const checkCmd = `Test-Path "${dashcamDir}\\node_modules\\dashcam-chrome\\build"`;
+      const exists = await this.exec(shell, checkCmd, 30000, true);
+      
+      if (!exists || !exists.trim().toLowerCase().includes('true')) {
+        console.log('[dashcam-chrome] Installing dashcam-chrome extension on Windows...');
+        
+        // Initialize npm project and install dashcam-chrome
+        await this.exec(shell, `cd "${dashcamDir}"; npm init -y`, 60000, true);
+        await this.exec(shell, `cd "${dashcamDir}"; npm install dashcam-chrome`, 120000, true);
+        
+        // console.log('[dashcam-chrome] ✅ Installation complete');
+      }
+      
+      // Return the path to the extension build directory
+      return `${dashcamDir}\\node_modules\\dashcam-chrome\\build`;
+    } catch (error) {
+      console.warn('[dashcam-chrome] ⚠️  Failed to install dashcam-chrome on Windows:', error.message);
+      return null;
+    }
+  }
+
   _createProvisionAPI() {
     const self = this;
     
@@ -1476,9 +1517,10 @@ class TestDriverSDK {
         if (guest) chromeArgs.push('--guest');
         chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', `--user-data-dir=${userDataDir}`);
         
-        // Add dashcam-chrome extension on Linux
-        if (this.os === 'linux') {
-          chromeArgs.push('--load-extension=/usr/lib/node_modules/dashcam-chrome/build');
+        // Add dashcam-chrome extension
+        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
+        if (dashcamChromePath) {
+          chromeArgs.push(`--load-extension=${dashcamChromePath}`);
         }
 
         // Launch Chrome
@@ -1487,7 +1529,7 @@ class TestDriverSDK {
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
+            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}, "${url}"`,
             30000
           );
         } else {
@@ -1746,11 +1788,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', '--disable-features=ChromeLabs', `--user-data-dir=${userDataDir}`);
         
         // Add user extension and dashcam-chrome extension
-        if (this.os === 'linux') {
+        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
+        if (dashcamChromePath) {
           // Load both user extension and dashcam-chrome for web log capture
-          chromeArgs.push(`--load-extension=${extensionPath},/usr/lib/node_modules/dashcam-chrome/build`);
-        } else if (this.os === 'windows') {
-          // On Windows, just load the user extension (dashcam-chrome not available)
+          chromeArgs.push(`--load-extension=${extensionPath},${dashcamChromePath}`);
+        } else {
+          // If dashcam-chrome unavailable, just load user extension
           chromeArgs.push(`--load-extension=${extensionPath}`);
         }
 
@@ -1759,7 +1802,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}`,
+            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}`,
             30000
           );
         } else {
