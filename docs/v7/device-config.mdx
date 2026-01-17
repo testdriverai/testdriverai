@@ -32,7 +32,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("Login Flow", () => {
   it("should log in successfully", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://myapp.com/login',
@@ -117,7 +117,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("Chrome Extension Test", () => {
   it("should load and interact with extension", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
 
     // Clone extension from GitHub
     await testdriver.ready();
@@ -192,7 +192,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("Desktop App Test", () => {
   it("should install and launch app", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
 
     // Download and install
     const installerPath = await testdriver.provision.installer({
@@ -215,7 +215,6 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 describe("Windows App Test", () => {
   it("should install on Windows", async (context) => {
     const testdriver = TestDriver(context, { 
-      newSandbox: true,
       os: 'windows'
     });
 
@@ -282,7 +281,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("VS Code Test", () => {
   it("should open workspace with extensions", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true });
+    const testdriver = TestDriver(context);
 
     // Create a test project
     await testdriver.ready();
