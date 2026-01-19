@@ -1366,8 +1366,8 @@ class TestDriverSDK {
    * @private
    */
   /**
-   * Get the path to the dashcam-chrome extension on Windows
-   * Installs it via npm if not already installed
+   * Get the path to the dashcam-chrome extension
+   * Uses preinstalled dashcam-chrome on both Linux and Windows
    * @returns {Promise<string>} Path to dashcam-chrome/build directory
    * @private
    */
@@ -1376,34 +1376,8 @@ class TestDriverSDK {
       return '/usr/lib/node_modules/dashcam-chrome/build';
     }
 
-    const shell = 'pwsh';
-    const extensionsDir = 'C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Extensions';
-    const dashcamDir = `${extensionsDir}\\dashcam-chrome-install`;
-    
-    try {
-      // Create extensions directory if it doesn't exist
-      await this.exec(shell, `New-Item -ItemType Directory -Path "${dashcamDir}" -Force | Out-Null`, 60000, true);
-      
-      // Check if dashcam-chrome is already installed
-      const checkCmd = `Test-Path "${dashcamDir}\\node_modules\\dashcam-chrome\\build"`;
-      const exists = await this.exec(shell, checkCmd, 30000, true);
-      
-      if (!exists || !exists.trim().toLowerCase().includes('true')) {
-        console.log('[dashcam-chrome] Installing dashcam-chrome extension on Windows...');
-        
-        // Initialize npm project and install dashcam-chrome
-        // await this.exec(shell, `cd "${dashcamDir}"; npm init -y`, 60000, true);
-        // await this.exec(shell, `cd "${dashcamDir}"; npm install dashcam-chrome`, 120000, true);
-        
-        // console.log('[dashcam-chrome] ✅ Installation complete');
-      }
-      
-      // Return the path to the extension build directory
-      return `${dashcamDir}\\node_modules\\dashcam-chrome\\build`;
-    } catch (error) {
-      console.warn('[dashcam-chrome] ⚠️  Failed to install dashcam-chrome on Windows:', error.message);
-      return null;
-    }
+    // dashcam-chrome is preinstalled on Windows at C:\Program Files\nodejs\node_modules\dashcam-chrome\build
+    return 'C:\\Program Files\\nodejs\\node_modules\\dashcam-chrome\\build';
   }
 
   _createProvisionAPI() {
