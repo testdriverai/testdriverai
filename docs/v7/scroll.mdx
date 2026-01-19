@@ -242,7 +242,7 @@ describe('Scrolling', () => {
   beforeAll(async () => {
     client = new TestDriver(process.env.TD_API_KEY);
     await testdriver.auth();
-    await testdriver.connect({ newSandbox: true });
+    await testdriver.connect(());
   });
 
   afterAll(async () => {

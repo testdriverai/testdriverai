@@ -3,7 +3,8 @@
  * @module testdriverai/vitest/hooks
  */
 
-import TestDriverSDK, { TestDriverOptions } from '../../sdk';
+import type TestDriverSDK from '../../sdk';
+import type { TestDriverOptions } from '../../sdk';
 
 /**
  * Vitest test context (from test function parameter)
@@ -21,23 +22,10 @@ export interface VitestContext {
 }
 
 /**
- * Options for TestDriver hook
+ * Options for TestDriver hook (includes all TestDriverOptions)
  */
 export interface TestDriverHookOptions extends TestDriverOptions {
-  /**
-   * Force creation of a new sandbox (default: true)
-   */
-  newSandbox?: boolean;
-  
-  /**
-   * Reconnect to the last used sandbox
-   */
-  reconnect?: boolean;
-  
-  /**
-   * Direct IP address to connect to a running sandbox instance
-   */
-  ip?: string;
+  // All TestDriverOptions are already included via extends
 }
 
 /**

@@ -1392,8 +1392,8 @@ class TestDriverSDK {
         console.log('[dashcam-chrome] Installing dashcam-chrome extension on Windows...');
         
         // Initialize npm project and install dashcam-chrome
-        await this.exec(shell, `cd "${dashcamDir}"; npm init -y`, 60000, true);
-        await this.exec(shell, `cd "${dashcamDir}"; npm install dashcam-chrome`, 120000, true);
+        // await this.exec(shell, `cd "${dashcamDir}"; npm init -y`, 60000, true);
+        // await this.exec(shell, `cd "${dashcamDir}"; npm install dashcam-chrome`, 120000, true);
         
         // console.log('[dashcam-chrome] ✅ Installation complete');
       }

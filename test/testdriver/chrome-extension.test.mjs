@@ -68,7 +68,7 @@ describe("Chrome Extension Test", () => {
   });
 
   it("should load Loom from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context, { headless: false, newSandbox: true});
+    const testdriver = TestDriver(context);
 
     // Launch Chrome with Loom loaded by its Chrome Web Store ID
     // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb

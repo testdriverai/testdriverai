@@ -10,7 +10,6 @@ Configure TestDriver behavior with options passed to the `TestDriver()` function
 
 ```javascript
 const testdriver = TestDriver(context, {
-  headless: false,
   reconnect: false,
 });
 ```
@@ -72,7 +71,6 @@ If self-hosting TestDriver, use `ip` to specify the device IP. See [Self-Hosting
 
 ```javascript
 const testdriver = TestDriver(context, {
-  newSandbox: true,
   ip: "203.0.113.42",  // Your allowlisted IP
 });
 ```
@@ -97,8 +95,6 @@ Split your test into two files: one for known-good steps that set up the desired
 
 ```javascript known-good.test.mjs
 const testdriver = TestDriver(context, {
-  newSandbox: true,
-  headless: false,
   keepAlive: 60000,  // Keep sandbox alive for 60 seconds after test
 });
 ```
@@ -106,8 +102,6 @@ const testdriver = TestDriver(context, {
 ```javascript work-in-progress.test.mjs
 // Second test file: experiment.test.mjs (run within keepAlive window)
 const testdriver = TestDriver(context, {
-  newSandbox: true,
-  headless: false,
   reconnect: true,  // Reconnect to existing sandbox
 });
 ```
