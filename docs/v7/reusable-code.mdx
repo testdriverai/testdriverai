@@ -45,7 +45,7 @@ import { login } from './helpers/auth.js';
 
 describe("Checkout", () => {
   it("should complete checkout as logged in user", async (context) => {
-    const testdriver = TestDriver(context, ());
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://shop.example.com',
@@ -116,7 +116,7 @@ import { LoginPage } from './pages/LoginPage.js';
 
 describe("Authentication", () => {
   it("should show error for invalid credentials", async (context) => {
-    const testdriver = TestDriver(context, ());
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://app.example.com/login',
@@ -131,7 +131,7 @@ describe("Authentication", () => {
   });
 
   it("should redirect to dashboard on success", async (context) => {
-    const testdriver = TestDriver(context, ());
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://app.example.com/login',
@@ -186,7 +186,7 @@ import { testUsers, testUrls, setupAuthenticatedSession } from './fixtures/index
 
 describe("Admin Panel", () => {
   it("should access admin settings", async (context) => {
-    const testdriver = TestDriver(context, ());
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: `${testUrls.staging}/login`,

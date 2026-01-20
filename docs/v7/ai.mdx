@@ -167,7 +167,7 @@ describe('E-commerce Flow with AI', () => {
   beforeAll(async () => {
     client = new TestDriver(process.env.TD_API_KEY);
     await testdriver.auth();
-    await testdriver.connect(());
+    await testdriver.connect();
   });
 
   afterAll(async () => {
