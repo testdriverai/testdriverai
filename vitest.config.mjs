@@ -6,6 +6,12 @@ import { defineConfig } from 'vitest/config';
 // and to worker processes
 config();
 
+// Use self-hosted setup when TD_OS=windows
+const setupFiles = ['testdriverai/vitest/setup'];
+if (process.env.TD_OS === 'windows') {
+  setupFiles.push('testdriverai/vitest/setup-aws');
+}
+
 export default defineConfig({
   test: {
     testTimeout: 900000,
@@ -17,6 +23,6 @@ export default defineConfig({
       TestDriver(),
       ['junit', { outputFile: 'test-report.junit.xml' }]
     ],
-    setupFiles: ['testdriverai/vitest/setup'],
+    setupFiles,
   },
 });

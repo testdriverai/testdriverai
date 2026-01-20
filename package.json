@@ -22,6 +22,7 @@
       "default": "./interfaces/vitest-plugin.mjs"
     },
     "./vitest/setup": "./lib/vitest/setup.mjs",
+    "./vitest/setup-aws": "./lib/vitest/setup-aws.mjs",
     "./vitest/hooks": {
       "types": "./lib/vitest/hooks.d.ts",
       "default": "./lib/vitest/hooks.mjs"

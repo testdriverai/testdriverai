@@ -37,34 +37,18 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Setup AWS Instance
-      id: aws-setup
-      run: |
-        chmod +x ./setup/aws/spawn-runner.sh
-        OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr)
-        echo "$OUTPUT"
-        PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
-        INSTANCE_ID=$(echo "$OUTPUT" | grep "INSTANCE_ID=" | cut -d'=' -f2)
-        AWS_REGION=$(echo "$OUTPUT" | grep "AWS_REGION=" | cut -d'=' -f2)
-        echo "public-ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-        echo "instance-id=$INSTANCE_ID" >> $GITHUB_OUTPUT
-        echo "aws-region=$AWS_REGION" >> $GITHUB_OUTPUT
+    - name: Run Windows tests with self-hosted instances
+      run: npx vitest run ${{ inputs.test_pattern }}
       env:
-        FORCE_COLOR: 3
+        TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        TD_WEBSITE: ${{ secrets.TD_WEBSITE }}
+        TD_OS: windows
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: us-east-2
         AWS_LAUNCH_TEMPLATE_ID: lt-0ef9bf26a945fb442
         AMI_ID: ami-063f575bb80f1e818
         RESOLUTION: 1920x1080
-    
-    - name: Run Windows tests
-      run: npx vitest run ${{ inputs.test_pattern }}
-      env:
-        TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        TD_WEBSITE: ${{ secrets.TD_WEBSITE }}
-        TD_OS: windows
-        TD_IP: ${{ steps.aws-setup.outputs.public-ip }}
     
     - name: Upload test results
       if: always()
@@ -82,12 +66,3 @@ jobs:
         path: /tmp/testdriverai-cli-*.log
         if-no-files-found: warn
         retention-days: 30
-    
-    - name: Shutdown AWS Instance
-      if: always()
-      run: aws ec2 terminate-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID"
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ steps.aws-setup.outputs.aws-region }}
-        INSTANCE_ID: ${{ steps.aws-setup.outputs.instance-id }}
