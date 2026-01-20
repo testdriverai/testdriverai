@@ -1377,7 +1377,8 @@ class TestDriverSDK {
     }
 
     // dashcam-chrome is preinstalled on Windows at C:\Program Files\nodejs\node_modules\dashcam-chrome\build
-    return 'C:\\Program Files\\nodejs\\node_modules\\dashcam-chrome\\build';
+    // Use the actual long path - we'll handle quoting in the chrome launch
+    return 'C:\\PROGRA~1\\nodejs\\node_modules\\dashcam-chrome\\build';
   }
 
   _createProvisionAPI() {
