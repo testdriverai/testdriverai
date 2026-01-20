@@ -1781,6 +1781,8 @@ ${regression}
         ip: this.ip,
       });
 
+      // Mark instance socket as connected so console logs are forwarded
+      this.sandbox.instanceSocketConnected = true;
       this.emitter.emit(events.sandbox.connected);
 
       this.instance = instance.instance;
@@ -2097,16 +2099,34 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       sandboxConfig.keepAlive = this.keepAlive;
     }
 
-    let instance = await this.sandbox.send(sandboxConfig, 60000 * 8);
+    const { formatter } = require("../sdk-log-formatter.js");
+    const retryDelay = 15000; // 15 seconds between retries
 
-    // Save the sandbox ID for reconnection with the correct OS type
-    if (instance.sandbox && instance.sandbox.sandboxId) {
-      this.saveLastSandboxId(instance.sandbox.sandboxId, this.sandboxOs);
-    } else if (instance.sandbox && instance.sandbox.instanceId) {
-      this.saveLastSandboxId(instance.sandbox.instanceId, this.sandboxOs);
+    while (true) {
+      let response = await this.sandbox.send(sandboxConfig, 60000 * 8);
+
+      // Check if queued (all slots in use)
+      if (response.type === 'create.queued') {
+        this.emitter.emit(
+          events.log.narration,
+          formatter.getPrefix("queue") + " " + theme.yellow.bold("Waiting") + " " +
+          theme.dim(response.message),
+        );
+
+        // Wait then retry
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
+      }
+
+      // Success - got a sandbox
+      if (response.sandbox && response.sandbox.sandboxId) {
+        this.saveLastSandboxId(response.sandbox.sandboxId, this.sandboxOs);
+      } else if (response.sandbox && response.sandbox.instanceId) {
+        this.saveLastSandboxId(response.sandbox.instanceId, this.sandboxOs);
+      }
+
+      return response;
     }
-
-    return instance;
   }
 
   async newSession() {

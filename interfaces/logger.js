@@ -14,14 +14,21 @@ class CustomTransport extends Transport {
   }
 
   log(info, callback) {
+
+    console.log('log called')
+
     try {
       const { message } = info;
 
       if (!this.sandbox) {
         this.sandbox = require("../agent/lib/sandbox");
       }
+      
+        console.log("is this sandbox log?", this.sandbox, this.sandbox.instanceSocketConnected);
 
       if (this.sandbox && this.sandbox.instanceSocketConnected) {
+
+
         if (typeof message === "object") {
           console.log(chalk.cyan("protecting against base64 error"));
           console.log(message);
