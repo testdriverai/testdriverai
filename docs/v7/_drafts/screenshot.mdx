@@ -113,7 +113,7 @@ const screenshot = await testdriver.screenshot(1, false, true);
 
 ```javascript
 it('should complete checkout', async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: 'https://shop.example.com' });
 
   try {

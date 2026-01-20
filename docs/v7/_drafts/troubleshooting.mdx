@@ -84,7 +84,7 @@ const client = await TestDriver.create({
 let attempts = 0;
 while (attempts < 3) {
   try {
-    await client.connect({ newSandbox: true });
+    await client.connect();
     break;
   } catch (error) {
     attempts++;
