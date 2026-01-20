@@ -13,7 +13,7 @@ export type ClickAction =
 export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
-export type ExecLanguage = "js" | "pwsh";
+export type ExecLanguage = "js" | "pwsh" | "sh";
 export type KeyboardKey =
   | "\t"
   | "\n"
