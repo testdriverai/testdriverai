@@ -133,7 +133,7 @@ await testdriver.connect(options)
 
 **Basic connection:**
 ```javascript
-await testdriver.connect({ newSandbox: true });
+await testdriver.connect(());
 ```
 
 **Reconnect to existing sandbox:**
@@ -273,7 +273,7 @@ describe('My Test Suite', () => {
     
     // Authenticate and connect
     await testdriver.auth();
-    const instance = await testdriver.connect({ newSandbox: true });
+    const instance = await testdriver.connect(());
     
     console.log('Connected to sandbox:', instance.instanceId);
   });
@@ -300,7 +300,7 @@ describe('My Test Suite', () => {
     
     ```javascript
     try {
-      await testdriver.connect({ newSandbox: true });
+      await testdriver.connect(());
     } catch (error) {
       console.error('Failed to connect:', error.message);
       throw error;
