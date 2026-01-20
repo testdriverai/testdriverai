@@ -17,7 +17,7 @@ async function performLogin(client, username = "standard_user") {
   await client.focusApplication("Google Chrome");
   const password = await client.extract("the password");
   const usernameField = await client.find(
-    "Username, label above the username input field on the login form",
+    "username input",
   );
   await usernameField.click();
   await client.type(username);

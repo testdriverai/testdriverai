@@ -199,7 +199,7 @@ export async function login(testdriver) {
 
   // Find the username field
   const usernameField = await testdriver.find(
-    'Username, label above the username input field on the login form'
+    'username input'
   );
   await usernameField.click();
 
