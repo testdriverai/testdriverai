@@ -8,7 +8,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Hover Text Test", () => {
   it("should click Sign In and verify error message", async (context) => {
-    const testdriver = TestDriver(context, { headless: false, ip: '3.138.116.105'});
+    const testdriver = TestDriver(context, { ip: '3.138.116.105'});
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // Click on Sign In button using new find() API

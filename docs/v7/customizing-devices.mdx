@@ -75,6 +75,26 @@ steps:
   - run: TD_OS=${{ matrix.os }} npx vitest run
 ```
 
+### Headless Mode
+
+Run tests without a visible browser window. Useful for CI/CD pipeline or spawning multiple tests locally:
+
+```javascript
+const testdriver = TestDriver(context, {
+  headless: true,  // No visible browser window
+});
+```
+
+### IP Target
+
+If self-hosting TestDriver, use `ip` to specify the device IP. See [Self-Hosting TestDriver](../self-hosting.md) for details.
+
+```javascript
+const testdriver = TestDriver(context, {
+  ip: "203.0.113.42",  // Your allowlisted IP
+});
+```
+
 ## Keepalive
 
 By default, sandboxes terminate immediately when the test finishes. Set this value to keep the sandbox alive for reconnection.

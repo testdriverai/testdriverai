@@ -1362,10 +1362,29 @@ class TestDriverSDK {
 
   /**
    * Create the provision API with methods for launching applications
+   * Automatically skips provisioning when reconnect mode is enabled
    * @private
    */
+  /**
+   * Get the path to the dashcam-chrome extension
+   * Uses preinstalled dashcam-chrome on both Linux and Windows
+   * @returns {Promise<string>} Path to dashcam-chrome/build directory
+   * @private
+   */
+  async _getDashcamChromeExtensionPath() {
+    if (this.os !== 'windows') {
+      return '/usr/lib/node_modules/dashcam-chrome/build';
+    }
+
+    // dashcam-chrome is preinstalled on Windows at C:\Program Files\nodejs\node_modules\dashcam-chrome\build
+    // Use the actual long path - we'll handle quoting in the chrome launch
+    return 'C:\\PROGRA~1\\nodejs\\node_modules\\dashcam-chrome\\build';
+  }
+
   _createProvisionAPI() {
-    return {
+    const self = this;
+    
+    const provisionMethods = {
       /**
        * Launch Chrome browser
        * @param {Object} options - Chrome launch options
@@ -1473,9 +1492,10 @@ class TestDriverSDK {
         if (guest) chromeArgs.push('--guest');
         chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', `--user-data-dir=${userDataDir}`);
         
-        // Add dashcam-chrome extension on Linux
-        if (this.os === 'linux') {
-          chromeArgs.push('--load-extension=/usr/lib/node_modules/dashcam-chrome/build');
+        // Add dashcam-chrome extension
+        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
+        if (dashcamChromePath) {
+          chromeArgs.push(`--load-extension=${dashcamChromePath}`);
         }
 
         // Launch Chrome
@@ -1484,7 +1504,7 @@ class TestDriverSDK {
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
+            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}, "${url}"`,
             30000
           );
         } else {
@@ -1743,11 +1763,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', '--disable-features=ChromeLabs', `--user-data-dir=${userDataDir}`);
         
         // Add user extension and dashcam-chrome extension
-        if (this.os === 'linux') {
+        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
+        if (dashcamChromePath) {
           // Load both user extension and dashcam-chrome for web log capture
-          chromeArgs.push(`--load-extension=${extensionPath},/usr/lib/node_modules/dashcam-chrome/build`);
-        } else if (this.os === 'windows') {
-          // On Windows, just load the user extension (dashcam-chrome not available)
+          chromeArgs.push(`--load-extension=${extensionPath},${dashcamChromePath}`);
+        } else {
+          // If dashcam-chrome unavailable, just load user extension
           chromeArgs.push(`--load-extension=${extensionPath}`);
         }
 
@@ -1756,7 +1777,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}`,
+            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}`,
             30000
           );
         } else {
@@ -2073,6 +2094,24 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         await this.focusApplication('Electron');
       },
     };
+
+    // Wrap all provision methods with reconnect check using Proxy
+    return new Proxy(provisionMethods, {
+      get(target, prop) {
+        const method = target[prop];
+        if (typeof method === 'function') {
+          return async (...args) => {
+            // Skip provisioning if reconnecting to existing sandbox
+            if (self.reconnect) {
+              console.log(`[provision.${prop}] Skipping provisioning (reconnect mode)`);
+              return;
+            }
+            return method(...args);
+          };
+        }
+        return method;
+      }
+    });
   }
 
   /**

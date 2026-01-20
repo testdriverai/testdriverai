@@ -236,6 +236,8 @@ describe("Experiment", () => {
 });
 ```
 
+> ⚠️ **NEVER REMOVE `reconnect: true`**: If a test file already has `reconnect: true`, do NOT remove it. This option is intentional and removing it will break the two-file workflow. Only remove `reconnect: true` when explicitly combining files into a final standalone test.
+
 ### Step 4: Iterate in Experiment File
 
 - Run experiment, see output, fix issues
@@ -255,12 +257,14 @@ vitest run tests/experiment.test.mjs
 
 ### After Experimentation: Combine and Rename
 
-**IMPORTANT:** Once the test is working, combine both files into a single, properly-named test file:
+**IMPORTANT:** Once the test is working AND the user explicitly asks to combine/finalize the test, combine both files into a single, properly-named test file:
 
 1. **Merge the code** - Copy the working steps from `experiment.test.mjs` into `setup.test.mjs`
-2. **Remove reconnect options** - Delete `reconnect: true` since the final test runs standalone
+2. **Remove reconnect options** - Delete `reconnect: true` since the final test runs standalone (ONLY do this when creating the final combined test - never remove it from an existing experiment file!)
 3. **Rename the file** - Give it a meaningful name like `login-flow.test.mjs` or `checkout-process.test.mjs`
 4. **Delete the experiment file** - Clean up `experiment.test.mjs`
+
+> ⚠️ **WARNING FOR AI AGENTS**: Do NOT remove `reconnect: true` from any existing test file unless you are explicitly combining files into a final test. If a test has `reconnect: true`, it is there intentionally.
 
 ```javascript
 // Final combined test: login-flow.test.mjs

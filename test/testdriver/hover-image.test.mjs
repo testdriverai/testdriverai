@@ -8,7 +8,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 /**
  * Perform login flow for SauceLabs demo app
- * @param {TestDriver} client - TestDriver client
+ * @param {import('../../sdk.js').default} client - TestDriver client instance
  * @param {string} username - Username (default: 'standard_user')
  */
 async function performLogin(client, username = "standard_user") {
@@ -27,11 +27,11 @@ async function performLogin(client, username = "standard_user") {
 
 describe("Hover Image Test", () => {
   it("should click on shopping cart icon and verify empty cart", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: process.env.TD_IP });
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({
-      url: 'http://testdriver-sandbox.vercel.app/login',
+      url: 'http://testdriver-sandbox.vercel.app/login'
     });
 
     // Perform login first
