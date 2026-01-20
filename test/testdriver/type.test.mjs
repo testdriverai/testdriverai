@@ -3,7 +3,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Type Test", () => {
   it("should enter standard_user in username field", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
@@ -20,7 +20,7 @@ describe("Type Test", () => {
   });
 
   it("should show validation message when clicking Sign In without password", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // First fill in username

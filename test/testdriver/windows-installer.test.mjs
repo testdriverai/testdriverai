@@ -19,7 +19,7 @@ describe("Windows App Installation", () => {
   it.skipIf(isLinux)("should download, install, and launch GitButler on Windows", async (context) => {
     // Alternative approach using provision.installer helper
     const testdriver = TestDriver(context, { 
-      reconnect: true,
+      ip: context.ip || process.env.TD_IP,
       os: 'windows'
     });
 

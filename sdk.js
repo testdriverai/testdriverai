@@ -1403,7 +1403,7 @@ class TestDriverSDK {
           guest = false,
         } = options;
 
-        // If dashcam is available and recording, add web logs for this domain
+        // If dashcam is available, add web logs for all websites using "**" pattern
         if (this._dashcam) {
     
             // Create the log file on the remote machine
@@ -1418,10 +1418,8 @@ class TestDriverSDK {
             
             await this.exec(shell, createLogCmd, 60000, true);
           
-            const urlObj = new URL(url);
-            const domain = urlObj.hostname;
-            const pattern = `*${domain}*`;
-            await this._dashcam.addWebLog(pattern, 'Web Logs');
+            // Track all websites by default with "**" pattern
+            await this._dashcam.addWebLog('**', 'Web Logs');
 
             await this._dashcam.addFileLog(logPath, "TestDriver Log");
 
@@ -1684,7 +1682,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           console.log(`[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`);
         }
 
-        // If dashcam is available, set up file logging
+        // If dashcam is available, set up file and web logging
         if (this._dashcam) {
           // Create the log file on the remote machine
           const logPath = this.os === "windows" 
@@ -1696,6 +1694,9 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             : `touch ${logPath}`;
           
           await this.exec(shell, createLogCmd, 60000, true);
+          
+          // Track all websites by default with "**" pattern
+          await this._dashcam.addWebLog('**', 'Web Logs');
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -1824,7 +1825,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === 'windows' ? 'pwsh' : 'sh';
 
-        // If dashcam is available, set up file logging
+        // If dashcam is available, set up file and web logging
         if (this._dashcam) {
           // Create the log file on the remote machine
           const logPath = this.os === "windows" 
@@ -1836,6 +1837,9 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             : `touch ${logPath}`;
           
           await this.exec(shell, createLogCmd, 60000, true);
+          
+          // Track all websites by default with "**" pattern
+          await this._dashcam.addWebLog('**', 'Web Logs');
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -1920,7 +1924,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === 'windows' ? 'pwsh' : 'sh';
 
-        // If dashcam is available, set up file logging
+        // If dashcam is available, set up file and web logging
         if (this._dashcam) {
           const logPath = this.os === "windows" 
             ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
@@ -1931,6 +1935,9 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             : `touch ${logPath}`;
           
           await this.exec(shell, createLogCmd, 60000, true);
+          
+          // Track all websites by default with "**" pattern
+          await this._dashcam.addWebLog('**', 'Web Logs');
           await this._dashcam.addFileLog(logPath, "TestDriver Log");
         }
         
@@ -2066,7 +2073,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
        * @returns {Promise<void>}
        */
       electron: async (options = {}) => {
-        this._ensureConnected();
+        // Automatically wait for connection to be ready
+        await this.ready();
         
         const { appPath, args = [] } = options;
         
@@ -2075,6 +2083,29 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+
+        // If dashcam is available, set up file and web logging
+        if (this._dashcam) {
+          const logPath = this.os === "windows" 
+            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
+            : "/tmp/testdriver.log";
+          
+          const createLogCmd = this.os === "windows"
+            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
+            : `touch ${logPath}`;
+          
+          await this.exec(shell, createLogCmd, 60000, true);
+          
+          // Track all websites by default with "**" pattern
+          await this._dashcam.addWebLog('**', 'Web Logs');
+          await this._dashcam.addFileLog(logPath, "TestDriver Log");
+        }
+        
+        // Automatically start dashcam if not already recording
+        if (!this._dashcam || !this._dashcam.recording) {
+          await this.dashcam.start();
+        }
+
         const argsString = args.join(' ');
         
         if (this.os === 'windows') {

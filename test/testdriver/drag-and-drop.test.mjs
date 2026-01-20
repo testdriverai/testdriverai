@@ -12,7 +12,7 @@ describe("Drag and Drop Test", () => {
   it.skipIf(isLinux)(
     'should drag "New Text Document" to "Recycle Bin"',
     async (context) => {
-      const testdriver = TestDriver(context, { headless: true });
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
       await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //

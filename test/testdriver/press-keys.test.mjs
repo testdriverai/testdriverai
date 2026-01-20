@@ -8,7 +8,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Press Keys Test", () => {
   it("should create tabs and navigate using keyboard shortcuts", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     const signInButton = await testdriver.find(

@@ -15,7 +15,7 @@ async function performLogin(client, username = "standard_user") {
   await client.focusApplication("Google Chrome");
   const password = await client.extract("the password");
   const usernameField = await client.find(
-    "Username, label above the username input field on the login form",
+    "username input",
   );
   await usernameField.click();
   await client.type(username);
@@ -27,7 +27,7 @@ async function performLogin(client, username = "standard_user") {
 
 describe("Hover Text With Description Test", () => {
   it("should add TestDriver Hat to cart and verify", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //

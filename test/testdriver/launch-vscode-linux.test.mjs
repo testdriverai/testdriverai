@@ -7,7 +7,7 @@ describe("Launch VS Code on Linux", () => {
   it.skipIf(!isLinux)(
     "should launch VS Code on Debian/Ubuntu",
     async (context) => {
-      const testdriver = TestDriver(context);
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
       
       // provision.vscode() automatically calls ready() and starts dashcam
       await testdriver.provision.vscode();
@@ -24,7 +24,7 @@ describe("Launch VS Code on Linux", () => {
   it.skipIf(!isLinux)(
     "should install and use a VS Code extension",
     async (context) => {
-      const testdriver = TestDriver(context);
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
       
       // Launch VS Code with the Prettier extension installed
       await testdriver.provision.vscode({
