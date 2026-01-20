@@ -15,7 +15,7 @@ describe("Chrome Extension Test", () => {
 
     console.log('connecting to', process.env.TD_IP)
 
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, cacheKey: new Date().getTime().toString() });
     
     // Wait for connection to be ready before running exec
     await testdriver.ready();
@@ -87,7 +87,7 @@ describe("Chrome Extension Test", () => {
     expect(pageResult).toBeTruthy();
 
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.");
+    const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.", {zoom: true});
     await extensionsButton.click();
 
     // Look for Loom in the extensions menu
