@@ -413,6 +413,7 @@ class Element {
       // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
       let cacheKey = null;
       let cacheThreshold = null;
+      let zoom = false; // Default to disabled, enable with zoom: true
       
       if (typeof options === 'number') {
         // Legacy: options is just a number threshold
@@ -421,18 +422,26 @@ class Element {
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
+        // zoom defaults to false unless explicitly set to true
+        zoom = options.zoom === true;
       }
 
       // Use default cacheKey from SDK constructor if not provided in find() options
-      if (!cacheKey && this.sdk.options?.cacheKey) {
+      // BUT only if cache is not explicitly disabled via cache: false option
+      if (!cacheKey && this.sdk.options?.cacheKey && this.sdk.cacheThresholds?.find !== -1) {
         cacheKey = this.sdk.options.cacheKey;
       }
 
       // Determine threshold: 
+      // - If cache is explicitly disabled (threshold = -1), don't use cache even with cacheKey
       // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
       // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
       let threshold;
-      if (cacheKey) {
+      if (this.sdk.cacheThresholds?.find === -1) {
+        // Cache explicitly disabled via cache: false option
+        threshold = -1;
+        cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
+      } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
         threshold = cacheThreshold ?? 0.01;
       } else if (cacheThreshold !== null) {
@@ -466,6 +475,7 @@ class Element {
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
+        zoom: zoom,
       });
 
       const duration = Date.now() - startTime;
@@ -2449,15 +2459,21 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       }
 
       // Use default cacheKey from SDK constructor if not provided in findAll() options
-      if (!cacheKey && this.options?.cacheKey) {
+      // BUT only if cache is not explicitly disabled via cache: false option
+      if (!cacheKey && this.options?.cacheKey && this.cacheThresholds?.findAll !== -1) {
         cacheKey = this.options.cacheKey;
       }
 
       // Determine threshold: 
+      // - If cache is explicitly disabled (threshold = -1), don't use cache even with cacheKey
       // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
       // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
       let threshold;
-      if (cacheKey) {
+      if (this.cacheThresholds?.findAll === -1) {
+        // Cache explicitly disabled via cache: false option
+        threshold = -1;
+        cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
+      } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
         threshold = cacheThreshold ?? 0.01;
       } else if (cacheThreshold !== null) {
