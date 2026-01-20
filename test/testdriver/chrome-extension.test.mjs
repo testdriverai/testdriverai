@@ -15,7 +15,7 @@ describe("Chrome Extension Test", () => {
 
     console.log('connecting to', process.env.TD_IP)
 
-    const testdriver = TestDriver(context, { ip: process.env.TD_IP });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
     
     // Wait for connection to be ready before running exec
     await testdriver.ready();
@@ -68,7 +68,7 @@ describe("Chrome Extension Test", () => {
   });
 
   it("should load Loom from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context);
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
 
     // Launch Chrome with Loom loaded by its Chrome Web Store ID
     // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb

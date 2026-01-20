@@ -8,7 +8,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Scroll Keyboard Test", () => {
   it("should navigate to webhamster.com and scroll with keyboard", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //

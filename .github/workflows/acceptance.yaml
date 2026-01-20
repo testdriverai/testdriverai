@@ -49,30 +49,32 @@ jobs:
         check_name: Test Results (Linux)
 
   test-windows:
-    runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'test-windows')
+    uses: ./.github/workflows/windows-self-hosted.yaml
+    with:
+      test_pattern: 'test/testdriver/assert.test.mjs'
+    secrets:
+      TD_API_KEY: ${{ secrets.TD_API_KEY }}
+      TD_WEBSITE: ${{ secrets.TD_WEBSITE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  publish-windows-results:
+    needs: test-windows
+    runs-on: ubuntu-latest
+    if: always() && contains(github.event.pull_request.labels.*.name, 'test-windows')
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Download test results
+      uses: actions/download-artifact@v4
       with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run Windows tests
-      run: npx vitest run test/testdriver/*.test.mjs
-      env:
-        TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        TD_OS: windows
+        name: test-results-windows
 
     - name: Upload test results to Sentry Prevent
       if: ${{ !cancelled() }}
       uses: getsentry/prevent-action@v0
+      with:
+        token: ${{ secrets.SENTRY_PREVENT_TOKEN }}
 
     - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2

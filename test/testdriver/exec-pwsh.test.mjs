@@ -10,7 +10,7 @@ describe.skip("Exec PowerShell Test", () => {
   it(
     "should generate random email using PowerShell and enter it",
     async (context) => {
-      const testdriver = TestDriver(context, { headless: true });
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
       await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //

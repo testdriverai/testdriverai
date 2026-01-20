@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.2.43",
+  "version": "7.2.45",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "types": "sdk.d.ts",
@@ -22,6 +22,7 @@
       "default": "./interfaces/vitest-plugin.mjs"
     },
     "./vitest/setup": "./lib/vitest/setup.mjs",
+    "./vitest/setup-aws": "./lib/vitest/setup-aws.mjs",
     "./vitest/hooks": {
       "types": "./lib/vitest/hooks.d.ts",
       "default": "./lib/vitest/hooks.mjs"

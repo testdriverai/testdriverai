@@ -10,7 +10,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("Scroll Test", () => {
   it("should navigate and scroll down the page", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // Give Chrome a moment to fully render the UI
