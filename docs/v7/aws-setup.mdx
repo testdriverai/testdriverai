@@ -189,7 +189,7 @@ export default defineConfig({
 
 ## Step 3: Write Your Tests
 
-Tests work the same way as cloud-hosted tests:
+Tests should use `context.ip || process.env.TD_IP` for the IP configuration:
 
 ```javascript
 import { describe, it } from "vitest";
@@ -207,9 +207,9 @@ describe("My Test", () => {
 });
 ```
 
-<Tip>
-  The `context.ip` is automatically set by the `setup-aws` hook. If you provide `TD_IP` manually, it will use that instead of spawning a new instance.
-</Tip>
+<Note>
+  **How it works**: When `TD_OS=windows` with AWS credentials, `context.ip` is automatically set by the setup hook. When running without AWS setup (cloud-hosted), both are undefined and TestDriver uses the cloud. When `TD_IP` is provided manually, it takes precedence.
+</Note>
 
 ## Step 4: Run Tests
 

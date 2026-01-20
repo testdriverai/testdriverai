@@ -33,7 +33,7 @@ const __dirname = dirname(__filename);
 
 describe("Match Image Test", () => {
   it.skip("should match shopping cart image and verify empty cart", async (context) => {
-    const testdriver = TestDriver(context, { headless: true });
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //

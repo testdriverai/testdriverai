@@ -12,7 +12,7 @@ describe("Provision Installer", () => {
   it.skipIf(!isLinux)(
     "should download and install a .deb package on Linux",
     async (context) => {
-      const testdriver = TestDriver(context);
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
       
       // Install bat (a cat clone with syntax highlighting) using provision.installer
       const filePath = await testdriver.provision.installer({
@@ -30,7 +30,7 @@ describe("Provision Installer", () => {
   it.skipIf(!isLinux)(
     "should download a shell script and verify it exists",
     async (context) => {
-      const testdriver = TestDriver(context);
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
       
       // Download a shell script (nvm installer)
       const filePath = await testdriver.provision.installer({

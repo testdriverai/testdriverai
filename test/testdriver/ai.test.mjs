@@ -8,7 +8,7 @@ import { TestDriver } from "../../lib/vitest/hooks.mjs";
 
 describe("AI Test", () => {
   it("should use ai to search for testdriver on Google", async (context) => {
-    const testdriver = TestDriver(context);
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({
