@@ -2138,7 +2138,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       : this.reconnect;
     
     // Skip reconnect if IP is supplied - directly connect to the provided IP
-    const hasIp = connectOptions.ip !== undefined || this.ip;
+    const hasIp = Boolean(connectOptions.ip || this.ip);
     
     if (shouldReconnect && !hasIp) {
       const lastSandbox = this.agent.getLastSandboxId();
