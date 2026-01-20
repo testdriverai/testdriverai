@@ -15,8 +15,6 @@ class CustomTransport extends Transport {
 
   log(info, callback) {
 
-    console.log('log called')
-
     try {
       const { message } = info;
 
@@ -24,8 +22,6 @@ class CustomTransport extends Transport {
         this.sandbox = require("../agent/lib/sandbox");
       }
       
-        console.log("is this sandbox log?", this.sandbox, this.sandbox.instanceSocketConnected);
-
       if (this.sandbox && this.sandbox.instanceSocketConnected) {
 
 
