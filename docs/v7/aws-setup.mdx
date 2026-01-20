@@ -149,13 +149,13 @@ AWS_REGION=us-east-2
 
 ### Run Tests Against Your Instance
 
-Specify the instance IP using the `TD_IP` environment variable:
+When running tests locally or connecting to an existing instance, use the `TD_IP` environment variable:
 
 ```bash
-TD_API_KEY=your-api-key TD_IP=1.2.3.4 npx vitest run
+TD_OS=windows TD_IP=1.2.3.4 npx vitest run
 ```
 
-In your test file, pass the IP to TestDriver:
+In your test file, TestDriver will automatically use `context.ip` which is set from the environment:
 
 ```javascript
 import { describe, it } from "vitest";
@@ -164,7 +164,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 describe("My Test", () => {
   it("should run on self-hosted instance", async (context) => {
     const testdriver = TestDriver(context, {
-      ip: process.env.TD_IP,
+      ip: context.ip || process.env.TD_IP,
     });
 
     await testdriver.provision.chrome({ url: "https://example.com" });
@@ -172,6 +172,36 @@ describe("My Test", () => {
   });
 });
 ```
+
+### Vitest Configuration
+
+Your `vitest.config.mjs` should include the AWS setup hooks:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+import { config } from 'dotenv';
+import TestDriver from 'testdriverai/vitest';
+
+config(); // Load .env file
+
+export default defineConfig({
+  test: {
+    testTimeout: 900000,
+    hookTimeout: 900000,
+    maxConcurrency: 3,
+    reporters: [
+      'default',
+      TestDriver(),
+      ['junit', { outputFile: 'test-report.junit.xml' }]
+    ],
+    setupFiles: ['testdriverai/vitest/setup', 'testdriverai/vitest/setup-aws'],
+  },
+});
+```
+
+<Note>
+  **Automatic Instance Management**: The `testdriverai/vitest/setup-aws` hook automatically spawns and terminates AWS instances when `TD_OS=windows` is set. If `TD_OS` is not set or `TD_IP` is provided, the setup hook is a no-op.
+</Note>
 
 ### Terminate Instances
 
@@ -189,24 +219,20 @@ aws ec2 terminate-instances \
 
 ## Step 3: GitHub Actions Integration
 
-Automate the full lifecycle in your CI/CD pipeline. This workflow spawns an instance, runs tests, and terminates the instance:
+Automate testing with self-hosted instances in your CI/CD pipeline. TestDriver automatically spawns a fresh instance for each test, runs the test, and terminates the instance.
 
 ```yaml .github/workflows/test.yml
-name: TestDriver Self-Hosted
+name: TestDriver Self-Hosted Windows Tests
 
 on:
   push:
     branches: [main]
   pull_request:
 
-# Prevent concurrent runs from competing for resources
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   test:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -215,42 +241,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Setup AWS Instance
-        id: aws-setup
-        run: |
-          OUTPUT=$(./setup/aws/spawn-runner.sh | tee /dev/stderr)
-          PUBLIC_IP=$(echo "$OUTPUT" | grep "PUBLIC_IP=" | cut -d'=' -f2)
-          INSTANCE_ID=$(echo "$OUTPUT" | grep "INSTANCE_ID=" | cut -d'=' -f2)
-          echo "public-ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-          echo "instance-id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+      - name: Run Windows tests with self-hosted instances
+        run: npx vitest run test/testdriver/*.test.mjs
         env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TD_OS: windows
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: us-east-2
           AWS_LAUNCH_TEMPLATE_ID: ${{ secrets.AWS_LAUNCH_TEMPLATE_ID }}
           AMI_ID: ${{ secrets.AMI_ID }}
 
-      - name: Run Tests
-        run: npx vitest run
-        env:
-          TD_API_KEY: ${{ secrets.TD_API_KEY }}
-          TD_IP: ${{ steps.aws-setup.outputs.public-ip }}
-
-      - name: Shutdown AWS Instance
+      - name: Upload test results
         if: always()
-        run: |
-          aws ec2 terminate-instances \
-            --region ${{ secrets.AWS_REGION }} \
-            --instance-ids ${{ steps.aws-setup.outputs.instance-id }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-report.junit.xml
 ```
+
+<Note>
+  **Automatic Instance Management**: Setting `TD_OS=windows` with AWS credentials enables automatic instance spawning. Each test gets its own fresh instance that's terminated after the test completes.
+</Note>
 
 ### Required GitHub Secrets
 
@@ -263,45 +280,21 @@ jobs:
 | `AMI_ID` | TestDriver AMI ID | `ami-0504bf50fad62f312` |
 | `TD_API_KEY` | Your TestDriver API key | From [console.testdriver.ai](https://console.testdriver.ai) |
 
-### Example Workflow
+### How It Works
 
-For a complete real-world example with matrix-based test execution and dynamic test file discovery, see the [`self-hosted.yml`](https://github.com/testdriverai/testdriverai/blob/main/setup/aws/self-hosted.yml) workflow in the TestDriver repository.
+When you set `TD_OS=windows` with AWS credentials:
 
-<Tip>
-  **Local Testing**: You can test your GitHub Actions workflow locally using [nektos/act](https://github.com/nektos/act). The `self-hosted.yml` workflow includes commented lines for installing the AWS CLI when running with `act`.
-</Tip>
+1. **Before each test**: A fresh EC2 instance is spawned using your launch template
+2. **During test**: The test connects to the instance via the IP address
+3. **After test**: The instance is automatically terminated
 
-## Manual Instance Management
+This ensures complete test isolation and eliminates the need for manual instance lifecycle management.
 
-You can manage TestDriver instances manually through the AWS Console or CLI. This is useful for debugging, development, or running tests outside of CI/CD.
+### Example Workflows
 
-### Starting an Instance
-
-```bash
-aws ec2 run-instances \
-  --region us-east-2 \
-  --image-id ami-0504bf50fad62f312 \
-  --launch-template LaunchTemplateId=lt-your-template-id \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=testdriver-manual}]'
-```
-
-### Stopping an Instance
-
-```bash
-aws ec2 stop-instances --region us-east-2 --instance-ids i-1234567890abcdef0
-```
-
-### Starting a Stopped Instance
-
-```bash
-aws ec2 start-instances --region us-east-2 --instance-ids i-1234567890abcdef0
-```
-
-### Terminating Instances
-
-```bash
-aws ec2 terminate-instances --region us-east-2 --instance-ids i-1234567890abcdef0
-```
+For complete production examples, see:
+- **[Scheduled Tests](https://github.com/testdriverai/testdriverai/blob/main/.github/workflows/acceptance-windows-scheduled.yaml)** — Daily automated test runs
+- **[Reusable Workflow](https://github.com/testdriverai/testdriverai/blob/main/.github/workflows/windows-self-hosted.yaml)** — Shared configuration for PR and scheduled tests
 
 ### Connecting to an Instance
 
@@ -354,28 +347,6 @@ You can customize the AMI to include additional software or configurations:
 <Warning>
   **Security**: Never use the default password in production. Always rotate passwords before creating custom AMIs.
 </Warning>
-
-### Changing Screen Resolution
-
-Set resolution via environment variable when spawning:
-
-```bash
-export RESOLUTION=1920x1080
-./setup/aws/spawn-runner.sh
-```
-
-Or in a lifecycle provision script:
-
-```yaml lifecycle/provision.yaml
-version: 7.0.0
-steps:
-  - prompt: set screen resolution
-    commands:
-      - command: exec
-        lang: pwsh
-        code: |
-          C:\testdriver\SetResolution.ps1 -Width 1920 -Height 1080
-```
 
 ## Security Best Practices
 
@@ -430,22 +401,3 @@ See [GitHub's OIDC documentation](https://docs.github.com/en/actions/deployment/
 - Validate credentials and permissions
 - Check service quotas and limits
 - Verify region consistency across all resources
-
-## Getting Help
-
-<CardGroup cols={2}>
-  <Card
-    title="Contact Support"
-    icon="envelope"
-    href="https://calendly.com/d/cq23-qyn-3v6/testdriver-ai-demo"
-  >
-    Get help with self-hosted setup and configuration
-  </Card>
-  <Card
-    title="Self-Hosted Overview"
-    icon="server"
-    href="/v7/self-hosted"
-  >
-    Learn more about self-hosted benefits and pricing
-  </Card>
-</CardGroup>

@@ -6,11 +6,8 @@ import { defineConfig } from 'vitest/config';
 // and to worker processes
 config();
 
-// Use self-hosted setup when TD_OS=windows
-const setupFiles = ['testdriverai/vitest/setup'];
-if (process.env.TD_OS === 'windows') {
-  setupFiles.push('testdriverai/vitest/setup-aws');
-}
+// Always include AWS setup - it will be a no-op unless TD_OS=windows
+const setupFiles = ['testdriverai/vitest/setup', 'testdriverai/vitest/setup-aws'];
 
 export default defineConfig({
   test: {
