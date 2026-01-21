@@ -706,7 +706,6 @@ class TestDriverReporter {
         startTime: pluginState.startTime,
       });
 
-      logger.info(`Test run created: ${pluginState.testRunId}`);
     } catch (error) {
       logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;

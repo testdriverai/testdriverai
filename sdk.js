@@ -428,28 +428,28 @@ class Element {
 
       // Use default cacheKey from SDK constructor if not provided in find() options
       // BUT only if cache is not explicitly disabled via cache: false option
-      if (!cacheKey && this.sdk.options?.cacheKey && this.sdk.cacheThresholds?.find !== -1) {
+      if (!cacheKey && this.sdk.options?.cacheKey && !this.sdk._cacheExplicitlyDisabled) {
         cacheKey = this.sdk.options.cacheKey;
       }
 
       // Determine threshold: 
-      // - If cache is explicitly disabled (threshold = -1), don't use cache even with cacheKey
-      // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
-      // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
+      // - If cache is explicitly disabled, don't use cache even with cacheKey
+      // - If cacheKey is provided, enable cache with threshold
+      // - If no cacheKey, disable cache
       let threshold;
-      if (this.sdk.cacheThresholds?.find === -1) {
-        // Cache explicitly disabled via cache: false option
+      if (this.sdk._cacheExplicitlyDisabled) {
+        // Cache explicitly disabled via cache: false option or TD_NO_CACHE env
         threshold = -1;
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? 0.01;
+        threshold = cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = cacheThreshold;
       } else {
-        // No cacheKey, no explicit threshold - use global default (which is -1 now)
-        threshold = this.sdk.cacheThresholds?.find ?? -1;
+        // No cacheKey, no explicit threshold - disable cache
+        threshold = -1;
       }
 
       // Store the threshold for debugging
@@ -1263,21 +1263,23 @@ class TestDriverSDK {
     // By default, cache is DISABLED (threshold = -1) to avoid unnecessary AI costs
     // To enable cache, provide a cacheKey when calling find() or findAll()
     // Also support TD_NO_CACHE environment variable and cache: false option for backwards compatibility
-    const cacheDisabled =
+    const cacheExplicitlyDisabled =
       options.cache === false || process.env.TD_NO_CACHE === "true";
 
-    if (cacheDisabled) {
+    // Track whether cache was explicitly disabled (not just default)
+    this._cacheExplicitlyDisabled = cacheExplicitlyDisabled;
+
+    if (cacheExplicitlyDisabled) {
       // Explicit cache disabled via option or env var
       this.cacheThresholds = {
         find: -1,
         findAll: -1,
       };
     } else {
-      // Cache disabled by default, enabled only when cacheKey is provided
-      // Note: The threshold value here is the fallback when cacheKey is NOT provided
+      // Cache enabled by default when cacheKey is provided
       this.cacheThresholds = {
-        find: options.cacheThreshold?.find ?? -1,  // Default: cache disabled
-        findAll: options.cacheThreshold?.findAll ?? -1,  // Default: cache disabled
+        find: options.cacheThreshold?.find ?? 0.01,  // Default: 1% threshold
+        findAll: options.cacheThreshold?.findAll ?? 0.01,
       };
     }
 
@@ -2274,6 +2276,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     // Set redrawThreshold on agent's cliArgs.options
     this.agent.cliArgs.options.redrawThreshold = this.redrawThreshold;
 
+    // Pass test file name to agent for debugger display
+    if (this.testFile) {
+      this.agent.testFile = this.testFile;
+    }
+
     // Use the agent's buildEnv method which handles all the connection logic
     await this.agent.buildEnv(buildEnvOptions);
 
@@ -2460,28 +2467,28 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
       // Use default cacheKey from SDK constructor if not provided in findAll() options
       // BUT only if cache is not explicitly disabled via cache: false option
-      if (!cacheKey && this.options?.cacheKey && this.cacheThresholds?.findAll !== -1) {
+      if (!cacheKey && this.options?.cacheKey && !this._cacheExplicitlyDisabled) {
         cacheKey = this.options.cacheKey;
       }
 
       // Determine threshold: 
-      // - If cache is explicitly disabled (threshold = -1), don't use cache even with cacheKey
-      // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
-      // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
+      // - If cache is explicitly disabled, don't use cache even with cacheKey
+      // - If cacheKey is provided, enable cache with threshold
+      // - If no cacheKey, disable cache
       let threshold;
-      if (this.cacheThresholds?.findAll === -1) {
-        // Cache explicitly disabled via cache: false option
+      if (this._cacheExplicitlyDisabled) {
+        // Cache explicitly disabled via cache: false option or TD_NO_CACHE env
         threshold = -1;
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? 0.01;
+        threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = cacheThreshold;
       } else {
-        // No cacheKey, no explicit threshold - use global default (which is -1 now)
-        threshold = this.cacheThresholds?.findAll ?? -1;
+        // No cacheKey, no explicit threshold - disable cache
+        threshold = -1;
       }
 
       // Debug log threshold

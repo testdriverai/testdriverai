@@ -2022,6 +2022,7 @@ ${regression}
         resolution: this.config.TD_RESOLUTION,
         url: url,
         token: "V3b8wG9",
+        testFile: this.testFile || null,
       };
 
       // Base64 encode the data (the debugger expects base64, not URL encoding)
