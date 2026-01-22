@@ -31,7 +31,7 @@ jobs:
 
     - name: Run Linux tests with Sentry Cron monitoring
       run: |
-        sentry-cli monitors run testdriver-linux-acceptance -- npx vitest run test/testdriver/*.test.mjs
+        sentry-cli monitors run testdriver-linux-acceptance -- npx vitest run examples/*.test.mjs
       env:
         SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         TD_API_KEY: ${{ secrets.TD_API_KEY }}

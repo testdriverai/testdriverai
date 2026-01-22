@@ -55,7 +55,7 @@ describe("Chrome Extension Test", () => {
     // When clicked, it shows a popup with "Hello Extensions"
 
     // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The extensions button in the Chrome toolbar");
+    const extensionsButton = await testdriver.find("The extensions button in the Chrome toolbar", {zoom: true});
     await extensionsButton.click();
 
     // Look for the hello world extension in the extensions menu

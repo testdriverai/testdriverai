@@ -11,7 +11,7 @@
 <br />
 <br />
   
-[🚀 **Quick Start**](#-quick-start) • [📖 **Documentation**](https://docs.testdriver.ai) • [💻 **Examples**](https://github.com/testdriverai/testdriverai/tree/main/test/testdriver) • [📖 **Pricing**](https://docs.testdriver.ai) • [💬 **Discord**](https://discord.com/invite/cWDFW8DzPm) • [🌐 **Website**](https://testdriver.ai)
+[🚀 **Quick Start**](#-quick-start) • [📖 **Documentation**](https://docs.testdriver.ai) • [💻 **Examples**](https://github.com/testdriverai/testdriverai/tree/main/examples) • [📖 **Pricing**](https://docs.testdriver.ai) • [💬 **Discord**](https://discord.com/invite/cWDFW8DzPm) • [🌐 **Website**](https://testdriver.ai)
 
 </div>
 
@@ -41,7 +41,7 @@ const result = await testdriver.assert(
 expect(result).toBeTruthy();
 ```
 
-[See Full Example](https://github.com/testdriverai/testdriverai/blob/main/test/testdriver/drag-and-drop.test.mjs) • [Browse All Examples](https://github.com/testdriverai/testdriverai/tree/main/test/testdriver)
+[See Full Example](https://github.com/testdriverai/testdriverai/blob/main/examples/drag-and-drop.test.mjs) • [Browse All Examples](https://github.com/testdriverai/testdriverai/tree/main/examples)
 
 ---
 
