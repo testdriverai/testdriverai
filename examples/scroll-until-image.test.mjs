@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("Scroll Until Image Test", () => {
   it.skip("should scroll until brown colored house image appears", async (context) => {

@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("Scroll Keyboard Test", () => {
   it("should navigate to webhamster.com and scroll with keyboard", async (context) => {

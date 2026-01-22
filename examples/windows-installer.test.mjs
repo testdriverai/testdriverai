@@ -10,7 +10,7 @@
  */
 
 import { describe, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 

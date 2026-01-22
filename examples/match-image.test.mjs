@@ -6,7 +6,7 @@
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 /**
  * Perform login flow for SauceLabs demo app

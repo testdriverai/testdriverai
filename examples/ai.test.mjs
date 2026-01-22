@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("AI Test", () => {
   it("should use ai to search for testdriver on Google", async (context) => {

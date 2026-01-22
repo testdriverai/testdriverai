@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("Assert Test", () => {
   it("should assert the testdriver login page shows", async (context) => {

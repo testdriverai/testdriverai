@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("Scroll Test", () => {
   it("should navigate and scroll down the page", async (context) => {

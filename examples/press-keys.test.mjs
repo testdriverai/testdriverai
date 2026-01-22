@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("Press Keys Test", () => {
   it("should create tabs and navigate using keyboard shortcuts", async (context) => {
