@@ -7,7 +7,7 @@ on:
         description: 'Test file pattern to run'
         required: false
         type: string
-        default: 'test/testdriver/*.test.mjs'
+        default: 'examples/*.test.mjs'
     secrets:
       TD_API_KEY:
         required: true
