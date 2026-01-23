@@ -1338,7 +1338,6 @@ class TestDriverSDK {
     this._dashcam = null;
 
     // Last-promise tracking for unawaited promise detection
-    this._lastPromise = null;
     this._lastPromiseSettled = true;
     this._lastCommandName = null;
 
@@ -2342,7 +2341,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       }
 
       // Warn if previous command may not have been awaited
-      if (this._lastPromise && !this._lastPromiseSettled) {
+      if (this._lastCommandName && !this._lastPromiseSettled) {
         console.warn(
           `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
           `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
@@ -2396,7 +2395,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     }
 
     // Warn if previous command may not have been awaited
-    if (this._lastPromise && !this._lastPromiseSettled) {
+    if (this._lastCommandName && !this._lastPromiseSettled) {
       console.warn(
         `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
         `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
@@ -2707,7 +2706,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         // Warn if previous command may not have been awaited
-        if (this._lastPromise && !this._lastPromiseSettled) {
+        if (this._lastCommandName && !this._lastPromiseSettled) {
           console.warn(
             `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
             `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
