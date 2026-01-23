@@ -390,3 +390,12 @@ const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 4. **Log element properties** to understand what the AI sees
 5. **Use `assert()` with specific, descriptive natural language**
 6. **Start simple** - get one step working before adding more
+7. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
+   ```json
+   // eslint.config.js (for TypeScript projects)
+   {
+     "rules": {
+       "@typescript-eslint/no-floating-promises": "error"
+     }
+   }
+   ```

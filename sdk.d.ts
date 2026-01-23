@@ -244,6 +244,8 @@ export interface TestDriverOptions {
   cacheKey?: string;
   /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
+  /** Enable/disable Dashcam video recording (default: true) */
+  dashcam?: boolean;
   /** Redraw configuration for screen change detection */
   redraw?: boolean | {
     /** Enable redraw detection (default: true) */
@@ -809,6 +811,11 @@ export default class TestDriverSDK {
    * Dashcam API for screen recording
    */
   readonly dashcam: DashcamAPI;
+
+  /**
+   * Whether Dashcam recording is enabled (default: true)
+   */
+  readonly dashcamEnabled: boolean;
 
   /**
    * Wait for the sandbox to be ready
