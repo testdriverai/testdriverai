@@ -2115,6 +2115,15 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       );
     }
 
+    // Clean up screenshots folder for this test file before running
+    if (this.testFile) {
+      const testFileName = path.basename(this.testFile, path.extname(this.testFile));
+      const screenshotsDir = path.join(process.cwd(), ".testdriverai", "screenshots", testFileName);
+      if (fs.existsSync(screenshotsDir)) {
+        fs.rmSync(screenshotsDir, { recursive: true, force: true });
+      }
+    }
+
     // Authenticate first if not already authenticated
     if (!this.authenticated) {
       await this.auth();
@@ -2782,8 +2791,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     this._ensureConnected();
     const base64Data = await this.system.captureScreenBase64(scale, silent, mouse);
     
-    // Save to .testdriverai/screenshots directory
-    const screenshotsDir = path.join(process.cwd(), ".testdriverai", "screenshots");
+    // Save to .testdriverai/screenshots/<test-file-name> directory
+    let screenshotsDir = path.join(process.cwd(), ".testdriverai", "screenshots");
+    if (this.testFile) {
+      const testFileName = path.basename(this.testFile, path.extname(this.testFile));
+      screenshotsDir = path.join(screenshotsDir, testFileName);
+    }
     if (!fs.existsSync(screenshotsDir)) {
       fs.mkdirSync(screenshotsDir, { recursive: true });
     }
