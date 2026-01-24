@@ -151,7 +151,7 @@ element.found();              // check if found (boolean)
 **Use `screenshot()` liberally during development** to see exactly what the sandbox screen looks like. Screenshots are saved locally and organized by test file.
 
 ```javascript
-// Capture a screenshot - saved to .testdriverai/screenshots/<test-file>/
+// Capture a screenshot - saved to .testdriver/screenshots/<test-file>/
 const screenshotPath = await testdriver.screenshot();
 console.log('Screenshot saved to:', screenshotPath);
 
@@ -168,7 +168,7 @@ await testdriver.screenshot(1, false, true);
 
 **Screenshot file organization:**
 ```
-.testdriverai/
+.testdriver/
   screenshots/
     login.test/           # Folder per test file
       screenshot-1737633600000.png
@@ -443,7 +443,7 @@ console.log('Screenshot with mouse saved to: screenshot-with-mouse.png');
 4. **Log element properties** to understand what the AI sees
 5. **Use `assert()` with specific, descriptive natural language**
 6. **Start simple** - get one step working before adding more
-7. **Take screenshots liberally** - use `await testdriver.screenshot()` after key steps to debug what the sandbox actually shows. Check `.testdriverai/screenshots/<test-file>/` to review them.
+7. **Take screenshots liberally** - use `await testdriver.screenshot()` after key steps to debug what the sandbox actually shows. Check `.testdriver/screenshots/<test-file>/` to review them.
 8. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
    ```json
    // eslint.config.js (for TypeScript projects)

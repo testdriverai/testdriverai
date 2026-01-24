@@ -35,10 +35,10 @@ const filePath = await testdriver.screenshot(scale, silent, mouse)
 
 ## File Organization
 
-Screenshots are automatically saved to `.testdriverai/screenshots/<test-file-name>/` in your project root:
+Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>/` in your project root:
 
 ```
-.testdriverai/
+.testdriver/
   screenshots/
     login.test/
       screenshot-1737633600000.png
@@ -136,11 +136,11 @@ describe("Login Flow", () => {
   </Accordion>
 
   <Accordion title="Add to .gitignore">
-    Add `.testdriverai/screenshots/` to your `.gitignore` to avoid committing screenshots to version control:
+    Add `.testdriver/screenshots/` to your `.gitignore` to avoid committing screenshots to version control:
     
     ```
     # .gitignore
-    .testdriverai/screenshots/
+    .testdriver/screenshots/
     ```
   </Accordion>
 </AccordionGroup>

@@ -2118,7 +2118,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     // Clean up screenshots folder for this test file before running
     if (this.testFile) {
       const testFileName = path.basename(this.testFile, path.extname(this.testFile));
-      const screenshotsDir = path.join(process.cwd(), ".testdriverai", "screenshots", testFileName);
+      const screenshotsDir = path.join(process.cwd(), ".testdriver", "screenshots", testFileName);
       if (fs.existsSync(screenshotsDir)) {
         fs.rmSync(screenshotsDir, { recursive: true, force: true });
       }
@@ -2791,8 +2791,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     this._ensureConnected();
     const base64Data = await this.system.captureScreenBase64(scale, silent, mouse);
     
-    // Save to .testdriverai/screenshots/<test-file-name> directory
-    let screenshotsDir = path.join(process.cwd(), ".testdriverai", "screenshots");
+    // Save to .testdriver/screenshots/<test-file-name> directory
+    let screenshotsDir = path.join(process.cwd(), ".testdriver", "screenshots");
     if (this.testFile) {
       const testFileName = path.basename(this.testFile, path.extname(this.testFile));
       screenshotsDir = path.join(screenshotsDir, testFileName);

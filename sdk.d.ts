@@ -1136,14 +1136,14 @@ export default class TestDriverSDK {
   // Utility Methods
 
   /**
-   * Capture a screenshot of the current screen and save it to .testdriverai/screenshots
+   * Capture a screenshot of the current screen and save it to .testdriver/screenshots
    * @param scale - Scale factor for the screenshot (default: 1 = original size)
    * @param silent - Whether to suppress logging (default: false)
    * @param mouse - Whether to include mouse cursor (default: false)
    * @returns The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot (saves to .testdriverai/screenshots)
+   * // Capture a screenshot (saves to .testdriver/screenshots)
    * const screenshotPath = await client.screenshot();
    * console.log('Screenshot saved to:', screenshotPath);
    *
