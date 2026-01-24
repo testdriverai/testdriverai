@@ -82,6 +82,7 @@
                   "/v7/mouse-up",
                   "/v7/press-keys",
                   "/v7/right-click",
+                  "/v7/screenshot",
                   "/v7/type",
                   "/v7/scroll"
                 ]

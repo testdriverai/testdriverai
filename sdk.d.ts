@@ -244,6 +244,8 @@ export interface TestDriverOptions {
   cacheKey?: string;
   /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
+  /** Enable/disable Dashcam video recording (default: true) */
+  dashcam?: boolean;
   /** Redraw configuration for screen change detection */
   redraw?: boolean | {
     /** Enable redraw detection (default: true) */
@@ -811,6 +813,11 @@ export default class TestDriverSDK {
   readonly dashcam: DashcamAPI;
 
   /**
+   * Whether Dashcam recording is enabled (default: true)
+   */
+  readonly dashcamEnabled: boolean;
+
+  /**
    * Wait for the sandbox to be ready
    * Called automatically by provision methods
    */
@@ -1129,20 +1136,20 @@ export default class TestDriverSDK {
   // Utility Methods
 
   /**
-   * Capture a screenshot of the current screen
+   * Capture a screenshot of the current screen and save it to .testdriverai/screenshots
    * @param scale - Scale factor for the screenshot (default: 1 = original size)
    * @param silent - Whether to suppress logging (default: false)
    * @param mouse - Whether to include mouse cursor (default: false)
-   * @returns Base64 encoded PNG screenshot
+   * @returns The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot
-   * const screenshot = await client.screenshot();
-   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * // Capture a screenshot (saves to .testdriverai/screenshots)
+   * const screenshotPath = await client.screenshot();
+   * console.log('Screenshot saved to:', screenshotPath);
    *
    * @example
    * // Capture with mouse cursor visible
-   * const screenshot = await client.screenshot(1, false, true);
+   * const screenshotPath = await client.screenshot(1, false, true);
    */
   screenshot(
     scale?: number,
