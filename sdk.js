@@ -2763,24 +2763,45 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
   // ====================================
 
   /**
-   * Capture a screenshot of the current screen
+   * Capture a screenshot of the current screen and save it to .testdriverai/screenshots
    * @param {number} [scale=1] - Scale factor for the screenshot (1 = original size)
    * @param {boolean} [silent=false] - Whether to suppress logging
    * @param {boolean} [mouse=false] - Whether to include mouse cursor
-   * @returns {Promise<string>} Base64 encoded PNG screenshot
+   * @returns {Promise<string>} The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot
-   * const screenshot = await client.screenshot();
-   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * // Capture a screenshot (saves to .testdriverai/screenshots)
+   * const screenshotPath = await client.screenshot();
+   * console.log('Screenshot saved to:', screenshotPath);
    *
    * @example
    * // Capture with mouse cursor visible
-   * const screenshot = await client.screenshot(1, false, true);
+   * const screenshotPath = await client.screenshot(1, false, true);
    */
   async screenshot(scale = 1, silent = false, mouse = false) {
     this._ensureConnected();
-    return await this.system.captureScreenBase64(scale, silent, mouse);
+    const base64Data = await this.system.captureScreenBase64(scale, silent, mouse);
+    
+    // Save to .testdriverai/screenshots directory
+    const screenshotsDir = path.join(process.cwd(), ".testdriverai", "screenshots");
+    if (!fs.existsSync(screenshotsDir)) {
+      fs.mkdirSync(screenshotsDir, { recursive: true });
+    }
+    
+    const filename = `screenshot-${Date.now()}.png`;
+    const filePath = path.join(screenshotsDir, filename);
+    
+    // Remove data:image/png;base64, prefix if present
+    const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(cleanBase64, "base64");
+    
+    fs.writeFileSync(filePath, buffer);
+    
+    if (!silent) {
+      this.emitter.emit("log:info", `📸 Screenshot saved to: ${filePath}`);
+    }
+    
+    return filePath;
   }
 
   /**
