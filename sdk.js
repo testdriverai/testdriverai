@@ -1354,7 +1354,7 @@ class TestDriverSDK {
       await this.__connectionPromise;
     }
     if (!this.connected) {
-      throw new Error('Not connected to sandbox. Call connect() first or use autoConnect option.');
+      throw new Error('Not connected to sandbox. Call connect() first.');
     }
   }
 

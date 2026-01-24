@@ -92,6 +92,7 @@ The SDK has TypeScript types in `sdk.d.ts`. Key methods:
 | `pressKeys([keys])` | Press keyboard keys |
 | `scroll(direction)` | Scroll the page |
 | `exec(language, code)` | Execute code in sandbox |
+| `screenshot(scale, silent, mouse)` | Capture screenshot as base64 PNG |
 | `ai(task)` | AI exploratory loop (see note below) |
 
 ### About `ai()` - Use for Exploration, Not Final Tests
@@ -418,6 +419,20 @@ const output = await testdriver.exec("sh", "ls -la", 5000);
 
 // PowerShell (Windows)
 const date = await testdriver.exec("pwsh", "Get-Date", 5000);
+```
+
+### Capturing Screenshots
+```javascript
+// Capture a screenshot and save to file
+const screenshot = await testdriver.screenshot();
+const filepath = 'screenshot.png';
+fs.writeFileSync(filepath, Buffer.from(screenshot, 'base64'));
+console.log('Screenshot saved to:', filepath);
+
+// Capture with mouse cursor visible
+const screenshotWithMouse = await testdriver.screenshot(1, false, true);
+fs.writeFileSync('screenshot-with-mouse.png', Buffer.from(screenshotWithMouse, 'base64'));
+console.log('Screenshot with mouse saved to: screenshot-with-mouse.png');
 ```
 
 ## Tips for Agents
