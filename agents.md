@@ -88,11 +88,11 @@ The SDK has TypeScript types in `sdk.d.ts`. Key methods:
 |--------|---------|
 | `find(description)` | Find element by natural language |
 | `findAll(description)` | Find all matching elements |
-| `assert(assertion)` | AI-powered assertion |
-| `type(text)` | Type text |
+| `assert(assertion)` | AI-powered assertion || `screenshot()` | Capture and save screenshot locally || `type(text)` | Type text |
 | `pressKeys([keys])` | Press keyboard keys |
 | `scroll(direction)` | Scroll the page |
 | `exec(language, code)` | Execute code in sandbox |
+| `screenshot(scale, silent, mouse)` | Capture screenshot as base64 PNG |
 | `ai(task)` | AI exploratory loop (see note below) |
 
 ### About `ai()` - Use for Exploration, Not Final Tests
@@ -145,6 +145,39 @@ await element.mouseDown();    // press mouse down
 await element.mouseUp();      // release mouse
 element.found();              // check if found (boolean)
 ```
+
+### Screenshots for Debugging
+
+**Use `screenshot()` liberally during development** to see exactly what the sandbox screen looks like. Screenshots are saved locally and organized by test file.
+
+```javascript
+// Capture a screenshot - saved to .testdriverai/screenshots/<test-file>/
+const screenshotPath = await testdriver.screenshot();
+console.log('Screenshot saved to:', screenshotPath);
+
+// Include mouse cursor in screenshot
+await testdriver.screenshot(1, false, true);
+```
+
+**When to use screenshots:**
+- After `provision.chrome()` to verify the page loaded correctly
+- Before/after clicking elements to see state changes
+- When a `find()` fails to see what the AI is actually seeing
+- Before `assert()` calls to debug assertion failures
+- When tests behave unexpectedly
+
+**Screenshot file organization:**
+```
+.testdriverai/
+  screenshots/
+    login.test/           # Folder per test file
+      screenshot-1737633600000.png
+      screenshot-1737633605000.png
+    checkout.test/
+      screenshot-1737633700000.png
+```
+
+> **Note:** The screenshot folder for each test file is automatically cleared when the test starts, so you only see screenshots from the most recent run.
 
 ## Best Workflow: Two-File Pattern
 
@@ -308,6 +341,9 @@ it("should incrementally build test", async (context) => {
   const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: 'https://example.com' });
 
+  // Take a screenshot to see the initial state
+  await testdriver.screenshot();
+
   // Step 1: Find and inspect
   const element = await testdriver.find("Some button");
   console.log("Element found:", element.found());
@@ -316,6 +352,9 @@ it("should incrementally build test", async (context) => {
   
   // Step 2: Interact
   await element.click();
+  
+  // Screenshot after interaction to see the result
+  await testdriver.screenshot();
   
   // Step 3: Assert and log
   const result = await testdriver.assert("Something happened");
@@ -382,6 +421,20 @@ const output = await testdriver.exec("sh", "ls -la", 5000);
 const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 ```
 
+### Capturing Screenshots
+```javascript
+// Capture a screenshot and save to file
+const screenshot = await testdriver.screenshot();
+const filepath = 'screenshot.png';
+fs.writeFileSync(filepath, Buffer.from(screenshot, 'base64'));
+console.log('Screenshot saved to:', filepath);
+
+// Capture with mouse cursor visible
+const screenshotWithMouse = await testdriver.screenshot(1, false, true);
+fs.writeFileSync('screenshot-with-mouse.png', Buffer.from(screenshotWithMouse, 'base64'));
+console.log('Screenshot with mouse saved to: screenshot-with-mouse.png');
+```
+
 ## Tips for Agents
 
 1. **Always check `sdk.d.ts`** for method signatures and types
@@ -390,3 +443,13 @@ const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 4. **Log element properties** to understand what the AI sees
 5. **Use `assert()` with specific, descriptive natural language**
 6. **Start simple** - get one step working before adding more
+7. **Take screenshots liberally** - use `await testdriver.screenshot()` after key steps to debug what the sandbox actually shows. Check `.testdriverai/screenshots/<test-file>/` to review them.
+8. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
+   ```json
+   // eslint.config.js (for TypeScript projects)
+   {
+     "rules": {
+       "@typescript-eslint/no-floating-promises": "error"
+     }
+   }
+   ```

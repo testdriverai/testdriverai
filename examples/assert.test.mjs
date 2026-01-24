@@ -17,6 +17,9 @@ describe("Assert Test", () => {
       url: 'http://testdriver-sandbox.vercel.app/login',
     });
 
+    // Take a screenshot
+    await testdriver.screenshot();
+
     // Assert the TestDriver.ai Sandbox login page is displayed
     const result = await testdriver.assert(
       "the TestDriver.ai Sandbox login page is displayed",

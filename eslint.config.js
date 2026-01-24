@@ -45,6 +45,12 @@ module.exports = [
         ...globals.node,
       },
     },
+    rules: {
+      // Warn about floating promises (unawaited async calls)
+      // This catches missing `await` on async methods like click(), assert(), etc.
+      // Note: For TypeScript projects, use @typescript-eslint/no-floating-promises instead
+      "require-await": "warn",
+    },
   },
   {
     // this needs to be it's own object for some reason

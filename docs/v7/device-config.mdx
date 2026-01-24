@@ -120,7 +120,6 @@ describe("Chrome Extension Test", () => {
     const testdriver = TestDriver(context);
 
     // Clone extension from GitHub
-    await testdriver.ready();
     await testdriver.exec(
       'sh',
       'git clone https://github.com/user/my-extension.git /tmp/my-extension',
@@ -284,7 +283,6 @@ describe("VS Code Test", () => {
     const testdriver = TestDriver(context);
 
     // Create a test project
-    await testdriver.ready();
     await testdriver.exec('sh', 'mkdir -p /tmp/test-project && echo "print(1)" > /tmp/test-project/test.py', 10000);
 
     // Launch VS Code

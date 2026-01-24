@@ -17,9 +17,6 @@ describe("Chrome Extension Test", () => {
 
     const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, cacheKey: new Date().getTime().toString() });
     
-    // Wait for connection to be ready before running exec
-    await testdriver.ready();
-    
     // Determine OS-specific paths and commands
     const shell = testdriver.os === 'windows' ? 'pwsh' : 'sh';
     const extensionsDir = testdriver.os === 'windows' 
