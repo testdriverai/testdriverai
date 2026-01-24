@@ -12,21 +12,13 @@ Capture a screenshot of the current screen and automatically save it to a local 
 ## Syntax
 
 ```javascript
-const filePath = await testdriver.screenshot(scale, silent, mouse)
+const filePath = await testdriver.screenshot(filename)
 ```
 
 ## Parameters
 
-<ParamField path="scale" type="number" default="1">
-  Scale factor for the screenshot (1 = original size, 0.5 = half size, 2 = double size)
-</ParamField>
-
-<ParamField path="silent" type="boolean" default="false">
-  Whether to suppress the log message showing where the screenshot was saved
-</ParamField>
-
-<ParamField path="mouse" type="boolean" default="false">
-  Whether to include the mouse cursor in the screenshot
+<ParamField path="filename" type="string" optional>
+  Custom filename for the screenshot (without .png extension). If not provided, a timestamp-based filename is generated automatically.
 </ParamField>
 
 ## Returns
@@ -42,7 +34,7 @@ Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>
   screenshots/
     login.test/
       screenshot-1737633600000.png
-      screenshot-1737633605000.png
+      login-page.png
     checkout.test/
       screenshot-1737633700000.png
 ```
@@ -56,23 +48,20 @@ Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>
 ### Basic Screenshot
 
 ```javascript
-// Capture a screenshot with default settings
+// Capture a screenshot with auto-generated filename
 const screenshotPath = await testdriver.screenshot();
 console.log('Screenshot saved to:', screenshotPath);
 ```
 
-### Screenshot with Mouse Cursor
+### Custom Filename
 
 ```javascript
-// Capture a screenshot showing the mouse cursor position
-const screenshotPath = await testdriver.screenshot(1, false, true);
-```
+// Save with a descriptive filename
+await testdriver.screenshot("login-page");
+// Saves to: .testdriver/screenshots/<test>/login-page.png
 
-### Silent Screenshot
-
-```javascript
-// Capture without logging the save location
-await testdriver.screenshot(1, true);
+await testdriver.screenshot("after-click");
+// Saves to: .testdriver/screenshots/<test>/after-click.png
 ```
 
 ### Debugging with Screenshots

@@ -1137,25 +1137,19 @@ export default class TestDriverSDK {
 
   /**
    * Capture a screenshot of the current screen and save it to .testdriver/screenshots
-   * @param scale - Scale factor for the screenshot (default: 1 = original size)
-   * @param silent - Whether to suppress logging (default: false)
-   * @param mouse - Whether to include mouse cursor (default: false)
+   * @param filename - Custom filename (without .png extension)
    * @returns The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot (saves to .testdriver/screenshots)
-   * const screenshotPath = await client.screenshot();
-   * console.log('Screenshot saved to:', screenshotPath);
+   * // Capture a screenshot with auto-generated filename
+   * const screenshotPath = await testdriver.screenshot();
    *
    * @example
-   * // Capture with mouse cursor visible
-   * const screenshotPath = await client.screenshot(1, false, true);
+   * // Capture with custom filename
+   * const screenshotPath = await testdriver.screenshot("login-page");
+   * // Saves to: .testdriver/screenshots/<test>/login-page.png
    */
-  screenshot(
-    scale?: number,
-    silent?: boolean,
-    mouse?: boolean,
-  ): Promise<string>;
+  screenshot(filename?: string): Promise<string>;
 
   /**
    * Wait for specified time

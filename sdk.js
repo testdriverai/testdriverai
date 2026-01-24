@@ -2772,24 +2772,27 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
   // ====================================
 
   /**
-   * Capture a screenshot of the current screen and save it to .testdriverai/screenshots
-   * @param {number} [scale=1] - Scale factor for the screenshot (1 = original size)
-   * @param {boolean} [silent=false] - Whether to suppress logging
-   * @param {boolean} [mouse=false] - Whether to include mouse cursor
+   * Capture a screenshot of the current screen and save it to .testdriver/screenshots
+   * @param {string} [filename] - Custom filename (without .png extension)
    * @returns {Promise<string>} The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot (saves to .testdriverai/screenshots)
-   * const screenshotPath = await client.screenshot();
-   * console.log('Screenshot saved to:', screenshotPath);
+   * // Capture a screenshot with auto-generated filename
+   * const screenshotPath = await testdriver.screenshot();
    *
    * @example
-   * // Capture with mouse cursor visible
-   * const screenshotPath = await client.screenshot(1, false, true);
+   * // Capture with custom filename
+   * const screenshotPath = await testdriver.screenshot("login-page");
+   * // Saves to: .testdriver/screenshots/<test>/login-page.png
    */
-  async screenshot(scale = 1, silent = false, mouse = false) {
+  async screenshot(filename) {
     this._ensureConnected();
-    const base64Data = await this.system.captureScreenBase64(scale, silent, mouse);
+    
+    const finalFilename = filename 
+      ? (filename.endsWith('.png') ? filename : `${filename}.png`)
+      : `screenshot-${Date.now()}.png`;
+    
+    const base64Data = await this.system.captureScreenBase64(1, false, false);
     
     // Save to .testdriver/screenshots/<test-file-name> directory
     let screenshotsDir = path.join(process.cwd(), ".testdriver", "screenshots");
@@ -2801,8 +2804,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       fs.mkdirSync(screenshotsDir, { recursive: true });
     }
     
-    const filename = `screenshot-${Date.now()}.png`;
-    const filePath = path.join(screenshotsDir, filename);
+    const filePath = path.join(screenshotsDir, finalFilename);
     
     // Remove data:image/png;base64, prefix if present
     const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
@@ -2810,9 +2812,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     
     fs.writeFileSync(filePath, buffer);
     
-    if (!silent) {
-      this.emitter.emit("log:info", `📸 Screenshot saved to: ${filePath}`);
-    }
+    this.emitter.emit("log:info", `📸 Screenshot saved to: ${filePath}`);
     
     return filePath;
   }
