@@ -1504,7 +1504,12 @@ class TestDriverSDK {
         if (maximized) chromeArgs.push('--start-maximized');
         if (guest) chromeArgs.push('--guest');
         chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', `--user-data-dir=${userDataDir}`);
-        
+
+        // Add remote debugging port for Linux
+        if (this.os !== 'windows') {
+          chromeArgs.push('--remote-debugging-port=9222');
+        }
+
         // Add dashcam-chrome extension
         const dashcamChromePath = await this._getDashcamChromeExtensionPath();
         if (dashcamChromePath) {
@@ -1512,7 +1517,7 @@ class TestDriverSDK {
         }
 
         // Launch Chrome
-        
+
         if (this.os === 'windows') {
           const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
           await this.exec(
@@ -1757,7 +1762,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         const chromeArgs = [];
         if (maximized) chromeArgs.push('--start-maximized');
         chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', '--disable-features=ChromeLabs', `--user-data-dir=${userDataDir}`);
-        
+
+        // Add remote debugging port for Linux
+        if (this.os !== 'windows') {
+          chromeArgs.push('--remote-debugging-port=9222');
+        }
+
         // Add user extension and dashcam-chrome extension
         const dashcamChromePath = await this._getDashcamChromeExtensionPath();
         if (dashcamChromePath) {
@@ -2080,6 +2090,293 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         return method;
       }
     });
+  }
+
+  /**
+   * Solve a captcha on the current page using 2captcha service
+   * Requires Chrome to be launched with remote debugging (--remote-debugging-port=9222)
+   *
+   * @param {Object} options - Captcha solving options
+   * @param {string} options.apiKey - 2captcha API key (required)
+   * @param {string} [options.sitekey] - Captcha sitekey (auto-detected if not provided)
+   * @param {string} [options.type='recaptcha_v3'] - Captcha type: 'recaptcha_v2', 'recaptcha_v3', 'hcaptcha', 'turnstile'
+   * @param {string} [options.action='verify'] - Action parameter for reCAPTCHA v3
+   * @param {boolean} [options.autoSubmit=true] - Automatically click submit button after solving
+   * @param {number} [options.pollInterval=5000] - Polling interval in ms for 2captcha
+   * @param {number} [options.timeout=120000] - Timeout in ms for solving
+   * @returns {Promise<{success: boolean, message: string, token?: string}>}
+   *
+   * @example
+   * // Auto-detect and solve captcha
+   * await testdriver.captcha({
+   *   apiKey: 'your-2captcha-api-key'
+   * });
+   *
+   * @example
+   * // Solve with known sitekey
+   * await testdriver.captcha({
+   *   apiKey: 'your-2captcha-api-key',
+   *   sitekey: '6LfB5_IbAAAAAMCtsjEHEHKqcB9iQocwwxTiihJu',
+   *   action: 'demo_action'
+   * });
+   */
+  async captcha(options = {}) {
+    const {
+      apiKey,
+      sitekey,
+      type = 'recaptcha_v3',
+      action = 'verify',
+      autoSubmit = true,
+      pollInterval = 5000,
+      timeout = 120000,
+    } = options;
+
+    if (!apiKey) {
+      throw new Error('[captcha] apiKey is required. Get your API key at https://2captcha.com');
+    }
+
+    const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+
+    // Ensure chrome-remote-interface is installed
+    await this.exec(shell, 'sudo npm install -g chrome-remote-interface 2>/dev/null || npm install -g chrome-remote-interface', 60000, true);
+
+    // Build config JSON for the solver
+    const config = JSON.stringify({
+      apiKey,
+      sitekey: sitekey || null,
+      type,
+      action,
+      autoSubmit,
+      pollInterval,
+      timeout
+    });
+
+    // Write config file (use heredoc to avoid quote issues)
+    await this.exec(shell, `cat > /tmp/td-captcha-config.json << 'CONFIGEOF'
+${config}
+CONFIGEOF`, 5000, true);
+
+    // Write the solver script - use simple string concatenation to avoid escaping issues
+    const solverScript = [
+      'const https = require("https");',
+      'const CDP = require("chrome-remote-interface");',
+      'const fs = require("fs");',
+      '',
+      'const config = JSON.parse(fs.readFileSync("/tmp/td-captcha-config.json", "utf8"));',
+      'const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));',
+      '',
+      'function httpsGet(url) {',
+      '  return new Promise((resolve, reject) => {',
+      '    https.get(url, (res) => {',
+      '      let data = "";',
+      '      res.on("data", chunk => data += chunk);',
+      '      res.on("end", () => resolve(data));',
+      '    }).on("error", reject);',
+      '  });',
+      '}',
+      '',
+      '(async () => {',
+      '  try {',
+      '    const targets = await CDP.List({ port: 9222 });',
+      '    const pageTarget = targets.find(t => t.type === "page" && !t.url.startsWith("chrome://") && !t.url.startsWith("chrome-extension://"));',
+      '    if (!pageTarget) throw new Error("No page target found");',
+      '',
+      '    const client = await CDP({ port: 9222, target: pageTarget });',
+      '    const { Runtime } = client;',
+      '    await Runtime.enable();',
+      '    const pageUrl = pageTarget.url;',
+      '',
+      '    // Auto-detect captcha parameters from page',
+      '    let sitekey = config.sitekey;',
+      '    let captchaType = config.type;',
+      '    let action = config.action;',
+      '    ',
+      '    if (!sitekey) {',
+      '      console.log("AUTO_DETECT: Scanning page for captcha...");',
+      '      const detectScript = `',
+      '        (function() {',
+      '          var result = { sitekey: null, type: null, action: null };',
+      '          ',
+      '          // 1. Check for reCAPTCHA v2 with data-sitekey',
+      '          var recaptchaV2 = document.querySelector(".g-recaptcha[data-sitekey]");',
+      '          if (recaptchaV2) {',
+      '            result.sitekey = recaptchaV2.getAttribute("data-sitekey");',
+      '            result.type = recaptchaV2.getAttribute("data-size") === "invisible" ? "recaptcha_v2_invisible" : "recaptcha_v2";',
+      '            return result;',
+      '          }',
+      '          ',
+      '          // 2. Check for hCaptcha',
+      '          var hcaptcha = document.querySelector(".h-captcha[data-sitekey]");',
+      '          if (hcaptcha) {',
+      '            result.sitekey = hcaptcha.getAttribute("data-sitekey");',
+      '            result.type = "hcaptcha";',
+      '            return result;',
+      '          }',
+      '          ',
+      '          // 3. Check for Turnstile',
+      '          var turnstile = document.querySelector(".cf-turnstile[data-sitekey]");',
+      '          if (turnstile) {',
+      '            result.sitekey = turnstile.getAttribute("data-sitekey");',
+      '            result.type = "turnstile";',
+      '            return result;',
+      '          }',
+      '          ',
+      '          // 4. Check for any data-sitekey',
+      '          var anySitekey = document.querySelector("[data-sitekey]");',
+      '          if (anySitekey) {',
+      '            result.sitekey = anySitekey.getAttribute("data-sitekey");',
+      '            result.type = "recaptcha_v2";',
+      '            return result;',
+      '          }',
+      '          ',
+      '          // 5. Scan scripts for reCAPTCHA v3 (grecaptcha.execute)',
+      '          var scripts = document.querySelectorAll("script");',
+      '          for (var i = 0; i < scripts.length; i++) {',
+      '            var content = scripts[i].textContent || "";',
+      '            ',
+      '            // Match grecaptcha.execute("SITEKEY", {action: "ACTION"})',
+      '            var v3Match = content.match(/grecaptcha[.]execute[(][\\\\s]*["\\x27]([0-9A-Za-z_-]{40})["\\x27][\\\\s]*,[\\\\s]*[{][\\\\s]*action[\\\\s]*:[\\\\s]*["\\x27]([^"\\x27]+)["\\x27]/);',
+      '            if (v3Match) {',
+      '              result.sitekey = v3Match[1];',
+      '              result.action = v3Match[2];',
+      '              result.type = "recaptcha_v3";',
+      '              return result;',
+      '            }',
+      '            ',
+      '            // Match render with sitekey',
+      '            var renderMatch = content.match(/grecaptcha[.]render[(][^,]*,[\\\\s]*[{][^}]*sitekey[\\\\s]*:[\\\\s]*["\\x27]([0-9A-Za-z_-]{40})["\\x27]/);',
+      '            if (renderMatch) {',
+      '              result.sitekey = renderMatch[1];',
+      '              result.type = "recaptcha_v2";',
+      '              return result;',
+      '            }',
+      '          }',
+      '          ',
+      '          // 6. Check script src for render= param (v3)',
+      '          var scriptSrc = document.querySelector("script[src*=\\\\"recaptcha\\\\"][src*=\\\\"render=\\\\"]");',
+      '          if (scriptSrc) {',
+      '            var srcMatch = scriptSrc.src.match(/render=([0-9A-Za-z_-]{40})/);',
+      '            if (srcMatch) {',
+      '              result.sitekey = srcMatch[1];',
+      '              result.type = "recaptcha_v3";',
+      '              return result;',
+      '            }',
+      '          }',
+      '          ',
+      '          return result;',
+      '        })()`;',
+      '      ',
+      '      const detectResult = await Runtime.evaluate({ expression: detectScript, returnByValue: true });',
+      '      const detected = detectResult.result.value;',
+      '      ',
+      '      if (detected && detected.sitekey) {',
+      '        sitekey = detected.sitekey;',
+      '        if (detected.type) captchaType = detected.type;',
+      '        if (detected.action) action = detected.action;',
+      '        console.log("AUTO_DETECT: Found " + captchaType);',
+      '      }',
+      '    }',
+      '    ',
+      '    if (!sitekey) throw new Error("Could not auto-detect captcha. Please provide sitekey manually.");',
+      '    console.log("SITEKEY:", sitekey);',
+      '    console.log("TYPE:", captchaType);',
+      '    if (action) console.log("ACTION:", action);',
+      '',
+      '    let submitUrl = "https://2captcha.com/in.php?key=" + config.apiKey + "&json=1";',
+      '    if (captchaType.startsWith("recaptcha")) {',
+      '      submitUrl += "&method=userrecaptcha&googlekey=" + sitekey + "&pageurl=" + encodeURIComponent(pageUrl);',
+      '      if (captchaType === "recaptcha_v3") submitUrl += "&version=v3&min_score=0.3&action=" + (action || "verify");',
+      '    } else if (captchaType === "hcaptcha") {',
+      '      submitUrl += "&method=hcaptcha&sitekey=" + sitekey + "&pageurl=" + encodeURIComponent(pageUrl);',
+      '    } else if (captchaType === "turnstile") {',
+      '      submitUrl += "&method=turnstile&sitekey=" + sitekey + "&pageurl=" + encodeURIComponent(pageUrl);',
+      '    }',
+      '',
+      '    console.log("SUBMITTING...");',
+      '    const submitResp = JSON.parse(await httpsGet(submitUrl));',
+      '    if (submitResp.status !== 1) throw new Error("Submit failed: " + JSON.stringify(submitResp));',
+      '    const requestId = submitResp.request;',
+      '    console.log("REQUEST_ID:", requestId);',
+      '',
+      '    let token = null;',
+      '    const maxAttempts = Math.ceil(config.timeout / config.pollInterval);',
+      '    for (let i = 0; i < maxAttempts; i++) {',
+      '      await sleep(config.pollInterval);',
+      '      const resultResp = JSON.parse(await httpsGet("https://2captcha.com/res.php?key=" + config.apiKey + "&action=get&id=" + requestId + "&json=1"));',
+      '      if (resultResp.status === 1) { token = resultResp.request; break; }',
+      '      if (resultResp.request !== "CAPCHA_NOT_READY") throw new Error("Error: " + JSON.stringify(resultResp));',
+      '      console.log("POLLING...", i + 1);',
+      '    }',
+      '    if (!token) throw new Error("Timeout");',
+      '    console.log("TOKEN:", token.substring(0, 50) + "...");',
+      '',
+      '    // Inject token',
+      '    await Runtime.evaluate({',
+      '      expression: "var t=\'" + token + "\';document.querySelectorAll(\'[name=g-recaptcha-response],textarea[id*=g-recaptcha-response]\').forEach(function(e){e.value=t;e.innerHTML=t});document.querySelectorAll(\'[name=h-captcha-response]\').forEach(function(e){e.value=t});document.querySelectorAll(\'[name=cf-turnstile-response]\').forEach(function(e){e.value=t});if(window.___grecaptcha_cfg&&window.___grecaptcha_cfg.clients){Object.values(window.___grecaptcha_cfg.clients).forEach(function(c){if(c&&typeof c===\'object\'){Object.values(c).forEach(function(v){if(v&&typeof v.callback===\'function\')v.callback(t)})}})}"',
+      '    });',
+      '    console.log("INJECTED");',
+      '',
+      '    if (config.autoSubmit) {',
+      '      await sleep(1000);',
+      '      await Runtime.evaluate({',
+      '        expression: "(function(){var b=document.querySelector(\'button[type=submit]\')||document.querySelector(\'input[type=submit]\')||Array.from(document.querySelectorAll(\'button\')).find(function(x){return x.textContent.toLowerCase().includes(\'submit\')||x.textContent.toLowerCase().includes(\'verify\')||x.textContent.toLowerCase().includes(\'check\')});if(b)b.click()})()"',
+      '      });',
+      '      console.log("SUBMITTED");',
+      '    }',
+      '',
+      '    await sleep(3000);',
+      '    const successRes = await Runtime.evaluate({',
+      '      expression: "(function(){var b=document.body.innerText.toLowerCase();if(b.includes(\'captcha is passed successfully\')||b.includes(\'success\'))return{success:true};var e=document.querySelector(\'.alert-success,[class*=success]\');if(e)return{success:true,message:e.textContent};return{success:null}})()",',
+      '      returnByValue: true',
+      '    });',
+      '',
+      '    await client.close();',
+      '    console.log("RESULT:", JSON.stringify(successRes.result.value));',
+      '    process.exit(successRes.result.value && successRes.result.value.success ? 0 : 1);',
+      '',
+      '  } catch (err) {',
+      '    console.error("ERROR:", err.message);',
+      '    process.exit(1);',
+      '  }',
+      '})();'
+    ].join('\n');
+
+    // Write the solver script
+    await this.exec(shell, `cat > /tmp/td-captcha-solver.js << 'CAPTCHA_SOLVER_EOF'
+${solverScript}
+CAPTCHA_SOLVER_EOF`, 10000, true);
+
+    // Run the solver (capture output even on failure)
+    let result;
+    try {
+      result = await this.exec(
+        shell,
+        'NODE_PATH=/usr/lib/node_modules node /tmp/td-captcha-solver.js 2>&1; echo "EXIT_CODE:$?"',
+        timeout + 30000
+      );
+    } catch (err) {
+      // If exec throws, try to get output from the error
+      result = err.message || err.toString();
+      if (err.responseData && err.responseData.stdout) {
+        result = err.responseData.stdout;
+      }
+    }
+
+    const tokenMatch = result.match(/TOKEN:\s*(\S+)/);
+    const success = result.includes('"success":true');
+    const hasError = result.includes('ERROR:');
+
+    if (hasError && !success) {
+      const errorMatch = result.match(/ERROR:\s*(.+)/);
+      throw new Error(`[captcha] ${errorMatch ? errorMatch[1] : 'Unknown error'}\nOutput: ${result}`);
+    }
+
+    return {
+      success,
+      message: success ? 'Captcha solved successfully' : 'Captcha solving failed',
+      token: tokenMatch ? tokenMatch[1] : null,
+      output: result
+    };
   }
 
   /**
