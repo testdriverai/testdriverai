@@ -37,16 +37,22 @@ class InitCommand extends BaseCommand {
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, "utf8");
       if (envContent.includes("TD_API_KEY=")) {
-        console.log(chalk.gray("\n  API key already configured in .env, skipping...\n"));
+        console.log(
+          chalk.gray("\n  API key already configured in .env, skipping...\n"),
+        );
         return;
       }
     }
 
     console.log(chalk.cyan("  Setting up your TestDriver API key...\n"));
-    console.log(chalk.gray("  Get your API key from: https://console.testdriver.ai/team"));
+    console.log(
+      chalk.gray("  Get your API key from: https://console.testdriver.ai/team"),
+    );
 
     // Ask if user wants to open the browser
-    const shouldOpen = await this.askYesNo("  Open API keys page in browser? (Y/n): ");
+    const shouldOpen = await this.askYesNo(
+      "  Open API keys page in browser? (Y/n): ",
+    );
     if (shouldOpen) {
       try {
         // Dynamic import for ES module
@@ -54,12 +60,16 @@ class InitCommand extends BaseCommand {
         await open("https://console.testdriver.ai/team");
         console.log(chalk.gray("  Opening browser...\n"));
       } catch (error) {
-        console.log(chalk.yellow("  ⚠️  Could not open browser automatically\n"));
+        console.log(
+          chalk.yellow("  ⚠️  Could not open browser automatically\n"),
+        );
       }
     }
 
     // Prompt for API key with hidden input
-    const apiKey = await this.promptHidden("  Enter your API key (input will be hidden): ");
+    const apiKey = await this.promptHidden(
+      "  Enter your API key (input will be hidden): ",
+    );
 
     if (apiKey && apiKey.trim()) {
       // Save to .env
@@ -70,7 +80,11 @@ class InitCommand extends BaseCommand {
       fs.writeFileSync(envPath, envContent + `TD_API_KEY=${apiKey.trim()}\n`);
       console.log(chalk.green("\n  ✓ API key saved to .env\n"));
     } else {
-      console.log(chalk.yellow("\n  ⚠️  No API key entered. You can add it later to .env:\n"));
+      console.log(
+        chalk.yellow(
+          "\n  ⚠️  No API key entered. You can add it later to .env:\n",
+        ),
+      );
       console.log(chalk.gray("     TD_API_KEY=your_api_key\n"));
     }
   }
@@ -81,7 +95,7 @@ class InitCommand extends BaseCommand {
   async promptHidden(question) {
     return new Promise((resolve) => {
       process.stdout.write(question);
-      
+
       const stdin = process.stdin;
       const wasRaw = stdin.isRaw;
       stdin.setRawMode(true);
@@ -131,7 +145,9 @@ class InitCommand extends BaseCommand {
       rl.question(question, (answer) => {
         rl.close();
         const normalized = answer.toLowerCase().trim();
-        resolve(normalized === "" || normalized === "y" || normalized === "yes");
+        resolve(
+          normalized === "" || normalized === "y" || normalized === "yes",
+        );
       });
     });
   }
@@ -153,17 +169,20 @@ class InitCommand extends BaseCommand {
         scripts: {
           test: "vitest run",
           "test:watch": "vitest",
-          "test:ui": "vitest --ui"
+          "test:ui": "vitest --ui",
         },
         keywords: ["testdriver", "testing", "e2e"],
         author: "",
         license: "ISC",
         engines: {
-          node: ">=20.19.0"
-        }
+          node: ">=20.19.0",
+        },
       };
 
-      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
+      fs.writeFileSync(
+        packageJsonPath,
+        JSON.stringify(packageJson, null, 2) + "\n",
+      );
       console.log(chalk.green(`  Created package.json`));
     } else {
       console.log(chalk.gray("  package.json already exists, skipping..."));
@@ -249,7 +268,7 @@ test('should login and add item to cart', async (context) => {
   await cartButton.click();
 
   // Verify item in cart
-  const result = await testdriver.assert('TestDriver Hat is in the cart');
+  const result = await testdriver.assert('There is an item in the cart');
   expect(result).toBeTruthy();
   
 });
@@ -283,7 +302,6 @@ export default defineConfig({
       fs.writeFileSync(configFile, configContent);
       console.log(chalk.green(`  Created config file: ${configFile}`));
     }
-
   }
 
   /**
@@ -387,10 +405,13 @@ jobs:
     console.log(chalk.cyan("\n  Installing dependencies...\n"));
 
     try {
-      execSync("npm install -D vitest testdriverai@beta && npm install dotenv", {
-        cwd: process.cwd(),
-        stdio: "inherit"
-      });
+      execSync(
+        "npm install -D vitest testdriverai@beta && npm install dotenv",
+        {
+          cwd: process.cwd(),
+          stdio: "inherit",
+        },
+      );
       console.log(chalk.green("\n  Dependencies installed successfully!"));
     } catch (error) {
       console.log(
@@ -410,10 +431,16 @@ jobs:
     console.log(chalk.cyan("Next steps:\n"));
     console.log("  1. Run your tests:");
     console.log(chalk.gray("     npx vitest run\n"));
-    console.log("  2. For CI/CD, add TD_API_KEY to your GitHub repository secrets");
-    console.log(chalk.gray("     Settings → Secrets → Actions → New repository secret\n"));
     console.log(
-      chalk.cyan("Learn more at https://docs.testdriver.ai/v7/getting-started/\n"),
+      "  2. For CI/CD, add TD_API_KEY to your GitHub repository secrets",
+    );
+    console.log(
+      chalk.gray("     Settings → Secrets → Actions → New repository secret\n"),
+    );
+    console.log(
+      chalk.cyan(
+        "Learn more at https://docs.testdriver.ai/v7/getting-started/\n",
+      ),
     );
   }
 }
