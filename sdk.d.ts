@@ -216,7 +216,7 @@ export interface TestDriverOptions {
   /** Sandbox resolution (default: '1366x768') */
   resolution?: string;
   /** Operating system for the sandbox (default: 'linux') */
-  os?: 'windows' | 'linux';
+  os?: "windows" | "linux";
   /** Enable analytics tracking (default: true) */
   analytics?: boolean;
   /** Enable console logging output (default: true) */
@@ -247,16 +247,18 @@ export interface TestDriverOptions {
   /** Enable/disable Dashcam video recording (default: true) */
   dashcam?: boolean;
   /** Redraw configuration for screen change detection */
-  redraw?: boolean | {
-    /** Enable redraw detection (default: true) */
-    enabled?: boolean;
-    /** Pixel difference threshold for redraw detection */
-    diffThreshold?: number;
-    /** Enable screen redraw detection */
-    screenRedraw?: boolean;
-    /** Enable network activity monitoring */
-    networkMonitor?: boolean;
-  };
+  redraw?:
+    | boolean
+    | {
+        /** Enable redraw detection (default: true) */
+        enabled?: boolean;
+        /** Pixel difference threshold for redraw detection */
+        diffThreshold?: number;
+        /** Enable screen redraw detection */
+        screenRedraw?: boolean;
+        /** Enable network activity monitoring */
+        networkMonitor?: boolean;
+      };
   /** @deprecated Use redraw.diffThreshold instead */
   redrawThreshold?: number | object;
   /** Additional environment variables */
@@ -277,7 +279,7 @@ export interface ConnectOptions {
   /** EC2 instance type for sandbox (e.g., 'i3.metal') */
   sandboxInstance?: string;
   /** Operating system for the sandbox (default: 'linux') */
-  os?: 'windows' | 'linux';
+  os?: "windows" | "linux";
   /** Run in headless mode (default: false) */
   headless?: boolean;
   /** Reuse recent connection if available (default: true) */
@@ -496,6 +498,36 @@ export interface ExecOptions {
   timeout?: number;
   /** Suppress output */
   silent?: boolean;
+}
+
+/** Options for captcha command */
+export interface CaptchaOptions {
+  /** 2captcha API key (required) */
+  apiKey: string;
+  /** Override auto-detected sitekey */
+  sitekey?: string;
+  /** Captcha type: 'recaptcha_v2', 'recaptcha_v3', 'hcaptcha', 'turnstile' */
+  type?: string;
+  /** reCAPTCHA v3 action (default: 'verify') */
+  action?: string;
+  /** Whether to auto-submit the form (default: true) */
+  autoSubmit?: boolean;
+  /** Polling interval in ms for 2captcha (default: 5000) */
+  pollInterval?: number;
+  /** Max time in ms to wait for solution (default: 120000) */
+  timeout?: number;
+}
+
+/** Result of captcha solving */
+export interface CaptchaResult {
+  /** Whether the captcha was solved successfully */
+  success: boolean;
+  /** Success/error message */
+  message: string;
+  /** The solved captcha token */
+  token: string | null;
+  /** Raw output from the solver script */
+  output: string;
 }
 
 /**
@@ -800,7 +832,7 @@ export default class TestDriverSDK {
   /**
    * The operating system of the sandbox
    */
-  readonly os: 'windows' | 'linux';
+  readonly os: "windows" | "linux";
 
   /**
    * Provision API for launching applications
@@ -844,7 +876,7 @@ export default class TestDriverSDK {
    */
   getLastSandboxId(): {
     sandboxId: string | null;
-    os: 'windows' | 'linux';
+    os: "windows" | "linux";
     ami: string | null;
     instanceType: string | null;
     timestamp: string | null;
@@ -879,7 +911,10 @@ export default class TestDriverSDK {
    * await element.click();
    */
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
-  find(description: string, options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number }): ChainableElementPromise;
+  find(
+    description: string,
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number },
+  ): ChainableElementPromise;
 
   /**
    * Find all elements matching a description
@@ -924,20 +959,23 @@ export default class TestDriverSDK {
    * Type text
    * @param text - Text to type
    * @param options - Options object with delay and secret
-   * 
+   *
    * @example
    * // Type regular text
    * await client.type('hello world');
-   * 
+   *
    * @example
    * // Type a password securely (not logged or stored)
    * await client.type(process.env.TD_PASSWORD, { secret: true });
-   * 
+   *
    * @example
    * // Type with custom delay
    * await client.type('slow typing', { delay: 100 });
    */
-  type(text: string | number, options?: { delay?: number; secret?: boolean }): Promise<void>;
+  type(
+    text: string | number,
+    options?: { delay?: number; secret?: boolean },
+  ): Promise<void>;
 
   /**
    * Wait for text to appear on screen
@@ -1081,7 +1119,10 @@ export default class TestDriverSDK {
    * @param direction - Direction to scroll (default: 'down')
    * @param options - Options object with amount
    */
-  scroll(direction?: ScrollDirection, options?: { amount?: number }): Promise<void>;
+  scroll(
+    direction?: ScrollDirection,
+    options?: { amount?: number },
+  ): Promise<void>;
 
   // Application Control
 
@@ -1111,6 +1152,12 @@ export default class TestDriverSDK {
    * @param description - What to extract
    */
   extract(description: string): Promise<string>;
+
+  /**
+   * Solve a captcha on the current page using 2captcha service
+   * @param options - Captcha solving options
+   */
+  captcha(options: CaptchaOptions): Promise<CaptchaResult>;
 
   // Code Execution
 

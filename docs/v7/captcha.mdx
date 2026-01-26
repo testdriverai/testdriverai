@@ -14,7 +14,7 @@ TestDriver can automatically solve captchas during your tests using the 2captcha
 
 ```javascript
 const result = await testdriver.captcha({
-  apiKey: '2CAPTCHA_API_KEY',
+  apiKey: process.env.TWOCAPTCHA_API_KEY,
 });
 
 console.log(result.success); // true
@@ -107,9 +107,21 @@ export TWOCAPTCHA_API_KEY=your_api_key_here
 Then use it in your tests:
 
 ```javascript
+```javascript
 const result = await testdriver.captcha({
   apiKey: process.env.TWOCAPTCHA_API_KEY,
 });
+```
+
+### GitHub Actions
+
+Add the key to your repository secrets and expose it in your workflow:
+
+```yaml
+- name: Run Tests
+  run: npm test
+  env:
+    TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
 ```
 
 ## How It Works
