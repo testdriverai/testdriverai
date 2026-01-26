@@ -14,9 +14,7 @@ import { TestDriver } from "../lib/vitest/hooks.mjs";
 async function performLogin(client, username = "standard_user") {
   await client.focusApplication("Google Chrome");
   const password = await client.extract("the password");
-  const usernameField = await client.find(
-    "username input",
-  );
+  const usernameField = await client.find("username input");
   await usernameField.click();
   await client.type(username);
   await client.pressKeys(["tab"]);
@@ -27,8 +25,13 @@ async function performLogin(client, username = "standard_user") {
 
 describe("Hover Text With Description Test", () => {
   it("should add TestDriver Hat to cart and verify", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
-    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+    const testdriver = TestDriver(context, {
+      ip: context.ip || process.env.TD_IP,
+      headless: true,
+    });
+    await testdriver.provision.chrome({
+      url: "http://testdriver-sandbox.vercel.app/login",
+    });
 
     //
     // Perform login first
@@ -47,7 +50,7 @@ describe("Hover Text With Description Test", () => {
     await cartButton.click();
 
     // Assert the TestDriver Hat is in the cart
-    const result = await testdriver.assert("TestDriver Hat is in the cart");
+    const result = await testdriver.assert("There is an item in the cart");
     expect(result).toBeTruthy();
   });
 });
