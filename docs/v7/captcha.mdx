@@ -1,8 +1,16 @@
+---
+title: "captcha()"
+sidebarTitle: "captcha"
+description: "Solve captchas using 2captcha service"
+icon: "shield-check"
+---
+
 # Captcha Solving
 
-TestDriver can automatically solve captchas during your tests using the 2captcha service.
+TestDriver can automatically solve captchas during your tests using the 2captcha service. This feature works on both **Linux** and **Windows** sandboxes.
 
 ## Quick Start
+
 
 ```javascript
 const result = await testdriver.captcha({
@@ -136,5 +144,5 @@ Some sites validate tokens immediately. Make sure:
 
 ## Requirements
 
-- Chrome must be launched with remote debugging enabled (automatic on Linux sandboxes)
+- Chrome must be launched with remote debugging enabled (automatic on all sandboxes)
 - A valid 2captcha API key with sufficient balance
