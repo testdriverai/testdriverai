@@ -2327,7 +2327,7 @@ CAPTCHA_SOLVER_EOF`,
         // Set environment variable and run node on Windows
         result = await this.exec(
           shell,
-          `$env:TD_CAPTCHA_CONFIG_PATH='${configPath}'; $env:NODE_PATH=(npm root -g); node '${solverPath}' 2>&1 | Out-String; Write-Output "EXIT_CODE:$LASTEXITCODE"`,
+          `$env:NODE_PATH = (npm root -g).Trim(); $env:TD_CAPTCHA_CONFIG_PATH='${configPath}'; node '${solverPath}' 2>&1 | Out-String; Write-Output "EXIT_CODE:$LASTEXITCODE"`,
           timeout + 30000,
         );
       } else {

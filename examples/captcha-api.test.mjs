@@ -3,7 +3,7 @@
  * Clean, simple API for solving captchas
  */
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../../lib/vitest/hooks.mjs";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 const TWOCAPTCHA_API_KEY = process.env.TWOCAPTCHA_API_KEY;
 
