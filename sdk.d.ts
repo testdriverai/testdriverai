@@ -13,7 +13,7 @@ export type ClickAction =
 export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
-export type ExecLanguage = "js" | "pwsh";
+export type ExecLanguage = "js" | "pwsh" | "sh";
 export type KeyboardKey =
   | "\t"
   | "\n"
@@ -216,7 +216,7 @@ export interface TestDriverOptions {
   /** Sandbox resolution (default: '1366x768') */
   resolution?: string;
   /** Operating system for the sandbox (default: 'linux') */
-  os?: 'windows' | 'linux';
+  os?: "windows" | "linux";
   /** Enable analytics tracking (default: true) */
   analytics?: boolean;
   /** Enable console logging output (default: true) */
@@ -242,19 +242,23 @@ export interface TestDriverOptions {
   sandboxInstance?: string;
   /** Cache key for element finding operations. If provided, enables caching tied to this key */
   cacheKey?: string;
-  /** Reconnect to the last used sandbox (throws error if no last sandbox exists) */
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
+  /** Enable/disable Dashcam video recording (default: true) */
+  dashcam?: boolean;
   /** Redraw configuration for screen change detection */
-  redraw?: boolean | {
-    /** Enable redraw detection (default: true) */
-    enabled?: boolean;
-    /** Pixel difference threshold for redraw detection */
-    diffThreshold?: number;
-    /** Enable screen redraw detection */
-    screenRedraw?: boolean;
-    /** Enable network activity monitoring */
-    networkMonitor?: boolean;
-  };
+  redraw?:
+    | boolean
+    | {
+        /** Enable redraw detection (default: true) */
+        enabled?: boolean;
+        /** Pixel difference threshold for redraw detection */
+        diffThreshold?: number;
+        /** Enable screen redraw detection */
+        screenRedraw?: boolean;
+        /** Enable network activity monitoring */
+        networkMonitor?: boolean;
+      };
   /** @deprecated Use redraw.diffThreshold instead */
   redrawThreshold?: number | object;
   /** Additional environment variables */
@@ -266,7 +270,7 @@ export interface ConnectOptions {
   sandboxId?: string;
   /** Force creation of a new sandbox */
   newSandbox?: boolean;
-  /** Reconnect to the last used sandbox (throws error if no last sandbox exists) */
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
   /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
@@ -275,7 +279,7 @@ export interface ConnectOptions {
   /** EC2 instance type for sandbox (e.g., 'i3.metal') */
   sandboxInstance?: string;
   /** Operating system for the sandbox (default: 'linux') */
-  os?: 'windows' | 'linux';
+  os?: "windows" | "linux";
   /** Run in headless mode (default: false) */
   headless?: boolean;
   /** Reuse recent connection if available (default: true) */
@@ -494,6 +498,36 @@ export interface ExecOptions {
   timeout?: number;
   /** Suppress output */
   silent?: boolean;
+}
+
+/** Options for captcha command */
+export interface CaptchaOptions {
+  /** 2captcha API key (required) */
+  apiKey: string;
+  /** Override auto-detected sitekey */
+  sitekey?: string;
+  /** Captcha type: 'recaptcha_v2', 'recaptcha_v3', 'hcaptcha', 'turnstile' */
+  type?: string;
+  /** reCAPTCHA v3 action (default: 'verify') */
+  action?: string;
+  /** Whether to auto-submit the form (default: true) */
+  autoSubmit?: boolean;
+  /** Polling interval in ms for 2captcha (default: 5000) */
+  pollInterval?: number;
+  /** Max time in ms to wait for solution (default: 120000) */
+  timeout?: number;
+}
+
+/** Result of captcha solving */
+export interface CaptchaResult {
+  /** Whether the captcha was solved successfully */
+  success: boolean;
+  /** Success/error message */
+  message: string;
+  /** The solved captcha token */
+  token: string | null;
+  /** Raw output from the solver script */
+  output: string;
 }
 
 /**
@@ -798,7 +832,7 @@ export default class TestDriverSDK {
   /**
    * The operating system of the sandbox
    */
-  readonly os: 'windows' | 'linux';
+  readonly os: "windows" | "linux";
 
   /**
    * Provision API for launching applications
@@ -809,6 +843,11 @@ export default class TestDriverSDK {
    * Dashcam API for screen recording
    */
   readonly dashcam: DashcamAPI;
+
+  /**
+   * Whether Dashcam recording is enabled (default: true)
+   */
+  readonly dashcamEnabled: boolean;
 
   /**
    * Wait for the sandbox to be ready
@@ -837,7 +876,7 @@ export default class TestDriverSDK {
    */
   getLastSandboxId(): {
     sandboxId: string | null;
-    os: 'windows' | 'linux';
+    os: "windows" | "linux";
     ami: string | null;
     instanceType: string | null;
     timestamp: string | null;
@@ -872,7 +911,10 @@ export default class TestDriverSDK {
    * await element.click();
    */
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
-  find(description: string, options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number }): ChainableElementPromise;
+  find(
+    description: string,
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number },
+  ): ChainableElementPromise;
 
   /**
    * Find all elements matching a description
@@ -917,20 +959,23 @@ export default class TestDriverSDK {
    * Type text
    * @param text - Text to type
    * @param options - Options object with delay and secret
-   * 
+   *
    * @example
    * // Type regular text
    * await client.type('hello world');
-   * 
+   *
    * @example
    * // Type a password securely (not logged or stored)
    * await client.type(process.env.TD_PASSWORD, { secret: true });
-   * 
+   *
    * @example
    * // Type with custom delay
    * await client.type('slow typing', { delay: 100 });
    */
-  type(text: string | number, options?: { delay?: number; secret?: boolean }): Promise<void>;
+  type(
+    text: string | number,
+    options?: { delay?: number; secret?: boolean },
+  ): Promise<void>;
 
   /**
    * Wait for text to appear on screen
@@ -1074,7 +1119,10 @@ export default class TestDriverSDK {
    * @param direction - Direction to scroll (default: 'down')
    * @param options - Options object with amount
    */
-  scroll(direction?: ScrollDirection, options?: { amount?: number }): Promise<void>;
+  scroll(
+    direction?: ScrollDirection,
+    options?: { amount?: number },
+  ): Promise<void>;
 
   // Application Control
 
@@ -1105,6 +1153,12 @@ export default class TestDriverSDK {
    */
   extract(description: string): Promise<string>;
 
+  /**
+   * Solve a captcha on the current page using 2captcha service
+   * @param options - Captcha solving options
+   */
+  captcha(options: CaptchaOptions): Promise<CaptchaResult>;
+
   // Code Execution
 
   /**
@@ -1129,26 +1183,20 @@ export default class TestDriverSDK {
   // Utility Methods
 
   /**
-   * Capture a screenshot of the current screen
-   * @param scale - Scale factor for the screenshot (default: 1 = original size)
-   * @param silent - Whether to suppress logging (default: false)
-   * @param mouse - Whether to include mouse cursor (default: false)
-   * @returns Base64 encoded PNG screenshot
+   * Capture a screenshot of the current screen and save it to .testdriver/screenshots
+   * @param filename - Custom filename (without .png extension)
+   * @returns The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot
-   * const screenshot = await client.screenshot();
-   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * // Capture a screenshot with auto-generated filename
+   * const screenshotPath = await testdriver.screenshot();
    *
    * @example
-   * // Capture with mouse cursor visible
-   * const screenshot = await client.screenshot(1, false, true);
+   * // Capture with custom filename
+   * const screenshotPath = await testdriver.screenshot("login-page");
+   * // Saves to: .testdriver/screenshots/<test>/login-page.png
    */
-  screenshot(
-    scale?: number,
-    silent?: boolean,
-    mouse?: boolean,
-  ): Promise<string>;
+  screenshot(filename?: string): Promise<string>;
 
   /**
    * Wait for specified time

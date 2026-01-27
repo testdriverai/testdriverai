@@ -202,6 +202,41 @@ The `timeout` option:
 - Logs progress during polling
 - Returns the element (check `element.found()` if not throwing on failure)
 
+## Zoom Mode for Crowded UIs
+
+When dealing with many similar icons or elements clustered together (like browser toolbars), enable `zoom` mode for better precision:
+
+```javascript
+// Enable zoom for better precision in crowded UIs
+const extensionsBtn = await testdriver.find('extensions puzzle icon in Chrome toolbar', { zoom: true });
+await extensionsBtn.click();
+```
+
+### How Zoom Mode Works
+
+1. **Phase 1**: AI identifies the approximate location of the element
+2. **Phase 2**: A 30% crop of the screen is created around that location
+3. **Phase 3**: AI performs precise location on the zoomed/cropped image
+4. **Result**: Coordinates are converted back to absolute screen position
+
+This two-phase approach gives the AI a higher-resolution view of the target area, improving accuracy when multiple similar elements are close together.
+
+<Tip>
+  Use `zoom: true` when:
+  - Clicking small icons in toolbars
+  - Selecting from a grid of similar items
+  - Targeting elements in dense UI areas
+  - The default locate is clicking the wrong similar element
+</Tip>
+
+```javascript
+// Without zoom - may click wrong icon in toolbar
+const icon = await testdriver.find('settings icon');
+
+// With zoom - better precision for crowded areas
+const icon = await testdriver.find('settings icon', { zoom: true });
+```
+
 ### Manual Polling (Alternative)
 
 If you need custom polling logic:
@@ -299,7 +334,7 @@ describe('Element Finding', () => {
   beforeAll(async () => {
     client = new TestDriver(process.env.TD_API_KEY);
     await testdriver.auth();
-    await testdriver.connect({ newSandbox: true });
+    await testdriver.connect();
   });
 
   afterAll(async () => {

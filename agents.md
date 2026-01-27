@@ -41,8 +41,8 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("My Test Suite", () => {
   it("should do something", async (context) => {
-    // Initialize TestDriver with options
-    const testdriver = TestDriver(context, { newSandbox: true, headless: false });
+    // Initialize TestDriver
+    const testdriver = TestDriver(context);
     
     // Start with provision - this launches the sandbox and browser
     await testdriver.provision.chrome({
@@ -88,11 +88,11 @@ The SDK has TypeScript types in `sdk.d.ts`. Key methods:
 |--------|---------|
 | `find(description)` | Find element by natural language |
 | `findAll(description)` | Find all matching elements |
-| `assert(assertion)` | AI-powered assertion |
-| `type(text)` | Type text |
+| `assert(assertion)` | AI-powered assertion || `screenshot()` | Capture and save screenshot locally || `type(text)` | Type text |
 | `pressKeys([keys])` | Press keyboard keys |
 | `scroll(direction)` | Scroll the page |
 | `exec(language, code)` | Execute code in sandbox |
+| `screenshot(scale, silent, mouse)` | Capture screenshot as base64 PNG |
 | `ai(task)` | AI exploratory loop (see note below) |
 
 ### About `ai()` - Use for Exploration, Not Final Tests
@@ -146,6 +146,39 @@ await element.mouseUp();      // release mouse
 element.found();              // check if found (boolean)
 ```
 
+### Screenshots for Debugging
+
+**Use `screenshot()` liberally during development** to see exactly what the sandbox screen looks like. Screenshots are saved locally and organized by test file.
+
+```javascript
+// Capture a screenshot - saved to .testdriver/screenshots/<test-file>/
+const screenshotPath = await testdriver.screenshot();
+console.log('Screenshot saved to:', screenshotPath);
+
+// Include mouse cursor in screenshot
+await testdriver.screenshot(1, false, true);
+```
+
+**When to use screenshots:**
+- After `provision.chrome()` to verify the page loaded correctly
+- Before/after clicking elements to see state changes
+- When a `find()` fails to see what the AI is actually seeing
+- Before `assert()` calls to debug assertion failures
+- When tests behave unexpectedly
+
+**Screenshot file organization:**
+```
+.testdriver/
+  screenshots/
+    login.test/           # Folder per test file
+      screenshot-1737633600000.png
+      screenshot-1737633605000.png
+    checkout.test/
+      screenshot-1737633700000.png
+```
+
+> **Note:** The screenshot folder for each test file is automatically cleared when the test starts, so you only see screenshots from the most recent run.
+
 ## Best Workflow: Two-File Pattern
 
 **The most efficient workflow for building tests uses two files.** This prevents having to restart from scratch when experimenting with new steps.
@@ -175,10 +208,7 @@ describe("Setup State", () => {
   });
 
   it("should set up the application state", async (context) => {
-    const testdriver = TestDriver(context, { 
-      newSandbox: true, 
-      headless: false 
-    });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({
       url: 'https://your-app.com/login',
@@ -219,8 +249,6 @@ describe("Experiment", () => {
 
   it("should continue from existing state", async (context) => {
     const testdriver = TestDriver(context, { 
-      newSandbox: true, 
-      headless: false,
       reconnect: true  // ← Key: reconnects to last sandbox
     });
     
@@ -241,6 +269,8 @@ describe("Experiment", () => {
 });
 ```
 
+> ⚠️ **NEVER REMOVE `reconnect: true`**: If a test file already has `reconnect: true`, do NOT remove it. This option is intentional and removing it will break the two-file workflow. Only remove `reconnect: true` when explicitly combining files into a final standalone test.
+
 ### Step 4: Iterate in Experiment File
 
 - Run experiment, see output, fix issues
@@ -260,12 +290,14 @@ vitest run tests/experiment.test.mjs
 
 ### After Experimentation: Combine and Rename
 
-**IMPORTANT:** Once the test is working, combine both files into a single, properly-named test file:
+**IMPORTANT:** Once the test is working AND the user explicitly asks to combine/finalize the test, combine both files into a single, properly-named test file:
 
 1. **Merge the code** - Copy the working steps from `experiment.test.mjs` into `setup.test.mjs`
-2. **Remove reconnect options** - Delete `reconnect: true` since the final test runs standalone
+2. **Remove reconnect options** - Delete `reconnect: true` since the final test runs standalone (ONLY do this when creating the final combined test - never remove it from an existing experiment file!)
 3. **Rename the file** - Give it a meaningful name like `login-flow.test.mjs` or `checkout-process.test.mjs`
 4. **Delete the experiment file** - Clean up `experiment.test.mjs`
+
+> ⚠️ **WARNING FOR AI AGENTS**: Do NOT remove `reconnect: true` from any existing test file unless you are explicitly combining files into a final test. If a test has `reconnect: true`, it is there intentionally.
 
 ```javascript
 // Final combined test: login-flow.test.mjs
@@ -274,7 +306,7 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("Login Flow", () => {
   it("should log in and open settings", async (context) => {
-    const testdriver = TestDriver(context, { newSandbox: true, headless: false });
+    const testdriver = TestDriver(context);
     
     await testdriver.provision.chrome({ url: 'https://your-app.com/login' });
 
@@ -306,8 +338,11 @@ describe("Login Flow", () => {
 ```javascript
 // Development workflow example
 it("should incrementally build test", async (context) => {
-  const testdriver = TestDriver(context, { newSandbox: true });
+  const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: 'https://example.com' });
+
+  // Take a screenshot to see the initial state
+  await testdriver.screenshot();
 
   // Step 1: Find and inspect
   const element = await testdriver.find("Some button");
@@ -317,6 +352,9 @@ it("should incrementally build test", async (context) => {
   
   // Step 2: Interact
   await element.click();
+  
+  // Screenshot after interaction to see the result
+  await testdriver.screenshot();
   
   // Step 3: Assert and log
   const result = await testdriver.assert("Something happened");
@@ -383,6 +421,20 @@ const output = await testdriver.exec("sh", "ls -la", 5000);
 const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 ```
 
+### Capturing Screenshots
+```javascript
+// Capture a screenshot and save to file
+const screenshot = await testdriver.screenshot();
+const filepath = 'screenshot.png';
+fs.writeFileSync(filepath, Buffer.from(screenshot, 'base64'));
+console.log('Screenshot saved to:', filepath);
+
+// Capture with mouse cursor visible
+const screenshotWithMouse = await testdriver.screenshot(1, false, true);
+fs.writeFileSync('screenshot-with-mouse.png', Buffer.from(screenshotWithMouse, 'base64'));
+console.log('Screenshot with mouse saved to: screenshot-with-mouse.png');
+```
+
 ## Tips for Agents
 
 1. **Always check `sdk.d.ts`** for method signatures and types
@@ -391,3 +443,13 @@ const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 4. **Log element properties** to understand what the AI sees
 5. **Use `assert()` with specific, descriptive natural language**
 6. **Start simple** - get one step working before adding more
+7. **Take screenshots liberally** - use `await testdriver.screenshot()` after key steps to debug what the sandbox actually shows. Check `.testdriver/screenshots/<test-file>/` to review them.
+8. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
+   ```json
+   // eslint.config.js (for TypeScript projects)
+   {
+     "rules": {
+       "@typescript-eslint/no-floating-promises": "error"
+     }
+   }
+   ```

@@ -13,12 +13,18 @@ const createSystem = (emitter, sandbox, config) => {
     });
 
     if (!base64) {
-      console.error("Failed to take screenshot");
-    } else {
-      let image = Buffer.from(base64, "base64");
-      fs.writeFileSync(options.filename, image);
-      return { filename: options.filename };
+      throw new Error("Failed to take screenshot: sandbox returned empty data");
     }
+    
+    let image = Buffer.from(base64, "base64");
+    
+    // Verify we got actual image data (PNG header starts with these bytes)
+    if (image.length < 100) {
+      throw new Error(`Failed to take screenshot: received only ${image.length} bytes`);
+    }
+    
+    fs.writeFileSync(options.filename, image);
+    return { filename: options.filename };
   };
 
   let primaryDisplay = null;
@@ -57,6 +63,11 @@ const createSystem = (emitter, sandbox, config) => {
 
       // Load the screenshot image with Jimp
       let image = await Jimp.read(step1);
+      
+      // Validate the image was loaded correctly (not a 1x1 or tiny placeholder)
+      if (image.getWidth() < 10 || image.getHeight() < 10) {
+        throw new Error(`Screenshot appears corrupted: got ${image.getWidth()}x${image.getHeight()} pixels`);
+      }
 
       // Resize the image
       image.resize(

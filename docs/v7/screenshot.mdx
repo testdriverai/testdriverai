@@ -1,0 +1,140 @@
+---
+title: "screenshot()"
+sidebarTitle: "screenshot"
+description: "Capture and save screenshots during test execution"
+icon: "camera"
+---
+
+## Overview
+
+Capture a screenshot of the current screen and automatically save it to a local file. Screenshots are organized by test file for easy debugging and review.
+
+## Syntax
+
+```javascript
+const filePath = await testdriver.screenshot(filename)
+```
+
+## Parameters
+
+<ParamField path="filename" type="string" optional>
+  Custom filename for the screenshot (without .png extension). If not provided, a timestamp-based filename is generated automatically.
+</ParamField>
+
+## Returns
+
+`Promise<string>` - The absolute file path where the screenshot was saved
+
+## File Organization
+
+Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>/` in your project root:
+
+```
+.testdriver/
+  screenshots/
+    login.test/
+      screenshot-1737633600000.png
+      login-page.png
+    checkout.test/
+      screenshot-1737633700000.png
+```
+
+<Note>
+  The screenshot folder for each test file is automatically cleared when the test starts. This ensures you only see screenshots from the most recent test run.
+</Note>
+
+## Examples
+
+### Basic Screenshot
+
+```javascript
+// Capture a screenshot with auto-generated filename
+const screenshotPath = await testdriver.screenshot();
+console.log('Screenshot saved to:', screenshotPath);
+```
+
+### Custom Filename
+
+```javascript
+// Save with a descriptive filename
+await testdriver.screenshot("login-page");
+// Saves to: .testdriver/screenshots/<test>/login-page.png
+
+await testdriver.screenshot("after-click");
+// Saves to: .testdriver/screenshots/<test>/after-click.png
+```
+
+### Debugging with Screenshots
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("Login Flow", () => {
+  it("should log in successfully", async (context) => {
+    const testdriver = TestDriver(context);
+    
+    await testdriver.provision.chrome({
+      url: 'https://myapp.com/login',
+    });
+
+    // Capture initial state
+    await testdriver.screenshot();
+
+    // Fill in login form
+    const emailInput = await testdriver.find("email input");
+    await emailInput.click();
+    await testdriver.type("user@example.com");
+
+    // Capture state after typing
+    await testdriver.screenshot();
+
+    const passwordInput = await testdriver.find("password input");
+    await passwordInput.click();
+    await testdriver.type("password123");
+
+    // Capture before clicking login
+    await testdriver.screenshot();
+
+    const loginButton = await testdriver.find("Login button");
+    await loginButton.click();
+
+    // Capture after login attempt
+    await testdriver.screenshot();
+
+    const result = await testdriver.assert("dashboard is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use screenshots for debugging flaky tests">
+    When a test fails intermittently, add screenshots at key steps to capture the actual screen state. This helps identify timing issues or unexpected UI states.
+  </Accordion>
+
+  <Accordion title="Capture before assertions">
+    Take a screenshot before making assertions. If the assertion fails, you'll have a visual record of what the screen looked like.
+    
+    ```javascript
+    await testdriver.screenshot();
+    const result = await testdriver.assert("checkout button is visible");
+    ```
+  </Accordion>
+
+  <Accordion title="Add to .gitignore">
+    Add `.testdriver/screenshots/` to your `.gitignore` to avoid committing screenshots to version control:
+    
+    ```
+    # .gitignore
+    .testdriver/screenshots/
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related
+
+- [assert()](/v7/assert) - Make AI-powered assertions
+- [find()](/v7/find) - Locate elements on screen

@@ -8,8 +8,8 @@
  * Run reconnect-signin.test.mjs within 2 minutes of this test completing.
  * 
  * Usage:
- *   1. npm test -- test/testdriver/reconnect-provision.test.mjs
- *   2. (within 2 minutes) npm test -- test/testdriver/reconnect-signin.test.mjs
+ *   1. npm test -- examples/reconnect-provision.test.mjs
+ *   2. (within 2 minutes) examples/reconnect-signin.test.mjs
  */
 
 import { afterAll, describe, expect, it } from "vitest";

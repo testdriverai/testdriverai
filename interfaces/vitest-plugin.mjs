@@ -185,22 +185,87 @@ export function getPluginState() {
 
 // Export API helper functions for direct use from tests
 export async function authenticateWithApiKey(apiKey, apiRoot) {
+  if (!apiKey) {
+    const error = new Error(
+      "TD_API_KEY is not configured. Get your API key at https://console.testdriver.ai/team"
+    );
+    error.code = "MISSING_API_KEY";
+    error.isAuthError = true;
+    throw error;
+  }
+
   const url = `${apiRoot}/auth/exchange-api-key`;
-  const response = await withTimeout(
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ apiKey }),
-    }),
-    10000,
-    "Authentication",
-  );
+  let response;
+
+  try {
+    response = await withTimeout(
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ apiKey }),
+      }),
+      15000,
+      "Authentication",
+    );
+  } catch (fetchError) {
+    // Network-level error (fetch failed entirely)
+    const networkError = new Error(
+      `Unable to reach TestDriver API at ${apiRoot}. ` +
+      "Check your internet connection and try again."
+    );
+    networkError.code = "NETWORK_ERROR";
+    networkError.isNetworkError = true;
+    networkError.originalError = fetchError;
+    throw networkError;
+  }
 
   if (!response.ok) {
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      // Response wasn't JSON, use empty object
+    }
+
+    // Invalid API key (401)
+    if (response.status === 401) {
+      const authError = new Error(
+        data.message ||
+        "Invalid API key. Please check your TD_API_KEY and try again. " +
+        "Get your API key at https://console.testdriver.ai/team"
+      );
+      authError.code = data.error || "INVALID_API_KEY";
+      authError.isAuthError = true;
+      throw authError;
+    }
+
+    // Server errors (5xx) - API is down or having issues
+    if (response.status >= 500) {
+      const serverError = new Error(
+        data.message ||
+        `TestDriver API is currently unavailable (HTTP ${response.status}). Please try again later.`
+      );
+      serverError.code = data.error || "API_UNAVAILABLE";
+      serverError.isServerError = true;
+      throw serverError;
+    }
+
+    // Rate limiting (429)
+    if (response.status === 429) {
+      const rateLimitError = new Error(
+        "Too many requests to TestDriver API. Please wait a moment and try again."
+      );
+      rateLimitError.code = "RATE_LIMITED";
+      rateLimitError.isRateLimitError = true;
+      throw rateLimitError;
+    }
+
+    // Other HTTP errors
     throw new Error(
-      `Authentication failed: ${response.status} ${response.statusText}`,
+      `Authentication failed: ${response.status} ${response.statusText}` +
+      (data.message ? ` - ${data.message}` : "")
     );
   }
 
@@ -641,7 +706,6 @@ class TestDriverReporter {
         startTime: pluginState.startTime,
       });
 
-      logger.info(`Test run created: ${pluginState.testRunId}`);
     } catch (error) {
       logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;

@@ -7,38 +7,48 @@ permissions:
 on:
   schedule:
     # Every day at midnight UTC
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch: # Allow manual trigger
 
 jobs:
   test-windows:
+    uses: ./.github/workflows/windows-self-hosted.yaml
+    secrets:
+      TD_API_KEY: ${{ secrets.TD_API_KEY }}
+      TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
+      TD_WEBSITE: ${{ secrets.TD_WEBSITE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  sentry-and-publish:
+    needs: test-windows
     runs-on: ubuntu-latest
-    
+    if: always()
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
 
-    - name: Install Sentry CLI
-      run: npm install -g @sentry/cli
+      - name: Report to Sentry Cron
+        run: |
+          sentry-cli monitors run testdriver-windows-acceptance -- echo "Windows tests completed"
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
-    - name: Run Windows tests with Sentry Cron monitoring
-      run: |
-        sentry-cli monitors run testdriver-windows-acceptance -- npx vitest run test/testdriver/*.test.mjs
-      env:
-        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        TD_OS: windows
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-windows
 
-    - name: Upload test results to Sentry Prevent
-      if: ${{ !cancelled() }}
-      uses: getsentry/prevent-action@v0
-      with:
-        token: ${{ secrets.SENTRY_PREVENT_TOKEN }}
+      - name: Upload test results to Sentry Prevent
+        if: ${{ !cancelled() }}
+        uses: getsentry/prevent-action@v0
+        with:
+          token: ${{ secrets.SENTRY_PREVENT_TOKEN }}
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-report.junit.xml
+          check_name: Test Results (Windows Scheduled)

@@ -38,7 +38,7 @@
 
 ## What the Test Does
 
-The workflow runs `test/testdriver/assert.test.mjs` which:
+The workflow runs `examples/assert.test.mjs` which:
 - Provisions a Chrome browser
 - Navigates to https://saucedemo.com
 - Performs login actions
@@ -72,7 +72,7 @@ Skipped: 0 ⏭️
 
 | Status | Test | File | Duration | Replay |
 |--------|------|------|----------|--------|
-| ✅ | Assert Test | `test/testdriver/assert.test.mjs` | 25.3s | [🎥 View](https://console.testdriver.ai/replay/...) |
+| ✅ | Assert Test | `examples/assert.test.mjs` | 25.3s | [🎥 View](https://console.testdriver.ai/replay/...) |
 
 ## 🎥 Dashcam Replays
 

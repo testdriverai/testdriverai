@@ -95,30 +95,125 @@ const createSDK = (emitter, config, sessionInstance) => {
   };
 
   const auth = async () => {
-    if (config["TD_API_KEY"]) {
-      const url = [config["TD_API_ROOT"], "auth/exchange-api-key"].join("/");
-      const c = {
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: {
-          apiKey: config["TD_API_KEY"],
-          version,
-        },
-      };
+    if (!config["TD_API_KEY"]) {
+      const error = new Error(
+        "TD_API_KEY is not configured. Get your API key at https://console.testdriver.ai/team"
+      );
+      error.code = "MISSING_API_KEY";
+      error.isAuthError = true;
+      throw error;
+    }
 
-      try {
-        let res = await axios(url, c);
+    const url = [config["TD_API_ROOT"], "auth/exchange-api-key"].join("/");
+    const c = {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 15000, // 15 second timeout for auth requests
+      data: {
+        apiKey: config["TD_API_KEY"],
+        version,
+      },
+    };
 
-        token = res.data.token;
-        return token;
-      } catch (error) {
-        outputError(error);
-        throw error; // Re-throw the error so calling code can handle it properly
-      }
+    try {
+      let res = await axios(url, c);
+
+      token = res.data.token;
+      return token;
+    } catch (error) {
+      // Classify the error for better user feedback
+      const classifiedError = classifyAuthError(error, config["TD_API_ROOT"]);
+      outputError(classifiedError);
+      throw classifiedError;
     }
   };
+
+  /**
+   * Classify authentication errors into user-friendly categories
+   * @param {Error} error - The original axios error
+   * @param {string} apiRoot - The API root URL for context
+   * @returns {Error} A classified error with code and helpful message
+   */
+  function classifyAuthError(error, apiRoot) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+
+    // Check for network-level errors (no response received)
+    if (!error.response) {
+      const networkError = new Error(
+        `Unable to reach TestDriver API at ${apiRoot}. ` +
+        getNetworkErrorHint(error.code)
+      );
+      networkError.code = "NETWORK_ERROR";
+      networkError.isNetworkError = true;
+      networkError.originalError = error;
+      return networkError;
+    }
+
+    // Invalid API key (401)
+    if (status === 401) {
+      const authError = new Error(
+        data?.message ||
+        "Invalid API key. Please check your TD_API_KEY and try again. " +
+        "Get your API key at https://console.testdriver.ai/team"
+      );
+      authError.code = data?.error || "INVALID_API_KEY";
+      authError.isAuthError = true;
+      authError.originalError = error;
+      return authError;
+    }
+
+    // Server errors (5xx) - API is down or having issues
+    if (status >= 500) {
+      const serverError = new Error(
+        data?.message ||
+        `TestDriver API is currently unavailable (HTTP ${status}). Please try again later.`
+      );
+      serverError.code = data?.error || "API_UNAVAILABLE";
+      serverError.isServerError = true;
+      serverError.originalError = error;
+      return serverError;
+    }
+
+    // Rate limiting (429)
+    if (status === 429) {
+      const rateLimitError = new Error(
+        "Too many requests to TestDriver API. Please wait a moment and try again."
+      );
+      rateLimitError.code = "RATE_LIMITED";
+      rateLimitError.isRateLimitError = true;
+      rateLimitError.originalError = error;
+      return rateLimitError;
+    }
+
+    // Other HTTP errors - return with context
+    const genericError = new Error(
+      `Authentication failed: ${status} ${error.response?.statusText || "Unknown error"}`
+    );
+    genericError.code = "AUTH_FAILED";
+    genericError.originalError = error;
+    return genericError;
+  }
+
+  /**
+   * Get a helpful hint based on the network error code
+   * @param {string} code - The error code (ECONNREFUSED, ETIMEDOUT, etc.)
+   * @returns {string} A helpful message for the user
+   */
+  function getNetworkErrorHint(code) {
+    const hints = {
+      ECONNREFUSED: "The server refused the connection. Check if the API is running.",
+      ETIMEDOUT: "The connection timed out. Check your internet connection.",
+      ENOTFOUND: "Could not resolve the hostname. Check your internet connection or DNS settings.",
+      ENETUNREACH: "Network is unreachable. Check your internet connection.",
+      ECONNRESET: "Connection was reset. This may be a temporary network issue.",
+      ERR_NETWORK: "A network error occurred. Check your internet connection.",
+      ECONNABORTED: "The request was aborted due to a timeout.",
+    };
+    return hints[code] || "Check your internet connection and try again.";
+  }
 
   const req = async (path, data, onChunk) => {
     // for each value of data, if it is empty remove it
@@ -219,6 +314,26 @@ const createSDK = (emitter, config, sessionInstance) => {
 
       return value;
     } catch (error) {
+      // Check for network-level errors (no response received)
+      if (!error.response) {
+        const networkError = new Error(
+          `Unable to reach TestDriver API at ${config["TD_API_ROOT"]}. ` +
+          getNetworkErrorHint(error.code)
+        );
+        networkError.code = "NETWORK_ERROR";
+        networkError.isNetworkError = true;
+        networkError.originalError = error;
+        networkError.path = path;
+        
+        emitter.emit(events.error.sdk, {
+          message: networkError.message,
+          code: networkError.code,
+          fullError: error,
+        });
+        
+        throw networkError;
+      }
+
       // Check if this is an API validation error with detailed problems
       if (error.response?.data?.problems) {
         const problems = error.response.data.problems;
@@ -238,6 +353,46 @@ const createSDK = (emitter, config, sessionInstance) => {
         });
         
         throw detailedError;
+      }
+
+      // Server errors (5xx) - API is down or having issues
+      const status = error.response?.status;
+      if (status >= 500) {
+        const serverError = new Error(
+          error.response?.data?.message ||
+          `TestDriver API is currently unavailable (HTTP ${status}). Please try again later.`
+        );
+        serverError.code = error.response?.data?.error || "API_UNAVAILABLE";
+        serverError.isServerError = true;
+        serverError.originalError = error;
+        serverError.path = path;
+        
+        emitter.emit(events.error.sdk, {
+          message: serverError.message,
+          code: serverError.code,
+          fullError: error,
+        });
+        
+        throw serverError;
+      }
+
+      // Rate limiting (429)
+      if (status === 429) {
+        const rateLimitError = new Error(
+          "Too many requests to TestDriver API. Please wait a moment and try again."
+        );
+        rateLimitError.code = "RATE_LIMITED";
+        rateLimitError.isRateLimitError = true;
+        rateLimitError.originalError = error;
+        rateLimitError.path = path;
+        
+        emitter.emit(events.error.sdk, {
+          message: rateLimitError.message,
+          code: rateLimitError.code,
+          fullError: error,
+        });
+        
+        throw rateLimitError;
       }
       
       outputError(error);

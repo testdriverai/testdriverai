@@ -19,13 +19,15 @@ function getCallerFilePath() {
     // Look for the first file that's not sdk.js, hooks.mjs, or node internals
     for (const callSite of stack) {
       const fileName = callSite.getFileName();
-      if (fileName && 
-          !fileName.includes('sdk.js') && 
-          !fileName.includes('hooks.mjs') &&
-          !fileName.includes('hooks.js') &&
-          !fileName.includes('node_modules') &&
-          !fileName.includes('node:internal') &&
-          fileName !== 'evalmachine.<anonymous>') {
+      if (
+        fileName &&
+        !fileName.includes("sdk.js") &&
+        !fileName.includes("hooks.mjs") &&
+        !fileName.includes("hooks.js") &&
+        !fileName.includes("node_modules") &&
+        !fileName.includes("node:internal") &&
+        fileName !== "evalmachine.<anonymous>"
+      ) {
         return fileName;
       }
     }
@@ -50,12 +52,12 @@ function getCallerFileHash() {
   try {
     // Handle file:// URLs by converting to file system path
     let fsPath = filePath;
-    if (filePath.startsWith('file://')) {
-      fsPath = filePath.replace('file://', '');
+    if (filePath.startsWith("file://")) {
+      fsPath = filePath.replace("file://", "");
     }
-    
-    const fileContent = fs.readFileSync(fsPath, 'utf-8');
-    const hash = crypto.createHash('sha256').update(fileContent).digest('hex');
+
+    const fileContent = fs.readFileSync(fsPath, "utf-8");
+    const hash = crypto.createHash("sha256").update(fileContent).digest("hex");
     // Return first 16 chars of hash for brevity
     return hash.substring(0, 16);
   } catch (error) {
@@ -298,7 +300,7 @@ class AIError extends Error {
     this.message += `\nTries: ${this.tries}/${this.maxTries}`;
     this.message += `\nDuration: ${this.duration}ms`;
     this.message += `\nTimestamp: ${this.timestamp}`;
-    
+
     if (this.cause) {
       this.message += `\nUnderlying error: ${this.cause.message}`;
     }
@@ -349,17 +351,21 @@ class Element {
     // Include response metadata if available
     if (this._response) {
       result.cache = {
-        hit: this._response.cacheHit || this._response.cache_hit || this._response.cached || false,
+        hit:
+          this._response.cacheHit ||
+          this._response.cache_hit ||
+          this._response.cached ||
+          false,
         strategy: this._response.cacheStrategy,
         createdAt: this._response.cacheCreatedAt,
         diffPercent: this._response.cacheDiffPercent,
         imageUrl: this._response.cachedImageUrl,
       };
-      
+
       result.similarity = this._response.similarity;
       result.confidence = this._response.confidence;
       result.selector = this._response.selector;
-      
+
       // Include AI response text if available
       if (this._response.response?.content?.[0]?.text) {
         result.aiResponse = this._response.response.content[0].text;
@@ -378,7 +384,7 @@ class Element {
    */
   async find(newDescription, options) {
     // Handle timeout/polling option
-    const timeout = typeof options === 'object' ? options?.timeout : null;
+    const timeout = typeof options === "object" ? options?.timeout : null;
     if (timeout && timeout > 0) {
       return this._findWithTimeout(newDescription, options, timeout);
     }
@@ -413,34 +419,47 @@ class Element {
       // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
       let cacheKey = null;
       let cacheThreshold = null;
-      
-      if (typeof options === 'number') {
+      let zoom = false; // Default to disabled, enable with zoom: true
+
+      if (typeof options === "number") {
         // Legacy: options is just a number threshold
         cacheThreshold = options;
-      } else if (typeof options === 'object' && options !== null) {
+      } else if (typeof options === "object" && options !== null) {
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
+        // zoom defaults to false unless explicitly set to true
+        zoom = options.zoom === true;
       }
 
       // Use default cacheKey from SDK constructor if not provided in find() options
-      if (!cacheKey && this.sdk.options?.cacheKey) {
+      // BUT only if cache is not explicitly disabled via cache: false option
+      if (
+        !cacheKey &&
+        this.sdk.options?.cacheKey &&
+        !this.sdk._cacheExplicitlyDisabled
+      ) {
         cacheKey = this.sdk.options.cacheKey;
       }
 
-      // Determine threshold: 
-      // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
-      // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
+      // Determine threshold:
+      // - If cache is explicitly disabled, don't use cache even with cacheKey
+      // - If cacheKey is provided, enable cache with threshold
+      // - If no cacheKey, disable cache
       let threshold;
-      if (cacheKey) {
+      if (this.sdk._cacheExplicitlyDisabled) {
+        // Cache explicitly disabled via cache: false option or TD_NO_CACHE env
+        threshold = -1;
+        cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
+      } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? 0.01;
+        threshold = cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = cacheThreshold;
       } else {
-        // No cacheKey, no explicit threshold - use global default (which is -1 now)
-        threshold = this.sdk.cacheThresholds?.find ?? -1;
+        // No cacheKey, no explicit threshold - disable cache
+        threshold = -1;
       }
 
       // Store the threshold for debugging
@@ -449,9 +468,11 @@ class Element {
       // Debug log threshold
       if (debugMode) {
         const { events } = require("./agent/events.js");
-        const autoGenMsg = (this.sdk._autoGeneratedCacheKey && cacheKey === this.sdk.options.cacheKey) 
-          ? ' (auto-generated from file hash)' 
-          : '';
+        const autoGenMsg =
+          this.sdk._autoGeneratedCacheKey &&
+          cacheKey === this.sdk.options.cacheKey
+            ? " (auto-generated from file hash)"
+            : "";
         this.sdk.emitter.emit(
           events.log.debug,
           `🔍 find() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey}${autoGenMsg}` : ""})`,
@@ -466,6 +487,7 @@ class Element {
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
+        zoom: zoom,
       });
 
       const duration = Date.now() - startTime;
@@ -482,7 +504,7 @@ class Element {
         this._response = this._sanitizeResponse(response);
         this._found = false;
         findError = "Element not found";
-        
+
         // Log not found
         const duration = Date.now() - startTime;
         const { events } = require("./agent/events.js");
@@ -498,7 +520,7 @@ class Element {
       this._found = false;
       findError = error.message;
       response = error.response;
-      
+
       // Log not found with error
       const duration = Date.now() - startTime;
       const { events } = require("./agent/events.js");
@@ -507,27 +529,33 @@ class Element {
         error: error.message,
       });
       this.sdk.emitter.emit(events.log.log, notFoundMessage);
-      
+
       console.error("Error during find():", error);
     }
 
     // Track find interaction once at the end (fire-and-forget, don't block)
     const sessionId = this.sdk.getSessionId();
     if (sessionId && this.sdk.sandbox?.send) {
-      await this.sdk.sandbox.send({
-        type: "trackInteraction",
-        interactionType: "find",
-        session: sessionId,
-        prompt: description,
-        timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-        success: this._found,
-        error: findError,
-        cacheHit: response?.cacheHit || response?.cache_hit || response?.cached || false,
-        selector: response?.selector,
-        selectorUsed: !!response?.selector,
-      }).catch(err => {
-        console.warn("Failed to track find interaction:", err.message);
-      });
+      await this.sdk.sandbox
+        .send({
+          type: "trackInteraction",
+          interactionType: "find",
+          session: sessionId,
+          prompt: description,
+          timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          success: this._found,
+          error: findError,
+          cacheHit:
+            response?.cacheHit ||
+            response?.cache_hit ||
+            response?.cached ||
+            false,
+          selector: response?.selector,
+          selectorUsed: !!response?.selector,
+        })
+        .catch((err) => {
+          console.warn("Failed to track find interaction:", err.message);
+        });
     }
 
     return this;
@@ -545,46 +573,58 @@ class Element {
     const POLL_INTERVAL = 5000; // 5 seconds between attempts
     const startTime = Date.now();
     const description = newDescription || this.description;
-    
+
     // Log that we're starting a polling find
     const { events } = require("./agent/events.js");
-    this.sdk.emitter.emit(events.log.log, `🔄 Polling for "${description}" (timeout: ${timeout}ms)`);
-    
+    this.sdk.emitter.emit(
+      events.log.log,
+      `🔄 Polling for "${description}" (timeout: ${timeout}ms)`,
+    );
+
     // Create options without timeout to avoid infinite recursion
-    const findOptions = typeof options === 'object' ? { ...options } : {};
+    const findOptions = typeof options === "object" ? { ...options } : {};
     delete findOptions.timeout;
-    
+
     let attempts = 0;
     while (Date.now() - startTime < timeout) {
       attempts++;
-      
+
       // Call the regular find (without timeout option)
       await this.find(newDescription, findOptions);
-      
+
       if (this._found) {
-        this.sdk.emitter.emit(events.log.log, `✅ Found "${description}" after ${attempts} attempt(s)`);
+        this.sdk.emitter.emit(
+          events.log.log,
+          `✅ Found "${description}" after ${attempts} attempt(s)`,
+        );
         return this;
       }
-      
+
       const elapsed = Date.now() - startTime;
       const remaining = timeout - elapsed;
-      
+
       if (remaining > POLL_INTERVAL) {
-        this.sdk.emitter.emit(events.log.log, `⏳ Element not found, retrying in 5s... (${Math.round(remaining / 1000)}s remaining)`);
-        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+        this.sdk.emitter.emit(
+          events.log.log,
+          `⏳ Element not found, retrying in 5s... (${Math.round(remaining / 1000)}s remaining)`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
       } else if (remaining > 0) {
         // Less than 5s remaining, wait the remaining time and try once more
-        await new Promise(resolve => setTimeout(resolve, remaining));
+        await new Promise((resolve) => setTimeout(resolve, remaining));
       }
     }
-    
+
     // Final attempt after timeout
     await this.find(newDescription, findOptions);
-    
+
     if (!this._found) {
-      this.sdk.emitter.emit(events.log.log, `❌ Element "${description}" not found after ${timeout}ms (${attempts} attempts)`);
+      this.sdk.emitter.emit(
+        events.log.log,
+        `❌ Element "${description}" not found after ${timeout}ms (${attempts} attempts)`,
+      );
     }
-    
+
     return this;
   }
 
@@ -871,13 +911,22 @@ class Element {
       edgeDetectedImageUrl: this._response?.edgeSavedImagePath || null,
       cacheHit: this._response?.cacheHit,
       selectorUsed: !!this._response?.selector,
-      selector: this._response?.selector
+      selector: this._response?.selector,
     };
 
     if (action === "hover") {
-      await this.commands.hover(this.coordinates.x, this.coordinates.y, elementData);
+      await this.commands.hover(
+        this.coordinates.x,
+        this.coordinates.y,
+        elementData,
+      );
     } else {
-      await this.commands.click(this.coordinates.x, this.coordinates.y, action, elementData);
+      await this.commands.click(
+        this.coordinates.x,
+        this.coordinates.y,
+        action,
+        elementData,
+      );
     }
   }
 
@@ -911,10 +960,14 @@ class Element {
       edgeDetectedImageUrl: this._response?.edgeSavedImagePath || null,
       cacheHit: this._response?.cacheHit,
       selectorUsed: !!this._response?.selector,
-      selector: this._response?.selector
+      selector: this._response?.selector,
     };
 
-    await this.commands.hover(this.coordinates.x, this.coordinates.y, elementData);
+    await this.commands.hover(
+      this.coordinates.x,
+      this.coordinates.y,
+      elementData,
+    );
   }
 
   /**
@@ -1109,54 +1162,69 @@ class Element {
 /**
  * Creates a chainable promise that allows method chaining on find() results
  * This enables syntax like: await testdriver.find("button").click()
- * 
+ *
  * @param {Promise<Element>} promise - The promise that resolves to an Element
  * @returns {Promise<Element> & ChainableElement} A promise with chainable element methods
  */
 function createChainablePromise(promise) {
   // Define the chainable methods that should be available
-  const chainableMethods = ['click', 'hover', 'doubleClick', 'rightClick', 'mouseDown', 'mouseUp'];
-  
+  const chainableMethods = [
+    "click",
+    "hover",
+    "doubleClick",
+    "rightClick",
+    "mouseDown",
+    "mouseUp",
+  ];
+
   // Create a new promise that wraps the original
-  const chainablePromise = promise.then(element => element);
-  
+  const chainablePromise = promise.then((element) => element);
+
   // Add chainable methods to the promise
   for (const method of chainableMethods) {
-    chainablePromise[method] = function(...args) {
+    chainablePromise[method] = function (...args) {
       // Return a promise that waits for the element, then calls the method
-      return promise.then(element => element[method](...args));
+      return promise.then((element) => element[method](...args));
     };
   }
-  
+
   // Add getters for element properties (these return promises)
-  Object.defineProperty(chainablePromise, 'x', {
-    get() { return promise.then(el => el.x); }
+  Object.defineProperty(chainablePromise, "x", {
+    get() {
+      return promise.then((el) => el.x);
+    },
   });
-  Object.defineProperty(chainablePromise, 'y', {
-    get() { return promise.then(el => el.y); }
+  Object.defineProperty(chainablePromise, "y", {
+    get() {
+      return promise.then((el) => el.y);
+    },
   });
-  Object.defineProperty(chainablePromise, 'centerX', {
-    get() { return promise.then(el => el.centerX); }
+  Object.defineProperty(chainablePromise, "centerX", {
+    get() {
+      return promise.then((el) => el.centerX);
+    },
   });
-  Object.defineProperty(chainablePromise, 'centerY', {
-    get() { return promise.then(el => el.centerY); }
+  Object.defineProperty(chainablePromise, "centerY", {
+    get() {
+      return promise.then((el) => el.centerY);
+    },
   });
-  
+
   // Add found() method
-  chainablePromise.found = function() {
-    return promise.then(el => el.found());
+  chainablePromise.found = function () {
+    return promise.then((el) => el.found());
   };
-  
+
   // Add getCoordinates() method
-  chainablePromise.getCoordinates = function() {
-    return promise.then(el => el.getCoordinates());
+  chainablePromise.getCoordinates = function () {
+    return promise.then((el) => el.getCoordinates());
   };
-  
+
   // Add getResponse() method
-  chainablePromise.getResponse = function() {
-    return promise.then(el => el.getResponse());
+  chainablePromise.getResponse = function () {
+    return promise.then((el) => el.getResponse());
   };
-  
+
   return chainablePromise;
 }
 
@@ -1246,28 +1314,34 @@ class TestDriverSDK {
     this.sandboxInstance = options.sandboxInstance || null;
 
     // Store reconnect preference from options
-    this.reconnect = options.reconnect !== undefined ? options.reconnect : false;
+    this.reconnect =
+      options.reconnect !== undefined ? options.reconnect : false;
+
+    // Store dashcam preference (default: true)
+    this.dashcamEnabled = options.dashcam !== false;
 
     // Cache threshold configuration
     // threshold = pixel difference allowed (0.05 = 5% difference, 95% similarity)
     // By default, cache is DISABLED (threshold = -1) to avoid unnecessary AI costs
     // To enable cache, provide a cacheKey when calling find() or findAll()
     // Also support TD_NO_CACHE environment variable and cache: false option for backwards compatibility
-    const cacheDisabled =
+    const cacheExplicitlyDisabled =
       options.cache === false || process.env.TD_NO_CACHE === "true";
 
-    if (cacheDisabled) {
+    // Track whether cache was explicitly disabled (not just default)
+    this._cacheExplicitlyDisabled = cacheExplicitlyDisabled;
+
+    if (cacheExplicitlyDisabled) {
       // Explicit cache disabled via option or env var
       this.cacheThresholds = {
         find: -1,
         findAll: -1,
       };
     } else {
-      // Cache disabled by default, enabled only when cacheKey is provided
-      // Note: The threshold value here is the fallback when cacheKey is NOT provided
+      // Cache enabled by default when cacheKey is provided
       this.cacheThresholds = {
-        find: options.cacheThreshold?.find ?? -1,  // Default: cache disabled
-        findAll: options.cacheThreshold?.findAll ?? -1,  // Default: cache disabled
+        find: options.cacheThreshold?.find ?? 0.01, // Default: 1% threshold
+        findAll: options.cacheThreshold?.findAll ?? 0.01,
       };
     }
 
@@ -1278,14 +1352,16 @@ class TestDriverSDK {
     // The `redraw` option takes precedence and matches the per-command API
     if (options.redraw !== undefined) {
       // New unified API: redraw object (matches per-command options)
-      this.redrawOptions = typeof options.redraw === 'object' 
-        ? options.redraw 
-        : { enabled: options.redraw }; // Support redraw: false as shorthand
+      this.redrawOptions =
+        typeof options.redraw === "object"
+          ? options.redraw
+          : { enabled: options.redraw }; // Support redraw: false as shorthand
     } else if (options.redrawThreshold !== undefined) {
       // Legacy API: redrawThreshold number or object
-      this.redrawOptions = typeof options.redrawThreshold === 'object'
-        ? options.redrawThreshold
-        : { diffThreshold: options.redrawThreshold };
+      this.redrawOptions =
+        typeof options.redrawThreshold === "object"
+          ? options.redrawThreshold
+          : { diffThreshold: options.redrawThreshold };
     } else {
       // Default: enabled (as of v7.2)
       this.redrawOptions = { enabled: true };
@@ -1321,6 +1397,13 @@ class TestDriverSDK {
 
     // Set up dashcam API lazily
     this._dashcam = null;
+
+    // Last-promise tracking for unawaited promise detection
+    this._lastPromiseSettled = true;
+    this._lastCommandName = null;
+
+    // Set up command methods that lazy-await connection
+    this._setupCommandMethods();
   }
 
   /**
@@ -1332,19 +1415,36 @@ class TestDriverSDK {
       await this.__connectionPromise;
     }
     if (!this.connected) {
-      throw new Error('Not connected to sandbox. Call connect() first or use autoConnect option.');
+      throw new Error("Not connected to sandbox. Call connect() first.");
     }
   }
 
   /**
    * Get or create the Dashcam instance
-   * @returns {Dashcam} Dashcam instance
+   * @returns {Dashcam} Dashcam instance (or no-op stub if dashcam is disabled)
    */
   get dashcam() {
     if (!this._dashcam) {
-      const { Dashcam } = require("./lib/core/index.js");
-      // Don't pass apiKey - let Dashcam use its default key
-      this._dashcam = new Dashcam(this);
+      // If dashcam is disabled, return a no-op stub
+      if (!this.dashcamEnabled) {
+        this._dashcam = {
+          start: async () => {},
+          stop: async () => null,
+          auth: async () => {},
+          addFileLog: async () => {},
+          addWebLog: async () => {},
+          addApplicationLog: async () => {},
+          addLog: async () => {},
+          isRecording: async () => false,
+          getElapsedTime: () => null,
+          recording: false,
+          url: null,
+        };
+      } else {
+        const { Dashcam } = require("./lib/core/index.js");
+        // Don't pass apiKey - let Dashcam use its default key
+        this._dashcam = new Dashcam(this);
+      }
     }
     return this._dashcam;
   }
@@ -1362,10 +1462,29 @@ class TestDriverSDK {
 
   /**
    * Create the provision API with methods for launching applications
+   * Automatically skips provisioning when reconnect mode is enabled
    * @private
    */
+  /**
+   * Get the path to the dashcam-chrome extension
+   * Uses preinstalled dashcam-chrome on both Linux and Windows
+   * @returns {Promise<string>} Path to dashcam-chrome/build directory
+   * @private
+   */
+  async _getDashcamChromeExtensionPath() {
+    if (this.os !== "windows") {
+      return "/usr/lib/node_modules/dashcam-chrome/build";
+    }
+
+    // dashcam-chrome is preinstalled on Windows at C:\Program Files\nodejs\node_modules\dashcam-chrome\build
+    // Use the actual long path - we'll handle quoting in the chrome launch
+    return "C:\\PROGRA~1\\nodejs\\node_modules\\dashcam-chrome\\build";
+  }
+
   _createProvisionAPI() {
-    return {
+    const self = this;
+
+    const provisionMethods = {
       /**
        * Launch Chrome browser
        * @param {Object} options - Chrome launch options
@@ -1375,148 +1494,141 @@ class TestDriverSDK {
        * @returns {Promise<void>}
        */
       chrome: async (options = {}) => {
-        // Automatically wait for connection to be ready
-        await this.ready();
-        
         const {
-          url = 'http://testdriver-sandbox.vercel.app/',
+          url = "http://testdriver-sandbox.vercel.app/",
           maximized = true,
           guest = false,
         } = options;
 
-        // If dashcam is available and recording, add web logs for this domain
+        // If dashcam is available, add web logs for all websites
+        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
         if (this._dashcam) {
-    
-            // Create the log file on the remote machine
-            const shell = this.os === "windows" ? "pwsh" : "sh";
-            const logPath = this.os === "windows" 
-            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-            : "/tmp/testdriver.log";
-            
-            const createLogCmd = this.os === "windows"
-            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
-            : `touch ${logPath}`;
-            
-            await this.exec(shell, createLogCmd, 60000, true);
-          
-            const urlObj = new URL(url);
-            const domain = urlObj.hostname;
-            const pattern = `*${domain}*`;
-            await this._dashcam.addWebLog(pattern, 'Web Logs');
-
-            await this._dashcam.addFileLog(logPath, "TestDriver Log");
-
-        }
-        
-        // Automatically start dashcam if not already recording
-        if (!this._dashcam || !this._dashcam.recording) {
-          await this.dashcam.start();
+          await this._dashcam.addWebLog("**", "Web Logs");
         }
 
         // Set up Chrome profile with preferences
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
-        const userDataDir = this.os === 'windows' 
-          ? 'C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome'
-          : '/tmp/testdriver-chrome-profile';
-        
+        const shell = this.os === "windows" ? "pwsh" : "sh";
+        const userDataDir =
+          this.os === "windows"
+            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
+            : "/tmp/testdriver-chrome-profile";
+
         // Create user data directory and Default profile directory
-        const defaultProfileDir = this.os === 'windows'
-          ? `${userDataDir}\\Default`
-          : `${userDataDir}/Default`;
-        
-        const createDirCmd = this.os === 'windows'
-          ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
-          : `mkdir -p "${defaultProfileDir}"`;
-        
+        const defaultProfileDir =
+          this.os === "windows"
+            ? `${userDataDir}\\Default`
+            : `${userDataDir}/Default`;
+
+        const createDirCmd =
+          this.os === "windows"
+            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+            : `mkdir -p "${defaultProfileDir}"`;
+
         await this.exec(shell, createDirCmd, 60000, true);
-        
+
         // Write Chrome preferences
         const chromePrefs = {
           credentials_enable_service: false,
           profile: {
             password_manager_enabled: false,
-            default_content_setting_values: {}
+            default_content_setting_values: {},
           },
           signin: {
-            allowed: false
+            allowed: false,
           },
           sync: {
             requested: false,
             first_setup_complete: true,
-            sync_all_os_types: false
+            sync_all_os_types: false,
           },
           autofill: {
-            enabled: false
+            enabled: false,
           },
           local_state: {
             browser: {
-              has_seen_welcome_page: true
-            }
-          }
+              has_seen_welcome_page: true,
+            },
+          },
         };
-        
-        const prefsPath = this.os === 'windows'
-          ? `${defaultProfileDir}\\Preferences`
-          : `${defaultProfileDir}/Preferences`;
-        
+
+        const prefsPath =
+          this.os === "windows"
+            ? `${defaultProfileDir}\\Preferences`
+            : `${defaultProfileDir}/Preferences`;
+
         const prefsJson = JSON.stringify(chromePrefs, null, 2);
-        const writePrefCmd = this.os === 'windows'
-          // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
-          ? `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
-          : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
-        
+        const writePrefCmd =
+          this.os === "windows"
+            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
+              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
+            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+
         await this.exec(shell, writePrefCmd, 60000, true);
 
         // Build Chrome launch command
         const chromeArgs = [];
-        if (maximized) chromeArgs.push('--start-maximized');
-        if (guest) chromeArgs.push('--guest');
-        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', `--user-data-dir=${userDataDir}`);
-        
-        // Add dashcam-chrome extension on Linux
-        if (this.os === 'linux') {
-          chromeArgs.push('--load-extension=/usr/lib/node_modules/dashcam-chrome/build');
+        if (maximized) chromeArgs.push("--start-maximized");
+        if (guest) chromeArgs.push("--guest");
+        chromeArgs.push(
+          "--disable-fre",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--no-experiments",
+          "--disable-infobars",
+          `--user-data-dir=${userDataDir}`,
+        );
+
+        // Add remote debugging port for captcha solving support
+        chromeArgs.push("--remote-debugging-port=9222");
+
+        // Add dashcam-chrome extension
+        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
+        if (dashcamChromePath) {
+          chromeArgs.push(`--load-extension=${dashcamChromePath}`);
         }
 
         // Launch Chrome
-        
-        if (this.os === 'windows') {
-          const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
+
+        if (this.os === "windows") {
+          const argsString = chromeArgs.map((arg) => `"${arg}"`).join(", ");
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}, "${url}"`,
-            30000
+            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}, "${url}"`,
+            30000,
           );
         } else {
-          const argsString = chromeArgs.join(' ');
+          const argsString = chromeArgs.join(" ");
           await this.exec(
             shell,
             `chrome-for-testing ${argsString} "${url}" >/dev/null 2>&1 &`,
-            30000
+            30000,
           );
         }
 
         // Wait for Chrome to be ready
-        await this.focusApplication('Google Chrome');
+        await this.focusApplication("Google Chrome");
 
         // Wait for URL to load
         try {
           const urlObj = new URL(url);
           const domain = urlObj.hostname;
-                    
+
           for (let attempt = 0; attempt < 30; attempt++) {
             const result = await this.find(`${domain}`);
 
             if (result.found()) {
               break;
             } else {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
           }
-          
-          await this.focusApplication('Google Chrome');
+
+          await this.focusApplication("Google Chrome");
         } catch (e) {
-          console.warn(`[provision.chrome] ⚠️  Could not parse URL "${url}":`, e.message);
+          console.warn(
+            `[provision.chrome] ⚠️  Could not parse URL "${url}":`,
+            e.message,
+          );
         }
       },
 
@@ -1533,7 +1645,7 @@ class TestDriverSDK {
        * await testdriver.provision.chromeExtension({
        *   extensionPath: '/tmp/extension'
        * });
-       * 
+       *
        * @example
        * // Load extension by Chrome Web Store ID
        * await testdriver.provision.chromeExtension({
@@ -1541,9 +1653,6 @@ class TestDriverSDK {
        * });
        */
       chromeExtension: async (options = {}) => {
-        // Automatically wait for connection to be ready
-        await this.ready();
-        
         const {
           extensionPath: providedExtensionPath,
           extensionId,
@@ -1551,55 +1660,62 @@ class TestDriverSDK {
         } = options;
 
         if (!providedExtensionPath && !extensionId) {
-          throw new Error('[provision.chromeExtension] Either extensionPath or extensionId is required');
+          throw new Error(
+            "[provision.chromeExtension] Either extensionPath or extensionId is required",
+          );
         }
 
         let extensionPath = providedExtensionPath;
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        const shell = this.os === "windows" ? "pwsh" : "sh";
 
         // If extensionId is provided, download and extract the extension from Chrome Web Store
         if (extensionId && !extensionPath) {
-          console.log(`[provision.chromeExtension] Downloading extension ${extensionId} from Chrome Web Store...`);
-          
-          const extensionDir = this.os === 'windows'
-            ? `C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Extensions\\${extensionId}`
-            : `/tmp/testdriver-extensions/${extensionId}`;
-          
+          console.log(
+            `[provision.chromeExtension] Downloading extension ${extensionId} from Chrome Web Store...`,
+          );
+
+          const extensionDir =
+            this.os === "windows"
+              ? `C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Extensions\\${extensionId}`
+              : `/tmp/testdriver-extensions/${extensionId}`;
+
           // Create extension directory
-          const mkdirCmd = this.os === 'windows'
-            ? `New-Item -ItemType Directory -Path "${extensionDir}" -Force | Out-Null`
-            : `mkdir -p "${extensionDir}"`;
+          const mkdirCmd =
+            this.os === "windows"
+              ? `New-Item -ItemType Directory -Path "${extensionDir}" -Force | Out-Null`
+              : `mkdir -p "${extensionDir}"`;
           await this.exec(shell, mkdirCmd, 60000, true);
-          
+
           // Download CRX from Chrome Web Store
           // The CRX download URL format for Chrome Web Store
           const crxUrl = `https://clients2.google.com/service/update2/crx?response=redirect&prodversion=131.0.0.0&acceptformat=crx2,crx3&x=id%3D${extensionId}%26installsource%3Dondemand%26uc`;
-          const crxPath = this.os === 'windows'
-            ? `${extensionDir}\\extension.crx`
-            : `${extensionDir}/extension.crx`;
-          
-          if (this.os === 'windows') {
+          const crxPath =
+            this.os === "windows"
+              ? `${extensionDir}\\extension.crx`
+              : `${extensionDir}/extension.crx`;
+
+          if (this.os === "windows") {
             await this.exec(
-              'pwsh',
+              "pwsh",
               `Invoke-WebRequest -Uri "${crxUrl}" -OutFile "${crxPath}"`,
               60000,
-              true
+              true,
             );
           } else {
             await this.exec(
-              'sh',
+              "sh",
               `curl -L -o "${crxPath}" "${crxUrl}"`,
               60000,
-              true
+              true,
             );
           }
-          
+
           // Extract the CRX file (CRX is a ZIP with a header)
           // Skip the CRX header and extract as ZIP
-          if (this.os === 'windows') {
+          if (this.os === "windows") {
             // PowerShell: Read CRX, skip header, extract ZIP
             await this.exec(
-              'pwsh',
+              "pwsh",
               `
 $crxBytes = [System.IO.File]::ReadAllBytes("${crxPath}")
 # CRX3 header: 4 bytes magic + 4 bytes version + 4 bytes header length + header
@@ -1617,13 +1733,13 @@ $zipPath = "${extensionDir}\\extension.zip"
 Expand-Archive -Path $zipPath -DestinationPath "${extensionDir}\\unpacked" -Force
               `,
               30000,
-              true
+              true,
             );
             extensionPath = `${extensionDir}\\unpacked`;
           } else {
             // Linux: Use unzip with offset or python to extract
             await this.exec(
-              'sh',
+              "sh",
               `
 cd "${extensionDir}"
 # Extract CRX (skip header and unzip)
@@ -1656,133 +1772,140 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 "
               `,
               30000,
-              true
+              true,
             );
             extensionPath = `${extensionDir}/unpacked`;
           }
-          
-          console.log(`[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`);
+
+          console.log(
+            `[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`,
+          );
         }
 
-        // If dashcam is available, set up file logging
+        // If dashcam is available, add web logs for all websites
+        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
         if (this._dashcam) {
-          // Create the log file on the remote machine
-          const logPath = this.os === "windows" 
-            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-            : "/tmp/testdriver.log";
-          
-          const createLogCmd = this.os === "windows"
-            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
-            : `touch ${logPath}`;
-          
-          await this.exec(shell, createLogCmd, 60000, true);
-          await this._dashcam.addFileLog(logPath, "TestDriver Log");
-        }
-        
-        // Automatically start dashcam if not already recording
-        if (!this._dashcam || !this._dashcam.recording) {
-          await this.dashcam.start();
+          await this._dashcam.addWebLog("**", "Web Logs");
         }
 
         // Set up Chrome profile with preferences
-        const userDataDir = this.os === 'windows' 
-          ? 'C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome'
-          : '/tmp/testdriver-chrome-profile';
-        
+        const userDataDir =
+          this.os === "windows"
+            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
+            : "/tmp/testdriver-chrome-profile";
+
         // Create user data directory and Default profile directory
-        const defaultProfileDir = this.os === 'windows'
-          ? `${userDataDir}\\Default`
-          : `${userDataDir}/Default`;
-        
-        const createDirCmd = this.os === 'windows'
-          ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
-          : `mkdir -p "${defaultProfileDir}"`;
-        
+        const defaultProfileDir =
+          this.os === "windows"
+            ? `${userDataDir}\\Default`
+            : `${userDataDir}/Default`;
+
+        const createDirCmd =
+          this.os === "windows"
+            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+            : `mkdir -p "${defaultProfileDir}"`;
+
         await this.exec(shell, createDirCmd, 60000, true);
-        
+
         // Write Chrome preferences
         const chromePrefs = {
           credentials_enable_service: false,
           profile: {
             password_manager_enabled: false,
-            default_content_setting_values: {}
+            default_content_setting_values: {},
           },
           signin: {
-            allowed: false
+            allowed: false,
           },
           sync: {
             requested: false,
             first_setup_complete: true,
-            sync_all_os_types: false
+            sync_all_os_types: false,
           },
           autofill: {
-            enabled: false
+            enabled: false,
           },
           local_state: {
             browser: {
-              has_seen_welcome_page: true
-            }
-          }
+              has_seen_welcome_page: true,
+            },
+          },
         };
-        
-        const prefsPath = this.os === 'windows'
-          ? `${defaultProfileDir}\\Preferences`
-          : `${defaultProfileDir}/Preferences`;
-        
+
+        const prefsPath =
+          this.os === "windows"
+            ? `${defaultProfileDir}\\Preferences`
+            : `${defaultProfileDir}/Preferences`;
+
         const prefsJson = JSON.stringify(chromePrefs, null, 2);
-        const writePrefCmd = this.os === 'windows'
-          // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
-          ? `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
-          : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
-        
+        const writePrefCmd =
+          this.os === "windows"
+            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
+              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
+            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+
         await this.exec(shell, writePrefCmd, 60000, true);
 
         // Build Chrome launch command
         const chromeArgs = [];
-        if (maximized) chromeArgs.push('--start-maximized');
-        chromeArgs.push('--disable-fre', '--no-default-browser-check', '--no-first-run', '--no-experiments', '--disable-infobars', '--disable-features=ChromeLabs', `--user-data-dir=${userDataDir}`);
-        
+        if (maximized) chromeArgs.push("--start-maximized");
+        chromeArgs.push(
+          "--disable-fre",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--no-experiments",
+          "--disable-infobars",
+          "--disable-features=ChromeLabs",
+          `--user-data-dir=${userDataDir}`,
+        );
+
+        // Add remote debugging port for captcha solving support
+        chromeArgs.push("--remote-debugging-port=9222");
+
         // Add user extension and dashcam-chrome extension
-        if (this.os === 'linux') {
+        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
+        if (dashcamChromePath) {
           // Load both user extension and dashcam-chrome for web log capture
-          chromeArgs.push(`--load-extension=${extensionPath},/usr/lib/node_modules/dashcam-chrome/build`);
-        } else if (this.os === 'windows') {
-          // On Windows, just load the user extension (dashcam-chrome not available)
+          chromeArgs.push(
+            `--load-extension=${extensionPath},${dashcamChromePath}`,
+          );
+        } else {
+          // If dashcam-chrome unavailable, just load user extension
           chromeArgs.push(`--load-extension=${extensionPath}`);
         }
 
         // Launch Chrome (opens to New Tab by default)
-        if (this.os === 'windows') {
-          const argsString = chromeArgs.map(arg => `"${arg}"`).join(', ');
+        if (this.os === "windows") {
+          const argsString = chromeArgs.map((arg) => `"${arg}"`).join(", ");
           await this.exec(
             shell,
-            `Start-Process "C:/Program Files/Google/Chrome/Application/chrome.exe" -ArgumentList ${argsString}`,
-            30000
+            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}`,
+            30000,
           );
         } else {
-          const argsString = chromeArgs.join(' ');
+          const argsString = chromeArgs.join(" ");
           await this.exec(
             shell,
             `chrome-for-testing ${argsString} >/dev/null 2>&1 &`,
-            30000
+            30000,
           );
         }
 
         // Wait for Chrome to be ready
-        await this.focusApplication('Google Chrome');
+        await this.focusApplication("Google Chrome");
 
         // Wait for New Tab to appear
         for (let attempt = 0; attempt < 30; attempt++) {
-          const result = await this.find('New Tab');
+          const result = await this.find("New Tab");
 
           if (result.found()) {
             break;
           } else {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
-        
-        await this.focusApplication('Google Chrome');
+
+        await this.focusApplication("Google Chrome");
       },
 
       /**
@@ -1793,34 +1916,14 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
        * @returns {Promise<void>}
        */
       vscode: async (options = {}) => {
-        // Automatically wait for connection to be ready
-        await this.ready();
-        
-        const {
-          workspace = null,
-          extensions = [],
-        } = options;
+        const { workspace = null, extensions = [] } = options;
 
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, set up file logging
+        // If dashcam is available, add web logs for all websites
+        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
         if (this._dashcam) {
-          // Create the log file on the remote machine
-          const logPath = this.os === "windows" 
-            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-            : "/tmp/testdriver.log";
-          
-          const createLogCmd = this.os === "windows"
-            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
-            : `touch ${logPath}`;
-          
-          await this.exec(shell, createLogCmd, 60000, true);
-          await this._dashcam.addFileLog(logPath, "TestDriver Log");
-        }
-        
-        // Automatically start dashcam if not already recording
-        if (!this._dashcam || !this._dashcam.recording) {
-          await this.dashcam.start();
+          await this._dashcam.addWebLog("**", "Web Logs");
         }
 
         // Install extensions if provided
@@ -1830,33 +1933,35 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             shell,
             `code --install-extension ${extension} --force`,
             120000,
-            true
+            true,
           );
-          console.log(`[provision.vscode] ✅ Extension installed: ${extension}`);
+          console.log(
+            `[provision.vscode] ✅ Extension installed: ${extension}`,
+          );
         }
 
         // Launch VS Code
-        const workspaceArg = workspace ? `"${workspace}"` : '';
-        
-        if (this.os === 'windows') {
+        const workspaceArg = workspace ? `"${workspace}"` : "";
+
+        if (this.os === "windows") {
           await this.exec(
             shell,
             `Start-Process code -ArgumentList ${workspaceArg}`,
-            30000
+            30000,
           );
         } else {
           await this.exec(
             shell,
             `code ${workspaceArg} >/dev/null 2>&1 &`,
-            30000
+            30000,
           );
         }
 
         // Wait for VS Code to start up
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Wait for VS Code to be ready
-        await this.focusApplication('Visual Studio Code');
+        await this.focusApplication("Visual Studio Code");
       },
 
       /**
@@ -1873,7 +1978,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
        *   url: 'https://example.com/app.deb',
        *   appName: 'MyApp'
        * });
-       * 
+       *
        * @example
        * // Download and run custom commands
        * const filePath = await testdriver.provision.installer({
@@ -1883,55 +1988,33 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
        * await testdriver.exec('sh', `chmod +x "${filePath}" && "${filePath}" &`, 10000);
        */
       installer: async (options = {}) => {
-        // Automatically wait for connection to be ready
-        await this.ready();
-        
-        const {
-          url,
-          filename,
-          appName,
-          launch = true,
-        } = options;
+        const { url, filename, appName, launch = true } = options;
 
         if (!url) {
-          throw new Error('[provision.installer] url is required');
+          throw new Error("[provision.installer] url is required");
         }
 
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
+        const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, set up file logging
+        // If dashcam is available, add web logs for all websites
+        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
         if (this._dashcam) {
-          const logPath = this.os === "windows" 
-            ? "C:\\Users\\testdriver\\Documents\\testdriver.log"
-            : "/tmp/testdriver.log";
-          
-          const createLogCmd = this.os === "windows"
-            ? `New-Item -ItemType File -Path "${logPath}" -Force | Out-Null`
-            : `touch ${logPath}`;
-          
-          await this.exec(shell, createLogCmd, 60000, true);
-          await this._dashcam.addFileLog(logPath, "TestDriver Log");
-        }
-        
-        // Automatically start dashcam if not already recording
-        if (!this._dashcam || !this._dashcam.recording) {
-          await this.dashcam.start();
+          await this._dashcam.addWebLog("**", "Web Logs");
         }
 
         // Determine download directory
-        const downloadDir = this.os === 'windows' 
-          ? 'C:\\Users\\testdriver\\Downloads'
-          : '/tmp';
+        const downloadDir =
+          this.os === "windows" ? "C:\\Users\\testdriver\\Downloads" : "/tmp";
 
         console.log(`[provision.installer] Downloading ${url}...`);
 
         let actualFilePath;
 
         // Download the file and get the actual filename (handles redirects)
-        if (this.os === 'windows') {
+        if (this.os === "windows") {
           // Simple approach: download first, then get the actual filename from the response
           const tempFile = `${downloadDir}\\installer_temp_${Date.now()}`;
-          
+
           const downloadScript = `
             $ProgressPreference = 'SilentlyContinue'
             $response = Invoke-WebRequest -Uri "${url}" -OutFile "${tempFile}" -PassThru -UseBasicParsing
@@ -1958,12 +2041,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             Move-Item -Path "${tempFile}" -Destination $finalPath -Force
             Write-Output $finalPath
           `;
-          
+
           const result = await this.exec(shell, downloadScript, 300000, true);
           actualFilePath = result ? result.trim() : null;
-          
+
           if (!actualFilePath) {
-            throw new Error('[provision.installer] Failed to download file');
+            throw new Error("[provision.installer] Failed to download file");
           }
         } else {
           // Use curl with options to get the final filename
@@ -1972,21 +2055,21 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             cd "${downloadDir}"
             curl -L -J -O -w "%{filename_effective}" "${url}" 2>/dev/null || echo "${tempMarker}"
           `;
-          
+
           const result = await this.exec(shell, downloadScript, 300000, true);
           const downloadedFile = result ? result.trim() : null;
-          
+
           if (downloadedFile && downloadedFile !== tempMarker) {
             actualFilePath = `${downloadDir}/${downloadedFile}`;
           } else {
             // Fallback: use curl without -J and specify output file
-            const fallbackFilename = filename || 'installer';
+            const fallbackFilename = filename || "installer";
             actualFilePath = `${downloadDir}/${fallbackFilename}`;
             await this.exec(
               shell,
               `curl -L -o "${actualFilePath}" "${url}"`,
               300000,
-              true
+              true,
             );
           }
         }
@@ -1994,30 +2077,30 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         console.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
 
         // Auto-detect install command based on file extension (use actualFilePath for extension detection)
-        const actualFilename = actualFilePath.split(/[/\\]/).pop() || '';
-        const ext = actualFilename.split('.').pop()?.toLowerCase();
+        const actualFilename = actualFilePath.split(/[/\\]/).pop() || "";
+        const ext = actualFilename.split(".").pop()?.toLowerCase();
         let installCommand = null;
-        
-        if (this.os === 'windows') {
-          if (ext === 'msi') {
+
+        if (this.os === "windows") {
+          if (ext === "msi") {
             installCommand = `Start-Process msiexec -ArgumentList '/i', '"${actualFilePath}"', '/quiet', '/norestart' -Wait`;
-          } else if (ext === 'exe') {
+          } else if (ext === "exe") {
             installCommand = `Start-Process "${actualFilePath}" -ArgumentList '/S' -Wait`;
           }
-        } else if (this.os === 'linux') {
-          if (ext === 'deb') {
+        } else if (this.os === "linux") {
+          if (ext === "deb") {
             installCommand = `sudo dpkg -i "${actualFilePath}" && sudo apt-get install -f -y`;
-          } else if (ext === 'rpm') {
+          } else if (ext === "rpm") {
             installCommand = `sudo rpm -i "${actualFilePath}"`;
-          } else if (ext === 'appimage') {
+          } else if (ext === "appimage") {
             installCommand = `chmod +x "${actualFilePath}"`;
-          } else if (ext === 'sh') {
+          } else if (ext === "sh") {
             installCommand = `chmod +x "${actualFilePath}" && "${actualFilePath}"`;
           }
-        } else if (this.os === 'darwin') {
-          if (ext === 'dmg') {
+        } else if (this.os === "darwin") {
+          if (ext === "dmg") {
             installCommand = `hdiutil attach "${actualFilePath}" -mountpoint /Volumes/installer && cp -R /Volumes/installer/*.app /Applications/ && hdiutil detach /Volumes/installer`;
-          } else if (ext === 'pkg') {
+          } else if (ext === "pkg") {
             installCommand = `sudo installer -pkg "${actualFilePath}" -target /`;
           }
         }
@@ -2030,7 +2113,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         // Launch and focus the app if appName is provided and launch is true
         if (appName && launch) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           await this.focusApplication(appName);
         }
 
@@ -2045,33 +2128,241 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
        * @returns {Promise<void>}
        */
       electron: async (options = {}) => {
-        this._ensureConnected();
-        
         const { appPath, args = [] } = options;
-        
+
         if (!appPath) {
-          throw new Error('provision.electron requires appPath option');
+          throw new Error("provision.electron requires appPath option");
         }
 
-        const shell = this.os === 'windows' ? 'pwsh' : 'sh';
-        const argsString = args.join(' ');
-        
-        if (this.os === 'windows') {
+        const shell = this.os === "windows" ? "pwsh" : "sh";
+
+        // If dashcam is available, add web logs for all websites
+        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
+        if (this._dashcam) {
+          await this._dashcam.addWebLog("**", "Web Logs");
+        }
+
+        const argsString = args.join(" ");
+
+        if (this.os === "windows") {
           await this.exec(
             shell,
             `Start-Process electron -ArgumentList "${appPath}", ${argsString}`,
-            30000
+            30000,
           );
         } else {
           await this.exec(
             shell,
             `electron "${appPath}" ${argsString} >/dev/null 2>&1 &`,
-            30000
+            30000,
           );
         }
 
-        await this.focusApplication('Electron');
+        await this.focusApplication("Electron");
       },
+    };
+
+    // Wrap all provision methods with reconnect check using Proxy
+    return new Proxy(provisionMethods, {
+      get(target, prop) {
+        const method = target[prop];
+        if (typeof method === "function") {
+          return async (...args) => {
+            // Skip provisioning if reconnecting to existing sandbox
+            if (self.reconnect) {
+              console.log(
+                `[provision.${prop}] Skipping provisioning (reconnect mode)`,
+              );
+              return;
+            }
+            return method(...args);
+          };
+        }
+        return method;
+      },
+    });
+  }
+
+  /**
+   * Solve a captcha on the current page using 2captcha service
+   * Requires Chrome to be launched with remote debugging (--remote-debugging-port=9222)
+   *
+   * @param {Object} options - Captcha solving options
+   * @param {string} options.apiKey - 2captcha API key (required)
+   * @param {string} [options.sitekey] - Captcha sitekey (auto-detected if not provided)
+   * @param {string} [options.type='recaptcha_v3'] - Captcha type: 'recaptcha_v2', 'recaptcha_v3', 'hcaptcha', 'turnstile'
+   * @param {string} [options.action='verify'] - Action parameter for reCAPTCHA v3
+   * @param {boolean} [options.autoSubmit=true] - Automatically click submit button after solving
+   * @param {number} [options.pollInterval=5000] - Polling interval in ms for 2captcha
+   * @param {number} [options.timeout=120000] - Timeout in ms for solving
+   * @returns {Promise<{success: boolean, message: string, token?: string}>}
+   *
+   * @example
+   * // Auto-detect and solve captcha
+   * await testdriver.captcha({
+   *   apiKey: 'your-2captcha-api-key'
+   * });
+   *
+   * @example
+   * // Solve with known sitekey
+   * await testdriver.captcha({
+   *   apiKey: 'your-2captcha-api-key',
+   *   sitekey: '6LfB5_IbAAAAAMCtsjEHEHKqcB9iQocwwxTiihJu',
+   *   action: 'demo_action'
+   * });
+   */
+  async captcha(options = {}) {
+    const {
+      apiKey,
+      sitekey,
+      type = "recaptcha_v3",
+      action = "verify",
+      autoSubmit = true,
+      pollInterval = 5000,
+      timeout = 120000,
+    } = options;
+
+    if (!apiKey) {
+      throw new Error(
+        "[captcha] apiKey is required. Get your API key at https://2captcha.com",
+      );
+    }
+
+    const shell = this.os === "windows" ? "pwsh" : "sh";
+    const isWindows = this.os === "windows";
+
+    // Paths for config and solver script
+    const configPath = isWindows
+      ? "C:\\Users\\testdriver\\AppData\\Local\\Temp\\td-captcha-config.json"
+      : "/tmp/td-captcha-config.json";
+    const solverPath = isWindows
+      ? "C:\\Users\\testdriver\\AppData\\Local\\Temp\\td-captcha-solver.js"
+      : "/tmp/td-captcha-solver.js";
+
+    // Ensure chrome-remote-interface is installed
+    if (isWindows) {
+      await this.exec(
+        shell,
+        "npm install -g chrome-remote-interface 2>$null; $true",
+        60000,
+        true,
+      );
+    } else {
+      await this.exec(
+        shell,
+        "sudo npm install -g chrome-remote-interface 2>/dev/null || npm install -g chrome-remote-interface",
+        60000,
+        true,
+      );
+    }
+
+    // Build config JSON for the solver
+    const config = JSON.stringify({
+      apiKey,
+      sitekey: sitekey || null,
+      type,
+      action,
+      autoSubmit,
+      pollInterval,
+      timeout,
+    });
+
+    // Write config file
+    if (isWindows) {
+      // Use PowerShell's Set-Content with escaped JSON
+      const escapedConfig = config.replace(/'/g, "''");
+      await this.exec(
+        shell,
+        `[System.IO.File]::WriteAllText('${configPath}', '${escapedConfig}')`,
+        5000,
+        true,
+      );
+    } else {
+      // Use heredoc for Linux
+      await this.exec(
+        shell,
+        `cat > ${configPath} << 'CONFIGEOF'
+${config}
+CONFIGEOF`,
+        5000,
+        true,
+      );
+    }
+
+    // Load the solver script from file (avoids escaping issues with string concatenation)
+    const solverScriptPath = path.join(
+      __dirname,
+      "lib",
+      "captcha",
+      "solver.js",
+    );
+    const solverScript = fs.readFileSync(solverScriptPath, "utf8");
+
+    // Write the solver script to sandbox
+    if (isWindows) {
+      // For Windows, write the script using base64 encoding to avoid escaping issues
+      const base64Script = Buffer.from(solverScript).toString("base64");
+      await this.exec(
+        shell,
+        `[System.IO.File]::WriteAllBytes('${solverPath}', [System.Convert]::FromBase64String('${base64Script}'))`,
+        10000,
+        true,
+      );
+    } else {
+      // Use heredoc for Linux
+      await this.exec(
+        shell,
+        `cat > ${solverPath} << 'CAPTCHA_SOLVER_EOF'
+${solverScript}
+CAPTCHA_SOLVER_EOF`,
+        10000,
+        true,
+      );
+    }
+
+    // Run the solver (capture output even on failure)
+    let result;
+    try {
+      if (isWindows) {
+        // Set environment variable and run node on Windows
+        result = await this.exec(
+          shell,
+          `$env:NODE_PATH = (npm root -g).Trim(); $env:TD_CAPTCHA_CONFIG_PATH='${configPath}'; node '${solverPath}' 2>&1 | Out-String; Write-Output "EXIT_CODE:$LASTEXITCODE"`,
+          timeout + 30000,
+        );
+      } else {
+        result = await this.exec(
+          shell,
+          `NODE_PATH=/usr/lib/node_modules node ${solverPath} 2>&1; echo "EXIT_CODE:$?"`,
+          timeout + 30000,
+        );
+      }
+    } catch (err) {
+      // If exec throws, try to get output from the error
+      result = err.message || err.toString();
+      if (err.responseData && err.responseData.stdout) {
+        result = err.responseData.stdout;
+      }
+    }
+
+    const tokenMatch = result.match(/TOKEN:\s*(\S+)/);
+    const success = result.includes('"success":true');
+    const hasError = result.includes("ERROR:");
+
+    if (hasError && !success) {
+      const errorMatch = result.match(/ERROR:\s*(.+)/);
+      throw new Error(
+        `[captcha] ${errorMatch ? errorMatch[1] : "Unknown error"}\nOutput: ${result}`,
+      );
+    }
+
+    return {
+      success,
+      message: success
+        ? "Captcha solved successfully"
+        : "Captcha solving failed",
+      token: tokenMatch ? tokenMatch[1] : null,
+      output: result,
     };
   }
 
@@ -2108,6 +2399,23 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       );
     }
 
+    // Clean up screenshots folder for this test file before running
+    if (this.testFile) {
+      const testFileName = path.basename(
+        this.testFile,
+        path.extname(this.testFile),
+      );
+      const screenshotsDir = path.join(
+        process.cwd(),
+        ".testdriver",
+        "screenshots",
+        testFileName,
+      );
+      if (fs.existsSync(screenshotsDir)) {
+        fs.rmSync(screenshotsDir, { recursive: true, force: true });
+      }
+    }
+
     // Authenticate first if not already authenticated
     if (!this.authenticated) {
       await this.auth();
@@ -2133,20 +2441,24 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
     // Handle reconnect option - use last sandbox file
     // Check both connectOptions and constructor options
-    const shouldReconnect = connectOptions.reconnect !== undefined 
-      ? connectOptions.reconnect 
-      : this.reconnect;
-    
-    if (shouldReconnect) {
+    const shouldReconnect =
+      connectOptions.reconnect !== undefined
+        ? connectOptions.reconnect
+        : this.reconnect;
+
+    // Skip reconnect if IP is supplied - directly connect to the provided IP
+    const hasIp = Boolean(connectOptions.ip || this.ip);
+
+    if (shouldReconnect && !hasIp) {
       const lastSandbox = this.agent.getLastSandboxId();
       if (!lastSandbox || !lastSandbox.sandboxId) {
         throw new Error(
-          "Cannot reconnect: No previous sandbox found. Run a test first to create a sandbox, or remove the reconnect option."
+          "Cannot reconnect: No previous sandbox found. Run a test first to create a sandbox, or remove the reconnect option.",
         );
       }
       this.agent.sandboxId = lastSandbox.sandboxId;
       buildEnvOptions.new = false;
-      
+
       // Use OS from last sandbox if not explicitly specified
       if (!connectOptions.os && lastSandbox.os) {
         this.agent.sandboxOs = lastSandbox.os;
@@ -2191,6 +2503,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     // Set redrawThreshold on agent's cliArgs.options
     this.agent.cliArgs.options.redrawThreshold = this.redrawThreshold;
 
+    // Pass test file name to agent for debugger display
+    if (this.testFile) {
+      this.agent.testFile = this.testFile;
+    }
+
     // Use the agent's buildEnv method which handles all the connection logic
     await this.agent.buildEnv(buildEnvOptions);
 
@@ -2202,7 +2519,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     if (this.agent.sandboxOs) {
       this.os = this.agent.sandboxOs;
     }
-    
+
     // Also ensure sandbox.os is set for consistency
     if (this.agent.sandbox && this.os) {
       this.agent.sandbox.os = this.os;
@@ -2227,8 +2544,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     this.agent.commands = commandsResult.commands;
     this.agent.redraw = commandsResult.redraw;
 
-    // Dynamically create command methods based on available commands
-    this._setupCommandMethods();
+    // Command methods are already set up in constructor with lazy-await
+    // They will use this.commands which is now populated
 
     this.connected = true;
     this.analytics.track("sdk.connect", {
@@ -2252,7 +2569,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
     // Always close the sandbox WebSocket connection to clean up resources
     // This ensures we don't leave orphaned connections even if connect() failed
-    if (this.sandbox && typeof this.sandbox.close === 'function') {
+    if (this.sandbox && typeof this.sandbox.close === "function") {
       this.sandbox.close();
     }
 
@@ -2318,10 +2635,39 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    * await element.click();
    */
   find(description, options) {
-    this._ensureConnected();
-    const element = new Element(description, this, this.system, this.commands);
-    const findPromise = element.find(null, options);
-    
+    // Wrap in async IIFE to support lazy-await and promise tracking
+    const findPromise = (async () => {
+      // Lazy-await: wait for connection if still pending
+      if (this.__connectionPromise) {
+        await this.__connectionPromise;
+      }
+
+      // Warn if previous command may not have been awaited
+      if (this._lastCommandName && !this._lastPromiseSettled) {
+        console.warn(
+          `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
+            `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
+            `   Unawaited promises can cause race conditions and flaky tests.`,
+        );
+      }
+
+      this._ensureConnected();
+
+      // Track this promise for unawaited detection
+      this._lastCommandName = "find";
+      this._lastPromiseSettled = false;
+
+      const element = new Element(
+        description,
+        this,
+        this.system,
+        this.commands,
+      );
+      const result = await element.find(null, options);
+      this._lastPromiseSettled = true;
+      return result;
+    })();
+
     // Create a chainable promise that allows direct method chaining
     // e.g., await testdriver.find("button").click()
     return createChainablePromise(findPromise);
@@ -2350,7 +2696,25 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    * }
    */
   async findAll(description, options) {
+    // Lazy-await: wait for connection if still pending
+    if (this.__connectionPromise) {
+      await this.__connectionPromise;
+    }
+
+    // Warn if previous command may not have been awaited
+    if (this._lastCommandName && !this._lastPromiseSettled) {
+      console.warn(
+        `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
+          `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
+          `   Unawaited promises can cause race conditions and flaky tests.`,
+      );
+    }
+
     this._ensureConnected();
+
+    // Track this promise for unawaited detection
+    this._lastCommandName = "findAll";
+    this._lastPromiseSettled = false;
 
     // Capture absolute timestamp at the very start of the command
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
@@ -2365,42 +2729,54 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
       let cacheKey = null;
       let cacheThreshold = null;
-      
-      if (typeof options === 'number') {
+
+      if (typeof options === "number") {
         // Legacy: options is just a number threshold
         cacheThreshold = options;
-      } else if (typeof options === 'object' && options !== null) {
+      } else if (typeof options === "object" && options !== null) {
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
       }
 
       // Use default cacheKey from SDK constructor if not provided in findAll() options
-      if (!cacheKey && this.options?.cacheKey) {
+      // BUT only if cache is not explicitly disabled via cache: false option
+      if (
+        !cacheKey &&
+        this.options?.cacheKey &&
+        !this._cacheExplicitlyDisabled
+      ) {
         cacheKey = this.options.cacheKey;
       }
 
-      // Determine threshold: 
-      // - If cacheKey is provided, enable cache (threshold = 0.01 or custom)
-      // - If no cacheKey, disable cache (threshold = -1) unless explicitly overridden
+      // Determine threshold:
+      // - If cache is explicitly disabled, don't use cache even with cacheKey
+      // - If cacheKey is provided, enable cache with threshold
+      // - If no cacheKey, disable cache
       let threshold;
-      if (cacheKey) {
+      if (this._cacheExplicitlyDisabled) {
+        // Cache explicitly disabled via cache: false option or TD_NO_CACHE env
+        threshold = -1;
+        cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
+      } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? 0.01;
+        threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = cacheThreshold;
       } else {
-        // No cacheKey, no explicit threshold - use global default (which is -1 now)
-        threshold = this.cacheThresholds?.findAll ?? -1;
+        // No cacheKey, no explicit threshold - disable cache
+        threshold = -1;
       }
 
       // Debug log threshold
-      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      const debugMode =
+        process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
       if (debugMode) {
-        const autoGenMsg = (this._autoGeneratedCacheKey && cacheKey === this.options.cacheKey) 
-          ? ' (auto-generated from file hash)' 
-          : '';
+        const autoGenMsg =
+          this._autoGeneratedCacheKey && cacheKey === this.options.cacheKey
+            ? " (auto-generated from file hash)"
+            : "";
         this.emitter.emit(
           events.log.debug,
           `🔍 findAll() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey}${autoGenMsg}` : ""})`,
@@ -2464,20 +2840,22 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         // Track successful findAll interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
         if (sessionId && this.sandbox?.send) {
-          this.sandbox.send({
-            type: "trackInteraction",
-            interactionType: "findAll",
-            session: sessionId,
-            prompt: description,
-            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            success: true,
-            input: { count: elements.length },
-            cacheHit: response.cached || false,
-            selector: response.selector,
-            selectorUsed: !!response.selector,
-          }).catch(err => {
-            console.warn("Failed to track findAll interaction:", err.message);
-          });
+          this.sandbox
+            .send({
+              type: "trackInteraction",
+              interactionType: "findAll",
+              session: sessionId,
+              prompt: description,
+              timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+              success: true,
+              input: { count: elements.length },
+              cacheHit: response.cached || false,
+              selector: response.selector,
+              selectorUsed: !!response.selector,
+            })
+            .catch((err) => {
+              console.warn("Failed to track findAll interaction:", err.message);
+            });
         }
 
         // Log debug information when elements are found
@@ -2493,10 +2871,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           this.emitter.emit(events.log.debug, `  Time: ${duration}ms`);
         }
 
+        this._lastPromiseSettled = true;
         return elements;
       } else {
         const duration = Date.now() - startTime;
-        
+
         // Single log at the end - no elements found
         const formattedMessage = formatter.formatFindAllSingleLine(
           description,
@@ -2511,29 +2890,32 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
         if (sessionId && this.sandbox?.send) {
-          this.sandbox.send({
-            type: "trackInteraction",
-            interactionType: "findAll",
-            session: sessionId,
-            prompt: description,
-            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            success: false,
-            error: "No elements found",
-            input: { count: 0 },
-            cacheHit: response?.cached || false,
-            selector: response?.selector,
-            selectorUsed: !!response?.selector,
-          }).catch(err => {
-            console.warn("Failed to track findAll interaction:", err.message);
-          });
+          this.sandbox
+            .send({
+              type: "trackInteraction",
+              interactionType: "findAll",
+              session: sessionId,
+              prompt: description,
+              timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+              success: false,
+              error: "No elements found",
+              input: { count: 0 },
+              cacheHit: response?.cached || false,
+              selector: response?.selector,
+              selectorUsed: !!response?.selector,
+            })
+            .catch((err) => {
+              console.warn("Failed to track findAll interaction:", err.message);
+            });
         }
 
         // No elements found - return empty array
+        this._lastPromiseSettled = true;
         return [];
       }
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Single log at the end - error
       const formattedMessage = formatter.formatFindAllSingleLine(
         description,
@@ -2547,20 +2929,23 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       // Track findAll error interaction (fire-and-forget, don't block)
       const sessionId = this.getSessionId();
       if (sessionId && this.sandbox?.send) {
-        this.sandbox.send({
-          type: "trackInteraction",
-          interactionType: "findAll",
-          session: sessionId,
-          prompt: description,
-          timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-          success: false,
-          error: error.message,
-          input: { count: 0 },
-        }).catch(err => {
-          console.warn("Failed to track findAll interaction:", err.message);
-        });
+        this.sandbox
+          .send({
+            type: "trackInteraction",
+            interactionType: "findAll",
+            session: sessionId,
+            prompt: description,
+            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            success: false,
+            error: error.message,
+            input: { count: 0 },
+          })
+          .catch((err) => {
+            console.warn("Failed to track findAll interaction:", err.message);
+          });
       }
 
+      this._lastPromiseSettled = true;
       return [];
     }
   }
@@ -2610,251 +2995,74 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
    * @private
    */
   _setupCommandMethods() {
-    // Mapping from command names to SDK method names with type definitions
-    // Each command supports both positional args (legacy) and object args (new)
+    // Mapping from internal command names to SDK method names
     const commandMapping = {
-      "hover-text": {
-        name: "hoverText",
-        /**
-         * Hover over text on screen
-         * @deprecated Use find() and element.click() instead
-         * @param {Object|string} options - Options object or text (legacy positional)
-         * @param {string} options.text - Text to find and hover over
-         * @param {string|null} [options.description] - Optional description of the element
-         * @param {ClickAction} [options.action='click'] - Action to perform
-         * @param {number} [options.timeout=5000] - Timeout in milliseconds
-         * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
-         */
-        doc: "Hover over text on screen (deprecated - use find() instead)",
-      },
-      "hover-image": {
-        name: "hoverImage",
-        /**
-         * Hover over an image on screen
-         * @deprecated Use find() and element.click() instead
-         * @param {Object|string} options - Options object or description (legacy positional)
-         * @param {string} options.description - Description of the image to find
-         * @param {ClickAction} [options.action='click'] - Action to perform
-         * @returns {Promise<{x: number, y: number, centerX: number, centerY: number}>}
-         */
-        doc: "Hover over an image on screen (deprecated - use find() instead)",
-      },
-      "match-image": {
-        name: "matchImage",
-        /**
-         * Match and interact with an image template
-         * @param {Object|string} options - Options object or path (legacy positional)
-         * @param {string} options.path - Path to the image template
-         * @param {ClickAction} [options.action='click'] - Action to perform
-         * @param {boolean} [options.invert=false] - Invert the match
-         * @returns {Promise<boolean>}
-         */
-        doc: "Match and interact with an image template",
-      },
-      type: {
-        name: "type",
-        /**
-         * Type text
-         * @param {string|number} text - Text to type
-         * @param {Object} [options] - Additional options
-         * @param {number} [options.delay=250] - Delay between keystrokes in milliseconds
-         * @param {boolean} [options.secret=false] - If true, text is treated as sensitive (not logged or stored)
-         * @returns {Promise<void>}
-         */
-        doc: "Type text (use { secret: true } for passwords)",
-      },
-      "press-keys": {
-        name: "pressKeys",
-        /**
-         * Press keyboard keys
-         * @param {KeyboardKey[]} keys - Array of keys to press
-         * @param {Object} [options] - Additional options (reserved for future use)
-         * @returns {Promise<void>}
-         */
-        doc: "Press keyboard keys",
-      },
-      click: {
-        name: "click",
-        /**
-         * Click at coordinates
-         * @param {Object|number} options - Options object or x coordinate (legacy positional)
-         * @param {number} options.x - X coordinate
-         * @param {number} options.y - Y coordinate
-         * @param {ClickAction} [options.action='click'] - Type of click action
-         * @returns {Promise<void>}
-         */
-        doc: "Click at coordinates",
-      },
-      hover: {
-        name: "hover",
-        /**
-         * Hover at coordinates
-         * @param {Object|number} options - Options object or x coordinate (legacy positional)
-         * @param {number} options.x - X coordinate
-         * @param {number} options.y - Y coordinate
-         * @returns {Promise<void>}
-         */
-        doc: "Hover at coordinates",
-      },
-      scroll: {
-        name: "scroll",
-        /**
-         * Scroll the page
-         * @param {ScrollDirection} [direction='down'] - Direction to scroll
-         * @param {Object} [options] - Additional options
-         * @param {number} [options.amount=300] - Amount to scroll in pixels
-         * @returns {Promise<void>}
-         */
-        doc: "Scroll the page",
-      },
-      wait: {
-        name: "wait",
-        /**
-         * Wait for specified time
-         * @deprecated Consider using element polling with find() instead of arbitrary waits
-         * @param {number} [timeout=3000] - Time to wait in milliseconds
-         * @param {Object} [options] - Additional options (reserved for future use)
-         * @returns {Promise<void>}
-         */
-        doc: "Wait for specified time (deprecated - consider element polling instead)",
-      },
-      "wait-for-text": {
-        name: "waitForText",
-        /**
-         * Wait for text to appear on screen
-         * @deprecated Use find() in a polling loop instead
-         * @param {Object|string} options - Options object or text (legacy positional)
-         * @param {string} options.text - Text to wait for
-         * @param {number} [options.timeout=5000] - Timeout in milliseconds
-         * @returns {Promise<void>}
-         */
-        doc: "Wait for text to appear on screen (deprecated - use find() in a loop instead)",
-      },
-      "wait-for-image": {
-        name: "waitForImage",
-        /**
-         * Wait for image to appear on screen
-         * @deprecated Use find() in a polling loop instead
-         * @param {Object|string} options - Options object or description (legacy positional)
-         * @param {string} options.description - Description of the image
-         * @param {number} [options.timeout=10000] - Timeout in milliseconds
-         * @returns {Promise<void>}
-         */
-        doc: "Wait for image to appear on screen (deprecated - use find() in a loop instead)",
-      },
-      "scroll-until-text": {
-        name: "scrollUntilText",
-        /**
-         * Scroll until text is found
-         * @param {Object|string} options - Options object or text (legacy positional)
-         * @param {string} options.text - Text to find
-         * @param {ScrollDirection} [options.direction='down'] - Scroll direction
-         * @param {number} [options.maxDistance=10000] - Maximum distance to scroll in pixels
-         * @param {boolean} [options.invert=false] - Invert the match
-         * @returns {Promise<void>}
-         */
-        doc: "Scroll until text is found",
-      },
-      "scroll-until-image": {
-        name: "scrollUntilImage",
-        /**
-         * Scroll until image is found
-         * @param {Object|string} [options] - Options object or description (legacy positional)
-         * @param {string} [options.description] - Description of the image
-         * @param {ScrollDirection} [options.direction='down'] - Scroll direction
-         * @param {number} [options.maxDistance=10000] - Maximum distance to scroll in pixels
-         * @param {string} [options.method='mouse'] - Scroll method
-         * @param {string} [options.path] - Path to image template
-         * @param {boolean} [options.invert=false] - Invert the match
-         * @returns {Promise<void>}
-         */
-        doc: "Scroll until image is found",
-      },
-      "focus-application": {
-        name: "focusApplication",
-        /**
-         * Focus an application by name
-         * @param {string} name - Application name
-         * @param {Object} [options] - Additional options (reserved for future use)
-         * @returns {Promise<string>}
-         */
-        doc: "Focus an application by name",
-      },
-      extract: {
-        name: "extract",
-        /**
-         * Extract information from the screen using AI
-         * @param {Object|string} options - Options object or description (legacy positional)
-         * @param {string} options.description - What to extract
-         * @returns {Promise<string>}
-         */
-        doc: "Extract information from the screen",
-      },
-      assert: {
-        name: "assert",
-        /**
-         * Make an AI-powered assertion
-         * @param {string} assertion - Assertion to check
-         * @param {Object} [options] - Additional options (reserved for future use)
-         * @returns {Promise<boolean>}
-         */
-        doc: "Make an AI-powered assertion",
-      },
-      exec: {
-        name: "exec",
-        /**
-         * Execute code in the sandbox
-         * @param {Object|ExecLanguage} options - Options object or language (legacy positional)
-         * @param {ExecLanguage} [options.language='pwsh'] - Language ('js', 'pwsh', or 'sh')
-         * @param {string} options.code - Code to execute
-         * @param {number} [options.timeout] - Timeout in milliseconds
-         * @param {boolean} [options.silent=false] - Suppress output
-         * @returns {Promise<string>}
-         */
-        doc: "Execute code in the sandbox",
-      },
+      "hover-text": "hoverText",
+      "hover-image": "hoverImage",
+      "match-image": "matchImage",
+      type: "type",
+      "press-keys": "pressKeys",
+      click: "click",
+      hover: "hover",
+      scroll: "scroll",
+      wait: "wait",
+      "wait-for-text": "waitForText",
+      "wait-for-image": "waitForImage",
+      "scroll-until-text": "scrollUntilText",
+      "scroll-until-image": "scrollUntilImage",
+      "focus-application": "focusApplication",
+      extract: "extract",
+      assert: "assert",
+      exec: "exec",
     };
 
-    // Create SDK methods dynamically from commands
-    Object.keys(this.commands).forEach((commandName) => {
-      const command = this.commands[commandName];
-      const methodInfo = commandMapping[commandName];
-
-      if (!methodInfo) {
-        // Skip commands not in mapping
-        return;
-      }
-
-      const methodName = methodInfo.name;
-
-      // Create the wrapper method with proper stack trace handling
+    // Create SDK methods that lazy-await connection then forward to this.commands
+    for (const [commandName, methodName] of Object.entries(commandMapping)) {
       this[methodName] = async function (...args) {
+        // Lazy-await: wait for connection if still pending
+        if (this.__connectionPromise) {
+          await this.__connectionPromise;
+        }
+
+        // Warn if previous command may not have been awaited
+        if (this._lastCommandName && !this._lastPromiseSettled) {
+          console.warn(
+            `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
+              `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
+              `   Unawaited promises can cause race conditions and flaky tests.`,
+          );
+        }
+
         this._ensureConnected();
 
         // Capture the call site for better error reporting
         const callSite = {};
         Error.captureStackTrace(callSite, this[methodName]);
 
+        // Track this promise for unawaited detection
+        this._lastCommandName = methodName;
+        this._lastPromiseSettled = false;
+
         try {
-          return await command(...args);
+          const result = await this.commands[commandName](...args);
+          this._lastPromiseSettled = true;
+          return result;
         } catch (error) {
+          this._lastPromiseSettled = true;
           // Ensure we have a proper Error object with a message
           let properError = error;
           if (!(error instanceof Error)) {
-            // If it's not an Error object, create one with a proper message
             const errorMessage =
               error?.message || error?.reason || JSON.stringify(error);
             properError = new Error(errorMessage);
-            // Preserve additional properties
             if (error?.code) properError.code = error.code;
             if (error?.fullError) properError.fullError = error.fullError;
           }
 
           // Replace the stack trace to point to the actual caller instead of SDK internals
           if (Error.captureStackTrace && callSite.stack) {
-            // Preserve the error message but use the captured call site stack
             const errorMessage = properError.stack?.split("\n")[0];
-            const callerStack = callSite.stack?.split("\n").slice(1); // Skip "Error" line
+            const callerStack = callSite.stack?.split("\n").slice(1);
             properError.stack = errorMessage + "\n" + callerStack.join("\n");
           }
           throw properError;
@@ -2866,7 +3074,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         value: methodName,
         writable: false,
       });
-    });
+    }
   }
 
   // ====================================
@@ -2874,24 +3082,54 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
   // ====================================
 
   /**
-   * Capture a screenshot of the current screen
-   * @param {number} [scale=1] - Scale factor for the screenshot (1 = original size)
-   * @param {boolean} [silent=false] - Whether to suppress logging
-   * @param {boolean} [mouse=false] - Whether to include mouse cursor
-   * @returns {Promise<string>} Base64 encoded PNG screenshot
+   * Capture a screenshot of the current screen and save it to .testdriver/screenshots
+   * @param {string} [filename] - Custom filename (without .png extension)
+   * @returns {Promise<string>} The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot
-   * const screenshot = await client.screenshot();
-   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * // Capture a screenshot with auto-generated filename
+   * const screenshotPath = await testdriver.screenshot();
    *
    * @example
-   * // Capture with mouse cursor visible
-   * const screenshot = await client.screenshot(1, false, true);
+   * // Capture with custom filename
+   * const screenshotPath = await testdriver.screenshot("login-page");
+   * // Saves to: .testdriver/screenshots/<test>/login-page.png
    */
-  async screenshot(scale = 1, silent = false, mouse = false) {
+  async screenshot(filename) {
     this._ensureConnected();
-    return await this.system.captureScreenBase64(scale, silent, mouse);
+
+    const finalFilename = filename
+      ? filename.endsWith(".png")
+        ? filename
+        : `${filename}.png`
+      : `screenshot-${Date.now()}.png`;
+
+    const base64Data = await this.system.captureScreenBase64(1, false, false);
+
+    // Save to .testdriver/screenshots/<test-file-name> directory
+    let screenshotsDir = path.join(process.cwd(), ".testdriver", "screenshots");
+    if (this.testFile) {
+      const testFileName = path.basename(
+        this.testFile,
+        path.extname(this.testFile),
+      );
+      screenshotsDir = path.join(screenshotsDir, testFileName);
+    }
+    if (!fs.existsSync(screenshotsDir)) {
+      fs.mkdirSync(screenshotsDir, { recursive: true });
+    }
+
+    const filePath = path.join(screenshotsDir, finalFilename);
+
+    // Remove data:image/png;base64, prefix if present
+    const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(cleanBase64, "base64");
+
+    fs.writeFileSync(filePath, buffer);
+
+    this.emitter.emit("log:info", `📸 Screenshot saved to: ${filePath}`);
+
+    return filePath;
   }
 
   /**
@@ -2949,13 +3187,14 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
   _setupLogging() {
     // Track the last fatal error message to throw on exit
     let lastFatalError = null;
-    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+    const debugMode =
+      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
 
     // Set up markdown logger
     createMarkdownLogger(this.emitter);
 
     // Set up basic event logging
-    // Note: We only console.log here - the console spy in vitest/hooks.mjs 
+    // Note: We only console.log here - the console spy in vitest/hooks.mjs
     // handles forwarding to sandbox. This prevents duplicate output to server.
     this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
@@ -2977,7 +3216,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
       if (this.loggingEnabled) {
         const event = this.emitter.event;
         console.error(event, ":", data);
-        
+
         // Capture fatal errors
         if (event === events.error.fatal) {
           lastFatalError = data;
@@ -2996,9 +3235,9 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     this.emitter.on(events.exit, (exitCode) => {
       if (exitCode !== 0) {
         // Create an error with the fatal error message if available
-        const errorMessage = lastFatalError || 'TestDriver fatal error';
+        const errorMessage = lastFatalError || "TestDriver fatal error";
         const error = new Error(errorMessage);
-        error.name = 'TestDriverFatalError';
+        error.name = "TestDriverFatalError";
         error.exitCode = exitCode;
         throw error;
       }
@@ -3023,7 +3262,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           console.log(url);
           await this._openBrowser(url);
         }
-        
       }
     });
   }
@@ -3114,7 +3352,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
     // Auto-detect sandbox ID from the active sandbox if not provided
     // For E2B (Linux), the instance has sandboxId; for AWS (Windows), it has instanceId
-    const sandboxId = options.sandboxId || this.instance?.sandboxId || this.instance?.instanceId || this.agent?.sandboxId || null;
+    const sandboxId =
+      options.sandboxId ||
+      this.instance?.sandboxId ||
+      this.instance?.instanceId ||
+      this.agent?.sandboxId ||
+      null;
 
     // Get or create session ID using the agent's newSession method
     let sessionId = this.agent?.sessionInstance?.get() || null;
@@ -3285,7 +3528,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     // Store original checkLimit and set custom one if provided
     const originalCheckLimit = this.agent.checkLimit;
     this.agent.checkLimit = tries;
-    
+
     // Reset check count for this act() call
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
@@ -3295,17 +3538,25 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
     try {
       // Use the agent's exploratoryLoop method directly
-      const response = await this.agent.exploratoryLoop(task, false, true, false);
-      
+      const response = await this.agent.exploratoryLoop(
+        task,
+        false,
+        true,
+        false,
+      );
+
       const duration = Date.now() - startTime;
       const triesUsed = this.agent.checkCount;
-      
-      this.emitter.emit(events.log.log, formatter.formatAIComplete(duration, true));
-      
+
+      this.emitter.emit(
+        events.log.log,
+        formatter.formatAIComplete(duration, true),
+      );
+
       // Restore original checkLimit
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
-      
+
       return {
         success: true,
         task,
@@ -3317,13 +3568,16 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
     } catch (error) {
       const duration = Date.now() - startTime;
       const triesUsed = this.agent.checkCount;
-      
-      this.emitter.emit(events.log.log, formatter.formatAIComplete(duration, false, error.message));
-      
+
+      this.emitter.emit(
+        events.log.log,
+        formatter.formatAIComplete(duration, false, error.message),
+      );
+
       // Restore original checkLimit
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
-      
+
       // Create an enhanced error with additional context using AIError class
       throw new AIError(`AI failed: ${error.message}`, {
         task,
