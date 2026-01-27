@@ -5,11 +5,6 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
 
-const TWOCAPTCHA_API_KEY = process.env.TWOCAPTCHA_API_KEY;
-console.log(
-  "DEBUG: TWOCAPTCHA_API_KEY length:",
-  TWOCAPTCHA_API_KEY ? TWOCAPTCHA_API_KEY.length : "undefined",
-);
 console.log("DEBUG: process.env.TD_OS:", process.env.TD_OS);
 
 describe("testdriver.captcha() API", () => {
@@ -25,7 +20,7 @@ describe("testdriver.captcha() API", () => {
 
     // Solve the captcha with just the API key - everything else is auto-detected!
     const result = await testdriver.captcha({
-      apiKey: TWOCAPTCHA_API_KEY,
+      apiKey: process.env.TWOCAPTCHA_API_KEY,
     });
 
     console.log("Captcha result:", result);
@@ -44,7 +39,7 @@ describe("testdriver.captcha() API", () => {
     await testdriver.screenshot();
 
     const result = await testdriver.captcha({
-      apiKey: TWOCAPTCHA_API_KEY,
+      apiKey: process.env.TWOCAPTCHA_API_KEY,
     });
 
     console.log("Turnstile result:", result);
