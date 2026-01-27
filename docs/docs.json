@@ -72,6 +72,7 @@
                 "pages": [
                   "/v7/ai",
                   "/v7/assert",
+                  "/v7/captcha",
                   "/v7/click",
                   "/v7/double-click",
                   "/v7/exec",
