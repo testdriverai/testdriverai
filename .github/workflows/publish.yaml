@@ -1,52 +1,68 @@
 name: Publish
 permissions:
-    contents: write
-    id-token: write  # Required for OIDC
+  contents: write
+  id-token: write # Required for OIDC
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        registry-url: 'https://registry.npmjs.org/'
-    
-    - name: Configure Git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Bump version (patch)
-      run: npm version patch --no-git-tag-version
-    
-    - name: Commit and push version bump
-      run: |
-        git add package.json package-lock.json
-        git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
-        git push
-    
-    - name: Debug NPM Token
-      run: |
-        echo "NPM_TOKEN is set: ${{ secrets.NPM_TOKEN != '' }}"
-        echo "NPM_TOKEN first 4 chars: ${NPM_TOKEN:0:4}..."
-      env:
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-    
-    - name: Publish to npm
-      run: npm publish --tag beta 
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version (patch)
+        run: npm version patch --no-git-tag-version
+
+      - name: Generate Changelog
+        run: |
+          npx conventional-changelog-cli -p angular -i CHANGELOG.md -s
+          git add CHANGELOG.md
+
+      - name: Commit and push version bump
+        run: |
+          git add package.json package-lock.json
+          VERSION=$(node -p "require('./package.json').version")
+          git commit -m "chore(release): ${VERSION}"
+          git tag "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          generate_release_notes: true
+          prerelease: false
+
+      - name: Debug NPM Token
+        run: |
+          echo "NPM_TOKEN is set: ${{ secrets.NPM_TOKEN != '' }}"
+          echo "NPM_TOKEN first 4 chars: ${NPM_TOKEN:0:4}..."
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        run: npm publish --tag beta
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
