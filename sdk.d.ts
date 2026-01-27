@@ -1229,6 +1229,7 @@ export default class TestDriverSDK {
   // AI Methods (Exploratory Loop)
 
   /**
+   * @deprecated Use ai() instead
    * Execute a natural language task using AI
    * This is the SDK equivalent of the CLI's exploratory loop
    *
@@ -1238,11 +1239,11 @@ export default class TestDriverSDK {
    *
    * @example
    * // Simple execution
-   * await client.act('Click the submit button');
+   * await client.ai('Click the submit button');
    *
    * @example
    * // With validation loop
-   * const result = await client.act('Fill out the contact form', { validateAndLoop: true });
+   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
    * console.log(result); // AI's final assessment
    */
   act(
@@ -1251,7 +1252,6 @@ export default class TestDriverSDK {
   ): Promise<string | void>;
 
   /**
-   * @deprecated Use act() instead
    * Execute a natural language task using AI
    *
    * @param task - Natural language description of what to do

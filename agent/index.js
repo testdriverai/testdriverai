@@ -110,8 +110,8 @@ class TestDriverAgent extends EventEmitter2 {
     this.sandbox = createSandbox(this.emitter, this.analytics, this.session);
 
     // Attach Sentry log listeners to capture CLI logs as breadcrumbs
-      const sentry = require("../lib/sentry");
-      sentry.attachLogListeners(this.emitter);
+    const sentry = require("../lib/sentry");
+    sentry.attachLogListeners(this.emitter);
 
     // Set the OS for the sandbox to use
     this.sandbox.os = this.sandboxOs;
@@ -187,7 +187,14 @@ class TestDriverAgent extends EventEmitter2 {
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
     const { formatter } = require("../sdk-log-formatter.js");
-    this.emitter.emit(events.log.narration, formatter.getPrefix("disconnect") + " " + theme.yellow.bold("Exiting") + theme.dim("..."), true);
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("disconnect") +
+        " " +
+        theme.yellow.bold("Exiting") +
+        theme.dim("..."),
+      true,
+    );
 
     // Clean up redraw interval
     if (this.redraw && this.redraw.cleanup) {
@@ -236,9 +243,7 @@ class TestDriverAgent extends EventEmitter2 {
     if (errorContext) {
       this.emitter.emit(events.error.fatal, errorContext);
     } else {
-      this.emitter.emit(
-        events.error.fatal,error,
-      );
+      this.emitter.emit(events.error.fatal, error);
     }
 
     if (skipPostrun) {
@@ -432,15 +437,12 @@ class TestDriverAgent extends EventEmitter2 {
     let mousePosition = await this.system.getMousePosition();
     let activeWindow = await this.system.activeWin();
 
-    let response = await this.sdk.req(
-      "check",
-      {
-        tasks: this.tasks,
-        images,
-        mousePosition,
-        activeWindow,
-      }
-    );
+    let response = await this.sdk.req("check", {
+      tasks: this.tasks,
+      images,
+      mousePosition,
+      activeWindow,
+    });
 
     this.emitter.emit(events.log.markdown.static, response.data);
 
@@ -873,7 +875,7 @@ commands:
     currentTask,
     dry = false,
     validateAndLoop = false,
-    shouldSave = true
+    shouldSave = true,
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
@@ -896,15 +898,12 @@ commands:
 
     this.lastScreenshot = await this.system.captureScreenBase64();
 
-    let message = await this.sdk.req(
-      "input",
-      {
-        input: currentTask,
-        mousePosition: await this.system.getMousePosition(),
-        activeWindow: await this.system.activeWin(),
-        image: this.lastScreenshot,
-      }
-    );
+    let message = await this.sdk.req("input", {
+      input: currentTask,
+      mousePosition: await this.system.getMousePosition(),
+      activeWindow: await this.system.activeWin(),
+      image: this.lastScreenshot,
+    });
 
     this.emitter.emit(events.log.log, message.data);
 
@@ -1621,8 +1620,8 @@ ${regression}
 
   // Returns the path to the last sandbox file
   getLastSandboxFilePath() {
-    const testdriverDir = path.join(process.cwd(), '.testdriver');
-    return path.join(testdriverDir, 'last-sandbox');
+    const testdriverDir = path.join(process.cwd(), ".testdriver");
+    return path.join(testdriverDir, "last-sandbox");
   }
 
   // Returns full sandbox info from last-sandbox file (no timeout - let API validate)
@@ -1643,7 +1642,7 @@ ${regression}
 
         return {
           sandboxId: sandboxInfo.sandboxId || sandboxInfo.instanceId || null,
-          os: sandboxInfo.os || 'linux',
+          os: sandboxInfo.os || "linux",
           ami: sandboxInfo.ami || null,
           instanceType: sandboxInfo.instanceType || null,
           timestamp: sandboxInfo.timestamp || null,
@@ -1658,7 +1657,7 @@ ${regression}
   // Returns sandboxId to use if AMI/instance type match current requirements
   getRecentSandboxId() {
     const sandboxInfo = this.getLastSandboxId();
-    
+
     if (!sandboxInfo || !sandboxInfo.sandboxId) {
       return null;
     }
@@ -1685,13 +1684,13 @@ ${regression}
   saveLastSandboxId(sandboxId, osType = "linux") {
     const lastSandboxFile = this.getLastSandboxFilePath();
     const testdriverDir = path.dirname(lastSandboxFile);
-    
+
     try {
       // Ensure .testdriver directory exists
       if (!fs.existsSync(testdriverDir)) {
         fs.mkdirSync(testdriverDir, { recursive: true });
       }
-      
+
       const sandboxInfo = {
         sandboxId: sandboxId,
         os: osType,
@@ -1752,15 +1751,9 @@ ${regression}
       // Also clear this.sandboxId to prevent reconnection attempts
       this.sandboxId = null;
       if (!this.config.CI && !this.newSandbox) {
-        this.emitter.emit(
-          events.log.log,
-          theme.dim("--`new` flag detected, will create a new sandbox"),
-        );
+        this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
       } else if (this.newSandbox) {
-        this.emitter.emit(
-          events.log.log,
-          theme.dim("--new-sandbox flag detected, will create a new sandbox"),
-        );
+        this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
       }
     }
 
@@ -1797,7 +1790,7 @@ ${regression}
         theme.dim(`using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
-      
+
       try {
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
@@ -1845,13 +1838,17 @@ ${regression}
         console.error("Failed to reconnect to sandbox:", error);
       }
     }
-    
+
     // Create new sandbox (either because createNew is true, or no existing sandbox to connect to)
     if (!this.instance) {
       const { formatter } = require("../sdk-log-formatter.js");
       this.emitter.emit(
         events.log.narration,
-        formatter.getPrefix("connect") + " " + theme.green.bold("Creating") + " " + theme.cyan(`new sandbox...`),
+        formatter.getPrefix("connect") +
+          " " +
+          theme.green.bold("Creating") +
+          " " +
+          theme.cyan(`new sandbox...`),
       );
       // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
       // to see if that fixes the issue.
@@ -1864,11 +1861,12 @@ ${regression}
       });
 
       // Extract the sandbox ID from the newly created sandbox
-      this.sandboxId = newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
-      
+      this.sandboxId =
+        newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
+
       // Use the configured sandbox OS type
       this.saveLastSandboxId(this.sandboxId, this.sandboxOs);
-      
+
       let instance = await this.connectToSandboxDirect(
         this.sandboxId,
         true, // always persist by default
@@ -1997,7 +1995,6 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
-
     if (!headless) {
       let url;
 
@@ -2051,7 +2048,13 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
 
     const { formatter } = require("../sdk-log-formatter.js");
-    this.emitter.emit(events.log.narration, formatter.getPrefix("connect") + " " + theme.green.bold("Authenticating") + theme.dim("..."));
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("connect") +
+        " " +
+        theme.green.bold("Authenticating") +
+        theme.dim("..."),
+    );
     let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
 
     if (!ableToAuth) {
@@ -2065,7 +2068,14 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 
   async connectToSandboxDirect(sandboxId, persist = false, keepAlive = null) {
     const { formatter } = require("../sdk-log-formatter.js");
-    this.emitter.emit(events.log.narration, formatter.getPrefix("connect") + " " + theme.green.bold("Connecting") + " " + theme.cyan(`to sandbox...`));
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("connect") +
+        " " +
+        theme.green.bold("Connecting") +
+        " " +
+        theme.cyan(`to sandbox...`),
+    );
     let reply = await this.sandbox.connect(sandboxId, persist, keepAlive);
 
     // reply includes { success, url, sandbox: {...} }
@@ -2107,15 +2117,18 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       let response = await this.sandbox.send(sandboxConfig, 60000 * 8);
 
       // Check if queued (all slots in use)
-      if (response.type === 'create.queued') {
+      if (response.type === "create.queued") {
         this.emitter.emit(
           events.log.narration,
-          formatter.getPrefix("queue") + " " + theme.yellow.bold("Waiting") + " " +
-          theme.dim(response.message),
+          formatter.getPrefix("queue") +
+            " " +
+            theme.yellow.bold("Waiting") +
+            " " +
+            theme.dim(response.message),
         );
 
         // Wait then retry
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
         continue;
       }
 
@@ -2134,10 +2147,14 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     // should be start of new session
     // If sandbox is connected, get system info; otherwise pass empty objects
     const isSandboxConnected = this.sandbox.apiSocketConnected;
-    
+
     const sessionRes = await this.sdk.req("session/start", {
-      systemInformationOsInfo: isSandboxConnected ? await this.system.getSystemInformationOsInfo() : {},
-      mousePosition: isSandboxConnected ? await this.system.getMousePosition() : {},
+      systemInformationOsInfo: isSandboxConnected
+        ? await this.system.getSystemInformationOsInfo()
+        : {},
+      mousePosition: isSandboxConnected
+        ? await this.system.getMousePosition()
+        : {},
       activeWindow: isSandboxConnected ? await this.system.activeWin() : {},
     });
 
@@ -2148,7 +2165,7 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
 
     this.session.set(sessionRes.data.id);
-    
+
     // Set Sentry session trace context for distributed tracing
     // This links CLI errors/logs to the same trace as API calls
     try {
