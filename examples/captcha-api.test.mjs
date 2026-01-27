@@ -6,6 +6,11 @@ import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 const TWOCAPTCHA_API_KEY = process.env.TWOCAPTCHA_API_KEY;
+console.log(
+  "DEBUG: TWOCAPTCHA_API_KEY length:",
+  TWOCAPTCHA_API_KEY ? TWOCAPTCHA_API_KEY.length : "undefined",
+);
+console.log("DEBUG: process.env.TD_OS:", process.env.TD_OS);
 
 describe("testdriver.captcha() API", () => {
   it("should solve reCAPTCHA v3 with auto-detect", async (context) => {
