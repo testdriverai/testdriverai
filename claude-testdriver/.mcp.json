@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "testdriver-cloud-local": {
+      "type": "http",
+      "baseUrl": "http://localhost:1337/api/v1/mcp",
+      "requestHeaders": {
+        "X-Api-Key": "${TESTDRIVER_API_KEY}"
+      },
+      "description": "Local TestDriver MCP endpoint for querying test runs and cases."
+    }
+  }
+}
+
