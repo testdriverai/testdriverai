@@ -5,6 +5,7 @@ const path = require("path");
 const chalk = require("chalk");
 const { execSync } = require("child_process");
 const readline = require("readline");
+const os = require("os");
 
 /**
  * Init command - scaffolds Vitest SDK example tests for TestDriver
@@ -78,7 +79,11 @@ class InitCommand extends BaseCommand {
         : "";
 
       fs.writeFileSync(envPath, envContent + `TD_API_KEY=${apiKey.trim()}\n`);
+      process.env.TD_API_KEY = apiKey.trim();
       console.log(chalk.green("\n  ✓ API key saved to .env\n"));
+
+      // Also persist to shell profile so it's available in all terminals
+      this.addToShellProfile("TD_API_KEY", apiKey.trim());
     } else {
       console.log(
         chalk.yellow(
@@ -130,6 +135,63 @@ class InitCommand extends BaseCommand {
 
       stdin.on("data", onData);
     });
+  }
+
+  /**
+   * Add an environment variable export to the user's shell profile
+   */
+  addToShellProfile(key, value) {
+    if (process.platform === "win32") {
+      // On Windows, set a persistent user environment variable via setx
+      try {
+        execSync(`setx ${key} "${value}"`, { stdio: "ignore" });
+        console.log(
+          chalk.green(`  ✓ Set ${key} as user environment variable\n`),
+        );
+      } catch (error) {
+        console.log(
+          chalk.yellow(`  ⚠️  Could not set ${key} via setx. You can set it manually:\n`),
+        );
+        console.log(chalk.gray(`     setx ${key} "your_api_key"\n`));
+      }
+      return;
+    }
+
+    // Unix: append export to shell profile
+    const shell = process.env.SHELL || "/bin/bash";
+    const home = os.homedir();
+    let profilePath;
+
+    if (shell.includes("zsh")) {
+      profilePath = path.join(home, ".zshrc");
+    } else {
+      profilePath = path.join(home, ".bashrc");
+    }
+
+    const exportLine = `export ${key}="${value}"`;
+
+    // Check if already present
+    if (fs.existsSync(profilePath)) {
+      const content = fs.readFileSync(profilePath, "utf8");
+      if (content.includes(`export ${key}=`)) {
+        // Replace existing line
+        const updated = content.replace(
+          new RegExp(`^export ${key}=.*$`, "m"),
+          exportLine,
+        );
+        fs.writeFileSync(profilePath, updated);
+        console.log(
+          chalk.green(`  ✓ Updated ${key} in ${profilePath}\n`),
+        );
+        return;
+      }
+    }
+
+    // Append to profile
+    fs.appendFileSync(profilePath, `\n${exportLine}\n`);
+    console.log(
+      chalk.green(`  ✓ Added ${key} to ${profilePath}\n`),
+    );
   }
 
   /**

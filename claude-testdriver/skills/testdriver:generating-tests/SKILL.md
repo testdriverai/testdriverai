@@ -1,0 +1,36 @@
+---
+name: testdriver:generating-tests
+description: Use AI coding agents and exploration mode to generate TestDriver tests
+---
+<!-- Generated from generating-tests.mdx. DO NOT EDIT. -->
+
+## Instructions for Coding Agents
+
+We recommend starting with [our quickstart](./quickstart) then supplying your coding agent with our agents.md file.
+
+<Card title="Agents.md" icon="link" arrow="true" horizontal href="https://github.com/testdriverai/testdriverai/blob/main/agents.md?plain=1">
+  Copy the current version of agents.md to provide your coding agent with up-to-date instructions on how to generate TestDriver tests.
+</Card>
+
+Then, you can prompt your coding agent to generate tests. Here is an example prompt:
+
+```md
+Make me a TestDriver test that does the following steps:
+
+Navigate to practicetestautomation.com
+Type username student into Username field
+Type password Password123 into Password field
+Push Submit button
+Verify new page contains expected text 'logged in'
+```
+
+## AI Exploration Mode
+
+Within a test, the `ai()` method lets TestDriver autonomously figure out how to accomplish a task. It's useful for dynamic or unpredictable UIs where explicit actions may be difficult to define.
+
+```javascript
+// Handle dynamic or unpredictable UI
+await testdriver.ai('dismiss any popups or modals that appear');
+```
+
+<Info>Explicit commands are preferred for production tests, as they are cheaper, faster, and more reliable.</Info>
