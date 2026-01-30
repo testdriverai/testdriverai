@@ -10,47 +10,52 @@ html, body {
   line-height: var(--font-text-sm-line-height, 1.5);
   background: var(--color-background-primary, #fff);
   color: var(--color-text-primary, #1a1a1a);
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .main {
   width: 100%;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 .screenshot-wrapper {
   position: relative;
   width: 100%;
-  min-height: 200px;
-  max-height: 400px;
-  overflow: hidden;
+  flex: 1;
+  min-height: 0;
   background: var(--color-background-secondary, #f5f5f5);
   border-radius: var(--border-radius-md, 8px);
+  overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 }
 
 /* Loading overlay */
 .loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  padding: 40px;
+  flex: 1;
+  min-height: 100px;
   background: var(--color-background-secondary, #f5f5f5);
-  z-index: 10;
-  transition: opacity 0.2s ease-out;
 }
 
 .loading-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .loading-spinner {
@@ -74,20 +79,18 @@ html, body {
 .screenshot-container {
   position: relative;
   width: 100%;
-  max-height: 100%;
-  transform-origin: top left;
-  transition: transform 0.3s ease-out;
-  cursor: zoom-out;
-}
-
-.screenshot-container:not(.zoomed) {
-  cursor: zoom-in;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #screenshot {
   display: block;
-  width: 100%;
   max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
   object-fit: contain;
 }

@@ -19,9 +19,9 @@ TestDriver enables computer-use testing through natural language - controlling b
 ## Capabilities
 
 - **Test Creation**: You know how to build tests from scratch using TestDriver skills and best practices.
-- **MCP Workflow**: You use the TestDriver MCP tools to build tests interactively with visual feedback. Each action returns a screenshot, allowing O(1) iteration time regardless of test length.
-- **Visual Verification**: You analyze screenshots returned by MCP tools to understand the current context and verify that actions are performing as expected.
-- **Iterative Development**: You don't just write code once; you interact with the sandbox, check the screenshots, and refine the test until the task is fully complete and the test passes reliably.
+- **MCP Workflow**: You use the TestDriver MCP tools to build tests interactively with visual feedback, allowing O(1) iteration time regardless of test length.
+- **Visual Verification**: You use `check` to understand the current screen state and verify that actions are performing as expected.
+- **Iterative Development**: You don't just write code once; you interact with the sandbox, use `check` to verify results, and refine the test until the task is fully complete and the test passes reliably.
 
 ## Context and examples
 
@@ -177,9 +177,9 @@ await element.mouseUp(); // release mouse
 element.found(); // check if found (boolean)
 ```
 
-### Screenshots for Debugging
+### Screenshots
 
-**Use `screenshot()` liberally during development** to see exactly what the sandbox screen looks like. Screenshots are saved locally and organized by test file.
+Use `screenshot()` **only when the user explicitly asks** to see what the screen looks like. Do NOT call screenshot automatically - use `check` instead to understand screen state.
 
 ```javascript
 // Capture a screenshot - saved to .testdriver/screenshots/<test-file>/
@@ -190,14 +190,6 @@ console.log("Screenshot saved to:", screenshotPath);
 await testdriver.screenshot(1, false, true);
 ```
 
-**When to use screenshots:**
-
-- After `provision.chrome()` to verify the page loaded correctly
-- Before/after clicking elements to see state changes
-- When a `find()` fails to see what the AI is actually seeing
-- Before `assert()` calls to debug assertion failures
-- When tests behave unexpectedly
-
 **Screenshot file organization:**
 
 ```
@@ -205,12 +197,11 @@ await testdriver.screenshot(1, false, true);
   screenshots/
     login.test/           # Folder per test file
       screenshot-1737633600000.png
-      screenshot-1737633605000.png
     checkout.test/
       screenshot-1737633700000.png
 ```
 
-> **Note:** The screenshot folder for each test file is automatically cleared when the test starts, so you only see screenshots from the most recent run.
+> **Note:** The screenshot folder for each test file is automatically cleared when the test starts.
 
 ## Best Workflow: MCP Tools
 
@@ -218,10 +209,10 @@ await testdriver.screenshot(1, false, true);
 
 ### Key Advantages
 
-- **See screenshots inline** after every action
 - **No need to restart** - continue from current state
 - **Automatic command recording** - successful commands are logged
 - **Code generation** - convert recorded commands to test files
+- **Use `check` to verify** - understand screen state without explicit screenshots
 
 ### Step 1: Start a Session
 
@@ -307,7 +298,7 @@ verify({ testFile: "tests/login.test.mjs" })
 | `check` | AI analysis of whether a task completed |
 | `assert` | AI-powered boolean assertion (pass/fail for test files) |
 | `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
-| `screenshot` | Capture screenshot without other actions |
+| `screenshot` | Capture screenshot - **only use when user explicitly asks** |
 | `commit` | Write recorded commands to test file |
 | `verify` | Run test file from scratch |
 | `get_command_log` | View recorded commands before committing |
@@ -335,9 +326,6 @@ it("should incrementally build test", async (context) => {
   const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: "https://example.com" });
 
-  // Take a screenshot to see the initial state
-  await testdriver.screenshot();
-
   // Step 1: Find and inspect
   const element = await testdriver.find("Some button");
   console.log("Element found:", element.found());
@@ -346,9 +334,6 @@ it("should incrementally build test", async (context) => {
 
   // Step 2: Interact
   await element.click();
-
-  // Screenshot after interaction to see the result
-  await testdriver.screenshot();
 
   // Step 3: Assert and log
   const result = await testdriver.assert("Something happened");
@@ -453,7 +438,7 @@ console.log("Screenshot with mouse saved to: screenshot-with-mouse.png");
 1. **Use MCP tools for development** - Don't write test files manually; use the MCP workflow to build tests interactively
 2. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
 3. **Look at test samples** in `node_modules/testdriverai/test` for working examples
-4. **Examine every screenshot** - They show exactly what the sandbox sees
+4. **Use `check` to understand screen state** - This is how you verify what the sandbox shows. Only use `screenshot` when the user asks to see the screen.
 5. **Use `check` after actions, `assert` for test files** - `check` gives detailed AI analysis, `assert` gives boolean pass/fail
 6. **Be specific with element descriptions** - "blue Sign In button in the header" > "button"
 7. **Start simple** - get one step working before adding more

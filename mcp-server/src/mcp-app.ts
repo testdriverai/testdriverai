@@ -94,7 +94,7 @@ function hideLoading() {
 }
 
 /**
- * Apply host context (theme, styles, safe areas)
+ * Apply host context (theme, styles, safe areas, container dimensions)
  */
 function handleHostContextChanged(ctx: McpUiHostContext) {
   if (ctx.theme) {
@@ -111,6 +111,32 @@ function handleHostContextChanged(ctx: McpUiHostContext) {
     mainEl.style.paddingRight = `${ctx.safeAreaInsets.right}px`;
     mainEl.style.paddingBottom = `${ctx.safeAreaInsets.bottom}px`;
     mainEl.style.paddingLeft = `${ctx.safeAreaInsets.left}px`;
+  }
+  
+  // Handle container dimensions to fit the entire image in the frame
+  const containerDimensions = (ctx as any).containerDimensions;
+  if (containerDimensions) {
+    // Handle height
+    if ("height" in containerDimensions) {
+      // Fixed height: fill the container
+      document.documentElement.style.height = "100vh";
+      mainEl.style.height = "100%";
+    } else if ("maxHeight" in containerDimensions && containerDimensions.maxHeight) {
+      // Flexible with max: let content determine size, up to max
+      document.documentElement.style.maxHeight = `${containerDimensions.maxHeight}px`;
+      mainEl.style.maxHeight = "100%";
+    }
+
+    // Handle width
+    if ("width" in containerDimensions) {
+      // Fixed width: fill the container
+      document.documentElement.style.width = "100vw";
+      mainEl.style.width = "100%";
+    } else if ("maxWidth" in containerDimensions && containerDimensions.maxWidth) {
+      // Flexible with max: let content determine size, up to max
+      document.documentElement.style.maxWidth = `${containerDimensions.maxWidth}px`;
+      mainEl.style.maxWidth = "100%";
+    }
   }
 }
 
@@ -357,6 +383,7 @@ function renderResult(data: ToolResultData) {
     screenshotEl.onerror = () => {
       console.error("Image failed to load");
       screenshotEl.alt = "Image failed to load";
+      containerEl.style.display = "none";
       hideLoading();
     };
     screenshotEl.onload = () => {
@@ -364,7 +391,8 @@ function renderResult(data: ToolResultData) {
       // Store natural dimensions
       screenshotNaturalWidth = screenshotEl.naturalWidth;
       screenshotNaturalHeight = screenshotEl.naturalHeight;
-      // Add overlays now that we know dimensions
+      // Show the container and add overlays now that we know dimensions
+      containerEl.style.display = "block";
       addOverlays(data);
       // Hide loading state
       hideLoading();
@@ -374,6 +402,7 @@ function renderResult(data: ToolResultData) {
   } else {
     // No image available - just show status without visual
     screenshotEl.style.display = "none";
+    containerEl.style.display = "none";
     hideLoading();
   }
 }
@@ -416,9 +445,10 @@ app.onteardown = async () => {
 
 app.ontoolinput = (params) => {
   console.info("Received tool input:", params);
-  // Show loading state
+  // Show loading state and hide screenshot (to avoid broken image during load)
   actionStatusEl.textContent = "Running action...";
   actionStatusEl.className = "loading";
+  containerEl.style.display = "none";
   showLoading("Running action...");
 };
 

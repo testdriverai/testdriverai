@@ -443,7 +443,8 @@ class TestDriverAgent extends EventEmitter2 {
       }
     );
 
-    this.emitter.emit(events.log.markdown.static, response.data);
+    // Use log.log (not markdown.static) so output goes through console spy to sandbox
+    this.emitter.emit(events.log.log, response.data);
 
     this.lastScreenshot = thisScreenshot;
 

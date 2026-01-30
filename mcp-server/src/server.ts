@@ -9,8 +9,9 @@ process.env.TD_STDIO = "stderr";
 process.env.TD_DEBUG = "true";
 
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
 import type { CallToolResult, ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import * as Sentry from "@sentry/node";
 import * as fs from "fs";
@@ -149,11 +150,9 @@ const DIST_DIR = __filename.endsWith(".ts")
 // Resource URI for the screenshot result UI
 const RESOURCE_URI = "ui://testdriver/mcp-app.html";
 
-// Resource URI for serving screenshot blobs
-const SCREENSHOT_RESOURCE_URI = "screenshot://testdriver/latest";
-
-// Resource URI for serving cropped image blobs from find operations
-const CROPPED_IMAGE_RESOURCE_URI = "screenshot://testdriver/cropped";
+// Resource URI base for serving screenshot blobs (with dynamic IDs)
+const SCREENSHOT_RESOURCE_BASE = "screenshot://testdriver/screenshot";
+const CROPPED_IMAGE_RESOURCE_BASE = "screenshot://testdriver/cropped";
 
 // SDK instance (will be initialized on session start)
 let sdk: any = null;
@@ -161,11 +160,60 @@ let sdk: any = null;
 // Last screenshot base64 for check comparisons
 let lastScreenshotBase64: string | null = null;
 
-// Latest screenshot for MCP app resource (stored when screenshot tool is called)
-let latestScreenshotBlob: string | null = null;
+// =============================================================================
+// Image Store - Stores images with unique IDs for reload persistence
+// =============================================================================
 
-// Latest cropped image for MCP app resource (from find/click actions)
-let latestCroppedImageBlob: string | null = null;
+interface StoredImage {
+  data: string;  // base64 image data
+  type: "screenshot" | "cropped";
+  timestamp: number;
+}
+
+// Map of image ID -> image data
+const imageStore = new Map<string, StoredImage>();
+
+// Counter for generating unique image IDs
+let imageIdCounter = 0;
+
+// Maximum number of images to store (to prevent memory leaks)
+const MAX_STORED_IMAGES = 100;
+
+/**
+ * Store an image and return its unique resource URI
+ */
+function storeImage(data: string, type: "screenshot" | "cropped"): string {
+  const id = `${type}-${++imageIdCounter}`;
+  
+  // Clean up old images if we exceed the limit
+  if (imageStore.size >= MAX_STORED_IMAGES) {
+    // Remove oldest images (first entries in the map)
+    const entriesToRemove = Math.floor(MAX_STORED_IMAGES / 4);
+    const keys = Array.from(imageStore.keys()).slice(0, entriesToRemove);
+    for (const key of keys) {
+      imageStore.delete(key);
+    }
+    logger.debug("storeImage: Cleaned up old images", { removed: entriesToRemove, remaining: imageStore.size });
+  }
+  
+  imageStore.set(id, {
+    data,
+    type,
+    timestamp: Date.now(),
+  });
+  
+  logger.debug("storeImage: Stored image", { id, type, dataLength: data.length });
+  
+  const base = type === "screenshot" ? SCREENSHOT_RESOURCE_BASE : CROPPED_IMAGE_RESOURCE_BASE;
+  return `${base}/${id}`;
+}
+
+/**
+ * Get an image by its ID
+ */
+function getStoredImage(id: string): StoredImage | undefined {
+  return imageStore.get(id);
+}
 
 /**
  * Get session info for structured content
@@ -293,55 +341,63 @@ registerAppResource(
   }
 );
 
-// Register screenshot resource for serving binary blobs to MCP app
+// Register screenshot resource template for serving binary blobs by ID
 server.registerResource(
   "Screenshot",
-  SCREENSHOT_RESOURCE_URI,
+  new ResourceTemplate(`${SCREENSHOT_RESOURCE_BASE}/{imageId}`, { list: undefined }),
   {
-    description: "Latest screenshot from TestDriver session served as base64 blob",
+    description: "Screenshot from TestDriver session served as base64 blob",
     mimeType: "image/png",
   },
-  async (): Promise<ReadResourceResult> => {
-    if (!latestScreenshotBlob) {
-      throw new Error("No screenshot available. Use the screenshot tool first.");
+  async (uri: URL, variables: Variables): Promise<ReadResourceResult> => {
+    const imageId = variables.imageId as string;
+    const image = getStoredImage(imageId);
+    
+    if (!image) {
+      throw new Error(`Screenshot not found: ${imageId}. It may have been cleaned up.`);
     }
     
     logger.debug("screenshot resource: Serving screenshot blob", { 
-      blobLength: latestScreenshotBlob.length 
+      imageId,
+      blobLength: image.data.length 
     });
     
     return {
       contents: [{
-        uri: SCREENSHOT_RESOURCE_URI,
+        uri: uri.href,
         mimeType: "image/png",
-        blob: latestScreenshotBlob,
+        blob: image.data,
       }],
     };
   }
 );
 
-// Register cropped image resource for serving find operation results to MCP app
+// Register cropped image resource template for serving find operation results by ID
 server.registerResource(
   "CroppedImage",
-  CROPPED_IMAGE_RESOURCE_URI,
+  new ResourceTemplate(`${CROPPED_IMAGE_RESOURCE_BASE}/{imageId}`, { list: undefined }),
   {
-    description: "Latest cropped image from find operations served as base64 blob",
+    description: "Cropped image from find operations served as base64 blob",
     mimeType: "image/png",
   },
-  async (): Promise<ReadResourceResult> => {
-    if (!latestCroppedImageBlob) {
-      throw new Error("No cropped image available. Use the find tool first.");
+  async (uri: URL, variables: Variables): Promise<ReadResourceResult> => {
+    const imageId = variables.imageId as string;
+    const image = getStoredImage(imageId);
+    
+    if (!image) {
+      throw new Error(`Cropped image not found: ${imageId}. It may have been cleaned up.`);
     }
     
     logger.debug("cropped image resource: Serving cropped image blob", { 
-      blobLength: latestCroppedImageBlob.length 
+      imageId,
+      blobLength: image.data.length 
     });
     
     return {
       contents: [{
-        uri: CROPPED_IMAGE_RESOURCE_URI,
+        uri: uri.href,
         mimeType: "image/png",
-        blob: latestCroppedImageBlob,
+        blob: image.data,
       }],
     };
   }
@@ -352,9 +408,11 @@ server.registerResource(
 // =============================================================================
 
 // Session Start
-server.registerTool(
+registerAppTool(
+  server,
   "session_start",
   {
+    title: "Session Start",
     description: `Start a new TestDriver session and provision a sandbox with browser or app.
 
 Provision types:
@@ -370,6 +428,7 @@ Self-hosted mode:
 - The IP can be from an AWS EC2 instance spawned via CloudFormation
 - See https://docs.testdriver.ai/v7/aws-setup for AWS setup guide`,
     inputSchema: SessionStartInputSchema,
+    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params: SessionStartInput): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -494,6 +553,16 @@ Self-hosted mode:
         }
       }
 
+      // Capture initial screenshot after provisioning
+      logger.debug("session_start: Capturing initial screenshot");
+      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+      
+      let screenshotResourceUri: string | undefined;
+      if (screenshotBase64) {
+        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+        lastScreenshotBase64 = screenshotBase64;
+      }
+
       const duration = Date.now() - startTime;
       logger.info("session_start: Completed", { duration, sessionId: newSession.sessionId, selfHosted: !!instanceIp });
 
@@ -514,6 +583,7 @@ Self-hosted mode:
           selfHosted: !!instanceIp, 
           instanceIp: instanceIp || undefined,
           debuggerUrl,
+          screenshotResourceUri,
           duration 
         },
         generatedCode
@@ -650,14 +720,19 @@ registerAppTool(
       const duration = Date.now() - startTime;
       
       // Store cropped image for resource serving (instead of inline data URL)
+      let croppedImageResourceUri: string | undefined;
       const croppedImage = rawResponse.croppedImage;
       if (croppedImage) {
-        latestCroppedImageBlob = croppedImage.startsWith('data:') 
+        const imageData = croppedImage.startsWith('data:') 
           ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
           : croppedImage;
+        croppedImageResourceUri = storeImage(imageData, "cropped");
         // Remove croppedImage from response to avoid context bloat
         delete rawResponse.croppedImage;
       }
+      
+      // Remove extractedText from response to reduce context bloat
+      delete rawResponse.extractedText;
 
       // Generate code for this find action
       const generatedCode = found ? generateActionCode("find", { description: params.description }) : undefined;
@@ -679,7 +754,7 @@ registerAppTool(
           action: "find",
           element: elementInfo,
           ref: elementRef,
-          croppedImageResourceUri: croppedImage ? CROPPED_IMAGE_RESOURCE_URI : undefined,
+          croppedImageResourceUri,
           duration,
         },
         generatedCode
@@ -763,14 +838,19 @@ registerAppTool(
       const duration = Date.now() - startTime;
       
       // Store cropped image for resource serving (instead of inline data URL)
+      let croppedImageResourceUri: string | undefined;
       const croppedImage = rawResponse.croppedImage;
       if (croppedImage) {
-        latestCroppedImageBlob = croppedImage.startsWith('data:') 
+        const imageData = croppedImage.startsWith('data:') 
           ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
           : croppedImage;
+        croppedImageResourceUri = storeImage(imageData, "cropped");
         // Remove croppedImage from response to avoid context bloat
         delete rawResponse.croppedImage;
       }
+      
+      // Remove extractedText from response to reduce context bloat
+      delete rawResponse.extractedText;
 
       // Generate code for this findall action
       const generatedCode = count > 0 ? generateActionCode("findall", { description: params.description }) : undefined;
@@ -788,7 +868,7 @@ registerAppTool(
           count,
           refs,
           elements: elementInfos,
-          croppedImageResourceUri: croppedImage ? CROPPED_IMAGE_RESOURCE_URI : undefined,
+          croppedImageResourceUri,
           duration,
         },
         generatedCode
@@ -802,14 +882,17 @@ registerAppTool(
 );
 
 // Click
-server.registerTool(
+registerAppTool(
+  server,
   "click",
   {
+    title: "Click Element",
     description: "Click on a previously found element. Use 'find' first to locate the element.",
     inputSchema: z.object({
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
     }),
+    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -842,6 +925,16 @@ server.registerTool(
         await element.rightClick();
       }
 
+      // Capture screenshot after click to show result
+      logger.debug("click: Capturing screenshot after click");
+      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+      
+      let screenshotResourceUri: string | undefined;
+      if (screenshotBase64) {
+        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+        lastScreenshotBase64 = screenshotBase64;
+      }
+
       const rawResponse = element._response || {};
       const duration = Date.now() - startTime;
       logger.info("click: Completed", { description, duration });
@@ -852,7 +945,14 @@ server.registerTool(
       return createToolResult(
         true,
         `Clicked on "${description}"`,
-        { ...rawResponse, action: "click", clickAction: params.action, clickPosition: coords, duration },
+        { 
+          ...rawResponse, 
+          action: "click", 
+          clickAction: params.action, 
+          clickPosition: coords, 
+          screenshotResourceUri,
+          duration 
+        },
         generatedCode
       );
     } catch (error) {
@@ -864,13 +964,16 @@ server.registerTool(
 );
 
 // Hover
-server.registerTool(
+registerAppTool(
+  server,
   "hover",
   {
+    title: "Hover Element",
     description: "Hover over a previously found element. Use 'find' first to locate the element.",
     inputSchema: z.object({
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
     }),
+    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -895,6 +998,16 @@ server.registerTool(
       logger.debug("hover: Executing hover on element", { description });
       await element.hover();
 
+      // Capture screenshot after hover to show result
+      logger.debug("hover: Capturing screenshot after hover");
+      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+      
+      let screenshotResourceUri: string | undefined;
+      if (screenshotBase64) {
+        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+        lastScreenshotBase64 = screenshotBase64;
+      }
+
       const rawResponse = element._response || {};
       const duration = Date.now() - startTime;
       logger.info("hover: Completed", { description, duration });
@@ -905,7 +1018,12 @@ server.registerTool(
       return createToolResult(
         true,
         `Hovered over "${description}"`,
-        { ...rawResponse, action: "hover", duration },
+        { 
+          ...rawResponse, 
+          action: "hover", 
+          screenshotResourceUri,
+          duration 
+        },
         generatedCode
       );
     } catch (error) {
@@ -1051,14 +1169,19 @@ registerAppTool(
       const duration = Date.now() - startTime;
       
       // Store cropped image for resource serving (instead of inline data URL)
+      let croppedImageResourceUri: string | undefined;
       const croppedImage = rawResponse.croppedImage;
       if (croppedImage) {
-        latestCroppedImageBlob = croppedImage.startsWith('data:') 
+        const imageData = croppedImage.startsWith('data:') 
           ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
           : croppedImage;
+        croppedImageResourceUri = storeImage(imageData, "cropped");
         // Remove croppedImage from response to avoid context bloat
         delete rawResponse.croppedImage;
       }
+      
+      // Remove extractedText from response to reduce context bloat
+      delete rawResponse.extractedText;
 
       // Generate code for this find_and_click action
       const generatedCode = generateActionCode("find_and_click", { description: params.description, action: params.action });
@@ -1084,7 +1207,7 @@ registerAppTool(
           element: elementInfo,
           clickAction: params.action,
           clickPosition: coords ? { x: coords.centerX, y: coords.centerY } : undefined,
-          croppedImageResourceUri: croppedImage ? CROPPED_IMAGE_RESOURCE_URI : undefined,
+          croppedImageResourceUri,
           duration,
         },
         generatedCode
@@ -1229,13 +1352,19 @@ server.registerTool(
   }
 );
 
-// Assert
+// Assert - generates code for test files
 server.registerTool(
   "assert",
   {
-    description: "Make an AI-powered assertion about the current screen state",
+    description: `Make an AI-powered assertion about the current screen state. GENERATES CODE for the test file.
+
+Use this when you want a verification step recorded in the generated test. This will add code like:
+  const assertResult = await testdriver.assert("your assertion");
+  expect(assertResult).toBeTruthy();
+
+Unlike 'check' which is for your understanding during development, 'assert' creates verification code that runs in CI/CD.`,
     inputSchema: z.object({
-      assertion: z.string().describe("Natural language assertion"),
+      assertion: z.string().describe("Natural language assertion to verify"),
     }),
   },
   async (params): Promise<CallToolResult> => {
@@ -1272,15 +1401,21 @@ server.registerTool(
   }
 );
 
-// Check - AI uses this to understand the screen state
-server.registerTool(
+// Check - AI uses this to understand the screen state (DOES NOT generate code)
+registerAppTool(
+  server,
   "check",
   {
+    title: "Check Screen State",
     description: `Use this tool to understand the current screen state and verify if actions succeeded.
 
 This is the PRIMARY tool for AI to understand what's on screen. It captures a screenshot, compares it with the previous state, and provides AI analysis of whether the task/condition is met.
 
-Unlike 'assert' which returns a simple pass/fail for test files, 'check' returns detailed analysis to help you understand the current state.
+IMPORTANT: This tool is for YOUR understanding during development only. It does NOT generate test code.
+- Use 'check' to verify actions worked during development
+- Use 'assert' when you want to add a verification step to the test file
+
+Unlike 'assert' which generates code like \`await testdriver.assert("...")\`, 'check' returns detailed analysis to help you understand the current state but does NOT add anything to the test file.
 
 Unlike 'screenshot' which just displays to the user, 'check' analyzes the screen and returns information to you (the AI).
 
@@ -1289,14 +1424,20 @@ Use after actions to verify they worked:
 - "Is the user logged in now?"
 - "Has the form been submitted successfully?"
 - "Did the page navigate to the dashboard?"
-- "Is the modal dialog visible?"`,
+- "Is the modal dialog visible?"
+
+When you want to add a verification step to the generated test, use 'assert' instead.
+
+You can optionally provide a reference image URI to compare against instead of using the automatically captured "before" screenshot. This is useful for comparing the current state to a known baseline.`,
     inputSchema: z.object({
       task: z.string().describe("The task or condition to verify (e.g., 'Did the login succeed?', 'Is the modal visible?')"),
+      referenceImageUri: z.string().optional().describe("Optional screenshot resource URI (e.g., 'screenshot://testdriver/screenshot/screenshot-1') to compare against instead of the automatically captured 'before' screenshot. Use a screenshotResourceUri from a previous action."),
     }),
+    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
-    logger.info("check: Starting", { task: params.task });
+    logger.info("check: Starting", { task: params.task, hasReferenceImageUri: !!params.referenceImageUri });
 
     const sessionCheck = requireActiveSession();
     if (!sessionCheck.valid) {
@@ -1309,8 +1450,42 @@ Use after actions to verify they worked:
       logger.debug("check: Capturing current screenshot");
       const currentScreenshot = await sdk.agent.system.captureScreenBase64(1, false, true);
       
-      // Use last screenshot as "before" state, or current if no previous screenshot
-      const beforeScreenshot = lastScreenshotBase64 || currentScreenshot;
+      // Use provided reference image URI, last screenshot as "before" state, or current if no previous screenshot
+      let beforeScreenshot: string;
+      if (params.referenceImageUri) {
+        // Extract image ID from URI (e.g., "screenshot://testdriver/screenshot/screenshot-1" -> "screenshot-1")
+        const uriParts = params.referenceImageUri.split('/');
+        const imageId = uriParts[uriParts.length - 1];
+        
+        logger.info("check: Looking up reference image", { 
+          referenceImageUri: params.referenceImageUri, 
+          extractedImageId: imageId,
+          imageStoreSize: imageStore.size,
+          availableKeys: Array.from(imageStore.keys())
+        });
+        
+        const storedImage = getStoredImage(imageId);
+        
+        if (storedImage) {
+          logger.info("check: Found reference image", { 
+            imageId, 
+            dataLength: storedImage.data?.length,
+            type: storedImage.type,
+            hasData: !!storedImage.data
+          });
+          beforeScreenshot = storedImage.data;
+        } else {
+          logger.warn("check: Reference image NOT found in store, falling back to last screenshot", { 
+            referenceImageUri: params.referenceImageUri, 
+            imageId,
+            imageStoreSize: imageStore.size,
+            availableKeys: Array.from(imageStore.keys())
+          });
+          beforeScreenshot = lastScreenshotBase64 || currentScreenshot;
+        }
+      } else {
+        beforeScreenshot = lastScreenshotBase64 || currentScreenshot;
+      }
       
       // Update last screenshot for next check
       lastScreenshotBase64 = currentScreenshot;
@@ -1320,8 +1495,13 @@ Use after actions to verify they worked:
       const activeWindow = await sdk.agent.system.activeWin();
       
       // Call the check endpoint
-      logger.debug("check: Calling check API endpoint", { 
-        hasLastScreenshot: beforeScreenshot !== currentScreenshot 
+      logger.info("check: Calling check API endpoint", { 
+        hasLastScreenshot: beforeScreenshot !== currentScreenshot,
+        usingReferenceImageUri: !!params.referenceImageUri,
+        beforeScreenshotLength: beforeScreenshot?.length || 0,
+        currentScreenshotLength: currentScreenshot?.length || 0,
+        beforeScreenshotPreview: beforeScreenshot?.substring(0, 50),
+        currentScreenshotPreview: currentScreenshot?.substring(0, 50)
       });
       const response = await sdk.agent.sdk.req("check", {
         tasks: [params.task],
@@ -1331,6 +1511,12 @@ Use after actions to verify they worked:
       });
 
       const aiResponse = response.data;
+      
+      // Store screenshot for resource serving
+      let screenshotResourceUri: string | undefined;
+      if (currentScreenshot) {
+        screenshotResourceUri = storeImage(currentScreenshot, "screenshot");
+      }
       
       // Determine if the check passed based on the AI response
       // The AI typically returns markdown with its analysis
@@ -1351,7 +1537,15 @@ Use after actions to verify they worked:
         isComplete 
           ? `✓ Task appears complete: "${params.task}"\n\nAI Analysis:\n${aiResponse}`
           : `⚠ Task may not be complete: "${params.task}"\n\nAI Analysis:\n${aiResponse}`,
-        { action: "check", task: params.task, complete: isComplete, success: isComplete, aiResponse, duration }
+        { 
+          action: "check", 
+          task: params.task, 
+          complete: isComplete, 
+          success: isComplete, 
+          aiResponse, 
+          screenshotResourceUri,
+          duration 
+        }
       );
     } catch (error) {
       logger.error("check: Failed", { error: String(error), task: params.task });
@@ -1436,12 +1630,10 @@ NOTE: This tool is for VISUAL DISPLAY to the user only. If you (the AI) need to 
       // Capture full screen screenshot
       const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
       
+      let screenshotResourceUri: string | undefined;
       if (screenshotBase64) {
-        // Store raw base64 for the resource blob
-        latestScreenshotBlob = screenshotBase64;
-        logger.debug("screenshot: Stored screenshot blob for resource", { 
-          blobLength: screenshotBase64.length 
-        });
+        // Store raw base64 for the resource blob with unique ID
+        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
       }
       
       const duration = Date.now() - startTime;
@@ -1454,7 +1646,7 @@ NOTE: This tool is for VISUAL DISPLAY to the user only. If you (the AI) need to 
         "Screenshot captured and displayed to user",
         { 
           action: "screenshot",
-          screenshotResourceUri: SCREENSHOT_RESOURCE_URI,
+          screenshotResourceUri,
           duration 
         }
       );

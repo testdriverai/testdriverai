@@ -18,12 +18,11 @@ Use the TestDriver MCP tools to build tests interactively with visual feedback:
 1. **Start session**: `session_start({ type: "chrome", url: "https://your-app.com" })`
 2. **Interact**: Use `find`, `click`, `type` - each returns a screenshot AND generated code
 3. **Append code**: After each successful action, append the generated code to your test file
-4. **Check**: Use `check` after actions to verify if the task completed successfully
-5. **Assert**: Use `assert` for specific boolean pass/fail conditions
+4. **Check**: Use `check` after actions to verify if the task completed successfully (FOR YOUR UNDERSTANDING ONLY - does NOT generate test code)
+5. **Assert**: Use `assert` for specific boolean pass/fail conditions (GENERATES CODE for the test file)
 6. **Verify test**: Use `verify` to run the test from scratch to validate
 
 **Key advantages:**
-- See screenshots inline after every action
 - **Generated code included in every response** - just append to your test file
 - Use `check` to get AI analysis of whether actions succeeded
 - No need to re-run the entire test for each change
@@ -72,9 +71,9 @@ Each tool returns a screenshot AND the generated code to add to your test file.
 
 | Tool | Description |
 |------|-------------|
-| `check` | **For AI to understand screen state.** Analyzes current screen and returns detailed feedback about whether a task/condition is met. Use this after actions to verify they worked. |
-| `assert` | AI-powered boolean assertion for test files (pass/fail). Gets recorded in generated tests. |
-| `screenshot` | **For showing the user the screen.** Captures and displays a screenshot. Does NOT return analysis to AI. |
+| `check` | **For AI to understand screen state ONLY.** Analyzes current screen and returns detailed feedback about whether a task/condition is met. Use this after actions to verify they worked. **DOES NOT generate code** - never appears in test files. |
+| `assert` | AI-powered boolean assertion for test files (pass/fail). **GENERATES CODE** like `await testdriver.assert("...")` that gets recorded in the test file. Use this for verifications that should be in the final test. |
+| `screenshot` | **Only use when the user explicitly asks to see the screen.** Captures and displays a screenshot. Does NOT return analysis to AI. |
 | `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
 
 ### Test Validation
@@ -100,9 +99,9 @@ type({ text: "user@example.com" })
 → Screenshot shows typed email
 → Add to test file: await testdriver.type("user@example.com");
 
-# 3. Check if email was entered correctly
+# 3. Check if email was entered correctly (for your understanding - no code generated)
 check({ task: "Was the email entered into the input field?" })
-→ AI confirms email is visible in the field
+→ AI confirms email is visible in the field (this is for YOU, not the test file)
 
 # 4. Fill in password
 find_and_click({ description: "password input field" })
@@ -116,11 +115,11 @@ find_and_click({ description: "Sign In button" })
 → Screenshot shows page changing
 → Add to test file: await testdriver.find("Sign In button").click();
 
-# 6. Check if login succeeded
+# 6. Check if login succeeded (for your understanding - no code generated)
 check({ task: "Did the login complete successfully?" })
-→ AI analyzes screen and confirms dashboard is visible
+→ AI analyzes screen and confirms dashboard is visible (this is for YOU, not the test file)
 
-# 7. Assert success (for the test file)
+# 7. Assert success (THIS generates code for the test file)
 assert({ assertion: "I can see the user dashboard" })
 → Pass with screenshot
 → Add to test file:
@@ -134,7 +133,7 @@ verify({ testFile: "tests/login.test.mjs" })
 
 ## Visual Feedback
 
-Action tools (`find`, `click`, `find_and_click`, etc.) return screenshots showing:
+Action tools (`find`, `click`, `find_and_click`, etc.) return visual information showing:
 
 - **Element highlights** - Blue box around found elements
 - **Click markers** - Red dot with ripple effect at click location
@@ -143,8 +142,9 @@ Action tools (`find`, `click`, `find_and_click`, etc.) return screenshots showin
 - **Session info** - Time remaining before expiry
 
 **Important distinction:**
-- Use `screenshot` to **show the user** the current screen state
-- Use `check` for **AI to understand** the screen state (returns analysis, not just an image)
+- Use `screenshot` **only when the user explicitly asks** to see the current screen state
+- Use `check` for **AI to understand** the screen state (returns analysis) - **DOES NOT generate code**
+- Use `assert` to **add verification to test file** - **GENERATES CODE** like `await testdriver.assert("...")`
 
 ## Best Practices
 
@@ -155,19 +155,26 @@ Don't try to build the entire test at once. After each action:
 - Use `check` to verify the action worked
 - Then proceed to the next step
 
-### 2. Use Check After Actions
+### 2. Use Check vs Assert Appropriately
 
-Use `check` to verify actions completed successfully:
+**`check`** - For YOUR understanding during development (DOES NOT generate code):
 ```
 find_and_click({ description: "Submit button" })
 check({ task: "Was the form submitted?" })
 ```
+The `check` tool compares the previous screenshot with the current state and gives you AI analysis of whether your action succeeded. Use it to understand the screen state, but it will NOT appear in the generated test file.
 
-The `check` tool compares the previous screenshot with the current state and gives you AI analysis of whether your action succeeded.
+**`assert`** - For verification steps in the test file (GENERATES CODE):
+```
+find_and_click({ description: "Submit button" })
+assert({ assertion: "The form was submitted successfully" })
+```
+The `assert` tool generates code like `await testdriver.assert("...")` that gets added to the test file for CI/CD verification.
 
-### 3. Use Assertions for Test Files
+### 3. When to Use Each
 
-Add `assert` calls after major state changes. They're included in the generated test file and provide boolean pass/fail for CI.
+- **Use `check`** when you need to understand what happened (debugging, verifying an action worked before continuing)
+- **Use `assert`** when you want a verification step recorded in the final test file
 
 ### 3. Handle Timing Issues
 
@@ -309,9 +316,9 @@ await element.mouseUp();     // release mouse
 
 1. **Use MCP tools for development** - Each action returns the code to add to your test file
 2. **Append code after each action** - The response includes `Add to test file:` with the exact code
-3. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state
-4. **Use `screenshot` to show the user** - This displays the screen to the user but doesn't return analysis to you
-5. **Use `check` after actions** - Verify actions succeeded before moving on
-6. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
-7. **Assert after major actions** - Helps catch issues early
+3. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state. **Does NOT generate code.**
+4. **Only use `screenshot` when the user asks** - Do NOT call screenshot automatically. Only use it when the user explicitly requests to see the screen.
+5. **Use `check` during development** - Verify actions succeeded before moving on, but remember this is for YOUR understanding only
+6. **Use `assert` for test file verifications** - When you want a verification step in the final test, use `assert` which generates `await testdriver.assert("...")` code
+7. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
 8. **Check `sdk.d.ts`** for method signatures when debugging tests
