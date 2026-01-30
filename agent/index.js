@@ -36,6 +36,7 @@ const { createOutputs } = require("./lib/outputs.js");
 const isValidVersion = require("./lib/valid-version.js");
 const { events, createEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
+const logger = require("./lib/logger.js");
 let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
 let debuggerStarted = false;
 
@@ -983,9 +984,9 @@ commands:
       const generateDir = path.join(this.workingDir, "testdriver", "generate");
       if (!fs.existsSync(generateDir)) {
         fs.mkdirSync(generateDir);
-        console.log("Created generate directory:", generateDir);
+        logger.log("Created generate directory:", generateDir);
       } else {
-        console.log("Generate directory already exists:", generateDir);
+        logger.log("Generate directory already exists:", generateDir);
       }
 
       let list = testPrompt.steps;
@@ -2014,7 +2015,7 @@ ${regression}
           "/vnc_lite.html?token=V3b8wG9";
       } else {
         // If we don't have URL or IP, we can't render
-        console.warn("renderSandbox: Missing URL and IP in instance", instance);
+        logger.warn("renderSandbox: Missing URL and IP in instance", instance);
         return;
       }
 

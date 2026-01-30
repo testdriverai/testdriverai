@@ -120,8 +120,15 @@ await testdriver.connect(options)
       Instance type for the sandbox (AWS deployments)
     </ParamField>
     
+    <ParamField path="preview" type="string" default="browser">
+      Preview mode for live test visualization:
+      - `"browser"` - Opens debugger in default browser (default)
+      - `"ide"` - Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension)
+      - `"none"` - Headless mode, no visual preview
+    </ParamField>
+    
     <ParamField path="headless" type="boolean" default="false">
-      Run in headless mode without opening the debugger
+      **Deprecated**: Use `preview: "none"` instead. Run in headless mode without opening the debugger.
     </ParamField>
   </Expandable>
 </ParamField>

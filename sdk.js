@@ -3,6 +3,7 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
+const logger = require("./agent/lib/logger");
 
 /**
  * Get the file path of the caller (the file that called TestDriver)
@@ -1670,7 +1671,7 @@ class TestDriverSDK {
 
         // If extensionId is provided, download and extract the extension from Chrome Web Store
         if (extensionId && !extensionPath) {
-          console.log(
+          logger.log(
             `[provision.chromeExtension] Downloading extension ${extensionId} from Chrome Web Store...`,
           );
 
@@ -1777,7 +1778,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             extensionPath = `${extensionDir}/unpacked`;
           }
 
-          console.log(
+          logger.log(
             `[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`,
           );
         }
@@ -1928,14 +1929,14 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         // Install extensions if provided
         for (const extension of extensions) {
-          console.log(`[provision.vscode] Installing extension: ${extension}`);
+          logger.log(`[provision.vscode] Installing extension: ${extension}`);
           await this.exec(
             shell,
             `code --install-extension ${extension} --force`,
             120000,
             true,
           );
-          console.log(
+          logger.log(
             `[provision.vscode] ✅ Extension installed: ${extension}`,
           );
         }
@@ -2006,7 +2007,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         const downloadDir =
           this.os === "windows" ? "C:\\Users\\testdriver\\Downloads" : "/tmp";
 
-        console.log(`[provision.installer] Downloading ${url}...`);
+        logger.log(`[provision.installer] Downloading ${url}...`);
 
         let actualFilePath;
 
@@ -2074,7 +2075,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           }
         }
 
-        console.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
+        logger.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
 
         // Auto-detect install command based on file extension (use actualFilePath for extension detection)
         const actualFilename = actualFilePath.split(/[/\\]/).pop() || "";
@@ -2106,9 +2107,9 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         if (installCommand) {
-          console.log(`[provision.installer] Installing...`);
+          logger.log(`[provision.installer] Installing...`);
           await this.exec(shell, installCommand, 300000, true);
-          console.log(`[provision.installer] ✅ Installation complete`);
+          logger.log(`[provision.installer] ✅ Installation complete`);
         }
 
         // Launch and focus the app if appName is provided and launch is true
@@ -2170,7 +2171,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           return async (...args) => {
             // Skip provisioning if reconnecting to existing sandbox
             if (self.reconnect) {
-              console.log(
+              logger.log(
                 `[provision.${prop}] Skipping provisioning (reconnect mode)`,
               );
               return;
@@ -3018,7 +3019,10 @@ CAPTCHA_SOLVER_EOF`,
 
     // Create SDK methods that lazy-await connection then forward to this.commands
     for (const [commandName, methodName] of Object.entries(commandMapping)) {
-      this[methodName] = async function (...args) {
+      // Create the bound method and capture its reference directly
+      // This avoids potential issues with this[methodName] property lookup
+      // which could cause stack overflow if there's a proxy or getter intercepting access
+      const boundMethod = (async function (...args) {
         // Lazy-await: wait for connection if still pending
         if (this.__connectionPromise) {
           await this.__connectionPromise;
@@ -3036,8 +3040,10 @@ CAPTCHA_SOLVER_EOF`,
         this._ensureConnected();
 
         // Capture the call site for better error reporting
+        // Use the captured boundMethod reference instead of this[methodName]
+        // to avoid potential recursive property lookups
         const callSite = {};
-        Error.captureStackTrace(callSite, this[methodName]);
+        Error.captureStackTrace(callSite, boundMethod);
 
         // Track this promise for unawaited detection
         this._lastCommandName = methodName;
@@ -3067,10 +3073,13 @@ CAPTCHA_SOLVER_EOF`,
           }
           throw properError;
         }
-      }.bind(this);
+      }).bind(this);
+
+      // Assign the bound method to the SDK instance
+      this[methodName] = boundMethod;
 
       // Preserve the original function's name for better debugging
-      Object.defineProperty(this[methodName], "name", {
+      Object.defineProperty(boundMethod, "name", {
         value: methodName,
         writable: false,
       });
@@ -3208,7 +3217,7 @@ CAPTCHA_SOLVER_EOF`,
         const prefixedMessage = this.testContext
           ? `[${this.testContext}] ${message}`
           : message;
-        console.log(prefixedMessage);
+        logger.log(prefixedMessage);
       }
     });
 
@@ -3226,7 +3235,7 @@ CAPTCHA_SOLVER_EOF`,
 
     this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
-        console.log(`- ${message}`);
+        logger.log(`- ${message}`);
       }
     });
 
@@ -3246,8 +3255,8 @@ CAPTCHA_SOLVER_EOF`,
     // Handle show window events for sandbox visualization
     this.emitter.on("show-window", async (url) => {
       if (this.loggingEnabled) {
-        console.log("");
-        console.log("🔗 Live test execution:");
+        logger.log("");
+        logger.log("🔗 Live test execution:");
         if (this.config.CI) {
           // In CI mode, just print the view-only URL
           const u = new URL(url);
@@ -3256,10 +3265,10 @@ CAPTCHA_SOLVER_EOF`,
           const data = JSON.parse(
             Buffer.from(encodedData, "base64").toString(),
           );
-          console.log(`${data.url}&view_only=true`);
+          logger.log(`${data.url}&view_only=true`);
         } else {
           // In local mode, print the URL and open it in the browser
-          console.log(url);
+          logger.log(url);
           await this._openBrowser(url);
         }
       }

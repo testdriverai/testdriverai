@@ -1,6 +1,7 @@
 const WebSocket = require("ws");
 const crypto = require("crypto");
 const { events } = require("../events");
+const logger = require("./logger");
 
 /**
  * Generate Sentry trace headers for distributed tracing
@@ -132,9 +133,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         // Log and store the Sentry trace ID for debugging
         if (reply.traceId) {
           this.traceId = reply.traceId;
-          console.log('');
-          console.log(`🔗 View Trace:`);
-          console.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
+          logger.log('');
+          logger.log(`🔗 View Trace:`);
+          logger.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
         }
         
         emitter.emit(events.sandbox.authenticated, { traceId: reply.traceId });
@@ -192,8 +193,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         });
 
         this.socket.on("error", (err) => {
-          console.log("Socket Error");
-          err && console.log(err);
+          logger.log("Socket Error");
+          err && logger.log(err);
           clearInterval(this.heartbeat);
           emitter.emit(events.error.sandbox, err);
           this.apiSocketConnected = false;

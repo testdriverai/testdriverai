@@ -14,6 +14,13 @@ export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
 export type ExecLanguage = "js" | "pwsh" | "sh";
+/**
+ * Preview mode for live test visualization
+ * - "browser": Opens debugger in default browser (default)
+ * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+ * - "none": Headless mode, no visual preview
+ */
+export type PreviewMode = "browser" | "ide" | "none";
 export type KeyboardKey =
   | "\t"
   | "\n"
@@ -232,7 +239,17 @@ export interface TestDriverOptions {
   };
   /** Force creation of a new sandbox (default: true) */
   newSandbox?: boolean;
-  /** Run in headless mode (default: false) */
+  /**
+   * Preview mode for live test visualization (default: "browser")
+   * - "browser": Opens debugger in default browser
+   * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+   * - "none": Headless mode, no visual preview
+   */
+  preview?: PreviewMode;
+  /**
+   * @deprecated Use `preview: "none"` instead. Run in headless mode (default: false)
+   * For backward compatibility: headless: true maps to preview: "none"
+   */
   headless?: boolean;
   /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
@@ -280,7 +297,17 @@ export interface ConnectOptions {
   sandboxInstance?: string;
   /** Operating system for the sandbox (default: 'linux') */
   os?: "windows" | "linux";
-  /** Run in headless mode (default: false) */
+  /**
+   * Preview mode for live test visualization (default: "browser")
+   * - "browser": Opens debugger in default browser
+   * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+   * - "none": Headless mode, no visual preview
+   */
+  preview?: PreviewMode;
+  /**
+   * @deprecated Use `preview: "none"` instead. Run in headless mode (default: false)
+   * For backward compatibility: headless: true maps to preview: "none"
+   */
   headless?: boolean;
   /** Reuse recent connection if available (default: true) */
   reuseConnection?: boolean;

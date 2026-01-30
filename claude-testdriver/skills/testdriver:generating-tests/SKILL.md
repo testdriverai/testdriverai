@@ -1,18 +1,27 @@
 ---
 name: testdriver:generating-tests
-description: Use AI coding agents and exploration mode to generate TestDriver tests
+description: Use AI coding agents to generate TestDriver tests via MCP tools
 ---
-<!-- Generated from generating-tests.mdx. DO NOT EDIT. -->
 
-## Instructions for Coding Agents
+## Generating Tests with MCP Tools
 
-We recommend starting with [our quickstart](./quickstart) then supplying your coding agent with our agents.md file.
+Use TestDriver MCP tools for interactive test development with visual feedback:
 
-<Card title="Agents.md" icon="link" arrow="true" horizontal href="https://github.com/testdriverai/testdriverai/blob/main/agents.md?plain=1">
-  Copy the current version of agents.md to provide your coding agent with up-to-date instructions on how to generate TestDriver tests.
-</Card>
+### Workflow
 
-Then, you can prompt your coding agent to generate tests. Here is an example prompt:
+1. **Start session**: `session_start({ type: "chrome", url: "https://your-app.com" })`
+2. **Interact**: Use `find`, `click`, `type` - each returns a screenshot showing the result
+3. **Assert**: Use `assert` to verify expected state
+4. **Commit**: Use `commit` to auto-generate the test file from recorded commands
+5. **Verify**: Use `verify` to run the test from scratch
+
+### Advantages
+
+- **Inline screenshots** after every action - see exactly what the AI sees
+- **Automatic code generation** from successful commands
+- **O(1) iteration time** - no re-running the entire test for each change
+
+### Example Prompt
 
 ```md
 Make me a TestDriver test that does the following steps:
@@ -24,9 +33,17 @@ Push Submit button
 Verify new page contains expected text 'logged in'
 ```
 
+The agent will:
+1. Use `session_start` to open the URL
+2. Use `find_and_click` and `type` for each field
+3. Use `assert` to verify the login
+4. Use `commit` to generate the test file
+
+See `testdriver:mcp-workflow` skill for detailed tool documentation.
+
 ## AI Exploration Mode
 
-Within a test, the `ai()` method lets TestDriver autonomously figure out how to accomplish a task. It's useful for dynamic or unpredictable UIs where explicit actions may be difficult to define.
+Within generated tests, the `ai()` method lets TestDriver autonomously figure out how to accomplish a task. It's useful for dynamic or unpredictable UIs where explicit actions may be difficult to define.
 
 ```javascript
 // Handle dynamic or unpredictable UI

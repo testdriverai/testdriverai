@@ -5,7 +5,7 @@ capabilities:
     "create tests",
     "refine tests",
     "debug tests",
-    "use two file pattern",
+    "use MCP workflow",
     "visual verification",
   ]
 ---
@@ -19,9 +19,9 @@ TestDriver enables computer-use testing through natural language - controlling b
 ## Capabilities
 
 - **Test Creation**: You know how to build tests from scratch using TestDriver skills and best practices.
-- **Two File Pattern**: You utilize the "two file pattern" to separate test logic from session management, allowing you to reconnect to existing browser instances for faster iteration and debugging.
-- **Visual Verification**: You liberally use the `.screenshot()` method to capture the state of the application. You analyze these screenshots to understand the current context and verify that the test is performing as expected.
-- **Iterative Development**: You don't just write code once; you run it, check the results (and screenshots), and refine the test until the task is fully complete and the test passes reliably.
+- **MCP Workflow**: You use the TestDriver MCP tools to build tests interactively with visual feedback. Each action returns a screenshot, allowing O(1) iteration time regardless of test length.
+- **Visual Verification**: You analyze screenshots returned by MCP tools to understand the current context and verify that actions are performing as expected.
+- **Iterative Development**: You don't just write code once; you interact with the sandbox, check the screenshots, and refine the test until the task is fully complete and the test passes reliably.
 
 ## Context and examples
 
@@ -35,10 +35,11 @@ Use this agent when the user asks to:
 ### Workflow
 
 1. **Analyze**: Understand the user's requirements and the application under test.
-2. **Setup**: Use the "two file pattern". Create a script to launch/connect to the browser and a separate script for the test logic.
-3. **Implement**: Write the test steps using TestDriver commands.
-4. **Verify**: Insert `.screenshot()` calls frequently to validate the state visually.
-5. **Iterate**: Run the test, examine the output and screenshots, and refine the code until it succeeds.
+2. **Start Session**: Use `session_start` MCP tool to launch a sandbox with browser/app.
+3. **Interact**: Use MCP tools (`find`, `click`, `type`, etc.) - each returns a screenshot showing the result.
+4. **Verify**: Use `check` after actions and `assert` for test conditions.
+5. **Commit**: Use `commit` to write recorded commands to a test file.
+6. **Verify Test**: Use `verify` to run the generated test from scratch.
 
 ## Prerequisites
 
@@ -211,151 +212,114 @@ await testdriver.screenshot(1, false, true);
 
 > **Note:** The screenshot folder for each test file is automatically cleared when the test starts, so you only see screenshots from the most recent run.
 
-## Best Workflow: Two-File Pattern
+## Best Workflow: MCP Tools
 
-**The most efficient workflow for building tests uses two files.** This prevents having to restart from scratch when experimenting with new steps.
+**The most efficient workflow for building tests uses TestDriver MCP tools.** This provides O(1) iteration time regardless of test length - you don't have to re-run the entire test for each change.
 
-### IMPORTANT: When to Use This Pattern
+### Key Advantages
 
-- **If a working test already exists**: Only create an `experiment.test.mjs` file to add new steps. Do NOT recreate the stable file.
-- **If starting from scratch**: Start with a MINIMAL setup file, run it, verify it passes, THEN create the experiment file.
+- **See screenshots inline** after every action
+- **No need to restart** - continue from current state
+- **Automatic command recording** - successful commands are logged
+- **Code generation** - convert recorded commands to test files
 
-### Step 1: Create a Minimal Setup File
+### Step 1: Start a Session
 
-Start with the bare minimum - just provision and one assertion. **Do NOT call it "stable" yet** - name it `setup.test.mjs` until it's proven to work:
-
-```javascript
-/**
- * Setup file - MINIMAL steps to get to starting state
- * Only add more steps AFTER this passes!
- */
-import { afterAll, describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/vitest/hooks";
-
-describe("Setup State", () => {
-  afterAll(async () => {
-    // DO NOT disconnect - keep sandbox alive for reconnect
-    console.log("Sandbox staying alive for 30 seconds (keepAlive)");
-  });
-
-  it("should set up the application state", async (context) => {
-    const testdriver = TestDriver(context);
-
-    await testdriver.provision.chrome({
-      url: "https://your-app.com/login",
-    });
-
-    // Start with just ONE assertion to verify we're on the right page
-    const result = await testdriver.assert("I can see the login page");
-    expect(result).toBeTruthy();
-
-    console.log("✅ Setup ready - run experiment.test.mjs now");
-  });
-});
+```
+session_start({ type: "chrome", url: "https://your-app.com/login" })
+→ Screenshot shows login page
 ```
 
-### Step 2: Run Setup File and Verify It Passes
+This provisions a sandbox with Chrome and navigates to your URL. You'll see a screenshot of the initial page.
 
-```bash
-vitest run tests/setup.test.mjs
+### Step 2: Interact with the App
+
+Find elements and interact with them:
+
+```
+find({ description: "email input field" })
+→ Returns: screenshot with element highlighted, coordinates, and a ref ID
+
+click({ elementRef: "el-123456" })
+→ Returns: screenshot with click marker
+
+type({ text: "user@example.com" })
+→ Returns: screenshot showing typed text
 ```
 
-**Only proceed to Step 3 if this passes!** If it fails, fix it first.
+Or combine find + click in one step:
 
-### Step 3: Create Experiment File
-
-Only AFTER the setup file passes, create the experiment file.
-
-**CRITICAL: The experiment file must NOT call `provision`!** It reconnects to the existing sandbox where provision already ran:
-
-```javascript
-/**
- * Experiment file - reconnects to existing sandbox
- * Run AFTER setup.test.mjs passes (within 2 minutes)
- */
-import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/vitest/hooks";
-
-describe("Experiment", () => {
-  it("should continue from existing state", async (context) => {
-    const testdriver = TestDriver(context, {
-      reconnect: true, // ← Key: reconnects to last sandbox
-    });
-
-    // NO provision here! The sandbox is already running from setup.test.mjs
-
-    // Experiment with new steps here - try ONE thing at a time
-    const element = await testdriver.find("email input");
-    console.log("Found element:", element.found(), element.getCoordinates());
-
-    await element.click();
-    await testdriver.type("user@example.com");
-
-    // Assert after each major step
-    const result = await testdriver.assert("email is filled in");
-    console.log("Assertion result:", result);
-    expect(result).toBeTruthy();
-  });
-});
+```
+find_and_click({ description: "Sign In button" })
 ```
 
-> ⚠️ **NEVER REMOVE `reconnect: true`**: If a test file already has `reconnect: true`, do NOT remove it. This option is intentional and removing it will break the two-file workflow. Only remove `reconnect: true` when explicitly combining files into a final standalone test.
+### Step 3: Verify Actions Succeeded
 
-### Step 4: Iterate in Experiment File
+After each action, use `check` to verify it worked:
 
-- Run experiment, see output, fix issues
-- Once steps work, move them to the setup file
-- Re-run setup file to verify it still passes
-- Repeat until complete
-
-### Running the Two-File Pattern
-
-```bash
-# Step 1: Run setup file (must pass first!)
-vitest run tests/setup.test.mjs
-
-# Step 2: Within 2 minutes, run experiment file
-vitest run tests/experiment.test.mjs
+```
+check({ task: "Was the email entered into the field?" })
+→ Returns: AI analysis comparing previous screenshot to current state
 ```
 
-### After Experimentation: Combine and Rename
+### Step 4: Add Assertions
 
-**IMPORTANT:** Once the test is working AND the user explicitly asks to combine/finalize the test, combine both files into a single, properly-named test file:
+Use `assert` for pass/fail conditions that get recorded in test files:
 
-1. **Merge the code** - Copy the working steps from `experiment.test.mjs` into `setup.test.mjs`
-2. **Remove reconnect options** - Delete `reconnect: true` since the final test runs standalone (ONLY do this when creating the final combined test - never remove it from an existing experiment file!)
-3. **Rename the file** - Give it a meaningful name like `login-flow.test.mjs` or `checkout-process.test.mjs`
-4. **Delete the experiment file** - Clean up `experiment.test.mjs`
-
-> ⚠️ **WARNING FOR AI AGENTS**: Do NOT remove `reconnect: true` from any existing test file unless you are explicitly combining files into a final test. If a test has `reconnect: true`, it is there intentionally.
-
-```javascript
-// Final combined test: login-flow.test.mjs
-import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/vitest/hooks";
-
-describe("Login Flow", () => {
-  it("should log in and open settings", async (context) => {
-    const testdriver = TestDriver(context);
-
-    await testdriver.provision.chrome({ url: "https://your-app.com/login" });
-
-    // Steps from stable file
-    await testdriver.find("email input").click();
-    await testdriver.type("user@example.com");
-    await testdriver.find("password input").click();
-    await testdriver.type("password123");
-    await testdriver.find("Login button").click();
-
-    // Steps from experiment file
-    const settingsBtn = await testdriver.find("Settings button");
-    await settingsBtn.click();
-
-    const result = await testdriver.assert("Settings panel is open");
-    expect(result).toBeTruthy();
-  });
-});
 ```
+assert({ assertion: "the dashboard is visible" })
+→ Returns: pass/fail with screenshot
+```
+
+### Step 5: Commit to Test File
+
+When your sequence works, save it:
+
+```
+commit({ 
+  testFile: "tests/login.test.mjs",
+  testName: "Login Flow",
+  testDescription: "User can log in with email and password"
+})
+```
+
+### Step 6: Verify the Test
+
+Run the generated test from scratch to ensure it works:
+
+```
+verify({ testFile: "tests/login.test.mjs" })
+```
+
+### MCP Tools Reference
+
+| Tool | Description |
+|------|-------------|
+| `session_start` | Start sandbox with browser/app, capture initial screenshot |
+| `session_status` | Check session health, time remaining, command count |
+| `session_extend` | Add more time before session expires |
+| `find` | Locate element by description, returns ref for later use |
+| `click` | Click on element ref or coordinates |
+| `find_and_click` | Find and click in one action |
+| `type` | Type text into focused field |
+| `press_keys` | Press keyboard shortcuts (e.g., `["ctrl", "a"]`) |
+| `scroll` | Scroll page (up/down/left/right) |
+| `check` | AI analysis of whether a task completed |
+| `assert` | AI-powered boolean assertion (pass/fail for test files) |
+| `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
+| `screenshot` | Capture screenshot without other actions |
+| `commit` | Write recorded commands to test file |
+| `verify` | Run test file from scratch |
+| `get_command_log` | View recorded commands before committing |
+
+### Tips for MCP Workflow
+
+1. **Work incrementally** - Don't try to build the entire test at once
+2. **Use `check` after every action** - Verify your actions succeeded before moving on
+3. **Be specific with element descriptions** - "the blue Sign In button in the header" is better than "button"
+4. **Commit in logical chunks** - Commit after each major workflow step (login, form fill, etc.)
+5. **Extend session proactively** - Sessions expire after 5 minutes; use `session_extend` if needed
+6. **Review the command log** - Use `get_command_log` to see what will be committed
 
 ## Recommended Development Workflow
 
@@ -400,7 +364,7 @@ it("should incrementally build test", async (context) => {
 ```javascript
 const testdriver = TestDriver(context, {
   newSandbox: true, // Create new sandbox (default: true)
-  headless: false, // Run in headless mode (default: false)
+  preview: "browser", // "browser" | "ide" | "none" (default: "browser")
   reconnect: false, // Reconnect to last sandbox (default: false)
   keepAlive: 30000, // Keep sandbox alive after test (default: 30000ms / 30 seconds)
   os: "linux", // 'linux' | 'windows' (default: 'linux')
@@ -409,6 +373,14 @@ const testdriver = TestDriver(context, {
   cacheKey: "my-test", // Cache key for element finding
 });
 ```
+
+### Preview Modes
+
+| Value | Description |
+|-------|-------------|
+| `"browser"` | Opens debugger in default browser (default) |
+| `"ide"` | Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension) |
+| `"none"` | Headless mode, no visual preview |
 
 ## Common Patterns
 
@@ -478,14 +450,15 @@ console.log("Screenshot with mouse saved to: screenshot-with-mouse.png");
 
 ## Tips for Agents
 
-1. **Always check `sdk.d.ts`** for method signatures and types
-2. **Look at test samples** in `node_modules/testdriverai/test` for working examples
-3. **Use reconnect pattern** when iterating on test steps
-4. **Log element properties** to understand what the AI sees
-5. **Use `assert()` with specific, descriptive natural language**
-6. **Start simple** - get one step working before adding more
-7. **Take screenshots liberally** - use `await testdriver.screenshot()` after key steps to debug what the sandbox actually shows. Check `.testdriver/screenshots/<test-file>/` to review them.
-8. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
+1. **Use MCP tools for development** - Don't write test files manually; use the MCP workflow to build tests interactively
+2. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
+3. **Look at test samples** in `node_modules/testdriverai/test` for working examples
+4. **Examine every screenshot** - They show exactly what the sandbox sees
+5. **Use `check` after actions, `assert` for test files** - `check` gives detailed AI analysis, `assert` gives boolean pass/fail
+6. **Be specific with element descriptions** - "blue Sign In button in the header" > "button"
+7. **Start simple** - get one step working before adding more
+8. **Commit working sequences** - Don't lose progress; use `commit` after each successful interaction sequence
+9. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
 
    ```json
    // eslint.config.js (for TypeScript projects)
@@ -496,4 +469,4 @@ console.log("Screenshot with mouse saved to: screenshot-with-mouse.png");
    }
    ```
 
-9. **Run the tests yourself** - Do not ask the user to run the tests. You must run the tests using `npx vitest run` or similar commands to verify your work. Analyze the output and iterate without user intervention until the test passes.
+10. **Use `verify` to validate tests** - After committing, run `verify` to ensure the generated test works from scratch.
