@@ -769,6 +769,18 @@ export interface ProvisionElectronOptions {
   args?: string[];
 }
 
+/** Options for provision.dashcam */
+export interface ProvisionDashcamOptions {
+  /** Path to log file (auto-generated if not provided) */
+  logPath?: string;
+  /** Display name for the log (default: 'TestDriver Log') */
+  logName?: string;
+  /** Enable web log tracking (default: true) */
+  webLogs?: boolean;
+  /** Custom title for the recording */
+  title?: string;
+}
+
 /** Provision API for launching applications */
 export interface ProvisionAPI {
   /**
@@ -801,6 +813,12 @@ export interface ProvisionAPI {
    * @param options - Electron launch options
    */
   electron(options: ProvisionElectronOptions): Promise<void>;
+
+  /**
+   * Initialize Dashcam recording with logging
+   * @param options - Dashcam options
+   */
+  dashcam(options?: ProvisionDashcamOptions): Promise<void>;
 }
 
 /** Dashcam API for screen recording */
