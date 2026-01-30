@@ -1,0 +1,160 @@
+---
+title: Using TestDriver with Claude Code (MCP)
+---
+
+TestDriver exposes test results and analytics over an **HTTP MCP server**, so Claude Code (or any MCP-compatible client) can inspect your test runs, failures, and filters.
+
+This guide assumes:
+
+- Your API server is running the MCP endpoint at `POST /api/v1/mcp`
+- You have a **team or user API key** for authentication
+- You are using this repo (`testdriverai`) as the SDK / local tooling
+
+## 1. Configure an API key
+
+Get your API key from the team settings:
+
+- Visit your team page (e.g. `https://console.testdriver.ai/team`)
+- Create or copy a **Team API Key** (or User API Key)
+- Store it locally as an environment variable, for example:
+
+```bash
+export TD_API_KEY="your_api_key_here"
+```
+
+The MCP server expects this API key in the `X-Api-Key` header (or `Authorization: Bearer <key>`).
+
+## 2. HTTP MCP endpoint contract
+
+The HTTP endpoint lives at:
+
+```text
+POST /api/v1/mcp
+```
+
+Common request shapes:
+
+- **List tools**
+
+```json
+{
+  "kind": "list_tools"
+}
+```
+
+- **Call a tool**
+
+```json
+{
+  "kind": "call_tool",
+  "tool": "list_test_runs",
+  "arguments": {
+    "status": "failed",
+    "page": 1,
+    "limit": 20
+  }
+}
+```
+
+Responses from tool calls follow the MCP content convention:
+
+```json
+{
+  "content": [
+    {
+      "type": "json",
+      "json": {
+        "testRuns": [],
+        "totalCount": 0,
+        "hasMore": false
+      }
+    }
+  ]
+}
+```
+
+### Available tools
+
+The MCP server advertises at least these tools in `list_tools`:
+
+- `list_test_runs`  
+  List recent TestDriver test runs for the current team, with filters and pagination.
+
+- `get_test_run_detail`  
+  Get a single test run and its test cases (including replay IDs / share keys when available).
+
+- `list_test_cases`  
+  List individual test cases for the team with status, duration, error messages, and replay info.
+
+- `get_filter_options`  
+  Get branch, suite, repo, filename, commit, status, platform, and test name options for building queries.
+
+## 3. Claude Code MCP server configuration
+
+You can point Claude Code at the HTTP MCP endpoint using a JSON configuration similar to:
+
+```json
+{
+  "$schema": "https://schema.anthropic.com/mcp/servers.json",
+  "mcpServers": {
+    "testdriver-cloud": {
+      "type": "sse",
+      "url": "https://your-api-host.example.com/api/v1/mcp",
+      "requestHeaders": {
+        "X-Api-Key": "${TD_API_KEY}"
+      },
+      "description": "Query TestDriver test runs, test cases, and filters for your team using an API key."
+    }
+  }
+}
+```
+
+You can find this exact snippet in the repo at:
+
+- `claude-mcp-config.example.json`
+
+Replace `https://your-api-host.example.com` with your actual API origin (e.g. `https://api.testdriver.ai` or `http://localhost:1337` in development).
+
+### Local development
+
+For local development:
+
+- Run your API server on `http://localhost:1337`
+- Point `baseUrl` at `http://localhost:1337/api/v1/mcp`
+- Use a local team or user API key in `TD_API_KEY`
+
+```json
+{
+  "mcpServers": {
+    "testdriver-cloud-local": {
+      "type": "sse",
+      "url": "http://localhost:1337/api/v1/mcp",
+      "requestHeaders": {
+        "X-Api-Key": "${TD_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+## 4. Skills documentation for Claude
+
+Claude Code expects a `SKILLs.md` file to explain how to use a server. In this repo:
+
+- `AGENTS.md` / `agents.md` contain the **full TestDriver Agent Guide**
+- `SKILLs.md` acts as a short wrapper that points Claude (and other agents) to `agents.md`
+
+Use these as the primary reference for:
+
+- How to initialize the `TestDriver` SDK in Vitest
+- The MCP workflow for building tests interactively with visual feedback
+- How to find elements, click, type, scroll, assert, and capture screenshots
+
+The MCP tools described above are **read-only** helpers for:
+
+- Inspecting recent test runs and failures
+- Discovering branches, files, and suites to focus on
+- Pulling detailed test case and replay information into Claude for analysis
+
+Use the SDK (`testdriverai`) for **driving tests**, and the HTTP MCP server (`/api/v1/mcp`) for **observing and debugging** them from Claude Code.
+

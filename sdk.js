@@ -3,6 +3,7 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
+const logger = require("./agent/lib/logger");
 
 /**
  * Get the file path of the caller (the file that called TestDriver)

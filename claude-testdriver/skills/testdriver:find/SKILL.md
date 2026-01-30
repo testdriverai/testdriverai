@@ -1,0 +1,642 @@
+---
+name: testdriver:find
+description: Locate UI elements using natural language
+---
+<!-- Generated from find.mdx. DO NOT EDIT. -->
+
+## Overview
+
+Locate UI elements on screen using AI-powered natural language descriptions. Returns an `Element` object that can be interacted with.
+
+## Syntax
+
+```javascript
+const element = await testdriver.find(description)
+```
+
+## Parameters
+
+<ParamField path="description" type="string" required>
+  Natural language description of the element to find
+</ParamField>
+
+## Returns
+
+`Promise<Element>` - Element instance that has been automatically located
+
+## Examples
+
+### Basic Element Finding
+
+```javascript
+// Find by role
+const button = await testdriver.find('submit button');
+const input = await testdriver.find('email input field');
+
+// Find by text content
+const link = await testdriver.find('Contact Us link');
+const heading = await testdriver.find('Welcome heading');
+
+// Find by visual appearance
+const icon = await testdriver.find('red warning icon');
+const image = await testdriver.find('company logo image');
+```
+
+### Finding with Context
+
+```javascript
+// Provide location context
+const field = await testdriver.find('username input in the login form');
+const button = await testdriver.find('delete button in the top right corner');
+
+// Describe nearby elements
+const input = await testdriver.find('input field below the email label');
+const checkbox = await testdriver.find('checkbox next to "Remember me"');
+
+// Describe visual position
+const menu = await testdriver.find('hamburger menu icon in the top left');
+```
+
+### Interacting with Found Elements
+
+```javascript
+// Find and click
+const submitBtn = await testdriver.find('submit button');
+await submitBtn.click();
+
+// Find and verify
+const message = await testdriver.find('success message');
+if (message.found()) {
+  console.log('Success message appeared');
+}
+
+// Find and extract info
+const price = await testdriver.find('product price');
+console.log('Price location:', price.coordinates);
+console.log('Price text:', price.text);
+```
+
+## Element Object
+
+The returned `Element` object provides:
+
+### Methods
+
+- `found()` - Check if element was located
+- `click(action)` - Click the element
+- `hover()` - Hover over the element
+- `doubleClick()` - Double-click the element
+- `rightClick()` - Right-click the element
+- `find(newDescription)` - Re-locate with optional new description
+
+### Properties
+
+- `coordinates` - Element position `{x, y, centerX, centerY}`
+- `x`, `y` - Top-left coordinates
+- `centerX`, `centerY` - Center coordinates
+- `text` - Text content (if available)
+- `screenshot` - Base64 screenshot (if available)
+- `confidence` - AI confidence score
+- `width`, `height` - Element dimensions
+- `boundingBox` - Complete bounding box
+
+See [Elements Reference](/v7/elements) for complete details.
+
+### JSON Serialization
+
+Elements can be safely serialized using `JSON.stringify()` for logging and debugging. Circular references are automatically removed:
+
+```javascript
+const element = await testdriver.find('login button');
+
+// Safe to stringify - no circular reference errors
+console.log(JSON.stringify(element, null, 2));
+
+// Output includes useful debugging info:
+// {
+//   "description": "login button",
+//   "coordinates": { "x": 100, "y": 200, "centerX": 150, "centerY": 225 },
+//   "found": true,
+//   "threshold": 0.01,
+//   "x": 100,
+//   "y": 200,
+//   "cache": {
+//     "hit": true,
+//     "strategy": "pixel-diff",
+//     "createdAt": "2025-12-09T10:30:00Z",
+//     "diffPercent": 0.0023,
+//     "imageUrl": "https://..."
+//   },
+//   "similarity": 0.98,
+//   "confidence": 0.95,
+//   "selector": "button#login",
+//   "aiResponse": "Found the blue login button..."
+// }
+```
+
+This is useful for:
+- Debugging element detection issues
+- Logging test execution details
+- Sharing element information across processes
+- Analyzing cache performance
+
+## Best Practices
+
+<Check>
+  **Be specific in descriptions**
+  
+  More specific descriptions improve accuracy:
+  
+  ```javascript
+  // ✅ Good
+  await testdriver.find('blue submit button below the email field');
+  
+  // ❌ Too vague
+  await testdriver.find('button');
+  ```
+</Check>
+
+<Check>
+  **Always check if found**
+  
+  Verify elements were located before interacting:
+  
+  ```javascript
+  const element = await testdriver.find('login button');
+  if (!element.found()) {
+    throw new Error('Login button not found');
+  }
+  await element.click();
+  ```
+</Check>
+
+<Check>
+  **Include visual or positional context**
+  
+  ```javascript
+  // Include color
+  await testdriver.find('red error icon');
+  
+  // Include position
+  await testdriver.find('search button in the top navigation bar');
+  
+  // Include nearby text
+  await testdriver.find('checkbox next to "I agree to terms"');
+  ```
+</Check>
+
+## Polling for Dynamic Elements
+
+For elements that may not be immediately visible, use the `timeout` option to automatically poll:
+
+```javascript
+// Poll for element (retries every 5 seconds until found or timeout)
+const element = await testdriver.find('login button', { timeout: 30000 });
+await element.click();
+```
+
+The `timeout` option:
+- Retries finding the element every 5 seconds
+- Stops when the element is found or the timeout expires
+- Logs progress during polling
+- Returns the element (check `element.found()` if not throwing on failure)
+
+## Zoom Mode for Crowded UIs
+
+When dealing with many similar icons or elements clustered together (like browser toolbars), enable `zoom` mode for better precision:
+
+```javascript
+// Enable zoom for better precision in crowded UIs
+const extensionsBtn = await testdriver.find('extensions puzzle icon in Chrome toolbar', { zoom: true });
+await extensionsBtn.click();
+```
+
+### How Zoom Mode Works
+
+1. **Phase 1**: AI identifies the approximate location of the element
+2. **Phase 2**: A 30% crop of the screen is created around that location
+3. **Phase 3**: AI performs precise location on the zoomed/cropped image
+4. **Result**: Coordinates are converted back to absolute screen position
+
+This two-phase approach gives the AI a higher-resolution view of the target area, improving accuracy when multiple similar elements are close together.
+
+<Tip>
+  Use `zoom: true` when:
+  - Clicking small icons in toolbars
+  - Selecting from a grid of similar items
+  - Targeting elements in dense UI areas
+  - The default locate is clicking the wrong similar element
+</Tip>
+
+```javascript
+// Without zoom - may click wrong icon in toolbar
+const icon = await testdriver.find('settings icon');
+
+// With zoom - better precision for crowded areas
+const icon = await testdriver.find('settings icon', { zoom: true });
+```
+
+### Manual Polling (Alternative)
+
+If you need custom polling logic:
+
+```javascript
+async function waitForElement(testdriver, description, timeout = 30000) {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < timeout) {
+    const element = await testdriver.find(description);
+    if (element.found()) return element;
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  throw new Error(`Element "${description}" not found after ${timeout}ms`);
+}
+
+// Usage
+const button = await waitForElement(testdriver, 'submit button', 10000);
+await button.click();
+```
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Form Fields">
+    ```javascript
+    const emailField = await testdriver.find('email input field');
+    await emailField.click();
+    await testdriver.type('user@example.com');
+    
+    const passwordField = await testdriver.find('password input');
+    await passwordField.click();
+    await testdriver.type('MyP@ssw0rd');
+    ```
+  </Accordion>
+  
+  <Accordion title="Buttons and Links">
+    ```javascript
+    const submitBtn = await testdriver.find('submit button');
+    await submitBtn.click();
+    
+    const cancelLink = await testdriver.find('cancel link');
+    await cancelLink.click();
+    
+    const menuIcon = await testdriver.find('hamburger menu icon');
+    await menuIcon.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Dynamic Content">
+    ```javascript
+    // Wait for loading to complete
+    let content;
+    for (let i = 0; i < 30; i++) {
+      content = await testdriver.find('results table');
+      if (content.found()) break;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    // Interact with loaded content
+    const firstRow = await testdriver.find('first row in the results table');
+    await firstRow.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Complex UI Elements">
+    ```javascript
+    // Modals and dialogs
+    const modal = await testdriver.find('confirmation dialog');
+    if (modal.found()) {
+      const confirmBtn = await testdriver.find('confirm button in the dialog');
+      await confirmBtn.click();
+    }
+    
+    // Dropdown menus
+    const dropdown = await testdriver.find('country dropdown');
+    await dropdown.click();
+    
+    const option = await testdriver.find('United States option');
+    await option.click();
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Complete Example
+
+```javascript
+import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import TestDriver from 'testdriverai';
+
+describe('Element Finding', () => {
+  let testdriver;
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY);
+    await testdriver.auth();
+    await testdriver.connect();
+  });
+
+  afterAll(async () => {
+    await testdriver.disconnect();
+  });
+
+  it('should find and interact with elements', async () => {
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Find login form elements
+    const usernameField = await testdriver.find('username input field');
+    expect(usernameField.found()).toBe(true);
+    
+    await usernameField.click();
+    await testdriver.type('testuser');
+    
+    // Find with context
+    const passwordField = await testdriver.find('password input below username');
+    await passwordField.click();
+    await testdriver.type('password123');
+    
+    // Find button
+    const submitBtn = await testdriver.find('green submit button');
+    expect(submitBtn.found()).toBe(true);
+    
+    console.log('Button location:', submitBtn.centerX, submitBtn.centerY);
+    
+    await submitBtn.click();
+    
+    // Wait for success message
+    let successMsg;
+    for (let i = 0; i < 10; i++) {
+      successMsg = await testdriver.find('success notification');
+      if (successMsg.found()) break;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    
+    expect(successMsg.found()).toBe(true);
+  });
+});
+```
+
+## Related Methods
+
+- [`click()`](/v7/click) - Click on found elements
+- [`hover()`](/v7/hover) - Hover over elements
+- [`assert()`](/v7/assert) - Verify element states
+- [Elements Reference](/v7/elements) - Complete Element API
+
+---
+
+## findAll()
+
+Locate **all elements** matching a description, rather than just one.
+
+### Syntax
+
+```javascript
+const elements = await testdriver.findAll(description, options)
+```
+
+### Parameters
+
+<ParamField path="description" type="string" required>
+  Natural language description of elements to find
+</ParamField>
+
+<ParamField path="options" type="object | number">
+  Optional cache options (same as `find()`)
+  
+  <Expandable title="properties">
+    <ParamField path="cacheKey" type="string">
+      Cache key for storing element location
+    </ParamField>
+    
+    <ParamField path="cacheThreshold" type="number" default={-1}>
+      Similarity threshold (0-1) for cache matching. Set to -1 to disable cache.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Returns
+
+`Promise<Element[]>` - Array of Element instances
+
+### Examples
+
+#### Basic Usage
+
+```javascript
+// Find all matching elements
+const buttons = await testdriver.findAll('button');
+console.log(`Found ${buttons.length} buttons`);
+
+// Interact with specific element
+if (buttons.length > 0) {
+  await buttons[0].click(); // Click first button
+}
+
+// Iterate over all
+for (const button of buttons) {
+  console.log(`Button at (${button.x}, ${button.y})`);
+}
+```
+
+#### Finding Multiple Items
+
+```javascript
+// Find all list items
+const items = await testdriver.findAll('list item');
+
+// Find specific item by index
+const thirdItem = items[2];
+await thirdItem.click();
+
+// Check all items
+for (let i = 0; i < items.length; i++) {
+  console.log(`Item ${i + 1}: ${items[i].text || 'No text'}`);
+}
+```
+
+#### With Caching
+
+```javascript
+// Cache element locations for faster subsequent runs
+const menuItems = await testdriver.findAll('menu item', {
+  cacheKey: 'main-menu-items'
+});
+
+// First run: ~2-3 seconds (AI call)
+// Subsequent runs: ~100ms (cache hit)
+```
+
+#### Empty Results
+
+```javascript
+// Returns empty array if nothing found (doesn't throw error)
+const errors = await testdriver.findAll('error message');
+
+if (errors.length === 0) {
+  console.log('No errors found - test passed!');
+} else {
+  console.log(`Found ${errors.length} errors`);
+}
+```
+
+### Differences from find()
+
+| Feature | find() | findAll() |
+|---------|--------|-----------|
+| Return type | Single `Element` | Array of `Element[]` |
+| If nothing found | Throws `ElementNotFoundError` | Returns empty array `[]` |
+| Chainable | ✅ Yes: `await find('button').click()` | ❌ No (returns array) |
+| Use case | One specific element | Multiple similar elements |
+| Cache support | ✅ Yes | ✅ Yes |
+
+### Use Cases
+
+<AccordionGroup>
+  <Accordion title="Table Rows">
+    ```javascript
+    // Find all rows in a table
+    const rows = await testdriver.findAll('table row');
+    
+    // Click every row
+    for (const row of rows) {
+      await row.click();
+      await new Promise(r => setTimeout(r, 500)); // Wait between clicks
+    }
+    
+    // Or click specific row
+    await rows[2].click(); // Click third row
+    ```
+  </Accordion>
+  
+  <Accordion title="Checkboxes/Radio Buttons">
+    ```javascript
+    // Find all checkboxes
+    const checkboxes = await testdriver.findAll('checkbox');
+    
+    // Check all boxes
+    for (const checkbox of checkboxes) {
+      await checkbox.click();
+    }
+    
+    // Or select first unchecked
+    const unchecked = checkboxes[0];
+    await unchecked.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Navigation Links">
+    ```javascript
+    // Find all navigation links
+    const navLinks = await testdriver.findAll('navigation link');
+    
+    // Validate all are present
+    expect(navLinks.length).toBeGreaterThan(0);
+    
+    // Click specific link by text
+    const homeLink = navLinks.find(link => 
+      link.text?.toLowerCase().includes('home')
+    );
+    
+    if (homeLink) {
+      await homeLink.click();
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Conditional Interactions">
+    ```javascript
+    // Check if any error messages exist
+    const errors = await testdriver.findAll('error message');
+    
+    if (errors.length > 0) {
+      console.log(`Found ${errors.length} validation errors`);
+      
+      // Log each error location
+      errors.forEach((error, i) => {
+        console.log(`Error ${i + 1} at (${error.x}, ${error.y})`);
+      });
+    } else {
+      console.log('Form validation passed!');
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Complete Example
+
+```javascript
+import { test, expect } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('select multiple items from list', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com/products'
+  });
+  
+  // Find all product cards
+  const products = await testdriver.findAll('product card');
+  
+  expect(products.length).toBeGreaterThan(0);
+  console.log(`Found ${products.length} products`);
+  
+  // Click first 3 products
+  const productsToSelect = Math.min(3, products.length);
+  
+  for (let i = 0; i < productsToSelect; i++) {
+    await products[i].click();
+    console.log(`Selected product ${i + 1}`);
+    await new Promise(r => setTimeout(r, 500)); // Brief pause
+  }
+  
+  // Verify selections
+  const selectedBadges = await testdriver.findAll('selected badge');
+  expect(selectedBadges.length).toBe(productsToSelect);
+});
+```
+
+### Best Practices
+
+<Check>
+  **Handle empty arrays gracefully**
+  
+  ```javascript
+  // ✅ Good - check length first
+  const items = await testdriver.findAll('list item');
+  if (items.length > 0) {
+    await items[0].click();
+  }
+  
+  // ❌ Bad - may throw error
+  const items = await testdriver.findAll('list item');
+  await items[0].click(); // Error if array is empty!
+  ```
+</Check>
+
+<Check>
+  **Use find() for single elements**
+  
+  ```javascript
+  // ✅ Use find() when you need exactly one
+  const submitBtn = await testdriver.find('submit button');
+  await submitBtn.click();
+  
+  // ❌ Unnecessary - findAll() returns array
+  const buttons = await testdriver.findAll('submit button');
+  await buttons[0].click(); // Extra array handling
+  ```
+</Check>
+
+<Check>
+  **Cache for performance**
+  
+  ```javascript
+  // First run - slow (AI call)
+  const items = await testdriver.findAll('menu item', {
+    cacheKey: 'menu-items'
+  });
+  
+  // Subsequent runs - fast (cache hit)
+  // ~10-20x faster than without cache
+  ```
+</Check>

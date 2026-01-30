@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>TestDriver Screenshot</title>
+</head>
+<body>
+  <main class="main">
+    <div class="screenshot-wrapper">
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Waiting for screenshot...</span>
+      </div>
+      <div class="screenshot-container" id="screenshot-container">
+        <img id="screenshot" alt="Screenshot" />
+        <div id="overlays"></div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span id="action-status"></span>
+      <span id="session-info"></span>
+    </div>
+  </main>
+  <script type="module" src="/src/mcp-app.ts"></script>
+</body>
+</html>

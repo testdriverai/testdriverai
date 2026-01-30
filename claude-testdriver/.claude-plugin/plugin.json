@@ -1,0 +1,9 @@
+{
+  "name": "testdriver",
+  "description": "TestDriver plugin: SDK guidance plus MCP access to test runs and results.",
+  "version": "1.0.0",
+  "author": {
+    "name": "TestDriver"
+  }
+}
+

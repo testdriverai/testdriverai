@@ -67,7 +67,7 @@ jobs:
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided
-        run: npm run test
+        run: npx vitest run
 ```
 
 **What happens automatically:**
@@ -160,7 +160,7 @@ In GitHub Actions workflow:
   env:
     TD_API_KEY: ${{ secrets.TD_API_KEY }}
     TESTDRIVER_SKIP_GITHUB_COMMENT: true
-  run: npm test
+  run: npx vitest run
 ```
 
 ## Troubleshooting

@@ -10,7 +10,7 @@ When you run `testdriverai init`, it automatically sets up:
 - Creates a new package.json if one doesn't exist
 - Sets `"type": "module"` for ES modules
 - Adds test scripts:
-  - `npm test` - Run tests once
+  - `npx vitest run` - Run tests once (recommended)
   - `npm run test:watch` - Run tests in watch mode
   - `npm run test:ui` - Open Vitest UI
 
@@ -59,7 +59,7 @@ testdriverai init
 
 2. **Run your tests:**
    ```bash
-   npm test
+   npx vitest run
    ```
 
 3. **For CI/CD:**

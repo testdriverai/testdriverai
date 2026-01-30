@@ -14,15 +14,45 @@ const testdriver = TestDriver(context, {
 });
 ```
 
-### Headless Mode
+### Preview Mode
 
-Run tests without a visible browser window. Useful for CI/CD pipeline or spawning multiple tests locally:
+Control how test execution is visualized. The `preview` option determines where the live debugger view opens:
 
 ```javascript
 const testdriver = TestDriver(context, {
-  headless: true,  // No visible browser window
+  preview: "browser",  // Opens in default browser (default)
 });
 ```
+
+| Value | Description |
+|-------|-------------|
+| `"browser"` | Opens debugger in default browser (default) |
+| `"ide"` | Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension) |
+| `"none"` | Headless mode, no visual preview |
+
+**IDE Preview**
+
+For the best development experience, use `preview: "ide"` with the TestDriver extension for VSCode or Cursor:
+
+```javascript
+const testdriver = TestDriver(context, {
+  preview: "ide",  // Opens preview in IDE panel
+});
+```
+
+**Headless Mode**
+
+Run tests without any visual preview. Useful for CI/CD pipelines:
+
+```javascript
+const testdriver = TestDriver(context, {
+  preview: "none",  // No visual preview (headless)
+});
+```
+
+<Note>
+  The legacy `headless: true` option still works for backward compatibility and maps to `preview: "none"`.
+</Note>
 
 ### IP Target
 
@@ -73,26 +103,6 @@ strategy:
     os: [linux, windows]
 steps:
   - run: TD_OS=${{ matrix.os }} npx vitest run
-```
-
-### Headless Mode
-
-Run tests without a visible browser window. Useful for CI/CD pipeline or spawning multiple tests locally:
-
-```javascript
-const testdriver = TestDriver(context, {
-  headless: true,  // No visible browser window
-});
-```
-
-### IP Target
-
-If self-hosting TestDriver, use `ip` to specify the device IP. See [Self-Hosting TestDriver](../self-hosting.md) for details.
-
-```javascript
-const testdriver = TestDriver(context, {
-  ip: "203.0.113.42",  // Your allowlisted IP
-});
 ```
 
 ## Keepalive

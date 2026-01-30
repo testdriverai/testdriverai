@@ -36,10 +36,11 @@
     "start": "node bin/testdriverai.js",
     "dev": "DEV=true node bin/testdriverai.js",
     "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
-    "docs": "cd docs && npx mint@latest dev",
+    "docs": "npm run docs:skills && cd docs && npx mint@latest dev",
     "docs:dev": "cd docs && npx mint dev",
-    "docs:build": "cd docs && npx mint@latest build",
+    "docs:build": "npm run docs:skills && cd docs && npx mint@latest build",
     "docs:links": "node docs/_scripts/link-replacer.js",
+    "docs:skills": "node docs/_scripts/generate-skills.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "test:sdk": "vitest run",
@@ -58,7 +59,8 @@
     "test-assert": "node index.js run --path=testdriver/acceptance/assert.yaml",
     "generate-report": "junit-viewer --results=out.xml --save=report.html",
     "serve-report": "npx http-server . -p 8080 -o report.html",
-    "report": "npm run generate-report && npm run serve-report"
+    "report": "npm run generate-report && npm run serve-report",
+    "generate:skills": "node scripts/generate-skills.js"
   },
   "author": "",
   "license": "ISC",
@@ -124,7 +126,8 @@
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3",
-    "vitest": "^4.0.16"
+    "testdriverai": "^7.2.60",
+    "vitest": "^4.0.18"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5"
@@ -137,6 +140,6 @@
       "@oclif/plugin-*"
     ],
     "topicSeparator": " ",
-    "default": "edit"
+    "default": "init"
   }
 }

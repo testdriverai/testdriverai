@@ -4,12 +4,32 @@ This guide is designed for AI agents working with TestDriver. TestDriver enables
 
 ## Quick Reference
 
-| Resource | Location |
-|----------|----------|
-| Code samples | `node_modules/testdriverai/test` |
-| TypeScript types | `node_modules/testdriverai/sdk.d.ts` |
-| Documentation | `node_modules/testdriverai/docs` |
-| API Key | [console.testdriver.ai/team](https://console.testdriver.ai/team) |
+| Resource         | Location                                                         |
+| ---------------- | ---------------------------------------------------------------- |
+| Code samples     | `node_modules/testdriverai/test`                                 |
+| TypeScript types | `node_modules/testdriverai/sdk.d.ts`                             |
+| Documentation    | `node_modules/testdriverai/docs`                                 |
+| API Key          | [console.testdriver.ai/team](https://console.testdriver.ai/team) |
+
+## MCP Workflow
+
+Use the TestDriver MCP tools to build tests interactively with visual feedback:
+
+1. **Start session**: `session_start({ type: "chrome", url: "https://your-app.com" })`
+2. **Interact**: Use `find`, `click`, `type` - each returns a screenshot AND generated code
+3. **Append code**: After each successful action, append the generated code to your test file
+4. **Check**: Use `check` after actions to verify if the task completed successfully (FOR YOUR UNDERSTANDING ONLY - does NOT generate test code)
+5. **Assert**: Use `assert` for specific boolean pass/fail conditions (GENERATES CODE for the test file)
+6. **Verify test**: Use `verify` to run the test from scratch to validate
+
+**Key advantages:**
+- **Generated code included in every response** - just append to your test file
+- Use `check` to get AI analysis of whether actions succeeded
+- No need to re-run the entire test for each change
+- Full control over where code is inserted in existing test files
+- O(1) iteration time regardless of test length
+
+See the `testdriver:mcp-workflow` skill for detailed documentation.
 
 ## Prerequisites
 
@@ -24,432 +44,281 @@ TD_API_KEY=your_api_key_here
 
 Get your API key at: **https://console.testdriver.ai/team**
 
-### Test Runner
+## MCP Tools Reference
 
-TestDriver **only works with Vitest**. Tests must use the `.test.mjs` extension and import from vitest:
+### Session Management
 
-```javascript
-import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+| Tool | Description |
+|------|-------------|
+| `session_start` | Start sandbox with browser/app, returns initial screenshot + provision code |
+| `session_status` | Check session health and time remaining |
+| `session_extend` | Add more time before session expires |
+
+### Element Interaction
+
+Each tool returns a screenshot AND the generated code to add to your test file.
+
+| Tool | Description |
+|------|-------------|
+| `find` | Locate element by natural language description, returns ref for later use |
+| `click` | Click on element ref |
+| `find_and_click` | Find and click in one action |
+| `type` | Type text into focused field |
+| `press_keys` | Press keyboard shortcuts (e.g., `["ctrl", "a"]`) |
+| `scroll` | Scroll page (up/down/left/right) |
+
+### Verification & Display
+
+| Tool | Description |
+|------|-------------|
+| `check` | **For AI to understand screen state ONLY.** Analyzes current screen and returns detailed feedback about whether a task/condition is met. Use this after actions to verify they worked. **DOES NOT generate code** - never appears in test files. |
+| `assert` | AI-powered boolean assertion for test files (pass/fail). **GENERATES CODE** like `await testdriver.assert("...")` that gets recorded in the test file. Use this for verifications that should be in the final test. |
+| `screenshot` | **Only use when the user explicitly asks to see the screen.** Captures and displays a screenshot. Does NOT return analysis to AI. |
+| `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
+
+### Test Validation
+
+| Tool | Description |
+|------|-------------|
+| `verify` | Run test file from scratch to validate it works |
+
+## Workflow Example
+
+```
+# 1. Start a session
+session_start({ type: "chrome", url: "https://app.example.com/login" })
+→ Screenshot shows login page
+→ Add to test file: await testdriver.provision.chrome({ url: "https://app.example.com/login" });
+
+# 2. Fill in email
+find_and_click({ description: "email input field" })
+→ Screenshot shows cursor in email field
+→ Add to test file: await testdriver.find("email input field").click();
+
+type({ text: "user@example.com" })
+→ Screenshot shows typed email
+→ Add to test file: await testdriver.type("user@example.com");
+
+# 3. Check if email was entered correctly (for your understanding - no code generated)
+check({ task: "Was the email entered into the input field?" })
+→ AI confirms email is visible in the field (this is for YOU, not the test file)
+
+# 4. Fill in password
+find_and_click({ description: "password input field" })
+→ Add to test file: await testdriver.find("password input field").click();
+
+type({ text: "secret123" })
+→ Add to test file: await testdriver.type("secret123");
+
+# 5. Submit login
+find_and_click({ description: "Sign In button" })
+→ Screenshot shows page changing
+→ Add to test file: await testdriver.find("Sign In button").click();
+
+# 6. Check if login succeeded (for your understanding - no code generated)
+check({ task: "Did the login complete successfully?" })
+→ AI analyzes screen and confirms dashboard is visible (this is for YOU, not the test file)
+
+# 7. Assert success (THIS generates code for the test file)
+assert({ assertion: "I can see the user dashboard" })
+→ Pass with screenshot
+→ Add to test file:
+   const assertResult = await testdriver.assert("I can see the user dashboard");
+   expect(assertResult).toBeTruthy();
+
+# 8. Verify the test runs correctly
+verify({ testFile: "tests/login.test.mjs" })
+→ Test passes from scratch
 ```
 
-## Basic Test Structure
+## Visual Feedback
+
+Action tools (`find`, `click`, `find_and_click`, etc.) return visual information showing:
+
+- **Element highlights** - Blue box around found elements
+- **Click markers** - Red dot with ripple effect at click location
+- **Scroll indicators** - Arrow showing scroll direction
+- **Action status** - Success/failure with duration
+- **Session info** - Time remaining before expiry
+
+**Important distinction:**
+- Use `screenshot` **only when the user explicitly asks** to see the current screen state
+- Use `check` for **AI to understand** the screen state (returns analysis) - **DOES NOT generate code**
+- Use `assert` to **add verification to test file** - **GENERATES CODE** like `await testdriver.assert("...")`
+
+## Best Practices
+
+### 1. Work Incrementally
+
+Don't try to build the entire test at once. After each action:
+- Examine the screenshot
+- Use `check` to verify the action worked
+- Then proceed to the next step
+
+### 2. Use Check vs Assert Appropriately
+
+**`check`** - For YOUR understanding during development (DOES NOT generate code):
+```
+find_and_click({ description: "Submit button" })
+check({ task: "Was the form submitted?" })
+```
+The `check` tool compares the previous screenshot with the current state and gives you AI analysis of whether your action succeeded. Use it to understand the screen state, but it will NOT appear in the generated test file.
+
+**`assert`** - For verification steps in the test file (GENERATES CODE):
+```
+find_and_click({ description: "Submit button" })
+assert({ assertion: "The form was submitted successfully" })
+```
+The `assert` tool generates code like `await testdriver.assert("...")` that gets added to the test file for CI/CD verification.
+
+### 3. When to Use Each
+
+- **Use `check`** when you need to understand what happened (debugging, verifying an action worked before continuing)
+- **Use `assert`** when you want a verification step recorded in the final test file
+
+### 3. Handle Timing Issues
+
+If elements take time to appear, use `find` with timeout:
+
+```
+find({ description: "Loading complete indicator", timeout: 30000 })
+```
+
+### 4. Watch Session Time
+
+Sessions expire after 5 minutes by default. Check with `session_status` and extend with `session_extend` if needed.
+
+### 5. Write Code as You Go
+
+After each successful action, append the generated code to your test file. This ensures you don't lose progress and makes the test easier to debug.
+
+## Error Recovery
+
+### Element Not Found
+
+1. Check the screenshot to see what's actually on screen
+2. Adjust the element description to be more specific
+3. Use timeout: `find({ description: "...", timeout: 10000 })`
+4. Scroll to find off-screen elements: `scroll({ direction: "down" })`
+
+### Session Expired
+
+1. Start a new session with `session_start`
+2. Run the test with `verify` to get back to last state
+3. Continue from where you left off
+
+### Test Verification Fails
+
+1. Check the error message and screenshot
+2. Review the test file to see the generated code
+3. Start a new session and manually test the failing step
+4. Adjust element descriptions or add waits as needed
+
+## Dependencies
+
+When creating a new test project, use these exact dependencies:
+
+**package.json:**
+```json
+{
+  "type": "module",
+  "devDependencies": {
+    "testdriverai": "beta",
+    "vitest": "^4.0.0"
+  },
+  "scripts": {
+    "test": "vitest"
+  }
+}
+```
+
+**Important:** The package is `testdriverai` (NOT `@testdriverai/sdk`). Always install from the `beta` tag.
+
+## Test File Format
+
+Create test files using this standard format. Each action's generated code goes inside the test function:
 
 ```javascript
+/**
+ * Login Flow test
+ * Generated by TestDriver MCP Server
+ */
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
-describe("My Test Suite", () => {
-  it("should do something", async (context) => {
-    // Initialize TestDriver
+describe("Login Flow", () => {
+  it("should complete Login Flow", async (context) => {
     const testdriver = TestDriver(context);
+
+    // --- GENERATED COMMANDS ---
+    await testdriver.provision.chrome({ url: "https://app.example.com" });
     
-    // Start with provision - this launches the sandbox and browser
-    await testdriver.provision.chrome({
-      url: 'https://example.com',
-    });
-
-    // Find elements and interact
-    const button = await testdriver.find("Sign In button");
-    await button.click();
-
-    // Assert using natural language
-    const result = await testdriver.assert("the dashboard is visible");
-    expect(result).toBeTruthy();
+    await testdriver.find("email input field").click();
+    await testdriver.type("user@example.com");
+    
+    await testdriver.find("password field").click();
+    await testdriver.type("secret123");
+    
+    await testdriver.find("Sign In button").click();
+    
+    const assertResult = await testdriver.assert("dashboard is visible");
+    expect(assertResult).toBeTruthy();
+    // --- END GENERATED ---
   });
 });
 ```
 
-## Provisioning Options
+## SDK Reference (for understanding generated tests)
 
-Most tests start with `testdriver.provision`. Choose the right one:
-
-### `provision.chrome` - Web Testing (Most Common)
-```javascript
-await testdriver.provision.chrome({
-  url: 'https://your-app.com',
-});
-```
-
-### `provision.installer` - Desktop App Testing
-```javascript
-// Download and install an application
-const filePath = await testdriver.provision.installer({
-  url: 'https://example.com/app.deb',  // or .msi, .exe, .sh
-  launch: true,  // auto-launch after install
-});
-```
-
-## Key SDK Methods
-
-The SDK has TypeScript types in `sdk.d.ts`. Key methods:
+The generated tests use these SDK methods:
 
 | Method | Purpose |
 |--------|---------|
+| `provision.chrome({ url })` | Launch sandbox with Chrome at URL |
+| `provision.installer({ url })` | Download and install desktop app |
 | `find(description)` | Find element by natural language |
-| `findAll(description)` | Find all matching elements |
-| `assert(assertion)` | AI-powered assertion || `screenshot()` | Capture and save screenshot locally || `type(text)` | Type text |
+| `find(description).click()` | Find and click element |
+| `type(text)` | Type text into focused field |
 | `pressKeys([keys])` | Press keyboard keys |
 | `scroll(direction)` | Scroll the page |
+| `assert(assertion)` | AI-powered assertion |
 | `exec(language, code)` | Execute code in sandbox |
-| `screenshot(scale, silent, mouse)` | Capture screenshot as base64 PNG |
-| `ai(task)` | AI exploratory loop (see note below) |
+| `screenshot()` | Capture screenshot |
 
-### About `ai()` - Use for Exploration, Not Final Tests
+### Element Properties
 
-The `ai(task)` method lets the AI figure out how to accomplish a task autonomously. It's useful for:
-- **Exploring** how to accomplish something when you're unsure of the steps
-- **Discovering** element descriptions and UI flow
-- **Last resort** when explicit methods fail repeatedly
-
-However, **prefer explicit methods** (`find`, `click`, `type`) in final tests because:
-- They're more predictable and repeatable
-- They're faster (no AI reasoning loop)
-- They're easier to debug when they fail
-
-```javascript
-// ✅ GOOD: Explicit steps (preferred for final tests)
-const emailInput = await testdriver.find("email input field");
-await emailInput.click();
-await testdriver.type("user@example.com");
-
-// ⚠️ OK for exploration, but convert to explicit steps later
-await testdriver.ai("fill in the email field with user@example.com");
-```
-
-### Element Properties (for debugging)
-
-Elements returned by `find()` have properties you can inspect:
+Elements returned by `find()` have these properties:
 
 ```javascript
 const element = await testdriver.find("Sign In button");
 
-// Debugging properties
 console.log(element.x, element.y);           // coordinates
-console.log(element.centerX, element.centerY); // center coordinates  
+console.log(element.centerX, element.centerY); // center coordinates
 console.log(element.width, element.height);  // dimensions
 console.log(element.confidence);             // AI confidence score
 console.log(element.text);                   // detected text
-console.log(element.boundingBox);            // full bounding box
+console.log(element.found());                // boolean: was it found?
 ```
 
 ### Element Methods
 
 ```javascript
 const element = await testdriver.find("button");
-await element.click();        // click
-await element.hover();        // hover
-await element.doubleClick();  // double-click
-await element.rightClick();   // right-click
-await element.mouseDown();    // press mouse down
-await element.mouseUp();      // release mouse
-element.found();              // check if found (boolean)
-```
-
-### Screenshots for Debugging
-
-**Use `screenshot()` liberally during development** to see exactly what the sandbox screen looks like. Screenshots are saved locally and organized by test file.
-
-```javascript
-// Capture a screenshot - saved to .testdriver/screenshots/<test-file>/
-const screenshotPath = await testdriver.screenshot();
-console.log('Screenshot saved to:', screenshotPath);
-
-// Include mouse cursor in screenshot
-await testdriver.screenshot(1, false, true);
-```
-
-**When to use screenshots:**
-- After `provision.chrome()` to verify the page loaded correctly
-- Before/after clicking elements to see state changes
-- When a `find()` fails to see what the AI is actually seeing
-- Before `assert()` calls to debug assertion failures
-- When tests behave unexpectedly
-
-**Screenshot file organization:**
-```
-.testdriver/
-  screenshots/
-    login.test/           # Folder per test file
-      screenshot-1737633600000.png
-      screenshot-1737633605000.png
-    checkout.test/
-      screenshot-1737633700000.png
-```
-
-> **Note:** The screenshot folder for each test file is automatically cleared when the test starts, so you only see screenshots from the most recent run.
-
-## Best Workflow: Two-File Pattern
-
-**The most efficient workflow for building tests uses two files.** This prevents having to restart from scratch when experimenting with new steps.
-
-### IMPORTANT: When to Use This Pattern
-
-- **If a working test already exists**: Only create an `experiment.test.mjs` file to add new steps. Do NOT recreate the stable file.
-- **If starting from scratch**: Start with a MINIMAL setup file, run it, verify it passes, THEN create the experiment file.
-
-### Step 1: Create a Minimal Setup File
-
-Start with the bare minimum - just provision and one assertion. **Do NOT call it "stable" yet** - name it `setup.test.mjs` until it's proven to work:
-
-```javascript
-/**
- * Setup file - MINIMAL steps to get to starting state
- * Only add more steps AFTER this passes!
- */
-import { afterAll, describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
-
-describe("Setup State", () => {
-
-  afterAll(async () => {
-    // DO NOT disconnect - keep sandbox alive for reconnect
-    console.log("Sandbox staying alive for 30 seconds (keepAlive)");
-  });
-
-  it("should set up the application state", async (context) => {
-    const testdriver = TestDriver(context);
-    
-    await testdriver.provision.chrome({
-      url: 'https://your-app.com/login',
-    });
-
-    // Start with just ONE assertion to verify we're on the right page
-    const result = await testdriver.assert("I can see the login page");
-    expect(result).toBeTruthy();
-    
-    console.log("✅ Setup ready - run experiment.test.mjs now");
-  });
-});
-```
-
-### Step 2: Run Setup File and Verify It Passes
-
-```bash
-vitest run tests/setup.test.mjs
-```
-
-**Only proceed to Step 3 if this passes!** If it fails, fix it first.
-
-### Step 3: Create Experiment File
-
-Only AFTER the setup file passes, create the experiment file.
-
-**CRITICAL: The experiment file must NOT call `provision`!** It reconnects to the existing sandbox where provision already ran:
-
-```javascript
-/**
- * Experiment file - reconnects to existing sandbox
- * Run AFTER setup.test.mjs passes (within 2 minutes)
- */
-import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
-
-describe("Experiment", () => {
-
-  it("should continue from existing state", async (context) => {
-    const testdriver = TestDriver(context, { 
-      reconnect: true  // ← Key: reconnects to last sandbox
-    });
-    
-    // NO provision here! The sandbox is already running from setup.test.mjs
-    
-    // Experiment with new steps here - try ONE thing at a time
-    const element = await testdriver.find("email input");
-    console.log("Found element:", element.found(), element.getCoordinates());
-    
-    await element.click();
-    await testdriver.type("user@example.com");
-    
-    // Assert after each major step
-    const result = await testdriver.assert("email is filled in");
-    console.log("Assertion result:", result);
-    expect(result).toBeTruthy();
-  });
-});
-```
-
-> ⚠️ **NEVER REMOVE `reconnect: true`**: If a test file already has `reconnect: true`, do NOT remove it. This option is intentional and removing it will break the two-file workflow. Only remove `reconnect: true` when explicitly combining files into a final standalone test.
-
-### Step 4: Iterate in Experiment File
-
-- Run experiment, see output, fix issues
-- Once steps work, move them to the setup file
-- Re-run setup file to verify it still passes
-- Repeat until complete
-
-### Running the Two-File Pattern
-
-```bash
-# Step 1: Run setup file (must pass first!)
-vitest run tests/setup.test.mjs
-
-# Step 2: Within 2 minutes, run experiment file
-vitest run tests/experiment.test.mjs
-```
-
-### After Experimentation: Combine and Rename
-
-**IMPORTANT:** Once the test is working AND the user explicitly asks to combine/finalize the test, combine both files into a single, properly-named test file:
-
-1. **Merge the code** - Copy the working steps from `experiment.test.mjs` into `setup.test.mjs`
-2. **Remove reconnect options** - Delete `reconnect: true` since the final test runs standalone (ONLY do this when creating the final combined test - never remove it from an existing experiment file!)
-3. **Rename the file** - Give it a meaningful name like `login-flow.test.mjs` or `checkout-process.test.mjs`
-4. **Delete the experiment file** - Clean up `experiment.test.mjs`
-
-> ⚠️ **WARNING FOR AI AGENTS**: Do NOT remove `reconnect: true` from any existing test file unless you are explicitly combining files into a final test. If a test has `reconnect: true`, it is there intentionally.
-
-```javascript
-// Final combined test: login-flow.test.mjs
-import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
-
-describe("Login Flow", () => {
-  it("should log in and open settings", async (context) => {
-    const testdriver = TestDriver(context);
-    
-    await testdriver.provision.chrome({ url: 'https://your-app.com/login' });
-
-    // Steps from stable file
-    await testdriver.find("email input").click();
-    await testdriver.type("user@example.com");
-    await testdriver.find("password input").click();
-    await testdriver.type("password123");
-    await testdriver.find("Login button").click();
-    
-    // Steps from experiment file
-    const settingsBtn = await testdriver.find("Settings button");
-    await settingsBtn.click();
-    
-    const result = await testdriver.assert("Settings panel is open");
-    expect(result).toBeTruthy();
-  });
-});
-```
-
-## Recommended Development Workflow
-
-1. **Write a few steps** - Don't write the entire test at once
-2. **Run the test** - See what happens on the sandbox
-3. **Inspect outputs** - Use element properties to debug
-4. **Assert/expect** - Verify the step worked
-5. **Iterate** - Add more steps incrementally
-
-```javascript
-// Development workflow example
-it("should incrementally build test", async (context) => {
-  const testdriver = TestDriver(context);
-  await testdriver.provision.chrome({ url: 'https://example.com' });
-
-  // Take a screenshot to see the initial state
-  await testdriver.screenshot();
-
-  // Step 1: Find and inspect
-  const element = await testdriver.find("Some button");
-  console.log("Element found:", element.found());
-  console.log("Coordinates:", element.x, element.y);
-  console.log("Confidence:", element.confidence);
-  
-  // Step 2: Interact
-  await element.click();
-  
-  // Screenshot after interaction to see the result
-  await testdriver.screenshot();
-  
-  // Step 3: Assert and log
-  const result = await testdriver.assert("Something happened");
-  console.log("Assertion result:", result);
-  expect(result).toBeTruthy();
-  
-  // Then add more steps...
-});
-```
-
-## TestDriver Options Reference
-
-```javascript
-const testdriver = TestDriver(context, {
-  newSandbox: true,       // Create new sandbox (default: true)
-  headless: false,        // Run in headless mode (default: false)
-  reconnect: false,       // Reconnect to last sandbox (default: false)
-  keepAlive: 30000,       // Keep sandbox alive after test (default: 30000ms / 30 seconds)
-  os: 'linux',            // 'linux' | 'windows' (default: 'linux')
-  resolution: '1366x768', // Sandbox resolution
-  cache: true,            // Enable element caching (default: true)
-  cacheKey: 'my-test',    // Cache key for element finding
-});
-```
-
-## Common Patterns
-
-### Typing in Fields
-```javascript
-await testdriver.find("Email input").click();
-await testdriver.type("user@example.com");
-```
-
-### Keyboard Shortcuts
-```javascript
-await testdriver.pressKeys(["ctrl", "a"]);  // Select all
-await testdriver.pressKeys(["ctrl", "c"]);  // Copy
-await testdriver.pressKeys(["enter"]);       // Submit
-```
-
-### Waiting and Polling
-```javascript
-// Use timeout option to poll until element is found (retries every 5 seconds)
-const element = await testdriver.find("Loading complete indicator", { timeout: 30000 });
-await element.click();
-```
-
-### Scrolling
-```javascript
-await testdriver.scroll("down");
-await testdriver.scrollUntilText("Footer text");
-await testdriver.scrollUntilImage("Product image at bottom");
-```
-
-### Executing Code in Sandbox
-```javascript
-// JavaScript
-const result = await testdriver.exec("js", "return document.title", 5000);
-
-// Shell (Linux)
-const output = await testdriver.exec("sh", "ls -la", 5000);
-
-// PowerShell (Windows)
-const date = await testdriver.exec("pwsh", "Get-Date", 5000);
-```
-
-### Capturing Screenshots
-```javascript
-// Capture a screenshot and save to file
-const screenshot = await testdriver.screenshot();
-const filepath = 'screenshot.png';
-fs.writeFileSync(filepath, Buffer.from(screenshot, 'base64'));
-console.log('Screenshot saved to:', filepath);
-
-// Capture with mouse cursor visible
-const screenshotWithMouse = await testdriver.screenshot(1, false, true);
-fs.writeFileSync('screenshot-with-mouse.png', Buffer.from(screenshotWithMouse, 'base64'));
-console.log('Screenshot with mouse saved to: screenshot-with-mouse.png');
+await element.click();       // click
+await element.hover();       // hover
+await element.doubleClick(); // double-click
+await element.rightClick();  // right-click
+await element.mouseDown();   // press mouse down
+await element.mouseUp();     // release mouse
 ```
 
 ## Tips for Agents
 
-1. **Always check `sdk.d.ts`** for method signatures and types
-2. **Look at test samples** in `node_modules/testdriverai/test` for working examples
-3. **Use reconnect pattern** when iterating on test steps
-4. **Log element properties** to understand what the AI sees
-5. **Use `assert()` with specific, descriptive natural language**
-6. **Start simple** - get one step working before adding more
-7. **Take screenshots liberally** - use `await testdriver.screenshot()` after key steps to debug what the sandbox actually shows. Check `.testdriver/screenshots/<test-file>/` to review them.
-8. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
-   ```json
-   // eslint.config.js (for TypeScript projects)
-   {
-     "rules": {
-       "@typescript-eslint/no-floating-promises": "error"
-     }
-   }
-   ```
+1. **Use MCP tools for development** - Each action returns the code to add to your test file
+2. **Append code after each action** - The response includes `Add to test file:` with the exact code
+3. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state. **Does NOT generate code.**
+4. **Only use `screenshot` when the user asks** - Do NOT call screenshot automatically. Only use it when the user explicitly requests to see the screen.
+5. **Use `check` during development** - Verify actions succeeded before moving on, but remember this is for YOUR understanding only
+6. **Use `assert` for test file verifications** - When you want a verification step in the final test, use `assert` which generates `await testdriver.assert("...")` code
+7. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
+8. **Check `sdk.d.ts`** for method signatures when debugging tests
