@@ -1,0 +1,299 @@
+---
+name: testdriver:scroll
+description: Scroll pages and elements
+---
+<!-- Generated from scroll.mdx. DO NOT EDIT. -->
+
+## Overview
+
+Scroll the page or active element in any direction using mouse wheel or keyboard.
+
+## Syntax
+
+```javascript
+await testdriver.scroll(direction, amount, method)
+```
+
+## Parameters
+
+<ParamField path="direction" type="string" default="down">
+  Direction to scroll: `'up'`, `'down'`, `'left'`, `'right'`
+</ParamField>
+
+<ParamField path="amount" type="number" default="300">
+  Amount to scroll in pixels
+</ParamField>
+
+<ParamField path="method" type="string" default="mouse">
+  Scroll method: `'mouse'` or `'keyboard'`
+</ParamField>
+
+## Returns
+
+`Promise<void>`
+
+## Examples
+
+### Basic Scrolling
+
+```javascript
+// Scroll down (default)
+await testdriver.scroll();
+
+// Scroll down 500 pixels
+await testdriver.scroll('down', 500);
+
+// Scroll up
+await testdriver.scroll('up');
+
+// Scroll up 200 pixels
+await testdriver.scroll('up', 200);
+```
+
+### Horizontal Scrolling
+
+```javascript
+// Scroll right
+await testdriver.scroll('right', 300);
+
+// Scroll left
+await testdriver.scroll('left', 300);
+```
+
+### Scroll Methods
+
+```javascript
+// Mouse wheel scroll (smooth, pixel-precise)
+await testdriver.scroll('down', 300, 'mouse');
+
+// Keyboard scroll (uses Page Down/Up, more compatible)
+await testdriver.scroll('down', 300, 'keyboard');
+```
+
+## Scroll Until Found
+
+### scrollUntilText()
+
+Scroll until specific text appears on screen.
+
+```javascript
+await testdriver.scrollUntilText(text, direction, maxDistance, textMatchMethod, method, invert)
+```
+
+**Parameters:**
+- `text` (string) - Text to find
+- `direction` (string) - Scroll direction (default: `'down'`)
+- `maxDistance` (number) - Max pixels to scroll (default: 10000)
+- `textMatchMethod` (string) - `'turbo'` or `'ai'` (default: `'turbo'`)
+- `method` (string) - `'keyboard'` or `'mouse'` (default: `'keyboard'`)
+- `invert` (boolean) - Scroll until text disappears (default: false)
+
+**Examples:**
+```javascript
+// Scroll down until "Contact Us" appears
+await testdriver.scrollUntilText('Contact Us');
+
+// Scroll up to find text
+await testdriver.scrollUntilText('Header', 'up');
+
+// Scroll until text disappears
+await testdriver.scrollUntilText('Loading...', 'down', 5000, 'turbo', 'keyboard', true);
+
+// Use AI matching for fuzzy text
+await testdriver.scrollUntilText('footer content', 'down', 10000, 'ai');
+```
+
+### scrollUntilImage()
+
+Scroll until a visual element appears.
+
+```javascript
+await testdriver.scrollUntilImage(description, direction, maxDistance, method, path, invert)
+```
+
+**Parameters:**
+- `description` (string) - Description of the image/element
+- `direction` (string) - Scroll direction (default: `'down'`)
+- `maxDistance` (number) - Max pixels to scroll (default: 10000)
+- `method` (string) - `'keyboard'` or `'mouse'` (default: `'keyboard'`)
+- `path` (string | null) - Path to image template (optional)
+- `invert` (boolean) - Scroll until image disappears (default: false)
+
+**Examples:**
+```javascript
+// Scroll until visual element appears
+await testdriver.scrollUntilImage('red subscribe button');
+
+// Scroll using image template
+await testdriver.scrollUntilImage('', 'down', 10000, 'keyboard', './footer-logo.png');
+
+// Scroll until image disappears
+await testdriver.scrollUntilImage('loading spinner', 'down', 5000, 'keyboard', null, true);
+```
+
+## Best Practices
+
+<Check>
+  **Choose the right scroll method**
+  
+  ```javascript
+  // For web pages, mouse scroll is usually smoother
+  await testdriver.scroll('down', 300, 'mouse');
+  
+  // For desktop apps or when mouse doesn't work
+  await testdriver.scroll('down', 300, 'keyboard');
+  ```
+</Check>
+
+<Check>
+  **Use scrollUntil for dynamic content**
+  
+  ```javascript
+  // Instead of guessing scroll amount
+  await testdriver.scrollUntilText('Load More button');
+  
+  const loadMoreBtn = await testdriver.find('Load More button');
+  await loadMoreBtn.click();
+  ```
+</Check>
+
+<Check>
+  **Set reasonable max distance**
+  
+  ```javascript
+  // Avoid infinite scrolling
+  await testdriver.scrollUntilText('Footer', 'down', 5000); // Max 5000px
+  ```
+</Check>
+
+<Warning>
+  **Keyboard scroll uses Page Down/Up**
+  
+  Keyboard scrolling typically moves by one "page" at a time, which may be more than the specified pixel amount. It's more compatible but less precise than mouse scrolling.
+</Warning>
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Navigate to Footer">
+    ```javascript
+    // Scroll to bottom of page
+    await testdriver.scrollUntilText('Contact Us');
+    
+    const contactLink = await testdriver.find('Contact Us link');
+    await contactLink.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Load More Results">
+    ```javascript
+    // Scroll to load more button
+    await testdriver.scrollUntilText('Load More');
+    
+    const loadBtn = await testdriver.find('Load More button');
+    await loadBtn.click();
+    
+    await new Promise(r => setTimeout(r, 2000));
+    ```
+  </Accordion>
+  
+  <Accordion title="Find Element in Long List">
+    ```javascript
+    // Scroll through list to find item
+    await testdriver.scrollUntilText('Product #42');
+    
+    const product = await testdriver.find('Product #42');
+    await product.click();
+    ```
+  </Accordion>
+  
+  <Accordion title="Infinite Scroll">
+    ```javascript
+    // Scroll multiple times for infinite scroll
+    for (let i = 0; i < 5; i++) {
+      await testdriver.scroll('down', 500);
+      await new Promise(r => setTimeout(r, 1000)); // Wait for load
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Horizontal Gallery">
+    ```javascript
+    // Navigate horizontal carousel
+    await testdriver.scroll('right', 300);
+    await new Promise(r => setTimeout(r, 500));
+    
+    const nextImage = await testdriver.find('next image in carousel');
+    await nextImage.click();
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Complete Example
+
+```javascript
+import { beforeAll, afterAll, describe, it } from 'vitest';
+import TestDriver from 'testdriverai';
+
+describe('Scrolling', () => {
+  let testdriver;
+
+  beforeAll(async () => {
+    client = new TestDriver(process.env.TD_API_KEY);
+    await testdriver.auth();
+    await testdriver.connect();
+  });
+
+  afterAll(async () => {
+    await testdriver.disconnect();
+  });
+
+  it('should scroll to find elements', async () => {
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Scroll to footer
+    await testdriver.scrollUntilText('Contact Information');
+    
+    // Click footer link
+    const privacyLink = await testdriver.find('Privacy Policy link');
+    await privacyLink.click();
+    
+    await testdriver.assert('privacy policy page is displayed');
+  });
+
+  it('should handle infinite scroll', async () => {
+    await testdriver.focusApplication('Google Chrome');
+    
+    // Scroll multiple times to load content
+    for (let i = 0; i < 3; i++) {
+      await testdriver.scroll('down', 500);
+      await new Promise(r => setTimeout(r, 1500)); // Wait for load
+    }
+    
+    // Verify content loaded
+    await testdriver.assert('more than 10 items are visible');
+  });
+
+  it('should scroll until loading completes', async () => {
+    // Scroll until loading spinner disappears
+    await testdriver.scrollUntilImage(
+      'loading spinner', 
+      'down', 
+      5000, 
+      'keyboard', 
+      null, 
+      true // invert - wait for it to disappear
+    );
+    
+    // Now interact with loaded content
+    const firstResult = await testdriver.find('first search result');
+    await firstResult.click();
+  });
+});
+```
+
+## Related Methods
+
+- [`find()`](/v7/find) - Locate elements after scrolling
+- [`pressKeys()`](/v7/press-keys) - Use Page Down/Up keys
+- [`wait()`](/v7/wait) - Wait after scrolling
