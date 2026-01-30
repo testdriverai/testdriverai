@@ -83,6 +83,7 @@ const createCommands = (
   getCurrentFilePath,
   redrawThreshold = 0.01,
   getDashcamElapsedTime = null,
+  getSoftAssertMode = () => false, // getter for soft assert mode (used by act())
 ) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
@@ -1516,7 +1517,9 @@ const createCommands = (
      * @param {Object} [options] - Additional options (reserved for future use)
      */
     "assert": async (assertion, options = {}) => {
-      let response = await assert(assertion, true);
+      // In soft assert mode (during act()), don't throw on failure
+      const shouldThrow = !getSoftAssertMode();
+      let response = await assert(assertion, shouldThrow);
 
       return response;
     },
