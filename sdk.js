@@ -1506,64 +1506,7 @@ class TestDriverSDK {
           await this._dashcam.addWebLog("**", "Web Logs");
         }
 
-        // Set up Chrome profile with preferences
         const shell = this.os === "windows" ? "pwsh" : "sh";
-        const userDataDir =
-          this.os === "windows"
-            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
-            : "/tmp/testdriver-chrome-profile";
-
-        // Create user data directory and Default profile directory
-        const defaultProfileDir =
-          this.os === "windows"
-            ? `${userDataDir}\\Default`
-            : `${userDataDir}/Default`;
-
-        const createDirCmd =
-          this.os === "windows"
-            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
-            : `mkdir -p "${defaultProfileDir}"`;
-
-        await this.exec(shell, createDirCmd, 60000, true);
-
-        // Write Chrome preferences
-        const chromePrefs = {
-          credentials_enable_service: false,
-          profile: {
-            password_manager_enabled: false,
-            default_content_setting_values: {},
-          },
-          signin: {
-            allowed: false,
-          },
-          sync: {
-            requested: false,
-            first_setup_complete: true,
-            sync_all_os_types: false,
-          },
-          autofill: {
-            enabled: false,
-          },
-          local_state: {
-            browser: {
-              has_seen_welcome_page: true,
-            },
-          },
-        };
-
-        const prefsPath =
-          this.os === "windows"
-            ? `${defaultProfileDir}\\Preferences`
-            : `${defaultProfileDir}/Preferences`;
-
-        const prefsJson = JSON.stringify(chromePrefs, null, 2);
-        const writePrefCmd =
-          this.os === "windows"
-            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
-              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
-            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
-
-        await this.exec(shell, writePrefCmd, 60000, true);
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1575,7 +1518,6 @@ class TestDriverSDK {
           "--no-first-run",
           "--no-experiments",
           "--disable-infobars",
-          `--user-data-dir=${userDataDir}`,
         );
 
         // Add remote debugging port for captcha solving support
@@ -1788,64 +1730,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           await this._dashcam.addWebLog("**", "Web Logs");
         }
 
-        // Set up Chrome profile with preferences
-        const userDataDir =
-          this.os === "windows"
-            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
-            : "/tmp/testdriver-chrome-profile";
-
-        // Create user data directory and Default profile directory
-        const defaultProfileDir =
-          this.os === "windows"
-            ? `${userDataDir}\\Default`
-            : `${userDataDir}/Default`;
-
-        const createDirCmd =
-          this.os === "windows"
-            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
-            : `mkdir -p "${defaultProfileDir}"`;
-
-        await this.exec(shell, createDirCmd, 60000, true);
-
-        // Write Chrome preferences
-        const chromePrefs = {
-          credentials_enable_service: false,
-          profile: {
-            password_manager_enabled: false,
-            default_content_setting_values: {},
-          },
-          signin: {
-            allowed: false,
-          },
-          sync: {
-            requested: false,
-            first_setup_complete: true,
-            sync_all_os_types: false,
-          },
-          autofill: {
-            enabled: false,
-          },
-          local_state: {
-            browser: {
-              has_seen_welcome_page: true,
-            },
-          },
-        };
-
-        const prefsPath =
-          this.os === "windows"
-            ? `${defaultProfileDir}\\Preferences`
-            : `${defaultProfileDir}/Preferences`;
-
-        const prefsJson = JSON.stringify(chromePrefs, null, 2);
-        const writePrefCmd =
-          this.os === "windows"
-            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
-              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
-            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
-
-        await this.exec(shell, writePrefCmd, 60000, true);
-
         // Build Chrome launch command
         const chromeArgs = [];
         if (maximized) chromeArgs.push("--start-maximized");
@@ -1856,7 +1740,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           "--no-experiments",
           "--disable-infobars",
           "--disable-features=ChromeLabs",
-          `--user-data-dir=${userDataDir}`,
         );
 
         // Add remote debugging port for captcha solving support
@@ -2159,6 +2042,58 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         await this.focusApplication("Electron");
+      },
+
+      /**
+       * Initialize Dashcam recording with logging
+       * @param {Object} options - Dashcam options
+       * @param {string} [options.logPath] - Path to log file (auto-generated if not provided)
+       * @param {string} [options.logName='TestDriver Log'] - Display name for the log
+       * @param {boolean} [options.webLogs=true] - Enable web log tracking
+       * @param {string} [options.title] - Custom title for the recording
+       * @returns {Promise<void>}
+       */
+      dashcam: async (options = {}) => {
+        const {
+          logPath,
+          logName = "TestDriver Log",
+          webLogs = true,
+          title,
+        } = options;
+
+        // Ensure dashcam is available
+        if (!this._dashcam) {
+          console.warn(
+            "[provision.dashcam] Dashcam is not available. Skipping.",
+          );
+          return;
+        }
+
+        // Set custom title if provided
+        if (title) {
+          this._dashcam.setTitle(title);
+        }
+
+        // Add file log tracking
+        const actualLogPath =
+          logPath ||
+          (this.os === "windows"
+            ? "C:\\Users\\testdriver\\testdriver.log"
+            : "/tmp/testdriver.log");
+
+        await this._dashcam.addFileLog(actualLogPath, logName);
+
+        // Add web log tracking if enabled
+        if (webLogs) {
+          await this._dashcam.addWebLog("**", "Web Logs");
+        }
+
+        // Start recording if not already recording
+        if (!(await this._dashcam.isRecording())) {
+          await this._dashcam.start();
+        }
+
+        console.log("[provision.dashcam] ✅ Dashcam recording started");
       },
     };
 
