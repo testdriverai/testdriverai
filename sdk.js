@@ -3468,6 +3468,10 @@ CAPTCHA_SOLVER_EOF`,
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
 
+    // Enable soft assert mode so check-phase assertions don't throw
+    const originalSoftAssertMode = this.agent.softAssertMode;
+    this.agent.softAssertMode = true;
+
     // Emit scoped start marker for ai()
     this.emitter.emit(events.log.log, formatter.formatAIStart(task));
 
@@ -3488,9 +3492,10 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, true),
       );
 
-      // Restore original checkLimit
+      // Restore original state
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
+      this.agent.softAssertMode = originalSoftAssertMode;
 
       return {
         success: true,
@@ -3509,9 +3514,10 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, false, error.message),
       );
 
-      // Restore original checkLimit
+      // Restore original state
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
+      this.agent.softAssertMode = originalSoftAssertMode;
 
       // Create an enhanced error with additional context using AIError class
       throw new AIError(`AI failed: ${error.message}`, {
