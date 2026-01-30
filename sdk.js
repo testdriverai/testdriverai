@@ -3434,28 +3434,28 @@ CAPTCHA_SOLVER_EOF`,
    *
    * @example
    * // Simple execution
-   * const result = await client.act('Click the submit button');
+   * const result = await client.ai('Click the submit button');
    * console.log(result.success); // true
    *
    * @example
    * // With custom retry limit
-   * const result = await client.act('Fill out the contact form', { tries: 10 });
+   * const result = await client.ai('Fill out the contact form', { tries: 10 });
    * console.log(`Completed in ${result.tries} tries`);
    *
    * @example
    * // Handle failures
    * try {
-   *   await client.act('Complete the checkout process', { tries: 3 });
+   *   await client.ai('Complete the checkout process', { tries: 3 });
    * } catch (error) {
    *   console.log(`Failed after ${error.tries} tries: ${error.message}`);
    * }
    */
-  async act(task, options = {}) {
+  async ai(task, options = {}) {
     this._ensureConnected();
 
     const { tries = 7 } = options;
 
-    this.analytics.track("sdk.act", { task, tries });
+    this.analytics.track("sdk.ai", { task, tries });
 
     const { events } = require("./agent/events.js");
     const startTime = Date.now();
@@ -3464,7 +3464,7 @@ CAPTCHA_SOLVER_EOF`,
     const originalCheckLimit = this.agent.checkLimit;
     this.agent.checkLimit = tries;
 
-    // Reset check count for this act() call
+    // Reset check count for this ai() call
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
 
@@ -3531,7 +3531,7 @@ CAPTCHA_SOLVER_EOF`,
   }
 
   /**
-   * @deprecated Use act() instead
+   * @deprecated Use ai() instead
    * Execute a natural language task using AI
    *
    * @param {string} task - Natural language description of what to do
@@ -3539,8 +3539,8 @@ CAPTCHA_SOLVER_EOF`,
    * @param {number} [options.tries=7] - Maximum number of check/retry attempts
    * @returns {Promise<ActResult>} Result object with success status and details
    */
-  async ai(task, options) {
-    return await this.act(task, options);
+  async act(task, options) {
+    return await this.ai(task, options);
   }
 }
 
