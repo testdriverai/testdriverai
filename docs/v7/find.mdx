@@ -13,12 +13,35 @@ Locate UI elements on screen using AI-powered natural language descriptions. Ret
 
 ```javascript
 const element = await testdriver.find(description)
+const element = await testdriver.find(description, options)
 ```
 
 ## Parameters
 
 <ParamField path="description" type="string" required>
   Natural language description of the element to find
+</ParamField>
+
+<ParamField path="options" type="object | number">
+  Optional configuration for finding and caching
+  
+  <Expandable title="properties">
+    <ParamField path="cacheKey" type="string">
+      Custom cache key for storing element location. Use this to prevent cache pollution when using dynamic variables in prompts, or to share cache across tests.
+    </ParamField>
+    
+    <ParamField path="cacheThreshold" type="number" default={0.05}>
+      Similarity threshold (0-1) for cache matching. Lower values require more similarity. Set to -1 to disable cache.
+    </ParamField>
+    
+    <ParamField path="timeout" type="number">
+      Maximum time in milliseconds to poll for the element. Retries every 5 seconds until found or timeout expires.
+    </ParamField>
+    
+    <ParamField path="zoom" type="boolean" default={false}>
+      Enable two-phase zoom mode for better precision in crowded UIs with many similar elements.
+    </ParamField>
+  </Expandable>
 </ParamField>
 
 ## Returns
@@ -236,6 +259,61 @@ const icon = await testdriver.find('settings icon');
 // With zoom - better precision for crowded areas
 const icon = await testdriver.find('settings icon', { zoom: true });
 ```
+
+## Cache Options
+
+Control caching behavior to optimize performance, especially when using dynamic variables in prompts.
+
+### Custom Cache Key
+
+Use `cacheKey` to prevent cache pollution when prompts contain variables:
+
+```javascript
+// ❌ Without cacheKey - creates new cache entry for each email value
+const email = 'user@example.com';
+await testdriver.find(`input for ${email}`); // Cache miss every time
+
+// ✅ With cacheKey - reuses cache regardless of variable
+const email = 'user@example.com';
+await testdriver.find(`input for ${email}`, {
+  cacheKey: 'email-input'
+});
+
+// Also useful for dynamic IDs, names, or other changing data
+const orderId = generateOrderId();
+await testdriver.find(`order ${orderId} status`, {
+  cacheKey: 'order-status'  // Same cache for all orders
+});
+```
+
+### Cache Threshold
+
+Control how similar a cached result must be to reuse it:
+
+```javascript
+// Default: 95% similarity required
+await testdriver.find('submit button');
+
+// Strict threshold - 99% similarity required
+await testdriver.find('submit button', {
+  cacheThreshold: 0.01
+});
+
+// Disable cache entirely for this call
+await testdriver.find('submit button', {
+  cacheThreshold: -1
+});
+
+// Combine cacheKey with threshold
+await testdriver.find('submit button', {
+  cacheKey: 'submit-btn',
+  cacheThreshold: 0.01
+});
+```
+
+<Tip>
+  By default, TestDriver auto-generates a cache key from the SHA-256 hash of your test file. When you modify your test file, the hash changes automatically, invalidating stale cache entries.
+</Tip>
 
 ### Manual Polling (Alternative)
 

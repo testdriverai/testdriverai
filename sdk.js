@@ -1671,7 +1671,7 @@ class TestDriverSDK {
 
         // If extensionId is provided, download and extract the extension from Chrome Web Store
         if (extensionId && !extensionPath) {
-          logger.log(
+          console.log(
             `[provision.chromeExtension] Downloading extension ${extensionId} from Chrome Web Store...`,
           );
 
@@ -1778,7 +1778,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             extensionPath = `${extensionDir}/unpacked`;
           }
 
-          logger.log(
+          console.log(
             `[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`,
           );
         }
@@ -1929,14 +1929,14 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         // Install extensions if provided
         for (const extension of extensions) {
-          logger.log(`[provision.vscode] Installing extension: ${extension}`);
+          console.log(`[provision.vscode] Installing extension: ${extension}`);
           await this.exec(
             shell,
             `code --install-extension ${extension} --force`,
             120000,
             true,
           );
-          logger.log(
+          console.log(
             `[provision.vscode] ✅ Extension installed: ${extension}`,
           );
         }
@@ -2007,7 +2007,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         const downloadDir =
           this.os === "windows" ? "C:\\Users\\testdriver\\Downloads" : "/tmp";
 
-        logger.log(`[provision.installer] Downloading ${url}...`);
+        console.log(`[provision.installer] Downloading ${url}...`);
 
         let actualFilePath;
 
@@ -2075,7 +2075,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           }
         }
 
-        logger.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
+        console.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
 
         // Auto-detect install command based on file extension (use actualFilePath for extension detection)
         const actualFilename = actualFilePath.split(/[/\\]/).pop() || "";
@@ -2107,9 +2107,9 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         if (installCommand) {
-          logger.log(`[provision.installer] Installing...`);
+          console.log(`[provision.installer] Installing...`);
           await this.exec(shell, installCommand, 300000, true);
-          logger.log(`[provision.installer] ✅ Installation complete`);
+          console.log(`[provision.installer] ✅ Installation complete`);
         }
 
         // Launch and focus the app if appName is provided and launch is true
@@ -2171,7 +2171,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           return async (...args) => {
             // Skip provisioning if reconnecting to existing sandbox
             if (self.reconnect) {
-              logger.log(
+              console.log(
                 `[provision.${prop}] Skipping provisioning (reconnect mode)`,
               );
               return;
@@ -3019,10 +3019,7 @@ CAPTCHA_SOLVER_EOF`,
 
     // Create SDK methods that lazy-await connection then forward to this.commands
     for (const [commandName, methodName] of Object.entries(commandMapping)) {
-      // Create the bound method and capture its reference directly
-      // This avoids potential issues with this[methodName] property lookup
-      // which could cause stack overflow if there's a proxy or getter intercepting access
-      const boundMethod = (async function (...args) {
+      this[methodName] = async function (...args) {
         // Lazy-await: wait for connection if still pending
         if (this.__connectionPromise) {
           await this.__connectionPromise;
@@ -3040,10 +3037,8 @@ CAPTCHA_SOLVER_EOF`,
         this._ensureConnected();
 
         // Capture the call site for better error reporting
-        // Use the captured boundMethod reference instead of this[methodName]
-        // to avoid potential recursive property lookups
         const callSite = {};
-        Error.captureStackTrace(callSite, boundMethod);
+        Error.captureStackTrace(callSite, this[methodName]);
 
         // Track this promise for unawaited detection
         this._lastCommandName = methodName;
@@ -3073,13 +3068,10 @@ CAPTCHA_SOLVER_EOF`,
           }
           throw properError;
         }
-      }).bind(this);
-
-      // Assign the bound method to the SDK instance
-      this[methodName] = boundMethod;
+      }.bind(this);
 
       // Preserve the original function's name for better debugging
-      Object.defineProperty(boundMethod, "name", {
+      Object.defineProperty(this[methodName], "name", {
         value: methodName,
         writable: false,
       });
@@ -3217,7 +3209,7 @@ CAPTCHA_SOLVER_EOF`,
         const prefixedMessage = this.testContext
           ? `[${this.testContext}] ${message}`
           : message;
-        logger.log(prefixedMessage);
+        console.log(prefixedMessage);
       }
     });
 
@@ -3235,7 +3227,7 @@ CAPTCHA_SOLVER_EOF`,
 
     this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
-        logger.log(`- ${message}`);
+        console.log(`- ${message}`);
       }
     });
 
@@ -3255,8 +3247,8 @@ CAPTCHA_SOLVER_EOF`,
     // Handle show window events for sandbox visualization
     this.emitter.on("show-window", async (url) => {
       if (this.loggingEnabled) {
-        logger.log("");
-        logger.log("🔗 Live test execution:");
+        console.log("");
+        console.log("🔗 Live test execution:");
         if (this.config.CI) {
           // In CI mode, just print the view-only URL
           const u = new URL(url);
@@ -3265,10 +3257,10 @@ CAPTCHA_SOLVER_EOF`,
           const data = JSON.parse(
             Buffer.from(encodedData, "base64").toString(),
           );
-          logger.log(`${data.url}&view_only=true`);
+          console.log(`${data.url}&view_only=true`);
         } else {
           // In local mode, print the URL and open it in the browser
-          logger.log(url);
+          console.log(url);
           await this._openBrowser(url);
         }
       }

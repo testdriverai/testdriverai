@@ -173,6 +173,51 @@ function getSessionData(session: SessionState | null) {
 }
 
 /**
+ * Check if session is ready for use - returns error result if not
+ * This helper provides clear, actionable error messages for the AI
+ */
+function requireActiveSession(): { valid: true } | { valid: false; error: CallToolResult } {
+  const session = sessionManager.getCurrentSession();
+  
+  // No session ever created
+  if (!sdk || !session) {
+    return {
+      valid: false,
+      error: createToolResult(
+        false,
+        "ERROR: No active session. You must call session_start first to create a sandbox before using any other tools.",
+        { 
+          error: "NO_SESSION",
+          action: "session_start",
+          message: "No sandbox session exists. Call session_start to create one."
+        }
+      )
+    };
+  }
+  
+  // Session exists but has expired
+  if (!sessionManager.isSessionValid(session.sessionId)) {
+    // Clear the SDK reference since the sandbox is no longer available
+    sdk = null;
+    return {
+      valid: false,
+      error: createToolResult(
+        false,
+        "ERROR: Session has expired or timed out. The sandbox is no longer available. You must call session_start again to create a new sandbox session before continuing.",
+        { 
+          error: "SESSION_EXPIRED",
+          action: "session_start",
+          message: "The previous sandbox session has expired. Call session_start to create a new one.",
+          expiredSessionId: session.sessionId
+        }
+      )
+    };
+  }
+  
+  return { valid: true };
+}
+
+/**
  * Create tool result with structured content for MCP App
  * Images: imageUrl (data URL) goes to structuredContent for UI to display
  * The croppedImage from find() is small (~10KB) so it's acceptable as data URL
@@ -274,11 +319,9 @@ server.registerResource(
 // =============================================================================
 
 // Session Start
-registerAppTool(
-  server,
+server.registerTool(
   "session_start",
   {
-    title: "Start Session",
     description: `Start a new TestDriver session and provision a sandbox with browser or app.
 
 Provision types:
@@ -294,7 +337,6 @@ Self-hosted mode:
 - The IP can be from an AWS EC2 instance spawned via CloudFormation
 - See https://docs.testdriver.ai/v7/aws-setup for AWS setup guide`,
     inputSchema: SessionStartInputSchema,
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params: SessionStartInput): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -425,11 +467,22 @@ Self-hosted mode:
       // Generate the code for this provision action
       const generatedCode = generateActionCode(provisionCmd, provisionOptions);
 
+      // Build debugger URL for the session
+      const debuggerUrl = instance?.debuggerUrl || (instanceIp ? `http://${instanceIp}:9222` : null);
+
       const connectionType = instanceIp ? `Self-hosted (${instanceIp})` : "Cloud";
       return createToolResult(
         true,
         `Session started: ${newSession.sessionId}\nConnection: ${connectionType}\nType: ${params.type}\nSandbox: ${instance?.instanceId}\nExpires in: ${Math.round(params.keepAlive / 1000)}s`,
-        { sessionId: newSession.sessionId, provisionType: params.type, selfHosted: !!instanceIp, instanceIp: instanceIp || undefined, duration },
+        { 
+          action: "session_start",
+          sessionId: newSession.sessionId, 
+          provisionType: params.type, 
+          selfHosted: !!instanceIp, 
+          instanceIp: instanceIp || undefined,
+          debuggerUrl,
+          duration 
+        },
         generatedCode
       );
     } catch (error) {
@@ -441,14 +494,11 @@ Self-hosted mode:
 );
 
 // Session Status
-registerAppTool(
-  server,
+server.registerTool(
   "session_status",
   {
-    title: "Session Status",
     description: "Check the current session status and time remaining",
     inputSchema: z.object({}),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -472,7 +522,7 @@ registerAppTool(
     return createToolResult(
       true,
       `Session: ${session.sessionId}\nStatus: ${session.status}\nTime remaining: ${Math.round((summary?.timeRemaining || 0) / 1000)}s`,
-      { ...summary, sessionId: session.sessionId, status: session.status, duration }
+      { action: "session_status", ...summary, sessionId: session.sessionId, status: session.status, duration }
     );
   }
 );
@@ -526,11 +576,11 @@ registerAppTool(
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("find: Starting", { description: params.description, timeout: params.timeout });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("find: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -577,6 +627,13 @@ registerAppTool(
       // Generate code for this find action
       const generatedCode = found ? generateActionCode("find", { description: params.description }) : undefined;
 
+      // Build element info for display (cropped image is always centered on element)
+      const elementInfo = found ? {
+        description: params.description,
+        confidence: element.confidence,
+        ref: elementRef,
+      } : undefined;
+
       return createToolResult(
         found,
         found
@@ -584,6 +641,8 @@ registerAppTool(
           : `Element not found: "${params.description}"`,
         {
           ...rawResponse,
+          action: "find",
+          element: elementInfo,
           ref: elementRef,
           duration,
         },
@@ -597,27 +656,130 @@ registerAppTool(
   }
 );
 
-// Click
+// Find All Elements
 registerAppTool(
   server,
-  "click",
+  "findall",
   {
-    title: "Click",
-    description: "Click on a previously found element. Use 'find' first to locate the element.",
+    title: "Find All Elements",
+    description: "Find all elements on screen matching a natural language description. Returns an array of element references.",
     inputSchema: z.object({
-      elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
-      action: z.enum(["click", "double-click", "right-click"]).default("click"),
+      description: z.string().describe("Natural language description of the elements to find"),
+      timeout: z.number().optional().describe("Timeout in ms for polling"),
     }),
     _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
-    logger.info("click: Starting", { elementRef: params.elementRef, action: params.action });
-    const session = sessionManager.getCurrentSession();
+    logger.info("findall: Starting", { description: params.description, timeout: params.timeout });
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
+      logger.warn("findall: No active session");
+      return sessionCheck.error;
+    }
+
+    try {
+      logger.debug("findall: Calling SDK findAll");
+      const elements = await sdk.findAll(params.description, params.timeout ? { timeout: params.timeout } : undefined);
+      const count = elements.length;
+
+      // Store element refs for later use
+      const refs: string[] = [];
+      const elementInfos: Array<{ ref: string; x: number; y: number; centerX: number; centerY: number; confidence: number }> = [];
+      
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i];
+        const coords = element.getCoordinates();
+        const elementRef = `el-${Date.now()}-${i}`;
+        
+        if (coords) {
+          elementRefs.set(elementRef, {
+            element: element,
+            description: `${params.description} [${i}]`,
+            coords: {
+              x: coords.x,
+              y: coords.y,
+              centerX: coords.centerX,
+              centerY: coords.centerY,
+            },
+          });
+          refs.push(elementRef);
+          elementInfos.push({
+            ref: elementRef,
+            x: coords.x,
+            y: coords.y,
+            centerX: coords.centerX,
+            centerY: coords.centerY,
+            confidence: element.confidence,
+          });
+        }
+      }
+
+      logger.info("findall: Elements found", { 
+        description: params.description, 
+        count,
+        refs 
+      });
+
+      // Get the first element's response for the image (shows all highlights)
+      const rawResponse = elements[0]?._response || {};
+      const duration = Date.now() - startTime;
+      
+      // Add imageUrl for MCP App display
+      const croppedImage = rawResponse.croppedImage;
+      if (croppedImage && !croppedImage.startsWith('data:')) {
+        rawResponse.imageUrl = `data:image/png;base64,${croppedImage}`;
+      } else if (croppedImage) {
+        rawResponse.imageUrl = croppedImage;
+      }
+
+      // Generate code for this findall action
+      const generatedCode = count > 0 ? generateActionCode("findall", { description: params.description }) : undefined;
+
+      // Build refs list for text output
+      const refsList = refs.map((ref, i) => `  [${i}] ${ref}`).join('\n');
+
+      return createToolResult(
+        count > 0,
+        count > 0
+          ? `Found ${count} elements matching "${params.description}":\n${refsList}`
+          : `No elements found matching: "${params.description}"`,
+        {
+          ...rawResponse,
+          count,
+          refs,
+          elements: elementInfos,
+          duration,
+        },
+        generatedCode
+      );
+    } catch (error) {
+      logger.error("findall: Failed", { error: String(error), description: params.description });
+      captureException(error as Error, { tags: { tool: "findall" }, extra: { description: params.description } });
+      throw error;
+    }
+  }
+);
+
+// Click
+server.registerTool(
+  "click",
+  {
+    description: "Click on a previously found element. Use 'find' first to locate the element.",
+    inputSchema: z.object({
+      elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
+      action: z.enum(["click", "double-click", "right-click"]).default("click"),
+    }),
+  },
+  async (params): Promise<CallToolResult> => {
+    const startTime = Date.now();
+    logger.info("click: Starting", { elementRef: params.elementRef, action: params.action });
+
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("click: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     // Look up the element reference
@@ -651,7 +813,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Clicked on "${description}"`,
-        { ...rawResponse, clickAction: params.action, duration },
+        { ...rawResponse, action: "click", clickAction: params.action, clickPosition: coords, duration },
         generatedCode
       );
     } catch (error) {
@@ -663,25 +825,22 @@ registerAppTool(
 );
 
 // Hover
-registerAppTool(
-  server,
+server.registerTool(
   "hover",
   {
-    title: "Hover",
     description: "Hover over a previously found element. Use 'find' first to locate the element.",
     inputSchema: z.object({
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("hover: Starting", { elementRef: params.elementRef });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("hover: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     // Look up the element reference
@@ -707,7 +866,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Hovered over "${description}"`,
-        { ...rawResponse, duration },
+        { ...rawResponse, action: "hover", duration },
         generatedCode
       );
     } catch (error) {
@@ -719,25 +878,22 @@ registerAppTool(
 );
 
 // Wait
-registerAppTool(
-  server,
+server.registerTool(
   "wait",
   {
-    title: "Wait",
     description: "Wait for a specified amount of time",
     inputSchema: z.object({
       timeout: z.number().default(3000).describe("Time to wait in milliseconds (default: 3000)"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("wait: Starting", { timeout: params.timeout });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("wait: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -753,7 +909,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Waited for ${params.timeout}ms`,
-        { timeout: params.timeout, duration },
+        { action: "wait", timeout: params.timeout, duration },
         generatedCode
       );
     } catch (error) {
@@ -765,25 +921,22 @@ registerAppTool(
 );
 
 // Focus Application
-registerAppTool(
-  server,
+server.registerTool(
   "focus_application",
   {
-    title: "Focus Application",
     description: "Bring an application window to the foreground",
     inputSchema: z.object({
       name: z.string().describe("Name of the application to focus (e.g., 'Google Chrome', 'Visual Studio Code')"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("focus_application: Starting", { name: params.name });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("focus_application: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -799,7 +952,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Focused application: "${params.name}"`,
-        { name: params.name, duration },
+        { action: "focus", name: params.name, duration },
         generatedCode
       );
     } catch (error) {
@@ -811,26 +964,23 @@ registerAppTool(
 );
 
 // Find and Click
-registerAppTool(
-  server,
+server.registerTool(
   "find_and_click",
   {
-    title: "Find and Click",
     description: "Find an element and click it in one action",
     inputSchema: z.object({
       description: z.string().describe("Natural language description of element"),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("find_and_click: Starting", { description: params.description, action: params.action });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("find_and_click: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -869,12 +1019,27 @@ registerAppTool(
       // Generate code for this find_and_click action
       const generatedCode = generateActionCode("find_and_click", { description: params.description, action: params.action });
 
+      // Build element info for display
+      const elementInfo = coords ? {
+        description: params.description,
+        x: coords.x,
+        y: coords.y,
+        centerX: coords.centerX,
+        centerY: coords.centerY,
+        width: element.width,
+        height: element.height,
+        confidence: element.confidence,
+      } : undefined;
+
       return createToolResult(
         true,
         `Found and clicked: "${params.description}" at (${rawResponse.coordinates?.x}, ${rawResponse.coordinates?.y})`,
         {
           ...rawResponse,
+          action: "find_and_click",
+          element: elementInfo,
           clickAction: params.action,
+          clickPosition: coords ? { x: coords.centerX, y: coords.centerY } : undefined,
           duration,
         },
         generatedCode
@@ -888,27 +1053,24 @@ registerAppTool(
 );
 
 // Type
-registerAppTool(
-  server,
+server.registerTool(
   "type",
   {
-    title: "Type Text",
     description: "Type text into the currently focused field",
     inputSchema: z.object({
       text: z.string().describe("Text to type"),
       secret: z.boolean().default(false).describe("Whether this is sensitive data"),
       delay: z.number().optional().describe("Delay between keystrokes in ms"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("type: Starting", { textLength: params.text.length, secret: params.secret });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("type: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -924,7 +1086,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Typed: ${params.secret ? "[secret text]" : `"${params.text}"`}`,
-        { text: params.secret ? "[SECRET]" : params.text, duration },
+        { action: "type", text: params.secret ? "[SECRET]" : params.text, duration },
         generatedCode
       );
     } catch (error) {
@@ -936,25 +1098,22 @@ registerAppTool(
 );
 
 // Press Keys
-registerAppTool(
-  server,
+server.registerTool(
   "press_keys",
   {
-    title: "Press Keys",
     description: "Press keyboard keys or shortcuts",
     inputSchema: z.object({
       keys: z.array(z.string()).describe("Array of keys to press (e.g., ['ctrl', 'a'])"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("press_keys: Starting", { keys: params.keys });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("press_keys: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -970,7 +1129,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Pressed keys: ${params.keys.join(" + ")}`,
-        { keys: params.keys, duration },
+        { action: "press_keys", keys: params.keys, duration },
         generatedCode
       );
     } catch (error) {
@@ -982,26 +1141,23 @@ registerAppTool(
 );
 
 // Scroll
-registerAppTool(
-  server,
+server.registerTool(
   "scroll",
   {
-    title: "Scroll",
     description: "Scroll the page or element",
     inputSchema: z.object({
       direction: z.enum(["up", "down", "left", "right"]).default("down"),
       amount: z.number().optional().describe("Amount to scroll in pixels"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("scroll: Starting", { direction: params.direction, amount: params.amount });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("scroll: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -1017,7 +1173,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Scrolled ${params.direction}${params.amount ? ` by ${params.amount}px` : ""}`,
-        { direction: params.direction, amount: params.amount, duration },
+        { action: "scroll", scrollDirection: params.direction, direction: params.direction, amount: params.amount, duration },
         generatedCode
       );
     } catch (error) {
@@ -1029,25 +1185,22 @@ registerAppTool(
 );
 
 // Assert
-registerAppTool(
-  server,
+server.registerTool(
   "assert",
   {
-    title: "Assert",
     description: "Make an AI-powered assertion about the current screen state",
     inputSchema: z.object({
       assertion: z.string().describe("Natural language assertion"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("assert: Starting", { assertion: params.assertion });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("assert: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -1063,7 +1216,7 @@ registerAppTool(
       return createToolResult(
         result,
         result ? `✓ Assertion passed: "${params.assertion}"` : `✗ Assertion failed: "${params.assertion}"`,
-        { assertion: params.assertion, passed: result, duration },
+        { action: "assert", assertion: params.assertion, passed: result, success: result, duration },
         generatedCode
       );
     } catch (error) {
@@ -1075,11 +1228,9 @@ registerAppTool(
 );
 
 // Check - AI uses this to understand the screen state
-registerAppTool(
-  server,
+server.registerTool(
   "check",
   {
-    title: "Check Task Completion",
     description: `Use this tool to understand the current screen state and verify if actions succeeded.
 
 This is the PRIMARY tool for AI to understand what's on screen. It captures a screenshot, compares it with the previous state, and provides AI analysis of whether the task/condition is met.
@@ -1097,16 +1248,15 @@ Use after actions to verify they worked:
     inputSchema: z.object({
       task: z.string().describe("The task or condition to verify (e.g., 'Did the login succeed?', 'Is the modal visible?')"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("check: Starting", { task: params.task });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("check: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -1156,7 +1306,7 @@ Use after actions to verify they worked:
         isComplete 
           ? `✓ Task appears complete: "${params.task}"\n\nAI Analysis:\n${aiResponse}`
           : `⚠ Task may not be complete: "${params.task}"\n\nAI Analysis:\n${aiResponse}`,
-        { task: params.task, complete: isComplete, aiResponse, duration }
+        { action: "check", task: params.task, complete: isComplete, success: isComplete, aiResponse, duration }
       );
     } catch (error) {
       logger.error("check: Failed", { error: String(error), task: params.task });
@@ -1167,27 +1317,24 @@ Use after actions to verify they worked:
 );
 
 // Exec
-registerAppTool(
-  server,
+server.registerTool(
   "exec",
   {
-    title: "Execute Code",
     description: "Execute code in the sandbox (JavaScript, shell, or PowerShell)",
     inputSchema: z.object({
       language: z.enum(["js", "sh", "pwsh"]).default("js"),
       code: z.string().describe("Code to execute"),
       timeout: z.number().default(30000).describe("Timeout in ms"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("exec: Starting", { language: params.language, codeLength: params.code.length, timeout: params.timeout });
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("exec: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -1203,7 +1350,7 @@ registerAppTool(
       return createToolResult(
         true,
         `Executed ${params.language} code:\n${output || "(no output)"}`,
-        { language: params.language, output, duration },
+        { action: "exec", language: params.language, output, duration },
         generatedCode
       );
     } catch (error) {
@@ -1233,11 +1380,11 @@ NOTE: This tool is for VISUAL DISPLAY to the user only. If you (the AI) need to 
   async (): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("screenshot: Starting");
-    const session = sessionManager.getCurrentSession();
 
-    if (!sdk || !session) {
+    const sessionCheck = requireActiveSession();
+    if (!sessionCheck.valid) {
       logger.warn("screenshot: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
+      return sessionCheck.error;
     }
 
     try {
@@ -1261,6 +1408,7 @@ NOTE: This tool is for VISUAL DISPLAY to the user only. If you (the AI) need to 
         true,
         "Screenshot captured and displayed to user",
         { 
+          action: "screenshot",
           screenshotResourceUri: SCREENSHOT_RESOURCE_URI,
           duration 
         }
@@ -1273,16 +1421,13 @@ NOTE: This tool is for VISUAL DISPLAY to the user only. If you (the AI) need to 
 );
 
 // Verify
-registerAppTool(
-  server,
+server.registerTool(
   "verify",
   {
-    title: "Verify Test",
     description: "Run the test file from scratch to verify it works",
     inputSchema: z.object({
       testFile: z.string().describe("Path to test file to run"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();

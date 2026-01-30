@@ -16,17 +16,18 @@ This guide is designed for AI agents working with TestDriver. TestDriver enables
 Use the TestDriver MCP tools to build tests interactively with visual feedback:
 
 1. **Start session**: `session_start({ type: "chrome", url: "https://your-app.com" })`
-2. **Interact**: Use `find`, `click`, `type` - each returns a screenshot showing the result
-3. **Check**: Use `check` after actions to verify if the task completed successfully
-4. **Assert**: Use `assert` for specific boolean pass/fail conditions
-5. **Commit**: Use `commit` to write commands to a test file
-6. **Verify test**: Use `verify` to run the generated test from scratch
+2. **Interact**: Use `find`, `click`, `type` - each returns a screenshot AND generated code
+3. **Append code**: After each successful action, append the generated code to your test file
+4. **Check**: Use `check` after actions to verify if the task completed successfully
+5. **Assert**: Use `assert` for specific boolean pass/fail conditions
+6. **Verify test**: Use `verify` to run the test from scratch to validate
 
 **Key advantages:**
 - See screenshots inline after every action
+- **Generated code included in every response** - just append to your test file
 - Use `check` to get AI analysis of whether actions succeeded
 - No need to re-run the entire test for each change
-- Automatic command recording and code generation
+- Full control over where code is inserted in existing test files
 - O(1) iteration time regardless of test length
 
 See the `testdriver:mcp-workflow` skill for detailed documentation.
@@ -50,16 +51,18 @@ Get your API key at: **https://console.testdriver.ai/team**
 
 | Tool | Description |
 |------|-------------|
-| `session_start` | Start sandbox with browser/app, returns initial screenshot |
-| `session_status` | Check session health, time remaining, command count |
+| `session_start` | Start sandbox with browser/app, returns initial screenshot + provision code |
+| `session_status` | Check session health and time remaining |
 | `session_extend` | Add more time before session expires |
 
 ### Element Interaction
 
+Each tool returns a screenshot AND the generated code to add to your test file.
+
 | Tool | Description |
 |------|-------------|
 | `find` | Locate element by natural language description, returns ref for later use |
-| `click` | Click on element ref or coordinates |
+| `click` | Click on element ref |
 | `find_and_click` | Find and click in one action |
 | `type` | Type text into focused field |
 | `press_keys` | Press keyboard shortcuts (e.g., `["ctrl", "a"]`) |
@@ -74,13 +77,11 @@ Get your API key at: **https://console.testdriver.ai/team**
 | `screenshot` | **For showing the user the screen.** Captures and displays a screenshot. Does NOT return analysis to AI. |
 | `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
 
-### Test Generation
+### Test Validation
 
 | Tool | Description |
 |------|-------------|
-| `commit` | Write recorded commands to test file |
-| `verify` | Run test file from scratch to validate |
-| `get_command_log` | View recorded commands before committing |
+| `verify` | Run test file from scratch to validate it works |
 
 ## Workflow Example
 
@@ -88,13 +89,16 @@ Get your API key at: **https://console.testdriver.ai/team**
 # 1. Start a session
 session_start({ type: "chrome", url: "https://app.example.com/login" })
 → Screenshot shows login page
+→ Add to test file: await testdriver.provision.chrome({ url: "https://app.example.com/login" });
 
 # 2. Fill in email
 find_and_click({ description: "email input field" })
 → Screenshot shows cursor in email field
+→ Add to test file: await testdriver.find("email input field").click();
 
 type({ text: "user@example.com" })
 → Screenshot shows typed email
+→ Add to test file: await testdriver.type("user@example.com");
 
 # 3. Check if email was entered correctly
 check({ task: "Was the email entered into the input field?" })
@@ -102,11 +106,15 @@ check({ task: "Was the email entered into the input field?" })
 
 # 4. Fill in password
 find_and_click({ description: "password input field" })
+→ Add to test file: await testdriver.find("password input field").click();
+
 type({ text: "secret123" })
+→ Add to test file: await testdriver.type("secret123");
 
 # 5. Submit login
 find_and_click({ description: "Sign In button" })
 → Screenshot shows page changing
+→ Add to test file: await testdriver.find("Sign In button").click();
 
 # 6. Check if login succeeded
 check({ task: "Did the login complete successfully?" })
@@ -115,15 +123,11 @@ check({ task: "Did the login complete successfully?" })
 # 7. Assert success (for the test file)
 assert({ assertion: "I can see the user dashboard" })
 → Pass with screenshot
+→ Add to test file:
+   const assertResult = await testdriver.assert("I can see the user dashboard");
+   expect(assertResult).toBeTruthy();
 
-# 8. Commit to test file
-commit({ 
-  testFile: "tests/login.test.mjs",
-  testName: "Login Flow"
-})
-→ Test file generated
-
-# 9. Verify the test runs correctly
+# 8. Verify the test runs correctly
 verify({ testFile: "tests/login.test.mjs" })
 → Test passes from scratch
 ```
@@ -177,13 +181,9 @@ find({ description: "Loading complete indicator", timeout: 30000 })
 
 Sessions expire after 5 minutes by default. Check with `session_status` and extend with `session_extend` if needed.
 
-### 5. Commit Often
+### 5. Write Code as You Go
 
-After each successful interaction sequence, commit to preserve your progress:
-
-```
-commit({ testFile: "tests/my-test.test.mjs", testName: "My Test" })
-```
+After each successful action, append the generated code to your test file. This ensures you don't lose progress and makes the test easier to debug.
 
 ## Error Recovery
 
@@ -197,19 +197,39 @@ commit({ testFile: "tests/my-test.test.mjs", testName: "My Test" })
 ### Session Expired
 
 1. Start a new session with `session_start`
-2. Run the committed test with `verify` to get back to last state
+2. Run the test with `verify` to get back to last state
 3. Continue from where you left off
 
 ### Test Verification Fails
 
 1. Check the error message and screenshot
-2. Use `get_command_log` to see what was recorded
+2. Review the test file to see the generated code
 3. Start a new session and manually test the failing step
 4. Adjust element descriptions or add waits as needed
 
-## Generated Test Format
+## Dependencies
 
-The `commit` tool generates standard TestDriver test files:
+When creating a new test project, use these exact dependencies:
+
+**package.json:**
+```json
+{
+  "type": "module",
+  "devDependencies": {
+    "testdriverai": "beta",
+    "vitest": "^4.0.0"
+  },
+  "scripts": {
+    "test": "vitest"
+  }
+}
+```
+
+**Important:** The package is `testdriverai` (NOT `@testdriverai/sdk`). Always install from the `beta` tag.
+
+## Test File Format
+
+Create test files using this standard format. Each action's generated code goes inside the test function:
 
 ```javascript
 /**
@@ -287,11 +307,11 @@ await element.mouseUp();     // release mouse
 
 ## Tips for Agents
 
-1. **Use MCP tools for development** - Don't write test files manually
-2. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state
-3. **Use `screenshot` to show the user** - This displays the screen to the user but doesn't return analysis to you
-4. **Use `check` after actions** - Verify actions succeeded before moving on
-5. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
-6. **Assert after major actions** - Helps catch issues early and gets recorded in test files
-7. **Commit working sequences** - Don't lose progress
-8. **Check `sdk.d.ts`** for method signatures when debugging generated tests
+1. **Use MCP tools for development** - Each action returns the code to add to your test file
+2. **Append code after each action** - The response includes `Add to test file:` with the exact code
+3. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state
+4. **Use `screenshot` to show the user** - This displays the screen to the user but doesn't return analysis to you
+5. **Use `check` after actions** - Verify actions succeeded before moving on
+6. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
+7. **Assert after major actions** - Helps catch issues early
+8. **Check `sdk.d.ts`** for method signatures when debugging tests

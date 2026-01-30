@@ -22,6 +22,11 @@ const sessionInfoEl = document.getElementById("session-info") as HTMLSpanElement
 const loadingOverlayEl = document.getElementById("loading-overlay") as HTMLDivElement;
 const loadingTextEl = loadingOverlayEl.querySelector(".loading-text") as HTMLSpanElement;
 
+// Create target info element dynamically
+const targetInfoEl = document.createElement("div");
+targetInfoEl.id = "target-info";
+targetInfoEl.className = "target-info hidden";
+
 // Track screenshot natural dimensions for coordinate scaling
 let screenshotNaturalWidth = 0;
 let screenshotNaturalHeight = 0;
@@ -57,8 +62,13 @@ interface ToolResultData {
     id?: string;
     expiresIn?: number;
   };
+  debuggerUrl?: string;
+  sessionId?: string;
   duration?: number;
 }
+
+// Store session info globally for display
+let currentDebuggerUrl: string | null = null;
 
 /**
  * Extract structured data from tool result
@@ -166,16 +176,15 @@ function addOverlays(data: ToolResultData) {
   let focalX: number | undefined;
   let focalY: number | undefined;
   
-  // Add element target overlay (click target, not bounding box)
-  if (data.element && data.element.centerX !== undefined && data.element.centerY !== undefined) {
+  // Add element target overlay only for 'find' action (not click)
+  // The cropped image is always centered on the found element, so position target at image center
+  if (data.action === "find" && data.element) {
     const target = document.createElement("div");
     target.className = "element-target";
     
-    const scaledX = scaleCoord(data.element.centerX, screenshotNaturalWidth, displayedWidth);
-    const scaledY = scaleCoord(data.element.centerY, screenshotNaturalHeight, displayedHeight);
-    
-    target.style.left = `${scaledX}px`;
-    target.style.top = `${scaledY}px`;
+    // Position at center of displayed image (cropped image is already centered on element)
+    target.style.left = `${displayedWidth / 2}px`;
+    target.style.top = `${displayedHeight / 2}px`;
     
     // Add crosshair lines
     const crosshairH = document.createElement("div");
@@ -197,9 +206,9 @@ function addOverlays(data: ToolResultData) {
     
     overlaysEl.appendChild(target);
     
-    // Set focal point for zoom
-    focalX = data.element.centerX;
-    focalY = data.element.centerY;
+    // Set focal point for zoom at image center
+    focalX = screenshotNaturalWidth / 2;
+    focalY = screenshotNaturalHeight / 2;
   }
 
   // Add click marker overlay
@@ -283,11 +292,62 @@ function renderResult(data: ToolResultData) {
   actionStatusEl.textContent = statusText;
   actionStatusEl.className = statusClass;
 
-  // Update session info
+  // Store debugger URL from session_start
+  if (data.debuggerUrl) {
+    currentDebuggerUrl = data.debuggerUrl;
+  }
+
+  // Update session info with debugger link
   if (data.session) {
     const expiresIn = data.session.expiresIn ? Math.round(data.session.expiresIn / 1000) : 0;
-    sessionInfoEl.textContent = `Session: ${expiresIn}s remaining`;
+    sessionInfoEl.innerHTML = "";
+    
+    if (currentDebuggerUrl) {
+      const link = document.createElement("a");
+      link.href = currentDebuggerUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = `${expiresIn}s remaining`;
+      link.className = "debugger-link";
+      link.title = `Open debugger: ${currentDebuggerUrl}`;
+      sessionInfoEl.appendChild(link);
+    } else {
+      sessionInfoEl.textContent = `${expiresIn}s remaining`;
+    }
     sessionInfoEl.className = expiresIn < 30 ? "warning" : "";
+  } else if (currentDebuggerUrl) {
+    // No session data but we have a debugger URL - show it
+    sessionInfoEl.innerHTML = "";
+    const link = document.createElement("a");
+    link.href = currentDebuggerUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Open Debugger";
+    link.className = "debugger-link";
+    link.title = currentDebuggerUrl;
+    sessionInfoEl.appendChild(link);
+  } else if (data.action === "session_start") {
+    sessionInfoEl.textContent = "Session started";
+  }
+
+  // Update target info for find/find_and_click actions
+  if (data.element && (data.action === "find" || data.action === "find_and_click")) {
+    const el = data.element;
+    let targetHtml = `<strong>Target:</strong> "${el.description || "Element"}"`;
+    if (el.centerX !== undefined && el.centerY !== undefined) {
+      targetHtml += ` <span class="target-coords">(${Math.round(el.centerX)}, ${Math.round(el.centerY)})</span>`;
+    }
+    if (el.confidence !== undefined) {
+      const confidencePercent = Math.round(el.confidence * 100);
+      targetHtml += ` <span class="target-confidence ${confidencePercent >= 70 ? 'high' : confidencePercent >= 40 ? 'medium' : 'low'}">${confidencePercent}%</span>`;
+    }
+    if (el.ref) {
+      targetHtml += ` <span class="target-ref">ref: ${el.ref}</span>`;
+    }
+    targetInfoEl.innerHTML = targetHtml;
+    targetInfoEl.classList.remove("hidden");
+  } else {
+    targetInfoEl.classList.add("hidden");
   }
 
   // Load cropped image from find() response (data URL)
@@ -404,6 +464,12 @@ app.connect().then(() => {
     handleHostContextChanged(ctx);
   }
 });
+
+// Insert target info element after screenshot wrapper
+const screenshotWrapper = document.querySelector(".screenshot-wrapper");
+if (screenshotWrapper && screenshotWrapper.parentNode) {
+  screenshotWrapper.parentNode.insertBefore(targetInfoEl, screenshotWrapper.nextSibling);
+}
 
 // 4. Add click-to-toggle zoom
 containerEl.addEventListener("click", () => {

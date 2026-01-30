@@ -94,6 +94,11 @@ export function generateActionCode(
       return `const element = await testdriver.find("${escapeString(description)}");`;
     }
 
+    case "findall": {
+      const description = args.description as string;
+      return `const elements = await testdriver.findAll("${escapeString(description)}");`;
+    }
+
     case "click": {
       // When used after find, reference the element
       const clickAction = args.action as string || "click";
