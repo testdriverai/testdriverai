@@ -129,6 +129,7 @@ class TestDriverAgent extends EventEmitter2 {
       () => this.sourceMapper.currentFilePath || this.thisFile,
       this.cliArgs.options.redrawThreshold,
       null, // getDashcamElapsedTime - will be set by SDK when dashcam is available
+      () => this.softAssertMode, // getter for soft assert mode (used by act())
     );
     this.commands = commandsResult.commands;
     this.redraw = commandsResult.redraw;
@@ -168,6 +169,9 @@ class TestDriverAgent extends EventEmitter2 {
 
     // Flag to indicate if the agent should stop execution
     this.stopped = false;
+
+    // Flag to suppress assertion throws (used by act() to make check-phase assertions non-fatal)
+    this.softAssertMode = false;
 
     this.emitter.emit(events.log.log, JSON.stringify(environment));
     this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
@@ -444,7 +448,8 @@ class TestDriverAgent extends EventEmitter2 {
       activeWindow,
     });
 
-    this.emitter.emit(events.log.markdown.static, response.data);
+    // Use log.log (not markdown.static) so output goes through console spy to sandbox
+    this.emitter.emit(events.log.log, response.data);
 
     this.lastScreenshot = thisScreenshot;
 
