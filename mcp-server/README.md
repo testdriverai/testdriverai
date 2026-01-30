@@ -6,8 +6,7 @@ MCP server that enables AI agents to iteratively build TestDriver tests with vis
 
 - **Live Session Control**: Direct sandbox control via MCP tools
 - **Visual Feedback**: Every action returns a screenshot with overlays (MCP Apps)
-- **Command Recording**: Automatic logging of successful commands
-- **Code Generation**: Converts command log to executable test files
+- **Inline Code Generation**: Each action returns the code to append to your test file
 - **Verification**: Run tests from scratch to verify they work
 
 ## Installation
@@ -140,23 +139,21 @@ npm start
 | `exec` | Execute code in sandbox |
 | `screenshot` | Capture screenshot |
 
-### Test Generation
+### Test Validation
 
 | Tool | Description |
 |------|-------------|
-| `commit` | Write recorded commands to test file |
 | `verify` | Run test file to verify it works |
-| `get_command_log` | View recorded commands |
 
 ## Workflow
 
 1. **Start Session**: `session_start` provisions a sandbox with browser/app
-2. **Explore**: Use `find`, `click`, `type` etc. to interact with the app
-3. **Verify**: Use `assert` to verify expected state
-4. **Commit**: Use `commit` to write commands to a test file
-5. **Verify**: Use `verify` to run the test from scratch
+2. **Interact**: Use `find`, `click`, `type` etc. - each action returns generated code
+3. **Build Test**: Append the generated code from each action to your test file
+4. **Assert**: Use `assert` to verify expected state
+5. **Verify**: Use `verify` to run the test from scratch and validate
 
-Each tool returns a screenshot showing the result, so you can see exactly what happened.
+Each tool returns a screenshot showing the result AND the code to add to your test file.
 
 ## Architecture
 
@@ -167,9 +164,9 @@ Each tool returns a screenshot showing the result, so you can see exactly what h
 │                                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │
 │  │   Tools     │  │   Session   │  │  CodeGen   │  │
-│  │  (find,     │  │  Manager    │  │  (test     │  │
-│  │   click,    │  │  (state,    │  │   file     │  │
-│  │   type...)  │  │   logging)  │  │   output)  │  │
+│  │  (find,     │  │  Manager    │  │  (inline   │  │
+│  │   click,    │  │  (state,    │  │   code     │  │
+│  │   type...)  │  │   expiry)   │  │   output)  │  │
 │  └──────┬──────┘  └──────┬──────┘  └─────┬──────┘  │
 │         │                │               │         │
 │         └────────────────┼───────────────┘         │

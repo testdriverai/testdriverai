@@ -169,3 +169,6 @@ test-results/*
 *.xml
 
 .testdriver
+
+# Generated MCP skills
+skills/

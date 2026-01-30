@@ -23,7 +23,7 @@ function generateSessionId(): string {
 }
 
 /**
- * Session Manager - handles session state and command logging
+ * Session Manager - handles session state for MCP server
  */
 export class SessionManager {
   private sessions: Map<string, SessionState> = new Map();

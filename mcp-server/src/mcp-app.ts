@@ -41,6 +41,7 @@ interface ToolResultData {
   success?: boolean;
   imageUrl?: string;  // Data URL with cropped image from find() response
   screenshotResourceUri?: string;  // Resource URI to fetch screenshot blob
+  croppedImageResourceUri?: string;  // Resource URI to fetch cropped image from find operations
   element?: {
     description?: string;
     x?: number;
@@ -428,11 +429,13 @@ app.ontoolresult = async (result) => {
   console.info("Extracted data keys:", Object.keys(data));
   console.info("Has imageUrl:", !!data.imageUrl);
   console.info("Has screenshotResourceUri:", !!data.screenshotResourceUri);
+  console.info("Has croppedImageResourceUri:", !!data.croppedImageResourceUri);
   
-  // If a screenshot resource URI is provided, fetch the screenshot from it
-  if (data.screenshotResourceUri && !data.imageUrl) {
-    showLoading("Fetching screenshot...");
-    const imageUrl = await fetchScreenshotFromResource(data.screenshotResourceUri);
+  // If a screenshot or cropped image resource URI is provided, fetch the image from it
+  const resourceUri = data.screenshotResourceUri || data.croppedImageResourceUri;
+  if (resourceUri && !data.imageUrl) {
+    showLoading("Fetching image...");
+    const imageUrl = await fetchScreenshotFromResource(resourceUri);
     if (imageUrl) {
       data.imageUrl = imageUrl;
     }

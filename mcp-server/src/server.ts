@@ -152,6 +152,9 @@ const RESOURCE_URI = "ui://testdriver/mcp-app.html";
 // Resource URI for serving screenshot blobs
 const SCREENSHOT_RESOURCE_URI = "screenshot://testdriver/latest";
 
+// Resource URI for serving cropped image blobs from find operations
+const CROPPED_IMAGE_RESOURCE_URI = "screenshot://testdriver/cropped";
+
 // SDK instance (will be initialized on session start)
 let sdk: any = null;
 
@@ -160,6 +163,9 @@ let lastScreenshotBase64: string | null = null;
 
 // Latest screenshot for MCP app resource (stored when screenshot tool is called)
 let latestScreenshotBlob: string | null = null;
+
+// Latest cropped image for MCP app resource (from find/click actions)
+let latestCroppedImageBlob: string | null = null;
 
 /**
  * Get session info for structured content
@@ -309,6 +315,33 @@ server.registerResource(
         uri: SCREENSHOT_RESOURCE_URI,
         mimeType: "image/png",
         blob: latestScreenshotBlob,
+      }],
+    };
+  }
+);
+
+// Register cropped image resource for serving find operation results to MCP app
+server.registerResource(
+  "CroppedImage",
+  CROPPED_IMAGE_RESOURCE_URI,
+  {
+    description: "Latest cropped image from find operations served as base64 blob",
+    mimeType: "image/png",
+  },
+  async (): Promise<ReadResourceResult> => {
+    if (!latestCroppedImageBlob) {
+      throw new Error("No cropped image available. Use the find tool first.");
+    }
+    
+    logger.debug("cropped image resource: Serving cropped image blob", { 
+      blobLength: latestCroppedImageBlob.length 
+    });
+    
+    return {
+      contents: [{
+        uri: CROPPED_IMAGE_RESOURCE_URI,
+        mimeType: "image/png",
+        blob: latestCroppedImageBlob,
       }],
     };
   }
@@ -616,12 +649,14 @@ registerAppTool(
       const rawResponse = element._response || {};
       const duration = Date.now() - startTime;
       
-      // Add imageUrl for MCP App display (convert croppedImage to data URL if needed)
+      // Store cropped image for resource serving (instead of inline data URL)
       const croppedImage = rawResponse.croppedImage;
-      if (croppedImage && !croppedImage.startsWith('data:')) {
-        rawResponse.imageUrl = `data:image/png;base64,${croppedImage}`;
-      } else if (croppedImage) {
-        rawResponse.imageUrl = croppedImage;
+      if (croppedImage) {
+        latestCroppedImageBlob = croppedImage.startsWith('data:') 
+          ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
+          : croppedImage;
+        // Remove croppedImage from response to avoid context bloat
+        delete rawResponse.croppedImage;
       }
 
       // Generate code for this find action
@@ -644,6 +679,7 @@ registerAppTool(
           action: "find",
           element: elementInfo,
           ref: elementRef,
+          croppedImageResourceUri: croppedImage ? CROPPED_IMAGE_RESOURCE_URI : undefined,
           duration,
         },
         generatedCode
@@ -726,12 +762,14 @@ registerAppTool(
       const rawResponse = elements[0]?._response || {};
       const duration = Date.now() - startTime;
       
-      // Add imageUrl for MCP App display
+      // Store cropped image for resource serving (instead of inline data URL)
       const croppedImage = rawResponse.croppedImage;
-      if (croppedImage && !croppedImage.startsWith('data:')) {
-        rawResponse.imageUrl = `data:image/png;base64,${croppedImage}`;
-      } else if (croppedImage) {
-        rawResponse.imageUrl = croppedImage;
+      if (croppedImage) {
+        latestCroppedImageBlob = croppedImage.startsWith('data:') 
+          ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
+          : croppedImage;
+        // Remove croppedImage from response to avoid context bloat
+        delete rawResponse.croppedImage;
       }
 
       // Generate code for this findall action
@@ -750,6 +788,7 @@ registerAppTool(
           count,
           refs,
           elements: elementInfos,
+          croppedImageResourceUri: croppedImage ? CROPPED_IMAGE_RESOURCE_URI : undefined,
           duration,
         },
         generatedCode
@@ -964,14 +1003,17 @@ server.registerTool(
 );
 
 // Find and Click
-server.registerTool(
+registerAppTool(
+  server,
   "find_and_click",
   {
+    title: "Find and Click",
     description: "Find an element and click it in one action",
     inputSchema: z.object({
       description: z.string().describe("Natural language description of element"),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
     }),
+    _meta: { ui: { resourceUri: RESOURCE_URI } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -1008,12 +1050,14 @@ server.registerTool(
       const rawResponse = element._response || {};
       const duration = Date.now() - startTime;
       
-      // Add imageUrl for MCP App display
+      // Store cropped image for resource serving (instead of inline data URL)
       const croppedImage = rawResponse.croppedImage;
-      if (croppedImage && !croppedImage.startsWith('data:')) {
-        rawResponse.imageUrl = `data:image/png;base64,${croppedImage}`;
-      } else if (croppedImage) {
-        rawResponse.imageUrl = croppedImage;
+      if (croppedImage) {
+        latestCroppedImageBlob = croppedImage.startsWith('data:') 
+          ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
+          : croppedImage;
+        // Remove croppedImage from response to avoid context bloat
+        delete rawResponse.croppedImage;
       }
 
       // Generate code for this find_and_click action
@@ -1040,6 +1084,7 @@ server.registerTool(
           element: elementInfo,
           clickAction: params.action,
           clickPosition: coords ? { x: coords.centerX, y: coords.centerY } : undefined,
+          croppedImageResourceUri: croppedImage ? CROPPED_IMAGE_RESOURCE_URI : undefined,
           duration,
         },
         generatedCode
