@@ -1,5 +1,6 @@
 import { execSync } from "child_process";
 import crypto from "crypto";
+import fs from "fs";
 import { createRequire } from "module";
 import path from "path";
 import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
@@ -1144,6 +1145,45 @@ function getGitInfo() {
 // ============================================================================
 
 /**
+ * Detect PR number from various GitHub Actions environment sources
+ * Supports multiple methods to maximize compatibility:
+ * - Direct environment variables: TD_GITHUB_PR, GITHUB_PR_NUMBER, PR_NUMBER
+ * - GitHub event file: GITHUB_EVENT_PATH (for pull_request triggers)
+ * - Git ref parsing: GITHUB_REF (refs/pull/123/merge format)
+ * @returns {number|null} PR number or null if not detected
+ */
+function detectPRNumber() {
+  // Try direct environment variables first
+  let prNumber = process.env.TD_GITHUB_PR || 
+                 process.env.GITHUB_PR_NUMBER ||
+                 process.env.PR_NUMBER;
+  
+  // GitHub Actions: try to extract PR number from event path
+  if (!prNumber && process.env.GITHUB_EVENT_PATH) {
+    try {
+      const eventData = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+      prNumber = eventData.pull_request?.number;
+      if (prNumber) {
+        logger.debug(`Detected PR number ${prNumber} from GITHUB_EVENT_PATH`);
+      }
+    } catch (err) {
+      logger.debug('Failed to read GITHUB_EVENT_PATH:', err.message);
+    }
+  }
+  
+  // GitHub Actions: try to extract from GITHUB_REF (refs/pull/123/merge)
+  if (!prNumber && process.env.GITHUB_REF) {
+    const match = process.env.GITHUB_REF.match(/refs\/pull\/(\d+)\/(merge|head)/);
+    if (match) {
+      prNumber = match[1];
+      logger.debug(`Detected PR number ${prNumber} from GITHUB_REF`);
+    }
+  }
+  
+  return prNumber ? parseInt(prNumber, 10) : null;
+}
+
+/**
  * Post GitHub comment with test results if enabled
  * Checks for GitHub token and PR number in environment variables
  * @param {string} testRunUrl - URL to the test run
@@ -1160,7 +1200,7 @@ async function postGitHubCommentIfEnabled(testRunUrl, stats, completeData) {
     
     // Check if GitHub comment posting is enabled
     const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    const prNumber = process.env.GITHUB_PR_NUMBER;
+    const prNumber = detectPRNumber();
     const commitSha = process.env.GITHUB_SHA || pluginState.gitInfo.commit;
     
     // Only post if we have a token and either a PR number or commit SHA
@@ -1214,7 +1254,7 @@ async function postGitHubCommentIfEnabled(testRunUrl, stats, completeData) {
       token: githubToken,
       owner,
       repo: repoName,
-      prNumber: prNumber ? parseInt(prNumber, 10) : undefined,
+      prNumber: prNumber || undefined,
       commitSha: commitSha,
     };
     
