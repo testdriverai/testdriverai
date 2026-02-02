@@ -283,8 +283,8 @@ function requireActiveSession(): { valid: true } | { valid: false; error: CallTo
  * Images: imageUrl (data URL) goes to structuredContent for UI to display
  * The croppedImage from find() is small (~10KB) so it's acceptable as data URL
  * 
- * If generatedCode is provided, it's appended to the text response so the agent
- * can add it to their test file.
+ * If generatedCode is provided, it's appended to the text response with instructions
+ * for the agent to write it to the test file.
  */
 function createToolResult(
   success: boolean,
@@ -292,10 +292,18 @@ function createToolResult(
   structuredData: Record<string, unknown>,
   generatedCode?: string
 ): CallToolResult {
-  // Build text content - append generated code if provided
+  // Build text content - append generated code if provided with directive instructions
   let fullText = textContent;
   if (generatedCode && success) {
-    fullText += `\n\nAdd to test file:\n${generatedCode}`;
+    // Get the test file from the current session
+    const session = sessionManager.getCurrentSession();
+    const testFile = session?.testFile;
+    
+    if (testFile) {
+      fullText += `\n\n⚠️ ACTION REQUIRED: Append this code to ${testFile}:\n\`\`\`javascript\n${generatedCode}\n\`\`\``;
+    } else {
+      fullText += `\n\n⚠️ ACTION REQUIRED: Append this code to the test file:\n\`\`\`javascript\n${generatedCode}\n\`\`\``;
+    }
   }
   
   const content: CallToolResult["content"] = [{ type: "text", text: fullText }];
@@ -309,9 +317,17 @@ function createToolResult(
   });
   
   // structuredContent goes to UI (includes imageUrl for display)
+  // Always include success flag so UI can display correct status indicator
+  // Include generatedCode and testFile in structured data so agents can programmatically handle it
+  const session = sessionManager.getCurrentSession();
   return {
     content,
-    structuredContent: structuredData,
+    structuredContent: { 
+      ...structuredData, 
+      success,
+      generatedCode: generatedCode && success ? generatedCode : undefined,
+      testFile: session?.testFile || undefined,
+    },
   };
 }
 
@@ -421,6 +437,10 @@ registerAppTool(
   {
     title: "Session Start",
     description: `Start a new TestDriver session and provision a sandbox with browser or app.
+
+⚠️ IMPORTANT - Test File Parameter:
+When 'testFile' is provided, you MUST append the generated code to that file after EVERY successful action.
+Each tool response includes "ACTION REQUIRED: Append this code..." - you must write that code to the test file immediately.
 
 Provision types:
 - chrome: Launch Chrome browser (default). Use 'url' for starting page.
@@ -1763,66 +1783,6 @@ Only use 'screenshot' when you explicitly want to show something to the human us
   }
 );
 
-// Verify
-server.registerTool(
-  "verify",
-  {
-    description: "Run the test file from scratch to verify it works",
-    inputSchema: z.object({
-      testFile: z.string().describe("Path to test file to run"),
-    }),
-  },
-  async (params): Promise<CallToolResult> => {
-    const startTime = Date.now();
-    logger.info("verify: Starting", { testFile: params.testFile });
-    const session = sessionManager.getCurrentSession();
-
-    if (!fs.existsSync(params.testFile)) {
-      logger.warn("verify: Test file not found", { testFile: params.testFile });
-      return createToolResult(false, `Test file not found: ${params.testFile}`, { error: "Test file not found" });
-    }
-
-    const { execSync } = await import("child_process");
-    try {
-      logger.info("verify: Running vitest", { testFile: params.testFile });
-      const output = execSync(`npx vitest run "${params.testFile}" --reporter=verbose`, {
-        encoding: "utf-8",
-        timeout: 300000,
-        cwd: process.cwd(),
-        env: { ...process.env },
-      });
-
-      const duration = Date.now() - startTime;
-      logger.info("verify: Test passed", { testFile: params.testFile, duration });
-
-      return createToolResult(
-        true,
-        `✓ Test passed!\n\n${output}`,
-        {
-          action: "verify",
-          success: true,
-          session: getSessionData(session),
-          duration,
-        }
-      );
-    } catch (error: any) {
-      const duration = Date.now() - startTime;
-      logger.error("verify: Test failed", { testFile: params.testFile, error: error.message, duration });
-
-      return createToolResult(
-        false,
-        `✗ Test failed!\n\n${error.stdout || error.message}`,
-        {
-          action: "verify",
-          success: false,
-          error: error.stdout || error.message,
-          session: getSessionData(session),
-          duration,
-        }
-      );
-    }
-  }
-);
 
 // Start the server
 async function main() {

@@ -7,7 +7,7 @@ MCP server that enables AI agents to iteratively build TestDriver tests with vis
 - **Live Session Control**: Direct sandbox control via MCP tools
 - **Visual Feedback**: Every action returns a screenshot with overlays (MCP Apps)
 - **Inline Code Generation**: Each action returns the code to append to your test file
-- **Verification**: Run tests from scratch to verify they work
+- **Assertions**: AI-powered assertions about screen state
 
 ## Installation
 
@@ -175,19 +175,13 @@ npm start
 | `exec` | Execute code in sandbox |
 | `screenshot` | Capture screenshot |
 
-### Test Validation
-
-| Tool | Description |
-|------|-------------|
-| `verify` | Run test file to verify it works |
-
 ## Workflow
 
 1. **Start Session**: `session_start` provisions a sandbox with browser/app
 2. **Interact**: Use `find`, `click`, `type` etc. - each action returns generated code
 3. **Build Test**: Append the generated code from each action to your test file
 4. **Assert**: Use `assert` to verify expected state
-5. **Verify**: Use `verify` to run the test from scratch and validate
+5. **Run Test**: Use the CLI (`npx vitest run <testFile>`) to run the test from scratch
 
 Each tool returns a screenshot showing the result AND the code to add to your test file.
 

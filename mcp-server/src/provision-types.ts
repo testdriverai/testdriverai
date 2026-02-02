@@ -146,8 +146,8 @@ export const SessionStartInputSchema = z.object({
   os: z.enum(["linux", "windows"]).default("linux").describe("Sandbox OS"),
   /** Keep sandbox alive duration in ms (default: 5 minutes) */
   keepAlive: z.number().default(300000).describe("Keep sandbox alive for this many ms"),
-  /** Path to test file being built */
-  testFile: z.string().optional().describe("Path to test file being built"),
+  /** Path to test file - when provided, you MUST append generated code to this file after each action */
+  testFile: z.string().optional().describe("Path to test file. When provided, append generated code from each action to this file immediately."),
   /** Reconnect to last sandbox */
   reconnect: z.boolean().default(false).describe("Reconnect to last sandbox"),
   /** API endpoint URL */

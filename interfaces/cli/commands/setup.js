@@ -47,7 +47,7 @@ class SetupCommand extends Command {
 
     this.installSkills(sourceSkills, path.join(CLAUDE_HOME, "skills"));
     this.installAgents(sourceAgents, path.join(CLAUDE_HOME, "agents"));
-    this.installMcp();
+    this.installClaudeMcp();
     this.installCursorMcp();
     await this.promptForApiKey();
 
@@ -125,7 +125,7 @@ class SetupCommand extends Command {
   /**
    * Add testdriver MCP server to ~/.claude.json
    */
-  installMcp() {
+  installClaudeMcp() {
     let config = {};
 
     if (fs.existsSync(CLAUDE_MCP_FILE)) {
@@ -182,13 +182,13 @@ class SetupCommand extends Command {
       }
     }
 
-    if (!config.mcpServers) {
-      config.mcpServers = {};
+    if (!config.servers) {
+      config.servers = {};
     }
 
-    const alreadyConfigured = config.mcpServers["testdriver-cloud"];
+    const alreadyConfigured = config.servers["testdriver-cloud"];
 
-    Object.assign(config.mcpServers, CURSOR_MCP_SERVER_CONFIG);
+    Object.assign(config.servers, CURSOR_MCP_SERVER_CONFIG);
     fs.writeFileSync(CURSOR_MCP_FILE, JSON.stringify(config, null, 2) + "\n");
 
     if (alreadyConfigured) {

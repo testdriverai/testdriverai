@@ -392,9 +392,6 @@ function renderResult(data: ToolResultData) {
       const confidencePercent = Math.round(el.confidence * 100);
       targetHtml += ` <span class="target-confidence ${confidencePercent >= 70 ? 'high' : confidencePercent >= 40 ? 'medium' : 'low'}">${confidencePercent}%</span>`;
     }
-    if (el.ref) {
-      targetHtml += ` <span class="target-ref">ref: ${el.ref}</span>`;
-    }
     targetInfoEl.innerHTML = targetHtml;
     targetInfoEl.classList.remove("hidden");
   } else {
@@ -469,11 +466,30 @@ app.onteardown = async () => {
 
 app.ontoolinput = (params) => {
   console.info("Received tool input:", params);
+  
+  const toolArgs = params.arguments;
+  
+  // Build a readable summary from the arguments
+  const summaryParts: string[] = [];
+  if (toolArgs) {
+    // Show key params based on what's present
+    if (toolArgs.description) summaryParts.push(`"${toolArgs.description}"`);
+    if (toolArgs.text) summaryParts.push(`"${toolArgs.text}"`);
+    if (toolArgs.url) summaryParts.push(`${toolArgs.url}`);
+    if (toolArgs.direction) summaryParts.push(`${toolArgs.direction}`);
+    if (toolArgs.assertion) summaryParts.push(`"${toolArgs.assertion}"`);
+    if (toolArgs.task) summaryParts.push(`"${toolArgs.task}"`);
+    if (toolArgs.keys) summaryParts.push(`[${(toolArgs.keys as string[]).join("+")}]`);
+    if (toolArgs.type) summaryParts.push(`${toolArgs.type}`);
+  }
+  
+  const actionSummary = summaryParts.length > 0 ? summaryParts.join(" ") : "action";
+  
   // Show loading state and hide screenshot (to avoid broken image during load)
-  actionStatusEl.textContent = "Running action...";
+  actionStatusEl.textContent = `Running ${actionSummary}...`;
   actionStatusEl.className = "loading";
   containerEl.style.display = "none";
-  showLoading("Running action...");
+  showLoading(`Running ${actionSummary}...`);
 };
 
 app.ontoolresult = async (result) => {

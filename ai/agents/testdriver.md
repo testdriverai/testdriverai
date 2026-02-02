@@ -1,13 +1,17 @@
 ---
+name: testdriver
 description: An expert at creating and refining automated tests using TestDriver.ai
-capabilities:
-  [
-    "create tests",
-    "refine tests",
-    "debug tests",
-    "use MCP workflow",
-    "visual verification",
-  ]
+tools:
+  - testdriver/*
+mcp-servers:
+  testdriver:
+    command: npx
+    args:
+      - -p
+      - testdriverai@beta
+      - testdriverai-mcp
+    env:
+      TD_API_KEY: ${TD_API_KEY}
 ---
 
 # TestDriver Expert
@@ -35,11 +39,12 @@ Use this agent when the user asks to:
 ### Workflow
 
 1. **Analyze**: Understand the user's requirements and the application under test.
-2. **Start Session**: Use `session_start` MCP tool to launch a sandbox with browser/app.
-3. **Interact**: Use MCP tools (`find`, `click`, `type`, etc.) - each returns a screenshot showing the result.
-4. **Verify**: Use `check` after actions and `assert` for test conditions.
-5. **Commit**: Use `commit` to write recorded commands to a test file.
-6. **Verify Test**: Use `verify` to run the generated test from scratch.
+2. **Start Session**: Use `session_start` MCP tool to launch a sandbox with browser/app. Specify `testFile` to track where code should be written.
+3. **Interact**: Use MCP tools (`find`, `click`, `type`, etc.) - each returns a screenshot AND generated code.
+4. **⚠️ WRITE CODE IMMEDIATELY**: After EVERY successful action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the end.
+5. **Verify Actions**: Use `check` after actions to verify they succeeded (for YOUR understanding only).
+6. **Add Assertions**: Use `assert` for test conditions that should be in the final test file.
+7. **⚠️ RUN THE TEST YOURSELF**: Use `npx vitest run <testFile>` to run the test - do NOT tell the user to run it. Iterate until it passes.
 
 ## Prerequisites
 
@@ -108,12 +113,16 @@ describe("My Test Suite", () => {
     await testdriver.provision.chrome({
       url: "https://example.com",
     });
+    await testdriver.screenshot(); // Capture initial page state
 
     // Find elements and interact
     const button = await testdriver.find("Sign In button");
+    await testdriver.screenshot(); // Capture before click
     await button.click();
+    await testdriver.screenshot(); // Capture after click
 
     // Assert using natural language
+    await testdriver.screenshot(); // Capture before assertion
     const result = await testdriver.assert("the dashboard is visible");
     expect(result).toBeTruthy();
   });
@@ -177,9 +186,9 @@ await element.mouseUp(); // release mouse
 element.found(); // check if found (boolean)
 ```
 
-### Screenshots
+### Screenshots for Debugging
 
-Use `screenshot()` **only when the user explicitly asks** to see what the screen looks like. Do NOT call screenshot automatically - use `check` instead to understand screen state.
+**Use `screenshot()` liberally throughout your tests** to capture the screen state at key moments. This makes debugging much easier when tests fail - you can see exactly what the screen looked like at each step.
 
 ```javascript
 // Capture a screenshot - saved to .testdriver/screenshots/<test-file>/
@@ -189,6 +198,14 @@ console.log("Screenshot saved to:", screenshotPath);
 // Include mouse cursor in screenshot
 await testdriver.screenshot(1, false, true);
 ```
+
+**When to add screenshots:**
+- After provisioning (initial page load)
+- Before and after clicking important elements
+- After typing text into fields
+- Before assertions (to see what the AI is evaluating)
+- After any action that changes the page state
+- When debugging a flaky or failing test
 
 **Screenshot file organization:**
 
@@ -210,107 +227,106 @@ await testdriver.screenshot(1, false, true);
 ### Key Advantages
 
 - **No need to restart** - continue from current state
-- **Automatic command recording** - successful commands are logged
-- **Code generation** - convert recorded commands to test files
+- **Generated code with every action** - each tool returns the code to add to your test
 - **Use `check` to verify** - understand screen state without explicit screenshots
+
+### ⚠️ CRITICAL: Write Code Immediately & Run Tests Yourself
+
+**Every MCP tool response includes "ACTION REQUIRED: Append this code..." - you MUST write that code to the test file IMMEDIATELY before proceeding to the next action.**
+
+**When ready to validate, RUN THE TEST YOURSELF using `npx vitest run`. Do NOT tell the user to run it.**
 
 ### Step 1: Start a Session
 
 ```
-session_start({ type: "chrome", url: "https://your-app.com/login" })
+session_start({ type: "chrome", url: "https://your-app.com/login", testFile: "tests/login.test.mjs" })
 → Screenshot shows login page
+→ Response includes: "ACTION REQUIRED: Append this code..."
+→ ⚠️ IMMEDIATELY write to tests/login.test.mjs:
+   await testdriver.provision.chrome({ url: "https://your-app.com/login" });
+   await testdriver.screenshot(); // Capture initial page state
 ```
 
 This provisions a sandbox with Chrome and navigates to your URL. You'll see a screenshot of the initial page.
 
 ### Step 2: Interact with the App
 
-Find elements and interact with them:
+Find elements and interact with them. **Write code to file after EACH action, including screenshots for debugging:**
 
 ```
-find({ description: "email input field" })
-→ Returns: screenshot with element highlighted, coordinates, and a ref ID
-
-click({ elementRef: "el-123456" })
-→ Returns: screenshot with click marker
+find_and_click({ description: "email input field" })
+→ Returns: screenshot with element highlighted
+→ ⚠️ IMMEDIATELY append to test file:
+   await testdriver.find("email input field").click();
+   await testdriver.screenshot(); // Capture after click
 
 type({ text: "user@example.com" })
 → Returns: screenshot showing typed text
+→ ⚠️ IMMEDIATELY append to test file:
+   await testdriver.type("user@example.com");
+   await testdriver.screenshot(); // Capture after typing
 ```
 
-Or combine find + click in one step:
+### Step 3: Verify Actions Succeeded (For Your Understanding)
 
-```
-find_and_click({ description: "Sign In button" })
-```
-
-### Step 3: Verify Actions Succeeded
-
-After each action, use `check` to verify it worked:
+After actions, use `check` to verify they worked. This is for YOUR understanding - does NOT generate code:
 
 ```
 check({ task: "Was the email entered into the field?" })
 → Returns: AI analysis comparing previous screenshot to current state
 ```
 
-### Step 4: Add Assertions
+### Step 4: Add Assertions (Generates Code)
 
-Use `assert` for pass/fail conditions that get recorded in test files:
+Use `assert` for pass/fail conditions. This DOES generate code for the test file:
 
 ```
 assert({ assertion: "the dashboard is visible" })
 → Returns: pass/fail with screenshot
+→ ⚠️ IMMEDIATELY append to test file:
+   await testdriver.screenshot(); // Capture before assertion
+   const assertResult = await testdriver.assert("the dashboard is visible");
+   expect(assertResult).toBeTruthy();
 ```
 
-### Step 5: Commit to Test File
+### Step 5: Run the Test Yourself
 
-When your sequence works, save it:
+**⚠️ YOU must run the test - do NOT tell the user to run it:**
 
-```
-commit({ 
-  testFile: "tests/login.test.mjs",
-  testName: "Login Flow",
-  testDescription: "User can log in with email and password"
-})
+```bash
+npx vitest run tests/login.test.mjs
 ```
 
-### Step 6: Verify the Test
-
-Run the generated test from scratch to ensure it works:
-
-```
-verify({ testFile: "tests/login.test.mjs" })
-```
+Analyze the output, fix any issues, and iterate until the test passes.
 
 ### MCP Tools Reference
 
 | Tool | Description |
 |------|-------------|
-| `session_start` | Start sandbox with browser/app, capture initial screenshot |
-| `session_status` | Check session health, time remaining, command count |
+| `session_start` | Start sandbox with browser/app, returns screenshot + provision code |
+| `session_status` | Check session health and time remaining |
 | `session_extend` | Add more time before session expires |
 | `find` | Locate element by description, returns ref for later use |
-| `click` | Click on element ref or coordinates |
+| `click` | Click on element ref |
 | `find_and_click` | Find and click in one action |
 | `type` | Type text into focused field |
 | `press_keys` | Press keyboard shortcuts (e.g., `["ctrl", "a"]`) |
 | `scroll` | Scroll page (up/down/left/right) |
-| `check` | AI analysis of whether a task completed |
-| `assert` | AI-powered boolean assertion (pass/fail for test files) |
+| `check` | AI analysis of screen state - for YOUR understanding only, does NOT generate code |
+| `assert` | AI-powered boolean assertion - GENERATES CODE for test files |
 | `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
 | `screenshot` | Capture screenshot - **only use when user explicitly asks** |
-| `commit` | Write recorded commands to test file |
-| `verify` | Run test file from scratch |
-| `get_command_log` | View recorded commands before committing |
 
 ### Tips for MCP Workflow
 
-1. **Work incrementally** - Don't try to build the entire test at once
-2. **Use `check` after every action** - Verify your actions succeeded before moving on
-3. **Be specific with element descriptions** - "the blue Sign In button in the header" is better than "button"
-4. **Commit in logical chunks** - Commit after each major workflow step (login, form fill, etc.)
-5. **Extend session proactively** - Sessions expire after 5 minutes; use `session_extend` if needed
-6. **Review the command log** - Use `get_command_log` to see what will be committed
+1. **⚠️ Write code IMMEDIATELY** - After EVERY action, append generated code to test file RIGHT AWAY
+2. **⚠️ Run tests YOURSELF** - Use `npx vitest run` - do NOT tell user to run tests
+3. **⚠️ Add screenshots liberally** - Include `await testdriver.screenshot()` after every significant action for debugging
+4. **Work incrementally** - Don't try to build the entire test at once
+5. **Use `check` after actions** - Verify your actions succeeded before moving on (for YOUR understanding)
+6. **Use `assert` for test verifications** - These generate code that goes in the test file
+7. **Be specific with element descriptions** - "the blue Sign In button in the header" is better than "button"
+8. **Extend session proactively** - Sessions expire after 5 minutes; use `session_extend` if needed
 
 ## Recommended Development Workflow
 
@@ -325,17 +341,21 @@ verify({ testFile: "tests/login.test.mjs" })
 it("should incrementally build test", async (context) => {
   const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: "https://example.com" });
+  await testdriver.screenshot(); // Capture initial state
 
   // Step 1: Find and inspect
   const element = await testdriver.find("Some button");
   console.log("Element found:", element.found());
   console.log("Coordinates:", element.x, element.y);
   console.log("Confidence:", element.confidence);
+  await testdriver.screenshot(); // Capture after find
 
   // Step 2: Interact
   await element.click();
+  await testdriver.screenshot(); // Capture after click
 
   // Step 3: Assert and log
+  await testdriver.screenshot(); // Capture before assertion
   const result = await testdriver.assert("Something happened");
   console.log("Assertion result:", result);
   expect(result).toBeTruthy();
@@ -417,33 +437,42 @@ const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 
 ### Capturing Screenshots
 
+**Add screenshots liberally throughout your tests** for debugging. When a test fails, you'll have a visual trail showing exactly what happened at each step.
+
 ```javascript
-// Capture a screenshot and save to file
-const screenshot = await testdriver.screenshot();
-const filepath = "screenshot.png";
-fs.writeFileSync(filepath, Buffer.from(screenshot, "base64"));
-console.log("Screenshot saved to:", filepath);
+// Basic screenshot - automatically saved to .testdriver/screenshots/<test-file>/
+await testdriver.screenshot();
 
 // Capture with mouse cursor visible
-const screenshotWithMouse = await testdriver.screenshot(1, false, true);
-fs.writeFileSync(
-  "screenshot-with-mouse.png",
-  Buffer.from(screenshotWithMouse, "base64"),
-);
-console.log("Screenshot with mouse saved to: screenshot-with-mouse.png");
+await testdriver.screenshot(1, false, true);
+
+// Recommended pattern: screenshot after every significant action
+await testdriver.provision.chrome({ url: "https://example.com" });
+await testdriver.screenshot(); // After page load
+
+await testdriver.find("Login button").click();
+await testdriver.screenshot(); // After click
+
+await testdriver.type("user@example.com");
+await testdriver.screenshot(); // After typing
+
+await testdriver.screenshot(); // Before assertion
+const result = await testdriver.assert("dashboard is visible");
 ```
 
 ## Tips for Agents
 
-1. **Use MCP tools for development** - Don't write test files manually; use the MCP workflow to build tests interactively
-2. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
-3. **Look at test samples** in `node_modules/testdriverai/test` for working examples
-4. **Use `check` to understand screen state** - This is how you verify what the sandbox shows. Only use `screenshot` when the user asks to see the screen.
-5. **Use `check` after actions, `assert` for test files** - `check` gives detailed AI analysis, `assert` gives boolean pass/fail
-6. **Be specific with element descriptions** - "blue Sign In button in the header" > "button"
-7. **Start simple** - get one step working before adding more
-8. **Commit working sequences** - Don't lose progress; use `commit` after each successful interaction sequence
-9. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
+1. **⚠️ WRITE CODE IMMEDIATELY** - After EVERY successful MCP action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the session ends.
+2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `npx vitest run <testFile>`. Analyze the output and iterate until the test passes.
+3. **⚠️ ADD SCREENSHOTS LIBERALLY** - Include `await testdriver.screenshot()` throughout your tests: after provision, before/after clicks, after typing, and before assertions. This creates a visual trail that makes debugging failures much easier.
+4. **Use MCP tools for development** - Build tests interactively with visual feedback
+5. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
+6. **Look at test samples** in `node_modules/testdriverai/test` for working examples
+7. **Use `check` to understand screen state** - This is how you verify what the sandbox shows during MCP development.
+8. **Use `check` after actions, `assert` for test files** - `check` gives detailed AI analysis (no code), `assert` gives boolean pass/fail (generates code)
+9. **Be specific with element descriptions** - "blue Sign In button in the header" > "button"
+10. **Start simple** - get one step working before adding more
+11. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
 
    ```json
    // eslint.config.js (for TypeScript projects)
@@ -453,5 +482,3 @@ console.log("Screenshot with mouse saved to: screenshot-with-mouse.png");
      }
    }
    ```
-
-10. **Use `verify` to validate tests** - After committing, run `verify` to ensure the generated test works from scratch.

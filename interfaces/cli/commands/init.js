@@ -21,6 +21,7 @@ class InitCommand extends BaseCommand {
     await this.createGitHubWorkflow();
     await this.createGitignore();
     await this.createVscodeMcpConfig();
+    await this.createVscodeExtensions();
     await this.installDependencies();
     await this.copySkills();
     await this.createAgents();
@@ -149,7 +150,10 @@ class InitCommand extends BaseCommand {
       try {
         execSync(`setx ${key} "${value}"`, { stdio: "ignore" });
         console.log(
-          chalk.green(`  ✓ Set ${key} as user environment variable\n`),
+          chalk.green(`  ✓ Set ${key} as user environment variable`),
+        );
+        console.log(
+          chalk.gray(`    Restart your terminal for changes to take effect\n`),
         );
       } catch (error) {
         console.log(
@@ -184,7 +188,10 @@ class InitCommand extends BaseCommand {
         );
         fs.writeFileSync(profilePath, updated);
         console.log(
-          chalk.green(`  ✓ Updated ${key} in ${profilePath}\n`),
+          chalk.green(`  ✓ Updated ${key} in ${profilePath}`),
+        );
+        console.log(
+          chalk.gray(`    Run: source ${profilePath}  (or open a new terminal)\n`),
         );
         return;
       }
@@ -193,7 +200,10 @@ class InitCommand extends BaseCommand {
     // Append to profile
     fs.appendFileSync(profilePath, `\n${exportLine}\n`);
     console.log(
-      chalk.green(`  ✓ Added ${key} to ${profilePath}\n`),
+      chalk.green(`  ✓ Added ${key} to ${profilePath}`),
+    );
+    console.log(
+      chalk.gray(`    Run: source ${profilePath}  (or open a new terminal)\n`),
     );
   }
 
@@ -478,10 +488,10 @@ jobs:
 
     if (!fs.existsSync(mcpConfigFile)) {
       const mcpConfig = {
-        mcpServers: {
+        servers: {
           testdriver: {
             command: "npx",
-            args: ["testdriverai-mcp"],
+            args: ["-p", "testdriverai@beta", "testdriverai-mcp"],
             env: {
               TD_API_KEY: "${TD_API_KEY}",
             },
@@ -496,6 +506,36 @@ jobs:
       console.log(chalk.green(`  Created MCP config: ${mcpConfigFile}`));
     } else {
       console.log(chalk.gray("  MCP config already exists, skipping..."));
+    }
+  }
+
+  /**
+   * Create VSCode extensions recommendations
+   */
+  async createVscodeExtensions() {
+    const vscodeDir = path.join(process.cwd(), ".vscode");
+    const extensionsFile = path.join(vscodeDir, "extensions.json");
+
+    // Create .vscode directory if it doesn't exist
+    if (!fs.existsSync(vscodeDir)) {
+      fs.mkdirSync(vscodeDir, { recursive: true });
+      console.log(chalk.gray(`  Created directory: ${vscodeDir}`));
+    }
+
+    if (!fs.existsSync(extensionsFile)) {
+      const extensionsConfig = {
+        recommendations: [
+          "vitest.explorer",
+        ],
+      };
+
+      fs.writeFileSync(
+        extensionsFile,
+        JSON.stringify(extensionsConfig, null, 2) + "\n",
+      );
+      console.log(chalk.green(`  Created extensions config: ${extensionsFile}`));
+    } else {
+      console.log(chalk.gray("  Extensions config already exists, skipping..."));
     }
   }
 
@@ -557,7 +597,7 @@ jobs:
   }
 
   /**
-   * Create TestDriver agents in GitHub Copilot format
+   * Copy TestDriver agents to .github/agents
    */
   async createAgents() {
     const agentsDestDir = path.join(process.cwd(), ".github", "agents");
@@ -576,98 +616,36 @@ jobs:
       }
     }
 
+    if (!agentsSourceDir) {
+      console.log(chalk.yellow("  ⚠️  Agents directory not found, skipping agents copy..."));
+      return;
+    }
+
     // Create .github/agents directory if it doesn't exist
     if (!fs.existsSync(agentsDestDir)) {
       fs.mkdirSync(agentsDestDir, { recursive: true });
       console.log(chalk.gray(`  Created directory: ${agentsDestDir}`));
     }
 
-    // If we found source agents, convert them to .agent.md format
-    if (agentsSourceDir) {
-      const agentFiles = fs.readdirSync(agentsSourceDir).filter(f => f.endsWith(".md"));
-      
-      for (const agentFile of agentFiles) {
-        const sourcePath = path.join(agentsSourceDir, agentFile);
-        const agentName = agentFile.replace(".md", "");
-        const destPath = path.join(agentsDestDir, `${agentName}.agent.md`);
+    // Copy agent files with .agent.md extension
+    const agentFiles = fs.readdirSync(agentsSourceDir).filter(f => f.endsWith(".md"));
+    let copiedCount = 0;
+    
+    for (const agentFile of agentFiles) {
+      const sourcePath = path.join(agentsSourceDir, agentFile);
+      const agentName = agentFile.replace(".md", "");
+      const destPath = path.join(agentsDestDir, `${agentName}.agent.md`);
 
-        if (!fs.existsSync(destPath)) {
-          const sourceContent = fs.readFileSync(sourcePath, "utf8");
-          
-          // Parse the source frontmatter and body
-          const frontmatterMatch = sourceContent.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-          
-          if (frontmatterMatch) {
-            const frontmatterText = frontmatterMatch[1];
-            const body = frontmatterMatch[2];
-
-            // Extract description from frontmatter
-            const descMatch = frontmatterText.match(/description:\s*["']?(.*?)["']?$/m);
-            const description = descMatch ? descMatch[1] : `TestDriver ${agentName} agent`;
-
-            // Create GitHub Copilot agent format
-            const agentContent = `---
-name: ${agentName}
-description: ${description}
-tools:
-  - testdriver/*
-mcp-servers:
-  testdriver:
-    command: npx
-    args:
-      - testdriverai-mcp
-    env:
-      TD_API_KEY: \${TD_API_KEY}
----
-${body}`;
-
-            fs.writeFileSync(destPath, agentContent);
-            console.log(chalk.green(`  Created agent: ${destPath}`));
-          }
-        } else {
-          console.log(chalk.gray(`  Agent ${agentName}.agent.md already exists, skipping...`));
-        }
+      if (!fs.existsSync(destPath)) {
+        fs.copyFileSync(sourcePath, destPath);
+        copiedCount++;
       }
+    }
+
+    if (copiedCount > 0) {
+      console.log(chalk.green(`  Copied ${copiedCount} agent(s) to ${agentsDestDir}`));
     } else {
-      // Create a default test-writer agent if no source found
-      const defaultAgentPath = path.join(agentsDestDir, "test-writer.agent.md");
-      
-      if (!fs.existsSync(defaultAgentPath)) {
-        const defaultAgentContent = `---
-name: test-writer
-description: An expert at creating and refining automated tests using TestDriver.ai
-tools:
-  - testdriver/*
-mcp-servers:
-  testdriver:
-    command: npx
-    args:
-      - testdriverai-mcp
-    env:
-      TD_API_KEY: \${TD_API_KEY}
----
-# TestDriver Expert
-
-You are an expert at writing automated tests using the TestDriver library. Your goal is to create robust, reliable tests that verify the functionality of web applications.
-
-## Workflow
-
-1. **Start Session**: Use \`session_start\` to provision a sandbox with browser
-2. **Interact**: Use \`find\`, \`click\`, \`type\` etc. - each returns a screenshot
-3. **Verify**: Use \`check\` after actions and \`assert\` for test conditions
-4. **Build Test**: Append generated code to your test file
-5. **Validate**: Use \`verify\` to run the test from scratch
-
-## Tips
-
-- Be specific with element descriptions: "blue Sign In button in the header" > "button"
-- Use \`check\` after actions to verify they succeeded
-- Start simple - get one step working before adding more
-`;
-
-        fs.writeFileSync(defaultAgentPath, defaultAgentContent);
-        console.log(chalk.green(`  Created default agent: ${defaultAgentPath}`));
-      }
+      console.log(chalk.gray("  Agents already exist, skipping..."));
     }
   }
 
@@ -705,7 +683,7 @@ You are an expert at writing automated tests using the TestDriver library. Your 
     console.log("  1. Run your tests:");
     console.log(chalk.gray("     npx vitest run\n"));
     console.log("  2. Use AI agents to write tests:");
-    console.log(chalk.gray("     Open VSCode/Cursor and use @test-writer agent\n"));
+    console.log(chalk.gray("     Open VSCode/Cursor and use @testdriver agent\n"));
     console.log("  3. MCP server configured:");
     console.log(chalk.gray("     TestDriver tools available via MCP in .vscode/mcp.json\n"));
     console.log(
