@@ -108,7 +108,7 @@ You can also pass the API key directly as a CLI parameter using the `apiKey=` fo
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp", "apiKey=your-api-key-here"]
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp", "apiKey=YOUR_API_KEY"]
     }
   }
 }
@@ -121,7 +121,7 @@ Or with local build:
   "servers": {
     "testdriver": {
       "command": "node",
-      "args": ["/path/to/testdriverai/mcp-server/dist/server.js", "apiKey=your-api-key-here"]
+      "args": ["/path/to/testdriverai/mcp-server/dist/server.js", "apiKey=YOUR_API_KEY"]
     }
   }
 }
