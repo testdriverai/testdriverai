@@ -6,7 +6,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "npm run build:ui && npm run build:server",
-    "build:server": "tsc && mv dist/server.js dist/server.mjs",
+    "build:server": "tsc && mv dist/server.js dist/server.mjs && echo '{\"type\":\"module\"}' > dist/package.json",
     "build:ui": "cross-env INPUT=mcp-app.html vite build",
     "dev": "tsx watch src/server.ts",
     "serve": "tsx src/server.ts",
