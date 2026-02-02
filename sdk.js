@@ -2176,6 +2176,58 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         await this.focusApplication("Electron");
       },
+
+      /**
+       * Initialize Dashcam recording with logging
+       * @param {Object} options - Dashcam options
+       * @param {string} [options.logPath] - Path to log file (auto-generated if not provided)
+       * @param {string} [options.logName='TestDriver Log'] - Display name for the log
+       * @param {boolean} [options.webLogs=true] - Enable web log tracking
+       * @param {string} [options.title] - Custom title for the recording
+       * @returns {Promise<void>}
+       */
+      dashcam: async (options = {}) => {
+        const {
+          logPath,
+          logName = "TestDriver Log",
+          webLogs = true,
+          title,
+        } = options;
+
+        // Ensure dashcam is available
+        if (!this._dashcam) {
+          console.warn(
+            "[provision.dashcam] Dashcam is not available. Skipping.",
+          );
+          return;
+        }
+
+        // Set custom title if provided
+        if (title) {
+          this._dashcam.setTitle(title);
+        }
+
+        // Add file log tracking
+        const actualLogPath =
+          logPath ||
+          (this.os === "windows"
+            ? "C:\\Users\\testdriver\\testdriver.log"
+            : "/tmp/testdriver.log");
+
+        await this._dashcam.addFileLog(actualLogPath, logName);
+
+        // Add web log tracking if enabled
+        if (webLogs) {
+          await this._dashcam.addWebLog("**", "Web Logs");
+        }
+
+        // Start recording if not already recording
+        if (!(await this._dashcam.isRecording())) {
+          await this._dashcam.start();
+        }
+
+        console.log("[provision.dashcam] ✅ Dashcam recording started");
+      },
     };
 
     // Wrap all provision methods with reconnect check using Proxy
@@ -3549,6 +3601,10 @@ CAPTCHA_SOLVER_EOF`,
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
 
+    // Enable soft assert mode so check-phase assertions don't throw
+    const originalSoftAssertMode = this.agent.softAssertMode;
+    this.agent.softAssertMode = true;
+
     // Emit scoped start marker for ai()
     this.emitter.emit(events.log.log, formatter.formatAIStart(task));
 
@@ -3569,9 +3625,10 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, true),
       );
 
-      // Restore original checkLimit
+      // Restore original state
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
+      this.agent.softAssertMode = originalSoftAssertMode;
 
       return {
         success: true,
@@ -3590,9 +3647,10 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, false, error.message),
       );
 
-      // Restore original checkLimit
+      // Restore original state
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
+      this.agent.softAssertMode = originalSoftAssertMode;
 
       // Create an enhanced error with additional context using AIError class
       throw new AIError(`AI failed: ${error.message}`, {
