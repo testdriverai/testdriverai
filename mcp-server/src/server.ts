@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * TestDriver MCP Server
  * Enables AI agents to iteratively build tests with visual feedback

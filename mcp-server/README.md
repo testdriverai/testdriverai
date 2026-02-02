@@ -11,6 +11,26 @@ MCP server that enables AI agents to iteratively build TestDriver tests with vis
 
 ## Installation
 
+### Via npx (Recommended)
+
+No installation needed! Just configure your MCP client to use npx:
+
+```json
+{
+  "mcpServers": {
+    "testdriver": {
+      "command": "npx",
+      "args": ["testdriverai-mcp"],
+      "env": {
+        "TD_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+### From Source
+
 ```bash
 cd mcp-server
 npm install
@@ -19,9 +39,27 @@ npm run build
 
 ## Usage
 
-### With Claude Desktop
+### With Claude Desktop / Cursor
 
-Add to your Claude Desktop config (`~/.cursor/mcp.json` or similar):
+Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+**Using npx (recommended):**
+
+```json
+{
+  "mcpServers": {
+    "testdriver": {
+      "command": "npx",
+      "args": ["testdriverai-mcp"],
+      "env": {
+        "TD_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+**Using local build:**
 
 ```json
 {
@@ -29,10 +67,8 @@ Add to your Claude Desktop config (`~/.cursor/mcp.json` or similar):
     "testdriver": {
       "command": "node",
       "args": ["/path/to/testdriverai/mcp-server/dist/server.js"],
-      "cwd": "/path/to/testdriverai",
       "env": {
-        "TD_API_KEY": "your-api-key",
-        "TD_API_ROOT": "https://testdriver-api.onrender.com"
+        "TD_API_KEY": "your-api-key"
       }
     }
   }
