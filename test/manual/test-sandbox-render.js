@@ -4,7 +4,7 @@ async function test() {
   console.log("Testing sandbox rendering...");
 
   // API key loaded automatically from .env
-  const client = new TestDriver(null, {
+  const client = new TestDriver({
     os: process.env.TEST_PLATFORM || "linux",
     headless: false, // Should open browser
     logging: true,

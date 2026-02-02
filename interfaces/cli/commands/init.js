@@ -485,12 +485,20 @@ jobs:
 
     if (!fs.existsSync(mcpConfigFile)) {
       const mcpConfig = {
+        inputs: [
+          {
+            type: "promptString",
+            id: "testdriver-api-key",
+            description: "TestDriver API Key From https://console.testdriver.ai/team",
+            password: true,
+          },
+        ],
         servers: {
           testdriver: {
             command: "npx",
             args: ["-p", "testdriverai@beta", "testdriverai-mcp"],
             env: {
-              TD_API_KEY: "${TD_API_KEY}",
+              TD_API_KEY: "${input:testdriver-api-key}",
             },
           },
         },

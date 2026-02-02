@@ -1245,16 +1245,15 @@ function createChainablePromise(promise) {
  * const client = new TestDriver();
  * await client.connect();
  *
+ * // Pass options only (API key from .env)
+ * const client = new TestDriver({ os: 'windows' });
+ *
  * // Or pass API key explicitly
  * const client = new TestDriver('your-api-key');
  *
  * // New API
  * const element = await client.find('Submit button');
  * await element.click();
- *
- * // Legacy API (deprecated)
- * await client.hoverText('Submit');
- * await client.click();
  */
 
 /**
