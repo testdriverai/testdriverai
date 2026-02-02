@@ -204,8 +204,29 @@ npm start
 | Tool | Description |
 |------|-------------|
 | `assert` | AI-powered assertion about screen state |
+| `check` | AI analyzes screen state (for agent understanding, no code generated) |
 | `exec` | Execute code in sandbox |
-| `screenshot` | Capture screenshot |
+| `screenshot` | Capture screenshot (displays to user only) |
+
+### Local Screenshots
+
+| Tool | Description |
+|------|-------------|
+| `list_local_screenshots` | List screenshots saved in `.testdriver` directory |
+| `view_local_screenshot` | View a local screenshot (returns image to AI + displays to user) |
+
+The local screenshot tools allow AI agents to review screenshots from previous test runs:
+
+```
+1. Call list_local_screenshots to see available screenshots
+2. Call view_local_screenshot with a path to view and analyze it
+3. The image is returned to the AI (if the client supports images) AND displayed to the user
+```
+
+This is useful for:
+- Debugging test failures by examining saved screenshots
+- Reviewing test execution history
+- Comparing current screen state to previous runs
 
 ## Workflow
 
