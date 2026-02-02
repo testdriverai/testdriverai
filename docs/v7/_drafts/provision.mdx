@@ -27,6 +27,7 @@ describe('My Test Suite', () => {
 - `provision.vscode()` - Launch VS Code with optional extensions
 - `provision.installer()` - Download and install applications
 - `provision.electron()` - Launch Electron applications
+- `provision.dashcam()` - Initialize Dashcam recording with logging
 
 ---
 
@@ -243,6 +244,66 @@ it('should launch Electron app', async (context) => {
   });
   
   await testdriver.find('main window').click();
+});
+```
+
+---
+
+## provision.dashcam()
+
+Initialize Dashcam recording with logging. Use this when you want to start Dashcam recording without launching a specific application (e.g., for custom application launches or testing scenarios).
+
+```javascript
+await testdriver.provision.dashcam({
+  logPath: '/tmp/myapp.log',
+  logName: 'My Application Log',
+  title: 'Custom Test Recording'
+});
+```
+
+**Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `logPath` | string | auto-generated | Path to log file to track |
+| `logName` | string | `'TestDriver Log'` | Display name for the log |
+| `webLogs` | boolean | `true` | Enable web log tracking |
+| `title` | string | - | Custom title for the recording |
+
+**Example - Basic Recording:**
+
+```javascript
+it('should record a custom application test', async (context) => {
+  const testdriver = TestDriver(context, ());
+  
+  // Start Dashcam recording
+  await testdriver.provision.dashcam();
+  
+  // Launch your custom application
+  await testdriver.exec('sh', './my-custom-app.sh &', 10000);
+  
+  // Interact with the application
+  await testdriver.find('main window').click();
+  
+  const result = await testdriver.assert('Application is running');
+  expect(result).toBeTruthy();
+});
+```
+
+**Example - Custom Log File:**
+
+```javascript
+it('should record with custom log file', async (context) => {
+  const testdriver = TestDriver(context, ());
+  
+  // Start Dashcam with custom log tracking
+  await testdriver.provision.dashcam({
+    logPath: '/var/log/myapp/application.log',
+    logName: 'My App Logs',
+    title: 'Custom App Test'
+  });
+  
+  // Your test code here
+  await testdriver.exec('sh', 'myapp --start', 30000);
 });
 ```
 
