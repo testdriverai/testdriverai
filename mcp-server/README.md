@@ -127,7 +127,9 @@ Or with local build:
 }
 ```
 
-> **Note**: CLI parameter takes precedence over the `TD_API_KEY` environment variable. Use environment variable for sensitive data or CLI parameter for convenience.
+> **Security Warning**: CLI arguments are visible in process listings (`ps`, `top`, `htop`) and may be logged in shell history. **For production use, environment variables are strongly recommended** to protect your API key. CLI parameters are provided for convenience in development and testing scenarios only.
+
+> **Note**: CLI parameter takes precedence over the `TD_API_KEY` environment variable if both are provided.
 
 ### API Endpoint Configuration
 

@@ -539,7 +539,6 @@ Debug mode (connect to existing sandbox):
       
       // Get API key from CLI argument or environment variable
       const apiKey = cliArgs.apiKey || process.env.TD_API_KEY || "";
-      logger.debug("session_start: Using API key", { source: cliArgs.apiKey ? "CLI argument" : "environment variable" });
       
       sdk = new TestDriverSDK(apiKey, {
         os: params.os,
