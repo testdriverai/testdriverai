@@ -15,7 +15,8 @@ const promptCache = require("./agent/lib/cache.js");
 async function testPromptCache() {
   console.log("Testing prompt caching functionality...\n");
 
-  const client = new TestDriver(process.env.TD_API_KEY, {
+  // API key loaded automatically from .env
+  const client = new TestDriver(null, {
     os: "linux",
     logging: true,
   });

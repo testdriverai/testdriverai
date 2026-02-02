@@ -5,6 +5,9 @@ const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
 const logger = require("./agent/lib/logger");
 
+// Load .env file into process.env by default
+require("dotenv").config();
+
 /**
  * Get the file path of the caller (the file that called TestDriver)
  * @returns {string|null} File path or null if not found
@@ -1233,12 +1236,17 @@ function createChainablePromise(promise) {
  * TestDriver SDK
  *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
+ * Automatically loads environment variables from .env file via dotenv.
  *
  * @example
  * const TestDriver = require('testdriverai');
  *
- * const client = new TestDriver(process.env.TD_API_KEY);
+ * // API key loaded automatically from TD_API_KEY in .env
+ * const client = new TestDriver();
  * await client.connect();
+ *
+ * // Or pass API key explicitly
+ * const client = new TestDriver('your-api-key');
  *
  * // New API
  * const element = await client.find('Submit button');
@@ -1264,9 +1272,18 @@ const { createMarkdownLogger } = require("./interfaces/logger.js");
 
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
+    // Support calling with just options: new TestDriver({ os: 'windows' })
+    if (typeof apiKey === 'object' && apiKey !== null) {
+      options = apiKey;
+      apiKey = null;
+    }
+
+    // Use provided API key or fall back to environment variable
+    const resolvedApiKey = apiKey || process.env.TD_API_KEY;
+
     // Set up environment with API key
     const environment = {
-      TD_API_KEY: apiKey,
+      TD_API_KEY: resolvedApiKey,
       TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,

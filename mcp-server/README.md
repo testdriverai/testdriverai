@@ -17,12 +17,20 @@ No installation needed! Just configure your MCP client to use npx:
 
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["testdriverai-mcp"],
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
       "env": {
-        "TD_API_KEY": "your-api-key"
+        "TD_API_KEY": "${input:testdriver-api-key}"
       }
     }
   }
@@ -47,12 +55,20 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
 
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["testdriverai-mcp"],
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
       "env": {
-        "TD_API_KEY": "your-api-key"
+        "TD_API_KEY": "${input:testdriver-api-key}"
       }
     }
   }
@@ -63,12 +79,20 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
 
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "node",
       "args": ["/path/to/testdriverai/mcp-server/dist/server.js"],
       "env": {
-        "TD_API_KEY": "your-api-key"
+        "TD_API_KEY": "${input:testdriver-api-key}"
       }
     }
   }
@@ -114,12 +138,20 @@ Connect to your own AWS-hosted Windows instances instead of using TestDriver clo
 Or set `TD_IP` environment variable:
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "node",
       "args": ["/path/to/mcp-server/dist/server.js"],
       "env": {
-        "TD_API_KEY": "your-api-key",
+        "TD_API_KEY": "${input:testdriver-api-key}",
         "TD_IP": "1.2.3.4"
       }
     }

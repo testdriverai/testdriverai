@@ -867,7 +867,22 @@ export interface DashcamAPI {
 }
 
 export default class TestDriverSDK {
-  constructor(apiKey: string, options?: TestDriverOptions);
+  /**
+   * Create a new TestDriverSDK instance
+   * Automatically loads environment variables from .env file via dotenv.
+   * 
+   * @param apiKey - API key (optional, defaults to TD_API_KEY environment variable)
+   * @param options - SDK configuration options
+   * 
+   * @example
+   * // API key loaded automatically from TD_API_KEY in .env
+   * const client = new TestDriver();
+   * 
+   * @example
+   * // Or pass API key explicitly
+   * const client = new TestDriver('your-api-key');
+   */
+  constructor(apiKey?: string, options?: TestDriverOptions);
 
   /**
    * Whether the SDK is currently connected to a sandbox
