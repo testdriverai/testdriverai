@@ -29,8 +29,8 @@ import { sessionManager, type SessionState } from "./session.js";
 // Sentry
 // =============================================================================
 
-// Read version from package.json
-const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+// Read version from main package.json (../../package.json from mcp-server/dist/)
+const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json");
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
 const version = packageJson.version || "1.0.0";
 
