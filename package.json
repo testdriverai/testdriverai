@@ -145,5 +145,18 @@
     ],
     "topicSeparator": " ",
     "default": "init"
-  }
+  },
+  "files": [
+    "agent/",
+    "bin/",
+    "ai/skills/",
+    "ai/agents/",
+    "interfaces/",
+    "lib/",
+    "mcp-server/dist/",
+    "sdk.js",
+    "sdk.d.ts",
+    "index.js",
+    "schema.json"
+  ]
 }

@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const docsDir = path.resolve(__dirname, "../docs/v7");
-const skillsDir = path.resolve(__dirname, "../claude-testdriver/skills");
+const skillsDir = path.resolve(__dirname, "../ai/skills");
 
 console.log(`Generating skills from ${docsDir} to ${skillsDir}`);
 
@@ -87,7 +87,7 @@ ${body}
 processDirectory(docsDir);
 
 // Process agents
-const agentsDir = path.resolve(__dirname, "../claude-testdriver/agents");
+const agentsDir = path.resolve(__dirname, "../ai/agents");
 console.log(`Generating skills from ${agentsDir} to ${skillsDir}`);
 processDirectory(agentsDir);
 

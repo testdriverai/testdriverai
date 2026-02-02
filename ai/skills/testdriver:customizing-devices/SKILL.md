@@ -50,7 +50,9 @@ const testdriver = TestDriver(context, {
 });
 ```
 
-> Note: The legacy `headless: true` option still works for backward compatibility and maps to `preview: "none"`.
+<Note>
+  The legacy `headless: true` option still works for backward compatibility and maps to `preview: "none"`.
+</Note>
 
 ### IP Target
 

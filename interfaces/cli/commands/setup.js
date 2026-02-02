@@ -42,8 +42,8 @@ class SetupCommand extends Command {
 
     console.log(chalk.cyan("\nSetting up TestDriver for Claude Code...\n"));
 
-    const sourceSkills = path.join(PACKAGE_ROOT, "claude-testdriver", "skills");
-    const sourceAgents = path.join(PACKAGE_ROOT, "claude-testdriver", "agents");
+    const sourceSkills = path.join(PACKAGE_ROOT, "ai", "skills");
+    const sourceAgents = path.join(PACKAGE_ROOT, "ai", "agents");
 
     this.installSkills(sourceSkills, path.join(CLAUDE_HOME, "skills"));
     this.installAgents(sourceAgents, path.join(CLAUDE_HOME, "agents"));
