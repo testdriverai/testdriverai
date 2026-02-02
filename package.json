@@ -152,11 +152,13 @@
     "bin/",
     "ai/skills/",
     "ai/agents/",
+    "debugger/",
     "interfaces/",
     "lib/",
     "mcp-server/dist/",
     "sdk.js",
     "sdk.d.ts",
+    "sdk-log-formatter.js",
     "index.js",
     "schema.json"
   ]
