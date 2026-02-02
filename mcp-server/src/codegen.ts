@@ -166,7 +166,9 @@ export function generateActionCode(
       const timeout = args.timeout as number | undefined;
       
       if (code.includes("\n")) {
-        return `await testdriver.exec("${language}", \`${code.replace(/`/g, "\\`")}\`${timeout ? `, ${timeout}` : ""});`;
+        // Escape backticks and template literal interpolation syntax
+        const escapedCode = code.replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+        return `await testdriver.exec("${language}", \`${escapedCode}\`${timeout ? `, ${timeout}` : ""});`;
       }
       return `await testdriver.exec("${language}", "${escapeString(code)}"${timeout ? `, ${timeout}` : ""});`;
     }
