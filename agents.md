@@ -2,6 +2,25 @@
 
 This guide is designed for AI agents working with TestDriver. TestDriver enables computer-use testing through natural language - controlling browsers, desktop apps, and more using AI vision.
 
+## ⚠️ CRITICAL: Required Dependencies
+
+When creating a new test project, you MUST use these EXACT versions:
+
+```json
+{
+  "type": "module",
+  "devDependencies": {
+    "testdriverai": "beta",
+    "vitest": "^4.0.0"
+  },
+  "scripts": {
+    "test": "vitest"
+  }
+}
+```
+
+**DO NOT use** `testdriverai: "^7.0.0-beta"` or `vitest: "^2.0.0"` - these are WRONG.
+
 ## Quick Reference
 
 | Resource         | Location                                                         |
@@ -10,6 +29,19 @@ This guide is designed for AI agents working with TestDriver. TestDriver enables
 | TypeScript types | `node_modules/testdriverai/sdk.d.ts`                             |
 | Documentation    | `node_modules/testdriverai/docs`                                 |
 | API Key          | [console.testdriver.ai/team](https://console.testdriver.ai/team) |
+
+## ⚠️ How to See the Screen
+
+**Use `check` to see what's on screen.** This is the ONLY way you (the AI) can understand the current screen state.
+
+| If you want to... | Use this tool |
+|-------------------|---------------|
+| See what's on screen | `check` |
+| Verify an action worked | `check` |
+| Understand current state | `check` |
+| Show user the screen (rare) | `screenshot` |
+
+**Do NOT use `screenshot` to understand the screen** - it only displays to the user and returns nothing to you.
 
 ## MCP Workflow
 
@@ -29,7 +61,12 @@ Use the TestDriver MCP tools to build tests interactively with visual feedback:
 - Full control over where code is inserted in existing test files
 - O(1) iteration time regardless of test length
 
-See the `testdriver:mcp-workflow` skill for detailed documentation.
+**⚠️ IMPORTANT: Always use the generated code from MCP tool responses!**
+- MCP tools return `Add to test file:` with the exact code to use
+- Do NOT write your own SDK calls - use the generated code instead
+- MCP tool parameters are different from SDK method signatures:
+  - MCP: `scroll({ direction: "down", amount: 200 })` (tool parameters)
+  - SDK: `await testdriver.scroll("down", { amount: 200 });` (generated code)
 
 ## Prerequisites
 
@@ -199,7 +236,7 @@ After each successful action, append the generated code to your test file. This 
 1. Check the screenshot to see what's actually on screen
 2. Adjust the element description to be more specific
 3. Use timeout: `find({ description: "...", timeout: 10000 })`
-4. Scroll to find off-screen elements: `scroll({ direction: "down" })`
+4. Scroll to find off-screen elements: `scroll({ direction: "down" })` (MCP tool) or `testdriver.scroll("down")` (SDK)
 
 ### Session Expired
 
@@ -207,12 +244,31 @@ After each successful action, append the generated code to your test file. This 
 2. Run the test with `verify` to get back to last state
 3. Continue from where you left off
 
-### Test Verification Fails
+### Test Verification Fails (Debug on Failure)
 
-1. Check the error message and screenshot
-2. Review the test file to see the generated code
-3. Start a new session and manually test the failing step
-4. Adjust element descriptions or add waits as needed
+If a test fails and `debugOnFailure: true` is set, the sandbox stays alive:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DEBUG MODE: Sandbox kept alive for debugging
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  To connect via MCP:
+    session_start({ sandboxId: "abc123" })
+
+  Sandbox will expire in 5 minutes.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**To debug:**
+1. Copy the sandboxId from the output
+2. Connect via MCP: `session_start({ sandboxId: "abc123" })`
+3. You're now connected to the sandbox at the exact state where it failed
+4. Use `check`, `find`, `click`, etc. to investigate and fix the issue
+5. Update your test file with the fix
+6. Run `verify` to validate the fix works from scratch
+
+This lets you iterate on the failing step without re-running the entire test each time.
 
 ## Dependencies
 
@@ -236,7 +292,9 @@ When creating a new test project, use these exact dependencies:
 
 ## Test File Format
 
-Create test files using this standard format. Each action's generated code goes inside the test function:
+Create test files using this standard format. Each action's generated code goes inside the test function.
+
+**IMPORTANT:** Always use `debugOnFailure: true` during test development. This keeps the sandbox alive when a test fails, allowing you to connect via MCP and fix the issue without re-running the entire test.
 
 ```javascript
 /**
@@ -248,7 +306,8 @@ import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
 
 describe("Login Flow", () => {
   it("should complete Login Flow", async (context) => {
-    const testdriver = TestDriver(context);
+    // debugOnFailure: true keeps sandbox alive on failure for interactive debugging
+    const testdriver = TestDriver(context, { debugOnFailure: true });
 
     // --- GENERATED COMMANDS ---
     await testdriver.provision.chrome({ url: "https://app.example.com" });
@@ -268,6 +327,8 @@ describe("Login Flow", () => {
 });
 ```
 
+**Note:** Remove `debugOnFailure: true` before committing to CI/CD to ensure sandboxes are properly cleaned up.
+
 ## SDK Reference (for understanding generated tests)
 
 The generated tests use these SDK methods:
@@ -280,7 +341,7 @@ The generated tests use these SDK methods:
 | `find(description).click()` | Find and click element |
 | `type(text)` | Type text into focused field |
 | `pressKeys([keys])` | Press keyboard keys |
-| `scroll(direction)` | Scroll the page |
+| `scroll(direction, options)` | Scroll the page - e.g. `scroll("down")` or `scroll("down", { amount: 200 })` |
 | `assert(assertion)` | AI-powered assertion |
 | `exec(language, code)` | Execute code in sandbox |
 | `screenshot()` | Capture screenshot |
@@ -314,11 +375,13 @@ await element.mouseUp();     // release mouse
 
 ## Tips for Agents
 
-1. **Use MCP tools for development** - Each action returns the code to add to your test file
-2. **Append code after each action** - The response includes `Add to test file:` with the exact code
-3. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state. **Does NOT generate code.**
-4. **Only use `screenshot` when the user asks** - Do NOT call screenshot automatically. Only use it when the user explicitly requests to see the screen.
-5. **Use `check` during development** - Verify actions succeeded before moving on, but remember this is for YOUR understanding only
-6. **Use `assert` for test file verifications** - When you want a verification step in the final test, use `assert` which generates `await testdriver.assert("...")` code
-7. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
-8. **Check `sdk.d.ts`** for method signatures when debugging tests
+1. **Always use `debugOnFailure: true`** - Add this option when creating tests: `TestDriver(context, { debugOnFailure: true })`. This keeps the sandbox alive on failure so you can connect and debug without re-running.
+2. **Use MCP tools for development** - Each action returns the code to add to your test file
+3. **Append code after each action** - The response includes `Add to test file:` with the exact code
+4. **Use `check` to understand the screen** - This is how you (the AI) see and understand the current state. **Does NOT generate code.**
+5. **Only use `screenshot` when the user asks** - Do NOT call screenshot automatically. Only use it when the user explicitly requests to see the screen.
+6. **Use `check` during development** - Verify actions succeeded before moving on, but remember this is for YOUR understanding only
+7. **Use `assert` for test file verifications** - When you want a verification step in the final test, use `assert` which generates `await testdriver.assert("...")` code
+8. **Be specific with descriptions** - "blue Sign In button in the header" > "button"
+9. **Check `sdk.d.ts`** for method signatures when debugging tests
+10. **Debug failed tests with sandboxId** - When a test fails with `debugOnFailure: true`, use `session_start({ sandboxId: "..." })` to connect to the failed state

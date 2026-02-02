@@ -31,9 +31,9 @@ targetInfoEl.className = "target-info hidden";
 let screenshotNaturalWidth = 0;
 let screenshotNaturalHeight = 0;
 
-// Zoom state
-let isZoomed = true; // Start zoomed in when element found
-const ZOOM_LEVEL = 2.0; // 2x zoom
+// Zoom state - disabled, always show full view
+let isZoomed = false;
+const ZOOM_LEVEL = 2.0; // 2x zoom (not used when zoom disabled)
 
 // Types for tool result data
 interface ToolResultData {
@@ -53,7 +53,7 @@ interface ToolResultData {
     confidence?: number;
     ref?: string;
   };
-  clickPosition?: { x: number; y: number };
+  clickPosition?: { x: number; y: number; centerX?: number; centerY?: number };
   scrollDirection?: string;
   assertion?: string;
   text?: string;
@@ -192,100 +192,124 @@ function resetZoom() {
 
 /**
  * Add overlays after screenshot loads (so we know dimensions)
+ * Uses requestAnimationFrame to ensure layout is computed
  */
 function addOverlays(data: ToolResultData) {
-  overlaysEl.innerHTML = "";
-  
-  const displayedWidth = screenshotEl.clientWidth;
-  const displayedHeight = screenshotEl.clientHeight;
-  
-  // Track the focal point for zoom
-  let focalX: number | undefined;
-  let focalY: number | undefined;
-  
-  // Add element target overlay only for 'find' action (not click)
-  // The cropped image is always centered on the found element, so position target at image center
-  if (data.action === "find" && data.element) {
-    const target = document.createElement("div");
-    target.className = "element-target";
+  // Use requestAnimationFrame to ensure the image has been laid out
+  requestAnimationFrame(() => {
+    overlaysEl.innerHTML = "";
     
-    // Position at center of displayed image (cropped image is already centered on element)
-    target.style.left = `${displayedWidth / 2}px`;
-    target.style.top = `${displayedHeight / 2}px`;
+    const displayedWidth = screenshotEl.clientWidth;
+    const displayedHeight = screenshotEl.clientHeight;
     
-    // Add crosshair lines
-    const crosshairH = document.createElement("div");
-    crosshairH.className = "crosshair-h";
-    target.appendChild(crosshairH);
+    console.info("addOverlays:", { 
+      action: data.action, 
+      hasElement: !!data.element,
+      hasClickPosition: !!data.clickPosition,
+      displayedWidth, 
+      displayedHeight,
+      naturalWidth: screenshotNaturalWidth,
+      naturalHeight: screenshotNaturalHeight
+    });
     
-    const crosshairV = document.createElement("div");
-    crosshairV.className = "crosshair-v";
-    target.appendChild(crosshairV);
-    
-    // Add label
-    const label = document.createElement("div");
-    label.className = "element-label";
-    label.textContent = data.element.description || "Element";
-    if (data.element.confidence) {
-      label.textContent += ` (${Math.round(data.element.confidence * 100)}%)`;
+    // Skip if dimensions aren't ready yet
+    if (displayedWidth === 0 || displayedHeight === 0) {
+      console.warn("addOverlays: Dimensions not ready, retrying...");
+      // Retry after a short delay
+      setTimeout(() => addOverlays(data), 50);
+      return;
     }
-    target.appendChild(label);
     
-    overlaysEl.appendChild(target);
+    // Track the focal point for zoom
+    let focalX: number | undefined;
+    let focalY: number | undefined;
     
-    // Set focal point for zoom at image center
-    focalX = screenshotNaturalWidth / 2;
-    focalY = screenshotNaturalHeight / 2;
-  }
-
-  // Add click marker overlay
-  if (data.clickPosition && data.clickPosition.x !== undefined && data.clickPosition.y !== undefined) {
-    const marker = document.createElement("div");
-    marker.className = "click-marker";
-    
-    const scaledX = scaleCoord(data.clickPosition.x, screenshotNaturalWidth, displayedWidth);
-    const scaledY = scaleCoord(data.clickPosition.y, screenshotNaturalHeight, displayedHeight);
-    
-    marker.style.left = `${scaledX}px`;
-    marker.style.top = `${scaledY}px`;
-    
-    // Add ripple effect
-    const ripple = document.createElement("div");
-    ripple.className = "click-ripple";
-    marker.appendChild(ripple);
-    
-    overlaysEl.appendChild(marker);
-    
-    // Set focal point for zoom (click position takes priority if no element)
-    if (focalX === undefined) {
-      focalX = data.clickPosition.x;
-      focalY = data.clickPosition.y;
+    // Add element target overlay for 'find' and 'find_and_click' actions
+    // The cropped image is always centered on the found element, so position target at image center
+    const showElementTarget = (data.action === "find" || data.action === "find_and_click" || data.action === "findall") && data.element;
+    if (showElementTarget) {
+      const target = document.createElement("div");
+      target.className = "element-target";
+      
+      // Position at center of displayed image (cropped image is already centered on element)
+      target.style.left = `${displayedWidth / 2}px`;
+      target.style.top = `${displayedHeight / 2}px`;
+      
+      // Add crosshair lines
+      const crosshairH = document.createElement("div");
+      crosshairH.className = "crosshair-h";
+      target.appendChild(crosshairH);
+      
+      const crosshairV = document.createElement("div");
+      crosshairV.className = "crosshair-v";
+      target.appendChild(crosshairV);
+      
+      // Add label
+      const label = document.createElement("div");
+      label.className = "element-label";
+      label.textContent = data.element?.description || "Element";
+      if (data.element?.confidence) {
+        label.textContent += ` (${Math.round(data.element.confidence * 100)}%)`;
+      }
+      target.appendChild(label);
+      
+      overlaysEl.appendChild(target);
+      
+      // Set focal point for zoom at image center
+      focalX = screenshotNaturalWidth / 2;
+      focalY = screenshotNaturalHeight / 2;
+      
+      console.info("addOverlays: Added element target at center");
     }
-  }
 
-  // Add scroll indicator (doesn't need scaling - centered)
-  if (data.scrollDirection) {
-    const arrow = document.createElement("div");
-    arrow.className = `scroll-indicator scroll-${data.scrollDirection}`;
-    arrow.textContent = data.scrollDirection === "up" ? "↑" : 
-                        data.scrollDirection === "down" ? "↓" :
-                        data.scrollDirection === "left" ? "←" : "→";
-    overlaysEl.appendChild(arrow);
-  }
-  
-  // Apply zoom if we have a focal point
-  if (focalX !== undefined && focalY !== undefined) {
-    isZoomed = true;
-    applyZoom(focalX, focalY, true);
+    // Add click marker overlay for click actions (uses full screenshot, not cropped)
+    // Use centerX/centerY if available (where the click actually happens), fallback to x/y
+    if (data.clickPosition) {
+      const clickX = data.clickPosition.centerX ?? data.clickPosition.x;
+      const clickY = data.clickPosition.centerY ?? data.clickPosition.y;
+      
+      if (clickX !== undefined && clickY !== undefined && screenshotNaturalWidth > 0) {
+        const marker = document.createElement("div");
+        marker.className = "click-marker";
+        
+        const scaledX = scaleCoord(clickX, screenshotNaturalWidth, displayedWidth);
+        const scaledY = scaleCoord(clickY, screenshotNaturalHeight, displayedHeight);
+        
+        marker.style.left = `${scaledX}px`;
+        marker.style.top = `${scaledY}px`;
+        
+        // Add ripple effect
+        const ripple = document.createElement("div");
+        ripple.className = "click-ripple";
+        marker.appendChild(ripple);
+        
+        overlaysEl.appendChild(marker);
+        
+        console.info("addOverlays: Added click marker at", { clickX, clickY, scaledX, scaledY });
+        
+        // Set focal point for zoom (click position takes priority if no element)
+        if (focalX === undefined) {
+          focalX = clickX;
+          focalY = clickY;
+        }
+      }
+    }
+
+    // Add scroll indicator (doesn't need scaling - centered)
+    if (data.scrollDirection) {
+      const arrow = document.createElement("div");
+      arrow.className = `scroll-indicator scroll-${data.scrollDirection}`;
+      arrow.textContent = data.scrollDirection === "up" ? "↑" : 
+                          data.scrollDirection === "down" ? "↓" :
+                          data.scrollDirection === "left" ? "←" : "→";
+      overlaysEl.appendChild(arrow);
+    }
     
-    // Store focal point for toggle
-    containerEl.dataset.focalX = String(focalX);
-    containerEl.dataset.focalY = String(focalY);
-  } else {
+    // Always show full view (zoom disabled)
     resetZoom();
     delete containerEl.dataset.focalX;
     delete containerEl.dataset.focalY;
-  }
+  });
 }
 
 /**
@@ -504,13 +528,4 @@ if (screenshotWrapper && screenshotWrapper.parentNode) {
   screenshotWrapper.parentNode.insertBefore(targetInfoEl, screenshotWrapper.nextSibling);
 }
 
-// 4. Add click-to-toggle zoom
-containerEl.addEventListener("click", () => {
-  const focalX = containerEl.dataset.focalX;
-  const focalY = containerEl.dataset.focalY;
-  
-  if (focalX && focalY) {
-    isZoomed = !isZoomed;
-    applyZoom(parseFloat(focalX), parseFloat(focalY), isZoomed);
-  }
-});
+// Zoom toggle disabled - always show full view

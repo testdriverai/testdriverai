@@ -102,7 +102,7 @@ export class SessionManager {
   }
 
   /**
-   * Extend session expiry time
+   * Extend session expiry time by adding additional milliseconds
    */
   extendSession(sessionId: string, additionalMs: number): SessionState | null {
     const session = this.sessions.get(sessionId);
@@ -110,6 +110,19 @@ export class SessionManager {
 
     return this.updateSession(sessionId, {
       expiresAt: session.expiresAt + additionalMs,
+    });
+  }
+
+  /**
+   * Refresh session expiry to reset the keepAlive timer from now
+   * Called on each command to keep session alive during active use
+   */
+  refreshSession(sessionId: string): SessionState | null {
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
+
+    return this.updateSession(sessionId, {
+      expiresAt: Date.now() + session.keepAlive,
     });
   }
 

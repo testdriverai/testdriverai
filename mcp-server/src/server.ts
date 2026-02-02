@@ -229,6 +229,8 @@ function getSessionData(session: SessionState | null) {
 /**
  * Check if session is ready for use - returns error result if not
  * This helper provides clear, actionable error messages for the AI
+ * 
+ * Auto-extends the session on each successful check to prevent expiry during active use
  */
 function requireActiveSession(): { valid: true } | { valid: false; error: CallToolResult } {
   const session = sessionManager.getCurrentSession();
@@ -267,6 +269,10 @@ function requireActiveSession(): { valid: true } | { valid: false; error: CallTo
       )
     };
   }
+  
+  // Auto-extend session on each command to prevent expiry during active use
+  // This resets the expiry timer back to the original keepAlive duration
+  sessionManager.refreshSession(session.sessionId);
   
   return { valid: true };
 }
@@ -426,9 +432,14 @@ Self-hosted mode:
 - Provide 'ip' parameter to connect directly to a self-hosted Windows instance
 - Set 'os' to 'windows' when connecting to Windows instances
 - The IP can be from an AWS EC2 instance spawned via CloudFormation
-- See https://docs.testdriver.ai/v7/aws-setup for AWS setup guide`,
+- See https://docs.testdriver.ai/v7/aws-setup for AWS setup guide
+
+Debug mode (connect to existing sandbox):
+- Provide 'sandboxId' to connect to an existing sandbox (e.g., from a failed test with debugOnFailure: true)
+- Skips provisioning - connects to sandbox in its current state
+- Use this to interactively debug failed tests without re-running from scratch`,
     inputSchema: SessionStartInputSchema,
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params: SessionStartInput): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -436,16 +447,19 @@ Self-hosted mode:
       type: params.type, 
       url: params.url,
       os: params.os, 
-      reconnect: params.reconnect 
+      reconnect: params.reconnect,
+      sandboxId: params.sandboxId,
     });
 
     try {
-      // Validate required fields for specific provision types
-      if (params.type === "installer" && !params.installerUrl) {
-        return createToolResult(false, "installer type requires 'installerUrl' parameter", { error: "Missing required parameter: installerUrl" });
-      }
-      if (params.type === "electron" && !params.appPath) {
-        return createToolResult(false, "electron type requires 'appPath' parameter", { error: "Missing required parameter: appPath" });
+      // Validate required fields for specific provision types (unless connecting to existing sandbox)
+      if (!params.sandboxId) {
+        if (params.type === "installer" && !params.installerUrl) {
+          return createToolResult(false, "installer type requires 'installerUrl' parameter", { error: "Missing required parameter: installerUrl" });
+        }
+        if (params.type === "electron" && !params.appPath) {
+          return createToolResult(false, "electron type requires 'appPath' parameter", { error: "Missing required parameter: appPath" });
+        }
       }
 
       // Create new session
@@ -480,6 +494,55 @@ Self-hosted mode:
         preview: previewMode as "browser" | "ide" | "none",
         ip: instanceIp,
       });
+
+      // Handle sandboxId mode - connect to existing sandbox (debug-on-failure mode)
+      if (params.sandboxId) {
+        logger.info("session_start: Connecting to existing sandbox (debug mode)", { sandboxId: params.sandboxId });
+        await sdk.connect({
+          sandboxId: params.sandboxId,
+          keepAlive: params.keepAlive,
+        });
+        
+        // Get sandbox ID
+        const instance = sdk.getInstance();
+        logger.info("session_start: Connected to existing sandbox", { instanceId: instance?.instanceId });
+        sessionManager.activateSession(newSession.sessionId, instance?.instanceId || params.sandboxId);
+        
+        // Set Sentry context for error tracking
+        setSessionContext(newSession.sessionId, instance?.instanceId);
+        
+        // Capture screenshot of current state
+        logger.debug("session_start: Capturing screenshot of existing sandbox");
+        const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+        
+        let screenshotResourceUri: string | undefined;
+        if (screenshotBase64) {
+          screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+          lastScreenshotBase64 = screenshotBase64;
+        }
+
+        const duration = Date.now() - startTime;
+        logger.info("session_start: Connected to existing sandbox", { duration, sessionId: newSession.sessionId, sandboxId: params.sandboxId });
+
+        return createToolResult(
+          true,
+          `Connected to existing sandbox (debug mode)
+Session: ${newSession.sessionId}
+Sandbox: ${params.sandboxId}
+Expires in: ${Math.round(params.keepAlive / 1000)}s
+
+You are now connected to the sandbox in its current state. Use find, click, type, etc. to interact.`,
+          { 
+            action: "session_start",
+            sessionId: newSession.sessionId, 
+            sandboxId: params.sandboxId,
+            debugMode: true,
+            screenshotResourceUri,
+            duration 
+          },
+          "// Connected to existing sandbox - no provision code needed"
+        );
+      }
 
       // Connect to sandbox
       if (instanceIp) {
@@ -575,7 +638,19 @@ Self-hosted mode:
       const connectionType = instanceIp ? `Self-hosted (${instanceIp})` : "Cloud";
       return createToolResult(
         true,
-        `Session started: ${newSession.sessionId}\nConnection: ${connectionType}\nType: ${params.type}\nSandbox: ${instance?.instanceId}\nExpires in: ${Math.round(params.keepAlive / 1000)}s`,
+        `Session started: ${newSession.sessionId}\nConnection: ${connectionType}\nType: ${params.type}\nSandbox: ${instance?.instanceId}\nExpires in: ${Math.round(params.keepAlive / 1000)}s
+
+IMPORTANT - If creating a new test project, use these EXACT dependencies in package.json:
+{
+  "type": "module",
+  "devDependencies": {
+    "testdriverai": "beta",
+    "vitest": "^4.0.0"
+  },
+  "scripts": {
+    "test": "vitest"
+  }
+}`,
         { 
           action: "session_start",
           sessionId: newSession.sessionId, 
@@ -674,7 +749,7 @@ registerAppTool(
       description: z.string().describe("Natural language description of the element"),
       timeout: z.number().optional().describe("Timeout in ms for polling"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -731,8 +806,9 @@ registerAppTool(
         delete rawResponse.croppedImage;
       }
       
-      // Remove extractedText from response to reduce context bloat
+      // Remove extractedText and pixelDiffImage from response to reduce context bloat
       delete rawResponse.extractedText;
+      delete rawResponse.pixelDiffImage;
 
       // Generate code for this find action
       const generatedCode = found ? generateActionCode("find", { description: params.description }) : undefined;
@@ -740,6 +816,8 @@ registerAppTool(
       // Build element info for display (cropped image is always centered on element)
       const elementInfo = found ? {
         description: params.description,
+        centerX: coords?.centerX,
+        centerY: coords?.centerY,
         confidence: element.confidence,
         ref: elementRef,
       } : undefined;
@@ -778,7 +856,7 @@ registerAppTool(
       description: z.string().describe("Natural language description of the elements to find"),
       timeout: z.number().optional().describe("Timeout in ms for polling"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -849,8 +927,9 @@ registerAppTool(
         delete rawResponse.croppedImage;
       }
       
-      // Remove extractedText from response to reduce context bloat
+      // Remove extractedText and pixelDiffImage from response to reduce context bloat
       delete rawResponse.extractedText;
+      delete rawResponse.pixelDiffImage;
 
       // Generate code for this findall action
       const generatedCode = count > 0 ? generateActionCode("findall", { description: params.description }) : undefined;
@@ -892,7 +971,7 @@ registerAppTool(
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -936,6 +1015,11 @@ registerAppTool(
       }
 
       const rawResponse = element._response || {};
+      // Remove large data from response to reduce context bloat
+      delete rawResponse.croppedImage;
+      delete rawResponse.extractedText;
+      delete rawResponse.pixelDiffImage;
+      
       const duration = Date.now() - startTime;
       logger.info("click: Completed", { description, duration });
 
@@ -973,7 +1057,7 @@ registerAppTool(
     inputSchema: z.object({
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -1009,6 +1093,11 @@ registerAppTool(
       }
 
       const rawResponse = element._response || {};
+      // Remove large data from response to reduce context bloat
+      delete rawResponse.croppedImage;
+      delete rawResponse.extractedText;
+      delete rawResponse.pixelDiffImage;
+      
       const duration = Date.now() - startTime;
       logger.info("hover: Completed", { description, duration });
 
@@ -1131,7 +1220,7 @@ registerAppTool(
       description: z.string().describe("Natural language description of element"),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -1153,7 +1242,24 @@ registerAppTool(
         return createToolResult(false, `Element not found: "${params.description}"`, { error: "Element not found", duration: Date.now() - startTime });
       }
 
-      logger.debug("find_and_click: Element found, clicking", { action: params.action });
+      const coords = element.getCoordinates();
+
+      // Store element ref for later use (in case user wants to interact again)
+      const elementRef = `el-${Date.now()}`;
+      if (coords) {
+        elementRefs.set(elementRef, {
+          element: element,
+          description: params.description,
+          coords: {
+            x: coords.x,
+            y: coords.y,
+            centerX: coords.centerX,
+            centerY: coords.centerY,
+          },
+        });
+      }
+
+      logger.debug("find_and_click: Element found, clicking", { action: params.action, elementRef });
       if (params.action === "click") {
         await element.click();
       } else if (params.action === "double-click") {
@@ -1161,8 +1267,6 @@ registerAppTool(
       } else if (params.action === "right-click") {
         await element.rightClick();
       }
-
-      const coords = element.getCoordinates();
 
       // Return raw SDK response directly
       const rawResponse = element._response || {};
@@ -1180,31 +1284,30 @@ registerAppTool(
         delete rawResponse.croppedImage;
       }
       
-      // Remove extractedText from response to reduce context bloat
+      // Remove extractedText and pixelDiffImage from response to reduce context bloat
       delete rawResponse.extractedText;
+      delete rawResponse.pixelDiffImage;
 
       // Generate code for this find_and_click action
       const generatedCode = generateActionCode("find_and_click", { description: params.description, action: params.action });
 
-      // Build element info for display
+      // Build element info for display (match find action format)
       const elementInfo = coords ? {
         description: params.description,
-        x: coords.x,
-        y: coords.y,
         centerX: coords.centerX,
         centerY: coords.centerY,
-        width: element.width,
-        height: element.height,
         confidence: element.confidence,
+        ref: elementRef,
       } : undefined;
 
       return createToolResult(
         true,
-        `Found and clicked: "${params.description}" at (${rawResponse.coordinates?.x}, ${rawResponse.coordinates?.y})`,
+        `Found and clicked: "${params.description}" at (${rawResponse.coordinates?.x}, ${rawResponse.coordinates?.y})\nRef: ${elementRef}`,
         {
           ...rawResponse,
           action: "find_and_click",
           element: elementInfo,
+          ref: elementRef,
           clickAction: params.action,
           clickPosition: coords ? { x: coords.centerX, y: coords.centerY } : undefined,
           croppedImageResourceUri,
@@ -1407,33 +1510,30 @@ registerAppTool(
   "check",
   {
     title: "Check Screen State",
-    description: `Use this tool to understand the current screen state and verify if actions succeeded.
+    description: `👁️ THIS IS HOW YOU SEE THE SCREEN. Use this tool whenever you need to understand what's currently displayed.
 
-This is the PRIMARY tool for AI to understand what's on screen. It captures a screenshot, compares it with the previous state, and provides AI analysis of whether the task/condition is met.
+This tool captures a screenshot and returns AI analysis to YOU. Use it to:
+- See what's on the screen right now
+- Verify if your last action worked
+- Understand the current application state
+- Check if elements are visible or if navigation completed
 
-IMPORTANT: This tool is for YOUR understanding during development only. It does NOT generate test code.
-- Use 'check' to verify actions worked during development
-- Use 'assert' when you want to add a verification step to the test file
-
-Unlike 'assert' which generates code like \`await testdriver.assert("...")\`, 'check' returns detailed analysis to help you understand the current state but does NOT add anything to the test file.
-
-Unlike 'screenshot' which just displays to the user, 'check' analyzes the screen and returns information to you (the AI).
-
-Use after actions to verify they worked:
+Examples:
+- "What is currently on the screen?"
 - "Did the button click work?"
-- "Is the user logged in now?"
-- "Has the form been submitted successfully?"
+- "Is the login form visible?"
 - "Did the page navigate to the dashboard?"
-- "Is the modal dialog visible?"
 
-When you want to add a verification step to the generated test, use 'assert' instead.
+⚠️ Do NOT use 'screenshot' to see the screen - that only shows the user, not you.
 
-You can optionally provide a reference image URI to compare against instead of using the automatically captured "before" screenshot. This is useful for comparing the current state to a known baseline.`,
+Note: This tool does NOT generate test code. Use 'assert' when you want to add a verification step to the test file.
+
+You can optionally provide a reference image URI to compare against a previous state.`,
     inputSchema: z.object({
       task: z.string().describe("The task or condition to verify (e.g., 'Did the login succeed?', 'Is the modal visible?')"),
       referenceImageUri: z.string().optional().describe("Optional screenshot resource URI (e.g., 'screenshot://testdriver/screenshot/screenshot-1') to compare against instead of the automatically captured 'before' screenshot. Use a screenshotResourceUri from a previous action."),
     }),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
@@ -1608,13 +1708,18 @@ registerAppTool(
   "screenshot",
   {
     title: "Screenshot",
-    description: `Capture a screenshot of the current screen to show the user.
+    description: `Display a screenshot to the user. This tool does NOT return the image to you (the AI).
 
-Use this tool to show the user what the screen looks like. The screenshot is displayed in the MCP App UI.
+⚠️ IMPORTANT: Do NOT use this tool to understand the screen state. The screenshot is ONLY displayed to the human user - you will NOT receive the image or any analysis.
 
-NOTE: This tool is for VISUAL DISPLAY to the user only. If you (the AI) need to understand or verify the screen state, use the 'check' tool instead.`,
+If you need to:
+- See what's on screen → use 'check' instead
+- Verify an action worked → use 'check' instead  
+- Understand the current state → use 'check' instead
+
+Only use 'screenshot' when you explicitly want to show something to the human user without needing to see it yourself.`,
     inputSchema: z.object({}),
-    _meta: { ui: { resourceUri: RESOURCE_URI } },
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (): Promise<CallToolResult> => {
     const startTime = Date.now();

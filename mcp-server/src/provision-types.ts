@@ -156,6 +156,10 @@ export const SessionStartInputSchema = z.object({
   // Self-hosted connection options
   /** Direct IP address of self-hosted instance (bypasses cloud provisioning) */
   ip: z.string().optional().describe("Direct IP address of self-hosted Windows instance (e.g., from AWS). When provided, connects directly to this IP instead of using cloud provisioning."),
+  
+  // Debug mode - connect to existing sandbox
+  /** Sandbox ID to connect to (for debug-on-failure mode). When provided, connects to an existing sandbox instead of creating a new one. Skip provisioning. */
+  sandboxId: z.string().optional().describe("Existing sandbox ID to connect to (from debug-on-failure mode). Skips provisioning."),
 });
 
 export type SessionStartInput = z.infer<typeof SessionStartInputSchema>;
