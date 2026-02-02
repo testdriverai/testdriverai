@@ -439,7 +439,7 @@ Debug mode (connect to existing sandbox):
 - Provide 'sandboxId' to connect to an existing sandbox (e.g., from a failed test with debugOnFailure: true)
 - Skips provisioning - connects to sandbox in its current state
 - Use this to interactively debug failed tests without re-running from scratch`,
-    inputSchema: SessionStartInputSchema,
+    inputSchema: SessionStartInputSchema as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
   async (params: SessionStartInput): Promise<CallToolResult> => {
@@ -749,10 +749,10 @@ registerAppTool(
     inputSchema: z.object({
       description: z.string().describe("Natural language description of the element"),
       timeout: z.number().optional().describe("Timeout in ms for polling"),
-    }),
+    }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params): Promise<CallToolResult> => {
+  async (params: { description: string; timeout?: number }): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("find: Starting", { description: params.description, timeout: params.timeout });
 
@@ -856,10 +856,10 @@ registerAppTool(
     inputSchema: z.object({
       description: z.string().describe("Natural language description of the elements to find"),
       timeout: z.number().optional().describe("Timeout in ms for polling"),
-    }),
+    }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params): Promise<CallToolResult> => {
+  async (params: { description: string; timeout?: number }): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("findall: Starting", { description: params.description, timeout: params.timeout });
 
@@ -971,10 +971,10 @@ registerAppTool(
     inputSchema: z.object({
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
-    }),
+    }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params): Promise<CallToolResult> => {
+  async (params: { elementRef: string; action: "click" | "double-click" | "right-click" }): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("click: Starting", { elementRef: params.elementRef, action: params.action });
 
@@ -1057,10 +1057,10 @@ registerAppTool(
     description: "Hover over a previously found element. Use 'find' first to locate the element.",
     inputSchema: z.object({
       elementRef: z.string().describe("Reference to previously found element (required). Get this from a 'find' call."),
-    }),
+    }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params): Promise<CallToolResult> => {
+  async (params: { elementRef: string }): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("hover: Starting", { elementRef: params.elementRef });
 
@@ -1220,10 +1220,10 @@ registerAppTool(
     inputSchema: z.object({
       description: z.string().describe("Natural language description of element"),
       action: z.enum(["click", "double-click", "right-click"]).default("click"),
-    }),
+    }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params): Promise<CallToolResult> => {
+  async (params: { description: string; action: "click" | "double-click" | "right-click" }): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("find_and_click: Starting", { description: params.description, action: params.action });
 
@@ -1533,10 +1533,10 @@ You can optionally provide a reference image URI to compare against a previous s
     inputSchema: z.object({
       task: z.string().describe("The task or condition to verify (e.g., 'Did the login succeed?', 'Is the modal visible?')"),
       referenceImageUri: z.string().optional().describe("Optional screenshot resource URI (e.g., 'screenshot://testdriver/screenshot/screenshot-1') to compare against instead of the automatically captured 'before' screenshot. Use a screenshotResourceUri from a previous action."),
-    }),
+    }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params): Promise<CallToolResult> => {
+  async (params: { task: string; referenceImageUri?: string }): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("check: Starting", { task: params.task, hasReferenceImageUri: !!params.referenceImageUri });
 
