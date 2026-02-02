@@ -99,6 +99,36 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
 }
 ```
 
+**Using CLI parameter (alternative to environment variable):**
+
+You can also pass the API key directly as a CLI parameter using the `apiKey=` format:
+
+```json
+{
+  "servers": {
+    "testdriver": {
+      "command": "npx",
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp", "apiKey=your-api-key-here"]
+    }
+  }
+}
+```
+
+Or with local build:
+
+```json
+{
+  "servers": {
+    "testdriver": {
+      "command": "node",
+      "args": ["/path/to/testdriverai/mcp-server/dist/server.js", "apiKey=your-api-key-here"]
+    }
+  }
+}
+```
+
+> **Note**: CLI parameter takes precedence over the `TD_API_KEY` environment variable. Use environment variable for sensitive data or CLI parameter for convenience.
+
 ### API Endpoint Configuration
 
 The API endpoint can be configured in three ways (in order of precedence):

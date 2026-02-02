@@ -26,6 +26,27 @@ import { getProvisionOptions, SessionStartInputSchema, type SessionStartInput } 
 import { sessionManager, type SessionState } from "./session.js";
 
 // =============================================================================
+// CLI Arguments Parsing
+// =============================================================================
+
+// Parse CLI arguments in the format key=value
+function parseCliArguments(): Record<string, string> {
+  const args: Record<string, string> = {};
+  
+  for (const arg of process.argv.slice(2)) {
+    const match = arg.match(/^([^=]+)=(.*)$/);
+    if (match) {
+      const [, key, value] = match;
+      args[key] = value;
+    }
+  }
+  
+  return args;
+}
+
+const cliArgs = parseCliArguments();
+
+// =============================================================================
 // Sentry
 // =============================================================================
 
@@ -516,7 +537,11 @@ Debug mode (connect to existing sandbox):
       // Get IP from params or environment (for self-hosted instances)
       const instanceIp = params.ip || process.env.TD_IP;
       
-      sdk = new TestDriverSDK(process.env.TD_API_KEY || "", {
+      // Get API key from CLI argument or environment variable
+      const apiKey = cliArgs.apiKey || process.env.TD_API_KEY || "";
+      logger.debug("session_start: Using API key", { source: cliArgs.apiKey ? "CLI argument" : "environment variable" });
+      
+      sdk = new TestDriverSDK(apiKey, {
         os: params.os,
         logging: false,
         apiRoot,
