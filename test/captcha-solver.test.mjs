@@ -92,67 +92,61 @@ describe("Captcha Solver Script", () => {
 
 describe("safeParseJson", () => {
   let safeParseJson;
+  let extractionFailed = false;
 
-  // Skip these tests if the function extraction fails
-  // This prevents test suite from failing if the function format changes
+  // Try to extract the function for testing
   try {
     safeParseJson = getSafeParseJson();
   } catch {
-    safeParseJson = null;
+    extractionFailed = true;
   }
 
-  it("should parse valid JSON normally", () => {
-    if (!safeParseJson) return;
+  // Use it.skipIf to clearly indicate skipped tests
+  const testFn = extractionFailed ? it.skip : it;
+
+  testFn("should parse valid JSON normally", () => {
     const result = safeParseJson('{"status":1,"request":"abc123"}');
     expect(result).toEqual({ status: 1, request: "abc123" });
   });
 
-  it("should handle JSON with leading/trailing whitespace", () => {
-    if (!safeParseJson) return;
+  testFn("should handle JSON with leading/trailing whitespace", () => {
     const result = safeParseJson('  {"status":1}  \n');
     expect(result).toEqual({ status: 1 });
   });
 
-  it("should extract first JSON object from concatenated responses", () => {
-    if (!safeParseJson) return;
+  testFn("should extract first JSON object from concatenated responses", () => {
     // This is the exact error case: multiple JSON objects concatenated
     const result = safeParseJson('{"status":1}{"status":2}');
     expect(result).toEqual({ status: 1 });
   });
 
-  it("should handle JSON with trailing garbage characters", () => {
-    if (!safeParseJson) return;
+  testFn("should handle JSON with trailing garbage characters", () => {
     const result = safeParseJson('{"status":1}xxx');
     expect(result).toEqual({ status: 1 });
   });
 
-  it("should handle nested objects correctly", () => {
-    if (!safeParseJson) return;
+  testFn("should handle nested objects correctly", () => {
     const result = safeParseJson('{"data":{"nested":true}}extra');
     expect(result).toEqual({ data: { nested: true } });
   });
 
-  it("should handle strings containing braces", () => {
-    if (!safeParseJson) return;
+  testFn("should handle strings containing braces", () => {
     const result = safeParseJson('{"text":"hello {world}"}extra');
     expect(result).toEqual({ text: "hello {world}" });
   });
 
-  it("should handle escaped quotes in strings", () => {
-    if (!safeParseJson) return;
+  testFn("should handle escaped quotes in strings", () => {
     const result = safeParseJson('{"text":"say \\"hello\\""}extra');
     expect(result).toEqual({ text: 'say "hello"' });
   });
 
-  it("should throw for responses without JSON", () => {
-    if (!safeParseJson) return;
+  testFn("should throw for responses without JSON", () => {
     expect(() => safeParseJson("not json at all")).toThrow(
       "No JSON object found",
     );
   });
 
-  it("should throw for incomplete JSON", () => {
-    if (!safeParseJson) return;
+  testFn("should throw for incomplete JSON", () => {
     expect(() => safeParseJson('{"incomplete')).toThrow("Invalid JSON");
   });
 });
