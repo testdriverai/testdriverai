@@ -825,8 +825,8 @@ class TestDriverReporter {
   }
 
   onTestCaseReady(test) {
-    if (!pluginState.apiKey || !pluginState.testRun) return;
-
+    // Always track test start times for duration calculation
+    // This is needed for GitHub comments even without API configuration
     pluginState.testCases.set(test.id, {
       test,
       startTime: Date.now(),
@@ -834,8 +834,6 @@ class TestDriverReporter {
   }
 
   async onTestCaseResult(test) {
-    if (!pluginState.apiKey || !pluginState.testRun) return;
-
     const result = test.result();
     const status =
       result.state === "passed"
@@ -886,33 +884,62 @@ class TestDriverReporter {
       pluginState.detectedPlatform = platform;
     }
 
+    // Extract error info for both GitHub comment and API recording
+    let errorMessage = null;
+    let errorStack = null;
+    if (
+      result.state === "failed" &&
+      result.errors &&
+      result.errors.length > 0
+    ) {
+      const error = result.errors[0];
+      errorMessage = error.message;
+      errorStack = error.stack;
+    }
+
+    const suiteName = test.suite?.name;
+    // Use actual tracked start time for accuracy, fallback to calculated
+    const startTime = testCase?.startTime || (Date.now() - duration);
+
+    // Build test case data for GitHub comment (always collected)
+    const testCaseDataForComment = {
+      testId: test.id, // Store test ID for reliable matching in concurrent scenarios
+      testName: test.name,
+      testFile: testFile,
+      testOrder: testOrder,
+      status,
+      duration: duration,
+      retries: result.retryCount || 0,
+    };
+
+    // Add optional fields
+    if (dashcamUrl) testCaseDataForComment.replayUrl = dashcamUrl;
+    if (suiteName) testCaseDataForComment.suiteName = suiteName;
+    if (errorMessage) testCaseDataForComment.errorMessage = errorMessage;
+    if (errorStack) testCaseDataForComment.errorStack = errorStack;
+
+    // Always store test case data for GitHub comment generation
+    // This ensures comments have data even if API recording fails or isn't configured
+    pluginState.recordedTestCases.push(testCaseDataForComment);
+    logger.debug(`Stored test case for GitHub comment: ${test.name} (${status})`);
+
+    // Skip API recording if not configured
+    if (!pluginState.apiKey || !pluginState.testRun) {
+      logger.debug(`API not configured, skipping API recording for: ${test.name}`);
+      return;
+    }
+
     // Get test run info from environment variables
     const testRunId = process.env.TD_TEST_RUN_ID;
     const token = process.env.TD_TEST_RUN_TOKEN;
 
     if (!testRunId || !token) {
-      logger.warn(`Test run not initialized, skipping test case recording for: ${test.name}`);
+      logger.warn(`Test run not initialized, skipping API recording for: ${test.name}`);
       return;
     }
 
     try {
-      let errorMessage = null;
-      let errorStack = null;
-
-      if (
-        result.state === "failed" &&
-        result.errors &&
-        result.errors.length > 0
-      ) {
-        const error = result.errors[0];
-        errorMessage = error.message;
-        errorStack = error.stack;
-      }
-
-      const suiteName = test.suite?.name;
-      const startTime = Date.now() - duration; // Calculate start time from duration
-
-      // Record test case with all metadata
+      // Record test case with all metadata via API
       const testCaseData = {
         runId: testRunId,
         testName: test.name,
@@ -939,7 +966,7 @@ class TestDriverReporter {
       if (errorMessage) testCaseData.errorMessage = errorMessage;
       if (errorStack) testCaseData.errorStack = errorStack;
 
-      logger.debug(`Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`);
+      logger.debug(`Recording test case via API: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`);
 
       const testCaseResponse = await recordTestCaseDirect(
         token,
@@ -950,16 +977,17 @@ class TestDriverReporter {
       const testCaseDbId = testCaseResponse.data?.id;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
-      // Store test case data for GitHub comment generation
-      pluginState.recordedTestCases.push({
-        ...testCaseData,
-        id: testCaseDbId,
-      });
+      // Update the already-stored test case with the API-assigned ID
+      // Use test.id for reliable matching in concurrent test execution
+      const recordedCase = pluginState.recordedTestCases.find(tc => tc.testId === test.id);
+      if (recordedCase) {
+        recordedCase.id = testCaseDbId;
+      }
 
       console.log('');
       console.log(`🔗 Test Report: ${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`);
     } catch (error) {
-      logger.error("Failed to report test case:", error.message);
+      logger.error("Failed to report test case via API:", error.message);
     }
   }
 }
