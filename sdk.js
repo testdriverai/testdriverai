@@ -3,10 +3,6 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
-const logger = require("./agent/lib/logger");
-
-// Load .env file into process.env by default
-require("dotenv").config();
 
 /**
  * Get the file path of the caller (the file that called TestDriver)
@@ -1236,24 +1232,20 @@ function createChainablePromise(promise) {
  * TestDriver SDK
  *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
- * Automatically loads environment variables from .env file via dotenv.
  *
  * @example
  * const TestDriver = require('testdriverai');
  *
- * // API key loaded automatically from TD_API_KEY in .env
- * const client = new TestDriver();
+ * const client = new TestDriver(process.env.TD_API_KEY);
  * await client.connect();
- *
- * // Pass options only (API key from .env)
- * const client = new TestDriver({ os: 'windows' });
- *
- * // Or pass API key explicitly
- * const client = new TestDriver('your-api-key');
  *
  * // New API
  * const element = await client.find('Submit button');
  * await element.click();
+ *
+ * // Legacy API (deprecated)
+ * await client.hoverText('Submit');
+ * await client.click();
  */
 
 /**
@@ -1271,18 +1263,9 @@ const { createMarkdownLogger } = require("./interfaces/logger.js");
 
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
-    // Support calling with just options: new TestDriver({ os: 'windows' })
-    if (typeof apiKey === 'object' && apiKey !== null) {
-      options = apiKey;
-      apiKey = null;
-    }
-
-    // Use provided API key or fall back to environment variable
-    const resolvedApiKey = apiKey || process.env.TD_API_KEY;
-
     // Set up environment with API key
     const environment = {
-      TD_API_KEY: resolvedApiKey,
+      TD_API_KEY: apiKey,
       TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
@@ -1523,7 +1506,64 @@ class TestDriverSDK {
           await this._dashcam.addWebLog("**", "Web Logs");
         }
 
+        // Set up Chrome profile with preferences
         const shell = this.os === "windows" ? "pwsh" : "sh";
+        const userDataDir =
+          this.os === "windows"
+            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
+            : "/tmp/testdriver-chrome-profile";
+
+        // Create user data directory and Default profile directory
+        const defaultProfileDir =
+          this.os === "windows"
+            ? `${userDataDir}\\Default`
+            : `${userDataDir}/Default`;
+
+        const createDirCmd =
+          this.os === "windows"
+            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+            : `mkdir -p "${defaultProfileDir}"`;
+
+        await this.exec(shell, createDirCmd, 60000, true);
+
+        // Write Chrome preferences
+        const chromePrefs = {
+          credentials_enable_service: false,
+          profile: {
+            password_manager_enabled: false,
+            default_content_setting_values: {},
+          },
+          signin: {
+            allowed: false,
+          },
+          sync: {
+            requested: false,
+            first_setup_complete: true,
+            sync_all_os_types: false,
+          },
+          autofill: {
+            enabled: false,
+          },
+          local_state: {
+            browser: {
+              has_seen_welcome_page: true,
+            },
+          },
+        };
+
+        const prefsPath =
+          this.os === "windows"
+            ? `${defaultProfileDir}\\Preferences`
+            : `${defaultProfileDir}/Preferences`;
+
+        const prefsJson = JSON.stringify(chromePrefs, null, 2);
+        const writePrefCmd =
+          this.os === "windows"
+            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
+              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
+            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+
+        await this.exec(shell, writePrefCmd, 60000, true);
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1535,6 +1575,7 @@ class TestDriverSDK {
           "--no-first-run",
           "--no-experiments",
           "--disable-infobars",
+          `--user-data-dir=${userDataDir}`,
         );
 
         // Add remote debugging port for captcha solving support
@@ -1747,6 +1788,64 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           await this._dashcam.addWebLog("**", "Web Logs");
         }
 
+        // Set up Chrome profile with preferences
+        const userDataDir =
+          this.os === "windows"
+            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
+            : "/tmp/testdriver-chrome-profile";
+
+        // Create user data directory and Default profile directory
+        const defaultProfileDir =
+          this.os === "windows"
+            ? `${userDataDir}\\Default`
+            : `${userDataDir}/Default`;
+
+        const createDirCmd =
+          this.os === "windows"
+            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
+            : `mkdir -p "${defaultProfileDir}"`;
+
+        await this.exec(shell, createDirCmd, 60000, true);
+
+        // Write Chrome preferences
+        const chromePrefs = {
+          credentials_enable_service: false,
+          profile: {
+            password_manager_enabled: false,
+            default_content_setting_values: {},
+          },
+          signin: {
+            allowed: false,
+          },
+          sync: {
+            requested: false,
+            first_setup_complete: true,
+            sync_all_os_types: false,
+          },
+          autofill: {
+            enabled: false,
+          },
+          local_state: {
+            browser: {
+              has_seen_welcome_page: true,
+            },
+          },
+        };
+
+        const prefsPath =
+          this.os === "windows"
+            ? `${defaultProfileDir}\\Preferences`
+            : `${defaultProfileDir}/Preferences`;
+
+        const prefsJson = JSON.stringify(chromePrefs, null, 2);
+        const writePrefCmd =
+          this.os === "windows"
+            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
+              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
+            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
+
+        await this.exec(shell, writePrefCmd, 60000, true);
+
         // Build Chrome launch command
         const chromeArgs = [];
         if (maximized) chromeArgs.push("--start-maximized");
@@ -1757,6 +1856,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           "--no-experiments",
           "--disable-infobars",
           "--disable-features=ChromeLabs",
+          `--user-data-dir=${userDataDir}`,
         );
 
         // Add remote debugging port for captcha solving support
@@ -2059,58 +2159,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         await this.focusApplication("Electron");
-      },
-
-      /**
-       * Initialize Dashcam recording with logging
-       * @param {Object} options - Dashcam options
-       * @param {string} [options.logPath] - Path to log file (auto-generated if not provided)
-       * @param {string} [options.logName='TestDriver Log'] - Display name for the log
-       * @param {boolean} [options.webLogs=true] - Enable web log tracking
-       * @param {string} [options.title] - Custom title for the recording
-       * @returns {Promise<void>}
-       */
-      dashcam: async (options = {}) => {
-        const {
-          logPath,
-          logName = "TestDriver Log",
-          webLogs = true,
-          title,
-        } = options;
-
-        // Ensure dashcam is available
-        if (!this._dashcam) {
-          console.warn(
-            "[provision.dashcam] Dashcam is not available. Skipping.",
-          );
-          return;
-        }
-
-        // Set custom title if provided
-        if (title) {
-          this._dashcam.setTitle(title);
-        }
-
-        // Add file log tracking
-        const actualLogPath =
-          logPath ||
-          (this.os === "windows"
-            ? "C:\\Users\\testdriver\\testdriver.log"
-            : "/tmp/testdriver.log");
-
-        await this._dashcam.addFileLog(actualLogPath, logName);
-
-        // Add web log tracking if enabled
-        if (webLogs) {
-          await this._dashcam.addWebLog("**", "Web Logs");
-        }
-
-        // Start recording if not already recording
-        if (!(await this._dashcam.isRecording())) {
-          await this._dashcam.start();
-        }
-
-        console.log("[provision.dashcam] ✅ Dashcam recording started");
       },
     };
 
@@ -3451,28 +3499,28 @@ CAPTCHA_SOLVER_EOF`,
    *
    * @example
    * // Simple execution
-   * const result = await client.ai('Click the submit button');
+   * const result = await client.act('Click the submit button');
    * console.log(result.success); // true
    *
    * @example
    * // With custom retry limit
-   * const result = await client.ai('Fill out the contact form', { tries: 10 });
+   * const result = await client.act('Fill out the contact form', { tries: 10 });
    * console.log(`Completed in ${result.tries} tries`);
    *
    * @example
    * // Handle failures
    * try {
-   *   await client.ai('Complete the checkout process', { tries: 3 });
+   *   await client.act('Complete the checkout process', { tries: 3 });
    * } catch (error) {
    *   console.log(`Failed after ${error.tries} tries: ${error.message}`);
    * }
    */
-  async ai(task, options = {}) {
+  async act(task, options = {}) {
     this._ensureConnected();
 
     const { tries = 7 } = options;
 
-    this.analytics.track("sdk.ai", { task, tries });
+    this.analytics.track("sdk.act", { task, tries });
 
     const { events } = require("./agent/events.js");
     const startTime = Date.now();
@@ -3481,13 +3529,9 @@ CAPTCHA_SOLVER_EOF`,
     const originalCheckLimit = this.agent.checkLimit;
     this.agent.checkLimit = tries;
 
-    // Reset check count for this ai() call
+    // Reset check count for this act() call
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
-
-    // Enable soft assert mode so check-phase assertions don't throw
-    const originalSoftAssertMode = this.agent.softAssertMode;
-    this.agent.softAssertMode = true;
 
     // Emit scoped start marker for ai()
     this.emitter.emit(events.log.log, formatter.formatAIStart(task));
@@ -3509,10 +3553,9 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, true),
       );
 
-      // Restore original state
+      // Restore original checkLimit
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
-      this.agent.softAssertMode = originalSoftAssertMode;
 
       return {
         success: true,
@@ -3531,10 +3574,9 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, false, error.message),
       );
 
-      // Restore original state
+      // Restore original checkLimit
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
-      this.agent.softAssertMode = originalSoftAssertMode;
 
       // Create an enhanced error with additional context using AIError class
       throw new AIError(`AI failed: ${error.message}`, {
@@ -3548,7 +3590,7 @@ CAPTCHA_SOLVER_EOF`,
   }
 
   /**
-   * @deprecated Use ai() instead
+   * @deprecated Use act() instead
    * Execute a natural language task using AI
    *
    * @param {string} task - Natural language description of what to do
@@ -3556,8 +3598,8 @@ CAPTCHA_SOLVER_EOF`,
    * @param {number} [options.tries=7] - Maximum number of check/retry attempts
    * @returns {Promise<ActResult>} Result object with success status and details
    */
-  async act(task, options) {
-    return await this.ai(task, options);
+  async ai(task, options) {
+    return await this.act(task, options);
   }
 }
 

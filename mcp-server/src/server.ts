@@ -51,6 +51,7 @@ if (isSentryEnabled()) {
     release: `testdriverai-mcp@${version}`,
     sampleRate: 1.0,
     tracesSampleRate: 1.0,
+    sendDefaultPii: true,
     integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
     initialScope: {
       tags: {
@@ -331,11 +332,18 @@ function createToolResult(
   };
 }
 
-// Create MCP server
-const server = new McpServer({
-  name: "testdriver",
-  version: "1.0.0",
-});
+// Create MCP server wrapped with Sentry for automatic tracing
+const server = isSentryEnabled()
+  ? Sentry.wrapMcpServerWithSentry(
+      new McpServer({
+        name: "testdriver",
+        version: version,
+      })
+    )
+  : new McpServer({
+      name: "testdriver",
+      version: version,
+    });
 
 // Element reference storage (for click/hover after find)
 // Stores actual Element instances - no raw coordinates as input
