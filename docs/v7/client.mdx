@@ -56,11 +56,17 @@ const testdriver = new TestDriver(apiKey, options)
 ```javascript
 import TestDriver from 'testdriverai';
 
-const testdriver = new TestDriver(process.env.TD_API_KEY, {
+// API key is automatically loaded from TD_API_KEY in .env
+const testdriver = new TestDriver({
   os: 'windows',
   resolution: '1920x1080',
   logging: true,
   analytics: true
+});
+
+// Or pass API key explicitly
+const testdriver = new TestDriver('your-api-key', {
+  os: 'windows'
 });
 ```
 
@@ -267,8 +273,8 @@ describe('My Test Suite', () => {
   let testdriver;
 
   beforeAll(async () => {
-    // Initialize client
-    client = new TestDriver(process.env.TD_API_KEY, {
+    // Initialize client - API key loaded automatically from .env
+    testdriver = new TestDriver({
       os: 'windows',
       resolution: '1366x768',
       logging: true
@@ -320,10 +326,15 @@ describe('My Test Suite', () => {
   </Accordion>
   
   <Accordion title="Use environment variables for API keys">
-    Never hardcode API keys. Use environment variables:
+    Never hardcode API keys. The SDK automatically loads `TD_API_KEY` from your `.env` file:
+    
+    ```bash .env
+    TD_API_KEY=your_api_key_here
+    ```
     
     ```javascript
-    const testdriver = new TestDriver(process.env.TD_API_KEY);
+    // API key is loaded automatically - no need to pass it!
+    const testdriver = new TestDriver();
     ```
   </Accordion>
 </AccordionGroup>

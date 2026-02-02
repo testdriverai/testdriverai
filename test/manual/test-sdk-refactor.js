@@ -11,7 +11,7 @@ async function test() {
 
   // Test 1: SDK construction (API key loaded automatically from .env)
   console.log("✓ Test 1: Creating SDK instance");
-  const client = new TestDriver(null, {
+  const client = new TestDriver({
     logging: false,
   });
 

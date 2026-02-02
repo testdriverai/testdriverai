@@ -16,7 +16,7 @@ async function testPromptCache() {
   console.log("Testing prompt caching functionality...\n");
 
   // API key loaded automatically from .env
-  const client = new TestDriver(null, {
+  const client = new TestDriver({
     os: "linux",
     logging: true,
   });
