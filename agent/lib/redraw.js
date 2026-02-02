@@ -8,6 +8,7 @@ const DEFAULT_REDRAW_OPTIONS = {
   enabled: true,           // Master switch to enable/disable redraw detection
   screenRedraw: true,      // Enable screen redraw detection
   networkMonitor: true,    // Enable network activity monitoring
+  noChangeTimeoutMs: 1500, // Exit early if no screen change detected after this time
 };
 
 // Factory function that creates redraw functionality with the provided system instance
@@ -235,7 +236,7 @@ const createRedraw = (
   }
 
   async function checkCondition(resolve, startTime, timeoutMs, options) {
-    const { enabled, screenRedraw, networkMonitor } = options;
+    const { enabled, screenRedraw, networkMonitor, noChangeTimeoutMs = 1500 } = options;
     
     // If redraw is disabled, resolve immediately
     if (!enabled) {
@@ -248,6 +249,9 @@ const createRedraw = (
     let diffFromInitial = 0;
     let diffFromLast = 0;
     let isTimeout = timeElapsed > timeoutMs;
+    
+    // Early exit: if no screen change detected after noChangeTimeoutMs, assume action had no visual effect
+    const noChangeTimeout = screenRedraw && !hasChangedFromInitial && timeElapsed > noChangeTimeoutMs;
 
     // Screen stability detection:
     // 1. Check if screen has changed from initial (detect transition)
@@ -276,8 +280,14 @@ const createRedraw = (
       lastScreenImage = nowImage;
     }
     
-    // Screen is settled when: it has changed from initial AND consecutive frames are now stable
-    const screenSettled = hasChangedFromInitial && consecutiveFramesStable;
+    // Screen is settled when:
+    // 1. It has changed from initial AND consecutive frames are now stable, OR
+    // 2. No change was detected after noChangeTimeoutMs (action had no visual effect)
+    const screenSettled = (hasChangedFromInitial && consecutiveFramesStable) || noChangeTimeout;
+    
+    if (noChangeTimeout && !hasChangedFromInitial) {
+      emitter.emit(events.log.debug, `[redraw] No screen change detected after ${noChangeTimeoutMs}ms, settling early`);
+    }
     
     // If screen redraw is disabled, consider it as "settled"
     const effectiveScreenSettled = screenRedraw ? screenSettled : true;
@@ -334,12 +344,13 @@ const createRedraw = (
         networkSettled: effectiveNetworkSettled,
         isTimeout,
         timeElapsed,
+        noChangeTimeout,
       });
       resolve("true");
     } else {
       setTimeout(() => {
         checkCondition(resolve, startTime, timeoutMs, options);
-      }, 500);
+      }, 250);
     }
   }
 
