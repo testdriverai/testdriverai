@@ -356,11 +356,8 @@ test('should login and add item to cart', async (context) => {
     if (!fs.existsSync(configFile)) {
       const configContent = `import { defineConfig } from 'vitest/config';
 import TestDriver from 'testdriverai/vitest';
-import { config } from 'dotenv';
 
-// Load environment variables from .env file
-config();
-
+// Note: dotenv is loaded automatically by the TestDriver SDK
 export default defineConfig({
   test: {
     testTimeout: 300000,

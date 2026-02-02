@@ -9,9 +9,9 @@ const TestDriver = require("./sdk.js");
 async function test() {
   console.log("Testing SDK refactor...\n");
 
-  // Test 1: SDK construction
+  // Test 1: SDK construction (API key loaded automatically from .env)
   console.log("✓ Test 1: Creating SDK instance");
-  const client = new TestDriver(process.env.TD_API_KEY || "test-key", {
+  const client = new TestDriver(null, {
     logging: false,
   });
 
