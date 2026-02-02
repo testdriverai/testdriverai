@@ -31,7 +31,7 @@
   },
   "bin": {
     "testdriverai": "bin/testdriverai.js",
-    "testdriverai-mcp": "mcp-server/dist/server.js"
+    "testdriverai-mcp": "mcp-server/dist/server.mjs"
   },
   "scripts": {
     "start": "node bin/testdriverai.js",
