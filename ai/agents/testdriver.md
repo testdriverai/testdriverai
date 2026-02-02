@@ -1,6 +1,7 @@
 ---
 name: testdriver
 description: An expert at creating and refining automated tests using TestDriver.ai
+tools: ["*"]
 mcp-servers:
   testdriver:
     command: npx

@@ -51,6 +51,7 @@ if (isSentryEnabled()) {
     release: `testdriverai-mcp@${version}`,
     sampleRate: 1.0,
     tracesSampleRate: 1.0,
+    sendDefaultPii: true,
     integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
     initialScope: {
       tags: {
@@ -331,11 +332,18 @@ function createToolResult(
   };
 }
 
-// Create MCP server
-const server = new McpServer({
-  name: "testdriver",
-  version: "1.0.0",
-});
+// Create MCP server wrapped with Sentry for automatic tracing
+const server = isSentryEnabled()
+  ? Sentry.wrapMcpServerWithSentry(
+      new McpServer({
+        name: "testdriver",
+        version: version,
+      })
+    )
+  : new McpServer({
+      name: "testdriver",
+      version: version,
+    });
 
 // Element reference storage (for click/hover after find)
 // Stores actual Element instances - no raw coordinates as input
@@ -1716,6 +1724,225 @@ server.registerTool(
     } catch (error) {
       logger.error("exec: Failed", { error: String(error), language: params.language });
       captureException(error as Error, { tags: { tool: "exec" }, extra: { language: params.language, codeLength: params.code.length } });
+      throw error;
+    }
+  }
+);
+
+// List Local Screenshots - lists screenshots saved to .testdriver directory
+server.registerTool(
+  "list_local_screenshots",
+  {
+    description: `List screenshots saved in the .testdriver directory.
+
+This tool helps you find screenshots that have been saved during test runs or via the screenshot tool.
+Screenshots are organized in subdirectories like 'mcp-screenshots' and 'screenshots'.
+
+Returns a list of screenshot paths that can be viewed with the 'view_local_screenshot' tool.`,
+    inputSchema: z.object({
+      directory: z.string().optional().describe("Subdirectory to list (e.g., 'mcp-screenshots', 'screenshots'). If not provided, lists all subdirectories."),
+    }),
+  },
+  async (params): Promise<CallToolResult> => {
+    const startTime = Date.now();
+    logger.info("list_local_screenshots: Starting", { directory: params.directory });
+
+    try {
+      // Find .testdriver directory - check current working directory and common locations
+      const possiblePaths = [
+        path.join(process.cwd(), ".testdriver"),
+        path.join(os.homedir(), ".testdriver"),
+      ];
+      
+      let testdriverDir: string | null = null;
+      for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+          testdriverDir = p;
+          break;
+        }
+      }
+      
+      if (!testdriverDir) {
+        logger.warn("list_local_screenshots: .testdriver directory not found");
+        return createToolResult(false, "No .testdriver directory found. Screenshots are saved here during test runs.", { error: "Directory not found" });
+      }
+      
+      const screenshots: Array<{ path: string; name: string; modified: Date; size: number }> = [];
+      
+      // Function to recursively find PNG files
+      const findPngFiles = (dir: string) => {
+        if (!fs.existsSync(dir)) return;
+        
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            // If a specific directory was requested, only search that one
+            if (!params.directory || entry.name === params.directory || dir !== testdriverDir) {
+              findPngFiles(fullPath);
+            }
+          } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".png")) {
+            const stats = fs.statSync(fullPath);
+            screenshots.push({
+              path: fullPath,
+              name: entry.name,
+              modified: stats.mtime,
+              size: stats.size,
+            });
+          }
+        }
+      };
+      
+      findPngFiles(testdriverDir);
+      
+      // Sort by modification time (newest first)
+      screenshots.sort((a, b) => b.modified.getTime() - a.modified.getTime());
+      
+      const duration = Date.now() - startTime;
+      logger.info("list_local_screenshots: Completed", { count: screenshots.length, duration });
+      
+      if (screenshots.length === 0) {
+        return createToolResult(true, "No screenshots found in .testdriver directory.", { 
+          action: "list_local_screenshots",
+          count: 0,
+          directory: testdriverDir,
+          duration 
+        });
+      }
+      
+      // Format the list for display
+      const screenshotList = screenshots.slice(0, 50).map((s, i) => {
+        const relativePath = path.relative(testdriverDir!, s.path);
+        const sizeKB = Math.round(s.size / 1024);
+        const timeAgo = formatTimeAgo(s.modified);
+        return `${i + 1}. ${relativePath} (${sizeKB}KB, ${timeAgo})`;
+      }).join("\n");
+      
+      const message = screenshots.length > 50 
+        ? `Found ${screenshots.length} screenshots (showing 50 most recent):\n\n${screenshotList}`
+        : `Found ${screenshots.length} screenshot(s):\n\n${screenshotList}`;
+      
+      return createToolResult(true, message, { 
+        action: "list_local_screenshots",
+        count: screenshots.length,
+        directory: testdriverDir,
+        screenshots: screenshots.slice(0, 50).map(s => ({
+          path: s.path,
+          relativePath: path.relative(testdriverDir!, s.path),
+          name: s.name,
+          modified: s.modified.toISOString(),
+          sizeBytes: s.size,
+        })),
+        duration 
+      });
+    } catch (error) {
+      logger.error("list_local_screenshots: Failed", { error: String(error) });
+      captureException(error as Error, { tags: { tool: "list_local_screenshots" } });
+      throw error;
+    }
+  }
+);
+
+// Helper to format time ago
+function formatTimeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+// View Local Screenshot - view a screenshot from .testdriver directory
+// Returns the image so AI clients that support images can see it
+// Also displays to the user via MCP App
+registerAppTool(
+  server,
+  "view_local_screenshot",
+  {
+    title: "View Local Screenshot",
+    description: `View a screenshot from the .testdriver directory.
+
+Use 'list_local_screenshots' first to see available screenshots, then use this tool to view one.
+
+This tool returns the image content so AI clients that support images can see it directly.
+The image is also displayed to the user via the MCP App UI.
+
+Useful for:
+- Reviewing screenshots from previous test runs
+- Debugging test failures by examining saved screenshots
+- Comparing current screen state to saved screenshots`,
+    inputSchema: z.object({
+      path: z.string().describe("Full path to the screenshot file (from list_local_screenshots)"),
+    }) as any,
+    _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
+  },
+  async (params: { path: string }): Promise<CallToolResult> => {
+    const startTime = Date.now();
+    logger.info("view_local_screenshot: Starting", { path: params.path });
+
+    try {
+      // Validate the path exists and is a PNG
+      if (!fs.existsSync(params.path)) {
+        logger.warn("view_local_screenshot: File not found", { path: params.path });
+        return createToolResult(false, `Screenshot not found: ${params.path}`, { error: "File not found" });
+      }
+      
+      if (!params.path.toLowerCase().endsWith(".png")) {
+        logger.warn("view_local_screenshot: Not a PNG file", { path: params.path });
+        return createToolResult(false, "Only PNG files are supported", { error: "Invalid file type" });
+      }
+      
+      // Security check - only allow files from .testdriver directory
+      const normalizedPath = path.resolve(params.path);
+      if (!normalizedPath.includes(".testdriver")) {
+        logger.warn("view_local_screenshot: Path not in .testdriver", { path: normalizedPath });
+        return createToolResult(false, "Can only view screenshots from .testdriver directory", { error: "Security: path not allowed" });
+      }
+      
+      // Read the file
+      const imageBuffer = fs.readFileSync(params.path);
+      const imageBase64 = imageBuffer.toString("base64");
+      
+      // Store image for MCP App UI display
+      const screenshotResourceUri = storeImage(imageBase64, "screenshot");
+      
+      const stats = fs.statSync(params.path);
+      const sizeKB = Math.round(stats.size / 1024);
+      const fileName = path.basename(params.path);
+      
+      const duration = Date.now() - startTime;
+      logger.info("view_local_screenshot: Completed", { path: params.path, sizeKB, duration });
+
+      // Return the image content for AI clients that support images
+      // The content array includes both text and image for maximum compatibility
+      const content: CallToolResult["content"] = [
+        { type: "text", text: `Screenshot: ${fileName} (${sizeKB}KB)` },
+        { 
+          type: "image", 
+          data: imageBase64, 
+          mimeType: "image/png" 
+        },
+      ];
+
+      return {
+        content,
+        structuredContent: { 
+          action: "view_local_screenshot",
+          success: true,
+          path: params.path,
+          fileName,
+          sizeBytes: stats.size,
+          modified: stats.mtime.toISOString(),
+          screenshotResourceUri,
+          duration 
+        },
+      };
+    } catch (error) {
+      logger.error("view_local_screenshot: Failed", { error: String(error), path: params.path });
+      captureException(error as Error, { tags: { tool: "view_local_screenshot" }, extra: { path: params.path } });
       throw error;
     }
   }
