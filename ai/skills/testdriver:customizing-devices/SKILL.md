@@ -1,0 +1,153 @@
+---
+name: testdriver:customizing-devices
+description: Configure TestDriver sandbox options and environment settings
+---
+<!-- Generated from customizing-devices.mdx. DO NOT EDIT. -->
+
+## TestDriver Options
+
+Configure TestDriver behavior with options passed to the `TestDriver()` function:
+
+```javascript
+const testdriver = TestDriver(context, {
+  reconnect: false,
+});
+```
+
+### Preview Mode
+
+Control how test execution is visualized. The `preview` option determines where the live debugger view opens:
+
+```javascript
+const testdriver = TestDriver(context, {
+  preview: "browser",  // Opens in default browser (default)
+});
+```
+
+| Value | Description |
+|-------|-------------|
+| `"browser"` | Opens debugger in default browser (default) |
+| `"ide"` | Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension) |
+| `"none"` | Headless mode, no visual preview |
+
+**IDE Preview**
+
+For the best development experience, use `preview: "ide"` with the TestDriver extension for VSCode or Cursor:
+
+```javascript
+const testdriver = TestDriver(context, {
+  preview: "ide",  // Opens preview in IDE panel
+});
+```
+
+**Headless Mode**
+
+Run tests without any visual preview. Useful for CI/CD pipelines:
+
+```javascript
+const testdriver = TestDriver(context, {
+  preview: "none",  // No visual preview (headless)
+});
+```
+
+<Note>
+  The legacy `headless: true` option still works for backward compatibility and maps to `preview: "none"`.
+</Note>
+
+### IP Target
+
+If self-hosting TestDriver, use `ip` to specify the device IP. See [Self-Hosting TestDriver](../self-hosting.md) for details.
+
+```javascript
+const testdriver = TestDriver(context, {
+  ip: "203.0.113.42",  // Your allowlisted IP
+});
+```
+
+### Operating System
+
+Set the `os` property to run tests on a specific operating system. Available options are `linux` (default) and `windows`.
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: "windows",  // Run on Windows sandbox
+});
+```
+
+#### Using Environment Variables
+
+You can make the operating system configurable via environment variables. This requires adding code to read from `process.env` in your test:
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: process.env.TD_OS || "linux",  // Read from env, default to Linux
+});
+```
+
+Then pass the variable when running tests:
+
+```bash
+# Run tests on Windows
+TD_OS=windows npx vitest run
+
+# Run tests on Linux (default)
+TD_OS=linux npx vitest run
+```
+
+This pattern is useful for running the same test suite across multiple operating systems in CI/CD:
+
+```yaml
+# Example GitHub Actions matrix
+strategy:
+  matrix:
+    os: [linux, windows]
+steps:
+  - run: TD_OS=${{ matrix.os }} npx vitest run
+```
+
+## Keepalive
+
+By default, sandboxes terminate immediately when the test finishes. Set this value to keep the sandbox alive for reconnection.
+
+The `keepAlive` param enables you to keep the sandbox running after the test completes for debugging or reconnection.  This will allow you to use the debugger to inspect the state of the device after the test has finished.
+
+```javascript
+const testdriver = TestDriver(context, {
+  keepAlive: 300000,  // Keep sandbox alive for 5 minutes after test
+});
+```
+
+### Reconnecting to Existing Sandbox
+
+Speed up test development by reconnecting to an existing sandbox instead of starting fresh each time. This lets you iterate quickly on failing steps without re-running the entire test from the beginning.
+
+Split your test into two files: one for known-good steps that set up the desired state, and another for work-in-progress steps you want to debug.
+
+```javascript known-good.test.mjs
+const testdriver = TestDriver(context, {
+  keepAlive: 60000,  // Keep sandbox alive for 60 seconds after test
+});
+```
+
+```javascript work-in-progress.test.mjs
+// Second test file: experiment.test.mjs (run within keepAlive window)
+const testdriver = TestDriver(context, {
+  reconnect: true,  // Reconnect to existing sandbox
+});
+```
+
+Then, you can run both tests in sequence:
+
+```bash
+npx vitest run -t known-good.test.mjs -t work-in-progress.test.mjs
+```
+
+And as you make changes to `work-in-progress.test.mjs`, you can re-run just that file to quickly iterate on the failing steps.
+
+```bash
+npx vitest run work-in-progress.test.mjs
+```
+
+<Warning>
+  Reconnect only works if run within the `keepAlive` window of the previous test.
+</Warning>
