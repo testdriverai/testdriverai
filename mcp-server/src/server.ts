@@ -18,7 +18,7 @@ import * as Sentry from "@sentry/node";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { z } from "zod";
 
 import { generateActionCode } from "./codegen.js";
@@ -516,7 +516,29 @@ Debug mode (connect to existing sandbox):
       // Get IP from params or environment (for self-hosted instances)
       const instanceIp = params.ip || process.env.TD_IP;
       
-      sdk = new TestDriverSDK(process.env.TD_API_KEY || "", {
+      // Get API key - check multiple sources for GitHub Copilot coding agent compatibility
+      // 1. TD_API_KEY (standard environment variable)
+      // 2. COPILOT_MCP_TD_API_KEY (fallback for GitHub Copilot coding agent)
+      const apiKey = process.env.TD_API_KEY || process.env.COPILOT_MCP_TD_API_KEY || "";
+      
+      if (!apiKey) {
+        logger.error("session_start: No API key found", {
+          hasTD_API_KEY: !!process.env.TD_API_KEY,
+          hasCOPILOT_MCP_TD_API_KEY: !!process.env.COPILOT_MCP_TD_API_KEY,
+          availableEnvVars: Object.keys(process.env).filter(k => k.includes('TD') || k.includes('COPILOT_MCP'))
+        });
+        return createToolResult(false, "No API key found. Please set TD_API_KEY or COPILOT_MCP_TD_API_KEY environment variable.", { 
+          error: "Missing API key",
+          hint: "For GitHub Copilot coding agent, create a Copilot environment secret named COPILOT_MCP_TD_API_KEY"
+        });
+      }
+      
+      logger.debug("session_start: API key found", { 
+        source: process.env.TD_API_KEY ? "TD_API_KEY" : "COPILOT_MCP_TD_API_KEY",
+        keyPrefix: apiKey.substring(0, 7) + "..."
+      });
+      
+      sdk = new TestDriverSDK(apiKey, {
         os: params.os,
         logging: false,
         apiRoot,
@@ -1268,7 +1290,37 @@ registerAppTool(
 
       if (!found) {
         logger.warn("find_and_click: Element not found", { description: params.description });
-        return createToolResult(false, `Element not found: "${params.description}"`, { error: "Element not found", duration: Date.now() - startTime });
+        
+        // Capture screenshot to show current state even when element not found
+        const rawResponse = element._response || {};
+        const duration = Date.now() - startTime;
+        
+        // Store cropped image (screenshot) for resource serving
+        let croppedImageResourceUri: string | undefined;
+        const croppedImage = rawResponse.croppedImage;
+        if (croppedImage) {
+          const imageData = croppedImage.startsWith('data:') 
+            ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
+            : croppedImage;
+          croppedImageResourceUri = storeImage(imageData, "screenshot");
+          delete rawResponse.croppedImage;
+        }
+        
+        // Remove extractedText and pixelDiffImage from response to reduce context bloat
+        delete rawResponse.extractedText;
+        delete rawResponse.pixelDiffImage;
+        
+        return createToolResult(
+          false, 
+          `Element not found: "${params.description}"`, 
+          { 
+            ...rawResponse,
+            action: "find_and_click",
+            error: "Element not found", 
+            croppedImageResourceUri,
+            duration 
+          }
+        );
       }
 
       const coords = element.getCoordinates();
@@ -2006,6 +2058,95 @@ Only use 'screenshot' when you explicitly want to show something to the human us
     } catch (error) {
       logger.error("screenshot: Failed", { error: String(error) });
       return createToolResult(false, `Screenshot failed: ${error}`, { error: String(error) });
+    }
+  }
+);
+
+// Init - Initialize a new TestDriver project
+server.registerTool(
+  "init",
+  {
+    description: `Initialize a new TestDriver project with Vitest SDK examples.
+
+This creates:
+- package.json with proper dependencies
+- Example test files (tests/example.test.js, tests/login.js)
+- vitest.config.js
+- .gitignore
+- GitHub Actions workflow (.github/workflows/testdriver.yml)
+- VSCode MCP config (.vscode/mcp.json)
+- VSCode extensions recommendations (.vscode/extensions.json)
+- TestDriver skills (.github/skills/)
+- TestDriver agents (.github/agents/)
+- .env file with API key (if provided)
+
+API Key: The apiKey parameter is optional. If not provided, you'll need to manually add TD_API_KEY to the .env file after initialization. The project structure will still be created successfully.`,
+    inputSchema: z.object({
+      directory: z.string().optional().describe("Target directory (defaults to current working directory)"),
+      apiKey: z.string().optional().describe("TestDriver API key (will be saved to .env)"),
+      skipInstall: z.boolean().default(false).describe("Skip npm install step"),
+    }),
+  },
+  async (params): Promise<CallToolResult> => {
+    const startTime = Date.now();
+    const targetDir = params.directory ? path.resolve(params.directory) : process.cwd();
+    
+    logger.info("init: Starting", { targetDir, hasApiKey: !!params.apiKey, skipInstall: params.skipInstall });
+
+    try {
+      // Import the shared init logic (dynamic import for ESM/CJS compatibility)
+      const initProjectPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "lib", "init-project.js");
+      const { initProject } = await import(pathToFileURL(initProjectPath).href);
+      
+      // Run the shared init logic
+      const result = await initProject({
+        targetDir,
+        apiKey: params.apiKey,
+        skipInstall: params.skipInstall,
+      });
+
+      const duration = Date.now() - startTime;
+      logger.info("init: Completed", { targetDir, duration, success: result.success });
+
+      const nextSteps = `
+
+📚 Next steps:
+
+1. Run your tests:
+   npx vitest run
+
+2. Use AI agents to write tests:
+   Open VSCode/Cursor and use @testdriver agent
+
+3. MCP server configured:
+   TestDriver tools available via MCP in .vscode/mcp.json
+
+4. For CI/CD, add TD_API_KEY to your GitHub repository secrets:
+   Settings → Secrets → Actions → New repository secret
+
+Learn more at https://docs.testdriver.ai/v7/getting-started/
+`;
+
+      const allMessages = [...result.results, ...result.errors.map((e: string) => `⚠️ ${e}`)];
+
+      return createToolResult(
+        result.success,
+        result.success 
+          ? `✅ TestDriver project initialized successfully!\n\n${allMessages.join("\n")}${nextSteps}`
+          : `⚠️ TestDriver project initialization completed with errors:\n\n${allMessages.join("\n")}`,
+        { 
+          action: "init",
+          targetDir,
+          filesCreated: result.results.length,
+          hasApiKey: !!params.apiKey,
+          errors: result.errors,
+          duration 
+        }
+      );
+    } catch (error) {
+      logger.error("init: Failed", { error: String(error), targetDir });
+      captureException(error as Error, { tags: { tool: "init" }, extra: { targetDir } });
+      throw error;
     }
   }
 );
