@@ -133,7 +133,35 @@ describe("Login Flow", () => {
   </Accordion>
 </AccordionGroup>
 
+## Viewing Saved Screenshots
+
+After saving screenshots during test execution, you can view them using TestDriver MCP commands. This is especially useful for debugging failed tests or verifying test behavior.
+
+### MCP Commands for Screenshot Viewing
+
+**List all saved screenshots:**
+
+```
+list_local_screenshots()
+```
+
+**View a specific screenshot:**
+
+```
+view_local_screenshot({ path: "/full/path/to/screenshot.png" })
+```
+
+These commands allow you to:
+- View screenshots from failed tests to understand what went wrong
+- Review test execution flow by examining screenshots in chronological order
+- Compare screenshots across test runs to identify flaky behavior
+
+<Note>
+  For detailed workflows and examples of using these MCP commands for debugging, see the [Debugging with Screenshots](/v7/debugging-with-screenshots) guide.
+</Note>
+
 ## Related
 
+- [Debugging with Screenshots](/v7/debugging-with-screenshots) - View and analyze saved screenshots using MCP
 - [assert()](/v7/assert) - Make AI-powered assertions
 - [find()](/v7/find) - Locate elements on screen

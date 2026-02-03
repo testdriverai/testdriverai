@@ -320,17 +320,60 @@ Analyze the output, fix any issues, and iterate until the test passes.
 | `assert` | AI-powered boolean assertion - GENERATES CODE for test files |
 | `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
 | `screenshot` | Capture screenshot - **only use when user explicitly asks** |
+| `list_local_screenshots` | List screenshots saved in `.testdriver` directory |
+| `view_local_screenshot` | View a local screenshot (returns image to AI + displays to user) |
+
+### Debugging with Local Screenshots
+
+After test runs (successful or failed), you can view saved screenshots to understand test behavior:
+
+**1. List available screenshots:**
+
+```
+list_local_screenshots({ directory: "login.test" })
+```
+
+This returns all screenshots from the specified test file, sorted by modification time (newest first).
+
+**2. View specific screenshots:**
+
+```
+view_local_screenshot({ path: ".testdriver/screenshots/login.test/after-click.png" })
+```
+
+This displays the screenshot to both you (the AI) and the user via MCP App.
+
+**When to use screenshot viewing:**
+
+- **After test failures** - View screenshots to see exactly what the UI looked like when the test failed
+- **Debugging element finding issues** - See if elements are actually visible or have different appearances than expected
+- **Comparing test runs** - View screenshots from multiple runs to identify flaky behavior
+- **Verifying test logic** - Before running a test, view screenshots from previous runs to understand the UI flow
+
+**Workflow example:**
+
+```
+# Test failed, let's debug
+list_local_screenshots({ directory: "checkout.test" })
+
+# View the last few screenshots to see what happened
+view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/screenshot-1737633620000.png" })
+view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/before-assertion.png" })
+
+# Analyze the UI state and update test code accordingly
+```
 
 ### Tips for MCP Workflow
 
 1. **⚠️ Write code IMMEDIATELY** - After EVERY action, append generated code to test file RIGHT AWAY
 2. **⚠️ Run tests YOURSELF** - Use `npx vitest run` - do NOT tell user to run tests
 3. **⚠️ Add screenshots liberally** - Include `await testdriver.screenshot()` after every significant action for debugging
-4. **Work incrementally** - Don't try to build the entire test at once
-5. **Use `check` after actions** - Verify your actions succeeded before moving on (for YOUR understanding)
-6. **Use `assert` for test verifications** - These generate code that goes in the test file
-7. **Be specific with element descriptions** - "the blue Sign In button in the header" is better than "button"
-8. **Extend session proactively** - Sessions expire after 5 minutes; use `session_extend` if needed
+4. **⚠️ Use screenshot viewing for debugging** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` to understand what went wrong
+5. **Work incrementally** - Don't try to build the entire test at once
+6. **Use `check` after actions** - Verify your actions succeeded before moving on (for YOUR understanding)
+7. **Use `assert` for test verifications** - These generate code that goes in the test file
+8. **Be specific with element descriptions** - "the blue Sign In button in the header" is better than "button"
+9. **Extend session proactively** - Sessions expire after 5 minutes; use `session_extend` if needed
 
 ## Recommended Development Workflow
 
@@ -469,15 +512,16 @@ const result = await testdriver.assert("dashboard is visible");
 1. **⚠️ WRITE CODE IMMEDIATELY** - After EVERY successful MCP action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the session ends.
 2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `npx vitest run <testFile> --reporter=dot`. Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes. **Always share the test report link** (e.g., `https://app.testdriver.ai/projects/.../reports/...`) with the user after each run.
 3. **⚠️ ADD SCREENSHOTS LIBERALLY** - Include `await testdriver.screenshot()` throughout your tests: after provision, before/after clicks, after typing, and before assertions. This creates a visual trail that makes debugging failures much easier.
-4. **⚠️ NEVER USE `.wait()`** - Do NOT use any `.wait()` method. Instead, use `find()` with a `timeout` option to poll for elements, or use `assert()` / `check()` to verify state. Explicit waits are flaky and slow.
-5. **Use MCP tools for development** - Build tests interactively with visual feedback
-6. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
-7. **Look at test samples** in `node_modules/testdriverai/test` for working examples
-8. **Use `check` to understand screen state** - This is how you verify what the sandbox shows during MCP development.
-9. **Use `check` after actions, `assert` for test files** - `check` gives detailed AI analysis (no code), `assert` gives boolean pass/fail (generates code)
-10. **Be specific with element descriptions** - "blue Sign In button in the header" > "button"
-11. **Start simple** - get one step working before adding more
-12. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
+4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. This is often faster than re-running the test.
+5. **⚠️ NEVER USE `.wait()`** - Do NOT use any `.wait()` method. Instead, use `find()` with a `timeout` option to poll for elements, or use `assert()` / `check()` to verify state. Explicit waits are flaky and slow.
+6. **Use MCP tools for development** - Build tests interactively with visual feedback
+7. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
+8. **Look at test samples** in `node_modules/testdriverai/test` for working examples
+9. **Use `check` to understand screen state** - This is how you verify what the sandbox shows during MCP development.
+10. **Use `check` after actions, `assert` for test files** - `check` gives detailed AI analysis (no code), `assert` gives boolean pass/fail (generates code)
+11. **Be specific with element descriptions** - "blue Sign In button in the header" > "button"
+12. **Start simple** - get one step working before adding more
+13. **Always `await` async methods** - TestDriver will warn if you forget, but for TypeScript projects, add `@typescript-eslint/no-floating-promises` to your ESLint config to catch missing `await` at compile time:
 
    ```json
    // eslint.config.js (for TypeScript projects)
