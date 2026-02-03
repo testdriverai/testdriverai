@@ -18,7 +18,7 @@ import * as Sentry from "@sentry/node";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { z } from "zod";
 
 import { generateActionCode } from "./codegen.js";
@@ -2096,7 +2096,7 @@ API Key: The apiKey parameter is optional. If not provided, you'll need to manua
     try {
       // Import the shared init logic (dynamic import for ESM/CJS compatibility)
       const initProjectPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "lib", "init-project.js");
-      const { initProject } = await import(`file://${initProjectPath}`);
+      const { initProject } = await import(pathToFileURL(initProjectPath).href);
       
       // Run the shared init logic
       const result = await initProject({
