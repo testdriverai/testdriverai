@@ -101,14 +101,14 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
 
 **Using CLI parameter (alternative to environment variable):**
 
-You can also pass the API key directly as a CLI parameter using the `apiKey=` format:
+You can also pass the API key directly as a CLI parameter:
 
 ```json
 {
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp", "apiKey=YOUR_API_KEY"]
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp", "--apiKey=YOUR_API_KEY"]
     }
   }
 }
@@ -121,7 +121,7 @@ Or with local build:
   "servers": {
     "testdriver": {
       "command": "node",
-      "args": ["/path/to/testdriverai/mcp-server/dist/server.js", "apiKey=YOUR_API_KEY"]
+      "args": ["/path/to/testdriverai/mcp-server/dist/server.js", "--apiKey=YOUR_API_KEY"]
     }
   }
 }

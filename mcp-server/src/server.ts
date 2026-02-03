@@ -16,6 +16,7 @@ import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js"
 import type { CallToolResult, ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
 import * as Sentry from "@sentry/node";
 import * as fs from "fs";
+import minimist from "minimist";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -29,14 +30,15 @@ import { sessionManager, type SessionState } from "./session.js";
 // CLI Arguments Parsing
 // =============================================================================
 
-// Parse CLI arguments in the format key=value
+// Parse CLI arguments using minimist
+// Supports standard format: --apiKey=1234
 function parseCliArguments(): Record<string, string> {
+  const parsed = minimist(process.argv.slice(2));
   const args: Record<string, string> = {};
   
-  for (const arg of process.argv.slice(2)) {
-    const match = arg.match(/^([^=]+)=(.*)$/);
-    if (match) {
-      const [, key, value] = match;
+  // Copy all parsed arguments except underscore (positional args)
+  for (const [key, value] of Object.entries(parsed)) {
+    if (key !== '_' && typeof value === 'string') {
       args[key] = value;
     }
   }
