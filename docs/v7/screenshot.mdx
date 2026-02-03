@@ -9,6 +9,10 @@ icon: "camera"
 
 Capture a screenshot of the current screen and automatically save it to a local file. Screenshots are organized by test file for easy debugging and review.
 
+<Note>
+  **Automatic Screenshots (Default: Enabled)**: TestDriver automatically captures screenshots before and after every command (click, type, find, etc.). These are saved with descriptive filenames like `001-click-before-L42-submit-button.png` that include the line number from your test file. You can disable this with `autoScreenshots: false` in your TestDriver options.
+</Note>
+
 ## Syntax
 
 ```javascript
@@ -33,11 +37,31 @@ Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>
 .testdriver/
   screenshots/
     login.test/
-      screenshot-1737633600000.png
-      login-page.png
+      001-find-before-L15-email-input.png     # Auto: before find()
+      002-find-after-L15-email-input.png      # Auto: after find()
+      003-click-before-L16-email-input.png    # Auto: before click()
+      004-click-after-L16-email-input.png     # Auto: after click()
+      005-type-before-L17-userexamplecom.png  # Auto: before type()
+      006-type-after-L17-userexamplecom.png   # Auto: after type()
+      custom-screenshot.png                    # Manual: screenshot("custom-screenshot")
     checkout.test/
-      screenshot-1737633700000.png
+      001-find-before-L12-checkout-button.png
+      ...
 ```
+
+### Automatic Screenshot Naming
+
+When `autoScreenshots` is enabled (default), filenames follow this format:
+
+`<seq>-<action>-<phase>-L<line>-<description>.png`
+
+| Component | Description | Example |
+|-----------|-------------|---------|
+| `seq` | Sequential number (001, 002, ...) | `001` |
+| `action` | Command name | `click`, `type`, `find` |
+| `phase` | Before, after, or error | `before`, `after` |
+| `L<line>` | Line number from test file | `L42` |
+| `description` | Element description or action target | `submit-button` |
 
 <Note>
   The screenshot folder for each test file is automatically cleared when the test starts. This ensures you only see screenshots from the most recent test run.
@@ -108,9 +132,66 @@ describe("Login Flow", () => {
 });
 ```
 
+## Automatic Screenshots
+
+By default, TestDriver captures screenshots **automatically** before and after every command. This creates a complete visual timeline of your test execution without any additional code.
+
+### Enabling/Disabling
+
+```javascript
+// Auto-screenshots enabled by default
+const testdriver = TestDriver(context);
+
+// Explicitly disable if needed (not recommended)
+const testdriver = TestDriver(context, {
+  autoScreenshots: false
+});
+```
+
+### What Gets Captured
+
+Automatic screenshots are taken around these commands:
+- `find()` / `findAll()`
+- `click()` / `hover()` / `doubleClick()` / `rightClick()`
+- `type()` / `pressKeys()`
+- `scroll()` / `scrollUntilText()` / `scrollUntilImage()`
+- `waitForText()` / `waitForImage()`
+- `focusApplication()`
+- `assert()` / `extract()` / `exec()`
+
+### Example Output
+
+For this test code:
+
+```javascript
+// Line 15: Find email input
+const emailInput = await testdriver.find("email input");
+// Line 16: Click it
+await emailInput.click();
+// Line 17: Type email
+await testdriver.type("user@example.com");
+```
+
+TestDriver automatically saves:
+
+```
+001-find-before-L15-email-input.png
+002-find-after-L15-email-input.png
+003-click-before-L16-email-input.png
+004-click-after-L16-email-input.png
+005-type-before-L17-userexamplecom.png
+006-type-after-L17-userexamplecom.png
+```
+
+If an error occurs, the phase will be `error` instead of `after`.
+
 ## Best Practices
 
 <AccordionGroup>
+  <Accordion title="Let automatic screenshots do the work">
+    With `autoScreenshots: true` (default), you get comprehensive coverage without adding manual `screenshot()` calls. Only add manual screenshots for specific named checkpoints.
+  </Accordion>
+  
   <Accordion title="Use screenshots for debugging flaky tests">
     When a test fails intermittently, add screenshots at key steps to capture the actual screen state. This helps identify timing issues or unexpected UI states.
   </Accordion>

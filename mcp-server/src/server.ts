@@ -1781,23 +1781,71 @@ server.registerTool(
   }
 );
 
+// Parse auto-screenshot filename format: <seq>-<action>-<phase>-L<line>-<description>.png
+// Example: 001-click-before-L42-submit-button.png
+interface ParsedScreenshotInfo {
+  sequence?: number;
+  action?: string;
+  phase?: "before" | "after";
+  lineNumber?: number;
+  description?: string;
+}
+
+function parseScreenshotFilename(filename: string): ParsedScreenshotInfo {
+  // Match pattern: 001-click-before-L42-submit-button.png
+  const match = filename.match(/^(\d+)-([a-z]+)-(before|after)-L(\d+)-(.+)\.png$/i);
+  if (match) {
+    return {
+      sequence: parseInt(match[1], 10),
+      action: match[2].toLowerCase(),
+      phase: match[3].toLowerCase() as "before" | "after",
+      lineNumber: parseInt(match[4], 10),
+      description: match[5],
+    };
+  }
+  return {};
+}
+
 // List Local Screenshots - lists screenshots saved to .testdriver directory
 server.registerTool(
   "list_local_screenshots",
   {
-    description: `List screenshots saved in the .testdriver directory.
+    description: `List and filter screenshots saved in the .testdriver directory.
 
-This tool helps you find screenshots that have been saved during test runs or via the screenshot tool.
-Screenshots are organized in subdirectories like 'mcp-screenshots' and 'screenshots'.
+Screenshots from auto-screenshot feature use the format: <seq>-<action>-<phase>-L<line>-<description>.png
+Example: 001-click-before-L42-submit-button.png
+
+This tool supports powerful filtering to find specific screenshots:
+- By test file (directory)
+- By line number or range
+- By action type (click, find, type, assert, etc.)
+- By phase (before/after)
+- By regex pattern on filename
+- By sequence number range
 
 Returns a list of screenshot paths that can be viewed with the 'view_local_screenshot' tool.`,
     inputSchema: z.object({
-      directory: z.string().optional().describe("Subdirectory to list (e.g., 'mcp-screenshots', 'screenshots'). If not provided, lists all subdirectories."),
+      directory: z.string().optional().describe("Test file or subdirectory to search (e.g., 'login.test', 'mcp-screenshots'). If not provided, searches all."),
+      line: z.number().optional().describe("Filter by exact line number from test file (e.g., 42 matches L42)"),
+      lineRange: z.object({
+        start: z.number().describe("Start line number (inclusive)"),
+        end: z.number().describe("End line number (inclusive)"),
+      }).optional().describe("Filter by line number range (e.g., { start: 10, end: 20 })"),
+      action: z.string().optional().describe("Filter by action type: click, find, type, assert, provision, scroll, hover, etc."),
+      phase: z.enum(["before", "after"]).optional().describe("Filter by phase: 'before' or 'after' the action"),
+      pattern: z.string().optional().describe("Regex pattern to match against filename (e.g., 'submit|login' or 'button.*click')"),
+      sequence: z.number().optional().describe("Filter by exact sequence number"),
+      sequenceRange: z.object({
+        start: z.number().describe("Start sequence (inclusive)"),
+        end: z.number().describe("End sequence (inclusive)"),
+      }).optional().describe("Filter by sequence range (e.g., { start: 1, end: 10 })"),
+      limit: z.number().optional().describe("Maximum number of results to return (default: 50)"),
+      sortBy: z.enum(["modified", "sequence", "line"]).optional().describe("Sort by: 'modified' (newest first), 'sequence' (execution order), or 'line' (line number). Default: 'modified'"),
     }),
   },
   async (params): Promise<CallToolResult> => {
     const startTime = Date.now();
-    logger.info("list_local_screenshots: Starting", { directory: params.directory });
+    logger.info("list_local_screenshots: Starting", { ...params });
 
     try {
       // Find .testdriver directory - check current working directory and common locations
@@ -1819,7 +1867,25 @@ Returns a list of screenshot paths that can be viewed with the 'view_local_scree
         return createToolResult(false, "No .testdriver directory found. Screenshots are saved here during test runs.", { error: "Directory not found" });
       }
       
-      const screenshots: Array<{ path: string; name: string; modified: Date; size: number }> = [];
+      interface ScreenshotInfo {
+        path: string;
+        name: string;
+        modified: Date;
+        size: number;
+        parsed: ParsedScreenshotInfo;
+      }
+      
+      const screenshots: ScreenshotInfo[] = [];
+      
+      // Compile regex pattern if provided
+      let regexPattern: RegExp | null = null;
+      if (params.pattern) {
+        try {
+          regexPattern = new RegExp(params.pattern, "i");
+        } catch {
+          return createToolResult(false, `Invalid regex pattern: ${params.pattern}`, { error: "Invalid regex" });
+        }
+      }
       
       // Function to recursively find PNG files
       const findPngFiles = (dir: string) => {
@@ -1834,12 +1900,32 @@ Returns a list of screenshot paths that can be viewed with the 'view_local_scree
               findPngFiles(fullPath);
             }
           } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".png")) {
+            const parsed = parseScreenshotFilename(entry.name);
+            
+            // Apply filters
+            if (params.line !== undefined && parsed.lineNumber !== params.line) continue;
+            if (params.lineRange && (
+              parsed.lineNumber === undefined ||
+              parsed.lineNumber < params.lineRange.start ||
+              parsed.lineNumber > params.lineRange.end
+            )) continue;
+            if (params.action && parsed.action !== params.action.toLowerCase()) continue;
+            if (params.phase && parsed.phase !== params.phase) continue;
+            if (params.sequence !== undefined && parsed.sequence !== params.sequence) continue;
+            if (params.sequenceRange && (
+              parsed.sequence === undefined ||
+              parsed.sequence < params.sequenceRange.start ||
+              parsed.sequence > params.sequenceRange.end
+            )) continue;
+            if (regexPattern && !regexPattern.test(entry.name)) continue;
+            
             const stats = fs.statSync(fullPath);
             screenshots.push({
               path: fullPath,
               name: entry.name,
               modified: stats.mtime,
               size: stats.size,
+              parsed,
             });
           }
         }
@@ -1847,43 +1933,84 @@ Returns a list of screenshot paths that can be viewed with the 'view_local_scree
       
       findPngFiles(testdriverDir);
       
-      // Sort by modification time (newest first)
-      screenshots.sort((a, b) => b.modified.getTime() - a.modified.getTime());
+      // Sort based on sortBy parameter
+      const sortBy = params.sortBy || "modified";
+      if (sortBy === "modified") {
+        screenshots.sort((a, b) => b.modified.getTime() - a.modified.getTime());
+      } else if (sortBy === "sequence") {
+        screenshots.sort((a, b) => (a.parsed.sequence ?? Infinity) - (b.parsed.sequence ?? Infinity));
+      } else if (sortBy === "line") {
+        screenshots.sort((a, b) => (a.parsed.lineNumber ?? Infinity) - (b.parsed.lineNumber ?? Infinity));
+      }
       
       const duration = Date.now() - startTime;
       logger.info("list_local_screenshots: Completed", { count: screenshots.length, duration });
       
       if (screenshots.length === 0) {
-        return createToolResult(true, "No screenshots found in .testdriver directory.", { 
+        const filters = [];
+        if (params.directory) filters.push(`directory=${params.directory}`);
+        if (params.line) filters.push(`line=${params.line}`);
+        if (params.lineRange) filters.push(`lineRange=${params.lineRange.start}-${params.lineRange.end}`);
+        if (params.action) filters.push(`action=${params.action}`);
+        if (params.phase) filters.push(`phase=${params.phase}`);
+        if (params.pattern) filters.push(`pattern=${params.pattern}`);
+        if (params.sequence) filters.push(`sequence=${params.sequence}`);
+        if (params.sequenceRange) filters.push(`sequenceRange=${params.sequenceRange.start}-${params.sequenceRange.end}`);
+        
+        const filterMsg = filters.length > 0 ? ` with filters: ${filters.join(", ")}` : "";
+        return createToolResult(true, `No screenshots found in .testdriver directory${filterMsg}.`, { 
           action: "list_local_screenshots",
           count: 0,
           directory: testdriverDir,
+          filters: params,
           duration 
         });
       }
       
-      // Format the list for display
-      const screenshotList = screenshots.slice(0, 50).map((s, i) => {
+      const limit = params.limit || 50;
+      const limitedScreenshots = screenshots.slice(0, limit);
+      
+      // Format the list for display with parsed info
+      const screenshotList = limitedScreenshots.map((s, i) => {
         const relativePath = path.relative(testdriverDir!, s.path);
         const sizeKB = Math.round(s.size / 1024);
         const timeAgo = formatTimeAgo(s.modified);
-        return `${i + 1}. ${relativePath} (${sizeKB}KB, ${timeAgo})`;
+        
+        // Add parsed info if available
+        const parts = [`${i + 1}. ${relativePath}`];
+        const meta = [];
+        if (s.parsed.lineNumber) meta.push(`L${s.parsed.lineNumber}`);
+        if (s.parsed.action) meta.push(s.parsed.action);
+        if (s.parsed.phase) meta.push(s.parsed.phase);
+        meta.push(`${sizeKB}KB`);
+        meta.push(timeAgo);
+        parts.push(`(${meta.join(", ")})`);
+        
+        return parts.join(" ");
       }).join("\n");
       
-      const message = screenshots.length > 50 
-        ? `Found ${screenshots.length} screenshots (showing 50 most recent):\n\n${screenshotList}`
-        : `Found ${screenshots.length} screenshot(s):\n\n${screenshotList}`;
+      const message = screenshots.length > limit 
+        ? `Found ${screenshots.length} screenshots (showing ${limit} results, sorted by ${sortBy}):\n\n${screenshotList}`
+        : `Found ${screenshots.length} screenshot(s) (sorted by ${sortBy}):\n\n${screenshotList}`;
       
       return createToolResult(true, message, { 
         action: "list_local_screenshots",
         count: screenshots.length,
+        returned: limitedScreenshots.length,
         directory: testdriverDir,
-        screenshots: screenshots.slice(0, 50).map(s => ({
+        filters: params,
+        sortBy,
+        screenshots: limitedScreenshots.map(s => ({
           path: s.path,
           relativePath: path.relative(testdriverDir!, s.path),
           name: s.name,
           modified: s.modified.toISOString(),
           sizeBytes: s.size,
+          sequence: s.parsed.sequence,
+          action: s.parsed.action,
+          phase: s.parsed.phase,
+          lineNumber: s.parsed.lineNumber,
+          description: s.parsed.description,
         })),
         duration 
       });
