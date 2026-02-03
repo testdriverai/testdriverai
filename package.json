@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.2.64",
+  "version": "7.2.77",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "types": "sdk.d.ts",
@@ -30,16 +30,18 @@
     "./presets": "./lib/presets/index.mjs"
   },
   "bin": {
-    "testdriverai": "bin/testdriverai.js"
+    "testdriverai": "bin/testdriverai.js",
+    "testdriverai-mcp": "mcp-server/dist/server.mjs"
   },
   "scripts": {
     "start": "node bin/testdriverai.js",
     "dev": "DEV=true node bin/testdriverai.js",
     "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
-    "docs": "cd docs && npx mint@latest dev",
+    "docs": "npm run docs:skills && cd docs && npx mint@latest dev",
     "docs:dev": "cd docs && npx mint dev",
-    "docs:build": "cd docs && npx mint@latest build",
+    "docs:build": "npm run docs:skills && cd docs && npx mint@latest build",
     "docs:links": "node docs/_scripts/link-replacer.js",
+    "docs:skills": "node docs/_scripts/generate-skills.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "test:sdk": "vitest run",
@@ -58,11 +60,15 @@
     "test-assert": "node index.js run --path=testdriver/acceptance/assert.yaml",
     "generate-report": "junit-viewer --results=out.xml --save=report.html",
     "serve-report": "npx http-server . -p 8080 -o report.html",
-    "report": "npm run generate-report && npm run serve-report"
+    "report": "npm run generate-report && npm run serve-report",
+    "generate:skills": "node scripts/generate-skills.js",
+    "prepack": "cd mcp-server && npm ci && npm run build"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "@npmcli/redact": "^3.2.2",
     "@oclif/core": "^4.5.0",
     "@oclif/plugin-commands": "^4.1.28",
@@ -96,7 +102,8 @@
     "tmp": "^0.2.3",
     "winston": "^3.13.0",
     "winston-transport": "^4.9.0",
-    "ws": "^8.18.1"
+    "ws": "^8.18.1",
+    "zod": "^3.24.0"
   },
   "overrides": {
     "glob": "^11.0.1",
@@ -124,7 +131,8 @@
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3",
-    "vitest": "^4.0.16"
+    "testdriverai": "^7.2.60",
+    "vitest": "^4.0.18"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.21.5"
@@ -137,6 +145,21 @@
       "@oclif/plugin-*"
     ],
     "topicSeparator": " ",
-    "default": "edit"
-  }
+    "default": "init"
+  },
+  "files": [
+    "agent/",
+    "bin/",
+    "ai/skills/",
+    "ai/agents/",
+    "debugger/",
+    "interfaces/",
+    "lib/",
+    "mcp-server/dist/",
+    "sdk.js",
+    "sdk.d.ts",
+    "sdk-log-formatter.js",
+    "index.js",
+    "schema.json"
+  ]
 }

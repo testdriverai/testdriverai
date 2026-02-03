@@ -119,7 +119,7 @@ Add the key to your repository secrets and expose it in your workflow:
 
 ```yaml
 - name: Run Tests
-  run: npm test
+  run: npx vitest run
   env:
     TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
 ```

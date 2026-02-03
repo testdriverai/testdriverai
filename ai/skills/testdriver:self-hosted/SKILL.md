@@ -1,0 +1,65 @@
+---
+name: testdriver:self-hosted
+description: Unlimited test execution, complete privacy, and the ability to customize everything — all for a predictable flat license fee.
+---
+<!-- Generated from self-hosted.mdx. DO NOT EDIT. -->
+
+Self-hosted pricing is based on **parallel test capacity**: the number of tests you can run simultaneously on **your infrastructure**. 
+
+With self-hosting, you get:.
+
+- **Flat license fee** per parallel test slot
+- **Unlimited test execution** — run as many tests as you want
+- **No device-second metering** — predictable monthly costs
+- **Use your own AI keys** — control data usage with your own OpenAI, Anthropic, or other AI provider keys
+- **Custom hardware & software** — choose instance types, resolution, install specific software, and configure networking as needed
+- **Debug & Customize** — RDP into test machines, install custom software, modify the AMI, and debug issues directly. No black boxes.
+
+## Get Started
+
+Ready to self-host? Follow our comprehensive AWS setup guide:
+
+<Card
+  title="AWS Setup Guide"
+  icon="aws"
+  href="/v7/aws-setup"
+>
+  Step-by-step instructions for deploying TestDriver on your AWS infrastructure using CloudFormation.
+</Card>
+
+
+## Who Should Self-Host?
+
+Self-hosting is ideal for teams that:
+
+- **Run high test volumes** — Flat pricing becomes more economical at scale
+- **Want infrastructure control** — Custom hardware, specific software dependencies, or network configurations
+- **Prefer predictable costs** — Budget with confidence using flat monthly fees
+
+
+## How It Works
+
+With self-hosting, you run test sandboxes on your own AWS infrastructure. TestDriver still provides:
+
+- **Dashboard** — View test results, analytics, and reports at [console.testdriver.ai](https://console.testdriver.ai)
+- **API** — Orchestration and AI-powered test execution
+- **License Management** — Your parallel test capacity
+
+You provide:
+
+- **AWS Infrastructure** — EC2 instances running in your account
+- **AI API Keys** — Use your own OpenAI, Anthropic, or other AI provider keys
+- **Custom Configuration** — Hardware specs, networking, installed software
+
+## Comparison vs Cloud
+
+| Feature | Cloud | Self-Hosted |
+|---------|-------|-------------|
+| **Setup Time** | Minutes | Hours |
+| **Pricing Model** | Device-seconds | Flat license fee |
+| **Infrastructure Management** | TestDriver | You |
+| **Device Location** | TestDriver cloud | Your AWS account |
+| **AI API Keys** | TestDriver's | Your own |
+| **Custom Software** | Limited | Full control |
+| **Hardware Selection** | Standard | Your choice |
+| **Debugging Access** | Replays only | Full RDP access |

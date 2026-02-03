@@ -1,0 +1,86 @@
+{
+  "name": "testdriverai",
+  "displayName": "TestDriver.ai",
+  "description": "AI-powered end-to-end testing with live preview and MCP integration",
+  "version": "0.1.0",
+  "publisher": "testdriverai",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/testdriverai/testdriverai"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing",
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "testing",
+    "e2e",
+    "end-to-end",
+    "ai",
+    "automation",
+    "testdriver",
+    "mcp"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "testdriverai.openDebugger",
+        "title": "TestDriver: Open Live Preview"
+      },
+      {
+        "command": "testdriverai.installMcp",
+        "title": "TestDriver: Install MCP Server"
+      },
+      {
+        "command": "testdriverai.closeDebugger",
+        "title": "TestDriver: Close Live Preview"
+      }
+    ],
+    "configuration": {
+      "title": "TestDriver.ai",
+      "properties": {
+        "testdriverai.autoOpenPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open the live preview panel when a test starts"
+        },
+        "testdriverai.mcpServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to TestDriver MCP server (leave empty for default)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

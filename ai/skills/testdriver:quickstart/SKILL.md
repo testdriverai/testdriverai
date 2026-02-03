@@ -1,0 +1,161 @@
+---
+name: testdriver:quickstart
+description: Run your first computer-use test in minutes.
+---
+<!-- Generated from quickstart.mdx. DO NOT EDIT. -->
+
+TestDriver makes it easy to write automated computer-use tests for web browsers, desktop apps, and more. Follow the directions below to run your first TestDriver test.
+
+<Tip><a href="https://discord.com/invite/cWDFW8DzPm" target="_blank" rel="noreferrer">Join our Discord</a> if you have any questions or need help getting started!</Tip>
+
+<Tabs>
+  <Tab title="Automatic Setup">
+
+    Get started quickly with the TestDriver CLI.
+
+    <Steps>
+      <Step title="Create a TestDriver Account">
+
+        You will need a TestDriver account to get an API key.
+
+        <Card
+          title="Get an API Key"
+          icon="user-plus"
+          href="https://console.testdriver.ai/team"
+          arrow
+          horizontal
+        >
+          Start with 60 free device minutes, no credit-card required!
+        </Card>
+
+      </Step>
+      <Step title="Install TestDriver">
+
+        Use `npx` to quickly set up an example project:
+
+        ```bash
+        npx testdriverai@beta init
+        ```
+
+        This will walk you through creating a new project folder, installing dependencies, and setting up your API key.
+
+      </Step>
+      
+      <Step title="Run Your Test">
+
+        TestDriver uses Vitest as the test runner. To run your test, use:
+        
+        ```bash
+        vitest run
+        ```
+
+        This will spawn a sandbox, launch Chrome, and run the example test!
+
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Manual Setup">
+
+    Install TestDriver and manually create the files yourself.
+
+    <Steps>
+      <Step title="Create a TestDriver Account">
+
+        You will need a TestDriver account to get an API key.
+
+        <Card
+          title="Get an API Key"
+          icon="user-plus"
+          href="https://console.testdriver.ai/team"
+          arrow
+          horizontal
+        >
+          Start with 60 free device minutes, no credit-card required!
+        </Card>
+
+      </Step>
+      <Step title="Install Dependencies">
+
+        Install Vitest and TestDriver as dev dependencies:
+
+        ```bash
+        npm install --save-dev vitest testdriverai@beta
+        ```
+
+      </Step>
+      <Step title="Create a vitest.config.js File">
+
+        In your project root, create a `vitest.config.js` file with the following content:
+
+        ```js vitest.config.js
+        import TestDriver from 'testdriverai/vitest';
+        import { defineConfig } from 'vitest/config';
+
+        export default defineConfig({
+          test: {
+            testTimeout: 900000,
+            hookTimeout: 900000,
+            disableConsoleIntercept: true,
+            maxConcurrency: 1, // this should match your plan's concurrency limit 
+            reporters: [
+              'default',
+              TestDriver()
+            ],
+            setupFiles: ['testdriverai/vitest/setup'],
+          },
+        });
+        ```
+
+      </Step>
+      <Step title="Create an Example Test File">
+
+        Add your API key to the example test file below and save it as `test.mjs` in your project root.
+
+        ```js test.mjs highlight={9}
+        import { describe, expect, it } from "vitest";
+        // Import TestDriver from the vitest hooks
+        import { TestDriver } from "testdriverai/vitest/hooks";
+
+        describe("Google Search Example", () => {
+          it("should search for TestDriver", async (context) => {
+            // Create TestDriver instance - automatically connects to sandbox
+            const testdriver = TestDriver(context, {
+              apiKey: 'YOUR_API_KEY_HERE' // supply your API key here 
+            });
+
+            // Provision Chrome browser with a URL
+            // This also starts dashcam recording automatically
+            await testdriver.provision.chrome({ url: "https://duckduckgo.com" });
+
+            // Find and interact with elements using natural language
+            const searchBox = await testdriver.find("DuckDuckGo search input field");
+            await searchBox.click();
+
+            // Type into the focused element
+            await testdriver.type("testdriver.ai");
+
+            // Press Enter to search
+            await testdriver.pressKeys(["enter"]);
+
+            // Assert something is visible on the page
+            const result = await testdriver.assert("search results are displayed");
+            expect(result).toBeTruthy();
+          });
+        });
+        ```
+
+      </Step>
+      <Step title="Run Your Test">
+
+        TestDriver uses Vitest as the test runner. To run your test, use:
+        
+        ```bash
+        vitest run
+        ```
+
+        This will spawn a sandbox, launch Chrome, and run the example test!
+
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>

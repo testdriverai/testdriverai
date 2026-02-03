@@ -3,6 +3,7 @@ const http = require("http");
 const path = require("path");
 const fs = require("fs");
 const { eventsArray } = require("../events.js");
+const logger = require("./logger");
 
 let server = null;
 let wss = null;
@@ -131,7 +132,7 @@ function stopDebugger() {
   }
 
   clients.clear();
-  console.log("Debugger server stopped");
+  logger.log("Debugger server stopped");
 }
 
 module.exports = {
