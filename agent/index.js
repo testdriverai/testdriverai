@@ -2026,6 +2026,7 @@ ${regression}
         url: url,
         token: "V3b8wG9",
         testFile: this.testFile || null,
+        os: this.sandboxOs || "linux",
       };
 
       // Base64 encode the data (the debugger expects base64, not URL encoding)
@@ -2034,7 +2035,47 @@ ${regression}
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
 
-      this.emitter.emit(events.showWindow, urlToOpen);
+      // Check preview mode from config
+      const previewMode = this.config.TD_PREVIEW || "browser";
+
+      if (previewMode === "ide") {
+        // Write session file for VSCode extension to pick up
+        this.writeIdeSessionFile(urlToOpen, data);
+      } else if (previewMode !== "none") {
+        // Open in browser (default behavior)
+        this.emitter.emit(events.showWindow, urlToOpen);
+      }
+      // If preview is "none", don't open anything
+    }
+  }
+
+  // Write session file for IDE preview mode
+  writeIdeSessionFile(debuggerUrl, data) {
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+
+    const sessionDir = path.join(os.homedir(), ".testdriver");
+    const sessionFile = path.join(sessionDir, "ide-session.json");
+
+    try {
+      // Ensure directory exists
+      if (!fs.existsSync(sessionDir)) {
+        fs.mkdirSync(sessionDir, { recursive: true });
+      }
+
+      const sessionData = {
+        debuggerUrl: debuggerUrl,
+        resolution: data.resolution || this.config.TD_RESOLUTION,
+        testFile: data.testFile || this.thisFile,
+        os: data.os || this.sandboxOs || "linux",
+        timestamp: Date.now(),
+      };
+
+      fs.writeFileSync(sessionFile, JSON.stringify(sessionData, null, 2));
+      logger.log(`IDE session file written: ${sessionFile}`);
+    } catch (error) {
+      logger.warn(`Failed to write IDE session file: ${error.message}`);
     }
   }
 

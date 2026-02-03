@@ -62,7 +62,8 @@
     "serve-report": "npx http-server . -p 8080 -o report.html",
     "report": "npm run generate-report && npm run serve-report",
     "generate:skills": "node scripts/generate-skills.js",
-    "prepack": "cd mcp-server && npm ci && npm run build"
+    "build:mcp": "cd mcp-server && npm ci && npm run build",
+    "prepublishOnly": "npm run build:mcp"
   },
   "author": "",
   "license": "ISC",

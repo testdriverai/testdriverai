@@ -1279,12 +1279,24 @@ class TestDriverSDK {
     // Use provided API key or fall back to environment variable
     const resolvedApiKey = apiKey || process.env.TD_API_KEY;
 
+    // Handle preview mode with backwards compatibility for headless option
+    // Preview  can be "browser" (default), "ide", or "none" (headless)
+    let previewMode = options.preview || process.env.TD_PREVIEW;
+    
+    // Backwards compatibility: headless: true maps to preview: "none"
+    if (options.headless === true && !options.preview) {
+      previewMode = "none";
+    } else if (!previewMode) {
+      previewMode = "browser"; // default
+    }
+
     // Set up environment with API key
     const environment = {
       TD_API_KEY: resolvedApiKey,
       TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
+      TD_PREVIEW: previewMode,
       ...options.environment,
     };
 
