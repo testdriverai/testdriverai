@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build MCP Server
+        run: npm run build:mcp
+
       - name: Bump version (patch)
         run: npm version patch --no-git-tag-version
 
@@ -44,6 +47,10 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           git commit -m "chore(release): ${VERSION}"
           git tag "v${VERSION}"
+          
+          # Pull any changes that happened since checkout
+          git pull --rebase origin main
+          
           git push origin main
           git push origin "v${VERSION}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV

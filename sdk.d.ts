@@ -14,6 +14,13 @@ export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
 export type ExecLanguage = "js" | "pwsh" | "sh";
+/**
+ * Preview mode for live test visualization
+ * - "browser": Opens debugger in default browser (default)
+ * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+ * - "none": Headless mode, no visual preview
+ */
+export type PreviewMode = "browser" | "ide" | "none";
 export type KeyboardKey =
   | "\t"
   | "\n"
@@ -232,7 +239,17 @@ export interface TestDriverOptions {
   };
   /** Force creation of a new sandbox (default: true) */
   newSandbox?: boolean;
-  /** Run in headless mode (default: false) */
+  /**
+   * Preview mode for live test visualization (default: "browser")
+   * - "browser": Opens debugger in default browser
+   * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+   * - "none": Headless mode, no visual preview
+   */
+  preview?: PreviewMode;
+  /**
+   * @deprecated Use `preview: "none"` instead. Run in headless mode (default: false)
+   * For backward compatibility: headless: true maps to preview: "none"
+   */
   headless?: boolean;
   /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
@@ -280,7 +297,17 @@ export interface ConnectOptions {
   sandboxInstance?: string;
   /** Operating system for the sandbox (default: 'linux') */
   os?: "windows" | "linux";
-  /** Run in headless mode (default: false) */
+  /**
+   * Preview mode for live test visualization (default: "browser")
+   * - "browser": Opens debugger in default browser
+   * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+   * - "none": Headless mode, no visual preview
+   */
+  preview?: PreviewMode;
+  /**
+   * @deprecated Use `preview: "none"` instead. Run in headless mode (default: false)
+   * For backward compatibility: headless: true maps to preview: "none"
+   */
   headless?: boolean;
   /** Reuse recent connection if available (default: true) */
   reuseConnection?: boolean;
@@ -769,6 +796,18 @@ export interface ProvisionElectronOptions {
   args?: string[];
 }
 
+/** Options for provision.dashcam */
+export interface ProvisionDashcamOptions {
+  /** Path to log file (auto-generated if not provided) */
+  logPath?: string;
+  /** Display name for the log (default: 'TestDriver Log') */
+  logName?: string;
+  /** Enable web log tracking (default: true) */
+  webLogs?: boolean;
+  /** Custom title for the recording */
+  title?: string;
+}
+
 /** Provision API for launching applications */
 export interface ProvisionAPI {
   /**
@@ -801,6 +840,12 @@ export interface ProvisionAPI {
    * @param options - Electron launch options
    */
   electron(options: ProvisionElectronOptions): Promise<void>;
+
+  /**
+   * Initialize Dashcam recording with logging
+   * @param options - Dashcam options
+   */
+  dashcam(options?: ProvisionDashcamOptions): Promise<void>;
 }
 
 /** Dashcam API for screen recording */
@@ -822,7 +867,26 @@ export interface DashcamAPI {
 }
 
 export default class TestDriverSDK {
-  constructor(apiKey: string, options?: TestDriverOptions);
+  /**
+   * Create a new TestDriverSDK instance
+   * Automatically loads environment variables from .env file via dotenv.
+   * 
+   * @param apiKey - API key (optional, defaults to TD_API_KEY environment variable)
+   * @param options - SDK configuration options
+   * 
+   * @example
+   * // API key loaded automatically from TD_API_KEY in .env
+   * const client = new TestDriver();
+   * 
+   * @example
+   * // Pass options only (API key from .env)
+   * const client = new TestDriver({ os: 'windows' });
+   * 
+   * @example
+   * // Or pass API key explicitly
+   * const client = new TestDriver('your-api-key');
+   */
+  constructor(apiKey?: string | TestDriverOptions, options?: TestDriverOptions);
 
   /**
    * Whether the SDK is currently connected to a sandbox
@@ -1229,6 +1293,7 @@ export default class TestDriverSDK {
   // AI Methods (Exploratory Loop)
 
   /**
+   * @deprecated Use ai() instead
    * Execute a natural language task using AI
    * This is the SDK equivalent of the CLI's exploratory loop
    *
@@ -1238,11 +1303,11 @@ export default class TestDriverSDK {
    *
    * @example
    * // Simple execution
-   * await client.act('Click the submit button');
+   * await client.ai('Click the submit button');
    *
    * @example
    * // With validation loop
-   * const result = await client.act('Fill out the contact form', { validateAndLoop: true });
+   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
    * console.log(result); // AI's final assessment
    */
   act(
@@ -1251,7 +1316,6 @@ export default class TestDriverSDK {
   ): Promise<string | void>;
 
   /**
-   * @deprecated Use act() instead
    * Execute a natural language task using AI
    *
    * @param task - Natural language description of what to do

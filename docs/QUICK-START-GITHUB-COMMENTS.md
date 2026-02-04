@@ -30,7 +30,7 @@ jobs:
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Auto-provided
-        run: npm test
+        run: npx vitest run
 ```
 
 That's it! TestDriver will automatically:
@@ -53,7 +53,7 @@ That's it! TestDriver will automatically:
    ```bash
    export GITHUB_TOKEN=ghp_your_token_here
    export GITHUB_PR_NUMBER=123
-   npm test
+   npx vitest run
    ```
 
 ## What Gets Posted
@@ -76,7 +76,7 @@ That's it! TestDriver will automatically:
 ## Disable Comments
 
 ```bash
-TESTDRIVER_SKIP_GITHUB_COMMENT=true npm test
+TESTDRIVER_SKIP_GITHUB_COMMENT=true npx vitest run
 ```
 
 ## Full Documentation
