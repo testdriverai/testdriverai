@@ -125,15 +125,32 @@ const createRedraw = (
     }
   };
 
+  // Track if a network request is in flight to prevent overlapping requests
+  let networkRequestInFlight = false;
+
   async function updateNetwork() {
+    // Prevent overlapping requests - if one is already in flight, skip this cycle
+    if (networkRequestInFlight) {
+      emitter.emit(events.log.debug, '[redraw] updateNetwork() - skipping, request already in flight');
+      return;
+    }
+
     if (sandbox && sandbox.instanceSocketConnected) {
-      let network = await sandbox.send({
-        type: "system.network",
-      });
-      parseNetworkStats(
-        network.out.totalBytesReceived,
-        network.out.totalBytesSent,
-      );
+      networkRequestInFlight = true;
+      try {
+        let network = await sandbox.send({
+          type: "system.network",
+        }, 10000); // Use a shorter 10 second timeout for network stats
+        parseNetworkStats(
+          network.out.totalBytesReceived,
+          network.out.totalBytesSent,
+        );
+      } catch (error) {
+        // Log the error but don't throw - network monitoring is non-critical
+        emitter.emit(events.log.debug, `[redraw] updateNetwork() failed: ${error.message}`);
+      } finally {
+        networkRequestInFlight = false;
+      }
     }
   }
 
@@ -181,14 +198,7 @@ const createRedraw = (
     }
   }
 
-  // Start network monitoring only when needed
-  function startNetworkMonitoring() {
-    if (!networkInterval) {
-      networkInterval = setInterval(updateNetwork, networkUpdateInterval);
-    }
-  }
-
-  // Stop network monitoring
+  // Stop network monitoring (cleanup any residual interval)
   function stopNetworkMonitoring() {
     if (networkInterval) {
       clearInterval(networkInterval);
@@ -220,11 +230,6 @@ const createRedraw = (
     
     resetState();
     
-    // Only start network monitoring if enabled
-    if (currentOptions.networkMonitor) {
-      startNetworkMonitoring();
-    }
-    
     // Capture initial image for screen stability monitoring
     if (currentOptions.screenRedraw) {
       initialScreenImage = await system.captureScreenPNG(0.25, true);
@@ -242,6 +247,11 @@ const createRedraw = (
     if (!enabled) {
       resolve("true");
       return;
+    }
+    
+    // Update network stats on each check (with guard against overlapping requests)
+    if (networkMonitor) {
+      await updateNetwork();
     }
     
     let nowImage = screenRedraw ? await system.captureScreenPNG(0.25, true) : null;
@@ -370,10 +380,6 @@ const createRedraw = (
     
     return new Promise((resolve) => {
       const startTime = Date.now();
-      // Start network monitoring if not already started and enabled
-      if (waitOptions.networkMonitor) {
-        startNetworkMonitoring();
-      }
       checkCondition(resolve, startTime, timeoutMs, waitOptions);
     });
   }
