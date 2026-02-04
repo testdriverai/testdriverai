@@ -1,14 +1,9 @@
-import { config } from "dotenv";
 import TestDriver from "testdriverai/vitest";
 import { defineConfig } from "vitest/config";
 
-// Load .env file early so it's available to the reporter (runs in main process)
-// and to worker processes
-config();
-
 // Always include AWS setup - it will be a no-op unless TD_OS=windows
+// Note: dotenv is loaded automatically by the TestDriver SDK
 const setupFiles = [
-  "dotenv/config",
   "testdriverai/vitest/setup",
   "testdriverai/vitest/setup-aws",
 ];

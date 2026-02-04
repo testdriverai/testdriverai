@@ -7,7 +7,7 @@ MCP server that enables AI agents to iteratively build TestDriver tests with vis
 - **Live Session Control**: Direct sandbox control via MCP tools
 - **Visual Feedback**: Every action returns a screenshot with overlays (MCP Apps)
 - **Inline Code Generation**: Each action returns the code to append to your test file
-- **Verification**: Run tests from scratch to verify they work
+- **Assertions**: AI-powered assertions about screen state
 
 ## Installation
 
@@ -17,12 +17,20 @@ No installation needed! Just configure your MCP client to use npx:
 
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["testdriverai-mcp"],
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
       "env": {
-        "TD_API_KEY": "your-api-key"
+        "TD_API_KEY": "${input:testdriver-api-key}"
       }
     }
   }
@@ -39,6 +47,38 @@ npm run build
 
 ## Usage
 
+### With GitHub Copilot Coding Agent
+
+To use the TestDriver MCP server with GitHub Copilot coding agent:
+
+1. **Create a Copilot environment secret:**
+   - Go to your repository **Settings** → **Environments**
+   - Create or select the `copilot` environment
+   - Add an environment secret named `COPILOT_MCP_TD_API_KEY`
+   - Set the value to your TestDriver API key from https://console.testdriver.ai/team
+
+2. **Add the MCP configuration** to your repository's **Settings** → **Copilot** → **Coding agent** → **MCP configuration**:
+
+```json
+{
+  "mcpServers": {
+    "testdriver": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "tools": ["*"],
+      "env": {
+        "TD_API_KEY": "COPILOT_MCP_TD_API_KEY"
+      }
+    }
+  }
+}
+```
+
+**Note:** The MCP server supports both `TD_API_KEY` and `COPILOT_MCP_TD_API_KEY` environment variables for maximum compatibility with GitHub Copilot coding agent.
+
+For more information, see [Extending GitHub Copilot coding agent with Model Context Protocol](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-coding-agent-with-mcp).
+
 ### With Claude Desktop / Cursor
 
 Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/Claude/claude_desktop_config.json`):
@@ -47,12 +87,20 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
 
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["testdriverai-mcp"],
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
       "env": {
-        "TD_API_KEY": "your-api-key"
+        "TD_API_KEY": "${input:testdriver-api-key}"
       }
     }
   }
@@ -63,12 +111,20 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
 
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "node",
       "args": ["/path/to/testdriverai/mcp-server/dist/server.js"],
       "env": {
-        "TD_API_KEY": "your-api-key"
+        "TD_API_KEY": "${input:testdriver-api-key}"
       }
     }
   }
@@ -114,12 +170,20 @@ Connect to your own AWS-hosted Windows instances instead of using TestDriver clo
 Or set `TD_IP` environment variable:
 ```json
 {
-  "mcpServers": {
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "testdriver-api-key",
+      "description": "TestDriver API Key From https://console.testdriver.ai/team",
+      "password": true
+    }
+  ],
+  "servers": {
     "testdriver": {
       "command": "node",
       "args": ["/path/to/mcp-server/dist/server.js"],
       "env": {
-        "TD_API_KEY": "your-api-key",
+        "TD_API_KEY": "${input:testdriver-api-key}",
         "TD_IP": "1.2.3.4"
       }
     }
@@ -172,14 +236,29 @@ npm start
 | Tool | Description |
 |------|-------------|
 | `assert` | AI-powered assertion about screen state |
+| `check` | AI analyzes screen state (for agent understanding, no code generated) |
 | `exec` | Execute code in sandbox |
-| `screenshot` | Capture screenshot |
+| `screenshot` | Capture screenshot (displays to user only) |
 
-### Test Validation
+### Local Screenshots
 
 | Tool | Description |
 |------|-------------|
-| `verify` | Run test file to verify it works |
+| `list_local_screenshots` | List screenshots saved in `.testdriver` directory |
+| `view_local_screenshot` | View a local screenshot (returns image to AI + displays to user) |
+
+The local screenshot tools allow AI agents to review screenshots from previous test runs:
+
+```
+1. Call list_local_screenshots to see available screenshots
+2. Call view_local_screenshot with a path to view and analyze it
+3. The image is returned to the AI (if the client supports images) AND displayed to the user
+```
+
+This is useful for:
+- Debugging test failures by examining saved screenshots
+- Reviewing test execution history
+- Comparing current screen state to previous runs
 
 ## Workflow
 
@@ -187,7 +266,7 @@ npm start
 2. **Interact**: Use `find`, `click`, `type` etc. - each action returns generated code
 3. **Build Test**: Append the generated code from each action to your test file
 4. **Assert**: Use `assert` to verify expected state
-5. **Verify**: Use `verify` to run the test from scratch and validate
+5. **Run Test**: Use the CLI (`npx vitest run <testFile>`) to run the test from scratch
 
 Each tool returns a screenshot showing the result AND the code to add to your test file.
 

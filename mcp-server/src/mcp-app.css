@@ -310,13 +310,6 @@ body {
   color: #991b1b;
 }
 
-.target-ref {
-  color: var(--color-text-tertiary, #999);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: var(--font-text-xs-size, 11px);
-  margin-left: 8px;
-}
-
 /* Dark mode overrides for elements without CSS vars */
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]) {
