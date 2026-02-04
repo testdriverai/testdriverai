@@ -45,6 +45,10 @@ const testdriver = new TestDriver(apiKey, options)
       Enable or disable console logging
     </ParamField>
     
+    <ParamField path="autoScreenshots" type="boolean" default="true">
+      Automatically capture screenshots before and after each command. Screenshots are saved to `.testdriver/screenshots/<test>/` with descriptive filenames that include the line number and action name. Format: `<seq>-<action>-<phase>-L<line>-<description>.png`
+    </ParamField>
+    
     <ParamField path="environment" type="object">
       Additional environment variables to pass to the sandbox
     </ParamField>

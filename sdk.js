@@ -70,6 +70,53 @@ function getCallerFileHash() {
 }
 
 /**
+ * Get detailed caller information including file path, line number, and column
+ * Used for automatic screenshot naming to identify which line of code triggered an action
+ * @param {number} [skipFrames=0] - Additional frames to skip in the stack trace
+ * @returns {{filePath: string|null, line: number|null, column: number|null, functionName: string|null}}
+ */
+function getCallerInfo(skipFrames = 0) {
+  const originalPrepareStackTrace = Error.prepareStackTrace;
+  try {
+    const err = new Error();
+    Error.prepareStackTrace = (_, stack) => stack;
+    const stack = err.stack;
+    Error.prepareStackTrace = originalPrepareStackTrace;
+
+    // Look for the first file that's not sdk.js, hooks.mjs, or node internals
+    let skipped = 0;
+    for (const callSite of stack) {
+      const fileName = callSite.getFileName();
+      if (
+        fileName &&
+        !fileName.includes("sdk.js") &&
+        !fileName.includes("hooks.mjs") &&
+        !fileName.includes("hooks.js") &&
+        !fileName.includes("node_modules") &&
+        !fileName.includes("node:internal") &&
+        fileName !== "evalmachine.<anonymous>"
+      ) {
+        if (skipped < skipFrames) {
+          skipped++;
+          continue;
+        }
+        return {
+          filePath: fileName,
+          line: callSite.getLineNumber(),
+          column: callSite.getColumnNumber(),
+          functionName: callSite.getFunctionName(),
+        };
+      }
+    }
+  } catch (error) {
+    // Silently fail and return nulls
+  } finally {
+    Error.prepareStackTrace = originalPrepareStackTrace;
+  }
+  return { filePath: null, line: null, column: null, functionName: null };
+}
+
+/**
  * Custom error class for element operation failures
  * Includes debugging information like screenshots and AI responses
  */
@@ -1430,6 +1477,12 @@ class TestDriverSDK {
     this._lastPromiseSettled = true;
     this._lastCommandName = null;
 
+    // Auto-screenshots configuration
+    // When enabled, automatically captures screenshots before/after each command
+    // Screenshots are saved to .testdriver/screenshots/<test>/ with descriptive names
+    this.autoScreenshots = options.autoScreenshots !== false;
+    this._screenshotSequence = 0; // Counter for sequential screenshot naming
+
     // Set up command methods that lazy-await connection
     this._setupCommandMethods();
   }
@@ -2733,9 +2786,17 @@ CAPTCHA_SOLVER_EOF`,
 
       this._ensureConnected();
 
+      // Get caller info for auto-screenshot naming
+      const callerInfo = this.autoScreenshots ? getCallerInfo() : null;
+
       // Track this promise for unawaited detection
       this._lastCommandName = "find";
       this._lastPromiseSettled = false;
+
+      // Take "before" screenshot if enabled
+      if (this.autoScreenshots) {
+        await this._saveAutoScreenshot("find", "before", callerInfo, description);
+      }
 
       const element = new Element(
         description,
@@ -2744,6 +2805,12 @@ CAPTCHA_SOLVER_EOF`,
         this.commands,
       );
       const result = await element.find(null, options);
+
+      // Take "after" screenshot if enabled
+      if (this.autoScreenshots) {
+        await this._saveAutoScreenshot("find", "after", callerInfo, description);
+      }
+
       this._lastPromiseSettled = true;
       return result;
     })();
@@ -2792,9 +2859,17 @@ CAPTCHA_SOLVER_EOF`,
 
     this._ensureConnected();
 
+    // Get caller info for auto-screenshot naming
+    const callerInfo = this.autoScreenshots ? getCallerInfo() : null;
+
     // Track this promise for unawaited detection
     this._lastCommandName = "findAll";
     this._lastPromiseSettled = false;
+
+    // Take "before" screenshot if enabled
+    if (this.autoScreenshots) {
+      await this._saveAutoScreenshot("findAll", "before", callerInfo, description);
+    }
 
     // Capture absolute timestamp at the very start of the command
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
@@ -2951,6 +3026,11 @@ CAPTCHA_SOLVER_EOF`,
           this.emitter.emit(events.log.debug, `  Time: ${duration}ms`);
         }
 
+        // Take "after" screenshot if enabled
+        if (this.autoScreenshots) {
+          await this._saveAutoScreenshot("findAll", "after", callerInfo, description);
+        }
+
         this._lastPromiseSettled = true;
         return elements;
       } else {
@@ -2989,6 +3069,11 @@ CAPTCHA_SOLVER_EOF`,
             });
         }
 
+        // Take "after" screenshot if enabled (no elements found)
+        if (this.autoScreenshots) {
+          await this._saveAutoScreenshot("findAll", "after", callerInfo, description);
+        }
+
         // No elements found - return empty array
         this._lastPromiseSettled = true;
         return [];
@@ -3023,6 +3108,11 @@ CAPTCHA_SOLVER_EOF`,
           .catch((err) => {
             console.warn("Failed to track findAll interaction:", err.message);
           });
+      }
+
+      // Take "error" screenshot if enabled
+      if (this.autoScreenshots) {
+        await this._saveAutoScreenshot("findAll", "error", callerInfo, description);
       }
 
       this._lastPromiseSettled = true;
@@ -3072,6 +3162,7 @@ CAPTCHA_SOLVER_EOF`,
   /**
    * Dynamically set up command methods based on available commands
    * This creates camelCase methods that wrap the underlying command functions
+   * When autoScreenshots is enabled, captures before/after screenshots for each command
    * @private
    */
   _setupCommandMethods() {
@@ -3096,6 +3187,53 @@ CAPTCHA_SOLVER_EOF`,
       exec: "exec",
     };
 
+    // Helper to extract a description from command args for screenshot naming
+    const getDescriptionFromArgs = (methodName, args) => {
+      if (!args || args.length === 0) return "";
+      const firstArg = args[0];
+      
+      switch (methodName) {
+        case "type":
+          // For type, use the text being typed (truncated)
+          return typeof firstArg === "string" ? firstArg.substring(0, 20) : "";
+        case "pressKeys":
+          // For pressKeys, show the keys
+          return Array.isArray(firstArg) ? firstArg.join("+") : String(firstArg);
+        case "click":
+        case "hover":
+          // For click/hover, try to get coordinates or prompt
+          if (typeof firstArg === "object" && firstArg !== null) {
+            return firstArg.prompt || `${firstArg.x},${firstArg.y}`;
+          }
+          return typeof firstArg === "number" ? `${firstArg},${args[1]}` : "";
+        case "scroll":
+          // For scroll, show direction
+          return typeof firstArg === "string" ? firstArg : "down";
+        case "waitForText":
+        case "scrollUntilText":
+          // For text-based commands, use the text
+          if (typeof firstArg === "object" && firstArg !== null) {
+            return firstArg.text || "";
+          }
+          return typeof firstArg === "string" ? firstArg : "";
+        case "focusApplication":
+          // For focus, use the app name
+          return typeof firstArg === "string" ? firstArg : "";
+        case "assert":
+        case "extract":
+          // For assert/extract, use the assertion/description
+          return typeof firstArg === "string" ? firstArg.substring(0, 30) : "";
+        case "exec":
+          // For exec, show the language
+          if (typeof firstArg === "object" && firstArg !== null) {
+            return firstArg.language || "code";
+          }
+          return typeof firstArg === "string" ? firstArg : "code";
+        default:
+          return typeof firstArg === "string" ? firstArg.substring(0, 20) : "";
+      }
+    };
+
     // Create SDK methods that lazy-await connection then forward to this.commands
     for (const [commandName, methodName] of Object.entries(commandMapping)) {
       this[methodName] = async function (...args) {
@@ -3115,19 +3253,39 @@ CAPTCHA_SOLVER_EOF`,
 
         this._ensureConnected();
 
-        // Capture the call site for better error reporting
+        // Capture the call site for better error reporting AND for auto-screenshots
         const callSite = {};
         Error.captureStackTrace(callSite, this[methodName]);
+
+        // Get caller info for auto-screenshot naming
+        const callerInfo = this.autoScreenshots ? getCallerInfo() : null;
+        const description = this.autoScreenshots ? getDescriptionFromArgs(methodName, args) : "";
 
         // Track this promise for unawaited detection
         this._lastCommandName = methodName;
         this._lastPromiseSettled = false;
 
         try {
+          // Take "before" screenshot if enabled
+          if (this.autoScreenshots) {
+            await this._saveAutoScreenshot(methodName, "before", callerInfo, description);
+          }
+
           const result = await this.commands[commandName](...args);
+
+          // Take "after" screenshot if enabled
+          if (this.autoScreenshots) {
+            await this._saveAutoScreenshot(methodName, "after", callerInfo, description);
+          }
+
           this._lastPromiseSettled = true;
           return result;
         } catch (error) {
+          // Take "error" screenshot if enabled (instead of "after")
+          if (this.autoScreenshots) {
+            await this._saveAutoScreenshot(methodName, "error", callerInfo, description);
+          }
+
           this._lastPromiseSettled = true;
           // Ensure we have a proper Error object with a message
           let properError = error;
@@ -3210,6 +3368,80 @@ CAPTCHA_SOLVER_EOF`,
     this.emitter.emit("log:info", `📸 Screenshot saved to: ${filePath}`);
 
     return filePath;
+  }
+
+  /**
+   * Save an automatic screenshot with descriptive naming
+   * Used internally when autoScreenshots is enabled
+   * @private
+   * @param {string} actionName - Name of the action (click, type, hover, etc.)
+   * @param {string} phase - 'before' or 'after'
+   * @param {Object} callerInfo - Caller information from getCallerInfo()
+   * @param {string} [description] - Optional description of the action target
+   * @returns {Promise<string|null>} The file path where the screenshot was saved, or null if failed
+   */
+  async _saveAutoScreenshot(actionName, phase, callerInfo, description = "") {
+    if (!this.autoScreenshots || !this.connected) {
+      return null;
+    }
+
+    try {
+      // Increment sequence for unique ordering
+      this._screenshotSequence++;
+      const seq = String(this._screenshotSequence).padStart(3, "0");
+
+      // Extract line number info
+      const lineInfo = callerInfo.line ? `L${callerInfo.line}` : "L???";
+
+      // Sanitize description for filename (remove special chars, limit length)
+      const sanitizedDesc = description
+        .replace(/[^a-zA-Z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .substring(0, 30)
+        .toLowerCase();
+
+      // Build filename: 001-click-before-L42-submit-button.png
+      const descPart = sanitizedDesc ? `-${sanitizedDesc}` : "";
+      const filename = `${seq}-${actionName}-${phase}-${lineInfo}${descPart}.png`;
+
+      const base64Data = await this.system.captureScreenBase64(1, false, false);
+
+      // Save to .testdriver/screenshots/<test-file-name> directory
+      let screenshotsDir = path.join(process.cwd(), ".testdriver", "screenshots");
+      if (this.testFile) {
+        const testFileName = path.basename(
+          this.testFile,
+          path.extname(this.testFile),
+        );
+        screenshotsDir = path.join(screenshotsDir, testFileName);
+      }
+      if (!fs.existsSync(screenshotsDir)) {
+        fs.mkdirSync(screenshotsDir, { recursive: true });
+      }
+
+      const filePath = path.join(screenshotsDir, filename);
+
+      // Remove data:image/png;base64, prefix if present
+      const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(cleanBase64, "base64");
+
+      fs.writeFileSync(filePath, buffer);
+
+      // Debug log in verbose mode
+      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      if (debugMode) {
+        this.emitter.emit("log:debug", `📸 Auto-screenshot: ${filename}`);
+      }
+
+      return filePath;
+    } catch (error) {
+      // Don't fail the command if screenshot fails
+      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      if (debugMode) {
+        this.emitter.emit("log:debug", `Failed to save auto-screenshot: ${error.message}`);
+      }
+      return null;
+    }
   }
 
   /**

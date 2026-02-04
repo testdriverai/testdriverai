@@ -263,6 +263,13 @@ export interface TestDriverOptions {
   reconnect?: boolean;
   /** Enable/disable Dashcam video recording (default: true) */
   dashcam?: boolean;
+  /**
+   * Enable automatic screenshots before and after each command (default: true)
+   * Screenshots are saved to .testdriver/screenshots/<test>/ with descriptive filenames
+   * Format: <seq>-<action>-<phase>-L<line>-<description>.png
+   * Example: 001-click-before-L42-submit-button.png
+   */
+  autoScreenshots?: boolean;
   /** Redraw configuration for screen change detection */
   redraw?:
     | boolean
