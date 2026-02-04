@@ -1783,22 +1783,23 @@ server.registerTool(
 
 // Parse auto-screenshot filename format: <seq>-<action>-<phase>-L<line>-<description>.png
 // Example: 001-click-before-L42-submit-button.png
+// Example: 003-click-error-L42-submit-button.png (error phase when action fails)
 interface ParsedScreenshotInfo {
   sequence?: number;
   action?: string;
-  phase?: "before" | "after";
+  phase?: "before" | "after" | "error";
   lineNumber?: number;
   description?: string;
 }
 
 function parseScreenshotFilename(filename: string): ParsedScreenshotInfo {
-  // Match pattern: 001-click-before-L42-submit-button.png
-  const match = filename.match(/^(\d+)-([a-z]+)-(before|after)-L(\d+)-(.+)\.png$/i);
+  // Match pattern: 001-click-before-L42-submit-button.png or 001-click-error-L42-submit-button.png
+  const match = filename.match(/^(\d+)-([a-z]+)-(before|after|error)-L(\d+)-(.+)\.png$/i);
   if (match) {
     return {
       sequence: parseInt(match[1], 10),
       action: match[2].toLowerCase(),
-      phase: match[3].toLowerCase() as "before" | "after",
+      phase: match[3].toLowerCase() as "before" | "after" | "error",
       lineNumber: parseInt(match[4], 10),
       description: match[5],
     };
@@ -1819,7 +1820,7 @@ This tool supports powerful filtering to find specific screenshots:
 - By test file (directory)
 - By line number or range
 - By action type (click, find, type, assert, etc.)
-- By phase (before/after)
+- By phase (before/after/error - error screenshots are captured when actions fail)
 - By regex pattern on filename
 - By sequence number range
 
@@ -1832,7 +1833,7 @@ Returns a list of screenshot paths that can be viewed with the 'view_local_scree
         end: z.number().describe("End line number (inclusive)"),
       }).optional().describe("Filter by line number range (e.g., { start: 10, end: 20 })"),
       action: z.string().optional().describe("Filter by action type: click, find, type, assert, provision, scroll, hover, etc."),
-      phase: z.enum(["before", "after"]).optional().describe("Filter by phase: 'before' or 'after' the action"),
+      phase: z.enum(["before", "after", "error"]).optional().describe("Filter by phase: 'before' (pre-action), 'after' (post-action), or 'error' (when action fails)"),
       pattern: z.string().optional().describe("Regex pattern to match against filename (e.g., 'submit|login' or 'button.*click')"),
       sequence: z.number().optional().describe("Filter by exact sequence number"),
       sequenceRange: z.object({
