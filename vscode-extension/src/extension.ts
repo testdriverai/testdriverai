@@ -1,4 +1,6 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as http from 'http';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -7,14 +9,18 @@ import WebSocket from 'ws';
 // Store active debugger panels by session ID
 const debuggerPanels: Map<string, vscode.WebviewPanel> = new Map();
 const websocketConnections: Map<string, WebSocket> = new Map();
-let fileWatcher: fs.FSWatcher | undefined;
 let processedSessions: Set<string> = new Set(); // Track sessions we've already opened
 
-// Path to the TestDriver sessions directory (used for IPC between SDK and extension)
+// Local HTTP server for receiving session notifications from SDK
+let httpServer: http.Server | undefined;
+let serverPort: number | undefined;
+
+// Path to the TestDriver directory (used for IPC between SDK and extension)
 const SESSION_DIR = path.join(os.homedir(), '.testdriver');
-const SESSIONS_DIR = path.join(SESSION_DIR, 'ide-sessions');
-// Legacy single session file for backward compatibility
-const SESSION_FILE = path.join(SESSION_DIR, 'ide-session.json');
+const INSTANCES_DIR = path.join(SESSION_DIR, 'ide-instances');
+
+// Generate a unique instance ID for this VS Code window
+const instanceId = crypto.randomUUID();
 
 interface SessionData {
   sessionId?: string;  // Unique identifier for this test session
@@ -25,15 +31,24 @@ interface SessionData {
   timestamp: number;
 }
 
+// Instance registration data written to disk for SDK discovery
+interface InstanceRegistration {
+  instanceId: string;
+  port: number;
+  workspacePaths: string[];
+  pid: number;
+  timestamp: number;
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('TestDriver.ai extension is now active');
 
-  // Ensure session directories exist
+  // Ensure directories exist
   if (!fs.existsSync(SESSION_DIR)) {
     fs.mkdirSync(SESSION_DIR, { recursive: true });
   }
-  if (!fs.existsSync(SESSIONS_DIR)) {
-    fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+  if (!fs.existsSync(INSTANCES_DIR)) {
+    fs.mkdirSync(INSTANCES_DIR, { recursive: true });
   }
 
   // Register commands
@@ -54,132 +69,124 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(openDebuggerCommand, closeDebuggerCommand, installMcpCommand);
 
-  // Start watching for session file changes
-  startSessionWatcher(context);
+  // Start local HTTP server for receiving session notifications
+  startHttpServer(context);
 
   // Auto-install MCP on first activation
   autoInstallMcp();
-
-  // Check for existing sessions
-  checkExistingSessions(context);
 }
 
-let sessionsWatcher: fs.FSWatcher | undefined;
+// Start HTTP server to receive session notifications from SDK
+function startHttpServer(context: vscode.ExtensionContext) {
+  httpServer = http.createServer((req, res) => {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-function startSessionWatcher(context: vscode.ExtensionContext) {
-  // Clean up existing watchers
-  if (fileWatcher) {
-    fileWatcher.close();
-  }
-  if (sessionsWatcher) {
-    sessionsWatcher.close();
-  }
-
-  // Watch the legacy session file for backward compatibility
-  try {
-    fileWatcher = fs.watch(SESSION_DIR, (eventType, filename) => {
-      if (filename === 'ide-session.json' && eventType === 'change') {
-        checkLegacySession(context);
-      }
-    });
-  } catch (error) {
-    // Directory might not exist yet, create it and try again
-    if (!fs.existsSync(SESSION_DIR)) {
-      fs.mkdirSync(SESSION_DIR, { recursive: true });
-      startSessionWatcher(context);
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
       return;
     }
-  }
 
-  // Watch the sessions directory for new session files (one per parallel test)
-  try {
-    if (!fs.existsSync(SESSIONS_DIR)) {
-      fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+    if (req.method === 'POST' && req.url === '/session') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        try {
+          const sessionData: SessionData = JSON.parse(body);
+          handleSessionNotification(context, sessionData);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (error) {
+          console.error('Error parsing session data:', error);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        }
+      });
+    } else if (req.method === 'GET' && req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', instanceId }));
+    } else {
+      res.writeHead(404);
+      res.end();
     }
-    sessionsWatcher = fs.watch(SESSIONS_DIR, (eventType, filename) => {
-      if (filename && filename.endsWith('.json')) {
-        checkSessionFile(context, path.join(SESSIONS_DIR, filename));
-      }
-    });
-  } catch (error) {
-    console.error('Error watching sessions directory:', error);
-  }
+  });
+
+  // Listen on a random available port
+  httpServer.listen(0, '127.0.0.1', () => {
+    const address = httpServer!.address();
+    if (address && typeof address === 'object') {
+      serverPort = address.port;
+      console.log(`TestDriver extension server listening on port ${serverPort}`);
+      
+      // Register this instance so SDK can discover it
+      registerInstance();
+    }
+  });
+
+  httpServer.on('error', (error) => {
+    console.error('HTTP server error:', error);
+  });
 }
 
-function checkExistingSessions(context: vscode.ExtensionContext) {
-  // Check legacy session file
-  checkLegacySession(context);
+// Register this VS Code instance for SDK discovery
+function registerInstance() {
+  if (!serverPort) {
+    return;
+  }
+
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const workspacePaths = workspaceFolders 
+    ? workspaceFolders.map(f => f.uri.fsPath)
+    : [];
+
+  const registration: InstanceRegistration = {
+    instanceId,
+    port: serverPort,
+    workspacePaths,
+    pid: process.pid,
+    timestamp: Date.now()
+  };
+
+  const registrationFile = path.join(INSTANCES_DIR, `${instanceId}.json`);
   
-  // Check all session files in the sessions directory
   try {
-    if (fs.existsSync(SESSIONS_DIR)) {
-      const files = fs.readdirSync(SESSIONS_DIR);
-      for (const file of files) {
-        if (file.endsWith('.json')) {
-          checkSessionFile(context, path.join(SESSIONS_DIR, file));
-        }
-      }
-    }
+    fs.writeFileSync(registrationFile, JSON.stringify(registration, null, 2));
+    console.log(`Registered VS Code instance: ${registrationFile}`);
   } catch (error) {
-    console.error('Error reading sessions directory:', error);
+    console.error('Failed to register instance:', error);
   }
 }
 
-function checkLegacySession(context: vscode.ExtensionContext) {
+// Unregister this instance on deactivation
+function unregisterInstance() {
+  const registrationFile = path.join(INSTANCES_DIR, `${instanceId}.json`);
   try {
-    if (fs.existsSync(SESSION_FILE)) {
-      const content = fs.readFileSync(SESSION_FILE, 'utf-8');
-      const sessionData: SessionData = JSON.parse(content);
-
-      // Check if session is recent (within last 30 seconds)
-      const isRecent = Date.now() - sessionData.timestamp < 30000;
-
-      if (isRecent && sessionData.debuggerUrl) {
-        // Generate a session ID if not present (for legacy support)
-        if (!sessionData.sessionId) {
-          sessionData.sessionId = `legacy-${sessionData.timestamp}`;
-        }
-        
-        const config = vscode.workspace.getConfiguration('testdriverai');
-        const autoOpen = config.get<boolean>('autoOpenPreview', true);
-
-        if (autoOpen && !processedSessions.has(sessionData.sessionId)) {
-          processedSessions.add(sessionData.sessionId);
-          openDebuggerPanel(context, sessionData);
-        }
-      }
+    if (fs.existsSync(registrationFile)) {
+      fs.unlinkSync(registrationFile);
     }
-  } catch (error) {
-    console.error('Error reading legacy session file:', error);
+  } catch {
+    // Ignore cleanup errors
   }
 }
 
-function checkSessionFile(context: vscode.ExtensionContext, sessionFilePath: string) {
-  try {
-    if (fs.existsSync(sessionFilePath)) {
-      const content = fs.readFileSync(sessionFilePath, 'utf-8');
-      const sessionData: SessionData = JSON.parse(content);
+// Handle incoming session notification from SDK
+function handleSessionNotification(context: vscode.ExtensionContext, sessionData: SessionData) {
+  // Generate session ID if not present
+  if (!sessionData.sessionId) {
+    sessionData.sessionId = `session-${Date.now()}`;
+  }
 
-      // Check if session is recent (within last 30 seconds)
-      const isRecent = Date.now() - sessionData.timestamp < 30000;
+  const config = vscode.workspace.getConfiguration('testdriverai');
+  const autoOpen = config.get<boolean>('autoOpenPreview', true);
 
-      if (isRecent && sessionData.debuggerUrl) {
-        // Generate a session ID from the filename if not present
-        if (!sessionData.sessionId) {
-          sessionData.sessionId = path.basename(sessionFilePath, '.json');
-        }
-        
-        const config = vscode.workspace.getConfiguration('testdriverai');
-        const autoOpen = config.get<boolean>('autoOpenPreview', true);
-
-        if (autoOpen && !processedSessions.has(sessionData.sessionId)) {
-          processedSessions.add(sessionData.sessionId);
-          openDebuggerPanel(context, sessionData);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error reading session file:', sessionFilePath, error);
+  if (autoOpen && !processedSessions.has(sessionData.sessionId)) {
+    processedSessions.add(sessionData.sessionId);
+    openDebuggerPanel(context, sessionData);
   }
 }
 
@@ -679,28 +686,13 @@ async function autoInstallMcp() {
 
 export function deactivate() {
   closeAllDebuggerPanels();
-  if (fileWatcher) {
-    fileWatcher.close();
-  }
-  if (sessionsWatcher) {
-    sessionsWatcher.close();
+  
+  // Stop HTTP server
+  if (httpServer) {
+    httpServer.close();
+    httpServer = undefined;
   }
   
-  // Clean up session files
-  try {
-    if (fs.existsSync(SESSION_FILE)) {
-      fs.unlinkSync(SESSION_FILE);
-    }
-    // Clean up all session files in the sessions directory
-    if (fs.existsSync(SESSIONS_DIR)) {
-      const files = fs.readdirSync(SESSIONS_DIR);
-      for (const file of files) {
-        if (file.endsWith('.json')) {
-          fs.unlinkSync(path.join(SESSIONS_DIR, file));
-        }
-      }
-    }
-  } catch {
-    // Ignore cleanup errors
-  }
+  // Unregister this instance
+  unregisterInstance();
 }
