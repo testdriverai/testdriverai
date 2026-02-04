@@ -7,7 +7,7 @@ const theme = require("./theme");
 const DEFAULT_REDRAW_OPTIONS = {
   enabled: true,           // Master switch to enable/disable redraw detection
   screenRedraw: true,      // Enable screen redraw detection
-  networkMonitor: true,    // Enable network activity monitoring
+  networkMonitor: false,    // Enable network activity monitoring
   noChangeTimeoutMs: 1500, // Exit early if no screen change detected after this time
 };
 
