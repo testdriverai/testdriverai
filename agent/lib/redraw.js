@@ -21,7 +21,8 @@ const createRedraw = (
   // Merge default options with provided defaults
   const baseOptions = { ...DEFAULT_REDRAW_OPTIONS, ...defaultOptions };
   
-  const networkUpdateInterval = 15000;
+  // Network check interval (ms) - used for speed calculation display
+  const networkCheckInterval = 250;
 
   let lastTxBytes = null;
   let lastRxBytes = null;
@@ -315,7 +316,7 @@ const createRedraw = (
       : effectiveNetworkSettled
         ? theme.green(`y`)
         : theme.dim(
-            `${Math.trunc((diffRxBytes + diffTxBytes) / networkUpdateInterval)}b/s`,
+            `${Math.trunc((diffRxBytes + diffTxBytes) / (networkCheckInterval / 1000))}b/s`,
           );
     let timeoutText = isTimeout
       ? theme.green(`y`)
