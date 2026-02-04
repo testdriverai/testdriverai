@@ -56,7 +56,7 @@ expect(result).toBeTruthy();
 ### Step 2: Initialize Your Project
 
 ```bash
-npx testdriverai@beta init
+npx testdriverai init
 ```
 
 This will:

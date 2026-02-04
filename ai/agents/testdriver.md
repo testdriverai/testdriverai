@@ -7,7 +7,7 @@ mcp-servers:
     command: npx
     args:
       - -p
-      - testdriverai@beta
+      - testdriverai
       - testdriverai-mcp
     env:
       TD_API_KEY: ${TD_API_KEY}
@@ -55,7 +55,7 @@ Use this agent when the user asks to:
 
 **CLI:**
 ```bash
-npx testdriverai@beta init
+npx testdriverai init
 ```
 
 **MCP (via this agent):**
@@ -97,10 +97,10 @@ Get your API key at: **https://console.testdriver.ai/team**
 
 ### Manual Installation
 
-If not using `init`, always use the **beta** tag when installing TestDriver:
+If not using `init`, install TestDriver:
 
 ```bash
-npm install --save-dev testdriverai@beta
+npm install --save-dev testdriverai
 ```
 
 ### Test Runner

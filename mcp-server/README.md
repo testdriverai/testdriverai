@@ -28,7 +28,7 @@ No installation needed! Just configure your MCP client to use npx:
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "env": {
         "TD_API_KEY": "${input:testdriver-api-key}"
       }
@@ -65,7 +65,7 @@ To use the TestDriver MCP server with GitHub Copilot coding agent:
     "testdriver": {
       "type": "local",
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "tools": ["*"],
       "env": {
         "TD_API_KEY": "COPILOT_MCP_TD_API_KEY"
@@ -98,7 +98,7 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "env": {
         "TD_API_KEY": "${input:testdriver-api-key}"
       }

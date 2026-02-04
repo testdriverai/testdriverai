@@ -214,6 +214,9 @@ class TestDriverAgent extends EventEmitter2 {
         // Ignore sandbox close errors during exit
       }
     }
+    
+    // Clean up IDE session file
+    this.cleanupIdeSessionFile();
 
     shouldRunPostrun =
       !this.hasRunPostrun &&
@@ -2056,15 +2059,26 @@ ${regression}
     const path = require("path");
 
     const sessionDir = path.join(os.homedir(), ".testdriver");
-    const sessionFile = path.join(sessionDir, "ide-session.json");
+    const sessionsDir = path.join(sessionDir, "ide-sessions");
+    
+    // Generate a unique session ID based on test file and timestamp
+    const testFileName = (data.testFile || this.thisFile || "test")
+      .split(path.sep).pop()
+      .replace(/\.[^/.]+$/, ""); // Remove file extension
+    const sessionId = `${testFileName}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const sessionFile = path.join(sessionsDir, `${sessionId}.json`);
 
     try {
-      // Ensure directory exists
+      // Ensure directories exist
       if (!fs.existsSync(sessionDir)) {
         fs.mkdirSync(sessionDir, { recursive: true });
       }
+      if (!fs.existsSync(sessionsDir)) {
+        fs.mkdirSync(sessionsDir, { recursive: true });
+      }
 
       const sessionData = {
+        sessionId: sessionId,
         debuggerUrl: debuggerUrl,
         resolution: data.resolution || this.config.TD_RESOLUTION,
         testFile: data.testFile || this.thisFile,
@@ -2074,8 +2088,27 @@ ${regression}
 
       fs.writeFileSync(sessionFile, JSON.stringify(sessionData, null, 2));
       logger.log(`IDE session file written: ${sessionFile}`);
+      
+      // Store session file path for cleanup on exit
+      this._ideSessionFile = sessionFile;
     } catch (error) {
       logger.warn(`Failed to write IDE session file: ${error.message}`);
+    }
+  }
+  
+  // Clean up IDE session file when test completes
+  cleanupIdeSessionFile() {
+    if (this._ideSessionFile) {
+      const fs = require("fs");
+      try {
+        if (fs.existsSync(this._ideSessionFile)) {
+          fs.unlinkSync(this._ideSessionFile);
+          logger.log(`IDE session file cleaned up: ${this._ideSessionFile}`);
+        }
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+      this._ideSessionFile = null;
     }
   }
 
