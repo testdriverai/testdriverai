@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.2.77",
+  "version": "7.2.79",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "types": "sdk.d.ts",
@@ -62,7 +62,8 @@
     "serve-report": "npx http-server . -p 8080 -o report.html",
     "report": "npm run generate-report && npm run serve-report",
     "generate:skills": "node scripts/generate-skills.js",
-    "prepack": "cd mcp-server && npm ci && npm run build"
+    "build:mcp": "cd mcp-server && npm ci && npm run build",
+    "prepublishOnly": "npm run build:mcp"
   },
   "author": "",
   "license": "ISC",

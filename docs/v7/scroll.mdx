@@ -9,6 +9,21 @@ icon: "arrows-up-down"
 
 Scroll the page or active element in any direction using mouse wheel or keyboard.
 
+<Warning>
+  **Focus Requirements**
+  
+  Scrolling requires the page or a frame to be focused. If an input field or other interactive element has focus, scroll commands may not work as expected. Before scrolling, ensure focus is on the page by:
+  - Clicking on a non-interactive area (e.g., page background)
+  - Pressing the Escape key to unfocus interactive elements
+  - Clicking outside of input fields or text areas
+  
+  **If scroll is still not working**, try using Page Down/Page Up keys directly:
+  ```javascript
+  await testdriver.pressKeys(['pagedown']); // Scroll down
+  await testdriver.pressKeys(['pageup']);   // Scroll up
+  ```
+</Warning>
+
 ## Syntax
 
 ```javascript
@@ -133,6 +148,27 @@ await testdriver.scrollUntilImage('loading spinner', 'down', 5000, 'keyboard', n
 ```
 
 ## Best Practices
+
+<Check>
+  **Ensure page has focus before scrolling**
+  
+  ```javascript
+  // After typing in an input, unfocus it first
+  await testdriver.find('email input').click();
+  await testdriver.type('user@example.com');
+  
+  // Click elsewhere or press Escape before scrolling
+  await testdriver.pressKeys(['escape']);
+  // Or click a non-interactive area
+  // await testdriver.find('page background').click();
+  
+  // Now scroll will work properly
+  await testdriver.scroll('down', 300);
+  
+  // If scroll still doesn't work, use Page Down directly
+  // await testdriver.pressKeys(['pagedown']);
+  ```
+</Check>
 
 <Check>
   **Choose the right scroll method**

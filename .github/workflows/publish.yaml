@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build MCP Server
+        run: npm run build:mcp
+
       - name: Bump version (patch)
         run: npm version patch --no-git-tag-version
 

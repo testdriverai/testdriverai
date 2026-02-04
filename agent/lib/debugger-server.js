@@ -113,6 +113,10 @@ async function startDebugger(config = {}, emitter) {
       });
     }
 
+    // Store the debugger URL and config for later use
+    module.exports.debuggerUrl = url;
+    module.exports.config = config;
+
     return { port, url };
   } catch (error) {
     console.error("Failed to start debugger server:", error);
@@ -140,4 +144,6 @@ module.exports = {
   stopDebugger,
   broadcastEvent,
   createDebuggerServer,
+  debuggerUrl: null,
+  config: null,
 };

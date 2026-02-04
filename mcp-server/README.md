@@ -47,6 +47,38 @@ npm run build
 
 ## Usage
 
+### With GitHub Copilot Coding Agent
+
+To use the TestDriver MCP server with GitHub Copilot coding agent:
+
+1. **Create a Copilot environment secret:**
+   - Go to your repository **Settings** → **Environments**
+   - Create or select the `copilot` environment
+   - Add an environment secret named `COPILOT_MCP_TD_API_KEY`
+   - Set the value to your TestDriver API key from https://console.testdriver.ai/team
+
+2. **Add the MCP configuration** to your repository's **Settings** → **Copilot** → **Coding agent** → **MCP configuration**:
+
+```json
+{
+  "mcpServers": {
+    "testdriver": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "tools": ["*"],
+      "env": {
+        "TD_API_KEY": "COPILOT_MCP_TD_API_KEY"
+      }
+    }
+  }
+}
+```
+
+**Note:** The MCP server supports both `TD_API_KEY` and `COPILOT_MCP_TD_API_KEY` environment variables for maximum compatibility with GitHub Copilot coding agent.
+
+For more information, see [Extending GitHub Copilot coding agent with Model Context Protocol](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-coding-agent-with-mcp).
+
 ### With Claude Desktop / Cursor
 
 Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/Claude/claude_desktop_config.json`):

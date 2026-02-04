@@ -1,7 +1,7 @@
 ---
 name: testdriver
 description: An expert at creating and refining automated tests using TestDriver.ai
-tools: ["*"]
+tools: ['vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/openSimpleBrowser', 'vscode/runCommand', 'vscode/askQuestions', 'vscode/switchAgent', 'vscode/vscodeAPI', 'vscode/extensions', 'execute/runNotebookCell', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/awaitTerminal', 'execute/killTerminal', 'execute/runTask', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read/getNotebookSummary', 'read/problems', 'read/readFile', 'read/readNotebookCellOutput', 'read/terminalSelection', 'read/terminalLastCommand', 'read/getTaskOutput', 'agent/runSubagent', 'edit/createDirectory', 'edit/createFile', 'edit/createJupyterNotebook', 'edit/editFiles', 'edit/editNotebook', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'search/usages', 'search/searchSubagent', 'web/fetch', 'web/githubRepo', 'testdriver/assert', 'testdriver/check', 'testdriver/click', 'testdriver/exec', 'testdriver/find', 'testdriver/find_and_click', 'testdriver/findall', 'testdriver/focus_application', 'testdriver/hover', 'testdriver/list_local_screenshots', 'testdriver/press_keys', 'testdriver/screenshot', 'testdriver/scroll', 'testdriver/session_extend', 'testdriver/session_start', 'testdriver/session_status', 'testdriver/type', 'testdriver/view_local_screenshot', 'testdriver/wait', 'todo']
 mcp-servers:
   testdriver:
     command: npx
@@ -48,6 +48,41 @@ Use this agent when the user asks to:
 
 ## Prerequisites
 
+### Quick Start - Creating Your First TestDriver Test
+
+**For new projects, use the `init` command to automatically set up everything:**
+
+**CLI:**
+```bash
+npx testdriverai@beta init
+```
+
+**MCP (via this agent):**
+```
+// apiKey is optional - if not provided, user adds it to .env manually after init
+init({ directory: "." })
+
+// Or with API key if available (though MCP typically won't have access to it)
+init({ directory: ".", apiKey: "your_api_key" })
+```
+
+**Note:** The `apiKey` parameter is optional. If not provided (which is typical for MCP), init will still create all project files successfully. The user can manually add `TD_API_KEY=...` to the `.env` file afterward.
+
+The `init` command creates:
+- ✅ `package.json` with proper dependencies
+- ✅ Example test files (`tests/example.test.js`, `tests/login.js`)
+- ✅ `vitest.config.js` with correct timeouts
+- ✅ `.gitignore` with `.env`
+- ✅ GitHub Actions workflow (`.github/workflows/testdriver.yml`)
+- ✅ VSCode MCP config (`.vscode/mcp.json`)
+- ✅ TestDriver skills and agents in `.github/`
+- ✅ `.env` file (user adds API key manually if not provided to init)
+
+**After running init:**
+1. User adds their API key to `.env`: `TD_API_KEY=...`
+2. Test the setup: `npx vitest run`
+3. Start building custom tests using the examples as templates
+
 ### API Key Setup
 
 The user **must** have a TestDriver API key set in their environment:
@@ -59,14 +94,12 @@ TD_API_KEY=your_api_key_here
 
 Get your API key at: **https://console.testdriver.ai/team**
 
-### Installation
+### Manual Installation
 
-Always use the **beta** tag when installing TestDriver:
+If not using `init`, always use the **beta** tag when installing TestDriver:
 
 ```bash
 npm install --save-dev testdriverai@beta
-# or
-npx testdriverai@beta init
 ```
 
 ### Test Runner
@@ -119,6 +152,7 @@ describe("My Test Suite", () => {
     const button = await testdriver.find("Sign In button");
     await testdriver.screenshot(); // Capture before click
     await button.click();
+    await testdriver.wait(2000); // Wait for state change
     await testdriver.screenshot(); // Capture after click
 
     // Assert using natural language
@@ -207,6 +241,23 @@ await testdriver.screenshot(1, false, true);
 - After any action that changes the page state
 - When debugging a flaky or failing test
 
+**⚠️ Important: Add delays before screenshots after actions**
+
+When you click or interact with an element that triggers a state change (page navigation, modal opening, content loading), **add a short delay before taking a screenshot** to allow the application state to update:
+
+```javascript
+await element.click();
+await testdriver.wait(2000); // Wait 2-3 seconds for state change
+await testdriver.screenshot(); // Now capture the updated state
+```
+
+This is especially important for:
+- Navigation clicks (page transitions)
+- Button clicks that open modals or dialogs
+- Form submissions
+- Actions that trigger AJAX requests or animations
+- Any interaction where visual feedback takes time to appear
+
 **Screenshot file organization:**
 
 ```
@@ -258,6 +309,7 @@ find_and_click({ description: "email input field" })
 → Returns: screenshot with element highlighted
 → ⚠️ IMMEDIATELY append to test file:
    await testdriver.find("email input field").click();
+   await testdriver.wait(2000); // Wait for state change
    await testdriver.screenshot(); // Capture after click
 
 type({ text: "user@example.com" })
@@ -399,6 +451,7 @@ it("should incrementally build test", async (context) => {
 
   // Step 2: Interact
   await element.click();
+  await testdriver.wait(2000); // Wait for state change
   await testdriver.screenshot(); // Capture after click
 
   // Step 3: Assert and log
@@ -463,10 +516,23 @@ await element.click();
 
 ### Scrolling
 
+**⚠️ Important: Ensure proper focus before scrolling**
+
+Scrolling requires the page or frame to be focused, not an input field or other interactive element. If an input is focused, scroll commands may not work as expected.
+
 ```javascript
+// If you've been typing in an input, click elsewhere first
+await testdriver.find("page background").click();
+// Or press Escape to unfocus
+await testdriver.pressKeys(["escape"]);
+
+// Now scroll
 await testdriver.scroll("down");
 await testdriver.scrollUntilText("Footer text");
 await testdriver.scrollUntilImage("Product image at bottom");
+
+// If scroll is not working, try using Page Down key directly
+await testdriver.pressKeys(["pagedown"]);
 ```
 
 ### Executing Code in Sandbox
@@ -498,6 +564,7 @@ await testdriver.provision.chrome({ url: "https://example.com" });
 await testdriver.screenshot(); // After page load
 
 await testdriver.find("Login button").click();
+await testdriver.wait(2000); // Wait for state change
 await testdriver.screenshot(); // After click
 
 await testdriver.type("user@example.com");
