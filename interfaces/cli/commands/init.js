@@ -8,6 +8,14 @@ const readline = require("readline");
 const os = require("os");
 const { execSync } = require("child_process");
 
+// Load .env file for CLI usage (TD_API_ROOT, etc.)
+require("dotenv").config();
+
+// API configuration
+const API_BASE_URL = process.env.TD_API_ROOT || "https://v6.testdriver.ai";
+const POLL_INTERVAL = 5000; // 5 seconds
+const POLL_TIMEOUT = 900000; // 15 minutes
+
 /**
  * Init command - scaffolds Vitest SDK example tests for TestDriver
  */
@@ -79,8 +87,33 @@ class InitCommand extends BaseCommand {
     }
 
     console.log(chalk.cyan("  Setting up your TestDriver API key...\n"));
+
+    // Ask user how they want to authenticate
+    const choice = await this.askChoice(
+      "  How would you like to authenticate?\n",
+      [
+        { key: "1", label: "Login with browser", description: "(recommended)" },
+        { key: "2", label: "Enter API key manually", description: "" },
+      ],
+    );
+
+    if (choice === "1") {
+      // Browser login flow
+      try {
+        const apiKey = await this.browserLogin();
+        if (apiKey) {
+          console.log(chalk.green("\n  ✓ Logged in successfully!\n"));
+          return apiKey;
+        }
+      } catch (error) {
+        console.log(chalk.yellow(`\n  ⚠️  Browser login failed: ${error.message}\n`));
+        console.log(chalk.gray("  Falling back to manual API key entry...\n"));
+      }
+    }
+
+    // Manual API key entry
     console.log(
-      chalk.gray("  Get your API key from: https://console.testdriver.ai/team"),
+      chalk.gray("  Get your API key from: https://console.testdriver.ai/team\n"),
     );
 
     // Ask if user wants to open the browser
@@ -89,7 +122,6 @@ class InitCommand extends BaseCommand {
     );
     if (shouldOpen) {
       try {
-        // Dynamic import for ES module
         const open = (await import("open")).default;
         await open("https://console.testdriver.ai/team");
         console.log(chalk.gray("  Opening browser...\n"));
@@ -117,6 +149,119 @@ class InitCommand extends BaseCommand {
       console.log(chalk.gray("     TD_API_KEY=your_api_key\n"));
       return null;
     }
+  }
+
+  /**
+   * Browser-based login flow using device code
+   * @returns {Promise<string>} The API key
+   */
+  async browserLogin() {
+    // Step 1: Create device code
+    process.stdout.write(chalk.gray("  Requesting authorization code..."));
+    
+    const createResponse = await fetch(`${API_BASE_URL}/auth/device/code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!createResponse.ok) {
+      throw new Error("Failed to create device code");
+    }
+
+    const { device_code, verification_uri, expires_in, interval } = await createResponse.json();
+    console.log(chalk.green(" done\n"));
+
+    // Step 2: Open browser
+    console.log(chalk.cyan(`  Opening browser to authorize CLI...\n`));
+    console.log(chalk.gray(`  If browser doesn't open, visit:\n  ${verification_uri}\n`));
+
+    try {
+      const open = (await import("open")).default;
+      await open(verification_uri);
+    } catch (error) {
+      // Browser didn't open, user can use the URL manually
+    }
+
+    // Step 3: Poll for token
+    const pollInterval = (interval || 5) * 1000;
+    const timeout = (expires_in || 900) * 1000;
+    const startTime = Date.now();
+
+    process.stdout.write(chalk.gray("  Waiting for authorization..."));
+    
+    // Start spinner
+    const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    let spinnerIndex = 0;
+    const spinnerInterval = setInterval(() => {
+      process.stdout.write(`\r  Waiting for authorization... ${spinnerFrames[spinnerIndex]}`);
+      spinnerIndex = (spinnerIndex + 1) % spinnerFrames.length;
+    }, 100);
+
+    try {
+      while (Date.now() - startTime < timeout) {
+        await this.sleep(pollInterval);
+
+        const tokenResponse = await fetch(`${API_BASE_URL}/auth/device/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deviceCode: device_code }),
+        });
+
+        const data = await tokenResponse.json();
+
+        if (tokenResponse.ok && data.apiKey) {
+          clearInterval(spinnerInterval);
+          process.stdout.write("\r  Waiting for authorization... " + chalk.green("✓") + "\n");
+          return data.apiKey;
+        }
+
+        if (data.error === "expired_token") {
+          clearInterval(spinnerInterval);
+          throw new Error("Authorization timed out. Please try again.");
+        }
+
+        // authorization_pending - continue polling
+      }
+
+      clearInterval(spinnerInterval);
+      throw new Error("Authorization timed out. Please try again.");
+    } catch (error) {
+      clearInterval(spinnerInterval);
+      process.stdout.write("\n");
+      throw error;
+    }
+  }
+
+  /**
+   * Ask user to choose from a list of options
+   */
+  async askChoice(question, options) {
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      console.log(question);
+      for (const opt of options) {
+        const desc = opt.description ? chalk.gray(` ${opt.description}`) : "";
+        console.log(`  ${chalk.cyan(opt.key)}. ${opt.label}${desc}`);
+      }
+      console.log("");
+
+      rl.question("  Enter choice [1]: ", (answer) => {
+        rl.close();
+        const normalized = answer.trim() || "1";
+        resolve(normalized);
+      });
+    });
+  }
+
+  /**
+   * Sleep for a given number of milliseconds
+   */
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

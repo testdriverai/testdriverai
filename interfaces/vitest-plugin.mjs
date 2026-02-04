@@ -1,5 +1,6 @@
 import { execSync } from "child_process";
 import crypto from "crypto";
+import fs from "fs";
 import { createRequire } from "module";
 import path from "path";
 import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
@@ -1202,6 +1203,49 @@ function getGitInfo() {
 // ============================================================================
 
 /**
+ * Extract PR number from GitHub Actions environment
+ * Checks multiple sources: env vars, event file, and GITHUB_REF
+ * @returns {string|null} PR number or null if not found
+ */
+function extractPRNumber() {
+  // Try direct environment variables first
+  let prNumber =
+    process.env.GITHUB_PR_NUMBER ||
+    process.env.TD_GITHUB_PR ||
+    process.env.PR_NUMBER;
+
+  if (prNumber) {
+    return prNumber;
+  }
+
+  // Try to extract from GitHub Actions event path
+  if (process.env.GITHUB_EVENT_PATH) {
+    try {
+      const eventData = JSON.parse(
+        fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"),
+      );
+      if (eventData.pull_request?.number) {
+        return String(eventData.pull_request.number);
+      }
+    } catch (err) {
+      logger.debug("Could not read GitHub event file:", err.message);
+    }
+  }
+
+  // Try to extract from GITHUB_REF (refs/pull/123/merge or refs/pull/123/head)
+  if (process.env.GITHUB_REF) {
+    const match = process.env.GITHUB_REF.match(
+      /refs\/pull\/(\d+)\/(merge|head)/,
+    );
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+/**
  * Post GitHub comment with test results if enabled
  * Checks for GitHub token and PR number in environment variables
  * @param {string} testRunUrl - URL to the test run
@@ -1220,7 +1264,7 @@ async function postGitHubCommentIfEnabled(testRunUrl, stats, completeData) {
 
     // Check if GitHub comment posting is enabled
     const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    const prNumber = process.env.GITHUB_PR_NUMBER;
+    const prNumber = extractPRNumber();
     const commitSha = process.env.GITHUB_SHA || pluginState.gitInfo.commit;
 
     // Only post if we have a token and either a PR number or commit SHA

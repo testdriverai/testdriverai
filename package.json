@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.2.79",
+  "version": "7.2.83",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "types": "sdk.d.ts",
@@ -132,7 +132,7 @@
     "mocha": "^10.8.2",
     "node-addon-api": "^8.0.0",
     "prettier": "3.3.3",
-    "testdriverai": "^7.2.60",
+    "testdriverai": "^7.2.79",
     "vitest": "^4.0.18"
   },
   "optionalDependencies": {
