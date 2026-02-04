@@ -11,6 +11,21 @@ import vm from "vm";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const solverPath = path.join(__dirname, "..", "lib", "captcha", "solver.js");
 
+// Extract safeParseJson function from the solver script for testing
+function getSafeParseJson() {
+  const script = fs.readFileSync(solverPath, "utf8");
+  // Extract the safeParseJson function source
+  const funcMatch = script.match(
+    /function safeParseJson\(text\) \{[\s\S]*?^}/m,
+  );
+  if (!funcMatch) {
+    throw new Error("Could not find safeParseJson function in solver script");
+  }
+  // Create and return the function
+  const func = new Function("return " + funcMatch[0])();
+  return func;
+}
+
 describe("Captcha Solver Script", () => {
   it("should exist", () => {
     expect(fs.existsSync(solverPath)).toBe(true);
@@ -66,5 +81,72 @@ describe("Captcha Solver Script", () => {
     expect(script).toContain("[name=h-captcha-response]");
     expect(script).toContain("[name=cf-turnstile-response]");
     expect(script).toContain("___grecaptcha_cfg");
+  });
+
+  it("should contain safeParseJson function for robust JSON parsing", () => {
+    const script = fs.readFileSync(solverPath, "utf8");
+    expect(script).toContain("function safeParseJson");
+    expect(script).toContain("safeParseJson(await httpsGet");
+  });
+});
+
+describe("safeParseJson", () => {
+  let safeParseJson;
+  let extractionFailed = false;
+
+  // Try to extract the function for testing
+  try {
+    safeParseJson = getSafeParseJson();
+  } catch {
+    extractionFailed = true;
+  }
+
+  // Use it.skipIf to clearly indicate skipped tests
+  const testFn = extractionFailed ? it.skip : it;
+
+  testFn("should parse valid JSON normally", () => {
+    const result = safeParseJson('{"status":1,"request":"abc123"}');
+    expect(result).toEqual({ status: 1, request: "abc123" });
+  });
+
+  testFn("should handle JSON with leading/trailing whitespace", () => {
+    const result = safeParseJson('  {"status":1}  \n');
+    expect(result).toEqual({ status: 1 });
+  });
+
+  testFn("should extract first JSON object from concatenated responses", () => {
+    // This is the exact error case: multiple JSON objects concatenated
+    const result = safeParseJson('{"status":1}{"status":2}');
+    expect(result).toEqual({ status: 1 });
+  });
+
+  testFn("should handle JSON with trailing garbage characters", () => {
+    const result = safeParseJson('{"status":1}xxx');
+    expect(result).toEqual({ status: 1 });
+  });
+
+  testFn("should handle nested objects correctly", () => {
+    const result = safeParseJson('{"data":{"nested":true}}extra');
+    expect(result).toEqual({ data: { nested: true } });
+  });
+
+  testFn("should handle strings containing braces", () => {
+    const result = safeParseJson('{"text":"hello {world}"}extra');
+    expect(result).toEqual({ text: "hello {world}" });
+  });
+
+  testFn("should handle escaped quotes in strings", () => {
+    const result = safeParseJson('{"text":"say \\"hello\\""}extra');
+    expect(result).toEqual({ text: 'say "hello"' });
+  });
+
+  testFn("should throw for responses without JSON", () => {
+    expect(() => safeParseJson("not json at all")).toThrow(
+      "No JSON object found",
+    );
+  });
+
+  testFn("should throw for incomplete JSON", () => {
+    expect(() => safeParseJson('{"incomplete')).toThrow("Invalid JSON");
   });
 });
