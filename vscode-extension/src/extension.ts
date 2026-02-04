@@ -105,7 +105,7 @@ function checkExistingSession(context: vscode.ExtensionContext) {
 function openDebuggerPanel(context: vscode.ExtensionContext, sessionData?: SessionData) {
   // If panel already exists, reveal it
   if (debuggerPanel) {
-    debuggerPanel.reveal(vscode.ViewColumn.Beside);
+    debuggerPanel.reveal(vscode.ViewColumn.Active);
 
     // Update content if we have new session data
     if (sessionData) {
@@ -118,7 +118,7 @@ function openDebuggerPanel(context: vscode.ExtensionContext, sessionData?: Sessi
   debuggerPanel = vscode.window.createWebviewPanel(
     'testdriverDebugger',
     'TestDriver Live Preview',
-    vscode.ViewColumn.Beside,
+    vscode.ViewColumn.Active,
     {
       enableScripts: true,
       retainContextWhenHidden: true,
@@ -311,7 +311,10 @@ function getWaitingHtml(): string {
 function getDebuggerHtml(debuggerUrl: string, encodedData: string, webview: vscode.Webview, context: vscode.ExtensionContext): string {
   // We'll embed the debugger in an iframe pointing to the local server
   // The debugger server must be running for this to work
-  const fullUrl = `${debuggerUrl}?data=${encodedData}`;
+  // Parse the URL properly to handle existing query parameters
+  const url = new URL(debuggerUrl);
+  url.searchParams.set('data', encodedData);
+  const fullUrl = url.toString();
 
   return `<!DOCTYPE html>
 <html lang="en">
