@@ -28,15 +28,8 @@ class InitCommand extends BaseCommand {
     // Prompt for API key first
     const apiKey = await this.promptForApiKey();
 
-    // Run the shared init logic
-    const result = await initProject({
-      targetDir: process.cwd(),
-      apiKey: apiKey,
-      skipInstall: false,
-    });
-
-    // Print results
-    for (const msg of result.results) {
+    // Helper to print progress messages with appropriate colors
+    const printProgress = (msg) => {
       if (msg.startsWith("✓")) {
         console.log(chalk.green(`  ${msg}`));
       } else if (msg.startsWith("⚠") || msg.startsWith("ℹ")) {
@@ -46,7 +39,15 @@ class InitCommand extends BaseCommand {
       } else {
         console.log(`  ${msg}`);
       }
-    }
+    };
+
+    // Run the shared init logic with real-time progress output
+    const result = await initProject({
+      targetDir: process.cwd(),
+      apiKey: apiKey,
+      skipInstall: false,
+      onProgress: printProgress,
+    });
 
     // Print errors if any
     for (const err of result.errors) {
