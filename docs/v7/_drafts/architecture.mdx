@@ -80,7 +80,7 @@ This system provides comprehensive test execution tracking, linking test runs wi
 ## Data Models
 
 ### TdTestRun
-Represents a complete test suite execution (e.g., `npx vitest run`).
+Represents a complete test suite execution (e.g., `vitest run`).
 
 **Key Fields:**
 - `runId`: Unique identifier
@@ -236,7 +236,7 @@ Mark test run as complete.
 ### Flow 1: Automated with Vitest Reporter
 
 ```
-1. Developer runs: npx vitest run
+1. Developer runs: vitest run
 2. Vitest starts, reporter initializes
 3. Reporter creates TdTestRun
 4. For each test:
@@ -252,7 +252,7 @@ Mark test run as complete.
 ```
 1. Start dashcam: dashcam start
 2. Set session ID: export DASHCAM_SESSION_ID=$(dashcam session-id)
-3. Run tests: npx vitest run
+3. Run tests: vitest run
 4. Reporter creates test run with dashcamSessionId
 5. Tests execute, dashcam records
 6. Stop dashcam: dashcam stop
@@ -277,7 +277,7 @@ jobs:
       - name: Run Tests
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        run: npx vitest run
+        run: vitest run
       - name: Publish Recording
         if: always()
         run: |

@@ -266,7 +266,7 @@ This is useful for:
 2. **Interact**: Use `find`, `click`, `type` etc. - each action returns generated code
 3. **Build Test**: Append the generated code from each action to your test file
 4. **Assert**: Use `assert` to verify expected state
-5. **Run Test**: Use the CLI (`npx vitest run <testFile>`) to run the test from scratch
+5. **Run Test**: Use the CLI (`vitest run <testFile>`) to run the test from scratch
 
 Each tool returns a screenshot showing the result AND the code to add to your test file.
 

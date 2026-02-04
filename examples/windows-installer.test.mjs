@@ -6,7 +6,7 @@
  * 
  * Based on the v6 GitButler provisioning workflow.
  * 
- * Run: TD_OS=windows npx vitest run examples/windows-installer.test.mjs
+ * Run: TD_OS=windows vitest run examples/windows-installer.test.mjs
  */
 
 import { describe, it } from "vitest";

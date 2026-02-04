@@ -57,7 +57,7 @@ Store sensitive credentials as GitHub repository secrets so they're never expose
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
         TD_USERNAME: ${{ secrets.TD_USERNAME }}
         TD_PASSWORD: ${{ secrets.TD_PASSWORD }}
-      run: npx vitest run
+      run: vitest run
     ```
   </Step>
 </Steps>
