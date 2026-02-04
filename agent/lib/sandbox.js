@@ -1,6 +1,7 @@
 const WebSocket = require("ws");
 const crypto = require("crypto");
 const { events } = require("../events");
+const logger = require("./logger");
 
 /**
  * Generate Sentry trace headers for distributed tracing
@@ -10,14 +11,14 @@ const { events } = require("../events");
  */
 function getSentryTraceHeaders(sessionId) {
   if (!sessionId) return {};
-  
+
   // Same logic as API: derive trace ID from session ID
-  const traceId = crypto.createHash('md5').update(sessionId).digest('hex');
-  const spanId = crypto.randomBytes(8).toString('hex');
-  
+  const traceId = crypto.createHash("md5").update(sessionId).digest("hex");
+  const spanId = crypto.randomBytes(8).toString("hex");
+
   return {
-    'sentry-trace': `${traceId}-${spanId}-1`,
-    'baggage': `sentry-trace_id=${traceId},sentry-sample_rate=1.0,sentry-sampled=true`
+    "sentry-trace": `${traceId}-${spanId}-1`,
+    baggage: `sentry-trace_id=${traceId},sentry-sample_rate=1.0,sentry-sampled=true`,
   };
 }
 
@@ -36,6 +37,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.os = null; // Store OS value to send with every message
       this.sessionInstance = sessionInstance; // Store session instance to include in messages
       this.traceId = null; // Sentry trace ID for debugging
+      this.reconnectAttempts = 0;
+      this.maxReconnectAttempts = 5;
+      this.intentionalDisconnect = false;
+      this.apiRoot = null;
+      this.apiKey = null;
     }
 
     /**
@@ -90,12 +96,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         });
 
         const requestId = message.requestId;
-        
+
         // Set up timeout to prevent hanging requests
         const timeoutId = setTimeout(() => {
           if (this.ps[requestId]) {
             delete this.ps[requestId];
-            rejectPromise(new Error(`Sandbox message '${message.type}' timed out after ${timeout}ms`));
+            rejectPromise(
+              new Error(
+                `Sandbox message '${message.type}' timed out after ${timeout}ms`,
+              ),
+            );
           }
         }, timeout);
 
@@ -115,12 +125,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         return p;
       }
-      
+
       // Return a rejected promise if socket is not available
-      return Promise.reject(new Error('Sandbox socket not connected'));
+      return Promise.reject(new Error("Sandbox socket not connected"));
     }
 
     async auth(apiKey) {
+      this.apiKey = apiKey;
       let reply = await this.send({
         type: "authenticate",
         apiKey,
@@ -128,15 +139,15 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
       if (reply.success) {
         this.authenticated = true;
-        
+
         // Log and store the Sentry trace ID for debugging
         if (reply.traceId) {
           this.traceId = reply.traceId;
-          console.log('');
-          console.log(`🔗 View Trace:`);
-          console.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
+          logger.log('');
+          logger.log(`🔗 View Trace:`);
+          logger.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
         }
-        
+
         emitter.emit(events.sandbox.authenticated, { traceId: reply.traceId });
         return true;
       }
@@ -161,24 +172,58 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
     }
 
+    async handleConnectionLoss() {
+      if (this.intentionalDisconnect) return;
+
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        const errorMsg =
+          "Unable to reconnect to TestDriver sandbox after multiple attempts. Please check your internet connection.";
+        emitter.emit(events.error.sandbox, errorMsg);
+        console.error(errorMsg);
+        return;
+      }
+
+      this.reconnectAttempts++;
+      const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 30000);
+
+      console.log(
+        `[Sandbox] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+      );
+
+      setTimeout(async () => {
+        try {
+          await this.boot(this.apiRoot);
+          if (this.apiKey) {
+            await this.auth(this.apiKey);
+          }
+          console.log("[Sandbox] Reconnected successfully.");
+        } catch (e) {
+          // Ignore error here as the boot's error handler will trigger handleConnectionLoss again
+        }
+      }, delay);
+    }
+
     async boot(apiRoot) {
+      if (apiRoot) this.apiRoot = apiRoot;
       return new Promise((resolve, reject) => {
         // Get session ID for Sentry trace headers
         const sessionId = this.sessionInstance?.get();
-        
+
         if (!sessionId) {
-          console.warn('[Sandbox] No session ID available at boot time - Sentry tracing will not be available');
+          console.warn(
+            "[Sandbox] No session ID available at boot time - Sentry tracing will not be available",
+          );
         }
-        
+
         const sentryHeaders = getSentryTraceHeaders(sessionId);
 
         // Build WebSocket URL with Sentry trace headers as query params
         const wsUrl = new URL(apiRoot.replace("https://", "wss://"));
-        if (sentryHeaders['sentry-trace']) {
-          wsUrl.searchParams.set('sentry-trace', sentryHeaders['sentry-trace']);
+        if (sentryHeaders["sentry-trace"]) {
+          wsUrl.searchParams.set("sentry-trace", sentryHeaders["sentry-trace"]);
         }
-        if (sentryHeaders['baggage']) {
-          wsUrl.searchParams.set('baggage', sentryHeaders['baggage']);
+        if (sentryHeaders["baggage"]) {
+          wsUrl.searchParams.set("baggage", sentryHeaders["baggage"]);
         }
 
         this.socket = new WebSocket(wsUrl.toString());
@@ -189,18 +234,22 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           // Emit a clear error event for API key issues
           reject();
           this.apiSocketConnected = false;
+          this.handleConnectionLoss();
         });
 
         this.socket.on("error", (err) => {
-          console.log("Socket Error");
-          err && console.log(err);
+          logger.log("Socket Error");
+          err && logger.log(err);
           clearInterval(this.heartbeat);
           emitter.emit(events.error.sandbox, err);
           this.apiSocketConnected = false;
-          throw err;
+          this.handleConnectionLoss();
+          // We don't throw here to avoid crashing the process, let reconnection handle it
+          reject(err);
         });
 
         this.socket.on("open", async () => {
+          this.reconnectAttempts = 0;
           this.apiSocketConnected = true;
 
           this.heartbeat = setInterval(() => {
@@ -216,7 +265,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           let message = JSON.parse(raw);
 
           // Handle progress messages (no requestId needed)
-          if (message.type === 'sandbox.progress') {
+          if (message.type === "sandbox.progress") {
             emitter.emit(events.sandbox.progress, {
               step: message.step,
               message: message.message,
@@ -250,11 +299,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
      * Close the WebSocket connection and clean up resources
      */
     close() {
+      this.intentionalDisconnect = true;
       if (this.heartbeat) {
         clearInterval(this.heartbeat);
         this.heartbeat = null;
       }
-      
+
       if (this.socket) {
         try {
           this.socket.close();
@@ -263,12 +313,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         }
         this.socket = null;
       }
-      
+
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
       this.authenticated = false;
       this.instance = null;
-      
+
       // Silently clear pending promises without rejecting
       // (rejecting causes unhandled promise rejections during cleanup)
       this.ps = {};

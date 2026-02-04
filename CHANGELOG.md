@@ -1,3 +1,87 @@
+## [7.2.81](https://github.com/testdriverai/testdriverai/compare/v7.2.80...v7.2.81) (2026-02-04)
+
+
+
+## [7.2.80](https://github.com/testdriverai/testdriverai/compare/v7.2.79...v7.2.80) (2026-02-04)
+
+
+
+## [7.2.79](https://github.com/testdriverai/testdriverai/compare/v7.2.78...v7.2.79) (2026-02-03)
+
+
+
+## [7.2.78](https://github.com/testdriverai/testdriverai/compare/v7.2.77...v7.2.78) (2026-02-03)
+
+
+
+## [7.2.77](https://github.com/testdriverai/testdriverai/compare/v7.2.76...v7.2.77) (2026-02-02)
+
+
+
+## [7.2.76](https://github.com/testdriverai/testdriverai/compare/v7.2.75...v7.2.76) (2026-02-02)
+
+
+
+## [7.2.75](https://github.com/testdriverai/testdriverai/compare/v7.2.74...v7.2.75) (2026-02-02)
+
+
+
+## [7.2.74](https://github.com/testdriverai/testdriverai/compare/v7.2.73...v7.2.74) (2026-02-02)
+
+
+
+## [7.2.73](https://github.com/testdriverai/testdriverai/compare/v7.2.72...v7.2.73) (2026-02-02)
+
+
+
+## [7.2.72](https://github.com/testdriverai/testdriverai/compare/v7.2.71...v7.2.72) (2026-02-02)
+
+
+
+## [7.2.71](https://github.com/testdriverai/testdriverai/compare/v7.2.70...v7.2.71) (2026-02-02)
+
+
+
+## [7.2.70](https://github.com/testdriverai/testdriverai/compare/v7.2.69...v7.2.70) (2026-02-02)
+
+
+
+## [7.2.69](https://github.com/testdriverai/testdriverai/compare/v7.2.68...v7.2.69) (2026-02-02)
+
+
+
+## [7.2.68](https://github.com/testdriverai/testdriverai/compare/v7.2.67...v7.2.68) (2026-02-02)
+
+
+
+## [7.2.67](https://github.com/testdriverai/testdriverai/compare/v7.2.66...v7.2.67) (2026-02-02)
+
+
+
+## [7.2.66](https://github.com/testdriverai/testdriverai/compare/v7.2.65...v7.2.66) (2026-02-02)
+
+
+
+## [7.2.65](https://github.com/testdriverai/testdriverai/compare/v7.2.64...v7.2.65) (2026-02-02)
+
+
+
+## [7.2.64](https://github.com/testdriverai/testdriverai/compare/v7.2.63...v7.2.64) (2026-02-02)
+
+
+
+## [7.2.63](https://github.com/testdriverai/testdriverai/compare/v7.2.62...v7.2.63) (2026-01-30)
+
+
+
+## [7.2.62](https://github.com/testdriverai/testdriverai/compare/v7.2.61...v7.2.62) (2026-01-30)
+
+
+
+## [7.2.61](https://github.com/testdriverai/testdriverai/compare/v7.2.60...v7.2.61) (2026-01-30)
+
+
+
 ## [7.2.60](https://github.com/testdriverai/testdriverai/compare/v7.2.59...v7.2.60) (2026-01-27)
 
 

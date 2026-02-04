@@ -4,6 +4,9 @@ const os = require("os");
 const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
 
+// Load .env file into process.env by default
+require("dotenv").config();
+
 /**
  * Get the file path of the caller (the file that called TestDriver)
  * @returns {string|null} File path or null if not found
@@ -1232,20 +1235,24 @@ function createChainablePromise(promise) {
  * TestDriver SDK
  *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
+ * Automatically loads environment variables from .env file via dotenv.
  *
  * @example
  * const TestDriver = require('testdriverai');
  *
- * const client = new TestDriver(process.env.TD_API_KEY);
+ * // API key loaded automatically from TD_API_KEY in .env
+ * const client = new TestDriver();
  * await client.connect();
+ *
+ * // Pass options only (API key from .env)
+ * const client = new TestDriver({ os: 'windows' });
+ *
+ * // Or pass API key explicitly
+ * const client = new TestDriver('your-api-key');
  *
  * // New API
  * const element = await client.find('Submit button');
  * await element.click();
- *
- * // Legacy API (deprecated)
- * await client.hoverText('Submit');
- * await client.click();
  */
 
 /**
@@ -1263,12 +1270,33 @@ const { createMarkdownLogger } = require("./interfaces/logger.js");
 
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
+    // Support calling with just options: new TestDriver({ os: 'windows' })
+    if (typeof apiKey === 'object' && apiKey !== null) {
+      options = apiKey;
+      apiKey = null;
+    }
+
+    // Use provided API key or fall back to environment variable
+    const resolvedApiKey = apiKey || process.env.TD_API_KEY;
+
+    // Handle preview mode with backwards compatibility for headless option
+    // Preview  can be "browser" (default), "ide", or "none" (headless)
+    let previewMode = options.preview || process.env.TD_PREVIEW;
+    
+    // Backwards compatibility: headless: true maps to preview: "none"
+    if (options.headless === true && !options.preview) {
+      previewMode = "none";
+    } else if (!previewMode) {
+      previewMode = "browser"; // default
+    }
+
     // Set up environment with API key
     const environment = {
-      TD_API_KEY: apiKey,
+      TD_API_KEY: resolvedApiKey,
       TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
+      TD_PREVIEW: previewMode,
       ...options.environment,
     };
 
@@ -2159,6 +2187,58 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         await this.focusApplication("Electron");
+      },
+
+      /**
+       * Initialize Dashcam recording with logging
+       * @param {Object} options - Dashcam options
+       * @param {string} [options.logPath] - Path to log file (auto-generated if not provided)
+       * @param {string} [options.logName='TestDriver Log'] - Display name for the log
+       * @param {boolean} [options.webLogs=true] - Enable web log tracking
+       * @param {string} [options.title] - Custom title for the recording
+       * @returns {Promise<void>}
+       */
+      dashcam: async (options = {}) => {
+        const {
+          logPath,
+          logName = "TestDriver Log",
+          webLogs = true,
+          title,
+        } = options;
+
+        // Ensure dashcam is available
+        if (!this._dashcam) {
+          console.warn(
+            "[provision.dashcam] Dashcam is not available. Skipping.",
+          );
+          return;
+        }
+
+        // Set custom title if provided
+        if (title) {
+          this._dashcam.setTitle(title);
+        }
+
+        // Add file log tracking
+        const actualLogPath =
+          logPath ||
+          (this.os === "windows"
+            ? "C:\\Users\\testdriver\\testdriver.log"
+            : "/tmp/testdriver.log");
+
+        await this._dashcam.addFileLog(actualLogPath, logName);
+
+        // Add web log tracking if enabled
+        if (webLogs) {
+          await this._dashcam.addWebLog("**", "Web Logs");
+        }
+
+        // Start recording if not already recording
+        if (!(await this._dashcam.isRecording())) {
+          await this._dashcam.start();
+        }
+
+        console.log("[provision.dashcam] ✅ Dashcam recording started");
       },
     };
 
@@ -3533,6 +3613,10 @@ CAPTCHA_SOLVER_EOF`,
     const originalCheckCount = this.agent.checkCount;
     this.agent.checkCount = 0;
 
+    // Enable soft assert mode so check-phase assertions don't throw
+    const originalSoftAssertMode = this.agent.softAssertMode;
+    this.agent.softAssertMode = true;
+
     // Emit scoped start marker for ai()
     this.emitter.emit(events.log.log, formatter.formatAIStart(task));
 
@@ -3553,9 +3637,10 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, true),
       );
 
-      // Restore original checkLimit
+      // Restore original state
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
+      this.agent.softAssertMode = originalSoftAssertMode;
 
       return {
         success: true,
@@ -3574,9 +3659,10 @@ CAPTCHA_SOLVER_EOF`,
         formatter.formatAIComplete(duration, false, error.message),
       );
 
-      // Restore original checkLimit
+      // Restore original state
       this.agent.checkLimit = originalCheckLimit;
       this.agent.checkCount = originalCheckCount;
+      this.agent.softAssertMode = originalSoftAssertMode;
 
       // Create an enhanced error with additional context using AIError class
       throw new AIError(`AI failed: ${error.message}`, {
