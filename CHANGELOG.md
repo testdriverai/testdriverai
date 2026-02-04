@@ -1,3 +1,7 @@
+## [7.2.88](https://github.com/testdriverai/testdriverai/compare/v7.2.87...v7.2.88) (2026-02-04)
+
+
+
 ## [7.2.87](https://github.com/testdriverai/testdriverai/compare/v7.2.86...v7.2.87) (2026-02-04)
 
 
