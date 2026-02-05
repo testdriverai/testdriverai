@@ -13,7 +13,7 @@ TestDriver works with Vitest's powerful test runner.
 ### Run All Tests
 
 ```bash
-npx vitest run
+vitest run
 ```
 
 Executes all test files in your project once and exits. Vitest automatically discovers files matching patterns like `*.test.js`, `*.test.mjs`, or `*.spec.js`.
@@ -21,7 +21,7 @@ Executes all test files in your project once and exits. Vitest automatically dis
 ### Run with Coverage
 
 ```bash
-npx vitest run --coverage
+vitest run --coverage
 ```
 
 Generates a code coverage report showing which lines of your source code were executed during tests. Coverage helps identify untested code paths. Results are displayed in the terminal and saved to a `coverage/` directory.
@@ -33,13 +33,13 @@ Generates a code coverage report showing which lines of your source code were ex
 ### Run Specific Tests
 
 ```bash
-npx vitest run login.test.js
+vitest run login.test.js
 ```
 
 Runs only the specified test file. Useful when debugging a single test or working on a specific feature.
 
 ```bash
-npx vitest run login.test.js checkout.test.js
+vitest run login.test.js checkout.test.js
 ```
 
 Runs multiple specific test files. List as many files as needed, separated by spaces.
@@ -47,7 +47,7 @@ Runs multiple specific test files. List as many files as needed, separated by sp
 ### Filter Tests by Name
 
 ```bash
-npx vitest run --grep "login"
+vitest run --grep "login"
 ```
 
 The `--grep` flag filters tests by their name (the string passed to `it()` or `test()`). Only tests whose names match the pattern will run. Supports regex patterns for complex matching.
@@ -55,7 +55,7 @@ The `--grep` flag filters tests by their name (the string passed to `it()` or `t
 ### Run Tests in a Folder
 
 ```bash
-npx vitest run tests/e2e/
+vitest run tests/e2e/
 ```
 
 Runs all test files within a specific directory. Great for organizing tests by type (unit, integration, e2e) and running them separately.
@@ -67,7 +67,7 @@ TestDriver runs each test in its own cloud sandbox, enabling true parallel execu
 ### Control Concurrency
 
 ```bash
-npx vitest run --maxConcurrency=5
+vitest run --maxConcurrency=5
 ```
 
 The `--maxConcurrency` flag limits how many tests run simultaneously. This should match your TestDriver license slots to avoid failures from exhausted slots.
@@ -75,7 +75,7 @@ The `--maxConcurrency` flag limits how many tests run simultaneously. This shoul
 ### Thread Configuration
 
 ```bash
-npx vitest run --pool=threads --minThreads=2 --maxThreads=8
+vitest run --pool=threads --minThreads=2 --maxThreads=8
 ```
 
 Fine-tune thread allocation for optimal performance:
@@ -139,7 +139,7 @@ export default defineConfig({
 Use Vitest UI for interactive debugging:
 
 ```bash
-npx vitest --ui
+vitest --ui
 ```
 
 The `--ui` flag launches a web-based interface for managing your test suite. Unlike `vitest run`, this starts in watch mode by default.
@@ -152,7 +152,7 @@ Open http://localhost:51204 to see:
 - **Filter and search** — Quickly find tests by name or status
 
 <Tip>
-  Combine with `--open` to automatically open the UI in your browser: `npx vitest --ui --open`
+  Combine with `--open` to automatically open the UI in your browser: `vitest --ui --open`
 </Tip>
 
 
@@ -167,7 +167,7 @@ Reports include:
 - **Error details** - Debug failures with full context
 
 ```bash
-$ npx vitest run
+$ vitest run
 
  ✓ login.test.js (2) 18.4s
    ✓ user can login 12.3s

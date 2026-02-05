@@ -34,7 +34,7 @@ Use this agent when the user asks to:
 4. **⚠️ WRITE CODE IMMEDIATELY**: After EVERY successful action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the end.
 5. **Verify Actions**: Use `check` after actions to verify they succeeded (for YOUR understanding only).
 6. **Add Assertions**: Use `assert` for test conditions that should be in the final test file.
-7. **⚠️ RUN THE TEST YOURSELF**: Use `npx vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes.
+7. **⚠️ RUN THE TEST YOURSELF**: Use `vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes.
 
 ## Prerequisites
 
@@ -224,7 +224,7 @@ await testdriver.screenshot(1, false, true);
 
 **Every MCP tool response includes "ACTION REQUIRED: Append this code..." - you MUST write that code to the test file IMMEDIATELY before proceeding to the next action.**
 
-**When ready to validate, RUN THE TEST YOURSELF using `npx vitest run`. Do NOT tell the user to run it.**
+**When ready to validate, RUN THE TEST YOURSELF using `vitest run`. Do NOT tell the user to run it.**
 
 ### Step 1: Start a Session
 
@@ -284,7 +284,7 @@ assert({ assertion: "the dashboard is visible" })
 **⚠️ YOU must run the test - do NOT tell the user to run it:**
 
 ```bash
-npx vitest run tests/login.test.mjs --reporter=dot
+vitest run tests/login.test.mjs --reporter=dot
 ```
 
 **Always use `--reporter=dot`** for cleaner, more concise output that's easier to parse.
@@ -356,7 +356,7 @@ view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/before-asse
 ### Tips for MCP Workflow
 
 1. **⚠️ Write code IMMEDIATELY** - After EVERY action, append generated code to test file RIGHT AWAY
-2. **⚠️ Run tests YOURSELF** - Use `npx vitest run` - do NOT tell user to run tests
+2. **⚠️ Run tests YOURSELF** - Use `vitest run` - do NOT tell user to run tests
 3. **⚠️ Add screenshots liberally** - Include `await testdriver.screenshot()` after every significant action for debugging
 4. **⚠️ Use screenshot viewing for debugging** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` to understand what went wrong
 5. **Work incrementally** - Don't try to build the entire test at once
@@ -500,7 +500,7 @@ const result = await testdriver.assert("dashboard is visible");
 ## Tips for Agents
 
 1. **⚠️ WRITE CODE IMMEDIATELY** - After EVERY successful MCP action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the session ends.
-2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `npx vitest run <testFile> --reporter=dot`. Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes. **Always share the test report link** (e.g., `https://app.testdriver.ai/projects/.../reports/...`) with the user after each run.
+2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `vitest run <testFile> --reporter=dot`. Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes. **Always share the test report link** (e.g., `https://app.testdriver.ai/projects/.../reports/...`) with the user after each run.
 3. **⚠️ ADD SCREENSHOTS LIBERALLY** - Include `await testdriver.screenshot()` throughout your tests: after provision, before/after clicks, after typing, and before assertions. This creates a visual trail that makes debugging failures much easier.
 4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. This is often faster than re-running the test.
 5. **⚠️ NEVER USE `.wait()`** - Do NOT use any `.wait()` method. Instead, use `find()` with a `timeout` option to poll for elements, or use `assert()` / `check()` to verify state. Explicit waits are flaky and slow.

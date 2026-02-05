@@ -49,7 +49,7 @@ That's it! No manual instance management needed.
     ```bash
     TD_OS=windows AWS_REGION=us-east-2 \
       AWS_LAUNCH_TEMPLATE_ID=lt-xxx AMI_ID=ami-xxx \
-      npx vitest run
+      vitest run
     ```
   </Step>
 </Steps>
@@ -219,7 +219,7 @@ TD_OS=windows \
 AWS_REGION=us-east-2 \
 AWS_LAUNCH_TEMPLATE_ID=lt-xxx \
 AMI_ID=ami-0504bf50fad62f312 \
-npx vitest run
+vitest run
 ```
 
 <Note>
@@ -256,7 +256,7 @@ jobs:
         run: npm ci
 
       - name: Run Windows tests with self-hosted instances
-        run: npx vitest run examples/*.test.mjs
+        run: vitest run examples/*.test.mjs
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_OS: windows
@@ -306,7 +306,7 @@ For complete production examples, see:
 If you already have a running instance, you can skip automatic spawning by providing `TD_IP`:
 
 ```bash
-TD_OS=windows TD_IP=1.2.3.4 npx vitest run
+TD_OS=windows TD_IP=1.2.3.4 vitest run
 ```
 
 The `setup-aws` hook will detect `TD_IP` is already set and skip spawning a new instance.

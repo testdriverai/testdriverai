@@ -87,7 +87,7 @@ To prevent tests from failing due to exceeding your license slot limit, we recom
             run: npm install
           
           - name: Run tests
-            run: npx vitest run
+            run: vitest run
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
     ```

@@ -1411,12 +1411,14 @@ class TestDriverSDK {
       this.cacheThresholds = {
         find: -1,
         findAll: -1,
+        assert: -1,
       };
     } else {
       // Cache enabled by default when cacheKey is provided
       this.cacheThresholds = {
         find: options.cacheThreshold?.find ?? 0.01, // Default: 1% threshold
         findAll: options.cacheThreshold?.findAll ?? 0.01,
+        assert: options.cacheThreshold?.assert ?? 0.05, // Default: 5% threshold for assertions
       };
     }
 
@@ -1438,8 +1440,8 @@ class TestDriverSDK {
           ? options.redrawThreshold
           : { diffThreshold: options.redrawThreshold };
     } else {
-      // Default: enabled (as of v7.2)
-      this.redrawOptions = { enabled: true };
+      // Default: disabled (as of v7.3)
+      this.redrawOptions = { enabled: false };
     }
     // Keep redrawThreshold for backwards compatibility in connect()
     this.redrawThreshold = this.redrawOptions;
@@ -3236,57 +3238,79 @@ CAPTCHA_SOLVER_EOF`,
 
     // Create SDK methods that lazy-await connection then forward to this.commands
     for (const [commandName, methodName] of Object.entries(commandMapping)) {
-      this[methodName] = async function (...args) {
+      // Use closure to capture sdk reference instead of .bind(this)
+      // This allows Error.captureStackTrace to correctly exclude the method from stack traces
+      const sdk = this;
+      const methodFn = async function (...args) {
         // Lazy-await: wait for connection if still pending
-        if (this.__connectionPromise) {
-          await this.__connectionPromise;
+        if (sdk.__connectionPromise) {
+          await sdk.__connectionPromise;
         }
 
         // Warn if previous command may not have been awaited
-        if (this._lastCommandName && !this._lastPromiseSettled) {
+        if (sdk._lastCommandName && !sdk._lastPromiseSettled) {
           console.warn(
-            `⚠️  Warning: Previous ${this._lastCommandName}() may not have been awaited.\n` +
-              `   Add "await" before the call: await testdriver.${this._lastCommandName}(...)\n` +
+            `⚠️  Warning: Previous ${sdk._lastCommandName}() may not have been awaited.\n` +
+              `   Add "await" before the call: await testdriver.${sdk._lastCommandName}(...)\n` +
               `   Unawaited promises can cause race conditions and flaky tests.`,
           );
         }
 
-        this._ensureConnected();
+        sdk._ensureConnected();
 
         // Capture the call site for better error reporting AND for auto-screenshots
         const callSite = {};
-        Error.captureStackTrace(callSite, this[methodName]);
+        Error.captureStackTrace(callSite, methodFn);
 
         // Get caller info for auto-screenshot naming
-        const callerInfo = this.autoScreenshots ? getCallerInfo() : null;
-        const description = this.autoScreenshots ? getDescriptionFromArgs(methodName, args) : "";
+        const callerInfo = sdk.autoScreenshots ? getCallerInfo() : null;
+        const description = sdk.autoScreenshots ? getDescriptionFromArgs(methodName, args) : "";
 
         // Track this promise for unawaited detection
-        this._lastCommandName = methodName;
-        this._lastPromiseSettled = false;
+        sdk._lastCommandName = methodName;
+        sdk._lastPromiseSettled = false;
 
         try {
           // Take "before" screenshot if enabled
-          if (this.autoScreenshots) {
-            await this._saveAutoScreenshot(methodName, "before", callerInfo, description);
+          if (sdk.autoScreenshots) {
+            await sdk._saveAutoScreenshot(methodName, "before", callerInfo, description);
           }
 
-          const result = await this.commands[commandName](...args);
+          let result;
+          // Special handling for assert to inject SDK options (cacheKey, os, resolution, threshold)
+          // similar to how find() handles these in the Element class
+          if (commandName === 'assert') {
+            const assertion = args[0];
+            const userOptions = args[1] || {};
+            
+            // Merge SDK defaults with user options (user options take precedence)
+            const mergedOptions = {
+              cacheKey: userOptions.cacheKey ?? sdk.options.cacheKey,
+              os: userOptions.os ?? sdk.os,
+              resolution: userOptions.resolution ?? sdk.resolution,
+              threshold: userOptions.threshold !== undefined ? userOptions.threshold : (sdk.cacheThresholds?.assert ?? -1),
+            };
+            
+            // Note: commands.assert takes (assertion, options), shouldThrow is determined internally
+            result = await sdk.commands[commandName](assertion, mergedOptions);
+          } else {
+            result = await sdk.commands[commandName](...args);
+          }
 
           // Take "after" screenshot if enabled
-          if (this.autoScreenshots) {
-            await this._saveAutoScreenshot(methodName, "after", callerInfo, description);
+          if (sdk.autoScreenshots) {
+            await sdk._saveAutoScreenshot(methodName, "after", callerInfo, description);
           }
 
-          this._lastPromiseSettled = true;
+          sdk._lastPromiseSettled = true;
           return result;
         } catch (error) {
           // Take "error" screenshot if enabled (instead of "after")
-          if (this.autoScreenshots) {
-            await this._saveAutoScreenshot(methodName, "error", callerInfo, description);
+          if (sdk.autoScreenshots) {
+            await sdk._saveAutoScreenshot(methodName, "error", callerInfo, description);
           }
 
-          this._lastPromiseSettled = true;
+          sdk._lastPromiseSettled = true;
           // Ensure we have a proper Error object with a message
           let properError = error;
           if (!(error instanceof Error)) {
@@ -3305,7 +3329,8 @@ CAPTCHA_SOLVER_EOF`,
           }
           throw properError;
         }
-      }.bind(this);
+      };
+      this[methodName] = methodFn;
 
       // Preserve the original function's name for better debugging
       Object.defineProperty(this[methodName], "name", {
@@ -3368,6 +3393,80 @@ CAPTCHA_SOLVER_EOF`,
     this.emitter.emit("log:info", `📸 Screenshot saved to: ${filePath}`);
 
     return filePath;
+  }
+
+  /**
+   * Extract all visible text from the current screen using OCR (Tesseract)
+   * Returns structured data with text content, bounding boxes, and confidence scores
+   *
+   * @returns {Promise<OCRResult>} OCR extraction result
+   *
+   * @typedef {Object} OCRResult
+   * @property {OCRWord[]} words - Array of words with positions and confidence
+   * @property {string} fullText - All extracted text concatenated
+   * @property {number} confidence - Overall OCR confidence (0-100)
+   * @property {number} imageWidth - Width of the analyzed image
+   * @property {number} imageHeight - Height of the analyzed image
+   *
+   * @typedef {Object} OCRWord
+   * @property {string} content - The text content of the word
+   * @property {number} confidence - Confidence score (0-100)
+   * @property {Object} bbox - Bounding box coordinates
+   * @property {number} bbox.x0 - Left edge X coordinate
+   * @property {number} bbox.y0 - Top edge Y coordinate
+   * @property {number} bbox.x1 - Right edge X coordinate
+   * @property {number} bbox.y1 - Bottom edge Y coordinate
+   *
+   * @example
+   * // Get all text on screen
+   * const result = await testdriver.ocr();
+   * console.log(result.fullText);
+   * // "Welcome to TestDriver Sign In Email Password Submit"
+   *
+   * @example
+   * // Find words matching a pattern
+   * const result = await testdriver.ocr();
+   * const buttons = result.words.filter(w => 
+   *   w.content.toLowerCase().includes('button')
+   * );
+   *
+   * @example
+   * // Get word positions for clicking
+   * const result = await testdriver.ocr();
+   * const submitWord = result.words.find(w => w.content === 'Submit');
+   * if (submitWord) {
+   *   // Calculate center of the word
+   *   const x = (submitWord.bbox.x0 + submitWord.bbox.x1) / 2;
+   *   const y = (submitWord.bbox.y0 + submitWord.bbox.y1) / 2;
+   *   await testdriver.click({ x, y });
+   * }
+   *
+   * @example
+   * // Check if specific text exists on screen
+   * const result = await testdriver.ocr();
+   * const hasError = result.words.some(w => 
+   *   w.content.toLowerCase().includes('error')
+   * );
+   */
+  async ocr() {
+    this._ensureConnected();
+
+    const { events } = require("./agent/events.js");
+    this.emitter.emit(events.log.log, "🔍 Running OCR text extraction...");
+
+    const screenshot = await this.system.captureScreenBase64();
+
+    const response = await this.apiClient.req("ocr", {
+      session: this.getSessionId(),
+      image: screenshot,
+    });
+
+    this.emitter.emit(
+      events.log.log,
+      `✅ OCR complete: ${response.words?.length || 0} words extracted`,
+    );
+
+    return response;
   }
 
   /**
