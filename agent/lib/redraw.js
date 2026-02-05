@@ -140,7 +140,7 @@ const createRedraw = (
       try {
         let network = await sandbox.send({
           type: "system.network",
-        }, 10000); // Use a shorter 10 second timeout for network stats
+        }, 30000); // 30 second timeout - Windows network stats collection can be slow
         parseNetworkStats(
           network.out.totalBytesReceived,
           network.out.totalBytesSent,
