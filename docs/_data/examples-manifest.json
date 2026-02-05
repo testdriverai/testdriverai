@@ -1,0 +1,9 @@
+{
+  "$schema": "./examples-manifest.schema.json",
+  "examples": {
+    "assert.test.mjs": {
+      "url": "http://localhost:3001/runs/6984db673a0f4eef7b929598/6984dba63a0f4eef7b9295a1",
+      "lastUpdated": "2026-02-05T18:04:39.523Z"
+    }
+  }
+}

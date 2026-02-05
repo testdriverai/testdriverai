@@ -1,0 +1,101 @@
+---
+title: "Shell Example"
+sidebarTitle: "Shell Commands"
+description: "Example test showing how to execute shell commands and use their output in test assertions."
+icon: "terminal"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* exec-output.test.mjs output */}
+<iframe 
+  src="http://localhost:1337/api/v1/testdriver/testcase/6984dba63a0f4eef7b9295a1/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="exec-output.test.mjs" {15-19}
+/**
+ * TestDriver SDK - Exec Output Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe.skip("Exec Output Test", () => {
+  it(
+    "should set date using PowerShell and navigate to calendar",
+    async (context) => {
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+      await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+      //
+      // Generate date in query string format
+      const queryString = await testdriver.exec(
+        "pwsh",
+        `
+$date = (Get-Date).AddMonths(1)
+Write-Output $date.ToString("yyyy-MM-dd")
+    `,
+        10000,
+      );
+
+      // Assert that the date is valid
+      const dateValidResult = await testdriver.assert(
+        `${queryString} is a valid date`,
+      );
+      expect(dateValidResult).toBeTruthy();
+
+      // Generate date in display format
+      const expectedDate = await testdriver.exec(
+        "pwsh",
+        `
+$date = (Get-Date).AddMonths(1)
+Write-Output $date.ToString("ddd MMM d yyyy")
+    `,
+        10000,
+      );
+
+      // Navigate to calendar with date parameter
+      await testdriver.focusApplication("Google Chrome");
+      await testdriver.pressKeys(["ctrl", "l"]);
+      await testdriver.type(
+        `https://teamup.com/ks48cf2135e7e080bc?view=d&date=${queryString}`,
+      );
+      await testdriver.pressKeys(["enter"]);
+
+      // Assert that the expected date shows
+      await testdriver.focusApplication("Google Chrome");
+      const result = await testdriver.assert(
+        `the text ${expectedDate} is visible on screen`,
+      );
+      expect(result).toBeTruthy();
+    },
+  );
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/exec-output.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

@@ -1,0 +1,92 @@
+---
+title: "Pressing Keys Test"
+sidebarTitle: "Pressing Keys"
+description: "Example test demonstrating keyboard shortcuts and key combinations for browser navigation."
+icon: "keyboard"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* press-keys.test.mjs output */}
+<iframe 
+  src="http://localhost:1337/api/v1/testdriver/testcase/6984dba63a0f4eef7b9295a1/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="press-keys.test.mjs" {17,24,36}
+/**
+ * TestDriver SDK - Press Keys Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Press Keys Test", () => {
+  it("should create tabs and navigate using keyboard shortcuts", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    const signInButton = await testdriver.find(
+      "Sign In, black button below the password field",
+    );
+    await signInButton.click();
+
+    // Open new tab
+    await testdriver.pressKeys(["ctrl", "t"]);
+
+    // Poll for "Learn more" to appear
+    let learnMore = await testdriver.find("Learn more");
+    for (let i = 0; i < 10; i++) {
+      learnMore = await learnMore.find();
+      if (learnMore.found()) break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // Open DevTools
+    await testdriver.pressKeys(["ctrl", "shift", "i"]);
+
+    // Poll for "Elements" to appear
+    let elements = await testdriver.find("Elements");
+    for (let i = 0; i < 10; i++) {
+      elements = await elements.find();
+      if (elements.found()) break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    // Open another tab and navigate
+    await testdriver.pressKeys(["ctrl", "t"]);
+    await testdriver.type("google.com");
+    await testdriver.pressKeys(["enter"]);
+
+    // Assert Google appears
+    const result = await testdriver.assert("google appears");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/press-keys.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

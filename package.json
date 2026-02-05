@@ -42,6 +42,8 @@
     "docs:build": "npm run docs:skills && cd docs && npx mint@latest build",
     "docs:links": "node docs/_scripts/link-replacer.js",
     "docs:skills": "node docs/_scripts/generate-skills.js",
+    "docs:examples": "node docs/_scripts/generate-examples.js",
+    "docs:extract-urls": "node docs/_scripts/extract-example-urls.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
     "test:sdk": "vitest run",
