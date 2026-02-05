@@ -88,10 +88,45 @@ jobs:
     if: always() && contains(github.event.pull_request.labels.*.name, 'test-windows')
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Download test results
         uses: actions/download-artifact@v4
         with:
           name: test-results-windows
+
+      - name: Download test output
+        uses: actions/download-artifact@v4
+        with:
+          name: test-output-windows
+
+      - name: Extract example URLs from Windows tests
+        if: needs.test-windows.result == 'success'
+        run: node docs/_scripts/extract-example-urls.js --file=test-output.log
+
+      - name: Generate example docs
+        if: needs.test-windows.result == 'success'
+        run: node docs/_scripts/generate-examples.js --skip-ai
+
+      - name: Commit updated docs
+        if: needs.test-windows.result == 'success'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/
+          git diff --staged --quiet || git commit -m "docs: update example documentation from Windows tests [skip ci]"
+          git push || echo "No changes to push"
 
       - name: Upload test results to Sentry Prevent
         if: ${{ !cancelled() }}

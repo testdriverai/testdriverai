@@ -18,8 +18,8 @@ const readline = require("readline");
 
 const MANIFEST_PATH = path.join(__dirname, "../_data/examples-manifest.json");
 
-// Regex to match TESTDRIVER_EXAMPLE_URL::filename::url
-const URL_PATTERN = /^TESTDRIVER_EXAMPLE_URL::([^:]+)::(.+)$/;
+// Regex to match TESTDRIVER_EXAMPLE_URL::filename::url (handles optional timestamp prefix from CI logs)
+const URL_PATTERN = /TESTDRIVER_EXAMPLE_URL::([^:]+)::(.+)$/;
 
 // Parse command line arguments
 function parseArgs() {
