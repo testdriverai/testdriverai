@@ -65,7 +65,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
           - name: Run TestDriver tests
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
-            run: npx vitest --run
+            run: vitest --run
     ```
 
     ### Parallel Execution
@@ -95,7 +95,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
           - name: Run tests (shard ${{ matrix.shard }}/4)
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
-            run: npx vitest --run --shard=${{ matrix.shard }}/4
+            run: vitest --run --shard=${{ matrix.shard }}/4
     ```
 
     ### Multi-Platform Testing
@@ -124,7 +124,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
               TD_OS: ${{ matrix.td-os }}
-            run: npx vitest --run
+            run: vitest --run
     ```
   </Tab>
 
@@ -153,7 +153,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
           - node_modules/
       script:
         - npm ci
-        - npx vitest --run
+        - vitest --run
       variables:
         TD_API_KEY: $TD_API_KEY
     ```
@@ -178,22 +178,22 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
     testdriver-shard-1:
       extends: .testdriver-base
       script:
-        - npx vitest --run --shard=1/4
+        - vitest --run --shard=1/4
 
     testdriver-shard-2:
       extends: .testdriver-base
       script:
-        - npx vitest --run --shard=2/4
+        - vitest --run --shard=2/4
 
     testdriver-shard-3:
       extends: .testdriver-base
       script:
-        - npx vitest --run --shard=3/4
+        - vitest --run --shard=3/4
 
     testdriver-shard-4:
       extends: .testdriver-base
       script:
-        - npx vitest --run --shard=4/4
+        - vitest --run --shard=4/4
     ```
 
     ### Multi-Platform Testing
@@ -218,14 +218,14 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
       variables:
         TD_OS: linux
       script:
-        - npx vitest --run
+        - vitest --run
 
     testdriver-windows:
       extends: .testdriver-base
       variables:
         TD_OS: windows
       script:
-        - npx vitest --run
+        - vitest --run
     ```
   </Tab>
 
@@ -260,7 +260,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
                 - node_modules
           - run:
               name: Run TestDriver tests
-              command: npx vitest --run
+              command: vitest --run
               environment:
                 TD_API_KEY: ${TD_API_KEY}
 
@@ -293,7 +293,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
           - run:
               name: Run TestDriver tests
               command: |
-                npx vitest --run --shard=$((CIRCLE_NODE_INDEX + 1))/$CIRCLE_NODE_TOTAL
+                vitest --run --shard=$((CIRCLE_NODE_INDEX + 1))/$CIRCLE_NODE_TOTAL
               environment:
                 TD_API_KEY: ${TD_API_KEY}
 
@@ -320,7 +320,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
           - run: npm ci
           - run:
               name: Run TestDriver tests on << parameters.td-os >>
-              command: npx vitest --run
+              command: vitest --run
               environment:
                 TD_API_KEY: ${TD_API_KEY}
                 TD_OS: << parameters.td-os >>
@@ -364,7 +364,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
       - script: npm ci
         displayName: 'Install dependencies'
 
-      - script: npx vitest --run
+      - script: vitest --run
         displayName: 'Run TestDriver tests'
         env:
           TD_API_KEY: $(TD_API_KEY)
@@ -398,7 +398,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
       - script: npm ci
         displayName: 'Install dependencies'
 
-      - script: npx vitest --run --shard=$(SHARD)
+      - script: vitest --run --shard=$(SHARD)
         displayName: 'Run TestDriver tests'
         env:
           TD_API_KEY: $(TD_API_KEY)
@@ -428,7 +428,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
       - script: npm ci
         displayName: 'Install dependencies'
 
-      - script: npx vitest --run
+      - script: vitest --run
         displayName: 'Run TestDriver tests on $(TD_OS)'
         env:
           TD_API_KEY: $(TD_API_KEY)
@@ -470,7 +470,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
             
             stage('Test') {
                 steps {
-                    sh 'npx vitest --run'
+                    sh 'vitest --run'
                 }
             }
         }
@@ -494,28 +494,28 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
                         agent { docker { image 'node:20' } }
                         steps {
                             sh 'npm ci'
-                            sh 'npx vitest --run --shard=1/4'
+                            sh 'vitest --run --shard=1/4'
                         }
                     }
                     stage('Shard 2') {
                         agent { docker { image 'node:20' } }
                         steps {
                             sh 'npm ci'
-                            sh 'npx vitest --run --shard=2/4'
+                            sh 'vitest --run --shard=2/4'
                         }
                     }
                     stage('Shard 3') {
                         agent { docker { image 'node:20' } }
                         steps {
                             sh 'npm ci'
-                            sh 'npx vitest --run --shard=3/4'
+                            sh 'vitest --run --shard=3/4'
                         }
                     }
                     stage('Shard 4') {
                         agent { docker { image 'node:20' } }
                         steps {
                             sh 'npm ci'
-                            sh 'npx vitest --run --shard=4/4'
+                            sh 'vitest --run --shard=4/4'
                         }
                     }
                 }
@@ -544,7 +544,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
                         }
                         steps {
                             sh 'npm ci'
-                            sh 'npx vitest --run'
+                            sh 'vitest --run'
                         }
                     }
                     stage('Windows') {
@@ -554,7 +554,7 @@ TestDriver requires an API key to authenticate with the TestDriver cloud. Store 
                         }
                         steps {
                             sh 'npm ci'
-                            sh 'npx vitest --run'
+                            sh 'vitest --run'
                         }
                     }
                 }

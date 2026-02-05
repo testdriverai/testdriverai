@@ -215,28 +215,7 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false) => {
-    let assertStartTimeForHandler;
-    const handleAssertResponse = (response) => {
-      const { formatter } = require("../../sdk-log-formatter.js");
-      const passed = response.indexOf("The task passed") > -1;
-      const duration = assertStartTimeForHandler ? Date.now() - assertStartTimeForHandler : undefined;
-      
-      emitter.emit(events.log.narration, formatter.formatAssertResult(passed, response, duration), true);
-
-      if (passed) {
-        return true;
-      } else {
-        if (shouldThrow) {
-          // Is fatal, otherwise it just changes the assertion to be true
-          const errorMessage = `AI Assertion failed: ${assertion}\n${response}`;
-          throw new MatchError(errorMessage, true);
-        } else {
-          return false;
-        }
-      }
-    };
-
+  const assert = async (assertion, shouldThrow = false, options = {}) => {
     // Log asserting action
     const { formatter } = require("../../sdk-log-formatter.js");
     const assertingMessage = formatter.formatAsserting(assertion);
@@ -246,37 +225,80 @@ const createCommands = (
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
     const assertTimestamp = Date.now();
     const assertStartTime = assertTimestamp;
-    assertStartTimeForHandler = assertStartTime;
     
+    // Extract cache options
+    const { threshold = -1, cacheKey, os, resolution } = options;
+    
+    // Debug log cache settings
+    emitter.emit(
+      events.log.debug,
+      `🔍 assert() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey.substring(0, 8)}...` : ""})`,
+    );
+    
+    // Use v7 endpoint for assert with caching support
     let response = await sdk.req("assert", {
       expect: assertion,
       image: await system.captureScreenBase64(),
+      threshold,
+      cacheKey,
+      os,
+      resolution,
     });
+
     const assertDuration = Date.now() - assertStartTime;
     
-    // Determine if assertion passed or failed
-    const assertionPassed = response.data.indexOf("The task passed") > -1;
+    // Handle both old (string) and new (object) response formats
+    // New v7 API returns: { data: { passed, reasoning, content, cacheHit... }, cacheHit, similarity }
+    // Old API returns: { data: "The task passed/failed..." }
+    let passed;
+    let responseText;
+    let cacheHit = false;
+    let similarity = null;
     
-    // Track interaction with success/failure
-    const sessionId = sessionInstance?.get();
-    if (sessionId) {
-      try {
-        await sandbox.send({
-          type: "trackInteraction",
-          interactionType: "assert",
-          session: sessionId,
-          prompt: assertion,
-          timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-          duration: assertDuration,
-          success: assertionPassed,
-          error: assertionPassed ? undefined : response.data,
-        });
-      } catch (err) {
-        console.warn("Failed to track assert interaction:", err.message);
-      }
+    if (typeof response.data === 'object' && response.data !== null) {
+      // New structured response
+      passed = response.data.passed;
+      responseText = response.data.content || response.data.reasoning || '';
+      cacheHit = response.cacheHit || response.data.cacheHit || false;
+      similarity = response.similarity || response.data.cacheSimilarity;
+    } else {
+      // Old string response (backward compatibility)
+      responseText = response.data || '';
+      passed = responseText.indexOf("The task passed") > -1;
     }
     
-    return handleAssertResponse(response.data);
+    // Log the result with cache info
+    emitter.emit(events.log.narration, formatter.formatAssertResult(passed, responseText, assertDuration, cacheHit), true);
+    
+    // Track interaction with success/failure (fire-and-forget)
+    const sessionId = sessionInstance?.get();
+    if (sessionId) {
+      sandbox.send({
+        type: "trackInteraction",
+        interactionType: "assert",
+        session: sessionId,
+        prompt: assertion,
+        timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+        duration: assertDuration,
+        success: passed,
+        error: passed ? undefined : responseText,
+        cacheHit: cacheHit,
+      }).catch((err) => {
+        console.warn("Failed to track assert interaction:", err.message);
+      });
+    }
+    
+    if (passed) {
+      return true;
+    } else {
+      if (shouldThrow) {
+        // Is fatal, otherwise it just changes the assertion to be true
+        const errorMessage = `AI Assertion failed: ${assertion}\n${responseText}`;
+        throw new MatchError(errorMessage, true);
+      } else {
+        return false;
+      }
+    }
   };
 
   /**
@@ -378,44 +400,40 @@ const createCommands = (
         true,
       );
       
-      // Track interaction success
+      // Track interaction success (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const scrollDuration = Date.now() - scrollStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "scroll",
-            session: sessionId,
-            input: { direction, amount },
-            timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: scrollDuration,
-            success: scrollSuccess,
-            error: scrollError,
-          });
-        } catch (err) {
+        const scrollDuration = Date.now() - scrollStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "scroll",
+          session: sessionId,
+          input: { direction, amount },
+          timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: scrollDuration,
+          success: scrollSuccess,
+          error: scrollError,
+        }).catch((err) => {
           console.warn("Failed to track scroll interaction:", err.message);
-        }
+        });
       }
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const scrollDuration = Date.now() - scrollStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "scroll",
-            session: sessionId,
-            input: { direction, amount },
-            timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: scrollDuration,
-            success: false,
-            error: error.message,
-          });
-        } catch (err) {
+        const scrollDuration = Date.now() - scrollStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "scroll",
+          session: sessionId,
+          input: { direction, amount },
+          timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: scrollDuration,
+          success: false,
+          error: error.message,
+        }).catch((err) => {
           console.warn("Failed to track scroll interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -527,26 +545,24 @@ const createCommands = (
         const actionEndTime = Date.now();
         const actionDuration = actionEndTime - clickStartTime;
         
-        // Track interaction
+        // Track interaction (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId && elementData.prompt) {
-          try {
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "click",
-              session: sessionId,
-              prompt: elementData.prompt,
-              input: { x, y, action },
-              timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: actionDuration,
-              success: true,
-              cacheHit: elementData.cacheHit,
-              selector: elementData.selector,
-              selectorUsed: elementData.selectorUsed,
-            });
-          } catch (err) {
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "click",
+            session: sessionId,
+            prompt: elementData.prompt,
+            input: { x, y, action },
+            timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: actionDuration,
+            success: true,
+            cacheHit: elementData.cacheHit,
+            selector: elementData.selector,
+            selectorUsed: elementData.selectorUsed,
+          }).catch((err) => {
             console.warn("Failed to track click interaction:", err.message);
-          }
+          });
         }
         
         // Wait for redraw and track duration
@@ -577,28 +593,26 @@ const createCommands = (
 
       return;
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
-        try {
-          const clickDuration = Date.now() - clickStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "click",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y, action },
-            timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: clickDuration,
-            success: false,
-            error: error.message,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        const clickDuration = Date.now() - clickStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "click",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y, action },
+          timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: clickDuration,
+          success: false,
+          error: error.message,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+        }).catch((err) => {
           console.warn("Failed to track click interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -647,29 +661,27 @@ const createCommands = (
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       const actionEndTime = Date.now();
       const actionDuration = actionEndTime - hoverStartTime;
       
       if (sessionId && elementData.prompt) {
-        try {
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "hover",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y },
-            timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: actionDuration,
-            success: true,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "hover",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y },
+          timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: actionDuration,
+          success: true,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+        }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
-        }
+        });
       }
 
       // Wait for redraw and track duration
@@ -688,28 +700,26 @@ const createCommands = (
 
       return;
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
-        try {
-          const hoverDuration = Date.now() - hoverStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "hover",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y },
-            timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: hoverDuration,
-            success: false,
-            error: error.message,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        const hoverDuration = Date.now() - hoverStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "hover",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y },
+          timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: hoverDuration,
+          success: false,
+          error: error.message,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+        }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -903,25 +913,23 @@ const createCommands = (
       const typeActionEndTime = Date.now();
       emitter.emit(events.log.narration, formatter.formatTypeResult(text, secret, typeActionEndTime - typeStartTime), true);
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const typeDuration = Date.now() - typeStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "type",
-            session: sessionId,
-            // Store masked text if secret, otherwise store actual text
-            input: { text: secret ? "****" : text, delay },
-            timestamp: typeTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: typeDuration,
-            success: true,
-            isSecret: secret, // Flag this interaction if it contains a secret
-          });
-        } catch (err) {
+        const typeDuration = Date.now() - typeStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "type",
+          session: sessionId,
+          // Store masked text if secret, otherwise store actual text
+          input: { text: secret ? "****" : text, delay },
+          timestamp: typeTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: typeDuration,
+          success: true,
+          isSecret: secret, // Flag this interaction if it contains a secret
+        }).catch((err) => {
           console.warn("Failed to track type interaction:", err.message);
-        }
+        });
       }
       
       const redrawStartTime = Date.now();
@@ -978,23 +986,21 @@ const createCommands = (
         true,
       );
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const pressKeysDuration = Date.now() - pressKeysStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "pressKeys",
-            session: sessionId,
-            input: { keys },
-            timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: pressKeysDuration,
-            success: true,
-          });
-        } catch (err) {
+        const pressKeysDuration = Date.now() - pressKeysStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "pressKeys",
+          session: sessionId,
+          input: { keys },
+          timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: pressKeysDuration,
+          success: true,
+        }).catch((err) => {
           console.warn("Failed to track pressKeys interaction:", err.message);
-        }
+        });
       }
 
       const redrawStartTime = Date.now();
@@ -1023,23 +1029,21 @@ const createCommands = (
       emitter.emit(events.log.narration, theme.dim(`waiting ${timeout}ms...`));
       const result = await delay(timeout);
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const waitDuration = Date.now() - waitStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "wait",
-            session: sessionId,
-            input: { timeout },
-            timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
-            duration: waitDuration,
-            success: true,
-          });
-        } catch (err) {
+        const waitDuration = Date.now() - waitStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "wait",
+          session: sessionId,
+          input: { timeout },
+          timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
+          duration: waitDuration,
+          success: true,
+        }).catch((err) => {
           console.warn("Failed to track wait interaction:", err.message);
-        }
+        });
       }
       
       return result;
@@ -1099,53 +1103,49 @@ const createCommands = (
         emitter.emit(
           events.log.narration,
           theme.dim(
-            `An image matching the description "${description}" found!`,
+            `An image matching the description \"${description}\" found!`,
           ),
           true,
         );
         
-        // Track interaction success
+        // Track interaction success (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const waitForImageDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForImage",
-              session: sessionId,
-              prompt: description,
-              input: { timeout },
-              timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForImageDuration,
-              success: true,
-            });
-          } catch (err) {
+          const waitForImageDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForImage",
+            session: sessionId,
+            prompt: description,
+            input: { timeout },
+            timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForImageDuration,
+            success: true,
+          }).catch((err) => {
             console.warn("Failed to track waitForImage interaction:", err.message);
-          }
+          });
         }
         
         return;
       } else {
-        // Track interaction failure
+        // Track interaction failure (fire-and-forget)
         const sessionId = sessionInstance?.get();
-        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description "${description}"`;
+        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description \"${description}\"`;
         if (sessionId) {
-          try {
-            const waitForImageDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForImage",
-              session: sessionId,
-              prompt: description,
-              input: { timeout },
-              timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForImageDuration,
-              success: false,
-              error: errorMsg,
-            });
-          } catch (err) {
+          const waitForImageDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForImage",
+            session: sessionId,
+            prompt: description,
+            input: { timeout },
+            timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForImageDuration,
+            success: false,
+            error: errorMsg,
+          }).catch((err) => {
             console.warn("Failed to track waitForImage interaction:", err.message);
-          }
+          });
         }
         
         throw new MatchError(errorMsg);
@@ -1217,48 +1217,44 @@ const createCommands = (
       if (passed) {
         emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
         
-        // Track interaction success
+        // Track interaction success (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const waitForTextDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForText",
-              session: sessionId,
-              prompt: text,
-              input: { timeout },
-              timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForTextDuration,
-              success: true,
-            });
-          } catch (err) {
+          const waitForTextDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForText",
+            session: sessionId,
+            prompt: text,
+            input: { timeout },
+            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForTextDuration,
+            success: true,
+          }).catch((err) => {
             console.warn("Failed to track waitForText interaction:", err.message);
-          }
+          });
         }
         
         return;
       } else {
-        // Track interaction failure
+        // Track interaction failure (fire-and-forget)
         const sessionId = sessionInstance?.get();
         const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`;
         if (sessionId) {
-          try {
-            const waitForTextDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForText",
-              session: sessionId,
-              prompt: text,
-              input: { timeout },
-              timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForTextDuration,
-              success: false,
-              error: errorMsg,
-            });
-          } catch (err) {
+          const waitForTextDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForText",
+            session: sessionId,
+            prompt: text,
+            input: { timeout },
+            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForTextDuration,
+            success: false,
+            error: errorMsg,
+          }).catch((err) => {
             console.warn("Failed to track waitForText interaction:", err.message);
-          }
+          });
         }
         
         throw new MatchError(errorMsg);
@@ -1514,12 +1510,16 @@ const createCommands = (
     /**
      * Make an AI-powered assertion
      * @param {string} assertion - Assertion to check
-     * @param {Object} [options] - Additional options (reserved for future use)
+     * @param {Object} [options] - Additional options
+     * @param {number} [options.threshold] - Cache threshold (0-1). Lower values require closer matches. Set to -1 to disable cache.
+     * @param {string} [options.cacheKey] - Cache key for grouping cached assertions (enables caching when provided)
+     * @param {string} [options.os] - Operating system identifier for cache partitioning
+     * @param {string} [options.resolution] - Screen resolution for cache partitioning
      */
     "assert": async (assertion, options = {}) => {
       // In soft assert mode (during act()), don't throw on failure
       const shouldThrow = !getSoftAssertMode();
-      let response = await assert(assertion, shouldThrow);
+      let response = await assert(assertion, shouldThrow, options);
 
       return response;
     },

@@ -144,7 +144,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         if (reply.traceId) {
           this.traceId = reply.traceId;
           logger.log('');
-          logger.log(`🔗 View Trace:`);
+          logger.log(`🔗 Trace Report (Share When Reporting Bugs):`);
           logger.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
         }
 

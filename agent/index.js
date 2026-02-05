@@ -437,10 +437,13 @@ class TestDriverAgent extends EventEmitter2 {
     this.emitter.emit(events.log.narration, theme.dim("checking..."));
 
     // check asks the ai if the task is complete
-    let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
+    // Parallelize system calls for better performance
+    const [thisScreenshot, mousePosition, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(1, false, true),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
     let images = [this.lastScreenshot, thisScreenshot];
-    let mousePosition = await this.system.getMousePosition();
-    let activeWindow = await this.system.activeWin();
 
     let response = await this.sdk.req("check", {
       tasks: this.tasks,
@@ -902,12 +905,18 @@ commands:
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    this.lastScreenshot = await this.system.captureScreenBase64();
+    // Parallelize system calls for better performance
+    const [screenshot, mousePosition, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
+    this.lastScreenshot = screenshot;
 
     let message = await this.sdk.req("input", {
       input: currentTask,
-      mousePosition: await this.system.getMousePosition(),
-      activeWindow: await this.system.activeWin(),
+      mousePosition,
+      activeWindow,
       image: this.lastScreenshot,
     });
 
@@ -938,13 +947,15 @@ commands:
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    let image = await this.system.captureScreenBase64();
-
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let mouse = await this.system.getMousePosition();
-    let activeWindow = await this.system.activeWin();
+    // Parallelize system calls for better performance
+    const [image, mouse, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
 
     let message = await this.sdk.req(
       "generate",

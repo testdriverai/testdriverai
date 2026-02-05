@@ -32,9 +32,9 @@ test('multi-environment testing', async (context) => {
 
 ```bash
 # Run against different environments
-TEST_ENV=dev npx vitest run
-TEST_ENV=staging npx vitest run
-TEST_ENV=production npx vitest run
+TEST_ENV=dev vitest run
+TEST_ENV=staging vitest run
+TEST_ENV=production vitest run
 ```
 
 ## Test Fixtures
