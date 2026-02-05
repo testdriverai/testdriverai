@@ -1,3 +1,7 @@
+## [7.3.2](https://github.com/testdriverai/testdriverai/compare/v7.3.1...v7.3.2) (2026-02-05)
+
+
+
 ## [7.3.1](https://github.com/testdriverai/testdriverai/compare/v7.2.92...v7.3.1) (2026-02-05)
 
 
