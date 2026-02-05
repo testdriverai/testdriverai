@@ -256,7 +256,7 @@ function extractTestcaseId(url) {
 // Generate replay URL from testcase ID
 function generateReplayUrl(testcaseId) {
   // Use the API replay endpoint which handles the redirect with embed=true
-  const apiRoot = process.env.TD_API_ROOT || 'https://api.testdriver.ai';
+  const apiRoot = process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com';
   return `${apiRoot}/api/v1/testdriver/testcase/${testcaseId}/replay`;
 }
 
