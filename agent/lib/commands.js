@@ -236,7 +236,7 @@ const createCommands = (
     );
     
     // Use v7 endpoint for assert with caching support
-    let response = await sdk.req("/api/v7.0.0/testdriver/assert", {
+    let response = await sdk.req("assert", {
       expect: assertion,
       image: await system.captureScreenBase64(),
       threshold,
