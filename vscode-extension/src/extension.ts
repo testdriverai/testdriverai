@@ -11,6 +11,9 @@ const debuggerPanels: Map<string, vscode.WebviewPanel> = new Map();
 const websocketConnections: Map<string, WebSocket> = new Map();
 let processedSessions: Set<string> = new Set(); // Track sessions we've already opened
 
+// File watchers for .testdriver/.previews/ in each workspace folder
+const previewWatchers: Map<string, vscode.FileSystemWatcher> = new Map();
+
 // Local HTTP server for receiving session notifications from SDK
 let httpServer: http.Server | undefined;
 let serverPort: number | undefined;
@@ -71,6 +74,16 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Start local HTTP server for receiving session notifications
   startHttpServer(context);
+
+  // Set up file watchers for .testdriver/.previews/ folders
+  setupPreviewWatchers(context);
+
+  // Listen for workspace folder changes to update watchers
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      setupPreviewWatchers(context);
+    })
+  );
 
   // Auto-install MCP on first activation
   autoInstallMcp();
@@ -187,6 +200,118 @@ function handleSessionNotification(context: vscode.ExtensionContext, sessionData
   if (autoOpen && !processedSessions.has(sessionData.sessionId)) {
     processedSessions.add(sessionData.sessionId);
     openDebuggerPanel(context, sessionData);
+  }
+}
+
+// Set up file watchers for .testdriver/.previews/ in each workspace folder
+function setupPreviewWatchers(context: vscode.ExtensionContext) {
+  console.log('[TestDriver] Setting up preview watchers...');
+  
+  // Dispose existing watchers
+  for (const [_, watcher] of previewWatchers) {
+    watcher.dispose();
+  }
+  previewWatchers.clear();
+
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) {
+    console.log('[TestDriver] No workspace folders found');
+    return;
+  }
+
+  console.log(`[TestDriver] Found ${workspaceFolders.length} workspace folders`);
+
+  for (const folder of workspaceFolders) {
+    const previewsDir = path.join(folder.uri.fsPath, '.testdriver', '.previews');
+    console.log(`[TestDriver] Watching: ${previewsDir}`);
+
+    // Ensure the previews directory exists
+    if (!fs.existsSync(previewsDir)) {
+      try {
+        fs.mkdirSync(previewsDir, { recursive: true });
+        console.log(`[TestDriver] Created directory: ${previewsDir}`);
+      } catch (error) {
+        console.error(`Failed to create previews directory: ${error}`);
+        continue;
+      }
+    }
+
+    // Create a file watcher for this workspace's previews folder
+    const pattern = new vscode.RelativePattern(folder, '.testdriver/.previews/*.json');
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+    // Handle new preview files
+    watcher.onDidCreate((uri) => {
+      console.log(`[TestDriver] File created: ${uri.fsPath}`);
+      handlePreviewFile(context, uri);
+    });
+
+    // Also handle file changes (in case file is created empty then written)
+    watcher.onDidChange((uri) => {
+      console.log(`[TestDriver] File changed: ${uri.fsPath}`);
+      handlePreviewFile(context, uri);
+    });
+
+    previewWatchers.set(folder.uri.fsPath, watcher);
+    context.subscriptions.push(watcher);
+
+    // Clean up any stale preview files from previous sessions (don't open them)
+    cleanupStalePreviewFiles(previewsDir);
+  }
+}
+
+// Clean up stale preview files from previous sessions (don't open them)
+function cleanupStalePreviewFiles(previewsDir: string) {
+  try {
+    const files = fs.readdirSync(previewsDir);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const filePath = path.join(previewsDir, file);
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`[TestDriver] Cleaned up stale preview file: ${filePath}`);
+        } catch {
+          // Ignore deletion errors
+        }
+      }
+    }
+  } catch {
+    // Directory might not exist yet, that's fine
+  }
+}
+
+// Handle a preview file being created or changed
+function handlePreviewFile(context: vscode.ExtensionContext, uri: vscode.Uri) {
+  try {
+    const content = fs.readFileSync(uri.fsPath, 'utf-8');
+    if (!content.trim()) {
+      // File is empty, wait for content
+      return;
+    }
+
+    const sessionData: SessionData = JSON.parse(content);
+
+    // Generate session ID if not present
+    if (!sessionData.sessionId) {
+      sessionData.sessionId = path.basename(uri.fsPath, '.json');
+    }
+
+    // Check if we've already processed this session
+    if (processedSessions.has(sessionData.sessionId)) {
+      return;
+    }
+
+    // Use the existing session notification handler
+    handleSessionNotification(context, sessionData);
+
+    // Delete the preview file after processing
+    try {
+      fs.unlinkSync(uri.fsPath);
+    } catch (error) {
+      console.error(`Failed to delete preview file: ${error}`);
+    }
+  } catch (error) {
+    console.error(`Error processing preview file ${uri.fsPath}:`, error);
   }
 }
 
@@ -692,6 +817,12 @@ export function deactivate() {
     httpServer.close();
     httpServer = undefined;
   }
+  
+  // Dispose preview file watchers
+  for (const [_, watcher] of previewWatchers) {
+    watcher.dispose();
+  }
+  previewWatchers.clear();
   
   // Unregister this instance
   unregisterInstance();

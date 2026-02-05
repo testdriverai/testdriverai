@@ -2035,18 +2035,47 @@ ${regression}
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
 
-      // Check preview mode from config
-      const previewMode = this.config.TD_PREVIEW || "browser";
+      // Check preview mode from CLI options (SDK passes it directly)
+      const previewMode = (this.cliArgs.options && this.cliArgs.options.preview) || this.config.TD_PREVIEW || "browser";
+      console.log("[DEBUG renderSandbox] preview:", previewMode);
 
       if (previewMode === "ide") {
         // Send session to VS Code extension via HTTP
-        this.sendIdeSessionNotification(urlToOpen, data);
+        this.writeIdeSessionFile(urlToOpen, data);
       } else if (previewMode !== "none") {
         // Open in browser (default behavior)
         this.emitter.emit(events.showWindow, urlToOpen);
       }
       // If preview is "none", don't open anything
     }
+  }
+
+  // Write session file for IDE preview (VSCode extension watches for these)
+  writeIdeSessionFile(debuggerUrl, data) {
+    const fs = require("fs");
+    const path = require("path");
+
+    const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const previewsDir = path.join(process.cwd(), ".testdriver", ".previews");
+
+    // Create the previews directory if it doesn't exist
+    if (!fs.existsSync(previewsDir)) {
+      fs.mkdirSync(previewsDir, { recursive: true });
+    }
+
+    const sessionData = {
+      sessionId,
+      debuggerUrl,
+      resolution: Array.isArray(data.resolution) ? data.resolution : (data.resolution ? data.resolution.split("x").map(Number) : [1920, 1080]),
+      testFile: data.testFile || this.testFile || null,
+      os: data.os || this.sandboxOs || "linux",
+      timestamp: Date.now(),
+    };
+
+    const filePath = path.join(previewsDir, `${sessionId}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+
+    logger.log(`IDE preview session written to ${filePath}`);
   }
 
   // Find the VS Code instance that contains the test file
