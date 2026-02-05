@@ -10,7 +10,10 @@ const createAnalytics = (emitter, config, sessionInstance) => {
         return;
       }
       if (Math.random() <= 0.01) {
-        await sdk.req("analytics", { event, data });
+        // Fire-and-forget: don't await analytics calls
+        sdk.req("analytics", { event, data }).catch((err) => {
+          console.warn("Analytics track failed:", err.message);
+        });
       }
     },
   };

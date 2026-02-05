@@ -460,7 +460,8 @@ class Element {
     this.sdk.emitter.emit(events.log.log, findingMessage);
 
     try {
-      const screenshot = await this.system.captureScreenBase64();
+      // Use cached screenshot for read-only find operations
+      const screenshot = await this.system.captureScreenBase64Cached();
       // Only store screenshot in DEBUG mode to prevent memory leaks
       if (debugMode) {
         this._screenshot = screenshot;
@@ -2879,7 +2880,8 @@ CAPTCHA_SOLVER_EOF`,
     const { events } = require("./agent/events.js");
 
     try {
-      const screenshot = await this.system.captureScreenBase64();
+      // Use cached screenshot for read-only findAll operations
+      const screenshot = await this.system.captureScreenBase64Cached();
 
       // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
       let cacheKey = null;

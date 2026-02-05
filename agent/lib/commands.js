@@ -248,32 +248,31 @@ const createCommands = (
     const assertStartTime = assertTimestamp;
     assertStartTimeForHandler = assertStartTime;
     
+    // Use cached screenshot for read-only operations like assert
     let response = await sdk.req("assert", {
       expect: assertion,
-      image: await system.captureScreenBase64(),
+      image: await system.captureScreenBase64Cached(),
     });
     const assertDuration = Date.now() - assertStartTime;
     
     // Determine if assertion passed or failed
     const assertionPassed = response.data.indexOf("The task passed") > -1;
     
-    // Track interaction with success/failure
+    // Track interaction with success/failure (fire-and-forget)
     const sessionId = sessionInstance?.get();
     if (sessionId) {
-      try {
-        await sandbox.send({
-          type: "trackInteraction",
-          interactionType: "assert",
-          session: sessionId,
-          prompt: assertion,
-          timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-          duration: assertDuration,
-          success: assertionPassed,
-          error: assertionPassed ? undefined : response.data,
-        });
-      } catch (err) {
+      sandbox.send({
+        type: "trackInteraction",
+        interactionType: "assert",
+        session: sessionId,
+        prompt: assertion,
+        timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+        duration: assertDuration,
+        success: assertionPassed,
+        error: assertionPassed ? undefined : response.data,
+      }).catch((err) => {
         console.warn("Failed to track assert interaction:", err.message);
-      }
+      });
     }
     
     return handleAssertResponse(response.data);
@@ -346,6 +345,9 @@ const createCommands = (
           throw new CommandError("Direction not found");
       }
       
+      // Invalidate screenshot cache after UI action
+      system.invalidateScreenshotCache();
+      
       const actionDuration = actionEndTime ? actionEndTime - scrollStartTime : Date.now() - scrollStartTime;
       
       // Log nested scroll action completion
@@ -378,44 +380,40 @@ const createCommands = (
         true,
       );
       
-      // Track interaction success
+      // Track interaction success (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const scrollDuration = Date.now() - scrollStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "scroll",
-            session: sessionId,
-            input: { direction, amount },
-            timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: scrollDuration,
-            success: scrollSuccess,
-            error: scrollError,
-          });
-        } catch (err) {
+        const scrollDuration = Date.now() - scrollStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "scroll",
+          session: sessionId,
+          input: { direction, amount },
+          timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: scrollDuration,
+          success: scrollSuccess,
+          error: scrollError,
+        }).catch((err) => {
           console.warn("Failed to track scroll interaction:", err.message);
-        }
+        });
       }
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const scrollDuration = Date.now() - scrollStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "scroll",
-            session: sessionId,
-            input: { direction, amount },
-            timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: scrollDuration,
-            success: false,
-            error: error.message,
-          });
-        } catch (err) {
+        const scrollDuration = Date.now() - scrollStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "scroll",
+          session: sessionId,
+          input: { direction, amount },
+          timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: scrollDuration,
+          success: false,
+          error: error.message,
+        }).catch((err) => {
           console.warn("Failed to track scroll interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -523,30 +521,31 @@ const createCommands = (
 
         emitter.emit(events.mouseClick, { x, y, button, click, double });
         
+        // Invalidate screenshot cache after UI action
+        system.invalidateScreenshotCache();
+        
         // Track action duration (before redraw wait)
         const actionEndTime = Date.now();
         const actionDuration = actionEndTime - clickStartTime;
         
-        // Track interaction
+        // Track interaction (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId && elementData.prompt) {
-          try {
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "click",
-              session: sessionId,
-              prompt: elementData.prompt,
-              input: { x, y, action },
-              timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: actionDuration,
-              success: true,
-              cacheHit: elementData.cacheHit,
-              selector: elementData.selector,
-              selectorUsed: elementData.selectorUsed,
-            });
-          } catch (err) {
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "click",
+            session: sessionId,
+            prompt: elementData.prompt,
+            input: { x, y, action },
+            timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: actionDuration,
+            success: true,
+            cacheHit: elementData.cacheHit,
+            selector: elementData.selector,
+            selectorUsed: elementData.selectorUsed,
+          }).catch((err) => {
             console.warn("Failed to track click interaction:", err.message);
-          }
+          });
         }
         
         // Wait for redraw and track duration
@@ -577,28 +576,26 @@ const createCommands = (
 
       return;
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
-        try {
-          const clickDuration = Date.now() - clickStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "click",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y, action },
-            timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: clickDuration,
-            success: false,
-            error: error.message,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        const clickDuration = Date.now() - clickStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "click",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y, action },
+          timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: clickDuration,
+          success: false,
+          error: error.message,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+        }).catch((err) => {
           console.warn("Failed to track click interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -647,29 +644,30 @@ const createCommands = (
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
-      // Track interaction
+      // Invalidate screenshot cache after UI action
+      system.invalidateScreenshotCache();
+
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       const actionEndTime = Date.now();
       const actionDuration = actionEndTime - hoverStartTime;
       
       if (sessionId && elementData.prompt) {
-        try {
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "hover",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y },
-            timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: actionDuration,
-            success: true,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "hover",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y },
+          timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: actionDuration,
+          success: true,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+        }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
-        }
+        });
       }
 
       // Wait for redraw and track duration
@@ -688,28 +686,26 @@ const createCommands = (
 
       return;
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
-        try {
-          const hoverDuration = Date.now() - hoverStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "hover",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y },
-            timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: hoverDuration,
-            success: false,
-            error: error.message,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        const hoverDuration = Date.now() - hoverStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "hover",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y },
+          timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: hoverDuration,
+          success: false,
+          error: error.message,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+        }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -899,29 +895,30 @@ const createCommands = (
       // Actually type the text in the sandbox
       await sandbox.send({ type: "write", text, delay, ...elementData });
       
+      // Invalidate screenshot cache after UI action
+      system.invalidateScreenshotCache();
+      
       // Update the action log with duration
       const typeActionEndTime = Date.now();
       emitter.emit(events.log.narration, formatter.formatTypeResult(text, secret, typeActionEndTime - typeStartTime), true);
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const typeDuration = Date.now() - typeStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "type",
-            session: sessionId,
-            // Store masked text if secret, otherwise store actual text
-            input: { text: secret ? "****" : text, delay },
-            timestamp: typeTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: typeDuration,
-            success: true,
-            isSecret: secret, // Flag this interaction if it contains a secret
-          });
-        } catch (err) {
+        const typeDuration = Date.now() - typeStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "type",
+          session: sessionId,
+          // Store masked text if secret, otherwise store actual text
+          input: { text: secret ? "****" : text, delay },
+          timestamp: typeTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: typeDuration,
+          success: true,
+          isSecret: secret, // Flag this interaction if it contains a secret
+        }).catch((err) => {
           console.warn("Failed to track type interaction:", err.message);
-        }
+        });
       }
       
       const redrawStartTime = Date.now();
@@ -970,6 +967,9 @@ const createCommands = (
       // finally, press the keys
       await sandbox.send({ type: "press", keys });
       
+      // Invalidate screenshot cache after UI action
+      system.invalidateScreenshotCache();
+      
       // Update the action log with duration
       const pressKeysActionEndTime = Date.now();
       emitter.emit(
@@ -978,23 +978,21 @@ const createCommands = (
         true,
       );
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const pressKeysDuration = Date.now() - pressKeysStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "pressKeys",
-            session: sessionId,
-            input: { keys },
-            timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: pressKeysDuration,
-            success: true,
-          });
-        } catch (err) {
+        const pressKeysDuration = Date.now() - pressKeysStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "pressKeys",
+          session: sessionId,
+          input: { keys },
+          timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: pressKeysDuration,
+          success: true,
+        }).catch((err) => {
           console.warn("Failed to track pressKeys interaction:", err.message);
-        }
+        });
       }
 
       const redrawStartTime = Date.now();
@@ -1023,23 +1021,21 @@ const createCommands = (
       emitter.emit(events.log.narration, theme.dim(`waiting ${timeout}ms...`));
       const result = await delay(timeout);
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const waitDuration = Date.now() - waitStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "wait",
-            session: sessionId,
-            input: { timeout },
-            timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
-            duration: waitDuration,
-            success: true,
-          });
-        } catch (err) {
+        const waitDuration = Date.now() - waitStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "wait",
+          session: sessionId,
+          input: { timeout },
+          timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
+          duration: waitDuration,
+          success: true,
+        }).catch((err) => {
           console.warn("Failed to track wait interaction:", err.message);
-        }
+        });
       }
       
       return result;
@@ -1099,53 +1095,49 @@ const createCommands = (
         emitter.emit(
           events.log.narration,
           theme.dim(
-            `An image matching the description "${description}" found!`,
+            `An image matching the description \"${description}\" found!`,
           ),
           true,
         );
         
-        // Track interaction success
+        // Track interaction success (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const waitForImageDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForImage",
-              session: sessionId,
-              prompt: description,
-              input: { timeout },
-              timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForImageDuration,
-              success: true,
-            });
-          } catch (err) {
+          const waitForImageDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForImage",
+            session: sessionId,
+            prompt: description,
+            input: { timeout },
+            timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForImageDuration,
+            success: true,
+          }).catch((err) => {
             console.warn("Failed to track waitForImage interaction:", err.message);
-          }
+          });
         }
         
         return;
       } else {
-        // Track interaction failure
+        // Track interaction failure (fire-and-forget)
         const sessionId = sessionInstance?.get();
-        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description "${description}"`;
+        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description \"${description}\"`;
         if (sessionId) {
-          try {
-            const waitForImageDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForImage",
-              session: sessionId,
-              prompt: description,
-              input: { timeout },
-              timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForImageDuration,
-              success: false,
-              error: errorMsg,
-            });
-          } catch (err) {
+          const waitForImageDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForImage",
+            session: sessionId,
+            prompt: description,
+            input: { timeout },
+            timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForImageDuration,
+            success: false,
+            error: errorMsg,
+          }).catch((err) => {
             console.warn("Failed to track waitForImage interaction:", err.message);
-          }
+          });
         }
         
         throw new MatchError(errorMsg);
@@ -1217,48 +1209,44 @@ const createCommands = (
       if (passed) {
         emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
         
-        // Track interaction success
+        // Track interaction success (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const waitForTextDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForText",
-              session: sessionId,
-              prompt: text,
-              input: { timeout },
-              timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForTextDuration,
-              success: true,
-            });
-          } catch (err) {
+          const waitForTextDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForText",
+            session: sessionId,
+            prompt: text,
+            input: { timeout },
+            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForTextDuration,
+            success: true,
+          }).catch((err) => {
             console.warn("Failed to track waitForText interaction:", err.message);
-          }
+          });
         }
         
         return;
       } else {
-        // Track interaction failure
+        // Track interaction failure (fire-and-forget)
         const sessionId = sessionInstance?.get();
         const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`;
         if (sessionId) {
-          try {
-            const waitForTextDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForText",
-              session: sessionId,
-              prompt: text,
-              input: { timeout },
-              timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: waitForTextDuration,
-              success: false,
-              error: errorMsg,
-            });
-          } catch (err) {
+          const waitForTextDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForText",
+            session: sessionId,
+            prompt: text,
+            input: { timeout },
+            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForTextDuration,
+            success: false,
+            error: errorMsg,
+          }).catch((err) => {
             console.warn("Failed to track waitForText interaction:", err.message);
-          }
+          });
         }
         
         throw new MatchError(errorMsg);
