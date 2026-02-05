@@ -1329,6 +1329,7 @@ class TestDriverSDK {
     // Handle preview mode with backwards compatibility for headless option
     // Preview  can be "browser" (default), "ide", or "none" (headless)
     let previewMode = options.preview || process.env.TD_PREVIEW;
+    console.log("[DEBUG SDK constructor] options.preview:", options.preview, "previewMode:", previewMode);
     
     // Backwards compatibility: headless: true maps to preview: "none"
     if (options.headless === true && !options.preview) {
@@ -1336,6 +1337,7 @@ class TestDriverSDK {
     } else if (!previewMode) {
       previewMode = "browser"; // default
     }
+    console.log("[DEBUG SDK constructor] final previewMode:", previewMode);
 
     // Set up environment with API key
     const environment = {
@@ -1353,6 +1355,7 @@ class TestDriverSDK {
       args: [],
       options: {
         os: options.os || "linux",
+        preview: previewMode,
       },
     });
 
