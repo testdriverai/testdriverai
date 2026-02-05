@@ -7,19 +7,6 @@ const Jimp = require("jimp");
 const { events } = require("../events.js");
 
 const createSystem = (emitter, sandbox, config) => {
-  // Screenshot cache with TTL support
-  const screenshotCache = {
-    data: null,
-    timestamp: 0,
-    params: null, // { scale, silent, mouse }
-  };
-
-  const invalidateScreenshotCache = () => {
-    screenshotCache.data = null;
-    screenshotCache.timestamp = 0;
-    screenshotCache.params = null;
-  };
-
   const screenshot = async (options) => {
     let { base64 } = await sandbox.send({
       type: "system.screenshot",
@@ -122,40 +109,7 @@ const createSystem = (emitter, sandbox, config) => {
     mouse = false,
   ) => {
     let step2 = await captureAndResize(scale, silent, mouse);
-    const base64 = fs.readFileSync(step2, "base64");
-    
-    // Update cache
-    screenshotCache.data = base64;
-    screenshotCache.timestamp = Date.now();
-    screenshotCache.params = { scale, silent, mouse };
-    
-    return base64;
-  };
-
-  // Cached version with TTL (default 500ms)
-  const captureScreenBase64Cached = async (
-    scale = 1,
-    silent = false,
-    mouse = false,
-    ttl = 500,
-  ) => {
-    const now = Date.now();
-    const cacheParams = screenshotCache.params;
-    
-    // Check if cache is valid: same params and within TTL
-    if (
-      screenshotCache.data &&
-      cacheParams &&
-      cacheParams.scale === scale &&
-      cacheParams.silent === silent &&
-      cacheParams.mouse === mouse &&
-      now - screenshotCache.timestamp < ttl
-    ) {
-      return screenshotCache.data;
-    }
-    
-    // Cache miss - capture fresh screenshot
-    return captureScreenBase64(scale, silent, mouse);
+    return fs.readFileSync(step2, "base64");
   };
 
   const captureScreenPNG = async (scale = 1, silent = false, mouse = false) => {
@@ -187,14 +141,12 @@ const createSystem = (emitter, sandbox, config) => {
 
   return {
     captureScreenBase64,
-    captureScreenBase64Cached,
     captureScreenPNG,
     getMousePosition,
     primaryDisplay,
     activeWin,
     platform,
     getSystemInformationOsInfo,
-    invalidateScreenshotCache,
   };
 };
 

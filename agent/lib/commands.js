@@ -215,28 +215,7 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false) => {
-    let assertStartTimeForHandler;
-    const handleAssertResponse = (response) => {
-      const { formatter } = require("../../sdk-log-formatter.js");
-      const passed = response.indexOf("The task passed") > -1;
-      const duration = assertStartTimeForHandler ? Date.now() - assertStartTimeForHandler : undefined;
-      
-      emitter.emit(events.log.narration, formatter.formatAssertResult(passed, response, duration), true);
-
-      if (passed) {
-        return true;
-      } else {
-        if (shouldThrow) {
-          // Is fatal, otherwise it just changes the assertion to be true
-          const errorMessage = `AI Assertion failed: ${assertion}\n${response}`;
-          throw new MatchError(errorMessage, true);
-        } else {
-          return false;
-        }
-      }
-    };
-
+  const assert = async (assertion, shouldThrow = false, options = {}) => {
     // Log asserting action
     const { formatter } = require("../../sdk-log-formatter.js");
     const assertingMessage = formatter.formatAsserting(assertion);
@@ -246,17 +225,50 @@ const createCommands = (
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
     const assertTimestamp = Date.now();
     const assertStartTime = assertTimestamp;
-    assertStartTimeForHandler = assertStartTime;
     
-    // Use cached screenshot for read-only operations like assert
-    let response = await sdk.req("assert", {
+    // Extract cache options
+    const { threshold = -1, cacheKey, os, resolution } = options;
+    
+    // Debug log cache settings
+    emitter.emit(
+      events.log.debug,
+      `🔍 assert() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey.substring(0, 8)}...` : ""})`,
+    );
+    
+    // Use v7 endpoint for assert with caching support
+    let response = await sdk.req("/api/v7.0.0/testdriver/assert", {
       expect: assertion,
-      image: await system.captureScreenBase64Cached(),
+      image: await system.captureScreenBase64(),
+      threshold,
+      cacheKey,
+      os,
+      resolution,
     });
+
     const assertDuration = Date.now() - assertStartTime;
     
-    // Determine if assertion passed or failed
-    const assertionPassed = response.data.indexOf("The task passed") > -1;
+    // Handle both old (string) and new (object) response formats
+    // New v7 API returns: { data: { passed, reasoning, content, cacheHit... }, cacheHit, similarity }
+    // Old API returns: { data: "The task passed/failed..." }
+    let passed;
+    let responseText;
+    let cacheHit = false;
+    let similarity = null;
+    
+    if (typeof response.data === 'object' && response.data !== null) {
+      // New structured response
+      passed = response.data.passed;
+      responseText = response.data.content || response.data.reasoning || '';
+      cacheHit = response.cacheHit || response.data.cacheHit || false;
+      similarity = response.similarity || response.data.cacheSimilarity;
+    } else {
+      // Old string response (backward compatibility)
+      responseText = response.data || '';
+      passed = responseText.indexOf("The task passed") > -1;
+    }
+    
+    // Log the result with cache info
+    emitter.emit(events.log.narration, formatter.formatAssertResult(passed, responseText, assertDuration, cacheHit), true);
     
     // Track interaction with success/failure (fire-and-forget)
     const sessionId = sessionInstance?.get();
@@ -268,14 +280,25 @@ const createCommands = (
         prompt: assertion,
         timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
         duration: assertDuration,
-        success: assertionPassed,
-        error: assertionPassed ? undefined : response.data,
+        success: passed,
+        error: passed ? undefined : responseText,
+        cacheHit: cacheHit,
       }).catch((err) => {
         console.warn("Failed to track assert interaction:", err.message);
       });
     }
     
-    return handleAssertResponse(response.data);
+    if (passed) {
+      return true;
+    } else {
+      if (shouldThrow) {
+        // Is fatal, otherwise it just changes the assertion to be true
+        const errorMessage = `AI Assertion failed: ${assertion}\n${responseText}`;
+        throw new MatchError(errorMessage, true);
+      } else {
+        return false;
+      }
+    }
   };
 
   /**
@@ -344,9 +367,6 @@ const createCommands = (
           scrollError = "Direction not found";
           throw new CommandError("Direction not found");
       }
-      
-      // Invalidate screenshot cache after UI action
-      system.invalidateScreenshotCache();
       
       const actionDuration = actionEndTime ? actionEndTime - scrollStartTime : Date.now() - scrollStartTime;
       
@@ -521,9 +541,6 @@ const createCommands = (
 
         emitter.emit(events.mouseClick, { x, y, button, click, double });
         
-        // Invalidate screenshot cache after UI action
-        system.invalidateScreenshotCache();
-        
         // Track action duration (before redraw wait)
         const actionEndTime = Date.now();
         const actionDuration = actionEndTime - clickStartTime;
@@ -643,9 +660,6 @@ const createCommands = (
       elementData.timestamp = Date.now();
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
-
-      // Invalidate screenshot cache after UI action
-      system.invalidateScreenshotCache();
 
       // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
@@ -895,9 +909,6 @@ const createCommands = (
       // Actually type the text in the sandbox
       await sandbox.send({ type: "write", text, delay, ...elementData });
       
-      // Invalidate screenshot cache after UI action
-      system.invalidateScreenshotCache();
-      
       // Update the action log with duration
       const typeActionEndTime = Date.now();
       emitter.emit(events.log.narration, formatter.formatTypeResult(text, secret, typeActionEndTime - typeStartTime), true);
@@ -966,9 +977,6 @@ const createCommands = (
 
       // finally, press the keys
       await sandbox.send({ type: "press", keys });
-      
-      // Invalidate screenshot cache after UI action
-      system.invalidateScreenshotCache();
       
       // Update the action log with duration
       const pressKeysActionEndTime = Date.now();
@@ -1502,12 +1510,16 @@ const createCommands = (
     /**
      * Make an AI-powered assertion
      * @param {string} assertion - Assertion to check
-     * @param {Object} [options] - Additional options (reserved for future use)
+     * @param {Object} [options] - Additional options
+     * @param {number} [options.threshold] - Cache threshold (0-1). Lower values require closer matches. Set to -1 to disable cache.
+     * @param {string} [options.cacheKey] - Cache key for grouping cached assertions (enables caching when provided)
+     * @param {string} [options.os] - Operating system identifier for cache partitioning
+     * @param {string} [options.resolution] - Screen resolution for cache partitioning
      */
     "assert": async (assertion, options = {}) => {
       // In soft assert mode (during act()), don't throw on failure
       const shouldThrow = !getSoftAssertMode();
-      let response = await assert(assertion, shouldThrow);
+      let response = await assert(assertion, shouldThrow, options);
 
       return response;
     },

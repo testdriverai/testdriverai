@@ -32,7 +32,7 @@ jobs:
           TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: npx vitest run
+        run: vitest run
 
       - name: Upload test results
         if: always()
