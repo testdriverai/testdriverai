@@ -157,6 +157,7 @@
     "interfaces/",
     "lib/",
     "mcp-server/dist/",
+    "setup/",
     "sdk.js",
     "sdk.d.ts",
     "sdk-log-formatter.js",
