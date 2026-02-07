@@ -1,0 +1,92 @@
+---
+title: "Captcha Solving Example"
+sidebarTitle: "Captcha Solving"
+description: "Example test demonstrating automatic captcha solving with reCAPTCHA and Cloudflare Turnstile support."
+icon: "shield-check"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* captcha-api.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69852e9db3d27441a2d96ed7/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="captcha-api.test.mjs" {18-20}
+/**
+ * TestDriver SDK - Captcha Test
+ */
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+console.log("DEBUG: process.env.TD_OS:", process.env.TD_OS);
+
+describe("testdriver.captcha() API", () => {
+  it("should solve reCAPTCHA v3 with auto-detect", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Launch Chrome (remote debugging is enabled automatically on Linux)
+    await testdriver.provision.chrome({
+      url: "https://2captcha.com/demo/recaptcha-v3",
+    });
+
+    await testdriver.screenshot();
+
+    // Solve the captcha with just the API key - everything else is auto-detected!
+    const result = await testdriver.captcha({
+      apiKey: process.env.TWOCAPTCHA_API_KEY,
+    });
+
+    console.log("Captcha result:", result);
+    await testdriver.screenshot();
+
+    expect(result.success).toBe(true);
+  }, 180000);
+
+  it("should solve Cloudflare Turnstile", async (context) => {
+    const testdriver = TestDriver(context);
+
+    await testdriver.provision.chrome({
+      url: "https://2captcha.com/demo/cloudflare-turnstile",
+    });
+
+    await testdriver.screenshot();
+
+    const result = await testdriver.captcha({
+      apiKey: process.env.TWOCAPTCHA_API_KEY,
+    });
+
+    console.log("Turnstile result:", result);
+    await testdriver.screenshot();
+
+    expect(result.success).toBe(true);
+  }, 180000);
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/captcha-api.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

@@ -1013,6 +1013,14 @@ class TestDriverReporter {
       console.log(
         `🔗 Test Report: ${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`,
       );
+      
+      // Output parseable format for docs generation (examples only)
+      if (testFile.startsWith("examples/")) {
+        const testFileName = path.basename(testFile);
+        console.log(
+          `TESTDRIVER_EXAMPLE_URL::${testFileName}::${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`,
+        );
+      }
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }
