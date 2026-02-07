@@ -15,29 +15,53 @@ const require = createRequire(import.meta.url);
 const MINIMUM_VITEST_VERSION = 4;
 
 /**
+ * Try to read vitest's package.json version using multiple resolution strategies.
+ * Vitest's Vite-based transform pipeline can rewrite import.meta.url, causing
+ * createRequire to resolve from the wrong location. We fall back to resolving
+ * from process.cwd() and then to reading directly from node_modules.
+ * @returns {string|null} The vitest version string, or null if not found
+ */
+function resolveVitestVersion() {
+  // Strategy 1: createRequire from import.meta.url (standard CJS interop)
+  try {
+    return require("vitest/package.json").version;
+  } catch {}
+
+  // Strategy 2: createRequire from process.cwd() (works when import.meta.url is rewritten)
+  try {
+    const cwdRequire = createRequire(path.join(process.cwd(), "package.json"));
+    return cwdRequire("vitest/package.json").version;
+  } catch {}
+
+  // Strategy 3: read directly from node_modules on disk
+  try {
+    const vitestPkgPath = path.join(process.cwd(), "node_modules", "vitest", "package.json");
+    return JSON.parse(fs.readFileSync(vitestPkgPath, "utf8")).version;
+  } catch {}
+
+  return null;
+}
+
+/**
  * Check that Vitest version meets minimum requirements
  * @throws {Error} if Vitest version is below minimum or not installed
  */
 function checkVitestVersion() {
-  try {
-    const vitestPkg = require("vitest/package.json");
-    const version = vitestPkg.version;
-    const major = parseInt(version.split(".")[0], 10);
+  const version = resolveVitestVersion();
 
-    if (major < MINIMUM_VITEST_VERSION) {
-      throw new Error(
-        `TestDriver requires Vitest >= ${MINIMUM_VITEST_VERSION}.0.0, but found ${version}. ` +
-          `Please upgrade Vitest: npm install vitest@latest`,
-      );
-    }
-  } catch (err) {
-    if (err.code === "MODULE_NOT_FOUND") {
-      throw new Error(
-        "TestDriver requires Vitest to be installed. " +
-          "Please install it: npm install vitest@latest",
-      );
-    }
-    throw err;
+  if (!version) {
+    throw new Error(
+      "TestDriver requires Vitest to be installed. " +
+        "Please install it: npm install vitest@latest",
+    );
+  }
+
+  const major = parseInt(version.split(".")[0], 10);
+  if (major < MINIMUM_VITEST_VERSION) {
+    throw new Error(
+      `TestDriver requires Vitest >= ${MINIMUM_VITEST_VERSION}.0.0, but found ${version}. ` +
+        `Please upgrade Vitest: npm install vitest@latest`,
+    );
   }
 }
 
