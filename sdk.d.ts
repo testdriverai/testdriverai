@@ -364,6 +364,42 @@ export interface HoverResult {
   [key: string]: any;
 }
 
+/** Bounding box for an OCR word */
+export interface OCRBoundingBox {
+  /** Left edge X coordinate */
+  x0: number;
+  /** Top edge Y coordinate */
+  y0: number;
+  /** Right edge X coordinate */
+  x1: number;
+  /** Bottom edge Y coordinate */
+  y1: number;
+}
+
+/** Individual word extracted by OCR */
+export interface OCRWord {
+  /** The text content of the word */
+  content: string;
+  /** Confidence score for this word (0-100) */
+  confidence: number;
+  /** Bounding box coordinates */
+  bbox: OCRBoundingBox;
+}
+
+/** Result from OCR text extraction */
+export interface OCRResult {
+  /** Array of extracted words with positions */
+  words: OCRWord[];
+  /** All text concatenated with spaces */
+  fullText: string;
+  /** Overall OCR confidence (0-100) */
+  confidence: number;
+  /** Width of the analyzed screenshot */
+  imageWidth: number;
+  /** Height of the analyzed screenshot */
+  imageHeight: number;
+}
+
 // ====================================
 // Command Options Interfaces
 // ====================================
@@ -520,6 +556,14 @@ export interface ExtractOptions {
 export interface AssertOptions {
   /** Assertion to check */
   assertion: string;
+  /** Cache threshold (0-1). Lower values require closer matches. Set to -1 to disable cache. */
+  threshold?: number;
+  /** Cache key for grouping cached assertions (enables caching when provided) */
+  cacheKey?: string;
+  /** Operating system identifier for cache partitioning */
+  os?: string;
+  /** Screen resolution for cache partitioning */
+  resolution?: string;
 }
 
 /** Options for exec command */
@@ -1209,9 +1253,21 @@ export default class TestDriverSDK {
   /**
    * Make an AI-powered assertion
    * @param assertion - Assertion to check
-   * @param options - Additional options (reserved for future use)
+   * @param options - Cache options for the assertion
+   *
+   * @example
+   * // Simple assertion
+   * await client.assert('the login form is visible');
+   *
+   * @example
+   * // With caching enabled via cacheKey
+   * await client.assert('the submit button is enabled', { cacheKey: 'my-test-run' });
+   *
+   * @example
+   * // With custom threshold
+   * await client.assert('the page loaded', { threshold: 0.01, cacheKey: 'login-test' });
    */
-  assert(assertion: string, options?: object): Promise<boolean>;
+  assert(assertion: string, options?: { threshold?: number; cacheKey?: string; os?: string; resolution?: string }): Promise<boolean>;
 
   /**
    * Extract information from the screen using AI
@@ -1268,6 +1324,34 @@ export default class TestDriverSDK {
    * // Saves to: .testdriver/screenshots/<test>/login-page.png
    */
   screenshot(filename?: string): Promise<string>;
+
+  /**
+   * Extract all visible text from the current screen using OCR (Tesseract)
+   * Returns structured data with text content, bounding boxes, and confidence scores
+   *
+   * @returns OCR extraction result with words, positions, and confidence
+   *
+   * @example
+   * // Get all text on screen
+   * const result = await testdriver.ocr();
+   * console.log(result.fullText);
+   *
+   * @example
+   * // Find and click text
+   * const result = await testdriver.ocr();
+   * const submit = result.words.find(w => w.content === 'Submit');
+   * if (submit) {
+   *   const x = (submit.bbox.x0 + submit.bbox.x1) / 2;
+   *   const y = (submit.bbox.y0 + submit.bbox.y1) / 2;
+   *   await testdriver.click({ x, y });
+   * }
+   *
+   * @example
+   * // Check if text exists
+   * const result = await testdriver.ocr();
+   * const hasError = result.words.some(w => w.content.toLowerCase().includes('error'));
+   */
+  ocr(): Promise<OCRResult>;
 
   /**
    * Wait for specified time

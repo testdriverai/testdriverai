@@ -2241,7 +2241,7 @@ API Key: The apiKey parameter is optional. If not provided, you'll need to manua
 📚 Next steps:
 
 1. Run your tests:
-   npx vitest run
+   vitest run
 
 2. Use AI agents to write tests:
    Open VSCode/Cursor and use @testdriver agent

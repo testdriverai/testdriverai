@@ -284,7 +284,7 @@ Generate comprehensive test reports:
 <Tabs>
   <Tab title="HTML Report">
     ```bash
-    npx vitest run --reporter=html
+    vitest run --reporter=html
     ```
 
     Generates interactive HTML report with:
@@ -297,7 +297,7 @@ Generate comprehensive test reports:
 
   <Tab title="JSON Report">
     ```bash
-    npx vitest run --reporter=json > report.json
+    vitest run --reporter=json > report.json
     ```
 
     ```json
@@ -317,7 +317,7 @@ Generate comprehensive test reports:
 
   <Tab title="JUnit XML">
     ```bash
-    npx vitest run --reporter=junit --outputFile=results.xml
+    vitest run --reporter=junit --outputFile=results.xml
     ```
 
     ```xml
@@ -459,7 +459,7 @@ Integrate test results into your CI/CD pipeline:
   <Tab title="GitHub Actions">
     ```yaml
     - name: Run tests
-      run: npx vitest run
+      run: vitest run
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
 
@@ -552,7 +552,7 @@ Monitor tests as they run:
 
 ```bash
 # Watch test execution in real-time
-npx vitest --reporter=verbose
+vitest --reporter=verbose
 
 # Output:
 ✓ login.test.js > user can login (12.3s)

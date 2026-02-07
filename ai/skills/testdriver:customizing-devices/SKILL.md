@@ -88,10 +88,10 @@ Then pass the variable when running tests:
 
 ```bash
 # Run tests on Windows
-TD_OS=windows npx vitest run
+TD_OS=windows vitest run
 
 # Run tests on Linux (default)
-TD_OS=linux npx vitest run
+TD_OS=linux vitest run
 ```
 
 This pattern is useful for running the same test suite across multiple operating systems in CI/CD:
@@ -102,7 +102,7 @@ strategy:
   matrix:
     os: [linux, windows]
 steps:
-  - run: TD_OS=${{ matrix.os }} npx vitest run
+  - run: TD_OS=${{ matrix.os }} vitest run
 ```
 
 ## Keepalive
@@ -139,13 +139,13 @@ const testdriver = TestDriver(context, {
 Then, you can run both tests in sequence:
 
 ```bash
-npx vitest run -t known-good.test.mjs -t work-in-progress.test.mjs
+vitest run -t known-good.test.mjs -t work-in-progress.test.mjs
 ```
 
 And as you make changes to `work-in-progress.test.mjs`, you can re-run just that file to quickly iterate on the failing steps.
 
 ```bash
-npx vitest run work-in-progress.test.mjs
+vitest run work-in-progress.test.mjs
 ```
 
 <Warning>

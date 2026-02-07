@@ -28,7 +28,7 @@ No installation needed! Just configure your MCP client to use npx:
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "env": {
         "TD_API_KEY": "${input:testdriver-api-key}"
       }
@@ -65,7 +65,7 @@ To use the TestDriver MCP server with GitHub Copilot coding agent:
     "testdriver": {
       "type": "local",
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "tools": ["*"],
       "env": {
         "TD_API_KEY": "COPILOT_MCP_TD_API_KEY"
@@ -98,7 +98,7 @@ Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/C
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "env": {
         "TD_API_KEY": "${input:testdriver-api-key}"
       }
@@ -266,7 +266,7 @@ This is useful for:
 2. **Interact**: Use `find`, `click`, `type` etc. - each action returns generated code
 3. **Build Test**: Append the generated code from each action to your test file
 4. **Assert**: Use `assert` to verify expected state
-5. **Run Test**: Use the CLI (`npx vitest run <testFile>`) to run the test from scratch
+5. **Run Test**: Use the CLI (`vitest run <testFile>`) to run the test from scratch
 
 Each tool returns a screenshot showing the result AND the code to add to your test file.
 

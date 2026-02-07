@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Examples Manifest",
+  "description": "Maps example test files to their test run URLs for documentation embedding",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "examples": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Full URL to the test run (without ?embed=true)",
+            "pattern": "^https://console\\.testdriver\\.ai/runs/.+"
+          },
+          "lastUpdated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO timestamp of when this URL was last updated"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable title extracted from describe() block"
+          },
+          "testName": {
+            "type": "string",
+            "description": "Test name extracted from it() block"
+          }
+        },
+        "required": ["url", "lastUpdated"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["examples"],
+  "additionalProperties": false
+}

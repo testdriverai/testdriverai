@@ -111,7 +111,7 @@ Generate JUnit-compatible XML reports for CI/CD integration:
 
 ```bash
 # Generate JUnit report
-npx vitest run --reporter=junit --outputFile=test-results.xml
+vitest run --reporter=junit --outputFile=test-results.xml
 ```
 
 ```xml test-results.xml
@@ -151,7 +151,7 @@ TestDriver reports integrate seamlessly with popular CI/CD platforms:
           - uses: actions/checkout@v3
           - uses: actions/setup-node@v3
           - run: npm install
-          - run: npx vitest run --reporter=junit --outputFile=test-results.xml
+          - run: vitest run --reporter=junit --outputFile=test-results.xml
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
           
@@ -172,7 +172,7 @@ TestDriver reports integrate seamlessly with popular CI/CD platforms:
       image: node:20
       script:
         - npm install
-        - npx vitest run --reporter=junit --outputFile=junit.xml
+        - vitest run --reporter=junit --outputFile=junit.xml
       artifacts:
         when: always
         reports:
@@ -194,7 +194,7 @@ TestDriver reports integrate seamlessly with popular CI/CD platforms:
         steps:
           - checkout
           - run: npm install
-          - run: npx vitest run --reporter=junit --outputFile=test-results/junit.xml
+          - run: vitest run --reporter=junit --outputFile=test-results/junit.xml
           - store_test_results:
               path: test-results
           - store_artifacts:
@@ -212,7 +212,7 @@ TestDriver reports integrate seamlessly with popular CI/CD platforms:
         stage('Test') {
           steps {
             sh 'npm install'
-            sh 'npx vitest run --reporter=junit --outputFile=test-results.xml'
+            sh 'vitest run --reporter=junit --outputFile=test-results.xml'
           }
         }
       }

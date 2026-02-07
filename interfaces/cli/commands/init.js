@@ -76,14 +76,20 @@ class InitCommand extends BaseCommand {
   async promptForApiKey() {
     const envPath = path.join(process.cwd(), ".env");
 
-    // Check if .env already exists with TD_API_KEY
+    // Check if .env already exists with a valid TD_API_KEY value
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, "utf8");
-      if (envContent.includes("TD_API_KEY=")) {
-        console.log(
-          chalk.gray("\n  API key already configured in .env, skipping...\n"),
-        );
-        return null;
+      // Match TD_API_KEY= that's not commented out and has a real value (not empty or placeholder)
+      const apiKeyMatch = envContent.match(/^TD_API_KEY=(.+)$/m);
+      if (apiKeyMatch) {
+        const value = apiKeyMatch[1].trim();
+        // Skip only if there's a real value (not empty or placeholder text)
+        if (value && value !== "your_api_key" && !value.startsWith("<") && !value.startsWith("$")) {
+          console.log(
+            chalk.gray("\n  API key already configured in .env, skipping...\n"),
+          );
+          return null;
+        }
       }
     }
 
@@ -400,7 +406,7 @@ class InitCommand extends BaseCommand {
   printNextSteps() {
     console.log(chalk.cyan("Next steps:\n"));
     console.log("  1. Run your tests:");
-    console.log(chalk.gray("     npx vitest run\n"));
+    console.log(chalk.gray("     vitest run\n"));
     console.log("  2. Use AI agents to write tests:");
     console.log(chalk.gray("     Open VSCode/Cursor and use @testdriver agent\n"));
     console.log("  3. MCP server configured:");

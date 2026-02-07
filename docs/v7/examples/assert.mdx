@@ -1,0 +1,72 @@
+---
+title: "Assert Test Example"
+sidebarTitle: "Assert"
+description: "Example test that uses assert to verify a page loads."
+icon: "check-circle"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* assert.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69852cedeae78746d7ac0c25/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="assert.test.mjs" {22-24}
+/**
+ * TestDriver SDK - Assert Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Assert Test", () => {
+  it("should assert the testdriver login page shows", async (context) => {
+    const testdriver = TestDriver(context, {
+      ip: context.ip || process.env.TD_IP,
+    });
+    
+    // provision.chrome() automatically calls ready() and starts dashcam
+    await testdriver.provision.chrome({
+      url: 'http://testdriver-sandbox.vercel.app/login',
+    });
+
+    // Take a screenshot
+    await testdriver.screenshot();
+
+    // Assert the TestDriver.ai Sandbox login page is displayed
+    const result = await testdriver.assert(
+      "the TestDriver.ai Sandbox login page is displayed",
+    );
+
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/assert.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

@@ -7,8 +7,7 @@ const theme = require("./theme");
 const DEFAULT_REDRAW_OPTIONS = {
   enabled: true,           // Master switch to enable/disable redraw detection
   screenRedraw: true,      // Enable screen redraw detection
-  networkMonitor: true,    // Enable network activity monitoring
-  noChangeTimeoutMs: 1500, // Exit early if no screen change detected after this time
+  networkMonitor: false,    // Enable network activity monitoring
 };
 
 // Factory function that creates redraw functionality with the provided system instance
@@ -21,7 +20,8 @@ const createRedraw = (
   // Merge default options with provided defaults
   const baseOptions = { ...DEFAULT_REDRAW_OPTIONS, ...defaultOptions };
   
-  const networkUpdateInterval = 15000;
+  // Network check interval (ms) - used for speed calculation display
+  const networkCheckInterval = 250;
 
   let lastTxBytes = null;
   let lastRxBytes = null;
@@ -125,15 +125,32 @@ const createRedraw = (
     }
   };
 
+  // Track if a network request is in flight to prevent overlapping requests
+  let networkRequestInFlight = false;
+
   async function updateNetwork() {
+    // Prevent overlapping requests - if one is already in flight, skip this cycle
+    if (networkRequestInFlight) {
+      emitter.emit(events.log.debug, '[redraw] updateNetwork() - skipping, request already in flight');
+      return;
+    }
+
     if (sandbox && sandbox.instanceSocketConnected) {
-      let network = await sandbox.send({
-        type: "system.network",
-      });
-      parseNetworkStats(
-        network.out.totalBytesReceived,
-        network.out.totalBytesSent,
-      );
+      networkRequestInFlight = true;
+      try {
+        let network = await sandbox.send({
+          type: "system.network",
+        }, 10000); // Use a shorter 10 second timeout for network stats
+        parseNetworkStats(
+          network.out.totalBytesReceived,
+          network.out.totalBytesSent,
+        );
+      } catch (error) {
+        // Log the error but don't throw - network monitoring is non-critical
+        emitter.emit(events.log.debug, `[redraw] updateNetwork() failed: ${error.message}`);
+      } finally {
+        networkRequestInFlight = false;
+      }
     }
   }
 
@@ -181,14 +198,7 @@ const createRedraw = (
     }
   }
 
-  // Start network monitoring only when needed
-  function startNetworkMonitoring() {
-    if (!networkInterval) {
-      networkInterval = setInterval(updateNetwork, networkUpdateInterval);
-    }
-  }
-
-  // Stop network monitoring
+  // Stop network monitoring (cleanup any residual interval)
   function stopNetworkMonitoring() {
     if (networkInterval) {
       clearInterval(networkInterval);
@@ -220,11 +230,6 @@ const createRedraw = (
     
     resetState();
     
-    // Only start network monitoring if enabled
-    if (currentOptions.networkMonitor) {
-      startNetworkMonitoring();
-    }
-    
     // Capture initial image for screen stability monitoring
     if (currentOptions.screenRedraw) {
       initialScreenImage = await system.captureScreenPNG(0.25, true);
@@ -236,7 +241,7 @@ const createRedraw = (
   }
 
   async function checkCondition(resolve, startTime, timeoutMs, options) {
-    const { enabled, screenRedraw, networkMonitor, noChangeTimeoutMs = 1500 } = options;
+    const { enabled, screenRedraw, networkMonitor } = options;
     
     // If redraw is disabled, resolve immediately
     if (!enabled) {
@@ -244,14 +249,16 @@ const createRedraw = (
       return;
     }
     
+    // Update network stats on each check (with guard against overlapping requests)
+    if (networkMonitor) {
+      await updateNetwork();
+    }
+    
     let nowImage = screenRedraw ? await system.captureScreenPNG(0.25, true) : null;
     let timeElapsed = Date.now() - startTime;
     let diffFromInitial = 0;
     let diffFromLast = 0;
     let isTimeout = timeElapsed > timeoutMs;
-    
-    // Early exit: if no screen change detected after noChangeTimeoutMs, assume action had no visual effect
-    const noChangeTimeout = screenRedraw && !hasChangedFromInitial && timeElapsed > noChangeTimeoutMs;
 
     // Screen stability detection:
     // 1. Check if screen has changed from initial (detect transition)
@@ -280,14 +287,8 @@ const createRedraw = (
       lastScreenImage = nowImage;
     }
     
-    // Screen is settled when:
-    // 1. It has changed from initial AND consecutive frames are now stable, OR
-    // 2. No change was detected after noChangeTimeoutMs (action had no visual effect)
-    const screenSettled = (hasChangedFromInitial && consecutiveFramesStable) || noChangeTimeout;
-    
-    if (noChangeTimeout && !hasChangedFromInitial) {
-      emitter.emit(events.log.debug, `[redraw] No screen change detected after ${noChangeTimeoutMs}ms, settling early`);
-    }
+    // Screen is settled when it has changed from initial AND consecutive frames are now stable
+    const screenSettled = hasChangedFromInitial && consecutiveFramesStable;
     
     // If screen redraw is disabled, consider it as "settled"
     const effectiveScreenSettled = screenRedraw ? screenSettled : true;
@@ -305,7 +306,7 @@ const createRedraw = (
       : effectiveNetworkSettled
         ? theme.green(`y`)
         : theme.dim(
-            `${Math.trunc((diffRxBytes + diffTxBytes) / networkUpdateInterval)}b/s`,
+            `${Math.trunc((diffRxBytes + diffTxBytes) / (networkCheckInterval / 1000))}b/s`,
           );
     let timeoutText = isTimeout
       ? theme.green(`y`)
@@ -344,7 +345,6 @@ const createRedraw = (
         networkSettled: effectiveNetworkSettled,
         isTimeout,
         timeElapsed,
-        noChangeTimeout,
       });
       resolve("true");
     } else {
@@ -370,10 +370,6 @@ const createRedraw = (
     
     return new Promise((resolve) => {
       const startTime = Date.now();
-      // Start network monitoring if not already started and enabled
-      if (waitOptions.networkMonitor) {
-        startNetworkMonitoring();
-      }
       checkCondition(resolve, startTime, timeoutMs, waitOptions);
     });
   }

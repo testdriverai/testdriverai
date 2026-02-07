@@ -38,7 +38,7 @@ Get your API key from: https://console.testdriver.ai/settings/api-keys
 ### 3. Run Tests
 
 ```bash
-npx vitest run
+vitest run
 ```
 
 That's it! Your tests are now being recorded. View results at:
@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: npm install
-      - run: npx vitest run
+      - run: vitest run
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
 ```
@@ -102,7 +102,7 @@ jobs:
 test:
   script:
     - npm install
-    - npx vitest run
+    - vitest run
   variables:
     TD_API_KEY: $CI_JOB_TOKEN
 ```
@@ -202,7 +202,7 @@ await client.completeTestRun({
 
 ## Next Steps
 
-1. **Try it out**: Run `npx vitest run` and check the dashboard
+1. **Try it out**: Run `vitest run` and check the dashboard
 2. **Add dashcam**: Record your tests with screen capture
 3. **Set up CI/CD**: Add to your pipeline for continuous tracking
 4. **Build dashboard UI**: Create Vue components to visualize test runs (next phase)

@@ -1,19 +1,32 @@
+import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as http from 'http';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import WebSocket from 'ws';
 
-// Store the active debugger panel
-let debuggerPanel: vscode.WebviewPanel | undefined;
-let fileWatcher: fs.FSWatcher | undefined;
-let websocketConnection: WebSocket | undefined;
+// Store active debugger panels by session ID
+const debuggerPanels: Map<string, vscode.WebviewPanel> = new Map();
+const websocketConnections: Map<string, WebSocket> = new Map();
+let processedSessions: Set<string> = new Set(); // Track sessions we've already opened
 
-// Path to the TestDriver session file (used for IPC between SDK and extension)
+// File watchers for .testdriver/.previews/ in each workspace folder
+const previewWatchers: Map<string, vscode.FileSystemWatcher> = new Map();
+
+// Local HTTP server for receiving session notifications from SDK
+let httpServer: http.Server | undefined;
+let serverPort: number | undefined;
+
+// Path to the TestDriver directory (used for IPC between SDK and extension)
 const SESSION_DIR = path.join(os.homedir(), '.testdriver');
-const SESSION_FILE = path.join(SESSION_DIR, 'ide-session.json');
+const INSTANCES_DIR = path.join(SESSION_DIR, 'ide-instances');
+
+// Generate a unique instance ID for this VS Code window
+const instanceId = crypto.randomUUID();
 
 interface SessionData {
+  sessionId?: string;  // Unique identifier for this test session
   debuggerUrl: string;
   resolution: [number, number];
   testFile?: string;
@@ -21,12 +34,24 @@ interface SessionData {
   timestamp: number;
 }
 
+// Instance registration data written to disk for SDK discovery
+interface InstanceRegistration {
+  instanceId: string;
+  port: number;
+  workspacePaths: string[];
+  pid: number;
+  timestamp: number;
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log('TestDriver.ai extension is now active');
 
-  // Ensure session directory exists
+  // Ensure directories exist
   if (!fs.existsSync(SESSION_DIR)) {
     fs.mkdirSync(SESSION_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(INSTANCES_DIR)) {
+    fs.mkdirSync(INSTANCES_DIR, { recursive: true });
   }
 
   // Register commands
@@ -37,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const closeDebuggerCommand = vscode.commands.registerCommand(
     'testdriverai.closeDebugger',
-    () => closeDebuggerPanel()
+    () => closeAllDebuggerPanels()
   );
 
   const installMcpCommand = vscode.commands.registerCommand(
@@ -47,78 +72,289 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(openDebuggerCommand, closeDebuggerCommand, installMcpCommand);
 
-  // Start watching for session file changes
-  startSessionWatcher(context);
+  // Start local HTTP server for receiving session notifications
+  startHttpServer(context);
+
+  // Set up file watchers for .testdriver/.previews/ folders
+  setupPreviewWatchers(context);
+
+  // Listen for workspace folder changes to update watchers
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      setupPreviewWatchers(context);
+    })
+  );
 
   // Auto-install MCP on first activation
   autoInstallMcp();
-
-  // Check if there's an existing session file
-  checkExistingSession(context);
 }
 
-function startSessionWatcher(context: vscode.ExtensionContext) {
-  // Clean up existing watcher
-  if (fileWatcher) {
-    fileWatcher.close();
-  }
+// Start HTTP server to receive session notifications from SDK
+function startHttpServer(context: vscode.ExtensionContext) {
+  httpServer = http.createServer((req, res) => {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Watch the session directory for changes
-  try {
-    fileWatcher = fs.watch(SESSION_DIR, (eventType, filename) => {
-      if (filename === 'ide-session.json' && eventType === 'change') {
-        checkExistingSession(context);
-      }
-    });
-  } catch (error) {
-    // Directory might not exist yet, create it and try again
-    if (!fs.existsSync(SESSION_DIR)) {
-      fs.mkdirSync(SESSION_DIR, { recursive: true });
-      startSessionWatcher(context);
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
+      return;
     }
+
+    if (req.method === 'POST' && req.url === '/session') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        try {
+          const sessionData: SessionData = JSON.parse(body);
+          handleSessionNotification(context, sessionData);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (error) {
+          console.error('Error parsing session data:', error);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        }
+      });
+    } else if (req.method === 'GET' && req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', instanceId }));
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
+  });
+
+  // Listen on a random available port
+  httpServer.listen(0, '127.0.0.1', () => {
+    const address = httpServer!.address();
+    if (address && typeof address === 'object') {
+      serverPort = address.port;
+      console.log(`TestDriver extension server listening on port ${serverPort}`);
+      
+      // Register this instance so SDK can discover it
+      registerInstance();
+    }
+  });
+
+  httpServer.on('error', (error) => {
+    console.error('HTTP server error:', error);
+  });
+}
+
+// Register this VS Code instance for SDK discovery
+function registerInstance() {
+  if (!serverPort) {
+    return;
+  }
+
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const workspacePaths = workspaceFolders 
+    ? workspaceFolders.map(f => f.uri.fsPath)
+    : [];
+
+  const registration: InstanceRegistration = {
+    instanceId,
+    port: serverPort,
+    workspacePaths,
+    pid: process.pid,
+    timestamp: Date.now()
+  };
+
+  const registrationFile = path.join(INSTANCES_DIR, `${instanceId}.json`);
+  
+  try {
+    fs.writeFileSync(registrationFile, JSON.stringify(registration, null, 2));
+    console.log(`Registered VS Code instance: ${registrationFile}`);
+  } catch (error) {
+    console.error('Failed to register instance:', error);
   }
 }
 
-function checkExistingSession(context: vscode.ExtensionContext) {
+// Unregister this instance on deactivation
+function unregisterInstance() {
+  const registrationFile = path.join(INSTANCES_DIR, `${instanceId}.json`);
   try {
-    if (fs.existsSync(SESSION_FILE)) {
-      const content = fs.readFileSync(SESSION_FILE, 'utf-8');
-      const sessionData: SessionData = JSON.parse(content);
+    if (fs.existsSync(registrationFile)) {
+      fs.unlinkSync(registrationFile);
+    }
+  } catch {
+    // Ignore cleanup errors
+  }
+}
 
-      // Check if session is recent (within last 30 seconds)
-      const isRecent = Date.now() - sessionData.timestamp < 30000;
+// Handle incoming session notification from SDK
+function handleSessionNotification(context: vscode.ExtensionContext, sessionData: SessionData) {
+  // Generate session ID if not present
+  if (!sessionData.sessionId) {
+    sessionData.sessionId = `session-${Date.now()}`;
+  }
 
-      if (isRecent && sessionData.debuggerUrl) {
-        const config = vscode.workspace.getConfiguration('testdriverai');
-        const autoOpen = config.get<boolean>('autoOpenPreview', true);
+  const config = vscode.workspace.getConfiguration('testdriverai');
+  const autoOpen = config.get<boolean>('autoOpenPreview', true);
 
-        if (autoOpen) {
-          openDebuggerPanel(context, sessionData);
+  if (autoOpen && !processedSessions.has(sessionData.sessionId)) {
+    processedSessions.add(sessionData.sessionId);
+    openDebuggerPanel(context, sessionData);
+  }
+}
+
+// Set up file watchers for .testdriver/.previews/ in each workspace folder
+function setupPreviewWatchers(context: vscode.ExtensionContext) {
+  console.log('[TestDriver] Setting up preview watchers...');
+  
+  // Dispose existing watchers
+  for (const [_, watcher] of previewWatchers) {
+    watcher.dispose();
+  }
+  previewWatchers.clear();
+
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) {
+    console.log('[TestDriver] No workspace folders found');
+    return;
+  }
+
+  console.log(`[TestDriver] Found ${workspaceFolders.length} workspace folders`);
+
+  for (const folder of workspaceFolders) {
+    const previewsDir = path.join(folder.uri.fsPath, '.testdriver', '.previews');
+    console.log(`[TestDriver] Watching: ${previewsDir}`);
+
+    // Ensure the previews directory exists
+    if (!fs.existsSync(previewsDir)) {
+      try {
+        fs.mkdirSync(previewsDir, { recursive: true });
+        console.log(`[TestDriver] Created directory: ${previewsDir}`);
+      } catch (error) {
+        console.error(`Failed to create previews directory: ${error}`);
+        continue;
+      }
+    }
+
+    // Create a file watcher for this workspace's previews folder
+    const pattern = new vscode.RelativePattern(folder, '.testdriver/.previews/*.json');
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+    // Handle new preview files
+    watcher.onDidCreate((uri) => {
+      console.log(`[TestDriver] File created: ${uri.fsPath}`);
+      handlePreviewFile(context, uri);
+    });
+
+    // Also handle file changes (in case file is created empty then written)
+    watcher.onDidChange((uri) => {
+      console.log(`[TestDriver] File changed: ${uri.fsPath}`);
+      handlePreviewFile(context, uri);
+    });
+
+    previewWatchers.set(folder.uri.fsPath, watcher);
+    context.subscriptions.push(watcher);
+
+    // Clean up any stale preview files from previous sessions (don't open them)
+    cleanupStalePreviewFiles(previewsDir);
+  }
+}
+
+// Clean up stale preview files from previous sessions (don't open them)
+function cleanupStalePreviewFiles(previewsDir: string) {
+  try {
+    const files = fs.readdirSync(previewsDir);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const filePath = path.join(previewsDir, file);
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`[TestDriver] Cleaned up stale preview file: ${filePath}`);
+        } catch {
+          // Ignore deletion errors
         }
       }
     }
-  } catch (error) {
-    console.error('Error reading session file:', error);
+  } catch {
+    // Directory might not exist yet, that's fine
   }
 }
 
-function openDebuggerPanel(context: vscode.ExtensionContext, sessionData?: SessionData) {
-  // If panel already exists, reveal it
-  if (debuggerPanel) {
-    debuggerPanel.reveal(vscode.ViewColumn.Beside);
+// Handle a preview file being created or changed
+function handlePreviewFile(context: vscode.ExtensionContext, uri: vscode.Uri) {
+  try {
+    const content = fs.readFileSync(uri.fsPath, 'utf-8');
+    if (!content.trim()) {
+      // File is empty, wait for content
+      return;
+    }
 
+    const sessionData: SessionData = JSON.parse(content);
+
+    // Generate session ID if not present
+    if (!sessionData.sessionId) {
+      sessionData.sessionId = path.basename(uri.fsPath, '.json');
+    }
+
+    // Check if we've already processed this session
+    if (processedSessions.has(sessionData.sessionId)) {
+      return;
+    }
+
+    // Use the existing session notification handler
+    handleSessionNotification(context, sessionData);
+
+    // Delete the preview file after processing
+    try {
+      fs.unlinkSync(uri.fsPath);
+    } catch (error) {
+      console.error(`Failed to delete preview file: ${error}`);
+    }
+  } catch (error) {
+    console.error(`Error processing preview file ${uri.fsPath}:`, error);
+  }
+}
+
+// Helper to get test file name from path (just the filename, not full path)
+function getTestFileName(testFile?: string): string {
+  if (!testFile) {
+    return 'TestDriver';
+  }
+  // Handle both forward and backslashes
+  return testFile.split('/').pop()?.split('\\').pop() || 'TestDriver';
+}
+
+// Format the panel title to match debugger.html: [status] filename
+function formatPanelTitle(status: string, testFile?: string): string {
+  const fileName = getTestFileName(testFile);
+  return `[${status}] ${fileName}`;
+}
+
+function openDebuggerPanel(context: vscode.ExtensionContext, sessionData?: SessionData) {
+  // Generate or use existing session ID
+  const sessionId = sessionData?.sessionId || `manual-${Date.now()}`;
+  
+  // Check if we already have a panel for this session
+  const existingPanel = debuggerPanels.get(sessionId);
+  if (existingPanel) {
+    existingPanel.reveal(vscode.ViewColumn.Active);
     // Update content if we have new session data
     if (sessionData) {
-      updateDebuggerContent(debuggerPanel, sessionData, context);
+      updateDebuggerContent(existingPanel, sessionData, context, sessionId);
     }
     return;
   }
 
-  // Create a new webview panel
-  debuggerPanel = vscode.window.createWebviewPanel(
+  // Determine the initial title
+  const initialTitle = sessionData 
+    ? formatPanelTitle('Loading', sessionData.testFile)
+    : 'TestDriver Live Preview';
+
+  // Create a new webview panel for this session
+  const panel = vscode.window.createWebviewPanel(
     'testdriverDebugger',
-    'TestDriver Live Preview',
-    vscode.ViewColumn.Beside,
+    initialTitle,
+    vscode.ViewColumn.Beside,  // Open beside current editor to show multiple
     {
       enableScripts: true,
       retainContextWhenHidden: true,
@@ -129,30 +365,34 @@ function openDebuggerPanel(context: vscode.ExtensionContext, sessionData?: Sessi
     }
   );
 
+  // Store the panel
+  debuggerPanels.set(sessionId, panel);
+
   // Set the webview icon
-  debuggerPanel.iconPath = {
+  panel.iconPath = {
     light: vscode.Uri.file(path.join(context.extensionPath, 'media', 'icon.png')),
     dark: vscode.Uri.file(path.join(context.extensionPath, 'media', 'icon.png'))
   };
 
   // Handle panel disposal
-  debuggerPanel.onDidDispose(() => {
-    debuggerPanel = undefined;
-    disconnectWebSocket();
+  panel.onDidDispose(() => {
+    debuggerPanels.delete(sessionId);
+    disconnectWebSocket(sessionId);
+    processedSessions.delete(sessionId);
   }, null, context.subscriptions);
 
   // Update content
   if (sessionData) {
-    updateDebuggerContent(debuggerPanel, sessionData, context);
+    updateDebuggerContent(panel, sessionData, context, sessionId);
   } else {
     // Show waiting state
-    debuggerPanel.webview.html = getWaitingHtml();
+    panel.webview.html = getWaitingHtml();
   }
 }
 
-function updateDebuggerContent(panel: vscode.WebviewPanel, sessionData: SessionData, context: vscode.ExtensionContext) {
+function updateDebuggerContent(panel: vscode.WebviewPanel, sessionData: SessionData, context: vscode.ExtensionContext, sessionId: string) {
   // Connect to the WebSocket server for live updates
-  connectToWebSocket(sessionData.debuggerUrl, panel);
+  connectToWebSocket(sessionData.debuggerUrl, panel, sessionId, sessionData.testFile);
 
   // Build the data parameter for the debugger
   const data = {
@@ -164,6 +404,9 @@ function updateDebuggerContent(panel: vscode.WebviewPanel, sessionData: SessionD
   };
 
   const encodedData = Buffer.from(JSON.stringify(data)).toString('base64');
+  
+  // Update the panel title to show it's running
+  panel.title = formatPanelTitle('Running', sessionData.testFile);
   
   // Update the webview content with the debugger
   panel.webview.html = getDebuggerHtml(sessionData.debuggerUrl, encodedData, panel.webview, context);
@@ -183,55 +426,83 @@ function extractVncUrl(debuggerUrl: string): string {
   return '';
 }
 
-function connectToWebSocket(debuggerUrl: string, panel: vscode.WebviewPanel) {
-  // Disconnect existing connection
-  disconnectWebSocket();
+function connectToWebSocket(debuggerUrl: string, panel: vscode.WebviewPanel, sessionId: string, testFile?: string) {
+  // Disconnect existing connection for this session
+  disconnectWebSocket(sessionId);
 
   try {
     const url = new URL(debuggerUrl);
     const wsUrl = `ws://${url.host}`;
 
-    websocketConnection = new WebSocket(wsUrl);
+    const ws = new WebSocket(wsUrl);
+    websocketConnections.set(sessionId, ws);
 
-    websocketConnection.on('open', () => {
-      console.log('Connected to TestDriver debugger WebSocket');
+    ws.on('open', () => {
+      console.log(`Connected to TestDriver debugger WebSocket for session: ${sessionId}`);
     });
 
-    websocketConnection.on('message', (data: Buffer) => {
+    ws.on('message', (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
         // Forward events to the webview
         panel.webview.postMessage(message);
+        
+        // Update panel title based on test events (matching debugger.html behavior)
+        if (message.event) {
+          switch (message.event) {
+            case 'test:start':
+              panel.title = formatPanelTitle('Running', testFile);
+              break;
+            case 'test:stop':
+              panel.title = formatPanelTitle('Stopped', testFile);
+              break;
+            case 'test:success':
+              panel.title = formatPanelTitle('Passed', testFile);
+              break;
+            case 'test:error':
+              panel.title = formatPanelTitle('Failed', testFile);
+              break;
+            case 'error:fatal':
+            case 'error:sdk':
+              panel.title = formatPanelTitle('Error', testFile);
+              break;
+          }
+        }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     });
 
-    websocketConnection.on('close', () => {
-      console.log('WebSocket connection closed');
+    ws.on('close', () => {
+      console.log(`WebSocket connection closed for session: ${sessionId}`);
+      // Update panel title to show disconnected/done state
+      panel.title = formatPanelTitle('Done', testFile);
     });
 
-    websocketConnection.on('error', (error: Error) => {
-      console.error('WebSocket error:', error);
+    ws.on('error', (error: Error) => {
+      console.error(`WebSocket error for session ${sessionId}:`, error);
     });
   } catch (error) {
     console.error('Error connecting to WebSocket:', error);
   }
 }
 
-function disconnectWebSocket() {
-  if (websocketConnection) {
-    websocketConnection.close();
-    websocketConnection = undefined;
+function disconnectWebSocket(sessionId: string) {
+  const ws = websocketConnections.get(sessionId);
+  if (ws) {
+    ws.close();
+    websocketConnections.delete(sessionId);
   }
 }
 
-function closeDebuggerPanel() {
-  if (debuggerPanel) {
-    debuggerPanel.dispose();
-    debuggerPanel = undefined;
+function closeAllDebuggerPanels() {
+  // Close all panels
+  for (const [sessionId, panel] of debuggerPanels) {
+    panel.dispose();
+    disconnectWebSocket(sessionId);
   }
-  disconnectWebSocket();
+  debuggerPanels.clear();
+  processedSessions.clear();
 }
 
 function getWaitingHtml(): string {
@@ -311,7 +582,10 @@ function getWaitingHtml(): string {
 function getDebuggerHtml(debuggerUrl: string, encodedData: string, webview: vscode.Webview, context: vscode.ExtensionContext): string {
   // We'll embed the debugger in an iframe pointing to the local server
   // The debugger server must be running for this to work
-  const fullUrl = `${debuggerUrl}?data=${encodedData}`;
+  // Parse the URL properly to handle existing query parameters
+  const url = new URL(debuggerUrl);
+  url.searchParams.set('data', encodedData);
+  const fullUrl = url.toString();
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -536,17 +810,20 @@ async function autoInstallMcp() {
 }
 
 export function deactivate() {
-  closeDebuggerPanel();
-  if (fileWatcher) {
-    fileWatcher.close();
+  closeAllDebuggerPanels();
+  
+  // Stop HTTP server
+  if (httpServer) {
+    httpServer.close();
+    httpServer = undefined;
   }
   
-  // Clean up session file
-  try {
-    if (fs.existsSync(SESSION_FILE)) {
-      fs.unlinkSync(SESSION_FILE);
-    }
-  } catch {
-    // Ignore cleanup errors
+  // Dispose preview file watchers
+  for (const [_, watcher] of previewWatchers) {
+    watcher.dispose();
   }
+  previewWatchers.clear();
+  
+  // Unregister this instance
+  unregisterInstance();
 }

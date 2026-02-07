@@ -437,10 +437,13 @@ class TestDriverAgent extends EventEmitter2 {
     this.emitter.emit(events.log.narration, theme.dim("checking..."));
 
     // check asks the ai if the task is complete
-    let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
+    // Parallelize system calls for better performance
+    const [thisScreenshot, mousePosition, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(1, false, true),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
     let images = [this.lastScreenshot, thisScreenshot];
-    let mousePosition = await this.system.getMousePosition();
-    let activeWindow = await this.system.activeWin();
 
     let response = await this.sdk.req("check", {
       tasks: this.tasks,
@@ -902,12 +905,18 @@ commands:
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    this.lastScreenshot = await this.system.captureScreenBase64();
+    // Parallelize system calls for better performance
+    const [screenshot, mousePosition, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
+    this.lastScreenshot = screenshot;
 
     let message = await this.sdk.req("input", {
       input: currentTask,
-      mousePosition: await this.system.getMousePosition(),
-      activeWindow: await this.system.activeWin(),
+      mousePosition,
+      activeWindow,
       image: this.lastScreenshot,
     });
 
@@ -938,13 +947,15 @@ commands:
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    let image = await this.system.captureScreenBase64();
-
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let mouse = await this.system.getMousePosition();
-    let activeWindow = await this.system.activeWin();
+    // Parallelize system calls for better performance
+    const [image, mouse, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
 
     let message = await this.sdk.req(
       "generate",
@@ -2035,11 +2046,12 @@ ${regression}
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
 
-      // Check preview mode from config
-      const previewMode = this.config.TD_PREVIEW || "browser";
+      // Check preview mode from CLI options (SDK passes it directly)
+      const previewMode = (this.cliArgs.options && this.cliArgs.options.preview) || this.config.TD_PREVIEW || "browser";
+      console.log("[DEBUG renderSandbox] preview:", previewMode);
 
       if (previewMode === "ide") {
-        // Write session file for VSCode extension to pick up
+        // Send session to VS Code extension via HTTP
         this.writeIdeSessionFile(urlToOpen, data);
       } else if (previewMode !== "none") {
         // Open in browser (default behavior)
@@ -2049,34 +2061,163 @@ ${regression}
     }
   }
 
-  // Write session file for IDE preview mode
+  // Write session file for IDE preview (VSCode extension watches for these)
   writeIdeSessionFile(debuggerUrl, data) {
+    const fs = require("fs");
+    const path = require("path");
+
+    const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const previewsDir = path.join(process.cwd(), ".testdriver", ".previews");
+
+    // Create the previews directory if it doesn't exist
+    if (!fs.existsSync(previewsDir)) {
+      fs.mkdirSync(previewsDir, { recursive: true });
+    }
+
+    const sessionData = {
+      sessionId,
+      debuggerUrl,
+      resolution: Array.isArray(data.resolution) ? data.resolution : (data.resolution ? data.resolution.split("x").map(Number) : [1920, 1080]),
+      testFile: data.testFile || this.testFile || null,
+      os: data.os || this.sandboxOs || "linux",
+      timestamp: Date.now(),
+    };
+
+    const filePath = path.join(previewsDir, `${sessionId}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+
+    logger.log(`IDE preview session written to ${filePath}`);
+  }
+
+  // Find the VS Code instance that contains the test file
+  findTargetIdeInstance(testFilePath) {
     const fs = require("fs");
     const os = require("os");
     const path = require("path");
 
-    const sessionDir = path.join(os.homedir(), ".testdriver");
-    const sessionFile = path.join(sessionDir, "ide-session.json");
-
-    try {
-      // Ensure directory exists
-      if (!fs.existsSync(sessionDir)) {
-        fs.mkdirSync(sessionDir, { recursive: true });
-      }
-
-      const sessionData = {
-        debuggerUrl: debuggerUrl,
-        resolution: data.resolution || this.config.TD_RESOLUTION,
-        testFile: data.testFile || this.thisFile,
-        os: data.os || this.sandboxOs || "linux",
-        timestamp: Date.now(),
-      };
-
-      fs.writeFileSync(sessionFile, JSON.stringify(sessionData, null, 2));
-      logger.log(`IDE session file written: ${sessionFile}`);
-    } catch (error) {
-      logger.warn(`Failed to write IDE session file: ${error.message}`);
+    const instancesDir = path.join(os.homedir(), ".testdriver", "ide-instances");
+    
+    if (!fs.existsSync(instancesDir)) {
+      return null;
     }
+
+    const files = fs.readdirSync(instancesDir);
+    const normalizedTestPath = testFilePath ? path.normalize(testFilePath) : null;
+    
+    let matchingInstance = null;
+    let longestMatchLength = 0;
+
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      
+      try {
+        const registrationPath = path.join(instancesDir, file);
+        const registration = JSON.parse(fs.readFileSync(registrationPath, 'utf-8'));
+        
+        // Check if this instance is still alive (registration within last 60 seconds or process exists)
+        const isRecent = Date.now() - registration.timestamp < 60000;
+        
+        // Skip stale registrations
+        if (!isRecent) {
+          // Try to clean up stale file
+          try { fs.unlinkSync(registrationPath); } catch {}
+          continue;
+        }
+
+        // If we have a test file path, find the best matching workspace
+        if (normalizedTestPath && registration.workspacePaths) {
+          for (const workspacePath of registration.workspacePaths) {
+            const normalizedWorkspace = path.normalize(workspacePath);
+            if (normalizedTestPath.startsWith(normalizedWorkspace + path.sep) || 
+                normalizedTestPath === normalizedWorkspace) {
+              // Prefer longest match (most specific workspace)
+              if (normalizedWorkspace.length > longestMatchLength) {
+                longestMatchLength = normalizedWorkspace.length;
+                matchingInstance = registration;
+              }
+            }
+          }
+        } else if (!matchingInstance) {
+          // If no test file path, just use the first available instance
+          matchingInstance = registration;
+        }
+      } catch (error) {
+        // Ignore malformed registration files
+      }
+    }
+
+    return matchingInstance;
+  }
+
+  // Send session notification to VS Code extension via HTTP
+  sendIdeSessionNotification(debuggerUrl, data) {
+    const http = require("http");
+    const path = require("path");
+
+    const testFilePath = data.testFile || this.thisFile;
+    const targetInstance = this.findTargetIdeInstance(testFilePath);
+
+    if (!targetInstance) {
+      logger.warn("No VS Code instance found for IDE preview. Make sure VS Code with TestDriver extension is open.");
+      // Fall back to browser
+      this.emitter.emit(events.showWindow, debuggerUrl);
+      return;
+    }
+
+    // Generate a unique session ID
+    const testFileName = (testFilePath || "test")
+      .split(path.sep).pop()
+      .replace(/\.[^/.]+$/, "");
+    const sessionId = `${testFileName}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
+    const sessionData = {
+      sessionId: sessionId,
+      debuggerUrl: debuggerUrl,
+      resolution: data.resolution || this.config.TD_RESOLUTION,
+      testFile: testFilePath,
+      os: data.os || this.sandboxOs || "linux",
+      timestamp: Date.now(),
+    };
+
+    const postData = JSON.stringify(sessionData);
+
+    const options = {
+      hostname: '127.0.0.1',
+      port: targetInstance.port,
+      path: '/session',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 5000
+    };
+
+    const req = http.request(options, (res) => {
+      if (res.statusCode === 200) {
+        logger.log(`IDE session notification sent to port ${targetInstance.port}`);
+      } else {
+        logger.warn(`IDE session notification failed with status ${res.statusCode}`);
+        // Fall back to browser on failure
+        this.emitter.emit(events.showWindow, debuggerUrl);
+      }
+    });
+
+    req.on('error', (error) => {
+      logger.warn(`Failed to send IDE session notification: ${error.message}`);
+      // Fall back to browser on error
+      this.emitter.emit(events.showWindow, debuggerUrl);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      logger.warn('IDE session notification timed out');
+      // Fall back to browser on timeout
+      this.emitter.emit(events.showWindow, debuggerUrl);
+    });
+
+    req.write(postData);
+    req.end();
   }
 
   async connectToSandboxService() {

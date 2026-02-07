@@ -7,7 +7,7 @@ mcp-servers:
     command: npx
     args:
       - -p
-      - testdriverai@beta
+      - testdriverai
       - testdriverai-mcp
     env:
       TD_API_KEY: ${TD_API_KEY}
@@ -44,7 +44,8 @@ Use this agent when the user asks to:
 4. **⚠️ WRITE CODE IMMEDIATELY**: After EVERY successful action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the end.
 5. **Verify Actions**: Use `check` after actions to verify they succeeded (for YOUR understanding only).
 6. **Add Assertions**: Use `assert` for test conditions that should be in the final test file.
-7. **⚠️ RUN THE TEST YOURSELF**: Use `npx vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes.
+7. **⚠️ RUN THE TEST YOURSELF**: Use `vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes. **NEVER use `npx vitest`** - always use `vitest` directly.
+8. **⚠️ SHARE THE TEST REPORT**: After EVERY test run, find the `TESTDRIVER_RUN_URL` in the output (e.g., `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...`) and share it with the user so they can view the recording and results.
 
 ## Prerequisites
 
@@ -54,7 +55,7 @@ Use this agent when the user asks to:
 
 **CLI:**
 ```bash
-npx testdriverai@beta init
+npx testdriverai init
 ```
 
 **MCP (via this agent):**
@@ -80,7 +81,7 @@ The `init` command creates:
 
 **After running init:**
 1. User adds their API key to `.env`: `TD_API_KEY=...`
-2. Test the setup: `npx vitest run`
+2. Test the setup: `vitest run`
 3. Start building custom tests using the examples as templates
 
 ### API Key Setup
@@ -96,10 +97,10 @@ Get your API key at: **https://console.testdriver.ai/team**
 
 ### Manual Installation
 
-If not using `init`, always use the **beta** tag when installing TestDriver:
+If not using `init`, install TestDriver:
 
 ```bash
-npm install --save-dev testdriverai@beta
+npm install --save-dev testdriverai
 ```
 
 ### Test Runner
@@ -254,7 +255,7 @@ TestDriver **automatically captures screenshots before and after every command**
 
 **Every MCP tool response includes "ACTION REQUIRED: Append this code..." - you MUST write that code to the test file IMMEDIATELY before proceeding to the next action.**
 
-**When ready to validate, RUN THE TEST YOURSELF using `npx vitest run`. Do NOT tell the user to run it.**
+**When ready to validate, RUN THE TEST YOURSELF using `vitest run`. Do NOT tell the user to run it. NEVER use `npx vitest`.**
 
 ### Step 1: Start a Session
 
@@ -311,17 +312,17 @@ assert({ assertion: "the dashboard is visible" })
 
 ### Step 5: Run the Test Yourself
 
-**⚠️ YOU must run the test - do NOT tell the user to run it:**
+**⚠️ YOU must run the test - do NOT tell the user to run it. NEVER use `npx vitest` - always use `vitest` directly:**
 
 ```bash
-npx vitest run tests/login.test.mjs --reporter=dot
+vitest run tests/login.test.mjs --reporter=dot
 ```
 
 **Always use `--reporter=dot`** for cleaner, more concise output that's easier to parse.
 
 Analyze the output, fix any issues, and iterate until the test passes.
 
-**⚠️ ALWAYS share the test report link with the user.** After each test run, look for the "View Report" URL in the test output (e.g., `https://app.testdriver.ai/projects/.../reports/...`) and share it with the user so they can review the recording and results.
+**⚠️ ALWAYS share the test report link with the user.** After each test run, look for `TESTDRIVER_RUN_URL` in the test output (e.g., `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...`) and share it with the user so they can view the recording and results. This is CRITICAL - users need to see the visual recording to understand test behavior.
 
 ### MCP Tools Reference
 
@@ -456,7 +457,7 @@ list_local_screenshots({ directory: "checkout.test", phase: "before", limit: 10 
 ### Tips for MCP Workflow
 
 1. **⚠️ Write code IMMEDIATELY** - After EVERY action, append generated code to test file RIGHT AWAY
-2. **⚠️ Run tests YOURSELF** - Use `npx vitest run` - do NOT tell user to run tests
+2. **⚠️ Run tests YOURSELF** - Use `vitest run` (NEVER `npx vitest`) - do NOT tell user to run tests
 3. **⚠️ Add screenshots liberally** - Include `await testdriver.screenshot()` after every significant action for debugging
 4. **⚠️ Use screenshot viewing for debugging** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` to understand what went wrong
 5. **Work incrementally** - Don't try to build the entire test at once
@@ -616,7 +617,8 @@ await testdriver.screenshot(1, false, true);
 ## Tips for Agents
 
 1. **⚠️ WRITE CODE IMMEDIATELY** - After EVERY successful MCP action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the session ends.
-2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `npx vitest run <testFile> --reporter=dot`. Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes. **Always share the test report link** (e.g., `https://app.testdriver.ai/projects/.../reports/...`) with the user after each run.
+2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `vitest run <testFile> --reporter=dot` (NEVER use `npx vitest` - it breaks the reporter). Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes.
+3. **⚠️ SHARE THE TEST REPORT URL** - After EVERY test run, find `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...` in the output and share it with the user. This is CRITICAL - users need to view the recording to understand what happened.
 3. **Screenshots are automatic** - TestDriver captures screenshots before/after every command by default. Each screenshot filename includes the line number (e.g., `001-click-before-L42-submit-button.png`) making it easy to trace issues.
 4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. The filenames tell you which line of code triggered each screenshot.
 5. **⚠️ NEVER USE `.wait()`** - Do NOT use any `.wait()` method. Instead, use `find()` with a `timeout` option to poll for elements, or use `assert()` / `check()` to verify state. Explicit waits are flaky and slow.

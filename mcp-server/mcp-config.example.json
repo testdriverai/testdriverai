@@ -10,7 +10,7 @@
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai@beta", "testdriverai-mcp"],
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
       "env": {
         "TD_API_KEY": "${input:testdriver-api-key}"
       }

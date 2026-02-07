@@ -137,9 +137,9 @@ Scale your testing with dynamic data to cover more scenarios:
 
     ```bash
     # Run against different environments
-    TEST_ENV=dev npx vitest run
-    TEST_ENV=staging npx vitest run
-    TEST_ENV=production npx vitest run
+    TEST_ENV=dev vitest run
+    TEST_ENV=staging vitest run
+    TEST_ENV=production vitest run
     ```
   </Tab>
 
@@ -245,10 +245,10 @@ export default defineConfig({
 
     ```bash
     # Run all tests in parallel
-    npx vitest run
+    vitest run
 
     # Control concurrency
-    npx vitest run --max-concurrency=5
+    vitest run --max-concurrency=5
     ```
   </Card>
 
@@ -257,10 +257,10 @@ export default defineConfig({
 
     ```bash
     # Run in watch mode
-    npx vitest
+    vitest
 
     # Only run changed tests
-    npx vitest --changed
+    vitest --changed
     ```
   </Card>
 </CardGroup>
@@ -285,7 +285,7 @@ TestDriver integrates seamlessly with all major CI/CD platforms:
           - uses: actions/checkout@v3
           - uses: actions/setup-node@v3
           - run: npm install
-          - run: npx vitest run
+          - run: vitest run
             env:
               TD_API_KEY: ${{ secrets.TD_API_KEY }}
     ```
@@ -299,7 +299,7 @@ TestDriver integrates seamlessly with all major CI/CD platforms:
       image: node:20
       script:
         - npm install
-        - npx vitest run
+        - vitest run
       variables:
         TD_API_KEY: $TD_API_KEY
     ```
@@ -317,7 +317,7 @@ TestDriver integrates seamlessly with all major CI/CD platforms:
         steps:
           - checkout
           - run: npm install
-          - run: npx vitest run
+          - run: vitest run
     ```
 
     [CircleCI guide](/v7/guides/ci-cd/circleci)
@@ -331,7 +331,7 @@ TestDriver integrates seamlessly with all major CI/CD platforms:
         stage('Test') {
           steps {
             sh 'npm install'
-            sh 'npx vitest run'
+            sh 'vitest run'
           }
         }
       }
@@ -368,7 +368,7 @@ export default defineConfig({
 Or run from the command line:
 
 ```bash
-npx vitest run --reporter=junit --outputFile=test-results.xml
+vitest run --reporter=junit --outputFile=test-results.xml
 ```
 
 This generates a standard JUnit XML report:
@@ -417,7 +417,7 @@ jobs:
         run: npm ci
       
       - name: Run tests
-        run: npx vitest run
+        run: vitest run
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
 
@@ -452,7 +452,7 @@ jobs:
       # ... setup steps ...
       
       - name: Run Linux tests
-        run: npx vitest run
+        run: vitest run
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_OS: linux
@@ -471,7 +471,7 @@ jobs:
       # ... setup steps ...
       
       - name: Run Windows tests
-        run: npx vitest run
+        run: vitest run
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_OS: windows
@@ -601,7 +601,7 @@ Distribute tests across multiple machines:
       matrix:
         shard: [1, 2, 3, 4, 5]
     steps:
-      - run: npx vitest run --shard=${{ matrix.shard }}/5
+      - run: vitest run --shard=${{ matrix.shard }}/5
     ```
 
     Runs 5 parallel jobs, each handling 1/5 of tests.
@@ -612,23 +612,23 @@ Distribute tests across multiple machines:
     test:
       parallel: 5
       script:
-        - npx vitest run --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
+        - vitest run --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
     ```
   </Tab>
 
   <Tab title="Manual Sharding">
     ```bash
     # Machine 1
-    npx vitest run --shard=1/4
+    vitest run --shard=1/4
 
     # Machine 2
-    npx vitest run --shard=2/4
+    vitest run --shard=2/4
 
     # Machine 3
-    npx vitest run --shard=3/4
+    vitest run --shard=3/4
 
     # Machine 4
-    npx vitest run --shard=4/4
+    vitest run --shard=4/4
     ```
   </Tab>
 </Tabs>
@@ -681,7 +681,7 @@ Built for teams with multiple developers:
 
     # Team members can connect
     export TESTDRIVER_SANDBOX_ID=i-0abc123def
-    npx vitest run
+    vitest run
     ```
 
     [Learn about sandbox management](/v7/guides/sandbox-management)
