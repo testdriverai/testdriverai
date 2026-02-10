@@ -1567,6 +1567,51 @@ class TestDriverSDK {
     return "C:\\PROGRA~1\\nodejs\\node_modules\\dashcam-chrome\\build";
   }
 
+  /**
+   * Wait for Chrome DevTools Protocol debugger to be ready on port 9222,
+   * then wait for a page to report loaded.
+   * Works on both Windows (PowerShell) and Linux (sh).
+   * @param {number} [timeoutMs=60000] - Maximum time to wait in ms
+   * @returns {Promise<void>}
+   */
+  async _waitForChromeDebuggerReady(timeoutMs = 60000) {
+    const shell = this.os === "windows" ? "pwsh" : "sh";
+
+    if (this.os === "windows") {
+      // Wait for port 9222 to be listening
+      await this.exec(
+        shell,
+        `$timeout = ${Math.floor(timeoutMs / 1000)}; $elapsed = 0; while ($elapsed -lt $timeout) { try { $tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); break } catch { Start-Sleep -Milliseconds 200; $elapsed += 0.2 } }`,
+        timeoutMs,
+        true,
+      );
+
+      // Wait for a page target to appear via CDP
+      await this.exec(
+        shell,
+        `$timeout = ${Math.floor(timeoutMs / 1000)}; $elapsed = 0; while ($elapsed -lt $timeout) { try { $r = Invoke-RestMethod -Uri 'http://localhost:9222/json' -TimeoutSec 2; if ($r | Where-Object { $_.type -eq 'page' }) { break } } catch {} Start-Sleep -Milliseconds 500; $elapsed += 0.5 }`,
+        timeoutMs,
+        true,
+      );
+    } else {
+      // Wait for port 9222 to be listening
+      await this.exec(
+        shell,
+        `timeout=${Math.floor(timeoutMs / 1000)}; elapsed=0; while [ $elapsed -lt $timeout ]; do nc -z localhost 9222 && break; sleep 0.2; elapsed=$((elapsed + 1)); done`,
+        timeoutMs,
+        true,
+      );
+
+      // Wait for a page target to appear via CDP
+      await this.exec(
+        shell,
+        `timeout=${Math.floor(timeoutMs / 1000)}; elapsed=0; while [ $elapsed -lt $timeout ]; do curl -s http://localhost:9222/json 2>/dev/null | grep -q '"type": "page"' && break; sleep 0.5; elapsed=$((elapsed + 1)); done`,
+        timeoutMs,
+        true,
+      );
+    }
+  }
+
   _createProvisionAPI() {
     const self = this;
 
@@ -1691,31 +1736,9 @@ class TestDriverSDK {
           );
         }
 
-        // Wait for Chrome to be ready
+        // Wait for Chrome debugger port and page to be ready
+        await this._waitForChromeDebuggerReady();
         await this.focusApplication("Google Chrome");
-
-        // Wait for URL to load
-        try {
-          const urlObj = new URL(url);
-          const domain = urlObj.hostname;
-
-          for (let attempt = 0; attempt < 30; attempt++) {
-            const result = await this.find(`${domain}`);
-
-            if (result.found()) {
-              break;
-            } else {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-
-          await this.focusApplication("Google Chrome");
-        } catch (e) {
-          console.warn(
-            `[provision.chrome] ⚠️  Could not parse URL "${url}":`,
-            e.message,
-          );
-        }
       },
 
       /**
@@ -1977,20 +2000,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           );
         }
 
-        // Wait for Chrome to be ready
-        await this.focusApplication("Google Chrome");
-
-        // Wait for New Tab to appear
-        for (let attempt = 0; attempt < 30; attempt++) {
-          const result = await this.find("New Tab");
-
-          if (result.found()) {
-            break;
-          } else {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-
+        // Wait for Chrome debugger port and page to be ready
+        await this._waitForChromeDebuggerReady();
         await this.focusApplication("Google Chrome");
       },
 
