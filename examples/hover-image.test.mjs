@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 /**
  * Perform login flow for SauceLabs demo app
@@ -27,7 +28,7 @@ async function performLogin(client, username = "standard_user") {
 
 describe("Hover Image Test", () => {
   it("should click on shopping cart icon and verify empty cart", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, redraw: false });
+    const testdriver = TestDriver(context, { ...getDefaults(context) });
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({

@@ -9,13 +9,14 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 describe("Chrome Extension Test", () => {
   it("should load hello-world Chrome extension from local path", async (context) => {
 
     console.log('connecting to', process.env.TD_IP)
 
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, cacheKey: new Date().getTime().toString() });
+    const testdriver = TestDriver(context, { ...getDefaults(context), cacheKey: new Date().getTime().toString() });
     
     // Determine OS-specific paths and commands
     const shell = testdriver.os === 'windows' ? 'pwsh' : 'sh';
@@ -65,7 +66,7 @@ describe("Chrome Extension Test", () => {
   });
 
   it("should load Loom from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+    const testdriver = TestDriver(context, { ...getDefaults(context) });
 
     // Launch Chrome with Loom loaded by its Chrome Web Store ID
     // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
