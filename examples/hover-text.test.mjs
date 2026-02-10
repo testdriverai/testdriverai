@@ -5,10 +5,11 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 describe("Hover Text Test", () => {
   it("should click Sign In and verify error message", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+    const testdriver = TestDriver(context, { ...getDefaults(context) });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // Click on Sign In button using new find() API

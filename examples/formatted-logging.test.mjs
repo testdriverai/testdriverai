@@ -5,10 +5,11 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 describe("Formatted Logging Test", () => {
   it("should demonstrate formatted logs in dashcam replay", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     // Find and click - logs will be nicely formatted

@@ -4,12 +4,13 @@
  */
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 console.log("DEBUG: process.env.TD_OS:", process.env.TD_OS);
 
 describe("testdriver.captcha() API", () => {
   it("should solve reCAPTCHA v3 with auto-detect", async (context) => {
-    const testdriver = TestDriver(context);
+    const testdriver = TestDriver(context, { ...getDefaults(context) });
 
     // Launch Chrome (remote debugging is enabled automatically on Linux)
     await testdriver.provision.chrome({
@@ -30,7 +31,7 @@ describe("testdriver.captcha() API", () => {
   }, 180000);
 
   it("should solve Cloudflare Turnstile", async (context) => {
-    const testdriver = TestDriver(context);
+    const testdriver = TestDriver(context, { ...getDefaults(context) });
 
     await testdriver.provision.chrome({
       url: "https://2captcha.com/demo/cloudflare-turnstile",

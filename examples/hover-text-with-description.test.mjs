@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 /**
  * Perform login flow for SauceLabs demo app
@@ -26,7 +27,7 @@ async function performLogin(client, username = "standard_user") {
 describe("Hover Text With Description Test", () => {
   it("should add TestDriver Hat to cart and verify", async (context) => {
     const testdriver = TestDriver(context, {
-      ip: context.ip || process.env.TD_IP,
+      ...getDefaults(context),
       headless: true,
     });
     await testdriver.provision.chrome({
