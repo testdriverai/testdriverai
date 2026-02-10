@@ -255,15 +255,16 @@ const createCommands = (
     let cacheHit = false;
     let similarity = null;
     
-    if (typeof response.data === 'object' && response.data !== null) {
+    const data = response?.data;
+    if (typeof data === 'object' && data !== null) {
       // New structured response
-      passed = response.data.passed;
-      responseText = response.data.content || response.data.reasoning || '';
-      cacheHit = response.cacheHit || response.data.cacheHit || false;
-      similarity = response.similarity || response.data.cacheSimilarity;
+      passed = data.passed;
+      responseText = data.content || data.reasoning || '';
+      cacheHit = response.cacheHit || data.cacheHit || false;
+      similarity = response.similarity || data.cacheSimilarity;
     } else {
       // Old string response (backward compatibility)
-      responseText = response.data || '';
+      responseText = typeof data === 'string' ? data : String(data || '');
       passed = responseText.indexOf("The task passed") > -1;
     }
     
