@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 
@@ -7,7 +8,7 @@ describe("Launch VS Code on Linux", () => {
   it.skipIf(!isLinux)(
     "should launch VS Code on Debian/Ubuntu",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+      const testdriver = TestDriver(context, { ...getDefaults(context) });
       
       // provision.vscode() automatically calls ready() and starts dashcam
       await testdriver.provision.vscode();
@@ -24,7 +25,7 @@ describe("Launch VS Code on Linux", () => {
   it.skipIf(!isLinux)(
     "should install and use a VS Code extension",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+      const testdriver = TestDriver(context, { ...getDefaults(context) });
       
       // Launch VS Code with the Prettier extension installed
       await testdriver.provision.vscode({

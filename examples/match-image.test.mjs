@@ -7,6 +7,7 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 /**
  * Perform login flow for SauceLabs demo app
@@ -33,7 +34,7 @@ const __dirname = dirname(__filename);
 
 describe("Match Image Test", () => {
   it.skip("should match shopping cart image and verify empty cart", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     //
