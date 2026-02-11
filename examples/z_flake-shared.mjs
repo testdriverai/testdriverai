@@ -19,8 +19,15 @@ export function popupLoadingTest(label, options = {}) {
       await testdriver.screenshot();
 
       // Accept the cookie banner to trigger the loading process
-      await testdriver.find("Accept All button on the cookie banner").click();
-      await testdriver.screenshot();
+      let acceptButton = await testdriver.find("Accept All button on the cookie banner", {timeout: 60000});
+
+      if (acceptButton.found()) {
+        await acceptButton.click();
+      } else {
+        console.log('no cookie banner found, proceeding without accepting cookies');
+      }
+
+      await testdriver.find('Start button').click();
 
       // Wait for "All done!" to appear with 120s timeout
       const allDone = await testdriver.find("All done! text or heading in a modal or popup", { timeout: 120000 });
