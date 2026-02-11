@@ -256,6 +256,7 @@ class ElementNotFoundError extends Error {
 
     if (this.aiResponse) {
       const responseText =
+        this.aiResponse.reasoning ||
         this.aiResponse.response?.content?.[0]?.text ||
         this.aiResponse.content?.[0]?.text ||
         "No detailed response available";
@@ -603,6 +604,10 @@ class Element {
             false,
           selector: response?.selector,
           selectorUsed: !!response?.selector,
+          confidence: response?.confidence ?? null,
+          reasoning: response?.reasoning ?? null,
+          similarity: response?.similarity ?? null,
+          screenshotUrl: response?.screenshotKey ?? null,
         })
         .catch((err) => {
           console.warn("Failed to track find interaction:", err.message);
@@ -969,6 +974,10 @@ class Element {
       cacheHit: this._response?.cacheHit,
       selectorUsed: !!this._response?.selector,
       selector: this._response?.selector,
+      confidence: this._response?.confidence ?? null,
+      reasoning: this._response?.reasoning ?? null,
+      similarity: this._response?.similarity ?? null,
+      screenshotUrl: this._response?.screenshotKey ?? null,
     };
 
     if (action === "hover") {
@@ -1018,6 +1027,7 @@ class Element {
       cacheHit: this._response?.cacheHit,
       selectorUsed: !!this._response?.selector,
       selector: this._response?.selector,
+      screenshotUrl: this._response?.screenshotKey ?? null,
     };
 
     await this.commands.hover(
@@ -1646,10 +1656,22 @@ class TestDriverSDK {
           guest = false,
         } = options;
 
-        // If dashcam is available, add web logs for all websites
+        // If dashcam is enabled, add web logs for all websites
         // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this._dashcam) {
-          await this._dashcam.addWebLog("**", "Web Logs");
+        if (this.dashcamEnabled) {
+          // get the domain from the url for more specific logging, e.g. "Web Logs - example.com"
+          let domain = url;
+          try {
+            const urlObj = new URL(url);
+            domain = urlObj.hostname;
+          } catch (err) {
+            // If URL parsing fails, fall back to using the full URL as the domain
+          } 
+
+          // the pattern should be https://domain* to match all subpages of the domain
+          const webLogPattern = `https://${domain}*`;
+
+          await this.dashcam.addWebLog(webLogPattern, "Web Logs");
         }
 
         // Set up Chrome profile with preferences
@@ -1906,10 +1928,10 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           );
         }
 
-        // If dashcam is available, add web logs for all websites
+        // If dashcam is enabled, add web logs for all websites
         // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this._dashcam) {
-          await this._dashcam.addWebLog("**", "Web Logs");
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog("**", "Web Logs");
         }
 
         // Set up Chrome profile with preferences
@@ -2032,10 +2054,10 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, add web logs for all websites
+        // If dashcam is enabled, add web logs for all websites
         // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this._dashcam) {
-          await this._dashcam.addWebLog("**", "Web Logs");
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog("**", "Web Logs");
         }
 
         // Install extensions if provided
@@ -2108,10 +2130,10 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, add web logs for all websites
+        // If dashcam is enabled, add web logs for all websites
         // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this._dashcam) {
-          await this._dashcam.addWebLog("**", "Web Logs");
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog("**", "Web Logs");
         }
 
         // Determine download directory
@@ -2248,10 +2270,10 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, add web logs for all websites
+        // If dashcam is enabled, add web logs for all websites
         // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this._dashcam) {
-          await this._dashcam.addWebLog("**", "Web Logs");
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog("**", "Web Logs");
         }
 
         const argsString = args.join(" ");
@@ -2290,17 +2312,17 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           title,
         } = options;
 
-        // Ensure dashcam is available
-        if (!this._dashcam) {
+        // Ensure dashcam is enabled
+        if (!this.dashcamEnabled) {
           console.warn(
-            "[provision.dashcam] Dashcam is not available. Skipping.",
+            "[provision.dashcam] Dashcam is not enabled. Skipping.",
           );
           return;
         }
 
         // Set custom title if provided
         if (title) {
-          this._dashcam.setTitle(title);
+          this.dashcam.setTitle(title);
         }
 
         // Add file log tracking
@@ -2310,16 +2332,16 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             ? "C:\\Users\\testdriver\\testdriver.log"
             : "/tmp/testdriver.log");
 
-        await this._dashcam.addFileLog(actualLogPath, logName);
+        await this.dashcam.addFileLog(actualLogPath, logName);
 
         // Add web log tracking if enabled
         if (webLogs) {
-          await this._dashcam.addWebLog("**", "Web Logs");
+          await this.dashcam.addWebLog("**", "Web Logs");
         }
 
         // Start recording if not already recording
-        if (!(await this._dashcam.isRecording())) {
-          await this._dashcam.start();
+        if (!(await this.dashcam.isRecording())) {
+          await this.dashcam.start();
         }
 
         console.log("[provision.dashcam] ✅ Dashcam recording started");
@@ -3038,6 +3060,7 @@ CAPTCHA_SOLVER_EOF`,
               cacheHit: response.cached || false,
               selector: response.selector,
               selectorUsed: !!response.selector,
+              screenshotUrl: response.screenshotKey ?? null,
             })
             .catch((err) => {
               console.warn("Failed to track findAll interaction:", err.message);
@@ -3094,6 +3117,7 @@ CAPTCHA_SOLVER_EOF`,
               cacheHit: response?.cached || false,
               selector: response?.selector,
               selectorUsed: !!response?.selector,
+              screenshotUrl: response?.screenshotKey ?? null,
             })
             .catch((err) => {
               console.warn("Failed to track findAll interaction:", err.message);
@@ -4048,6 +4072,9 @@ CAPTCHA_SOLVER_EOF`,
     return await this.act(task, options);
   }
 }
+
+// Expose SDK version as a static property for use by vitest hooks/plugins
+TestDriverSDK.version = require("./package.json").version;
 
 module.exports = TestDriverSDK;
 module.exports.Element = Element;
