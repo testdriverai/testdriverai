@@ -414,6 +414,7 @@ class Element {
 
       result.similarity = this._response.similarity;
       result.confidence = this._response.confidence;
+      result.reasoning = this._response.reasoning;
       result.selector = this._response.selector;
 
       // Include AI response text if available
@@ -716,20 +717,26 @@ class Element {
       cacheStrategy: response.cacheStrategy || null,
       similarity: response.similarity ?? null,
       confidence: response.confidence ?? null,
+      reasoning: response.reasoning ?? null,
     };
 
     // Emit element found as log:log event
     const { events } = require("./agent/events.js");
     const Dashcam = require("./lib/core/Dashcam");
     const consoleUrl = Dashcam.getConsoleUrl(this.sdk.config?.TD_API_ROOT);
-    const formattedMessage = formatter.formatElementFound(this.description, {
+    const meta = {
       x: this.coordinates.x,
       y: this.coordinates.y,
       duration: debugInfo.duration,
       cacheHit: debugInfo.cacheHit,
       selectorId: this._response?.selector,
       consoleUrl: consoleUrl,
-    });
+    };
+    if (!debugInfo.cacheHit) {
+      meta.confidence = debugInfo.confidence;
+      meta.reasoning = debugInfo.reasoning;
+    }
+    const formattedMessage = formatter.formatElementFound(this.description, meta);
     this.sdk.emitter.emit(events.log.log, formattedMessage);
 
     // Log cache information in debug mode
@@ -1114,6 +1121,14 @@ class Element {
    */
   get confidence() {
     return this._response?.confidence ?? null;
+  }
+
+  /**
+   * Get model reasoning for why this element was selected
+   * @returns {string|null}
+   */
+  get reasoning() {
+    return this._response?.reasoning ?? null;
   }
 
   /**
