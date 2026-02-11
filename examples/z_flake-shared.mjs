@@ -40,7 +40,7 @@ export function popupLoadingTest(label, options = {}) {
       await testdriver.find("Continue button in the modal").click();
 
       // Wait for the 5x5 grid of images to fully load (up to 60s) and click the rocket
-      await testdriver.find("rocket image in the 5x5 grid", { timeout: 60000 }).click();
+      await testdriver.find("rocket image in the 5x5 grid", { timeout: 60000, cacheThreshold: -1 }).click();
 
       // Assert the success message appears
       const rocketResult = await testdriver.assert("The text 'You found the rocket!' is visible on the page");
