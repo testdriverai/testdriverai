@@ -377,6 +377,12 @@ class SDKLogFormatter {
     if (meta.cacheHit) {
       metaParts.push(chalk.bold.yellow("⚡ cached"));
     }
+    if (meta.confidence !== undefined && meta.confidence !== null) {
+      metaParts.push(chalk.dim.gray(`confidence: ${meta.confidence}`));
+    }
+    if (meta.reasoning) {
+      metaParts.push(chalk.dim.gray(`reasoning: ${meta.reasoning}`));
+    }
     // Duration always last
     if (meta.duration) {
       metaParts.push(this.formatDurationColored(meta.duration, thresholdKey));

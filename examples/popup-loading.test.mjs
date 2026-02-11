@@ -14,20 +14,8 @@ import { TestDriver } from "../lib/vitest/hooks.mjs";
 
 describe("Popup with Loading", () => {
   it("should accept cookies and wait for completion", async (context) => {
-    // Parse redraw option from env: "true", "false", or JSON object
-    let redrawOption;
-    if (process.env.TD_REDRAW) {
-      try {
-        redrawOption = JSON.parse(process.env.TD_REDRAW);
-      } catch {
-        redrawOption = process.env.TD_REDRAW === "true";
-      }
-    }
-
     const testdriver = TestDriver(context, {
       ip: context.ip || process.env.TD_IP,
-      ...(process.env.TD_REDRAW !== undefined && { redraw: redrawOption }),
-      ...(process.env.TD_CACHE !== undefined && { cache: process.env.TD_CACHE === "true" }),
     });
 
     await testdriver.provision.chrome({
