@@ -30,8 +30,13 @@ jobs:
         run: npm install -g @sentry/cli
 
       - name: Report to Sentry Cron
+        continue-on-error: true
         run: |
-          sentry-cli monitors run testdriver-windows-acceptance -- echo "Windows tests completed"
+          if [ "${{ needs.test-windows.result }}" == "success" ]; then
+            sentry-cli monitors run testdriver-windows-acceptance -- echo "Windows tests passed"
+          else
+            sentry-cli monitors run testdriver-windows-acceptance -- bash -c "echo 'Windows tests failed' && exit 1"
+          fi
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
