@@ -1646,10 +1646,13 @@ class TestDriverSDK {
           guest = false,
         } = options;
 
-        // If dashcam is available, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
+        // If dashcam is available, add web logs before starting recording
         if (this._dashcam) {
           await this._dashcam.addWebLog("**", "Web Logs");
+
+          if (!(await this._dashcam.isRecording())) {
+            await this._dashcam.start();
+          }
         }
 
         // Set up Chrome profile with preferences
@@ -1906,10 +1909,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           );
         }
 
-        // If dashcam is available, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
+        // If dashcam is available, add web logs before starting recording
         if (this._dashcam) {
           await this._dashcam.addWebLog("**", "Web Logs");
+
+          if (!(await this._dashcam.isRecording())) {
+            await this._dashcam.start();
+          }
         }
 
         // Set up Chrome profile with preferences
@@ -2032,10 +2038,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
+        // If dashcam is available, add web logs before starting recording
         if (this._dashcam) {
           await this._dashcam.addWebLog("**", "Web Logs");
+
+          if (!(await this._dashcam.isRecording())) {
+            await this._dashcam.start();
+          }
         }
 
         // Install extensions if provided
@@ -2108,10 +2117,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
+        // If dashcam is available, add web logs before starting recording
         if (this._dashcam) {
           await this._dashcam.addWebLog("**", "Web Logs");
+
+          if (!(await this._dashcam.isRecording())) {
+            await this._dashcam.start();
+          }
         }
 
         // Determine download directory
@@ -2248,10 +2260,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is available, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
+        // If dashcam is available, add web logs before starting recording
         if (this._dashcam) {
           await this._dashcam.addWebLog("**", "Web Logs");
+
+          if (!(await this._dashcam.isRecording())) {
+            await this._dashcam.start();
+          }
         }
 
         const argsString = args.join(" ");
