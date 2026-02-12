@@ -5,8 +5,7 @@ import { defineConfig } from "vitest/config";
 // Note: dotenv is loaded automatically by the TestDriver SDK
 const setupFiles = [
   "testdriverai/vitest/setup",
-  "testdriverai/vitest/setup-aws",
-  'testdriverai/vitest/setup-disable-defender'
+  "testdriverai/vitest/setup-aws"
 ];
 
 export default defineConfig({
