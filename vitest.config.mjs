@@ -6,6 +6,7 @@ import { defineConfig } from "vitest/config";
 const setupFiles = [
   "testdriverai/vitest/setup",
   "testdriverai/vitest/setup-aws",
+  'testdriverai/vitest/setup-disable-defender'
 ];
 
 export default defineConfig({
