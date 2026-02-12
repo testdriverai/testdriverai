@@ -1661,15 +1661,17 @@ class TestDriverSDK {
         if (this.dashcamEnabled) {
           // get the domain from the url for more specific logging, e.g. "Web Logs - example.com"
           let domain = url;
+          let protocol = "https:";
           try {
             const urlObj = new URL(url);
             domain = urlObj.hostname;
+            protocol = urlObj.protocol;
           } catch (err) {
             // If URL parsing fails, fall back to using the full URL as the domain
-          } 
+          }
 
-          // the pattern should be https://domain* to match all subpages of the domain
-          const webLogPattern = `https://${domain}*`;
+          // the pattern should be protocol://domain* to match all subpages of the domain
+          const webLogPattern = `${protocol}//${domain}*`;
 
           await this.dashcam.addWebLog(webLogPattern, "Web Logs");
         }
