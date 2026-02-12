@@ -2,6 +2,7 @@ const WebSocket = require("ws");
 const crypto = require("crypto");
 const { events } = require("../events");
 const logger = require("./logger");
+const { version } = require("../../package.json");
 
 /**
  * Generate Sentry trace headers for distributed tracing
@@ -135,6 +136,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       let reply = await this.send({
         type: "authenticate",
         apiKey,
+        version,
       });
 
       if (reply.success) {

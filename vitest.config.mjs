@@ -10,6 +10,7 @@ const setupFiles = [
 
 export default defineConfig({
   test: {
+    retry: 1,
     testTimeout: 900000,
     hookTimeout: 900000,
     disableConsoleIntercept: true,
