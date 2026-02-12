@@ -9,6 +9,7 @@ export function popupLoadingTest(label, options = {}) {
   describe(`Popup with Loading (${label})`, () => {
     it("should accept cookies and wait for completion", async (context) => {
       const testdriver = TestDriver(context, {
+        preview: 'ide',
         ip: context.ip || process.env.TD_IP,
         ...options,
       });

@@ -255,12 +255,17 @@ const createCommands = (
     let cacheHit = false;
     let similarity = null;
     
+    let confidence = null;
+    let reasoning = null;
+
     if (typeof response.data === 'object' && response.data !== null) {
       // New structured response
       passed = response.data.passed;
       responseText = response.data.content || response.data.reasoning || '';
       cacheHit = response.cacheHit || response.data.cacheHit || false;
       similarity = response.similarity || response.data.cacheSimilarity;
+      confidence = response.confidence != null ? response.confidence : (response.data.confidence != null ? response.data.confidence : null);
+      reasoning = response.data.reasoning || null;
     } else {
       // Old string response (backward compatibility)
       responseText = response.data || '';
@@ -283,6 +288,10 @@ const createCommands = (
         success: passed,
         error: passed ? undefined : responseText,
         cacheHit: cacheHit,
+        confidence: confidence,
+        reasoning: reasoning,
+        similarity: similarity,
+        screenshotUrl: response?.screenshotKey ?? null,
       }).catch((err) => {
         console.warn("Failed to track assert interaction:", err.message);
       });
@@ -560,6 +569,10 @@ const createCommands = (
             cacheHit: elementData.cacheHit,
             selector: elementData.selector,
             selectorUsed: elementData.selectorUsed,
+            confidence: elementData.confidence ?? null,
+            reasoning: elementData.reasoning ?? null,
+            similarity: elementData.similarity ?? null,
+            screenshotUrl: elementData.screenshotUrl ?? null,
           }).catch((err) => {
             console.warn("Failed to track click interaction:", err.message);
           });
@@ -610,6 +623,9 @@ const createCommands = (
           cacheHit: elementData.cacheHit,
           selector: elementData.selector,
           selectorUsed: elementData.selectorUsed,
+          confidence: elementData.confidence ?? null,
+          reasoning: elementData.reasoning ?? null,
+          similarity: elementData.similarity ?? null,
         }).catch((err) => {
           console.warn("Failed to track click interaction:", err.message);
         });
@@ -679,6 +695,10 @@ const createCommands = (
           cacheHit: elementData.cacheHit,
           selector: elementData.selector,
           selectorUsed: elementData.selectorUsed,
+          confidence: elementData.confidence ?? null,
+          reasoning: elementData.reasoning ?? null,
+          similarity: elementData.similarity ?? null,
+          screenshotUrl: elementData.screenshotUrl ?? null,
         }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
         });
@@ -717,6 +737,10 @@ const createCommands = (
           cacheHit: elementData.cacheHit,
           selector: elementData.selector,
           selectorUsed: elementData.selectorUsed,
+          confidence: elementData.confidence ?? null,
+          reasoning: elementData.reasoning ?? null,
+          similarity: elementData.similarity ?? null,
+          screenshotUrl: elementData.screenshotUrl ?? null,
         }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
         });
