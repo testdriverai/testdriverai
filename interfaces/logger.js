@@ -22,6 +22,11 @@ class CustomTransport extends Transport {
   _flushBatch() {
     if (this.batchQueue.length === 0) return;
     
+    // Capture and clear the batch atomically to prevent duplicate sends
+    const batch = this.batchQueue;
+    this.batchQueue = [];
+    this.batchTimeout = null;
+    
     try {
       if (!this.sandbox) {
         this.sandbox = require("../agent/lib/sandbox");
@@ -29,18 +34,21 @@ class CustomTransport extends Transport {
       
       if (this.sandbox && this.sandbox.instanceSocketConnected) {
         // Send all batched messages as a single combined output
-        const combinedOutput = this.batchQueue.join('\n');
+        const combinedOutput = batch.join('\n');
         this.sandbox.send({
           type: "output",
           output: Buffer.from(combinedOutput).toString("base64"),
+        }).catch((e) => {
+          // Re-queue failed messages for retry on next flush
+          this.batchQueue = batch.concat(this.batchQueue);
+          console.error("Error sending log batch:", e);
         });
       }
     } catch (e) {
+      // Re-queue on synchronous error as well
+      this.batchQueue = batch.concat(this.batchQueue);
       console.error("Error flushing log batch:", e);
     }
-    
-    this.batchQueue = [];
-    this.batchTimeout = null;
   }
 
   log(info, callback) {
