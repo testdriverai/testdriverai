@@ -348,9 +348,11 @@ const createRedraw = (
       });
       resolve("true");
     } else {
+      // Poll at 500ms intervals to reduce websocket traffic
+      // (previously 250ms = up to 20 polls per 5s timeout, now max 10)
       setTimeout(() => {
         checkCondition(resolve, startTime, timeoutMs, options);
-      }, 250);
+      }, 500);
     }
   }
 

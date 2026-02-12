@@ -11,30 +11,61 @@ class CustomTransport extends Transport {
     this.level = opts.level || "info";
     this.logStore = opts.logStore || []; // You could connect to a DB or API here
     this.sandbox = null;
+    
+    // Batching configuration to reduce websocket traffic
+    this.batchQueue = [];
+    this.batchTimeout = null;
+    this.BATCH_INTERVAL_MS = 100;  // Flush every 100ms
+    this.MAX_BATCH_SIZE = 20;      // Or when batch reaches 20 messages
   }
 
-  log(info, callback) {
-
+  _flushBatch() {
+    if (this.batchQueue.length === 0) return;
+    
     try {
-      const { message } = info;
-
       if (!this.sandbox) {
         this.sandbox = require("../agent/lib/sandbox");
       }
       
       if (this.sandbox && this.sandbox.instanceSocketConnected) {
-
-
-        if (typeof message === "object") {
-          console.log(chalk.cyan("protecting against base64 error"));
-          console.log(message);
-          return;
-        }
-
+        // Send all batched messages as a single combined output
+        const combinedOutput = this.batchQueue.join('\n');
         this.sandbox.send({
           type: "output",
-          output: Buffer.from(message).toString("base64"),
+          output: Buffer.from(combinedOutput).toString("base64"),
         });
+      }
+    } catch (e) {
+      console.error("Error flushing log batch:", e);
+    }
+    
+    this.batchQueue = [];
+    this.batchTimeout = null;
+  }
+
+  log(info, callback) {
+    try {
+      const { message } = info;
+
+      if (typeof message === "object") {
+        console.log(chalk.cyan("protecting against base64 error"));
+        console.log(message);
+        callback();
+        return;
+      }
+
+      // Add to batch queue instead of sending immediately
+      this.batchQueue.push(message);
+      
+      // Flush if batch is full
+      if (this.batchQueue.length >= this.MAX_BATCH_SIZE) {
+        if (this.batchTimeout) {
+          clearTimeout(this.batchTimeout);
+        }
+        this._flushBatch();
+      } else if (!this.batchTimeout) {
+        // Schedule flush after interval
+        this.batchTimeout = setTimeout(() => this._flushBatch(), this.BATCH_INTERVAL_MS);
       }
     } catch (e) {
       console.error("Error in CustomTransport log method:", e);
