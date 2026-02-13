@@ -364,8 +364,8 @@ export interface HoverResult {
   [key: string]: any;
 }
 
-/** Bounding box for an OCR word */
-export interface OCRBoundingBox {
+/** Bounding box for a parsed element (pixel coordinates) */
+export interface ParsedElementBBox {
   /** Left edge X coordinate */
   x0: number;
   /** Top edge Y coordinate */
@@ -376,28 +376,41 @@ export interface OCRBoundingBox {
   y1: number;
 }
 
-/** Individual word extracted by OCR */
-export interface OCRWord {
-  /** The text content of the word */
-  content: string;
-  /** Confidence score for this word (0-100) */
-  confidence: number;
-  /** Bounding box coordinates */
-  bbox: OCRBoundingBox;
+/** Bounding box as {left, top, width, height} */
+export interface ParsedElementBoundingBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
 
-/** Result from OCR text extraction */
-export interface OCRResult {
-  /** Array of extracted words with positions */
-  words: OCRWord[];
-  /** All text concatenated with spaces */
-  fullText: string;
-  /** Overall OCR confidence (0-100) */
-  confidence: number;
+/** Individual element detected by OmniParser */
+export interface ParsedElement {
+  /** Element index */
+  index: number;
+  /** Element type (e.g. "text", "icon", "button") */
+  type: string;
+  /** Text content or description */
+  content: string;
+  /** Interactivity level (e.g. "clickable", "non-interactive") */
+  interactivity: string;
+  /** Bounding box in pixel coordinates */
+  bbox: ParsedElementBBox;
+  /** Bounding box as {left, top, width, height} */
+  boundingBox: ParsedElementBoundingBox;
+}
+
+/** Result from OmniParser screen analysis */
+export interface ParseResult {
+  /** Array of detected UI elements */
+  elements: ParsedElement[];
+  /** URL of the annotated screenshot */
+  annotatedImageUrl: string;
   /** Width of the analyzed screenshot */
   imageWidth: number;
   /** Height of the analyzed screenshot */
   imageHeight: number;
+}
 }
 
 // ====================================
@@ -1326,32 +1339,28 @@ export default class TestDriverSDK {
   screenshot(filename?: string): Promise<string>;
 
   /**
-   * Extract all visible text from the current screen using OCR (Tesseract)
-   * Returns structured data with text content, bounding boxes, and confidence scores
+   * Parse the current screen using OmniParser v2 to detect all UI elements
+   * Returns structured data with element types, bounding boxes, and content
+   * Requires enterprise or self-hosted plan.
    *
-   * @returns OCR extraction result with words, positions, and confidence
-   *
-   * @example
-   * // Get all text on screen
-   * const result = await testdriver.ocr();
-   * console.log(result.fullText);
+   * @returns Parsed screen elements with positions and types
    *
    * @example
-   * // Find and click text
-   * const result = await testdriver.ocr();
-   * const submit = result.words.find(w => w.content === 'Submit');
-   * if (submit) {
-   *   const x = (submit.bbox.x0 + submit.bbox.x1) / 2;
-   *   const y = (submit.bbox.y0 + submit.bbox.y1) / 2;
-   *   await testdriver.click({ x, y });
-   * }
+   * // Get all elements on screen
+   * const result = await testdriver.parse();
+   * console.log(`Found ${result.elements.length} elements`);
    *
    * @example
-   * // Check if text exists
-   * const result = await testdriver.ocr();
-   * const hasError = result.words.some(w => w.content.toLowerCase().includes('error'));
+   * // Find clickable elements
+   * const result = await testdriver.parse();
+   * const clickable = result.elements.filter(e => e.interactivity === 'clickable');
+   *
+   * @example
+   * // Find text content
+   * const result = await testdriver.parse();
+   * const textElements = result.elements.filter(e => e.type === 'text');
    */
-  ocr(): Promise<OCRResult>;
+  parse(): Promise<ParseResult>;
 
   /**
    * Wait for specified time

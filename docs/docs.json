@@ -27,7 +27,6 @@
                 "pages": [
                   "/v7/examples/ai",
                   "/v7/examples/assert",
-                  "/v7/examples/captcha-api",
                   "/v7/examples/chrome-extension",
                   "/v7/examples/drag-and-drop",
                   "/v7/examples/element-not-found",

@@ -243,7 +243,7 @@ const createSDK = (emitter, config, sessionInstance) => {
         ...sentryHeaders, // Add Sentry distributed tracing headers
       },
       responseType: typeof onChunk === "function" ? "stream" : "json",
-      timeout: 60000, // 60 second timeout to prevent hanging requests
+      timeout: 120000, // 120 second timeout to prevent hanging requests
       data: {
         ...data,
         session: sessionInstance.get(),

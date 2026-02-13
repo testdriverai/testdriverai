@@ -736,6 +736,9 @@ class Element {
       cacheHit: debugInfo.cacheHit,
       selectorId: this._response?.selector,
       consoleUrl: consoleUrl,
+      validated: response.validated ?? null,
+      validationConfidence: response.validationConfidence ?? null,
+      coordsUpdated: response.coordsUpdated ?? null,
     };
     if (!debugInfo.cacheHit) {
       meta.confidence = debugInfo.confidence;
@@ -2994,7 +2997,7 @@ CAPTCHA_SOLVER_EOF`,
       }
 
       const response = await this.apiClient.req(
-        "/api/v7.0.0/testdriver-agent/testdriver-find-all",
+        "/api/v7.0.0/testdriver/find-all",
         {
           session: this.getSessionId(),
           element: description,
@@ -3010,7 +3013,7 @@ CAPTCHA_SOLVER_EOF`,
 
       if (response && response.elements && response.elements.length > 0) {
         // Single log at the end - found elements
-        const formattedMessage = formatter.formatFindAllSingleLine(
+        const formattedMessage = formatter.formatElementsFound(
           description,
           response.elements.length,
           {
@@ -3093,7 +3096,7 @@ CAPTCHA_SOLVER_EOF`,
         const duration = Date.now() - startTime;
 
         // Single log at the end - no elements found
-        const formattedMessage = formatter.formatFindAllSingleLine(
+        const formattedMessage = formatter.formatElementsFound(
           description,
           0,
           {
@@ -3139,7 +3142,7 @@ CAPTCHA_SOLVER_EOF`,
       const duration = Date.now() - startTime;
 
       // Single log at the end - error
-      const formattedMessage = formatter.formatFindAllSingleLine(
+      const formattedMessage = formatter.formatElementsFound(
         description,
         0,
         {
@@ -3451,74 +3454,70 @@ CAPTCHA_SOLVER_EOF`,
   }
 
   /**
-   * Extract all visible text from the current screen using OCR (Tesseract)
-   * Returns structured data with text content, bounding boxes, and confidence scores
+   * Parse the current screen using OmniParser v2 to detect all UI elements
+   * Returns structured data with element types, bounding boxes, and content
+   * Requires enterprise or self-hosted plan.
    *
-   * @returns {Promise<OCRResult>} OCR extraction result
+   * @returns {Promise<ParseResult>} Parsed screen elements
    *
-   * @typedef {Object} OCRResult
-   * @property {OCRWord[]} words - Array of words with positions and confidence
-   * @property {string} fullText - All extracted text concatenated
-   * @property {number} confidence - Overall OCR confidence (0-100)
+   * @typedef {Object} ParseResult
+   * @property {ParsedElement[]} elements - Array of detected UI elements
+   * @property {string} annotatedImageUrl - URL of the annotated screenshot
    * @property {number} imageWidth - Width of the analyzed image
    * @property {number} imageHeight - Height of the analyzed image
    *
-   * @typedef {Object} OCRWord
-   * @property {string} content - The text content of the word
-   * @property {number} confidence - Confidence score (0-100)
-   * @property {Object} bbox - Bounding box coordinates
+   * @typedef {Object} ParsedElement
+   * @property {number} index - Element index
+   * @property {string} type - Element type (e.g. "text", "icon", "button")
+   * @property {string} content - Text content or description
+   * @property {string} interactivity - Interactivity level (e.g. "clickable", "non-interactive")
+   * @property {Object} bbox - Bounding box in pixel coordinates
    * @property {number} bbox.x0 - Left edge X coordinate
    * @property {number} bbox.y0 - Top edge Y coordinate
    * @property {number} bbox.x1 - Right edge X coordinate
    * @property {number} bbox.y1 - Bottom edge Y coordinate
+   * @property {Object} boundingBox - Bounding box as {left, top, width, height}
+   * @property {number} boundingBox.left - Left position
+   * @property {number} boundingBox.top - Top position
+   * @property {number} boundingBox.width - Element width
+   * @property {number} boundingBox.height - Element height
    *
    * @example
-   * // Get all text on screen
-   * const result = await testdriver.ocr();
-   * console.log(result.fullText);
-   * // "Welcome to TestDriver Sign In Email Password Submit"
+   * // Get all elements on screen
+   * const result = await testdriver.parse();
+   * console.log(`Found ${result.elements.length} elements`);
    *
    * @example
-   * // Find words matching a pattern
-   * const result = await testdriver.ocr();
-   * const buttons = result.words.filter(w => 
-   *   w.content.toLowerCase().includes('button')
-   * );
+   * // Find clickable elements
+   * const result = await testdriver.parse();
+   * const clickable = result.elements.filter(e => e.interactivity === 'clickable');
    *
    * @example
-   * // Get word positions for clicking
-   * const result = await testdriver.ocr();
-   * const submitWord = result.words.find(w => w.content === 'Submit');
-   * if (submitWord) {
-   *   // Calculate center of the word
-   *   const x = (submitWord.bbox.x0 + submitWord.bbox.x1) / 2;
-   *   const y = (submitWord.bbox.y0 + submitWord.bbox.y1) / 2;
-   *   await testdriver.click({ x, y });
-   * }
-   *
-   * @example
-   * // Check if specific text exists on screen
-   * const result = await testdriver.ocr();
-   * const hasError = result.words.some(w => 
-   *   w.content.toLowerCase().includes('error')
-   * );
+   * // Find text content
+   * const result = await testdriver.parse();
+   * const textElements = result.elements.filter(e => e.type === 'text');
+   * textElements.forEach(e => console.log(e.content));
    */
-  async ocr() {
+  async parse() {
     this._ensureConnected();
 
     const { events } = require("./agent/events.js");
-    this.emitter.emit(events.log.log, "🔍 Running OCR text extraction...");
+    this.emitter.emit(events.log.log, "🔍 Running OmniParser screen analysis...");
 
     const screenshot = await this.system.captureScreenBase64();
 
-    const response = await this.apiClient.req("ocr", {
+    const response = await this.apiClient.req("parse", {
       session: this.getSessionId(),
       image: screenshot,
     });
 
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
     this.emitter.emit(
       events.log.log,
-      `✅ OCR complete: ${response.words?.length || 0} words extracted`,
+      `✅ Parse complete: ${response.elements?.length || 0} elements detected`,
     );
 
     return response;

@@ -376,6 +376,15 @@ class SDKLogFormatter {
     }
     if (meta.cacheHit) {
       metaParts.push(chalk.bold.yellow("⚡ cached"));
+      if (meta.validated) {
+        const confStr = meta.validationConfidence !== null && meta.validationConfidence !== undefined
+          ? ` ${(meta.validationConfidence * 100).toFixed(1)}%`
+          : '';
+        metaParts.push(chalk.green(`✅ validated${confStr}`));
+        if (meta.coordsUpdated) {
+          metaParts.push(chalk.dim.yellow(`↗ coords shifted`));
+        }
+      }
     }
     if (meta.confidence !== undefined && meta.confidence !== null) {
       metaParts.push(chalk.dim.gray(`confidence: ${meta.confidence}`));

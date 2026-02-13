@@ -77,10 +77,6 @@
       "url": "https://console.testdriver.ai/runs/698e2d894e1b33b1297e6fe6/698e2edc4e1b33b1297e70e9",
       "lastUpdated": "2026-02-12T20:00:32.579Z"
     },
-    "captcha-api.test.mjs": {
-      "url": "https://console.testdriver.ai/runs/698e2d894e1b33b1297e6fe6/698e2ed94e1b33b1297e70e3",
-      "lastUpdated": "2026-02-12T20:00:32.579Z"
-    },
     "element-not-found.test.mjs": {
       "url": "https://console.testdriver.ai/runs/698e2d894e1b33b1297e6fe6/698e2f0e4e1b33b1297e7107",
       "lastUpdated": "2026-02-12T20:00:32.580Z"
