@@ -1466,21 +1466,31 @@ const createCommands = (
      * Extract information from the screen using AI
      * @param {Object|string} options - Options object or description (for backward compatibility)
      * @param {string} options.description - What to extract
+     * @param {Object} [options.redraw] - Redraw detection options
+     * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
+     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
+     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
+     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
      */
     "extract": async (...args) => {
       // Capture absolute timestamp at the very start of the command
       // Frontend will calculate relative time using: timestamp - replay.clientStartDate
       const rememberTimestamp = Date.now();
       const rememberStartTime = rememberTimestamp;
-      let description;
+      let description, redrawOptions;
       
       // Handle both object and positional argument styles
       if (isObjectArgs(args, ['description'])) {
-        ({ description } = args[0]);
+        const { redraw: redrawOpts, ...rest } = args[0];
+        ({ description } = rest);
+        redrawOptions = extractRedrawOptions({ redraw: redrawOpts, ...rest });
       } else {
         // Legacy positional: remember(description)
         [description] = args;
+        redrawOptions = {};
       }
+      
+      await redraw.start(redrawOptions);
       
       try {
         let result = await sdk.req("remember", {
@@ -1507,6 +1517,8 @@ const createCommands = (
           }
         }
         
+        await redraw.wait(5000, redrawOptions);
+        
         return result.data;
       } catch (error) {
         // Track interaction failure
@@ -1528,6 +1540,9 @@ const createCommands = (
             console.warn("Failed to track extract interaction:", err.message);
           }
         }
+        
+        await redraw.wait(5000, redrawOptions);
+        
         throw error;
       }
     },
