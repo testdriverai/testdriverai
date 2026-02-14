@@ -228,9 +228,24 @@ export interface TestDriverOptions {
   analytics?: boolean;
   /** Enable console logging output (default: true) */
   logging?: boolean;
-  /** Enable/disable cache (default: true). Set to false to force regeneration on all find operations */
-  cache?: boolean;
-  /** Cache threshold configuration for different methods */
+  /** Enable/disable cache, or configure with thresholds
+   * @example { cache: { enabled: true, thresholds: { find: { screen: 0.05, element: 0.8 }, assert: 0.05 } } }
+   */
+  cache?: boolean | {
+    enabled?: boolean;
+    thresholds?: {
+      /** Thresholds for find operations */
+      find?: {
+        /** Pixel diff threshold for screen comparison (0-1, default 0.05 = 5% diff allowed) */
+        screen?: number;
+        /** OpenCV template match threshold for element matching (0-1, default 0.8 = 80% correlation) */
+        element?: number;
+      };
+      /** Pixel diff threshold for assert operations (0-1, default 0.05 = 5% diff allowed) */
+      assert?: number;
+    };
+  };
+  /** @deprecated Use cache.thresholds instead */
   cacheThreshold?: {
     /** Threshold for find operations (default: 0.05 = 5% difference, 95% similarity) */
     find?: number;
@@ -270,20 +285,29 @@ export interface TestDriverOptions {
    * Example: 001-click-before-L42-submit-button.png
    */
   autoScreenshots?: boolean;
-  /** Redraw configuration for screen change detection */
+  /** Redraw configuration for screen change detection
+   * @example { redraw: { enabled: true, thresholds: { screen: 0.05, network: true } } }
+   */
   redraw?:
     | boolean
     | {
         /** Enable redraw detection (default: true) */
         enabled?: boolean;
-        /** Pixel difference threshold for redraw detection */
+        /** Threshold configuration */
+        thresholds?: {
+          /** Screen diff threshold (0-1). Set to false to disable screen redraw detection. Default: 0.05 */
+          screen?: number | false;
+          /** Enable/disable network activity monitoring (default: false) */
+          network?: boolean;
+        };
+        /** @deprecated Use thresholds.screen instead */
         diffThreshold?: number;
-        /** Enable screen redraw detection */
+        /** @deprecated Use thresholds.screen !== false instead */
         screenRedraw?: boolean;
-        /** Enable network activity monitoring */
+        /** @deprecated Use thresholds.network instead */
         networkMonitor?: boolean;
       };
-  /** @deprecated Use redraw.diffThreshold instead */
+  /** @deprecated Use redraw option instead */
   redrawThreshold?: number | object;
   /** Additional environment variables */
   environment?: Record<string, any>;
@@ -707,7 +731,7 @@ export class Element {
   /**
    * Find the element on screen
    * @param newDescription - Optional new description to search for
-   * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
+   * @param options - Cache options: number for threshold, or object with cache.thresholds
    */
   find(newDescription?: string, cacheThreshold?: number): Promise<Element>;
 
@@ -1017,7 +1041,7 @@ export default class TestDriverSDK {
    * Automatically locates the element and returns it
    *
    * @param description - Description of the element to find
-   * @param options - Cache threshold (number) or options object
+   * @param options - Cache threshold (number) or options object with cache.thresholds
    * @returns Chainable promise that resolves to Element instance
    *
    * @example
@@ -1030,8 +1054,10 @@ export default class TestDriverSDK {
    * await element.click();
    *
    * @example
-   * // Find with custom cache threshold
-   * const element = await client.find('login button', 0.01);
+   * // Find with custom cache thresholds
+   * const element = await client.find('login button', {
+   *   cache: { thresholds: { screen: 0.05, element: 0.9 } }
+   * });
    *
    * @example
    * // Poll for element with timeout (retries every 5 seconds)
@@ -1041,7 +1067,7 @@ export default class TestDriverSDK {
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
   find(
     description: string,
-    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number },
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; cache?: { thresholds?: { screen?: number; element?: number } } },
   ): ChainableElementPromise;
 
   /**
@@ -1056,9 +1082,13 @@ export default class TestDriverSDK {
    *
    * @example
    * // Find with custom cache threshold
-   * const items = await client.findAll('list item', 0.01);
+   * const items = await client.findAll('list item', 0.05);
    */
   findAll(description: string, cacheThreshold?: number): Promise<Element[]>;
+  findAll(
+    description: string,
+    options?: { cacheThreshold?: number; cacheKey?: string; cache?: { thresholds?: { screen?: number } } },
+  ): Promise<Element[]>;
 
   // Text Interaction Methods
 
@@ -1278,7 +1308,7 @@ export default class TestDriverSDK {
    *
    * @example
    * // With custom threshold
-   * await client.assert('the page loaded', { threshold: 0.01, cacheKey: 'login-test' });
+   * await client.assert('the page loaded', { threshold: 0.05, cacheKey: 'login-test' });
    */
   assert(assertion: string, options?: { threshold?: number; cacheKey?: string; os?: string; resolution?: string }): Promise<boolean>;
 

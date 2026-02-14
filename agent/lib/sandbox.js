@@ -39,10 +39,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.sessionInstance = sessionInstance; // Store session instance to include in messages
       this.traceId = null; // Sentry trace ID for debugging
       this.reconnectAttempts = 0;
-      this.maxReconnectAttempts = 5;
+      this.maxReconnectAttempts = 30;
       this.intentionalDisconnect = false;
       this.apiRoot = null;
       this.apiKey = null;
+      this.reconnectTimer = null; // Track reconnect setTimeout
+      this.pendingTimeouts = new Map(); // Track per-message timeouts
     }
 
     /**
@@ -100,6 +102,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         // Set up timeout to prevent hanging requests
         const timeoutId = setTimeout(() => {
+          this.pendingTimeouts.delete(requestId);
           if (this.ps[requestId]) {
             delete this.ps[requestId];
             rejectPromise(
@@ -110,14 +113,19 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           }
         }, timeout);
 
+        // Track timeout so close() can clear it
+        this.pendingTimeouts.set(requestId, timeoutId);
+
         this.ps[requestId] = {
           promise: p,
           resolve: (result) => {
             clearTimeout(timeoutId);
+            this.pendingTimeouts.delete(requestId);
             resolvePromise(result);
           },
           reject: (error) => {
             clearTimeout(timeoutId);
+            this.pendingTimeouts.delete(requestId);
             rejectPromise(error);
           },
           message,
@@ -186,13 +194,14 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
 
       this.reconnectAttempts++;
-      const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 30000);
+      const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 10000);
 
       console.log(
         `[Sandbox] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
       );
 
-      setTimeout(async () => {
+      this.reconnectTimer = setTimeout(async () => {
+        this.reconnectTimer = null;
         try {
           await this.boot(this.apiRoot);
           if (this.apiKey) {
@@ -259,6 +268,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
               this.socket.ping();
             }
           }, 5000);
+          // Don't let the heartbeat interval prevent Node process from exiting
+          if (this.heartbeat.unref) {
+            this.heartbeat.unref();
+          }
 
           resolve(this);
         });
@@ -302,12 +315,27 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
      */
     close() {
       this.intentionalDisconnect = true;
+
+      // Cancel any pending reconnect timer
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+
       if (this.heartbeat) {
         clearInterval(this.heartbeat);
         this.heartbeat = null;
       }
 
+      // Clear all pending message timeouts to prevent timers keeping the process alive
+      for (const timeoutId of this.pendingTimeouts.values()) {
+        clearTimeout(timeoutId);
+      }
+      this.pendingTimeouts.clear();
+
       if (this.socket) {
+        // Remove all listeners before closing to prevent reconnect attempts
+        this.socket.removeAllListeners();
         try {
           this.socket.close();
         } catch (err) {

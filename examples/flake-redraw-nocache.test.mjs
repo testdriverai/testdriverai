@@ -1,9 +1,9 @@
 /**
  * Popup Loading - redraw=true, cache=false
  */
-import { popupLoadingTest } from "./z_flake-shared.mjs";
+import { popupLoadingTest } from "./flake-shared.mjs";
 
 popupLoadingTest("redraw=true, cache=false", {
-  redraw: true,
+  redraw: { enabled: true },
   cache: false,
 });

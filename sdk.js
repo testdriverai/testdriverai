@@ -430,8 +430,9 @@ class Element {
   /**
    * Find the element on screen
    * @param {string} [newDescription] - Optional new description to search for
-   * @param {Object} [options] - Optional options object with cacheThreshold, cacheKey, and/or timeout
+   * @param {Object} [options] - Optional options object with cache thresholds, cacheKey, and/or timeout
    * @param {number} [options.timeout] - Max time in ms to poll for element (polls every 5 seconds)
+   * @param {Object} [options.cache] - Cache configuration { thresholds: { screen, element } }
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, options) {
@@ -468,9 +469,10 @@ class Element {
         this._screenshot = screenshot;
       }
 
-      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
+      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold/cache
       let cacheKey = null;
       let cacheThreshold = null;
+      let perCommandThresholds = null; // Per-command { screen, element } override
       let zoom = false; // Default to disabled, enable with zoom: true
 
       if (typeof options === "number") {
@@ -482,6 +484,10 @@ class Element {
         cacheThreshold = options.cacheThreshold ?? null;
         // zoom defaults to false unless explicitly set to true
         zoom = options.zoom === true;
+        // Per-command cache thresholds: { cache: { thresholds: { screen: 0.1, element: 0.2 } } }
+        if (typeof options.cache === "object" && options.cache?.thresholds) {
+          perCommandThresholds = options.cache.thresholds;
+        }
       }
 
       // Use default cacheKey from SDK constructor if not provided in find() options
@@ -499,19 +505,25 @@ class Element {
       // - If cacheKey is provided, enable cache with threshold
       // - If no cacheKey, disable cache
       let threshold;
+      let elementSimilarity;
       if (this.sdk._cacheExplicitlyDisabled) {
         // Cache explicitly disabled via cache: false option or TD_NO_CACHE env
         threshold = -1;
+        elementSimilarity = -1;
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.01;
+        // Per-command thresholds > legacy cacheThreshold > global config
+        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.sdk.cacheConfig?.thresholds?.find?.screen ?? 0.05;
+        elementSimilarity = perCommandThresholds?.element ?? this.sdk.cacheConfig?.thresholds?.find?.element ?? 0.8;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
-        threshold = cacheThreshold;
+        threshold = perCommandThresholds?.screen ?? cacheThreshold;
+        elementSimilarity = perCommandThresholds?.element ?? this.sdk.cacheConfig?.thresholds?.find?.element ?? 0.8;
       } else {
         // No cacheKey, no explicit threshold - disable cache
         threshold = -1;
+        elementSimilarity = -1;
       }
 
       // Store the threshold for debugging
@@ -536,6 +548,7 @@ class Element {
         element: description,
         image: screenshot,
         threshold: threshold,
+        elementSimilarity: elementSimilarity,
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
@@ -1307,6 +1320,34 @@ function createChainablePromise(promise) {
 }
 
 /**
+ * Normalize redraw options from new thresholds format or legacy format to internal format.
+ * New:    { enabled: true, thresholds: { screen: 0.05, network: true } }
+ * Legacy: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
+ * Internal: { enabled: true, screenRedraw: true, networkMonitor: false }
+ * @param {Object} opts - raw redraw options
+ * @returns {Object} normalised options the redraw subsystem expects
+ */
+function normalizeRedrawOptions(opts) {
+  if (!opts || typeof opts !== "object") {
+    return { enabled: !!opts };
+  }
+
+  const result = { enabled: opts.enabled !== false };
+
+  // New thresholds format takes precedence
+  if (opts.thresholds && typeof opts.thresholds === "object") {
+    result.screenRedraw = opts.thresholds.screen !== false;
+    result.networkMonitor = !!opts.thresholds.network;
+  } else {
+    // Legacy format fallback
+    result.screenRedraw = opts.screenRedraw !== undefined ? opts.screenRedraw : true;
+    result.networkMonitor = opts.networkMonitor !== undefined ? opts.networkMonitor : false;
+  }
+
+  return result;
+}
+
+/**
  * TestDriver SDK
  *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
@@ -1444,32 +1485,56 @@ class TestDriverSDK {
         findAll: -1,
         assert: -1,
       };
+      this.cacheConfig = {
+        enabled: false,
+        thresholds: {
+          find: { screen: -1, element: -1 },
+          assert: -1,
+        },
+      };
     } else {
-      // Cache enabled by default when cacheKey is provided
+      // Support cache object format: { cache: { thresholds: { find: { screen: 0.05, element: 0.8 }, assert: 0.05 } } }
+      const cacheOpts = typeof options.cache === "object" ? options.cache : {};
+      const thresholds = cacheOpts.thresholds || {};
+      const findThresholds = typeof thresholds.find === "object" ? thresholds.find : {};
+
+      this.cacheConfig = {
+        enabled: cacheOpts.enabled !== false,
+        thresholds: {
+          find: {
+            screen: findThresholds.screen ?? 0.05, // Default: 5% pixel diff allowed
+            element: findThresholds.element ?? 0.8, // Default: 80% OpenCV correlation
+          },
+          assert: thresholds.assert ?? 0.05, // Default: 5% pixel diff for assertions
+        },
+      };
+
+      // Legacy cacheThresholds - keep for backwards compatibility
       this.cacheThresholds = {
-        find: options.cacheThreshold?.find ?? 0.01, // Default: 1% threshold
-        findAll: options.cacheThreshold?.findAll ?? 0.01,
-        assert: options.cacheThreshold?.assert ?? 0.05, // Default: 5% threshold for assertions
+        find: options.cacheThreshold?.find ?? this.cacheConfig.thresholds.find.screen,
+        findAll: options.cacheThreshold?.findAll ?? this.cacheConfig.thresholds.find.screen,
+        assert: options.cacheThreshold?.assert ?? this.cacheConfig.thresholds.assert,
       };
     }
 
     // Redraw configuration
-    // Supports both:
-    //   - redraw: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
-    //   - redrawThreshold: 0.1 (legacy, sets diffThreshold)
-    // The `redraw` option takes precedence and matches the per-command API
+    // Supports:
+    //   - redraw: { enabled: true, thresholds: { screen: 0.05, network: true } }  (new)
+    //   - redraw: true/false  (shorthand)
+    //   - redraw: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }  (legacy)
+    //   - redrawThreshold: 0.1  (legacy, deprecated)
     if (options.redraw !== undefined) {
-      // New unified API: redraw object (matches per-command options)
-      this.redrawOptions =
-        typeof options.redraw === "object"
-          ? options.redraw
-          : { enabled: options.redraw }; // Support redraw: false as shorthand
+      if (typeof options.redraw === "object") {
+        this.redrawOptions = normalizeRedrawOptions(options.redraw);
+      } else {
+        this.redrawOptions = { enabled: !!options.redraw };
+      }
     } else if (options.redrawThreshold !== undefined) {
-      // Legacy API: redrawThreshold number or object
+      // Legacy API: redrawThreshold number or object (deprecated)
       this.redrawOptions =
         typeof options.redrawThreshold === "object"
-          ? options.redrawThreshold
-          : { diffThreshold: options.redrawThreshold };
+          ? normalizeRedrawOptions(options.redrawThreshold)
+          : { enabled: true, screenRedraw: true, networkMonitor: false };
     } else {
       // Default: disabled (as of v7.3)
       this.redrawOptions = { enabled: false };
@@ -2758,14 +2823,37 @@ CAPTCHA_SOLVER_EOF`,
       this.analytics.track("sdk.disconnect");
     }
 
+    // Clean up redraw interval if active
+    if (this.agent?.redraw?.cleanup) {
+      try {
+        this.agent.redraw.cleanup();
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    }
+
+    // Stop the debugger server (HTTP + WebSocket server) to release the port
+    try {
+      const { stopDebugger } = require("./agent/lib/debugger-server.js");
+      stopDebugger();
+    } catch (err) {
+      // Ignore if debugger wasn't started
+    }
+
     // Always close the sandbox WebSocket connection to clean up resources
     // This ensures we don't leave orphaned connections even if connect() failed
     if (this.sandbox && typeof this.sandbox.close === "function") {
       this.sandbox.close();
     }
 
+    // Remove all event listeners on the emitter to release references
+    if (this.emitter && typeof this.emitter.removeAllListeners === "function") {
+      this.emitter.removeAllListeners();
+    }
+
     this.connected = false;
     this.instance = null;
+    this.commands = null;
   }
 
   /**
@@ -2794,7 +2882,7 @@ CAPTCHA_SOLVER_EOF`,
    * Automatically locates the element and returns it
    *
    * @param {string} description - Description of the element to find
-   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
+   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cache: { thresholds: { screen, element } }}
    * @returns {Promise<Element> & ChainableElement} Element instance that has been located, with chainable methods
    *
    * @example
@@ -2812,7 +2900,7 @@ CAPTCHA_SOLVER_EOF`,
    *
    * @example
    * // Find with custom cache threshold (legacy)
-   * const element = await client.find('login button', 0.01);
+   * const element = await client.find('login button', 0.05);
    *
    * @example
    * // Poll until element is found
@@ -2883,7 +2971,7 @@ CAPTCHA_SOLVER_EOF`,
    * Automatically locates all matching elements and returns them as an array
    *
    * @param {string} description - Description of the elements to find
-   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
+   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cache: { thresholds: { screen } }}
    * @returns {Promise<Element[]>} Array of Element instances that have been located
    *
    * @example
@@ -2939,9 +3027,10 @@ CAPTCHA_SOLVER_EOF`,
     try {
       const screenshot = await this.system.captureScreenBase64();
 
-      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
+      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold/cache
       let cacheKey = null;
       let cacheThreshold = null;
+      let perCommandThresholds = null; // Per-command { screen } override (findAll has no element threshold)
 
       if (typeof options === "number") {
         // Legacy: options is just a number threshold
@@ -2950,6 +3039,10 @@ CAPTCHA_SOLVER_EOF`,
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
+        // Per-command cache thresholds: { cache: { thresholds: { screen: 0.1 } } }
+        if (typeof options.cache === "object" && options.cache?.thresholds) {
+          perCommandThresholds = options.cache.thresholds;
+        }
       }
 
       // Use default cacheKey from SDK constructor if not provided in findAll() options
@@ -2972,11 +3065,11 @@ CAPTCHA_SOLVER_EOF`,
         threshold = -1;
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
-        // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.01;
+        // cacheKey provided - enable cache with threshold (findAll only uses screen, no element)
+        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.cacheConfig?.thresholds?.find?.screen ?? 0.05;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
-        threshold = cacheThreshold;
+        threshold = perCommandThresholds?.screen ?? cacheThreshold;
       } else {
         // No cacheKey, no explicit threshold - disable cache
         threshold = -1;
@@ -3337,16 +3430,22 @@ CAPTCHA_SOLVER_EOF`,
           let result;
           // Special handling for assert to inject SDK options (cacheKey, os, resolution, threshold)
           // similar to how find() handles these in the Element class
+          // Note: assert does NOT use elementSimilarity (template matching not relevant for assertions)
           if (commandName === 'assert') {
             const assertion = args[0];
             const userOptions = args[1] || {};
+            
+            // Support per-command cache threshold override: { cache: { threshold: 0.05 } }
+            const perCommandThreshold = typeof userOptions.cache === "object"
+              ? userOptions.cache.threshold
+              : undefined;
             
             // Merge SDK defaults with user options (user options take precedence)
             const mergedOptions = {
               cacheKey: userOptions.cacheKey ?? sdk.options.cacheKey,
               os: userOptions.os ?? sdk.os,
               resolution: userOptions.resolution ?? sdk.resolution,
-              threshold: userOptions.threshold !== undefined ? userOptions.threshold : (sdk.cacheThresholds?.assert ?? -1),
+              threshold: perCommandThreshold ?? userOptions.threshold ?? (sdk.cacheConfig?.thresholds?.assert ?? sdk.cacheThresholds?.assert ?? 0.05),
             };
             
             // Note: commands.assert takes (assertion, options), shouldThrow is determined internally

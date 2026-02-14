@@ -83,8 +83,11 @@ import { TestDriver } from 'testdriverai';
 const testdriver = new TestDriver({
   apiKey: process.env.TD_API_KEY,
   cacheKey: 'my-test-suite', // cache-key for this instance
-  cacheDefaults: {
-    threshold: 0.05,      // 95% similarity
+  cache: {
+    thresholds: {
+      find: { screen: 0.05, element: 0.8 },
+      assert: 0.05
+    }
   }
 });
 ```
@@ -97,7 +100,9 @@ await testdriver.find('submit button');
 
 // Explicit strict threshold
 await testdriver.find('submit button', {
-  cacheThreshold: 0.01 // 99% similarity
+  cache: {
+    thresholds: { screen: 0.01, element: 0.9 }
+  }
 });
 ```
 
