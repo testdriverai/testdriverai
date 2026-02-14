@@ -31,6 +31,9 @@ describe("Scroll Until Text Test", () => {
     const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
+    // Give Chrome a moment to fully render the login page
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     //
     // Perform login first
     await performLogin(testdriver);
