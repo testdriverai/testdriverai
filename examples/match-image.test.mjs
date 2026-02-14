@@ -19,6 +19,7 @@ async function performLogin(client, username = "standard_user") {
   const password = await client.extract("the password");
   const usernameField = await client.find(
     "username input",
+    { timeout: 60000 }
   );
   await usernameField.click();
   await client.type(username);
