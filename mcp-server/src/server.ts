@@ -509,8 +509,8 @@ Debug mode (connect to existing sandbox):
       
       // Determine preview mode from environment variable
       // TD_PREVIEW can be "ide", "browser", or "none"
-      // Default to "none" for MCP server (headless) unless explicitly set
-      const previewMode = process.env.TD_PREVIEW || "none";
+      // Default to "ide" so the live preview shows within the IDE
+      const previewMode = process.env.TD_PREVIEW || "ide";
       logger.debug("session_start: Preview mode", { preview: previewMode });
       
       // Get IP from params or environment (for self-hosted instances)

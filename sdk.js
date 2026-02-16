@@ -430,8 +430,9 @@ class Element {
   /**
    * Find the element on screen
    * @param {string} [newDescription] - Optional new description to search for
-   * @param {Object} [options] - Optional options object with cacheThreshold, cacheKey, and/or timeout
+   * @param {Object} [options] - Optional options object with cache thresholds, cacheKey, and/or timeout
    * @param {number} [options.timeout] - Max time in ms to poll for element (polls every 5 seconds)
+   * @param {Object} [options.cache] - Cache configuration { thresholds: { screen, element } }
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, options) {
@@ -468,10 +469,12 @@ class Element {
         this._screenshot = screenshot;
       }
 
-      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
+      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold/cache
       let cacheKey = null;
       let cacheThreshold = null;
+      let perCommandThresholds = null; // Per-command { screen, element } override
       let zoom = false; // Default to disabled, enable with zoom: true
+      let perCommandAi = null; // Per-command AI config override
 
       if (typeof options === "number") {
         // Legacy: options is just a number threshold
@@ -482,6 +485,10 @@ class Element {
         cacheThreshold = options.cacheThreshold ?? null;
         // zoom defaults to false unless explicitly set to true
         zoom = options.zoom === true;
+        // Per-command cache thresholds: { cache: { thresholds: { screen: 0.1, element: 0.2 } } }
+        if (typeof options.cache === "object" && options.cache?.thresholds) {
+          perCommandThresholds = options.cache.thresholds;
+        }
       }
 
       // Use default cacheKey from SDK constructor if not provided in find() options
@@ -499,19 +506,25 @@ class Element {
       // - If cacheKey is provided, enable cache with threshold
       // - If no cacheKey, disable cache
       let threshold;
+      let elementSimilarity;
       if (this.sdk._cacheExplicitlyDisabled) {
         // Cache explicitly disabled via cache: false option or TD_NO_CACHE env
         threshold = -1;
+        elementSimilarity = -1;
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? this.sdk.cacheThresholds?.find ?? 0.01;
+        // Per-command thresholds > legacy cacheThreshold > global config
+        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.sdk.cacheConfig?.thresholds?.find?.screen ?? 0.01;
+        elementSimilarity = perCommandThresholds?.element ?? this.sdk.cacheConfig?.thresholds?.find?.element ?? 0.8;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
-        threshold = cacheThreshold;
+        threshold = perCommandThresholds?.screen ?? cacheThreshold;
+        elementSimilarity = perCommandThresholds?.element ?? this.sdk.cacheConfig?.thresholds?.find?.element ?? 0.8;
       } else {
         // No cacheKey, no explicit threshold - disable cache
         threshold = -1;
+        elementSimilarity = -1;
       }
 
       // Store the threshold for debugging
@@ -536,10 +549,16 @@ class Element {
         element: description,
         image: screenshot,
         threshold: threshold,
+        elementSimilarity: elementSimilarity,
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
         zoom: zoom,
+        ai: {
+          ...this.sdk.aiConfig,
+          ...(perCommandAi || {}),
+          top: { ...this.sdk.aiConfig?.top, ...(perCommandAi?.top || {}) },
+        },
       });
 
       const duration = Date.now() - startTime;
@@ -736,6 +755,9 @@ class Element {
       cacheHit: debugInfo.cacheHit,
       selectorId: this._response?.selector,
       consoleUrl: consoleUrl,
+      validated: response.validated ?? null,
+      validationConfidence: response.validationConfidence ?? null,
+      coordsUpdated: response.coordsUpdated ?? null,
     };
     if (!debugInfo.cacheHit) {
       meta.confidence = debugInfo.confidence;
@@ -1441,14 +1463,48 @@ class TestDriverSDK {
         findAll: -1,
         assert: -1,
       };
+      this.cacheConfig = {
+        enabled: false,
+        thresholds: {
+          find: { screen: -1, element: -1 },
+          assert: -1,
+        },
+      };
     } else {
-      // Cache enabled by default when cacheKey is provided
+      // Support cache object format: { cache: { thresholds: { find: { screen: 0.01, element: 0.8 }, assert: 0.05 } } }
+      const cacheOpts = typeof options.cache === "object" ? options.cache : {};
+      const thresholds = cacheOpts.thresholds || {};
+      const findThresholds = typeof thresholds.find === "object" ? thresholds.find : {};
+
+      this.cacheConfig = {
+        enabled: cacheOpts.enabled !== false,
+        thresholds: {
+          find: {
+            screen: findThresholds.screen ?? 0.01, // Default: 1% pixel diff allowed
+            element: findThresholds.element ?? 0.8, // Default: 80% OpenCV correlation
+          },
+          assert: thresholds.assert ?? 0.05, // Default: 5% pixel diff for assertions
+        },
+      };
+
+      // Legacy cacheThresholds - keep for backwards compatibility
       this.cacheThresholds = {
-        find: options.cacheThreshold?.find ?? 0.01, // Default: 1% threshold
-        findAll: options.cacheThreshold?.findAll ?? 0.01,
-        assert: options.cacheThreshold?.assert ?? 0.05, // Default: 5% threshold for assertions
+        find: options.cacheThreshold?.find ?? this.cacheConfig.thresholds.find.screen,
+        findAll: options.cacheThreshold?.findAll ?? this.cacheConfig.thresholds.find.screen,
+        assert: options.cacheThreshold?.assert ?? this.cacheConfig.thresholds.assert,
       };
     }
+
+    // AI sampling configuration
+    // Supports: { ai: { temperature: 0, top: { p: 1, k: 0 } } }
+    // Can be overridden per find() or assert() call
+    this.aiConfig = typeof options.ai === "object" ? {
+      temperature: options.ai.temperature,
+      top: {
+        p: options.ai.top?.p,
+        k: options.ai.top?.k,
+      },
+    } : {};
 
     // Redraw configuration
     // Supports both:
@@ -2791,7 +2847,7 @@ CAPTCHA_SOLVER_EOF`,
    * Automatically locates the element and returns it
    *
    * @param {string} description - Description of the element to find
-   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
+   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cache: { thresholds: { screen, element } }}
    * @returns {Promise<Element> & ChainableElement} Element instance that has been located, with chainable methods
    *
    * @example
@@ -2880,7 +2936,7 @@ CAPTCHA_SOLVER_EOF`,
    * Automatically locates all matching elements and returns them as an array
    *
    * @param {string} description - Description of the elements to find
-   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cacheThreshold}
+   * @param {number | Object} [options] - Cache options: number for threshold, or object with {cacheKey, cache: { thresholds: { screen } }}
    * @returns {Promise<Element[]>} Array of Element instances that have been located
    *
    * @example
@@ -2936,9 +2992,10 @@ CAPTCHA_SOLVER_EOF`,
     try {
       const screenshot = await this.system.captureScreenBase64();
 
-      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold
+      // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold/cache
       let cacheKey = null;
       let cacheThreshold = null;
+      let perCommandThresholds = null; // Per-command { screen } override (findAll has no element threshold)
 
       if (typeof options === "number") {
         // Legacy: options is just a number threshold
@@ -2947,6 +3004,10 @@ CAPTCHA_SOLVER_EOF`,
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
+        // Per-command cache thresholds: { cache: { thresholds: { screen: 0.1 } } }
+        if (typeof options.cache === "object" && options.cache?.thresholds) {
+          perCommandThresholds = options.cache.thresholds;
+        }
       }
 
       // Use default cacheKey from SDK constructor if not provided in findAll() options
@@ -2969,11 +3030,11 @@ CAPTCHA_SOLVER_EOF`,
         threshold = -1;
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
-        // cacheKey provided - enable cache with threshold
-        threshold = cacheThreshold ?? this.cacheThresholds?.findAll ?? 0.01;
+        // cacheKey provided - enable cache with threshold (findAll only uses screen, no element)
+        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.cacheConfig?.thresholds?.find?.screen ?? 0.01;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
-        threshold = cacheThreshold;
+        threshold = perCommandThresholds?.screen ?? cacheThreshold;
       } else {
         // No cacheKey, no explicit threshold - disable cache
         threshold = -1;
@@ -2994,7 +3055,7 @@ CAPTCHA_SOLVER_EOF`,
       }
 
       const response = await this.apiClient.req(
-        "/api/v7.0.0/testdriver-agent/testdriver-find-all",
+        "/api/v7.0.0/testdriver/find-all",
         {
           session: this.getSessionId(),
           element: description,
@@ -3010,7 +3071,7 @@ CAPTCHA_SOLVER_EOF`,
 
       if (response && response.elements && response.elements.length > 0) {
         // Single log at the end - found elements
-        const formattedMessage = formatter.formatFindAllSingleLine(
+        const formattedMessage = formatter.formatElementsFound(
           description,
           response.elements.length,
           {
@@ -3093,7 +3154,7 @@ CAPTCHA_SOLVER_EOF`,
         const duration = Date.now() - startTime;
 
         // Single log at the end - no elements found
-        const formattedMessage = formatter.formatFindAllSingleLine(
+        const formattedMessage = formatter.formatElementsFound(
           description,
           0,
           {
@@ -3139,7 +3200,7 @@ CAPTCHA_SOLVER_EOF`,
       const duration = Date.now() - startTime;
 
       // Single log at the end - error
-      const formattedMessage = formatter.formatFindAllSingleLine(
+      const formattedMessage = formatter.formatElementsFound(
         description,
         0,
         {
@@ -3334,16 +3395,30 @@ CAPTCHA_SOLVER_EOF`,
           let result;
           // Special handling for assert to inject SDK options (cacheKey, os, resolution, threshold)
           // similar to how find() handles these in the Element class
+          // Note: assert does NOT use elementSimilarity (template matching not relevant for assertions)
           if (commandName === 'assert') {
             const assertion = args[0];
             const userOptions = args[1] || {};
+            
+            // Support per-command cache threshold override: { cache: { threshold: 0.05 } }
+            const perCommandThreshold = typeof userOptions.cache === "object"
+              ? userOptions.cache.threshold
+              : undefined;
             
             // Merge SDK defaults with user options (user options take precedence)
             const mergedOptions = {
               cacheKey: userOptions.cacheKey ?? sdk.options.cacheKey,
               os: userOptions.os ?? sdk.os,
               resolution: userOptions.resolution ?? sdk.resolution,
-              threshold: userOptions.threshold !== undefined ? userOptions.threshold : (sdk.cacheThresholds?.assert ?? -1),
+              threshold: perCommandThreshold ?? userOptions.threshold ?? (sdk.cacheConfig?.thresholds?.assert ?? sdk.cacheThresholds?.assert ?? 0.05),
+              ai: {
+                ...sdk.aiConfig,
+                ...(typeof userOptions.ai === "object" ? userOptions.ai : {}),
+                top: {
+                  ...sdk.aiConfig?.top,
+                  ...(typeof userOptions.ai === "object" ? userOptions.ai?.top : {}),
+                },
+              },
             };
             
             // Note: commands.assert takes (assertion, options), shouldThrow is determined internally
@@ -3451,74 +3526,70 @@ CAPTCHA_SOLVER_EOF`,
   }
 
   /**
-   * Extract all visible text from the current screen using OCR (Tesseract)
-   * Returns structured data with text content, bounding boxes, and confidence scores
+   * Parse the current screen using OmniParser v2 to detect all UI elements
+   * Returns structured data with element types, bounding boxes, and content
+   * Requires enterprise or self-hosted plan.
    *
-   * @returns {Promise<OCRResult>} OCR extraction result
+   * @returns {Promise<ParseResult>} Parsed screen elements
    *
-   * @typedef {Object} OCRResult
-   * @property {OCRWord[]} words - Array of words with positions and confidence
-   * @property {string} fullText - All extracted text concatenated
-   * @property {number} confidence - Overall OCR confidence (0-100)
+   * @typedef {Object} ParseResult
+   * @property {ParsedElement[]} elements - Array of detected UI elements
+   * @property {string} annotatedImageUrl - URL of the annotated screenshot
    * @property {number} imageWidth - Width of the analyzed image
    * @property {number} imageHeight - Height of the analyzed image
    *
-   * @typedef {Object} OCRWord
-   * @property {string} content - The text content of the word
-   * @property {number} confidence - Confidence score (0-100)
-   * @property {Object} bbox - Bounding box coordinates
+   * @typedef {Object} ParsedElement
+   * @property {number} index - Element index
+   * @property {string} type - Element type (e.g. "text", "icon", "button")
+   * @property {string} content - Text content or description
+   * @property {string} interactivity - Interactivity level (e.g. "clickable", "non-interactive")
+   * @property {Object} bbox - Bounding box in pixel coordinates
    * @property {number} bbox.x0 - Left edge X coordinate
    * @property {number} bbox.y0 - Top edge Y coordinate
    * @property {number} bbox.x1 - Right edge X coordinate
    * @property {number} bbox.y1 - Bottom edge Y coordinate
+   * @property {Object} boundingBox - Bounding box as {left, top, width, height}
+   * @property {number} boundingBox.left - Left position
+   * @property {number} boundingBox.top - Top position
+   * @property {number} boundingBox.width - Element width
+   * @property {number} boundingBox.height - Element height
    *
    * @example
-   * // Get all text on screen
-   * const result = await testdriver.ocr();
-   * console.log(result.fullText);
-   * // "Welcome to TestDriver Sign In Email Password Submit"
+   * // Get all elements on screen
+   * const result = await testdriver.parse();
+   * console.log(`Found ${result.elements.length} elements`);
    *
    * @example
-   * // Find words matching a pattern
-   * const result = await testdriver.ocr();
-   * const buttons = result.words.filter(w => 
-   *   w.content.toLowerCase().includes('button')
-   * );
+   * // Find clickable elements
+   * const result = await testdriver.parse();
+   * const clickable = result.elements.filter(e => e.interactivity === 'clickable');
    *
    * @example
-   * // Get word positions for clicking
-   * const result = await testdriver.ocr();
-   * const submitWord = result.words.find(w => w.content === 'Submit');
-   * if (submitWord) {
-   *   // Calculate center of the word
-   *   const x = (submitWord.bbox.x0 + submitWord.bbox.x1) / 2;
-   *   const y = (submitWord.bbox.y0 + submitWord.bbox.y1) / 2;
-   *   await testdriver.click({ x, y });
-   * }
-   *
-   * @example
-   * // Check if specific text exists on screen
-   * const result = await testdriver.ocr();
-   * const hasError = result.words.some(w => 
-   *   w.content.toLowerCase().includes('error')
-   * );
+   * // Find text content
+   * const result = await testdriver.parse();
+   * const textElements = result.elements.filter(e => e.type === 'text');
+   * textElements.forEach(e => console.log(e.content));
    */
-  async ocr() {
+  async parse() {
     this._ensureConnected();
 
     const { events } = require("./agent/events.js");
-    this.emitter.emit(events.log.log, "🔍 Running OCR text extraction...");
+    this.emitter.emit(events.log.log, "🔍 Running OmniParser screen analysis...");
 
     const screenshot = await this.system.captureScreenBase64();
 
-    const response = await this.apiClient.req("ocr", {
+    const response = await this.apiClient.req("parse", {
       session: this.getSessionId(),
       image: screenshot,
     });
 
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
     this.emitter.emit(
       events.log.log,
-      `✅ OCR complete: ${response.words?.length || 0} words extracted`,
+      `✅ Parse complete: ${response.elements?.length || 0} elements detected`,
     );
 
     return response;

@@ -22,7 +22,7 @@ export function popupLoadingTest(label, options = {}) {
       // Accept the cookie banner to trigger the loading process
       let acceptButton = await testdriver.find("Accept All button on the cookie banner", {timeout: 60000});
 
-      if (acceptButton.found()) {
+      if (await acceptButton.found()) {
         await acceptButton.click();
       } else {
         console.log('no cookie banner found, proceeding without accepting cookies');
