@@ -256,7 +256,7 @@ jobs:
         run: npm ci
 
       - name: Run Windows tests with self-hosted instances
-        run: vitest run examples/*.test.mjs
+        run: npx vitest run examples/*.test.mjs
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TD_OS: windows
