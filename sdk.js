@@ -1712,26 +1712,6 @@ class TestDriverSDK {
           guest = false,
         } = options;
 
-        // If dashcam is enabled, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this.dashcamEnabled) {
-          // get the domain from the url for more specific logging, e.g. "Web Logs - example.com"
-          let domain = url;
-          let protocol = "https:";
-          try {
-            const urlObj = new URL(url);
-            domain = urlObj.hostname;
-            protocol = urlObj.protocol;
-          } catch (err) {
-            // If URL parsing fails, fall back to using the full URL as the domain
-          }
-
-          // the pattern should be protocol://domain* to match all subpages of the domain
-          const webLogPattern = `${protocol}//${domain}*`;
-
-          await this.dashcam.addWebLog(webLogPattern, "Web Logs");
-        }
-
         // Set up Chrome profile with preferences
         const shell = this.os === "windows" ? "pwsh" : "sh";
         const userDataDir =
@@ -1986,12 +1966,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           );
         }
 
-        // If dashcam is enabled, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this.dashcamEnabled) {
-          await this.dashcam.addWebLog("**", "Web Logs");
-        }
-
         // Set up Chrome profile with preferences
         const userDataDir =
           this.os === "windows"
@@ -2112,12 +2086,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
-        // If dashcam is enabled, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this.dashcamEnabled) {
-          await this.dashcam.addWebLog("**", "Web Logs");
-        }
-
         // Install extensions if provided
         for (const extension of extensions) {
           console.log(`[provision.vscode] Installing extension: ${extension}`);
@@ -2187,12 +2155,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
-
-        // If dashcam is enabled, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this.dashcamEnabled) {
-          await this.dashcam.addWebLog("**", "Web Logs");
-        }
 
         // Determine download directory
         const downloadDir =
@@ -2327,12 +2289,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
-
-        // If dashcam is enabled, add web logs for all websites
-        // Note: File log and dashcam.start() are handled by the connection promise in hooks.mjs
-        if (this.dashcamEnabled) {
-          await this.dashcam.addWebLog("**", "Web Logs");
-        }
 
         const argsString = args.join(" ");
 
