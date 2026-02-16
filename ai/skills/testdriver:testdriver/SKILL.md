@@ -34,9 +34,45 @@ Use this agent when the user asks to:
 4. **⚠️ WRITE CODE IMMEDIATELY**: After EVERY successful action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the end.
 5. **Verify Actions**: Use `check` after actions to verify they succeeded (for YOUR understanding only).
 6. **Add Assertions**: Use `assert` for test conditions that should be in the final test file.
-7. **⚠️ RUN THE TEST YOURSELF**: Use `vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes.
+7. **⚠️ RUN THE TEST YOURSELF**: Use `vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes. **NEVER use `npx vitest`** - always use `vitest` directly.
+8. **⚠️ SHARE THE TEST REPORT**: After EVERY test run, find the `TESTDRIVER_RUN_URL` in the output (e.g., `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...`) and share it with the user so they can view the recording and results.
 
 ## Prerequisites
+
+### Quick Start - Creating Your First TestDriver Test
+
+**For new projects, use the `init` command to automatically set up everything:**
+
+**CLI:**
+```bash
+npx testdriverai init
+```
+
+**MCP (via this agent):**
+```
+// apiKey is optional - if not provided, user adds it to .env manually after init
+init({ directory: "." })
+
+// Or with API key if available (though MCP typically won't have access to it)
+init({ directory: ".", apiKey: "your_api_key" })
+```
+
+**Note:** The `apiKey` parameter is optional. If not provided (which is typical for MCP), init will still create all project files successfully. The user can manually add `TD_API_KEY=...` to the `.env` file afterward.
+
+The `init` command creates:
+- ✅ `package.json` with proper dependencies
+- ✅ Example test files (`tests/example.test.js`, `tests/login.js`)
+- ✅ `vitest.config.js` with correct timeouts
+- ✅ `.gitignore` with `.env`
+- ✅ GitHub Actions workflow (`.github/workflows/testdriver.yml`)
+- ✅ VSCode MCP config (`.vscode/mcp.json`)
+- ✅ TestDriver skills and agents in `.github/`
+- ✅ `.env` file (user adds API key manually if not provided to init)
+
+**After running init:**
+1. User adds their API key to `.env`: `TD_API_KEY=...`
+2. Test the setup: `vitest run`
+3. Start building custom tests using the examples as templates
 
 ### API Key Setup
 
@@ -49,14 +85,12 @@ TD_API_KEY=your_api_key_here
 
 Get your API key at: **https://console.testdriver.ai/team**
 
-### Installation
+### Manual Installation
 
-Always use the **beta** tag when installing TestDriver:
+If not using `init`, install TestDriver:
 
 ```bash
-npm install --save-dev testdriverai@beta
-# or
-npx testdriverai@beta init
+npm install --save-dev testdriverai
 ```
 
 ### Test Runner
@@ -96,28 +130,31 @@ import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("My Test Suite", () => {
   it("should do something", async (context) => {
-    // Initialize TestDriver
+    // Initialize TestDriver - screenshots are captured automatically before/after each command
     const testdriver = TestDriver(context);
 
     // Start with provision - this launches the sandbox and browser
     await testdriver.provision.chrome({
       url: "https://example.com",
     });
-    await testdriver.screenshot(); // Capture initial page state
 
     // Find elements and interact
+    // Note: Screenshots are automatically captured before/after find() and click()
     const button = await testdriver.find("Sign In button");
-    await testdriver.screenshot(); // Capture before click
     await button.click();
-    await testdriver.screenshot(); // Capture after click
+    await testdriver.wait(2000); // Wait for state change
 
     // Assert using natural language
-    await testdriver.screenshot(); // Capture before assertion
+    // Screenshots are automatically captured before/after assert()
     const result = await testdriver.assert("the dashboard is visible");
     expect(result).toBeTruthy();
   });
 });
 ```
+
+<Note>
+  **Automatic Screenshots**: TestDriver captures screenshots before and after every command by default. Screenshots are saved with descriptive names like `001-click-before-L42-submit-button.png` that include the line number from your test file.
+</Note>
 
 ## Provisioning Options
 
@@ -176,37 +213,21 @@ await element.mouseUp(); // release mouse
 element.found(); // check if found (boolean)
 ```
 
-### Screenshots for Debugging
+### Automatic Screenshots (Enabled by Default)
 
-**Use `screenshot()` liberally throughout your tests** to capture the screen state at key moments. This makes debugging much easier when tests fail - you can see exactly what the screen looked like at each step.
-
-```javascript
-// Capture a screenshot - saved to .testdriver/screenshots/<test-file>/
-const screenshotPath = await testdriver.screenshot();
-console.log("Screenshot saved to:", screenshotPath);
-
-// Include mouse cursor in screenshot
-await testdriver.screenshot(1, false, true);
-```
-
-**When to add screenshots:**
-- After provisioning (initial page load)
-- Before and after clicking important elements
-- After typing text into fields
-- Before assertions (to see what the AI is evaluating)
-- After any action that changes the page state
-- When debugging a flaky or failing test
-
-**Screenshot file organization:**
+TestDriver **automatically captures screenshots before and after every command** by default. This creates a complete visual timeline without any additional code. Screenshots are named with the line number from your test file, making it easy to trace issues:
 
 ```
-.testdriver/
-  screenshots/
-    login.test/           # Folder per test file
-      screenshot-1737633600000.png
-    checkout.test/
-      screenshot-1737633700000.png
+.testdriver/screenshots/login.test/
+  001-find-before-L15-email-input.png
+  002-find-after-L15-email-input.png
+  003-click-before-L16-email-input.png
+  004-click-after-L16-email-input.png
+  005-type-before-L17-userexamplecom.png
+  006-type-after-L17-userexamplecom.png
 ```
+
+**Filename format:** `<seq>-<action>-<phase>-L<line>-<description>.png`
 
 > **Note:** The screenshot folder for each test file is automatically cleared when the test starts.
 
@@ -224,7 +245,7 @@ await testdriver.screenshot(1, false, true);
 
 **Every MCP tool response includes "ACTION REQUIRED: Append this code..." - you MUST write that code to the test file IMMEDIATELY before proceeding to the next action.**
 
-**When ready to validate, RUN THE TEST YOURSELF using `vitest run`. Do NOT tell the user to run it.**
+**When ready to validate, RUN THE TEST YOURSELF using `vitest run`. Do NOT tell the user to run it. NEVER use `npx vitest`.**
 
 ### Step 1: Start a Session
 
@@ -234,28 +255,29 @@ session_start({ type: "chrome", url: "https://your-app.com/login", testFile: "te
 → Response includes: "ACTION REQUIRED: Append this code..."
 → ⚠️ IMMEDIATELY write to tests/login.test.mjs:
    await testdriver.provision.chrome({ url: "https://your-app.com/login" });
-   await testdriver.screenshot(); // Capture initial page state
 ```
 
 This provisions a sandbox with Chrome and navigates to your URL. You'll see a screenshot of the initial page.
 
+> **Note**: Screenshots are captured automatically before/after each command. The generated code no longer includes manual `screenshot()` calls.
+
 ### Step 2: Interact with the App
 
-Find elements and interact with them. **Write code to file after EACH action, including screenshots for debugging:**
+Find elements and interact with them. **Write code to file after EACH action:**
 
 ```
 find_and_click({ description: "email input field" })
 → Returns: screenshot with element highlighted
 → ⚠️ IMMEDIATELY append to test file:
    await testdriver.find("email input field").click();
-   await testdriver.screenshot(); // Capture after click
 
 type({ text: "user@example.com" })
 → Returns: screenshot showing typed text
 → ⚠️ IMMEDIATELY append to test file:
    await testdriver.type("user@example.com");
-   await testdriver.screenshot(); // Capture after typing
 ```
+
+> **Note**: Screenshots are automatically captured before/after each command. Each screenshot filename includes the line number (e.g., `001-click-before-L42-email-input.png`).
 
 ### Step 3: Verify Actions Succeeded (For Your Understanding)
 
@@ -274,14 +296,13 @@ Use `assert` for pass/fail conditions. This DOES generate code for the test file
 assert({ assertion: "the dashboard is visible" })
 → Returns: pass/fail with screenshot
 → ⚠️ IMMEDIATELY append to test file:
-   await testdriver.screenshot(); // Capture before assertion
    const assertResult = await testdriver.assert("the dashboard is visible");
    expect(assertResult).toBeTruthy();
 ```
 
 ### Step 5: Run the Test Yourself
 
-**⚠️ YOU must run the test - do NOT tell the user to run it:**
+**⚠️ YOU must run the test - do NOT tell the user to run it. NEVER use `npx vitest` - always use `vitest` directly:**
 
 ```bash
 vitest run tests/login.test.mjs --reporter=dot
@@ -291,7 +312,7 @@ vitest run tests/login.test.mjs --reporter=dot
 
 Analyze the output, fix any issues, and iterate until the test passes.
 
-**⚠️ ALWAYS share the test report link with the user.** After each test run, look for the "View Report" URL in the test output (e.g., `https://app.testdriver.ai/projects/.../reports/...`) and share it with the user so they can review the recording and results.
+**⚠️ ALWAYS share the test report link with the user.** After each test run, look for `TESTDRIVER_RUN_URL` in the test output (e.g., `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...`) and share it with the user so they can view the recording and results. This is CRITICAL - users need to see the visual recording to understand test behavior.
 
 ### MCP Tools Reference
 
@@ -310,28 +331,97 @@ Analyze the output, fix any issues, and iterate until the test passes.
 | `assert` | AI-powered boolean assertion - GENERATES CODE for test files |
 | `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
 | `screenshot` | Capture screenshot - **only use when user explicitly asks** |
-| `list_local_screenshots` | List screenshots saved in `.testdriver` directory |
+| `list_local_screenshots` | List/filter screenshots by line, action, phase, regex, etc. |
 | `view_local_screenshot` | View a local screenshot (returns image to AI + displays to user) |
 
 ### Debugging with Local Screenshots
 
-After test runs (successful or failed), you can view saved screenshots to understand test behavior:
+After test runs (successful or failed), you can view saved screenshots to understand test behavior.
 
-**1. List available screenshots:**
+**Screenshot filename format:** `<seq>-<action>-<phase>-L<line>-<description>.png`
+Example: `001-click-before-L42-submit-button.png`
+
+**1. List all screenshots from a test:**
 
 ```
 list_local_screenshots({ directory: "login.test" })
 ```
 
-This returns all screenshots from the specified test file, sorted by modification time (newest first).
-
-**2. View specific screenshots:**
+**2. Filter by line number (find what happened at a specific line):**
 
 ```
-view_local_screenshot({ path: ".testdriver/screenshots/login.test/after-click.png" })
+// Find screenshots from line 42
+list_local_screenshots({ line: 42 })
+
+// Find screenshots from lines 10-20
+list_local_screenshots({ lineRange: { start: 10, end: 20 } })
 ```
 
-This displays the screenshot to both you (the AI) and the user via MCP App.
+**3. Filter by action type:**
+
+```
+// Find all click screenshots
+list_local_screenshots({ action: "click" })
+
+// Find all assertions
+list_local_screenshots({ action: "assert" })
+```
+
+**4. Filter by phase (before/after):**
+
+```
+// See state BEFORE actions (useful for debugging what was visible)
+list_local_screenshots({ phase: "before" })
+
+// See state AFTER actions (useful for verifying results)
+list_local_screenshots({ phase: "after" })
+```
+
+**5. Filter by regex pattern:**
+
+```
+// Find screenshots related to login
+list_local_screenshots({ pattern: "login|signin" })
+
+// Find button-related screenshots
+list_local_screenshots({ pattern: "button.*click" })
+```
+
+**6. Filter by sequence number:**
+
+```
+// Find screenshots 1-5 (first 5 actions)
+list_local_screenshots({ sequenceRange: { start: 1, end: 5 } })
+```
+
+**7. Sort results:**
+
+```
+// Sort by execution order (useful for understanding flow)
+list_local_screenshots({ sortBy: "sequence" })
+
+// Sort by line number (useful for tracing back to code)
+list_local_screenshots({ sortBy: "line" })
+
+// Sort by modified time (default - newest first)
+list_local_screenshots({ sortBy: "modified" })
+```
+
+**8. Combine filters:**
+
+```
+// Find click screenshots at line 42
+list_local_screenshots({ directory: "checkout.test", line: 42, action: "click" })
+
+// Find all "before" screenshots in lines 10-30
+list_local_screenshots({ lineRange: { start: 10, end: 30 }, phase: "before" })
+```
+
+**9. View a screenshot:**
+
+```
+view_local_screenshot({ path: ".testdriver/screenshots/login.test/001-click-before-L42-submit-button.png" })
+```
 
 **When to use screenshot viewing:**
 
@@ -340,23 +430,24 @@ This displays the screenshot to both you (the AI) and the user via MCP App.
 - **Comparing test runs** - View screenshots from multiple runs to identify flaky behavior
 - **Verifying test logic** - Before running a test, view screenshots from previous runs to understand the UI flow
 
-**Workflow example:**
+**Debugging workflow example:**
 
 ```
-# Test failed, let's debug
-list_local_screenshots({ directory: "checkout.test" })
+# Test failed at line 42, let's see what happened
+list_local_screenshots({ line: 42 })
 
-# View the last few screenshots to see what happened
-view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/screenshot-1737633620000.png" })
-view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/before-assertion.png" })
+# View the before/after state at that line
+view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/005-click-before-L42-submit-button.png" })
+view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/006-click-after-L42-submit-button.png" })
 
-# Analyze the UI state and update test code accordingly
+# Check what the screen looked like before the failing action
+list_local_screenshots({ directory: "checkout.test", phase: "before", limit: 10 })
 ```
 
 ### Tips for MCP Workflow
 
 1. **⚠️ Write code IMMEDIATELY** - After EVERY action, append generated code to test file RIGHT AWAY
-2. **⚠️ Run tests YOURSELF** - Use `vitest run` - do NOT tell user to run tests
+2. **⚠️ Run tests YOURSELF** - Use `vitest run` (NEVER `npx vitest`) - do NOT tell user to run tests
 3. **⚠️ Add screenshots liberally** - Include `await testdriver.screenshot()` after every significant action for debugging
 4. **⚠️ Use screenshot viewing for debugging** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` to understand what went wrong
 5. **Work incrementally** - Don't try to build the entire test at once
@@ -375,27 +466,28 @@ view_local_screenshot({ path: ".testdriver/screenshots/checkout.test/before-asse
 
 ```javascript
 // Development workflow example
+// Note: Screenshots are automatically captured before/after each command!
 it("should incrementally build test", async (context) => {
   const testdriver = TestDriver(context);
   await testdriver.provision.chrome({ url: "https://example.com" });
-  await testdriver.screenshot(); // Capture initial state
+  // Automatic screenshot: 001-provision-after-L3-chrome.png
 
   // Step 1: Find and inspect
   const element = await testdriver.find("Some button");
   console.log("Element found:", element.found());
   console.log("Coordinates:", element.x, element.y);
   console.log("Confidence:", element.confidence);
-  await testdriver.screenshot(); // Capture after find
+  // Automatic screenshot: 002-find-after-L7-some-button.png
 
   // Step 2: Interact
   await element.click();
-  await testdriver.screenshot(); // Capture after click
+  // Automatic screenshot: 003-click-after-L13-element.png
 
-  // Step 3: Assert and log
-  await testdriver.screenshot(); // Capture before assertion
+  // Step 3: Assert
   const result = await testdriver.assert("Something happened");
   console.log("Assertion result:", result);
   expect(result).toBeTruthy();
+  // Automatic screenshot: 004-assert-after-L17-something-happened.png
 
   // Then add more steps...
 });
@@ -413,6 +505,7 @@ const testdriver = TestDriver(context, {
   resolution: "1366x768", // Sandbox resolution
   cache: true, // Enable element caching (default: true)
   cacheKey: "my-test", // Cache key for element finding
+  autoScreenshots: true, // Capture screenshots before/after each command (default: true)
 });
 ```
 
@@ -453,10 +546,23 @@ await element.click();
 
 ### Scrolling
 
+**⚠️ Important: Ensure proper focus before scrolling**
+
+Scrolling requires the page or frame to be focused, not an input field or other interactive element. If an input is focused, scroll commands may not work as expected.
+
 ```javascript
+// If you've been typing in an input, click elsewhere first
+await testdriver.find("page background").click();
+// Or press Escape to unfocus
+await testdriver.pressKeys(["escape"]);
+
+// Now scroll
 await testdriver.scroll("down");
 await testdriver.scrollUntilText("Footer text");
 await testdriver.scrollUntilImage("Product image at bottom");
+
+// If scroll is not working, try using Page Down key directly
+await testdriver.pressKeys(["pagedown"]);
 ```
 
 ### Executing Code in Sandbox
@@ -474,35 +580,37 @@ const date = await testdriver.exec("pwsh", "Get-Date", 5000);
 
 ### Capturing Screenshots
 
-**Add screenshots liberally throughout your tests** for debugging. When a test fails, you'll have a visual trail showing exactly what happened at each step.
+**Screenshots are captured automatically** before and after each SDK command (click, type, find, assert, etc.). Each screenshot filename includes:
+- Sequential number for chronological ordering
+- Action name (e.g., `click`, `find`, `assert`)
+- Phase (`before` or `after`)
+- Line number from your test file
+- Description from the command
 
+Example filenames:
+- `001-provision-after-L8-chrome.png`
+- `002-find-before-L12-login-button.png`
+- `003-click-after-L12-element.png`
+
+Screenshots are saved to `.testdriver/screenshots/<test-file>/`.
+
+To disable automatic screenshots:
 ```javascript
-// Basic screenshot - automatically saved to .testdriver/screenshots/<test-file>/
-await testdriver.screenshot();
+const testdriver = TestDriver(context, { autoScreenshots: false });
+```
 
-// Capture with mouse cursor visible
+For manual screenshots (e.g., with mouse cursor visible):
+```javascript
 await testdriver.screenshot(1, false, true);
-
-// Recommended pattern: screenshot after every significant action
-await testdriver.provision.chrome({ url: "https://example.com" });
-await testdriver.screenshot(); // After page load
-
-await testdriver.find("Login button").click();
-await testdriver.screenshot(); // After click
-
-await testdriver.type("user@example.com");
-await testdriver.screenshot(); // After typing
-
-await testdriver.screenshot(); // Before assertion
-const result = await testdriver.assert("dashboard is visible");
 ```
 
 ## Tips for Agents
 
 1. **⚠️ WRITE CODE IMMEDIATELY** - After EVERY successful MCP action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the session ends.
-2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `vitest run <testFile> --reporter=dot`. Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes. **Always share the test report link** (e.g., `https://app.testdriver.ai/projects/.../reports/...`) with the user after each run.
-3. **⚠️ ADD SCREENSHOTS LIBERALLY** - Include `await testdriver.screenshot()` throughout your tests: after provision, before/after clicks, after typing, and before assertions. This creates a visual trail that makes debugging failures much easier.
-4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. This is often faster than re-running the test.
+2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `vitest run <testFile> --reporter=dot` (NEVER use `npx vitest` - it breaks the reporter). Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes.
+3. **⚠️ SHARE THE TEST REPORT URL** - After EVERY test run, find `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...` in the output and share it with the user. This is CRITICAL - users need to view the recording to understand what happened.
+3. **Screenshots are automatic** - TestDriver captures screenshots before/after every command by default. Each screenshot filename includes the line number (e.g., `001-click-before-L42-submit-button.png`) making it easy to trace issues.
+4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. The filenames tell you which line of code triggered each screenshot.
 5. **⚠️ NEVER USE `.wait()`** - Do NOT use any `.wait()` method. Instead, use `find()` with a `timeout` option to poll for elements, or use `assert()` / `check()` to verify state. Explicit waits are flaky and slow.
 6. **Use MCP tools for development** - Build tests interactively with visual feedback
 7. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
