@@ -643,24 +643,32 @@ const createCommands = (
    * @param {boolean} [options.cacheHit] - Whether cache was hit
    * @param {string} [options.selector] - Selector used
    * @param {boolean} [options.selectorUsed] - Whether selector was used
+   * @param {number} [options.postHoverDelay=500] - Additional delay in ms after hover completes to allow for delayed UI elements (e.g., submenus) to fully render
+   * @param {Object} [options.redraw] - Redraw detection options
+   * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
+   * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
+   * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
+   * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
    */
   const hover = async (...args) => {
     // Capture absolute timestamp at the very start of the command
     // Frontend will calculate relative time using: timestamp - replay.clientStartDate
     const hoverTimestamp = Date.now();
     const hoverStartTime = hoverTimestamp;
-    let x, y, elementData, redrawOptions;
+    let x, y, elementData, redrawOptions, postHoverDelay;
     
     // Handle both object and positional argument styles
     if (isObjectArgs(args, ['x', 'y', 'prompt', 'cacheHit', 'selector'])) {
-      const { x: xPos, y: yPos, redraw: redrawOpts, ...rest } = args[0];
+      const { x: xPos, y: yPos, redraw: redrawOpts, postHoverDelay: postDelay = 500, ...rest } = args[0];
       x = xPos;
       y = yPos;
+      postHoverDelay = postDelay;
       elementData = rest;
       redrawOptions = extractRedrawOptions({ redraw: redrawOpts, ...rest });
     } else {
       // Legacy positional: hover(x, y, elementData)
       [x, y, elementData = {}] = args;
+      postHoverDelay = elementData.postHoverDelay !== undefined ? elementData.postHoverDelay : 500;
       redrawOptions = extractRedrawOptions(elementData);
     }
     
@@ -708,6 +716,13 @@ const createCommands = (
       const redrawStartTime = Date.now();
       await redraw.wait(2500, redrawOptions);
       const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Add post-hover delay to allow dependent UI elements (like submenus) to fully render
+      // This ensures that elements appearing after hover (e.g., context menu submenus) are
+      // fully visible before the next command (like find()) is executed
+      if (postHoverDelay > 0) {
+        await delay(postHoverDelay);
+      }
       
       // Log action completion with separate durations
       const { formatter } = require("../../sdk-log-formatter.js");
