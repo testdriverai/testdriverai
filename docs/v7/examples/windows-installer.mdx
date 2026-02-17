@@ -1,0 +1,89 @@
+---
+title: "Windows App Installation"
+sidebarTitle: "Windows Installer"
+description: "Example test showing how to download and install Windows applications using MSI installers."
+icon: "download"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* windows-installer.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/698f7e5ddd202a57999808ae/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="windows-installer.test.mjs" {22-25}
+/**
+ * TestDriver SDK - Windows Installer Example
+ */
+
+import { describe, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+const isLinux = (process.env.TD_OS || "linux") === "linux";
+
+describe("Windows App Installation", () => {
+    
+  it.skipIf(isLinux)("should download, install, and launch GitButler on Windows", async (context) => {
+    // Alternative approach using provision.installer helper
+    const testdriver = TestDriver(context, { 
+      ip: context.ip || process.env.TD_IP,
+      os: 'windows'
+    });
+
+    // Download the MSI installer
+    const installerPath = await testdriver.provision.installer({
+      url: 'https://app.gitbutler.com/downloads/release/windows/x86_64/msi',
+      launch: false, // Don't auto-launch, we'll install manually
+    });
+
+    console.log('Installer downloaded to:', installerPath);
+
+    // Install the MSI silently (the file might not have an extension, so we try MSI first)
+    await testdriver.exec('pwsh', 
+      `Start-Process msiexec.exe -ArgumentList "/i \`"${installerPath}\`" /qn /norestart" -Wait`,
+      120000
+    );
+
+    // Verify installation by checking if executable exists
+    const verifyScript = `
+      $exePath = "C:\\Program Files\\GitButler\\gitbutler-tauri.exe"
+      if (Test-Path $exePath) {
+          Write-Host "GitButler installed successfully at $exePath"
+      } else {
+          Write-Error "GitButler not found"
+          exit 1
+      }
+    `;
+
+    await testdriver.exec('pwsh', verifyScript, 5000);
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/windows-installer.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

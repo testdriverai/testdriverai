@@ -11,6 +11,7 @@
 
 import { describe, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 
@@ -19,7 +20,7 @@ describe("Windows App Installation", () => {
   it.skipIf(isLinux)("should download, install, and launch GitButler on Windows", async (context) => {
     // Alternative approach using provision.installer helper
     const testdriver = TestDriver(context, { 
-      ip: context.ip || process.env.TD_IP,
+      ...getDefaults(context),
       os: 'windows'
     });
 

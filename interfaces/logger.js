@@ -34,6 +34,9 @@ class CustomTransport extends Transport {
         this.sandbox.send({
           type: "output",
           output: Buffer.from(message).toString("base64"),
+        }).catch(() => {
+          // Silently ignore output send failures to prevent infinite loops
+          // (failed send → error event → log message → send → ...)
         });
       }
     } catch (e) {

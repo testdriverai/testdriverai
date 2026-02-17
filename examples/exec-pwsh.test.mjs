@@ -5,12 +5,13 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 describe.skip("Exec PowerShell Test", () => {
   it(
     "should generate random email using PowerShell and enter it",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+      const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
       await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //

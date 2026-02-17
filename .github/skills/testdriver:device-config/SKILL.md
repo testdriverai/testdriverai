@@ -1,0 +1,317 @@
+---
+name: testdriver:device-config
+description: Launch browsers, desktop apps, and extensions in your TestDriver sandbox
+---
+<!-- Generated from device-config.mdx. DO NOT EDIT. -->
+
+Provision methods are the starting point for most tests. They launch applications in your sandbox and prepare the environment for testing.
+
+## Chrome Browser
+
+The most common starting point for web testing. Launches Chrome browser and navigates to a URL.
+
+```javascript
+await testdriver.provision.chrome({
+  url: 'https://example.com',
+});
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | string | `'http://testdriver-sandbox.vercel.app/'` | URL to navigate to |
+| `maximized` | boolean | `true` | Start browser maximized |
+| `guest` | boolean | `false` | Use guest mode (no profile) |
+
+### Example: Basic Web Test
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("Login Flow", () => {
+  it("should log in successfully", async (context) => {
+    const testdriver = TestDriver(context);
+    
+    await testdriver.provision.chrome({
+      url: 'https://myapp.com/login',
+    });
+
+    await testdriver.find("Email input").click();
+    await testdriver.type("user@example.com");
+    
+    await testdriver.find("Password input").click();
+    await testdriver.type("password123");
+    
+    await testdriver.find("Sign In button").click();
+    
+    const result = await testdriver.assert("the dashboard is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+<Info>
+  `provision.chrome()` automatically starts Dashcam recording and waits for Chrome to be ready before returning.
+</Info>
+
+---
+
+## Chrome Extensions
+
+Launch Chrome with a custom extension loaded. Supports both local extensions and Chrome Web Store extensions.
+
+### Load from Local Path
+
+Clone or create an extension locally, then load it:
+
+```javascript
+// First, get the extension onto the sandbox
+await testdriver.exec(
+  'sh',
+  'git clone https://github.com/user/my-extension.git /tmp/my-extension',
+  60000
+);
+
+// Launch Chrome with the extension
+await testdriver.provision.chromeExtension({
+  extensionPath: '/tmp/my-extension',
+  url: 'https://example.com'
+});
+```
+
+### Load from Chrome Web Store
+
+Load any published extension by its Chrome Web Store ID:
+
+```javascript
+await testdriver.provision.chromeExtension({
+  extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm', // uBlock Origin
+  url: 'https://example.com'
+});
+```
+
+<Tip>
+  Find the extension ID in the Chrome Web Store URL. For example, `https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm` → ID is `cjpalhdlnbpafiamejdnhcphjbkeiagm`
+</Tip>
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `extensionPath` | string | - | Local path to unpacked extension directory |
+| `extensionId` | string | - | Chrome Web Store extension ID |
+| `url` | string | - | URL to navigate to after launch |
+| `maximized` | boolean | `true` | Start browser maximized |
+
+<Warning>
+  You must provide either `extensionPath` or `extensionId`, but not both.
+</Warning>
+
+### Example: Testing a Chrome Extension
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("Chrome Extension Test", () => {
+  it("should load and interact with extension", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Clone extension from GitHub
+    await testdriver.exec(
+      'sh',
+      'git clone https://github.com/user/my-extension.git /tmp/my-extension',
+      60000,
+      true
+    );
+
+    // Launch Chrome with extension loaded
+    await testdriver.provision.chromeExtension({
+      extensionPath: '/tmp/my-extension',
+      url: 'https://testdriver.ai'
+    });
+
+    // Click extensions puzzle icon
+    const extensionsButton = await testdriver.find("puzzle-shaped icon in Chrome toolbar");
+    await extensionsButton.click();
+
+    // Interact with your extension
+    const myExtension = await testdriver.find("My Extension in the dropdown");
+    await myExtension.click();
+
+    const result = await testdriver.assert("extension popup is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+---
+
+## Desktop Apps
+
+Download and install desktop applications. Supports `.deb`, `.rpm`, `.msi`, `.exe`, `.AppImage`, `.dmg`, `.pkg`, and shell scripts.
+
+```javascript
+const filePath = await testdriver.provision.installer({
+  url: 'https://example.com/app.deb',
+  appName: 'MyApp',  // Focus this app after install
+  launch: true,      // Auto-launch after install
+});
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | string | **required** | URL to download the installer from |
+| `filename` | string | auto-detected | Filename to save as |
+| `appName` | string | - | Application name to focus after install |
+| `launch` | boolean | `true` | Launch the app after installation |
+
+### Supported File Types
+
+| Extension | OS | Install Method |
+|-----------|-----|----------------|
+| `.deb` | Linux | `dpkg -i` + `apt-get install -f` |
+| `.rpm` | Linux | `rpm -i` |
+| `.AppImage` | Linux | `chmod +x` |
+| `.sh` | Linux | `chmod +x` + execute |
+| `.msi` | Windows | `msiexec /i /quiet` |
+| `.exe` | Windows | Silent install (`/S`) |
+| `.dmg` | macOS | Mount + copy to Applications |
+| `.pkg` | macOS | `installer -pkg` |
+
+### Example: Install and Test a Desktop App
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("Desktop App Test", () => {
+  it("should install and launch app", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Download and install
+    const installerPath = await testdriver.provision.installer({
+      url: 'https://github.com/sharkdp/bat/releases/download/v0.24.0/bat_0.24.0_amd64.deb',
+    });
+
+    // Verify installation
+    const output = await testdriver.exec('sh', 'bat --version', 5000);
+    expect(output).toContain('bat');
+  });
+});
+```
+
+### Example: Windows Installer
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("Windows App Test", () => {
+  it("should install on Windows", async (context) => {
+    const testdriver = TestDriver(context, { 
+      os: 'windows'
+    });
+
+    // Download MSI installer
+    const installerPath = await testdriver.provision.installer({
+      url: 'https://example.com/app.msi',
+      launch: false,  // Don't auto-launch
+    });
+
+    // Custom installation if needed
+    await testdriver.exec(
+      'pwsh',
+      `Start-Process msiexec.exe -ArgumentList "/i", "${installerPath}", "/qn" -Wait`,
+      120000
+    );
+
+    // Verify installation
+    const result = await testdriver.assert("application is installed");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+### Manual Installation
+
+Set `launch: false` to download without auto-installing:
+
+```javascript
+const filePath = await testdriver.provision.installer({
+  url: 'https://example.com/custom-script.sh',
+  launch: false,
+});
+
+// Run custom install commands
+await testdriver.exec('sh', `chmod +x "${filePath}"`, 5000);
+await testdriver.exec('sh', `"${filePath}" --custom-flag`, 60000);
+```
+
+---
+
+## VS Code
+
+Launch Visual Studio Code with optional workspace and extensions.
+
+```javascript
+await testdriver.provision.vscode({
+  workspace: '/home/testdriver/my-project',
+  extensions: ['ms-python.python', 'esbenp.prettier-vscode'],
+});
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `workspace` | string | - | Workspace folder to open |
+| `extensions` | string[] | `[]` | Extensions to install (by ID) |
+
+### Example: VS Code Extension Test
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("VS Code Test", () => {
+  it("should open workspace with extensions", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Create a test project
+    await testdriver.exec('sh', 'mkdir -p /tmp/test-project && echo "print(1)" > /tmp/test-project/test.py', 10000);
+
+    // Launch VS Code
+    await testdriver.provision.vscode({
+      workspace: '/tmp/test-project',
+      extensions: ['ms-python.python'],
+    });
+
+    // Verify VS Code is ready
+    const result = await testdriver.assert("VS Code is open with the project");
+    expect(result).toBeTruthy();
+
+    // Open the Python file
+    await testdriver.find("test.py in the explorer").click();
+  });
+});
+```
+
+---
+
+## Choosing the Right Provision Method
+
+| Use Case | Method |
+|----------|--------|
+| Testing a website | `provision.chrome` |
+| Testing a Chrome extension | `provision.chromeExtension` |
+| Testing a desktop app (needs installation) | `provision.installer` |
+| Testing VS Code or VS Code extensions | `provision.vscode` |
+
+<Tip>
+  All provision methods automatically start Dashcam recording and wait for the application to be ready before returning. You don't need to call `dashcam.start()` manually.
+</Tip>

@@ -377,6 +377,12 @@ class SDKLogFormatter {
     if (meta.cacheHit) {
       metaParts.push(chalk.bold.yellow("⚡ cached"));
     }
+    if (meta.confidence !== undefined && meta.confidence !== null) {
+      metaParts.push(chalk.dim.gray(`confidence: ${meta.confidence}`));
+    }
+    if (meta.reasoning) {
+      metaParts.push(chalk.dim.gray(`reasoning: ${meta.reasoning}`));
+    }
     // Duration always last
     if (meta.duration) {
       metaParts.push(this.formatDurationColored(meta.duration, thresholdKey));
@@ -461,6 +467,46 @@ class SDKLogFormatter {
       parts.push(this.joinMetaParts(metaParts));
     }
 
+    return parts.join(" ");
+  }
+
+  /**
+   * Format a single-line findAll message (combines finding + result) 🔎
+   * @param {string} description - Element description
+   * @param {number} count - Number of elements found
+   * @param {Object} meta - Metadata (duration, cache hit)
+   * @returns {string} Formatted message
+   */
+  formatFindAllSingleLine(description, count, meta = {}) {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getPrefix("findAll"));
+    parts.push(chalk.bold.magenta("Finding All"));
+    parts.push(chalk.cyan(`"${description}"`));
+    
+    const metaParts = [];
+    
+    // Add count with appropriate coloring
+    if (count > 0) {
+      metaParts.push(chalk.green(`found ${count}`));
+    } else {
+      metaParts.push(chalk.yellow("found 0"));
+    }
+    
+    // Add cache hit indicator
+    if (meta.cacheHit) {
+      metaParts.push(chalk.bold.yellow("⚡ cached"));
+    }
+    
+    // Add duration
+    if (meta.duration) {
+      metaParts.push(this.formatDurationColored(meta.duration));
+    }
+    
+    if (metaParts.length > 0) {
+      parts.push(this.joinMetaParts(metaParts));
+    }
+    
     return parts.join(" ");
   }
 
@@ -908,6 +954,47 @@ class SDKLogFormatter {
    * @returns {string} Formatted ai complete message
    */
   formatAIComplete(durationMs, success, error = null) {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getResultPrefix());
+    
+    if (success) {
+      parts.push(chalk.green("complete"));
+    } else {
+      parts.push(chalk.red("failed"));
+      if (error) {
+        parts.push(chalk.dim("·"));
+        parts.push(chalk.red(error));
+      }
+    }
+    
+    parts.push(this.formatDurationColored(durationMs, "default"));
+    
+    return parts.join(" ");
+  }
+
+  /**
+   * Format act() start message - provides visual scope boundary
+   * @param {string} task - The task being executed
+   * @returns {string} Formatted act start message
+   */
+  formatActStart(task) {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getPrefix("action"));
+    parts.push(chalk.bold.cyan("Act"));
+    parts.push(chalk.cyan(`"${task}"`));
+    return parts.join(" ");
+  }
+
+  /**
+   * Format act() completion message - provides visual scope boundary
+   * @param {number} durationMs - Duration in milliseconds
+   * @param {boolean} success - Whether the act completed successfully
+   * @param {string} [error] - Error message if failed
+   * @returns {string} Formatted act complete message
+   */
+  formatActComplete(durationMs, success, error = null) {
     const parts = [];
     this.addTimestamp(parts);
     parts.push(this.getResultPrefix());

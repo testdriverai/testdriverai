@@ -1,0 +1,79 @@
+---
+title: "Scrolling with Keyboard Test"
+sidebarTitle: "Scrolling with Keyboard"
+description: "Example test demonstrating page scrolling using keyboard-based scroll controls."
+icon: "scroll"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* scroll-keyboard.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/698f7f55dd202a57999808d6/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="scroll-keyboard.test.mjs" {26}
+/**
+ * TestDriver SDK - Scroll Keyboard Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Scroll Keyboard Test", () => {
+  it("should navigate to webhamster.com and scroll with keyboard", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    //
+    // Navigate to https://www.webhamster.com/
+    await testdriver.focusApplication("Google Chrome");
+    const urlBar = await testdriver.find(
+      "testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page",
+    );
+    await urlBar.click();
+    await testdriver.pressKeys(["ctrl", "a"]);
+    await testdriver.type("https://www.webhamster.com/");
+    await testdriver.pressKeys(["enter"]);
+
+    // Scroll down with keyboard 1000 pixels
+    const heading = await testdriver.find(
+      "The Hamster Dance, large heading at top of page",
+    );
+    await heading.click();
+    await testdriver.scroll("down", { amount: 1000 });
+
+    // Assert the page is scrolled down
+    const result = await testdriver.assert("The text 'The Hamster Dance' is not visible on the webpage content. It's ok if it's visible in the tab title.");
+
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/scroll-keyboard.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

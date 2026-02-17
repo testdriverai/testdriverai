@@ -10,34 +10,81 @@ import { setTestRunInfo } from "./shared-test-state.mjs";
 const require = createRequire(import.meta.url);
 
 /**
+ * Resolve the TestDriver SDK version using multiple strategies.
+ * Similar to resolveVitestVersion(), guards against import.meta.url rewriting.
+ * @returns {string|null}
+ */
+function resolveTestDriverVersion() {
+  try {
+    return require("../package.json").version;
+  } catch {}
+
+  try {
+    const cwdRequire = createRequire(path.join(process.cwd(), "package.json"));
+    return cwdRequire("testdriverai/package.json").version;
+  } catch {}
+
+  try {
+    const pkgPath = path.join(process.cwd(), "node_modules", "testdriverai", "package.json");
+    return JSON.parse(fs.readFileSync(pkgPath, "utf8")).version;
+  } catch {}
+
+  return null;
+}
+
+/**
  * Minimum required Vitest major version
  */
 const MINIMUM_VITEST_VERSION = 4;
+
+/**
+ * Try to read vitest's package.json version using multiple resolution strategies.
+ * Vitest's Vite-based transform pipeline can rewrite import.meta.url, causing
+ * createRequire to resolve from the wrong location. We fall back to resolving
+ * from process.cwd() and then to reading directly from node_modules.
+ * @returns {string|null} The vitest version string, or null if not found
+ */
+function resolveVitestVersion() {
+  // Strategy 1: createRequire from import.meta.url (standard CJS interop)
+  try {
+    return require("vitest/package.json").version;
+  } catch {}
+
+  // Strategy 2: createRequire from process.cwd() (works when import.meta.url is rewritten)
+  try {
+    const cwdRequire = createRequire(path.join(process.cwd(), "package.json"));
+    return cwdRequire("vitest/package.json").version;
+  } catch {}
+
+  // Strategy 3: read directly from node_modules on disk
+  try {
+    const vitestPkgPath = path.join(process.cwd(), "node_modules", "vitest", "package.json");
+    return JSON.parse(fs.readFileSync(vitestPkgPath, "utf8")).version;
+  } catch {}
+
+  return null;
+}
 
 /**
  * Check that Vitest version meets minimum requirements
  * @throws {Error} if Vitest version is below minimum or not installed
  */
 function checkVitestVersion() {
-  try {
-    const vitestPkg = require("vitest/package.json");
-    const version = vitestPkg.version;
-    const major = parseInt(version.split(".")[0], 10);
+  const version = resolveVitestVersion();
 
-    if (major < MINIMUM_VITEST_VERSION) {
-      throw new Error(
-        `TestDriver requires Vitest >= ${MINIMUM_VITEST_VERSION}.0.0, but found ${version}. ` +
-          `Please upgrade Vitest: npm install vitest@latest`,
-      );
-    }
-  } catch (err) {
-    if (err.code === "MODULE_NOT_FOUND") {
-      throw new Error(
-        "TestDriver requires Vitest to be installed. " +
-          "Please install it: npm install vitest@latest",
-      );
-    }
-    throw err;
+  if (!version) {
+    throw new Error(
+      "TestDriver requires Vitest to be installed. " +
+        "Please install it: npm install vitest@latest",
+    );
+  }
+
+  const major = parseInt(version.split(".")[0], 10);
+  if (major < MINIMUM_VITEST_VERSION) {
+    throw new Error(
+      `TestDriver requires Vitest >= ${MINIMUM_VITEST_VERSION}.0.0, but found ${version}. ` +
+        `Please upgrade Vitest: npm install vitest@latest`,
+    );
   }
 }
 
@@ -146,21 +193,32 @@ export const pluginState = {
   // TestDriver options to pass to all instances
   testDriverOptions: {},
   // Dashcam URL tracking (in-memory, no files needed!)
-  dashcamUrls: new Map(), // testId -> dashcamUrl
+  dashcamUrls: new Map(), // testId -> [{url, platform, attempt}]
   lastDashcamUrl: null, // Fallback for when test ID isn't available
   // Suite-level test run tracking
   suiteTestRuns: new Map(), // suiteId -> { runId, testRunDbId, token }
 };
 
 // Export functions that can be used by the reporter or tests
-export function registerDashcamUrl(testId, url, platform) {
-  logger.debug(`Registering dashcam URL for test ${testId}:`, url);
-  pluginState.dashcamUrls.set(testId, { url, platform });
+export function registerDashcamUrl(testId, url, platform, attempt) {
+  logger.debug(`Registering dashcam URL for test ${testId} (attempt ${attempt || 1}):`, url);
+  // Support multiple attempts per test - store as array
+  if (!pluginState.dashcamUrls.has(testId)) {
+    pluginState.dashcamUrls.set(testId, []);
+  }
+  pluginState.dashcamUrls.get(testId).push({ url, platform, attempt: attempt || 1 });
   pluginState.lastDashcamUrl = url;
 }
 
 export function getDashcamUrl(testId) {
-  return pluginState.dashcamUrls.get(testId);
+  const entries = pluginState.dashcamUrls.get(testId);
+  if (!entries) return undefined;
+  // Return the last entry for backward compatibility (single URL callers)
+  return entries[entries.length - 1];
+}
+
+export function getAllDashcamUrls(testId) {
+  return pluginState.dashcamUrls.get(testId) || [];
 }
 
 export function clearDashcamUrls() {
@@ -719,6 +777,17 @@ class TestDriverReporter {
       // Default to linux if no tests write platform info
       testRunData.platform = "linux";
 
+      // Send version metadata
+      testRunData.nodeVersion = process.version;
+      const tdVer = resolveTestDriverVersion();
+      if (tdVer) {
+        testRunData.testDriverVersion = tdVer;
+      }
+      const vitestVer = resolveVitestVersion();
+      if (vitestVer) {
+        testRunData.vitestVersion = vitestVer;
+      }
+
       logger.debug("Creating test run with data:", JSON.stringify(testRunData));
       pluginState.testRun = await createTestRun(testRunData);
       logger.debug("Test run created:", JSON.stringify(pluginState.testRun));
@@ -905,6 +974,7 @@ class TestDriverReporter {
     logger.debug(`Test meta for ${test.id}:`, meta);
 
     const dashcamUrl = meta.dashcamUrl || null;
+    const dashcamUrls = meta.dashcamUrls || []; // Per-attempt URLs
     const sessionId = meta.sessionId || null;
     const platform = meta.platform || null;
     const sandboxId = meta.sandboxId || null;
@@ -962,8 +1032,12 @@ class TestDriverReporter {
 
       const suiteName = test.suite?.name;
       const startTime = Date.now() - duration; // Calculate start time from duration
+      const retryCount = result.retryCount || 0;
+      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const consoleUrl = getConsoleUrl(pluginState.apiRoot);
+      const hasRetries = retryCount > 0 && dashcamUrls.length > 1;
 
-      // Record test case with all metadata
+      // Record a single test case with all metadata
       const testCaseData = {
         runId: testRunId,
         testName: test.name,
@@ -973,7 +1047,7 @@ class TestDriverReporter {
         startTime: startTime,
         endTime: Date.now(),
         duration: duration,
-        retries: result.retryCount || 0,
+        retries: retryCount,
       };
 
       // Add sessionId if available
@@ -984,6 +1058,13 @@ class TestDriverReporter {
       // Only include replayUrl if we have a valid dashcam URL
       if (dashcamUrl) {
         testCaseData.replayUrl = dashcamUrl;
+      }
+
+      // Include per-attempt replay URLs for retry visibility
+      if (dashcamUrls.length > 0) {
+        const attemptUrls = dashcamUrls
+          .map(a => ({ attempt: a.attempt, url: a.url || null, sessionId: a.sessionId || null }));
+        testCaseData.replayUrls = attemptUrls;
       }
 
       if (suiteName) testCaseData.suiteName = suiteName;
@@ -1001,7 +1082,6 @@ class TestDriverReporter {
       );
 
       const testCaseDbId = testCaseResponse.data?.id;
-      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
       // Store test case data for GitHub comment generation
       pluginState.recordedTestCases.push({
@@ -1011,8 +1091,27 @@ class TestDriverReporter {
 
       console.log("");
       console.log(
-        `🔗 Test Report: ${getConsoleUrl(pluginState.apiRoot)}/runs/${testRunDbId}/${testCaseDbId}`,
+        `🔗 Test Report: ${consoleUrl}/runs/${testRunDbId}/${testCaseDbId}`,
       );
+
+      // If there were retries, list all per-attempt dashcam URLs for debugging
+      if (hasRetries) {
+        const validAttempts = dashcamUrls.filter(a => a.url);
+        if (validAttempts.length > 0) {
+          console.log(`📋 Retry attempts (${dashcamUrls.length} total):`);
+          for (const attempt of validAttempts) {
+            console.log(`   Attempt ${attempt.attempt}: ${attempt.url}`);
+          }
+        }
+      }
+      
+      // Output parseable format for docs generation (examples only)
+      if (testFile.startsWith("examples/")) {
+        const testFileName = path.basename(testFile);
+        console.log(
+          `TESTDRIVER_EXAMPLE_URL::${testFileName}::${consoleUrl}/runs/${testRunDbId}/${testCaseDbId}`,
+        );
+      }
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }
@@ -1067,12 +1166,16 @@ function getPlatform() {
   }
 
   // Try to get platform from dashcam URLs (registered during test cleanup)
-  for (const [, data] of pluginState.dashcamUrls) {
-    if (data.platform) {
-      logger.debug(
-        `Using platform from dashcam URL registration: ${data.platform}`,
-      );
-      return data.platform;
+  for (const [, entries] of pluginState.dashcamUrls) {
+    // entries is now an array of {url, platform, attempt}
+    const arr = Array.isArray(entries) ? entries : [entries];
+    for (const data of arr) {
+      if (data.platform) {
+        logger.debug(
+          `Using platform from dashcam URL registration: ${data.platform}`,
+        );
+        return data.platform;
+      }
     }
   }
 

@@ -1,3 +1,43 @@
+## [7.3.12](https://github.com/testdriverai/testdriverai/compare/v7.3.11...v7.3.12) (2026-02-17)
+
+
+
+## [7.3.11](https://github.com/testdriverai/testdriverai/compare/v7.3.10...v7.3.11) (2026-02-17)
+
+
+
+## [7.3.10](https://github.com/testdriverai/testdriverai/compare/v7.3.9...v7.3.10) (2026-02-16)
+
+
+
+## [7.3.9](https://github.com/testdriverai/testdriverai/compare/v7.3.8...v7.3.9) (2026-02-12)
+
+
+
+## [7.3.8](https://github.com/testdriverai/testdriverai/compare/v7.3.7...v7.3.8) (2026-02-12)
+
+
+
+## [7.3.7](https://github.com/testdriverai/testdriverai/compare/v7.3.6...v7.3.7) (2026-02-11)
+
+
+
+## [7.3.6](https://github.com/testdriverai/testdriverai/compare/v7.3.5...v7.3.6) (2026-02-10)
+
+
+
+## [7.3.5](https://github.com/testdriverai/testdriverai/compare/v7.3.4...v7.3.5) (2026-02-07)
+
+
+
+## [7.3.4](https://github.com/testdriverai/testdriverai/compare/v7.3.2...v7.3.4) (2026-02-06)
+
+
+
+## [7.3.3](https://github.com/testdriverai/testdriverai/compare/v7.3.2...v7.3.3) (2026-02-06)
+
+
+
 ## [7.3.2](https://github.com/testdriverai/testdriverai/compare/v7.3.1...v7.3.2) (2026-02-05)
 
 

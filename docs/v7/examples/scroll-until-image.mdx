@@ -1,0 +1,81 @@
+---
+title: "Scroll Until Image Test"
+sidebarTitle: "Scroll Until Image"
+description: "Example test demonstrating how to scroll a page until a specific image becomes visible."
+icon: "scroll"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* scroll-until-image.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/698f7f749e27ce1528d7d0da/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="scroll-until-image.test.mjs" {26}
+/**
+ * TestDriver SDK - Scroll Until Image Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Scroll Until Image Test", () => {
+  it.skip("should scroll until brown colored house image appears", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    //
+    // Navigate to Wikipedia page
+    await testdriver.pressKeys(["ctrl", "l"]);
+    await testdriver.type("https://en.wikipedia.org/wiki/Leonardo_da_Vinci");
+    await testdriver.pressKeys(["enter"]);
+
+    // sleep for 5 seconds
+    await new Promise((r) => setTimeout(r, 5000));
+
+    // Click on heading
+    const heading = await testdriver.find(
+      "Leonardo Da Vinci, the page heading",
+      0,
+    );
+    await heading.click();
+
+    // Scroll until image appears
+    await testdriver.scrollUntilImage("a brown colored house", "down", 10000);
+
+    // Assert image of brown colored house appears on screen
+    const result = await testdriver.assert(
+      "image of brown colored house appears on screen",
+    );
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/scroll-until-image.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

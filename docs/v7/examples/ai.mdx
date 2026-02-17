@@ -1,0 +1,72 @@
+---
+title: "AI Test Example"
+sidebarTitle: "AI"
+description: "Example test using the AI exploratory loop to automate complex multi-step interactions."
+icon: "wand-magic-sparkles"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* ai.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/698f8010d3b320ad547d9d52/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="ai.test.mjs" {17}
+/**
+ * TestDriver SDK - AI Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("AI Test", () => {
+  it("should use ai to search for testdriver on Google", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+    
+    // provision.chrome() automatically calls ready() and starts dashcam
+    await testdriver.provision.chrome({
+      url: 'https://duckduckgo.com',
+    });
+
+    // Use ai to search for testdriver
+    let aiRes = await testdriver.ai("click on the empty search box, type 'testdriver', and hit enter.");
+
+    console.log("AI response:", aiRes);
+
+    // Assert the search results are displayed
+    const result = await testdriver.assert(
+      "search results for testdriver are visible",
+    );
+
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/ai.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

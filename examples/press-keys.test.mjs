@@ -5,10 +5,11 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 describe("Press Keys Test", () => {
   it("should create tabs and navigate using keyboard shortcuts", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
     await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
     const signInButton = await testdriver.find(
@@ -20,23 +21,16 @@ describe("Press Keys Test", () => {
     await testdriver.pressKeys(["ctrl", "t"]);
 
     // Poll for "Learn more" to appear
-    let learnMore = await testdriver.find("Learn more");
-    for (let i = 0; i < 10; i++) {
-      learnMore = await learnMore.find();
-      if (learnMore.found()) break;
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+    let imagesLink = await testdriver.find("Images", {timeout: 5000});
+
+    expect(imagesLink.found()).toBeTruthy();
 
     // Open DevTools
     await testdriver.pressKeys(["ctrl", "shift", "i"]);
 
     // Poll for "Elements" to appear
-    let elements = await testdriver.find("Elements");
-    for (let i = 0; i < 10; i++) {
-      elements = await elements.find();
-      if (elements.found()) break;
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+    let elements = await testdriver.find("Elements", {timeout: 5000});
+    expect(elements.found()).toBeTruthy();
 
     // Open another tab and navigate
     await testdriver.pressKeys(["ctrl", "t"]);

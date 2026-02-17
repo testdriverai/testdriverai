@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { getDefaults } from "./config.mjs";
 
 const isLinux = (process.env.TD_OS || "linux") === "linux";
 
@@ -12,7 +13,7 @@ describe("Provision Installer", () => {
   it.skipIf(!isLinux)(
     "should download and install a .deb package on Linux",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+      const testdriver = TestDriver(context, { ...getDefaults(context) });
       
       // Install bat (a cat clone with syntax highlighting) using provision.installer
       const filePath = await testdriver.provision.installer({
@@ -30,7 +31,7 @@ describe("Provision Installer", () => {
   it.skipIf(!isLinux)(
     "should download a shell script and verify it exists",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+      const testdriver = TestDriver(context, { ...getDefaults(context) });
       
       // Download a shell script (nvm installer)
       const filePath = await testdriver.provision.installer({
