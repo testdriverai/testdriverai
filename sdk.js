@@ -1864,10 +1864,15 @@ class TestDriverSDK {
         await this._waitForChromeDebuggerReady();
         await this.focusApplication("Google Chrome");
 
-        // Add web log tracking with domain wildcard pattern
+        // Add web log tracking with domain wildcard pattern, then start dashcam
         if (this.dashcamEnabled) {
           const domainPattern = this._getUrlDomainPattern(url);
           await this.dashcam.addWebLog(domainPattern, "Web Logs");
+          
+          // Start dashcam recording after logs are configured
+          if (!(await this.dashcam.isRecording())) {
+            await this.dashcam.start();
+          }
         }
       },
 
@@ -2127,6 +2132,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         // Wait for Chrome debugger port and page to be ready
         await this._waitForChromeDebuggerReady();
         await this.focusApplication("Google Chrome");
+
+        // Start dashcam recording
+        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
+          await this.dashcam.start();
+        }
       },
 
       /**
@@ -2177,6 +2187,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         // Wait for VS Code to be ready
         await this.focusApplication("Visual Studio Code");
+
+        // Start dashcam recording
+        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
+          await this.dashcam.start();
+        }
       },
 
       /**
@@ -2326,6 +2341,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           await this.focusApplication(appName);
         }
 
+        // Start dashcam recording
+        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
+          await this.dashcam.start();
+        }
+
         return actualFilePath;
       },
 
@@ -2362,6 +2382,11 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         }
 
         await this.focusApplication("Electron");
+
+        // Start dashcam recording
+        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
+          await this.dashcam.start();
+        }
       },
 
       /**

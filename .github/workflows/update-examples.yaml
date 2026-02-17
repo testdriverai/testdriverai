@@ -1,0 +1,53 @@
+name: Update Example Docs
+permissions:
+  contents: write
+on:
+  schedule:
+    - cron: "0 0 * * *" # Daily at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-examples:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run example tests
+        run: set -o pipefail && npx vitest run examples/*.test.mjs 2>&1 | tee test-output.log
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+          TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
+          TD_OS: linux
+
+      - name: Extract example URLs
+        if: success()
+        run: node docs/_scripts/extract-example-urls.js --file=test-output.log
+
+      - name: Generate example docs
+        if: success()
+        run: node docs/_scripts/generate-examples.js --skip-ai
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Commit and push updated docs
+        if: success()
+        run: |
+          git add docs/
+          git diff --staged --quiet || (git commit -m "docs: update example documentation [skip ci]" && git push origin main)
