@@ -11,7 +11,7 @@ const path = require("path");
  */
 
 const DOCS_DIR = path.join(__dirname, "../v7");
-const OUTPUT_DIR = path.join(__dirname, "../../skills");
+const OUTPUT_DIR = path.join(__dirname, "../../ai/skills");
 
 // Parse YAML frontmatter from mdx content
 function parseFrontmatter(content) {
