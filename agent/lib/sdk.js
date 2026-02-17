@@ -6,6 +6,115 @@ const { version } = require("../../package.json");
 const axios = require("axios");
 
 /**
+ * Default retry configuration
+ */
+const DEFAULT_RETRY_CONFIG = {
+  maxRetries: 10,
+  baseDelayMs: 3000,
+  maxDelayMs: 30000,
+  // Error codes that should trigger a retry
+  retryableNetworkCodes: [
+    'ECONNRESET',
+    'ECONNREFUSED', 
+    'ETIMEDOUT',
+    'ENOTFOUND',
+    'ENETUNREACH',
+    'ERR_NETWORK',
+    'ECONNABORTED',
+    'EPIPE',
+    'EAI_AGAIN',
+  ],
+  // HTTP status codes that should trigger a retry
+  retryableStatusCodes: [429, 500, 502, 503, 504],
+};
+
+/**
+ * Determines if an error is retryable
+ * @param {Error} error - The axios error
+ * @param {Object} config - Retry configuration
+ * @returns {boolean} Whether the request should be retried
+ */
+function isRetryableError(error, config = DEFAULT_RETRY_CONFIG) {
+  // Network-level errors (no response received)
+  if (!error.response) {
+    return config.retryableNetworkCodes.includes(error.code);
+  }
+  
+  // HTTP status code based retries
+  const status = error.response?.status;
+  return config.retryableStatusCodes.includes(status);
+}
+
+/**
+ * Calculate delay for next retry using exponential backoff with jitter
+ * @param {number} attempt - Current attempt number (0-indexed)
+ * @param {Error} error - The error that triggered the retry
+ * @param {Object} config - Retry configuration
+ * @returns {number} Delay in milliseconds
+ */
+function calculateRetryDelay(attempt, error, config = DEFAULT_RETRY_CONFIG) {
+  // Respect Retry-After header for rate limiting
+  if (error.response?.status === 429) {
+    const retryAfter = error.response.headers?.['retry-after'];
+    if (retryAfter) {
+      const retryAfterMs = parseInt(retryAfter, 10) * 1000;
+      if (!isNaN(retryAfterMs) && retryAfterMs > 0) {
+        return Math.min(retryAfterMs, config.maxDelayMs);
+      }
+    }
+  }
+  
+  // Exponential backoff: baseDelay * 2^attempt + random jitter
+  const exponentialDelay = config.baseDelayMs * Math.pow(2, attempt);
+  const jitter = Math.random() * config.baseDelayMs * 0.5;
+  return Math.min(exponentialDelay + jitter, config.maxDelayMs);
+}
+
+/**
+ * Sleep for a specified duration
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Execute an async function with retry logic
+ * @param {Function} fn - Async function to execute
+ * @param {Object} options - Options
+ * @param {Object} options.retryConfig - Retry configuration (uses defaults if not provided)
+ * @param {Function} options.onRetry - Callback called before each retry (attempt, error, delayMs)
+ * @returns {Promise<*>} Result of the function
+ */
+async function withRetry(fn, options = {}) {
+  const config = { ...DEFAULT_RETRY_CONFIG, ...options.retryConfig };
+  let lastError;
+  
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry if we've exhausted attempts or error isn't retryable
+      if (attempt >= config.maxRetries || !isRetryableError(error, config)) {
+        throw error;
+      }
+      
+      const delayMs = calculateRetryDelay(attempt, error, config);
+      
+      // Call onRetry callback if provided
+      if (options.onRetry) {
+        options.onRetry(attempt + 1, error, delayMs);
+      }
+      
+      await sleep(delayMs);
+    }
+  }
+  
+  throw lastError;
+}
+
+/**
  * Generate Sentry trace headers for distributed tracing
  * Uses the same trace ID derivation as the API (MD5 hash of session ID)
  * @param {string} sessionId - The session ID
@@ -118,7 +227,19 @@ const createSDK = (emitter, config, sessionInstance) => {
     };
 
     try {
-      let res = await axios(url, c);
+      let res = await withRetry(
+        () => axios(url, c),
+        {
+          onRetry: (attempt, error, delayMs) => {
+            emitter.emit(events.sdk.retry, {
+              path: 'auth/exchange-api-key',
+              attempt,
+              error: error.message || error.code,
+              delayMs,
+            });
+          },
+        }
+      );
 
       token = res.data.token;
       return token;
@@ -254,7 +375,25 @@ const createSDK = (emitter, config, sessionInstance) => {
     try {
       let response;
 
-      response = await axios(url, c);
+      // Use retry logic for non-streaming requests
+      // Streaming requests are not retried as they involve ongoing data transfer
+      if (typeof onChunk !== "function") {
+        response = await withRetry(
+          () => axios(url, c),
+          {
+            onRetry: (attempt, error, delayMs) => {
+              emitter.emit(events.sdk.retry, {
+                path,
+                attempt,
+                error: error.message || error.code,
+                delayMs,
+              });
+            },
+          }
+        );
+      } else {
+        response = await axios(url, c);
+      }
 
       emitter.emit(events.sdk.response, {
         path,
