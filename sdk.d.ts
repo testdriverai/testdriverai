@@ -436,7 +436,6 @@ export interface ParseResult {
   /** Height of the analyzed screenshot */
   imageHeight: number;
 }
-}
 
 // ====================================
 // Command Options Interfaces
