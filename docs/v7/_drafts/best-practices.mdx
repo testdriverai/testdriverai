@@ -115,6 +115,58 @@ const button = await waitFor(testdriver, 'submit button');
 await button.click();
 ```
 
+### Verify UI Context After Actions
+
+When actions change the UI state (opening modals, menus, dialogs), always verify the expected UI appeared before continuing:
+
+```javascript
+// ❌ Bad - assumes correct modal opened
+const settingsButton = await testdriver.find('settings icon');
+await settingsButton.click();
+// Fails if wrong modal appeared (e.g., user preferences instead of settings)
+await testdriver.find('theme dropdown').then(el => el.click());
+
+// ✅ Good - verify expected UI appeared
+const settingsButton = await testdriver.find('settings icon');
+await settingsButton.click();
+
+// Verify the settings modal appeared (not some other dialog)
+const settingsModal = await testdriver.find('settings modal window');
+if (!settingsModal.found()) {
+  throw new Error('Expected settings modal, but it did not appear');
+}
+
+// Now safely find elements within the correct context
+await testdriver.find('theme dropdown in settings modal').then(el => el.click());
+
+// ✅ Alternative - handle unexpected state
+const createButton = await testdriver.find('create resource button');
+await createButton.click();
+
+try {
+  // Verify expected menu appeared
+  const resourceMenu = await testdriver.find('resource creation menu');
+  if (!resourceMenu.found()) {
+    throw new Error('Resource menu did not appear');
+  }
+  await resourceMenu.find('Full Page option').then(el => el.click());
+} catch (error) {
+  // Check if wrong UI appeared
+  const wrongModal = await testdriver.find('User Preferences modal');
+  if (wrongModal.found()) {
+    console.error('Wrong modal opened - expected resource menu, got preferences');
+    await testdriver.find('close button').then(el => el.click());
+  }
+  throw error;
+}
+```
+
+This prevents "element not found" errors when:
+- Wrong button was clicked (similar icons in toolbars)
+- UI changed and element descriptions are outdated
+- Application state is unexpected
+- Multiple overlapping UI contexts exist
+
 ## Actions
 
 ### Use Descriptive Prompts
@@ -457,6 +509,7 @@ Before committing tests:
 - ✅ Tests use `beforeAll`/`afterAll` for sandbox lifecycle
 - ✅ All elements checked with `.found()` before use
 - ✅ Descriptive element descriptions with visual context
+- ✅ UI state verified after actions that change context (modals, menus, dialogs)
 - ✅ Key assertions at important checkpoints
 - ✅ No hardcoded delays (use polling instead)
 - ✅ API keys in environment variables

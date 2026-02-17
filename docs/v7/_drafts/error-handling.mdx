@@ -243,6 +243,70 @@ await testdriver.find('first button in the top navigation');
 await testdriver.find('button with text Submit');
 ```
 
+### Scenario 6: Wrong Modal or Dialog Opened
+
+**Error:**
+```
+AI Response:
+The '+ Create Resource' option is not visible in the provided image.
+The current view shows a 'User Preferences' modal window which does 
+not contain the specified menu item.
+```
+
+**Cause:** Clicked the wrong button, opening an unexpected UI context (modal, menu, dialog)
+
+**Solutions:**
+
+```javascript
+// ❌ Problem - assumes specific UI appeared without verification
+await testdriver.find('folder icon button').click();
+await testdriver.find('+ Create Resource option in the popup menu').click();
+// ^^^ Fails because User Preferences modal opened instead
+
+// ✅ Solution 1 - Verify expected UI appeared after click
+await testdriver.find('folder icon button').click();
+
+// Verify the expected menu appeared
+const createMenu = await testdriver.find('resource creation popup menu');
+if (!createMenu.found()) {
+  throw new Error('Expected resource creation menu, but it did not appear');
+}
+
+// Now safely find elements within the correct context
+await testdriver.find('+ Create Resource option in the popup menu').click();
+
+// ✅ Solution 2 - Be more specific about which button to click
+// The wrong button may have been clicked - verify element description
+await testdriver.find('create resource button in the toolbar').click();
+await testdriver.find('+ Create Resource option in the popup menu').click();
+
+// ✅ Solution 3 - Handle unexpected UI state
+await testdriver.find('folder icon button').click();
+
+// Check what actually appeared
+try {
+  const resourceMenu = await testdriver.find('resource creation menu');
+  await resourceMenu.find('+ Create Resource option').click();
+} catch (error) {
+  // Resource menu didn't appear - check if wrong modal opened
+  const prefsModal = await testdriver.find('User Preferences modal');
+  if (prefsModal.found()) {
+    // Close unwanted modal and try the correct button
+    await testdriver.find('close button in modal').click();
+    await testdriver.find('actual create resource button').click();
+  }
+  throw error;
+}
+```
+
+**Prevention:**
+
+Always verify the UI context after actions that can change state:
+- Clicking icons (may open different menus)
+- Navigation buttons
+- Context menu triggers
+- Any action that opens modals, dialogs, or popups
+
 ## Error Handling Patterns
 
 ### Pattern 1: Try/Catch with Fallback

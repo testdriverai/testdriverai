@@ -168,6 +168,36 @@ await dropZone.mouseUp();
   ```
 </Check>
 
+<Check>
+  **Verify UI state after clicks that change context**
+  
+  After clicking buttons that open modals, menus, or dialogs, verify the expected UI appeared before interacting with it:
+  
+  ```javascript
+  // ✅ Good - verify expected context appeared
+  const createButton = await testdriver.find('create resource button');
+  await createButton.click();
+  
+  // Verify the resource creation menu appeared
+  const resourceMenu = await testdriver.find('resource creation menu');
+  if (!resourceMenu.found()) {
+    throw new Error('Resource menu did not appear');
+  }
+  
+  // Now safely interact with menu items
+  const fullPageOption = await testdriver.find('Full Page option in menu');
+  await fullPageOption.click();
+  
+  // ❌ Bad - assumes correct UI appeared
+  const createButton = await testdriver.find('create resource button');
+  await createButton.click();
+  
+  // May fail if wrong modal opened (e.g., user preferences instead)
+  const fullPageOption = await testdriver.find('Full Page option');
+  await fullPageOption.click();
+  ```
+</Check>
+
 <Warning>
   **Element must be found before clicking**
   

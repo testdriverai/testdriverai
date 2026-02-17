@@ -233,6 +233,44 @@ This is useful for:
   ```
 </Check>
 
+<Check>
+  **Verify UI state after actions that change context**
+  
+  When clicking buttons that open modals, dropdowns, or new windows, verify the expected UI appeared before searching for elements within it:
+  
+  ```javascript
+  // ✅ Good - verify modal appeared before finding elements inside it
+  const settingsButton = await testdriver.find('settings icon button');
+  await settingsButton.click();
+  
+  // Wait and verify the settings modal appeared
+  const settingsModal = await testdriver.find('settings modal dialog');
+  if (!settingsModal.found()) {
+    throw new Error('Settings modal did not appear');
+  }
+  
+  // Now find elements within the modal
+  const themeOption = await testdriver.find('theme option in settings modal');
+  await themeOption.click();
+  
+  // ❌ Bad - assumes correct UI appeared without verification
+  const settingsButton = await testdriver.find('settings icon button');
+  await settingsButton.click();
+  
+  // Might fail if wrong modal/dialog opened
+  const themeOption = await testdriver.find('theme option');
+  await themeOption.click();
+  ```
+  
+  This is especially important when:
+  - Clicking icons that could open different menus or modals
+  - Navigation actions that change application state
+  - Buttons that trigger popups or context menus
+  - Actions in applications with multiple overlapping UI contexts
+  
+  **Common scenario**: Clicking a button you expect to open a resource creation menu, but it actually opens a user preferences modal instead. Always verify the expected context appeared before searching for elements within it.
+</Check>
+
 ## Polling for Dynamic Elements
 
 For elements that may not be immediately visible, use the `timeout` option to automatically poll:

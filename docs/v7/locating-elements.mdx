@@ -69,3 +69,37 @@ for (const product of products) {
 const firstProduct = products[0];
 await firstProduct.click();
 ```
+
+## Verifying UI Context After State Changes
+
+When clicking elements that trigger modals, menus, or dialogs, always verify the expected UI appeared before searching for elements within it:
+
+```javascript
+// ✅ Good - verify expected context
+const settingsButton = await testdriver.find('settings button');
+await settingsButton.click();
+
+// Verify settings modal appeared
+const settingsModal = await testdriver.find('settings modal window');
+if (!settingsModal.found()) {
+  throw new Error('Settings modal did not appear');
+}
+
+// Now safely find elements in the modal
+const themeDropdown = await testdriver.find('theme dropdown in settings');
+await themeDropdown.click();
+
+// ❌ Bad - assumes correct modal opened
+const settingsButton = await testdriver.find('settings button');
+await settingsButton.click();
+
+// May fail if wrong modal opened
+const themeDropdown = await testdriver.find('theme dropdown');
+await themeDropdown.click();
+```
+
+This pattern prevents "element not found" errors when:
+- The wrong button was clicked (e.g., clicked user preferences instead of settings)
+- The UI is in an unexpected state
+- Multiple similar icons exist (e.g., in a toolbar)
+- Context menus or popups appear in different locations
