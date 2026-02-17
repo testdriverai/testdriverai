@@ -52,23 +52,42 @@ class CommandError extends Error {
 }
 
 /**
+ * Normalize redraw options from new thresholds format or legacy format.
+ * New:    { enabled: true, thresholds: { screen: 0.05, network: true } }
+ * Legacy: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
+ * @param {Object} opts - Raw redraw options object
+ * @returns {Object} Normalised { enabled, screenRedraw, networkMonitor }
+ */
+const normalizeRedrawOpts = (opts) => {
+  if (!opts || typeof opts !== 'object') return { enabled: !!opts };
+  const result = { enabled: opts.enabled !== false };
+  if (opts.thresholds && typeof opts.thresholds === 'object') {
+    result.screenRedraw = opts.thresholds.screen !== false;
+    result.networkMonitor = !!opts.thresholds.network;
+  } else {
+    result.screenRedraw = opts.screenRedraw !== undefined ? opts.screenRedraw : true;
+    result.networkMonitor = opts.networkMonitor !== undefined ? opts.networkMonitor : false;
+  }
+  return result;
+};
+
+/**
  * Extract redraw options from command options
  * @param {Object} options - Command options that may contain redraw settings
  * @returns {Object} Redraw options object
  */
 const extractRedrawOptions = (options = {}) => {
-  const redrawOpts = {};
-  
-  // Support nested redraw object: { redraw: { enabled: false, diffThreshold: 0.5 } }
+  // Support nested redraw object (new or legacy format)
   if (options.redraw && typeof options.redraw === 'object') {
-    return options.redraw;
+    return normalizeRedrawOpts(options.redraw);
   }
   
-  // Support flat options for convenience
+  // Support flat options for convenience (legacy)
+  const redrawOpts = {};
   if ('redrawEnabled' in options) redrawOpts.enabled = options.redrawEnabled;
   if ('redrawScreenRedraw' in options) redrawOpts.screenRedraw = options.redrawScreenRedraw;
   if ('redrawNetworkMonitor' in options) redrawOpts.networkMonitor = options.redrawNetworkMonitor;
-  if ('redrawDiffThreshold' in options) redrawOpts.diffThreshold = options.redrawDiffThreshold;
+  if ('redrawDiffThreshold' in options) redrawOpts.screenRedraw = true;
   
   return redrawOpts;
 };
@@ -226,8 +245,8 @@ const createCommands = (
     const assertTimestamp = Date.now();
     const assertStartTime = assertTimestamp;
     
-    // Extract cache and AI options
-    const { threshold = -1, cacheKey, os, resolution, ai } = options;
+    // Extract cache options
+    const { threshold = 0.05, cacheKey, os, resolution, ai } = options;
     
     // Debug log cache settings
     emitter.emit(
@@ -318,9 +337,9 @@ const createCommands = (
    * @param {number} [options.amount=300] - Amount to scroll in pixels
    * @param {Object} [options.redraw] - Redraw detection options
    * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-   * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-   * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-   * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+   * @param {Object} [options.redraw.thresholds] - Threshold configuration
+   * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+   * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
    */
   const scroll = async (direction = 'down', options = {}) => {
     // Capture absolute timestamp at the very start of the command
@@ -461,9 +480,9 @@ const createCommands = (
    * @param {boolean} [options.selectorUsed] - Whether selector was used
    * @param {Object} [options.redraw] - Redraw detection options
    * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-   * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-   * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-   * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+   * @param {Object} [options.redraw.thresholds] - Threshold configuration
+   * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+   * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
    */
   const click = async (...args) => {
     // Capture absolute timestamp at the very start of the command
@@ -904,9 +923,9 @@ const createCommands = (
      * @param {boolean} [options.secret=false] - If true, text is treated as sensitive (not logged or stored)
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "type": async (text, options = {}) => {
       const { formatter } = require("../../sdk-log-formatter.js");
@@ -976,9 +995,9 @@ const createCommands = (
      * @param {Object} [options] - Additional options
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "press-keys": async (keys, options = {}) => {
       const { formatter } = require("../../sdk-log-formatter.js");
@@ -1183,9 +1202,9 @@ const createCommands = (
      * @param {number} [options.timeout=5000] - Timeout in milliseconds
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "wait-for-text": async (...args) => {
       // Capture absolute timestamp at the very start of the command
@@ -1294,9 +1313,9 @@ const createCommands = (
      * @param {boolean} [options.invert=false] - Invert the match
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "scroll-until-text": async (...args) => {
       let text, direction, maxDistance, invert, redrawOptions;
@@ -1448,9 +1467,9 @@ const createCommands = (
      * @param {Object} [options] - Additional options
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "focus-application": async (name, options = {}) => {
       const redrawOptions = extractRedrawOptions(options);
