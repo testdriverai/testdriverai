@@ -1155,16 +1155,24 @@ class TestDriverReporter {
         errorMessage = error.message;
         errorStack = error.stack;
         
-        // Report test failure to Sentry
-        captureTestFailure({
-          testName: test.name,
-          testFile,
-          errorMessage,
-          errorStack,
-          sessionId,
-          platform: platform || pluginState.detectedPlatform,
-          duration,
-        });
+        // Report test failure to Sentry, but skip ElementNotFoundError
+        // ElementNotFoundError is a normal test failure when UI elements aren't found
+        // and should not be reported to Sentry as it's expected behavior
+        const isElementNotFoundError = 
+          error.name === "ElementNotFoundError" ||
+          (errorMessage && errorMessage.includes("Element") && errorMessage.includes("not found"));
+        
+        if (!isElementNotFoundError) {
+          captureTestFailure({
+            testName: test.name,
+            testFile,
+            errorMessage,
+            errorStack,
+            sessionId,
+            platform: platform || pluginState.detectedPlatform,
+            duration,
+          });
+        }
       }
 
       const suiteName = test.suite?.name;
