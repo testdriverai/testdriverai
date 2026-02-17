@@ -10,6 +10,10 @@ Learn how to run TestDriver tests efficiently with Vitest's powerful test runner
 
 TestDriver works with Vitest's powerful test runner.
 
+<Info>
+  Install Vitest globally for best results: `npm install vitest -g`
+</Info>
+
 ### Run All Tests
 
 ```bash

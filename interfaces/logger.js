@@ -40,7 +40,6 @@ class CustomTransport extends Transport {
           output: Buffer.from(combinedOutput).toString("base64"),
         }).catch((e) => {
           // Re-queue failed messages for retry on next flush
-          this.batchQueue = batch.concat(this.batchQueue);
           console.error("Error sending log batch:", e);
         });
       }

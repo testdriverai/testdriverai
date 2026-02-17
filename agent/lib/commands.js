@@ -246,7 +246,7 @@ const createCommands = (
     const assertStartTime = assertTimestamp;
     
     // Extract cache options
-    const { threshold = 0.05, cacheKey, os, resolution } = options;
+    const { threshold = 0.05, cacheKey, os, resolution, ai } = options;
     
     // Debug log cache settings
     emitter.emit(
@@ -262,6 +262,7 @@ const createCommands = (
       cacheKey,
       os,
       resolution,
+      ai,
     });
 
     const assertDuration = Date.now() - assertStartTime;

@@ -132,6 +132,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           startTime: Date.now(),
         };
 
+        // Fire-and-forget message types: attach .catch() to prevent
+        // unhandled promise rejections if nobody awaits the result
+        const fireAndForgetTypes = ["output", "trackInteraction"];
+        if (fireAndForgetTypes.includes(message.type)) {
+          p.catch(() => {});
+        }
+
         return p;
       }
 
@@ -297,7 +304,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           }
 
           if (message.error) {
-            emitter.emit(events.error.sandbox, message.errorMessage);
+            // Don't emit error:sandbox for output (log forwarding) messages
+            // to prevent infinite loops: error → log → sendToSandbox → error → ...
+            const pendingMessage = this.ps[message.requestId]?.message;
+            if (pendingMessage?.type !== "output") {
+              emitter.emit(events.error.sandbox, message.errorMessage);
+            }
             const error = new Error(message.errorMessage || "Sandbox error");
             error.responseData = message;
             this.ps[message.requestId].reject(error);

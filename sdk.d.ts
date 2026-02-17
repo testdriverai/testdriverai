@@ -245,6 +245,7 @@ export interface TestDriverOptions {
       assert?: number;
     };
   };
+  ai?: AIConfig;
   /** @deprecated Use cache.thresholds instead */
   cacheThreshold?: {
     /** Threshold for find operations (default: 0.05 = 5% difference, 95% similarity) */
@@ -583,6 +584,19 @@ export interface FocusApplicationOptions {
   name: string;
 }
 
+/** AI sampling configuration for controlling model behavior */
+export interface AIConfig {
+  /** Temperature for AI sampling (0 = deterministic, higher = more creative). Default: 0 for find verification, model default for assert. */
+  temperature?: number;
+  /** Top-P and Top-K sampling parameters */
+  top?: {
+    /** Top-P (nucleus sampling). Controls diversity by limiting to top P probability mass. Range: 0-1. */
+    p?: number;
+    /** Top-K sampling. Limits choices to top K tokens. 1 = always pick most likely. 0 = disabled. */
+    k?: number;
+  };
+}
+
 /** Options for extract command */
 export interface ExtractOptions {
   /** What to extract */
@@ -601,6 +615,8 @@ export interface AssertOptions {
   os?: string;
   /** Screen resolution for cache partitioning */
   resolution?: string;
+  /** AI sampling configuration (overrides global ai config) */
+  ai?: AIConfig;
 }
 
 /** Options for exec command */
@@ -1067,7 +1083,7 @@ export default class TestDriverSDK {
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
   find(
     description: string,
-    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; cache?: { thresholds?: { screen?: number; element?: number } } },
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; ai?: AIConfig; cache?: { thresholds?: { screen?: number; element?: number } } },
   ): ChainableElementPromise;
 
   /**
@@ -1310,7 +1326,7 @@ export default class TestDriverSDK {
    * // With custom threshold
    * await client.assert('the page loaded', { threshold: 0.05, cacheKey: 'login-test' });
    */
-  assert(assertion: string, options?: { threshold?: number; cacheKey?: string; os?: string; resolution?: string }): Promise<boolean>;
+  assert(assertion: string, options?: { threshold?: number; cacheKey?: string; os?: string; resolution?: string; ai?: AIConfig }): Promise<boolean>;
 
   /**
    * Extract information from the screen using AI

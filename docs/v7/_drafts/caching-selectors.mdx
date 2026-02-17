@@ -97,9 +97,9 @@ If you don't want automatic caching:
 // Disable cache for this find
 await testdriver.find('button', { cacheThreshold: -1 });
 
-// Or disable globally
+// Or use a threshold of -1 globally
 const client = new TestDriver(apiKey, {
-  cache: false
+  cacheThreshold: { find: -1, findAll: -1 }
 });
 ```
 
@@ -149,30 +149,26 @@ The selector cache uses a three-tier matching system:
 3. **Template Match** (Fallback)
    - Edge detection + template matching
    - Finds visually similar UI elements
-   - Default 80% confidence threshold (configurable via `cache.thresholds.find.element`)
+   - 75%+ confidence threshold
 
 ## Controlling Cache Threshold
 
-Adjust thresholds when cache is enabled:
+Adjust similarity threshold when cache is enabled:
 
 ```javascript
-// Default: 99% screen similarity, 80% element match
+// Default: 95% similarity (5% difference allowed)
 await testdriver.find('submit button', { cacheKey: 'test-1' });
 
-// Stricter screen match: 99.5% similarity
+// Stricter: 99% similarity (1% difference allowed)
 await testdriver.find('submit button', { 
   cacheKey: 'test-1',
-  cache: {
-    thresholds: { screen: 0.005, element: 0.9 }
-  }
+  cacheThreshold: 0.01 
 });
 
-// More lenient: 90% screen similarity
+// More lenient: 90% similarity (10% difference allowed)
 await testdriver.find('submit button', { 
   cacheKey: 'test-1',
-  cache: {
-    thresholds: { screen: 0.10 }
-  }
+  cacheThreshold: 0.10 
 });
 
 // Disable cache: force fresh AI analysis
@@ -180,7 +176,7 @@ await testdriver.find('submit button', { cacheThreshold: -1 });
 ```
 
 <Note>
-  `cache.thresholds` only works when caching is enabled via `cacheKey` or global config.
+  `cacheThreshold` only works when caching is enabled via `cacheKey` or global config.
 </Note>
 
 ## Cache Filtering
@@ -250,23 +246,19 @@ test('find element', async (context) => {
 test('strict vs lenient matching', async (context) => {
   const { testdriver } = await chrome(context, { url });
   
-  // Strict: 99.5% screen similarity, 90% element match
-  const elem1 = await testdriver.find('button', {
-    cache: { thresholds: { screen: 0.005, element: 0.9 } }
-  });
+  // Strict: 99% similarity required (auto-cache key)
+  const elem1 = await testdriver.find('button', { cacheThreshold: 0.01 });
   
-  // Lenient: 90% screen similarity
-  const elem2 = await testdriver.find('button', {
-    cache: { thresholds: { screen: 0.10 } }
-  });
+  // Lenient: 90% similarity acceptable
+  const elem2 = await testdriver.find('button', { cacheThreshold: 0.10 });
   
-  // Bypass cache entirely
+  // Bypass cache entirely (no cacheKey needed)
   const elem3 = await testdriver.find('button', { cacheThreshold: -1 });
   
-  // Custom cache key with thresholds
+  // Custom cache key with threshold
   const elem4 = await testdriver.find('button', {
     cacheKey: 'my-button',
-    cache: { thresholds: { screen: 0.05, element: 0.8 } }
+    cacheThreshold: 0.05
   });
 });
 ```
@@ -302,14 +294,10 @@ test('monitor cache performance', async (context) => {
 
 ```javascript
 // Stable UI: strict threshold (auto-cache)
-await testdriver.find('logo', {
-  cache: { thresholds: { screen: 0.005, element: 0.95 } }
-});
+await testdriver.find('logo', { cacheThreshold: 0.01 });
 
 // Dynamic UI: lenient threshold
-await testdriver.find('news feed item', {
-  cache: { thresholds: { screen: 0.10 } }
-});
+await testdriver.find('news feed item', { cacheThreshold: 0.10 });
 
 // Always fresh: disable cache
 await testdriver.find('timestamp', { cacheThreshold: -1 });

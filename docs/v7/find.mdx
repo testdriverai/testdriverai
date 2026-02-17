@@ -31,24 +31,7 @@ const element = await testdriver.find(description, options)
     </ParamField>
     
     <ParamField path="cacheThreshold" type="number" default={0.05}>
-      **Deprecated.** Use `cache.thresholds.screen` instead. Similarity threshold (0-1) for cache matching. Lower values require more similarity. Set to -1 to disable cache.
-    </ParamField>
-
-    <ParamField path="cache" type="object">
-      Cache configuration for this call
-
-      <Expandable title="properties">
-        <ParamField path="cache.thresholds" type="object">
-          <Expandable title="properties">
-            <ParamField path="cache.thresholds.screen" type="number" default={0.01}>
-              Pixel diff threshold (0-1). Lower values require more screen similarity. 0.01 = 1% diff allowed.
-            </ParamField>
-            <ParamField path="cache.thresholds.element" type="number" default={0.8}>
-              OpenCV template match threshold (0-1). Higher values require more element similarity. 0.8 = 80% correlation required.
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
+      Similarity threshold (0-1) for cache matching. Lower values require more similarity. Set to -1 to disable cache.
     </ParamField>
     
     <ParamField path="timeout" type="number">
@@ -57,6 +40,30 @@ const element = await testdriver.find(description, options)
     
     <ParamField path="zoom" type="boolean" default={false}>
       Enable two-phase zoom mode for better precision in crowded UIs with many similar elements.
+    </ParamField>
+    
+    <ParamField path="ai" type="object">
+      AI sampling configuration for this find call (overrides global `ai` config from constructor).
+      
+      <Expandable title="properties">
+        <ParamField path="temperature" type="number">
+          Controls randomness. `0` = deterministic. Default: `0` for find verification.
+        </ParamField>
+        
+        <ParamField path="top" type="object">
+          Sampling parameters
+          
+          <Expandable title="properties">
+            <ParamField path="p" type="number">
+              Top-P (nucleus sampling). Range: 0-1.
+            </ParamField>
+            
+            <ParamField path="k" type="number">
+              Top-K sampling. `1` = most deterministic.
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
     </ParamField>
   </Expandable>
 </ParamField>
@@ -308,14 +315,12 @@ await testdriver.find(`order ${orderId} status`, {
 Control how similar a cached result must be to reuse it:
 
 ```javascript
-// Default: 99% screen similarity, 80% element match
+// Default: 95% similarity required
 await testdriver.find('submit button');
 
-// Strict screen threshold - 99.5% similarity required
+// Strict threshold - 99% similarity required
 await testdriver.find('submit button', {
-  cache: {
-    thresholds: { screen: 0.005, element: 0.9 }
-  }
+  cacheThreshold: 0.01
 });
 
 // Disable cache entirely for this call
@@ -323,12 +328,10 @@ await testdriver.find('submit button', {
   cacheThreshold: -1
 });
 
-// Combine cacheKey with thresholds
+// Combine cacheKey with threshold
 await testdriver.find('submit button', {
   cacheKey: 'submit-btn',
-  cache: {
-    thresholds: { screen: 0.01, element: 0.8 }
-  }
+  cacheThreshold: 0.01
 });
 ```
 
@@ -510,21 +513,7 @@ const elements = await testdriver.findAll(description, options)
     </ParamField>
     
     <ParamField path="cacheThreshold" type="number" default={-1}>
-      **Deprecated.** Use `cache.thresholds.screen` instead. Similarity threshold (0-1) for cache matching. Set to -1 to disable cache.
-    </ParamField>
-
-    <ParamField path="cache" type="object">
-      Cache configuration for this call
-
-      <Expandable title="properties">
-        <ParamField path="cache.thresholds" type="object">
-          <Expandable title="properties">
-            <ParamField path="cache.thresholds.screen" type="number" default={0.01}>
-              Pixel diff threshold (0-1). Lower values require more screen similarity.
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
+      Similarity threshold (0-1) for cache matching. Set to -1 to disable cache.
     </ParamField>
   </Expandable>
 </ParamField>

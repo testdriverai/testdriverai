@@ -37,25 +37,6 @@ jobs:
           TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
           TD_OS: linux
 
-      - name: Extract example URLs
-        if: success()
-        run: node docs/_scripts/extract-example-urls.js --file=test-output.log
-
-      - name: Generate example docs
-        if: success()
-        run: node docs/_scripts/generate-examples.js --skip-ai
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-      - name: Commit updated docs
-        if: success()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add docs/
-          git diff --staged --quiet || git commit -m "docs: update example documentation [skip ci]"
-          git push || echo "No changes to push"
-
       - name: Upload test results to Sentry Prevent
         if: ${{ !cancelled() }}
         uses: getsentry/prevent-action@v0
@@ -110,23 +91,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: test-output-windows
-
-      - name: Extract example URLs from Windows tests
-        if: needs.test-windows.result == 'success'
-        run: node docs/_scripts/extract-example-urls.js --file=test-output.log
-
-      - name: Generate example docs
-        if: needs.test-windows.result == 'success'
-        run: node docs/_scripts/generate-examples.js --skip-ai
-
-      - name: Commit updated docs
-        if: needs.test-windows.result == 'success'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add docs/
-          git diff --staged --quiet || git commit -m "docs: update example documentation from Windows tests [skip ci]"
-          git push || echo "No changes to push"
 
       - name: Upload test results to Sentry Prevent
         if: ${{ !cancelled() }}

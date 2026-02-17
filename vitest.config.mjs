@@ -13,18 +13,6 @@ export default defineConfig({
   test: {
     testTimeout: 900000,
     hookTimeout: 900000,
-    teardownTimeout: 10000, // Kill test processes that hang during cleanup after 10s
-    disableConsoleIntercept: true,
-    maxConcurrency: 100,
-    pool: "forks",
-    poolOptions: {
-      forks: {
-        singleFork: false,
-        isolate: true,
-        maxForks: 5, // Limit concurrent child processes to prevent resource exhaustion
-      },
-    },
-    forceExit: true, // Force kill child processes that don't exit cleanly (prevents zombies)
     reporters: [
       "default",
       TestDriver(),
