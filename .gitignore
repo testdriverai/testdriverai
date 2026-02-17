@@ -171,4 +171,4 @@ test-results/*
 .testdriver
 
 # Generated MCP skills
-skills/
+/skills/
