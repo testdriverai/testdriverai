@@ -41,6 +41,30 @@ const element = await testdriver.find(description, options)
     <ParamField path="zoom" type="boolean" default={false}>
       Enable two-phase zoom mode for better precision in crowded UIs with many similar elements.
     </ParamField>
+    
+    <ParamField path="ai" type="object">
+      AI sampling configuration for this find call (overrides global `ai` config from constructor).
+      
+      <Expandable title="properties">
+        <ParamField path="temperature" type="number">
+          Controls randomness. `0` = deterministic. Default: `0` for find verification.
+        </ParamField>
+        
+        <ParamField path="top" type="object">
+          Sampling parameters
+          
+          <Expandable title="properties">
+            <ParamField path="p" type="number">
+              Top-P (nucleus sampling). Range: 0-1.
+            </ParamField>
+            
+            <ParamField path="k" type="number">
+              Top-K sampling. `1` = most deterministic.
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
+    </ParamField>
   </Expandable>
 </ParamField>
 
