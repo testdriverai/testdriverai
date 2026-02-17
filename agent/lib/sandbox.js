@@ -207,6 +207,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       if (this.reconnecting) return;
       this.reconnecting = true;
 
+      // Remove listeners from the old socket to prevent "No pending promise found" warnings
+      // when late responses arrive on the dying connection
+      if (this.socket) {
+        try {
+          this.socket.removeAllListeners("message");
+        } catch (e) {
+          // Ignore errors removing listeners from closed socket
+        }
+      }
+
       // Queue pending requests for retry after reconnection
       // (they were sent on the old socket and will never receive responses)
       const pendingRequestIds = Object.keys(this.ps);
@@ -393,10 +403,14 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           }
 
           if (!this.ps[message.requestId]) {
-            console.warn(
-              "No pending promise found for requestId:",
-              message.requestId,
-            );
+            // This can happen during reconnection (ps was cleared) or after timeout
+            // (promise was deleted). Only log at debug level since it's expected.
+            if (!this.reconnecting) {
+              console.warn(
+                "No pending promise found for requestId:",
+                message.requestId,
+              );
+            }
             return;
           }
 
