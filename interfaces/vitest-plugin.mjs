@@ -68,6 +68,76 @@ function initializeSentry() {
 }
 
 /**
+ * Categorize test failure based on error message patterns
+ * @param {string} errorMessage - The error message
+ * @returns {Object} Category info with name, type, and fingerprint
+ */
+function categorizeTestFailure(errorMessage) {
+  const message = errorMessage || "";
+  
+  // Element not found errors
+  if (message.match(/Element .* not found/i)) {
+    return {
+      name: "ElementNotFoundError",
+      type: "element_not_found",
+      fingerprint: ["element-not-found", "{{ default }}"],
+    };
+  }
+  
+  // Sandbox errors (connection, timeout, or not running)
+  if (message.match(/Sandbox.*not running/i) || message.match(/sandbox.*probably/i)) {
+    return {
+      name: "SandboxNotRunningError",
+      type: "sandbox_not_running",
+      fingerprint: ["sandbox-not-running", "{{ default }}"],
+    };
+  }
+  
+  // Timeout errors
+  if (message.match(/timeout|timed out/i)) {
+    return {
+      name: "TimeoutError",
+      type: "timeout",
+      fingerprint: ["timeout", "{{ default }}"],
+    };
+  }
+  
+  // AI assertion errors
+  if (message.match(/AI Assertion failed/i)) {
+    return {
+      name: "AIAssertionError",
+      type: "ai_assertion_failed",
+      fingerprint: ["ai-assertion-failed", "{{ default }}"],
+    };
+  }
+  
+  // Network/connection errors
+  if (message.match(/network|connection|ECONNREFUSED|ETIMEDOUT|ENOTFOUND/i)) {
+    return {
+      name: "NetworkError",
+      type: "network_error",
+      fingerprint: ["network-error", "{{ default }}"],
+    };
+  }
+  
+  // Cannot read properties errors (usually undefined/null access)
+  if (message.match(/Cannot read propert(y|ies) of (undefined|null)/i)) {
+    return {
+      name: "PropertyAccessError",
+      type: "property_access_error",
+      fingerprint: ["property-access-error", "{{ default }}"],
+    };
+  }
+  
+  // Default test failure
+  return {
+    name: "TestFailure",
+    type: "unknown",
+    fingerprint: ["test-failure", "{{ default }}"],
+  };
+}
+
+/**
  * Capture a test failure in Sentry
  * @param {Object} params - Test failure parameters
  * @param {string} params.testName - Name of the test
@@ -75,16 +145,20 @@ function initializeSentry() {
  * @param {string} params.errorMessage - Error message
  * @param {string} [params.errorStack] - Error stack trace
  * @param {string} [params.sessionId] - Session ID if available
+ * @param {string} [params.sandboxId] - Sandbox ID if available
  * @param {string} [params.platform] - Platform (windows, mac, linux)
  * @param {number} [params.duration] - Test duration in ms
  */
-function captureTestFailure({ testName, testFile, errorMessage, errorStack, sessionId, platform, duration }) {
+function captureTestFailure({ testName, testFile, errorMessage, errorStack, sessionId, sandboxId, platform, duration }) {
   if (!sentryInitialized || process.env.TD_TELEMETRY === "false") return;
 
   try {
+    // Categorize the error for better grouping in Sentry
+    const category = categorizeTestFailure(errorMessage);
+    
     // Create an error object with the test failure details
     const error = new Error(errorMessage);
-    error.name = "TestFailure";
+    error.name = category.name;
     if (errorStack) {
       error.stack = errorStack;
     }
@@ -93,20 +167,29 @@ function captureTestFailure({ testName, testFile, errorMessage, errorStack, sess
       scope.setTag("test.name", testName);
       scope.setTag("test.file", testFile);
       scope.setTag("test.status", "failed");
+      scope.setTag("error.type", category.type);
       
       if (sessionId) {
         scope.setTag("session", sessionId);
       }
+      if (sandboxId) {
+        scope.setTag("sandbox", sandboxId);
+      }
       if (platform) {
         scope.setTag("platform", platform);
       }
+      
+      // Set custom fingerprint for better error grouping
+      scope.setFingerprint(category.fingerprint);
       
       scope.setContext("test", {
         name: testName,
         file: testFile,
         duration: duration,
         sessionId: sessionId,
+        sandboxId: sandboxId,
         platform: platform,
+        errorType: category.type,
       });
 
       Sentry.captureException(error);
@@ -1162,6 +1245,7 @@ class TestDriverReporter {
           errorMessage,
           errorStack,
           sessionId,
+          sandboxId,
           platform: platform || pluginState.detectedPlatform,
           duration,
         });
