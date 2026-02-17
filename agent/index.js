@@ -1791,6 +1791,14 @@ ${regression}
         ip: this.ip,
       });
 
+      // Store sandboxId (for self-hosted, use the IP as identifier) so messages include it
+      // This enables the API to reconnect if the websocket connection is rerouted
+      this.sandbox._lastConnectParams = {
+        sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || this.ip,
+        persist: true,
+        keepAlive: this.keepAlive,
+      };
+
       // Mark instance socket as connected so console logs are forwarded
       this.sandbox.instanceSocketConnected = true;
       this.emitter.emit(events.sandbox.connected);
