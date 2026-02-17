@@ -1638,14 +1638,21 @@ const createCommands = (
         //   console.log(result);
         // }
 
-        if (result.out && result.out.returncode !== 0) {
+        // Check if result has the expected structure
+        if (!result || !result.out) {
+          throw new MatchError(
+            `Command execution failed: Invalid or missing response from sandbox (result: ${JSON.stringify(result)})`,
+          );
+        }
+
+        if (result.out.returncode !== 0) {
           emitter.emit(
             events.log.narration,
             formatter.formatExecComplete(result.out.returncode, execDuration),
             true,
           );
           throw new MatchError(
-            `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
+            `Command failed with exit code ${result.out.returncode}: ${result.out.stderr || '(no stderr)'}`,
           );
         } else {
           emitter.emit(
@@ -1659,7 +1666,7 @@ const createCommands = (
             emitter.emit(events.log.log, theme.dim(`  ${result.out.stdout}`), true);
           }
 
-          if (!silent && result.out.stderr) {
+          if (!silent && result.out?.stderr) {
             emitter.emit(events.log.log, theme.dim(`  stderr:`), true);
             emitter.emit(events.log.log, theme.dim(`  ${result.out.stderr}`), true);
           }
