@@ -1677,6 +1677,24 @@ class TestDriverSDK {
   }
 
   /**
+   * Extract domain pattern from a URL for web log tracking
+   * @param {string} url - The URL to extract domain from
+   * @returns {string} Domain pattern (e.g., "*://example.com/*")
+   * @private
+   */
+  _getUrlDomainPattern(url) {
+    try {
+      const parsed = new URL(url);
+      // Use wildcard scheme and path to match all pages on the domain
+      return `*://${parsed.hostname}*`;
+    } catch (e) {
+      // Fallback to ** if URL parsing fails
+      console.warn(`[_getUrlDomainPattern] Failed to parse URL "${url}", using ** pattern`);
+      return "**";
+    }
+  }
+
+  /**
    * Wait for Chrome DevTools Protocol debugger to be ready on port 9222,
    * then wait for a page to report loaded.
    * Works on both Windows (PowerShell) and Linux (sh).
@@ -1739,6 +1757,9 @@ class TestDriverSDK {
           maximized = true,
           guest = false,
         } = options;
+
+        // Store the URL for domain-specific web log tracking
+        self._provisionedChromeUrl = url;
 
         // Set up Chrome profile with preferences
         const shell = this.os === "windows" ? "pwsh" : "sh";
@@ -1842,6 +1863,12 @@ class TestDriverSDK {
         // Wait for Chrome debugger port and page to be ready
         await this._waitForChromeDebuggerReady();
         await this.focusApplication("Google Chrome");
+
+        // Add web log tracking with domain wildcard pattern
+        if (this.dashcamEnabled) {
+          const domainPattern = this._getUrlDomainPattern(url);
+          await this.dashcam.addWebLog(domainPattern, "Web Logs");
+        }
       },
 
       /**
@@ -2377,8 +2404,12 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         await this.dashcam.addFileLog(actualLogPath, logName);
 
         // Add web log tracking if enabled
+        // Use domain pattern from provisioned Chrome URL if available
         if (webLogs) {
-          await this.dashcam.addWebLog("**", "Web Logs");
+          const pattern = this._provisionedChromeUrl
+            ? this._getUrlDomainPattern(this._provisionedChromeUrl)
+            : "**";
+          await this.dashcam.addWebLog(pattern, "Web Logs");
         }
 
         // Start recording if not already recording
