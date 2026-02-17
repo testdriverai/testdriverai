@@ -515,7 +515,7 @@ class Element {
       } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold
         // Per-command thresholds > legacy cacheThreshold > global config
-        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.sdk.cacheConfig?.thresholds?.find?.screen ?? 0.01;
+        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.sdk.cacheConfig?.thresholds?.find?.screen ?? 0.05;
         elementSimilarity = perCommandThresholds?.element ?? this.sdk.cacheConfig?.thresholds?.find?.element ?? 0.8;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
@@ -1326,6 +1326,34 @@ function createChainablePromise(promise) {
 }
 
 /**
+ * Normalize redraw options from new thresholds format or legacy format to internal format.
+ * New:    { enabled: true, thresholds: { screen: 0.05, network: true } }
+ * Legacy: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
+ * Internal: { enabled: true, screenRedraw: true, networkMonitor: false }
+ * @param {Object} opts - raw redraw options
+ * @returns {Object} normalised options the redraw subsystem expects
+ */
+function normalizeRedrawOptions(opts) {
+  if (!opts || typeof opts !== "object") {
+    return { enabled: !!opts };
+  }
+
+  const result = { enabled: opts.enabled !== false };
+
+  // New thresholds format takes precedence
+  if (opts.thresholds && typeof opts.thresholds === "object") {
+    result.screenRedraw = opts.thresholds.screen !== false;
+    result.networkMonitor = !!opts.thresholds.network;
+  } else {
+    // Legacy format fallback
+    result.screenRedraw = opts.screenRedraw !== undefined ? opts.screenRedraw : true;
+    result.networkMonitor = opts.networkMonitor !== undefined ? opts.networkMonitor : false;
+  }
+
+  return result;
+}
+
+/**
  * TestDriver SDK
  *
  * This SDK provides programmatic access to TestDriver's AI-powered testing capabilities.
@@ -1470,7 +1498,7 @@ class TestDriverSDK {
         },
       };
     } else {
-      // Support cache object format: { cache: { thresholds: { find: { screen: 0.01, element: 0.8 }, assert: 0.05 } } }
+      // Support cache object format: { cache: { thresholds: { find: { screen: 0.05, element: 0.8 }, assert: 0.05 } } }
       const cacheOpts = typeof options.cache === "object" ? options.cache : {};
       const thresholds = cacheOpts.thresholds || {};
       const findThresholds = typeof thresholds.find === "object" ? thresholds.find : {};
@@ -1479,7 +1507,7 @@ class TestDriverSDK {
         enabled: cacheOpts.enabled !== false,
         thresholds: {
           find: {
-            screen: findThresholds.screen ?? 0.01, // Default: 1% pixel diff allowed
+            screen: findThresholds.screen ?? 0.05, // Default: 5% pixel diff allowed
             element: findThresholds.element ?? 0.8, // Default: 80% OpenCV correlation
           },
           assert: thresholds.assert ?? 0.05, // Default: 5% pixel diff for assertions
@@ -1506,22 +1534,23 @@ class TestDriverSDK {
     } : {};
 
     // Redraw configuration
-    // Supports both:
-    //   - redraw: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
-    //   - redrawThreshold: 0.1 (legacy, sets diffThreshold)
-    // The `redraw` option takes precedence and matches the per-command API
+    // Supports:
+    //   - redraw: { enabled: true, thresholds: { screen: 0.05, network: true } }  (new)
+    //   - redraw: true/false  (shorthand)
+    //   - redraw: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }  (legacy)
+    //   - redrawThreshold: 0.1  (legacy, deprecated)
     if (options.redraw !== undefined) {
-      // New unified API: redraw object (matches per-command options)
-      this.redrawOptions =
-        typeof options.redraw === "object"
-          ? options.redraw
-          : { enabled: options.redraw }; // Support redraw: false as shorthand
+      if (typeof options.redraw === "object") {
+        this.redrawOptions = normalizeRedrawOptions(options.redraw);
+      } else {
+        this.redrawOptions = { enabled: !!options.redraw };
+      }
     } else if (options.redrawThreshold !== undefined) {
-      // Legacy API: redrawThreshold number or object
+      // Legacy API: redrawThreshold number or object (deprecated)
       this.redrawOptions =
         typeof options.redrawThreshold === "object"
-          ? options.redrawThreshold
-          : { diffThreshold: options.redrawThreshold };
+          ? normalizeRedrawOptions(options.redrawThreshold)
+          : { enabled: true, screenRedraw: true, networkMonitor: false };
     } else {
       // Default: disabled (as of v7.3)
       this.redrawOptions = { enabled: false };
@@ -2766,14 +2795,37 @@ CAPTCHA_SOLVER_EOF`,
       this.analytics.track("sdk.disconnect");
     }
 
+    // Clean up redraw interval if active
+    if (this.agent?.redraw?.cleanup) {
+      try {
+        this.agent.redraw.cleanup();
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    }
+
+    // Stop the debugger server (HTTP + WebSocket server) to release the port
+    try {
+      const { stopDebugger } = require("./agent/lib/debugger-server.js");
+      stopDebugger();
+    } catch (err) {
+      // Ignore if debugger wasn't started
+    }
+
     // Always close the sandbox WebSocket connection to clean up resources
     // This ensures we don't leave orphaned connections even if connect() failed
     if (this.sandbox && typeof this.sandbox.close === "function") {
       this.sandbox.close();
     }
 
+    // Remove all event listeners on the emitter to release references
+    if (this.emitter && typeof this.emitter.removeAllListeners === "function") {
+      this.emitter.removeAllListeners();
+    }
+
     this.connected = false;
     this.instance = null;
+    this.commands = null;
   }
 
   /**
@@ -2820,7 +2872,7 @@ CAPTCHA_SOLVER_EOF`,
    *
    * @example
    * // Find with custom cache threshold (legacy)
-   * const element = await client.find('login button', 0.01);
+   * const element = await client.find('login button', 0.05);
    *
    * @example
    * // Poll until element is found
@@ -2986,7 +3038,7 @@ CAPTCHA_SOLVER_EOF`,
         cacheKey = null; // Clear any cacheKey to ensure cache is truly disabled
       } else if (cacheKey) {
         // cacheKey provided - enable cache with threshold (findAll only uses screen, no element)
-        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.cacheConfig?.thresholds?.find?.screen ?? 0.01;
+        threshold = perCommandThresholds?.screen ?? cacheThreshold ?? this.cacheConfig?.thresholds?.find?.screen ?? 0.05;
       } else if (cacheThreshold !== null) {
         // Explicit threshold provided without cacheKey
         threshold = perCommandThresholds?.screen ?? cacheThreshold;

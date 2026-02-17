@@ -20,7 +20,7 @@ export function popupLoadingTest(label, options = {}) {
       await testdriver.screenshot();
 
       // Accept the cookie banner to trigger the loading process
-      let acceptButton = await testdriver.find("Accept All button on the cookie banner", {timeout: 60000});
+      let acceptButton = await testdriver.find("Accept All button on the cookie banner", {timeout: 10000});
 
       if (await acceptButton.found()) {
         await acceptButton.click();
@@ -41,7 +41,7 @@ export function popupLoadingTest(label, options = {}) {
       await testdriver.find("Continue button in the modal").click();
 
       // Wait for the 5x5 grid of images to fully load (up to 60s) and click the rocket
-      await testdriver.find("rocket image in the 5x5 grid", { timeout: 60000, cacheThreshold: -1 }).click();
+      await testdriver.find("The icon of a rocket in the 5x5 grid of images", { timeout: 60000, zoom: true }).click();
 
       // Assert the success message appears
       const rocketResult = await testdriver.assert("The text 'You found the rocket!' is visible on the page");

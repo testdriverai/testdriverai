@@ -134,6 +134,28 @@ export interface TestDriverOptions {
   analytics?: boolean;
   
   /**
+   * Cache configuration
+   * Set to false to disable caching entirely.
+   * Set to an object to configure thresholds.
+   * @example { cache: { enabled: true, thresholds: { find: { screen: 0.05, element: 0.8 }, assert: 0.05 } } }
+   */
+  cache?: boolean | {
+    enabled?: boolean;
+    thresholds?: {
+      /** Thresholds for find operations */
+      find?: {
+        /** Pixel diff threshold for screen comparison (0-1, default 0.05 = 5% diff allowed) */
+        screen?: number;
+        /** OpenCV template match threshold for element matching (0-1, default 0.8 = 80% correlation) */
+        element?: number;
+      };
+      /** Pixel diff threshold for assert operations (0-1, default 0.05 = 5% diff allowed) */
+      assert?: number;
+    };
+  };
+
+  /**
+   * @deprecated Use cache.thresholds instead
    * Cache thresholds for find operations
    */
   cacheThresholds?: {

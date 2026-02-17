@@ -56,11 +56,6 @@ const createSystem = (emitter, sandbox, config) => {
 
       await screenshot({ filename: step1, format: "png" });
 
-      // Location of cursor image
-      const cursorPath = path.join(__dirname, "resources", "cursor-2.png");
-
-      const mousePos = await getMousePosition();
-
       // Load the screenshot image with Jimp
       let image = await Jimp.read(step1);
       
@@ -76,9 +71,12 @@ const createSystem = (emitter, sandbox, config) => {
       );
 
       if (mouse) {
+        // Only get mouse position when needed to avoid unnecessary websocket calls
+        const cursorPath = path.join(__dirname, "resources", "cursor-2.png");
+        const mousePos = await getMousePosition();
+        
         // Load and composite the mouse cursor image
         const cursorImage = await Jimp.read(cursorPath);
-
         image.composite(cursorImage, mousePos.x, mousePos.y);
       }
 

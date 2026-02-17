@@ -249,6 +249,7 @@ This two-phase approach gives the AI a higher-resolution view of the target area
   - Selecting from a grid of similar items
   - Targeting elements in dense UI areas
   - The default locate is clicking the wrong similar element
+  - You get an AI verification rejection like "The crosshair is located in the empty space of the browser's tab bar/title bar area" — this means the initial locate was imprecise and zoom will help the AI pinpoint the correct element
 </Tip>
 
 ```javascript

@@ -178,7 +178,7 @@
       #vm-iframe {
         display: none;
         border: none;
-        pointer-events: auto;
+        pointer-events: none; /* view-only by default, enabled on user click */
         position: absolute;
         top: 0px;
         left: 0px;
@@ -186,6 +186,10 @@
         height: 100%;
         z-index: 1;
         overflow: hidden;
+      }
+
+      #vm-iframe.interactive {
+        pointer-events: auto;
       }
 
       /* Loading screen styles */
@@ -564,11 +568,17 @@
       const hideInteractionOverlay = () => {
         interactionOverlay.classList.remove("visible");
         isInteractionEnabled = true;
+        iframe.classList.add("interactive"); // Enable pointer events on iframe
 
         // Clear any existing timeout
         if (interactionTimeout) {
           clearTimeout(interactionTimeout);
         }
+      };
+
+      const disableInteraction = () => {
+        isInteractionEnabled = false;
+        iframe.classList.remove("interactive"); // Disable pointer events on iframe
       };
 
       // Event listeners for interaction overlay
@@ -754,7 +764,7 @@
       // Handle window blur/focus for screen locking
       window.addEventListener("blur", () => {
         showInteractionOverlay();
-        isInteractionEnabled = false;
+        disableInteraction();
       });
     </script>
   </body>

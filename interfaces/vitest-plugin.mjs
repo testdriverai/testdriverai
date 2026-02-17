@@ -2,12 +2,132 @@ import { execSync } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
 import { createRequire } from "module";
+import os from "os";
 import path from "path";
 import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
 import { setTestRunInfo } from "./shared-test-state.mjs";
 
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
+
+// Import Sentry for error reporting
+const Sentry = require("@sentry/node");
+
+// Track if Sentry has been initialized
+let sentryInitialized = false;
+
+/**
+ * Initialize Sentry for test failure reporting
+ * Uses same configuration as lib/sentry.js for consistency
+ */
+function initializeSentry() {
+  if (sentryInitialized) return;
+  
+  // Respect telemetry opt-out
+  if (process.env.TD_TELEMETRY === "false") {
+    return;
+  }
+
+  try {
+    const version = resolveTestDriverVersion() || "unknown";
+    
+    Sentry.init({
+      dsn:
+        process.env.SENTRY_DSN ||
+        "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
+      environment: "vitest",
+      release: `testdriverai@${version}`,
+      sampleRate: 1.0,
+      tracesSampleRate: 1.0,
+      enableLogs: true,
+      integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
+      initialScope: {
+        tags: {
+          platform: os.platform(),
+          arch: os.arch(),
+          nodeVersion: process.version,
+          runner: "vitest",
+        },
+      },
+      // Don't send user-cancelled errors
+      beforeSend(event, hint) {
+        const error = hint.originalException;
+        if (error && error.message && error.message.includes("User cancelled")) {
+          return null;
+        }
+        return event;
+      },
+    });
+    
+    sentryInitialized = true;
+    logger.debug("Sentry initialized for vitest");
+  } catch (err) {
+    // Sentry init failed - continue without it
+    logger.debug("Failed to initialize Sentry:", err.message);
+  }
+}
+
+/**
+ * Capture a test failure in Sentry
+ * @param {Object} params - Test failure parameters
+ * @param {string} params.testName - Name of the test
+ * @param {string} params.testFile - File path of the test
+ * @param {string} params.errorMessage - Error message
+ * @param {string} [params.errorStack] - Error stack trace
+ * @param {string} [params.sessionId] - Session ID if available
+ * @param {string} [params.platform] - Platform (windows, mac, linux)
+ * @param {number} [params.duration] - Test duration in ms
+ */
+function captureTestFailure({ testName, testFile, errorMessage, errorStack, sessionId, platform, duration }) {
+  if (!sentryInitialized || process.env.TD_TELEMETRY === "false") return;
+
+  try {
+    // Create an error object with the test failure details
+    const error = new Error(errorMessage);
+    error.name = "TestFailure";
+    if (errorStack) {
+      error.stack = errorStack;
+    }
+
+    Sentry.withScope((scope) => {
+      scope.setTag("test.name", testName);
+      scope.setTag("test.file", testFile);
+      scope.setTag("test.status", "failed");
+      
+      if (sessionId) {
+        scope.setTag("session", sessionId);
+      }
+      if (platform) {
+        scope.setTag("platform", platform);
+      }
+      
+      scope.setContext("test", {
+        name: testName,
+        file: testFile,
+        duration: duration,
+        sessionId: sessionId,
+        platform: platform,
+      });
+
+      Sentry.captureException(error);
+    });
+  } catch (err) {
+    logger.debug("Failed to capture test failure in Sentry:", err.message);
+  }
+}
+
+/**
+ * Flush Sentry events before process exit
+ * @param {number} [timeout=2000] - Timeout in ms
+ */
+async function flushSentry(timeout = 2000) {
+  if (!sentryInitialized) return;
+  try {
+    await Sentry.flush(timeout);
+  } catch (err) {
+    // Ignore flush errors
+  }
+}
 
 /**
  * Resolve the TestDriver SDK version using multiple strategies.
@@ -710,6 +830,9 @@ class TestDriverReporter {
     this.ctx = ctx;
     logger.debug("onInit called - UPDATED VERSION");
 
+    // Initialize Sentry for error reporting
+    initializeSentry();
+
     // Store project root for making file paths relative
     pluginState.projectRoot = ctx.config.root || process.cwd();
     logger.debug("Project root:", pluginState.projectRoot);
@@ -936,6 +1059,9 @@ class TestDriverReporter {
     } catch (error) {
       logger.error("Failed to complete test run:", error.message);
       logger.debug("Error stack:", error.stack);
+    } finally {
+      // Flush any pending Sentry events before process exits
+      await flushSentry();
     }
   }
 
@@ -1028,6 +1154,17 @@ class TestDriverReporter {
         const error = result.errors[0];
         errorMessage = error.message;
         errorStack = error.stack;
+        
+        // Report test failure to Sentry
+        captureTestFailure({
+          testName: test.name,
+          testFile,
+          errorMessage,
+          errorStack,
+          sessionId,
+          platform: platform || pluginState.detectedPlatform,
+          duration,
+        });
       }
 
       const suiteName = test.suite?.name;
