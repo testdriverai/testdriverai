@@ -25,7 +25,8 @@ const { createParser } = require("./lib/parser.js");
 const { createSystem } = require("./lib/system.js");
 const { createCommander } = require("./lib/commander.js");
 const { createCommands } = require("./lib/commands.js");
-const { createSandbox } = require("./lib/sandbox.js");
+const { createSandbox: createWebSocketSandbox } = require("./lib/sandbox.js");
+const { createSandbox: createPubNubSandbox } = require("./lib/sandbox-pubnub.js");
 const { createCommandDefinitions } = require("./interface.js");
 const { createSDK } = require("./lib/sdk.js");
 const { createConfig } = require("./lib/config.js");
@@ -108,6 +109,10 @@ class TestDriverAgent extends EventEmitter2 {
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
     // Create sandbox instance with this agent's emitter, analytics, and session
+    // Use PubNub transport if TD_TRANSPORT=pubnub is set
+    const createSandbox = this.config.TD_TRANSPORT === 'pubnub'
+      ? createPubNubSandbox
+      : createWebSocketSandbox;
     this.sandbox = createSandbox(this.emitter, this.analytics, this.session);
 
     // Attach Sentry log listeners to capture CLI logs as breadcrumbs

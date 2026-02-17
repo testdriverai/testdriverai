@@ -99,6 +99,7 @@
     "marky": "^1.2.5",
     "open": "^10.1.2",
     "pixelmatch": "^7.1.0",
+    "pubnub": "^10.2.7",
     "remark-parse": "^11.0.0",
     "sanitize-filename": "^1.6.3",
     "strip-ansi": "^6.0.1",
