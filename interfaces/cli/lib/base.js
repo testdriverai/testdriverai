@@ -48,6 +48,8 @@ class BaseCommand extends Command {
     this.agent.sandbox.send({
       type: "output",
       output: Buffer.from(message).toString("base64"),
+    }).catch(() => {
+      // Silently ignore output send failures to prevent infinite loops
     });
   }
 
@@ -107,6 +109,10 @@ class BaseCommand extends Command {
       });
 
       this.agent.emitter.on("error:*", (message) => {
+        // Don't forward sandbox errors back to sandbox - this creates an infinite loop
+        // (sandbox error → error:* event → sendToSandbox → output message → sandbox error → ...)
+        const event = this.agent.emitter.event;
+        if (event === "error:sandbox") return;
         this.sendToSandbox(message);
       });
     });
