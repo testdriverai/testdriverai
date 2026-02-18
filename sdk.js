@@ -1423,6 +1423,9 @@ class TestDriverSDK {
       ...options.environment,
     };
 
+    // Resolve sandboxId from options or environment variable
+    const resolvedSandboxId = options.sandboxId || process.env.TD_SANDBOX_ID || null;
+
     // Create the underlying agent with minimal CLI args
     this.agent = new TestDriverAgent(environment, {
       command: "sdk",
@@ -1430,6 +1433,7 @@ class TestDriverSDK {
       options: {
         os: options.os || "linux",
         preview: previewMode,
+        "sandbox-id": resolvedSandboxId,
       },
     });
 
@@ -1452,8 +1456,9 @@ class TestDriverSDK {
     this.resolution = options.resolution || "1366x768";
 
     // Store newSandbox preference from options
+    // Default to false if a sandboxId was explicitly provided (user wants to connect to existing)
     this.newSandbox =
-      options.newSandbox !== undefined ? options.newSandbox : true;
+      options.newSandbox !== undefined ? options.newSandbox : !resolvedSandboxId;
 
     // Store headless preference from options
     this.headless = options.headless !== undefined ? options.headless : false;
@@ -1832,6 +1837,16 @@ class TestDriverSDK {
           "--disable-infobars",
           `--user-data-dir=${userDataDir}`,
         );
+
+        // Docker/Linux sandbox flags — required for Chrome to render in headless containers
+        if (this.os !== "windows") {
+          chromeArgs.push(
+            "--no-sandbox",
+            "--disable-gpu",
+            "--disable-dev-shm-usage",
+            "--disable-software-rasterizer",
+          );
+        }
 
         // Add remote debugging port for captcha solving support
         chromeArgs.push("--remote-debugging-port=9222");

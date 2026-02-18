@@ -25,8 +25,7 @@ const { createParser } = require("./lib/parser.js");
 const { createSystem } = require("./lib/system.js");
 const { createCommander } = require("./lib/commander.js");
 const { createCommands } = require("./lib/commands.js");
-const { createSandbox: createWebSocketSandbox } = require("./lib/sandbox.js");
-const { createSandbox: createPubNubSandbox } = require("./lib/sandbox-pubnub.js");
+const { createSandbox } = require("./lib/sandbox.js");
 const { createCommandDefinitions } = require("./interface.js");
 const { createSDK } = require("./lib/sdk.js");
 const { createConfig } = require("./lib/config.js");
@@ -109,10 +108,6 @@ class TestDriverAgent extends EventEmitter2 {
     this.analytics = createAnalytics(this.emitter, this.config, this.session);
 
     // Create sandbox instance with this agent's emitter, analytics, and session
-    // Use PubNub transport if TD_TRANSPORT=pubnub is set
-    const createSandbox = this.config.TD_TRANSPORT === 'pubnub'
-      ? createPubNubSandbox
-      : createWebSocketSandbox;
     this.sandbox = createSandbox(this.emitter, this.analytics, this.session);
 
     // Attach Sentry log listeners to capture CLI logs as breadcrumbs
@@ -211,10 +206,10 @@ class TestDriverAgent extends EventEmitter2 {
       this.redraw.cleanup();
     }
 
-    // Close sandbox connection to release the connection slot
+    // Close sandbox connection — releases runner back to pool
     if (this.sandbox) {
       try {
-        this.sandbox.close();
+        await this.sandbox.close();
       } catch (err) {
         // Ignore sandbox close errors during exit
       }
@@ -1785,127 +1780,49 @@ ${regression}
     // order is important!
     await this.connectToSandboxService();
 
+    // Determine which sandboxId to connect to (if any).
+    // If sandboxId is provided via --sandbox-id flag, use it.
+    // If not creating new, check for a recent sandbox.
+    // If none, pass null — the API will auto-claim an idle runner.
     const recentId = createNew ? null : this.getRecentSandboxId();
+    const targetSandboxId = this.sandboxId || recentId || null;
 
-    // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
-    if (this.ip) {
-      let instance = await this.sandbox.send({
-        type: "direct",
-        resolution: this.config.TD_RESOLUTION,
-        ci: this.config.CI,
-        ip: this.ip,
-      });
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("connect") +
+        " " +
+        theme.green.bold("Connecting") +
+        " " +
+        theme.cyan(targetSandboxId ? `to runner ${targetSandboxId}...` : `to available runner...`),
+    );
 
-      // Store sandboxId (for self-hosted, use the IP as identifier) so messages include it
-      // This enables the API to reconnect if the websocket connection is rerouted
-      this.sandbox._lastConnectParams = {
-        sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || this.ip,
-        persist: true,
-        keepAlive: this.keepAlive,
-      };
+    // connect() calls /api/v7/sandbox/connect, which either connects to
+    // the specified runner or auto-claims an idle one from the pool.
+    const reply = await this.sandbox.connect(targetSandboxId);
 
-      // Mark instance socket as connected so console logs are forwarded
-      this.sandbox.instanceSocketConnected = true;
-      this.emitter.emit(events.sandbox.connected);
+    this.sandboxId = reply.sandboxId;
+    this.saveLastSandboxId(this.sandboxId, this.sandboxOs);
 
-      this.instance = instance.instance;
-      await this.renderSandbox(this.instance, headless);
-      await this.runLifecycle("provision");
+    // Wait for the runner to respond to pings
+    this.emitter.emit(
+      events.log.narration,
+      theme.dim(`waiting for runner...`),
+    );
+    await this.sandbox.waitForRunner();
 
-      return;
-    } else if (!createNew && recentId) {
-      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`using recent sandbox: ${recentId}`),
-      );
-      this.sandboxId = recentId;
+    // Claim the runner (marks it busy in the pool)
+    await this.sandbox.claim();
 
-      try {
-        let instance = await this.connectToSandboxDirect(
-          this.sandboxId,
-          true, // always persist by default
-          this.keepAlive, // pass keepAlive TTL
-        );
-
-        this.instance = instance;
-
-        await this.renderSandbox(instance, headless);
-        return;
-      } catch (error) {
-        // If connection fails, fall through to creating a new sandbox
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`failed to connect to recent sandbox, creating new one...`),
-        );
-        console.error("Failed to reconnect to sandbox:", error);
-      }
-    } else if (!createNew && this.sandboxId && !this.config.CI) {
-      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
-      // Attempt to connect to known instance
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`connecting to sandbox ${this.sandboxId}...`),
-      );
-
-      try {
-        let instance = await this.connectToSandboxDirect(
-          this.sandboxId,
-          true, // always persist by default
-          this.keepAlive, // pass keepAlive TTL
-        );
-
-        this.instance = instance;
-
-        await this.renderSandbox(instance, headless);
-        return;
-      } catch (error) {
-        // If connection fails, fall through to creating a new sandbox
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`failed to connect to recent sandbox, creating new one...`),
-        );
-        console.error("Failed to reconnect to sandbox:", error);
-      }
+    // Build the instance object for renderSandbox
+    const instance = reply.sandbox || {};
+    if (!instance.url) {
+      const runnerIp = this.sandbox._runnerIp || "localhost";
+      instance.url = `http://${runnerIp}:6080/vnc_lite.html`;
     }
-
-    // Create new sandbox (either because createNew is true, or no existing sandbox to connect to)
-    if (!this.instance) {
-      const { formatter } = require("../sdk-log-formatter.js");
-      this.emitter.emit(
-        events.log.narration,
-        formatter.getPrefix("connect") +
-          " " +
-          theme.green.bold("Creating") +
-          " " +
-          theme.cyan(`new sandbox...`),
-      );
-      // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-      // to see if that fixes the issue.
-      let newSandbox = await this.createNewSandbox().catch(() => {
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`double-checking sandbox availability`),
-        );
-        return this.createNewSandbox();
-      });
-
-      // Extract the sandbox ID from the newly created sandbox
-      this.sandboxId =
-        newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
-
-      // Use the configured sandbox OS type
-      this.saveLastSandboxId(this.sandboxId, this.sandboxOs);
-
-      let instance = await this.connectToSandboxDirect(
-        this.sandboxId,
-        true, // always persist by default
-        this.keepAlive, // pass keepAlive TTL
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
-      await this.runLifecycle("provision");
-    }
+    this.instance = instance;
+    await this.renderSandbox(instance, headless);
+    await this.runLifecycle("provision");
   }
 
   async start() {
@@ -2037,12 +1954,11 @@ ${regression}
           "http://" +
           (instance.ip || instance.publicIp) +
           ":" +
-          (instance.vncPort || "5800") +
-          "/vnc_lite.html?token=V3b8wG9";
+          (instance.vncPort || "6080") +
+          "/vnc_lite.html";
       } else {
-        // If we don't have URL or IP, we can't render
-        logger.warn("renderSandbox: Missing URL and IP in instance", instance);
-        return;
+        // Fall back to localhost noVNC (local Docker)
+        url = "http://localhost:6080/vnc_lite.html";
       }
 
       let data = {
@@ -2264,83 +2180,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
 Please check your network connection, TD_API_KEY, or the service status.`,
         true,
       );
-    }
-  }
-
-  async connectToSandboxDirect(sandboxId, persist = false, keepAlive = null) {
-    const { formatter } = require("../sdk-log-formatter.js");
-    this.emitter.emit(
-      events.log.narration,
-      formatter.getPrefix("connect") +
-        " " +
-        theme.green.bold("Connecting") +
-        " " +
-        theme.cyan(`to sandbox...`),
-    );
-    let reply = await this.sandbox.connect(sandboxId, persist, keepAlive);
-
-    // reply includes { success, url, sandbox: {...} }
-    // For renderSandbox, we need the sandbox object with url merged in
-    const sandbox = reply.sandbox || {};
-
-    // If reply has a URL at top level, merge it into the sandbox object
-    if (reply.url && !sandbox.url) {
-      sandbox.url = reply.url;
-    }
-
-    return sandbox;
-  }
-
-  async createNewSandbox() {
-    const sandboxConfig = {
-      type: "create",
-      resolution: this.config.TD_RESOLUTION,
-      ci: this.config.CI,
-      os: this.sandboxOs || "linux",
-    };
-
-    // Add AMI and instance type if specified
-    if (this.sandboxAmi) {
-      sandboxConfig.ami = this.sandboxAmi;
-    }
-    if (this.sandboxInstance) {
-      sandboxConfig.instanceType = this.sandboxInstance;
-    }
-    // Add keepAlive TTL if specified
-    if (this.keepAlive !== undefined && this.keepAlive !== null) {
-      sandboxConfig.keepAlive = this.keepAlive;
-    }
-
-    const { formatter } = require("../sdk-log-formatter.js");
-    const retryDelay = 15000; // 15 seconds between retries
-
-    while (true) {
-      let response = await this.sandbox.send(sandboxConfig, 60000 * 8);
-
-      // Check if queued (all slots in use)
-      if (response.type === "create.queued") {
-        this.emitter.emit(
-          events.log.narration,
-          formatter.getPrefix("queue") +
-            " " +
-            theme.yellow.bold("Waiting") +
-            " " +
-            theme.dim(response.message),
-        );
-
-        // Wait then retry
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        continue;
-      }
-
-      // Success - got a sandbox
-      if (response.sandbox && response.sandbox.sandboxId) {
-        this.saveLastSandboxId(response.sandbox.sandboxId, this.sandboxOs);
-      } else if (response.sandbox && response.sandbox.instanceId) {
-        this.saveLastSandboxId(response.sandbox.instanceId, this.sandboxOs);
-      }
-
-      return response;
     }
   }
 

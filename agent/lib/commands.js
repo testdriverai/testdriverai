@@ -1659,7 +1659,7 @@ const createCommands = (
             emitter.emit(events.log.log, theme.dim(`  ${result.out.stdout}`), true);
           }
 
-          if (!silent && result.out.stderr) {
+          if (!silent && result.out?.stderr) {
             emitter.emit(events.log.log, theme.dim(`  stderr:`), true);
             emitter.emit(events.log.log, theme.dim(`  ${result.out.stderr}`), true);
           }

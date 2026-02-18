@@ -12,8 +12,12 @@ const { version } = require("../../package.json");
  * communication via PubNub pub/sub. The API is only called for
  * lifecycle operations (auth, create, destroy) via REST.
  *
- * Same public interface as the original:
+ * Same public interface as the original WebSocket sandbox:
  *   boot(apiRoot) → auth(apiKey) → connect(sandboxId) → send(message) → close()
+ *
+ * Lifecycle message types (create, connect, authenticate, direct) are
+ * intercepted in send() and handled via REST so that callers (index.js)
+ * don't need any changes.
  */
 const createSandbox = (emitter, analytics, sessionInstance) => {
   class Sandbox {
@@ -49,23 +53,241 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this._runnerReadyPromise = null;
       this._runnerReadyResolve = null;
       this._lastConnectParams = null;
-      this._fileListeners = {};
     }
 
+    /**
+     * Get the Sentry trace ID for this session
+     * @returns {string|null}
+     */
     getTraceId() {
       return this.traceId;
     }
 
+    /**
+     * Get the Sentry trace URL for this session
+     * @returns {string|null}
+     */
     getTraceUrl() {
       if (!this.traceId) return null;
       return `https://testdriver.sentry.io/explore/traces/trace/${this.traceId}`;
     }
 
+    // ─── Lifecycle messages intercepted from send() ────────────────────
+
     /**
-     * Send a command to the runner via PubNub
-     * Same interface as the original WebSocket-based send()
+     * Handle { type: "create" } — create sandbox via REST, init PubNub.
+     * Returns a response shaped like the old WebSocket create reply so
+     * that createNewSandbox() in index.js works unchanged.
+     */
+    async _handleCreate(message) {
+      const os = message.os || this.os || "local";
+
+      const response = await axios.post(
+        `${this.apiRoot}/api/v7/sandbox/create`,
+        {
+          apiKey: this.apiKey,
+          os,
+          resolution: message.resolution,
+          version,
+        },
+        { timeout: 120000 },
+      );
+
+      const data = response.data;
+      if (!data.success) {
+        throw new Error(data.message || "Failed to create sandbox");
+      }
+
+      this._sandboxId = data.sandboxId;
+      this._pubnubConfig = data.pubnub;
+      this._channels = data.pubnub.channels;
+      this._sdkToken = data.pubnub.sdkToken;
+      this._runnerToken = data.pubnub.runnerToken;
+
+      this._initPubNub();
+
+      // Shape the response to match what index.js expects from WebSocket create
+      return {
+        success: true,
+        type: "create.reply",
+        sandbox: {
+          sandboxId: data.sandboxId,
+          e2bSandboxId: data.e2bSandboxId,
+          url: data.url,
+          os,
+        },
+        // Pass through PubNub config for callers that need it
+        pubnub: data.pubnub,
+      };
+    }
+
+    /**
+     * Handle { type: "connect" } — connect to an already-running runner.
+     *
+     * Uses the new /api/v7/sandbox/connect endpoint which just grants
+     * SDK PubNub tokens for the runner's channels. No sandbox creation.
+     */
+    async _handleConnect(message) {
+      const sandboxId = message.sandboxId;
+
+      // If we already have PubNub config for this sandbox, reuse it
+      if (this._channels && this._sandboxId === sandboxId) {
+        this.instanceSocketConnected = true;
+        return { success: true, sandboxId };
+      }
+
+      const response = await axios.post(
+        `${this.apiRoot}/api/v7/sandbox/connect`,
+        {
+          apiKey: this.apiKey,
+          sandboxId,
+        },
+        { timeout: 30000 },
+      );
+
+      const data = response.data;
+      if (!data.success) {
+        throw new Error(data.message || "Failed to connect to sandbox");
+      }
+
+      this._sandboxId = data.sandboxId;
+      this._pubnubConfig = data.pubnub;
+      this._channels = data.pubnub.channels;
+      this._sdkToken = data.pubnub.token;
+
+      this._initPubNub();
+
+      this.instanceSocketConnected = true;
+      return {
+        success: true,
+        sandboxId: this._sandboxId,
+        sandbox: {
+          sandboxId: this._sandboxId,
+          os: message.os || this.os || "linux",
+        },
+      };
+    }
+
+    /**
+     * Handle { type: "direct" } — connect to a pre-existing runner.
+     *
+     * When the runner has self-registered with the API, the sandboxId
+     * is all we need. Call /api/v7/sandbox/connect to get SDK tokens.
+     *
+     * Also supports env-var override for pre-created tokens.
+     */
+    async _handleDirect(message) {
+      const ip = message.ip;
+      const os = message.os || this.os || "local";
+
+      // Check for pre-created sandbox config via env vars
+      const envSandboxId = process.env.SANDBOX_ID;
+      const envSdkToken = process.env.PUBNUB_SDK_TOKEN;
+      const envSubscribeKey = process.env.PUBNUB_SUBSCRIBE_KEY;
+      const envPublishKey = process.env.PUBNUB_PUBLISH_KEY;
+
+      if (envSandboxId && envSdkToken && envSubscribeKey && envPublishKey) {
+        // Use pre-created sandbox config — runner is already running
+        this._sandboxId = envSandboxId;
+        this._pubnubConfig = {
+          subscribeKey: envSubscribeKey,
+          publishKey: envPublishKey,
+        };
+        this._channels = {
+          commands: `sandbox-${envSandboxId}-commands`,
+          responses: `sandbox-${envSandboxId}-responses`,
+          files: `sandbox-${envSandboxId}-files`,
+        };
+        this._sdkToken = envSdkToken;
+
+        this._initPubNub();
+
+        this.instanceSocketConnected = true;
+        return {
+          success: true,
+          type: "direct.reply",
+          instance: {
+            sandboxId: envSandboxId,
+            instanceId: envSandboxId,
+            ip,
+            os,
+          },
+        };
+      }
+
+      // Use the simplified connect endpoint — runner has self-registered.
+      // The sandboxId is the runner's sandboxId (could be IP-based or UUID).
+      const sandboxId = message.sandboxId || ip;
+
+      const response = await axios.post(
+        `${this.apiRoot}/api/v7/sandbox/connect`,
+        {
+          apiKey: this.apiKey,
+          sandboxId,
+        },
+        { timeout: 30000 },
+      );
+
+      const data = response.data;
+      if (!data.success) {
+        throw new Error(data.message || "Failed to connect to runner");
+      }
+
+      this._sandboxId = data.sandboxId;
+      this._pubnubConfig = data.pubnub;
+      this._channels = data.pubnub.channels;
+      this._sdkToken = data.pubnub.token;
+
+      this._initPubNub();
+
+      this.instanceSocketConnected = true;
+      return {
+        success: true,
+        type: "direct.reply",
+        instance: {
+          sandboxId: data.sandboxId,
+          instanceId: data.sandboxId,
+          ip,
+          os,
+        },
+      };
+    }
+
+    // ─── send() — the main message interface ───────────────────────────
+
+    /**
+     * Send a command to the runner via PubNub.
+     *
+     * Lifecycle messages (create, connect, authenticate, direct) are
+     * intercepted and handled via REST. All other messages are published
+     * to the PubNub commands channel for the runner.
      */
     send(message, timeout = 300000) {
+      // Intercept lifecycle messages and handle via REST
+      const type = message.type;
+
+      if (type === "authenticate") {
+        return this.auth(message.apiKey).then(() => ({
+          success: true,
+          type: "authenticate.reply",
+          traceId: this.traceId,
+        }));
+      }
+
+      if (type === "create") {
+        return this._handleCreate(message);
+      }
+
+      if (type === "connect") {
+        return this._handleConnect(message);
+      }
+
+      if (type === "direct") {
+        return this._handleDirect(message);
+      }
+
+      // ── Regular command → publish to PubNub ──
+
       if (!this.pubnub || !this._channels) {
         return Promise.reject(new Error("Sandbox not connected to PubNub"));
       }
@@ -104,8 +326,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             delete this.ps[requestId];
             reject(
               new Error(
-                `Sandbox message '${message.type}' timed out after ${timeout}ms`
-              )
+                `Sandbox message '${message.type}' timed out after ${timeout}ms`,
+              ),
             );
           }
         }, timeout);
@@ -127,11 +349,26 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           startTime: Date.now(),
         };
 
-        // Fire-and-forget message types
+        // Fire-and-forget message types — publish but resolve immediately,
+        // do NOT register in this.ps (no response expected from runner).
         const fireAndForgetTypes = ["output", "trackInteraction"];
         if (fireAndForgetTypes.includes(message.type)) {
-          // Attach catch so unhandled rejection doesn't crash
-          Promise.resolve().then(() => {}).catch(() => {});
+          clearTimeout(timeoutId);
+          this.pendingTimeouts.delete(requestId);
+          delete this.ps[requestId];
+          this.pubnub
+            .publish({
+              channel: this._channels.commands,
+              message,
+            })
+            .then(() => {
+              emitter.emit(events.sandbox.sent, message);
+            })
+            .catch(() => {
+              // Silently ignore publish failures for fire-and-forget
+            });
+          resolve({ success: true });
+          return;
         }
 
         // Publish to commands channel
@@ -148,14 +385,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             this.pendingTimeouts.delete(requestId);
             delete this.ps[requestId];
             reject(
-              new Error(`Failed to publish command: ${err.message}`)
+              new Error(`Failed to publish command: ${err.message}`),
             );
           });
       });
     }
 
+    // ─── auth() ────────────────────────────────────────────────────────
+
     /**
-     * Authenticate with the API via REST
+     * Authenticate with the API via REST.
      */
     async auth(apiKey) {
       this.apiKey = apiKey;
@@ -164,7 +403,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         const response = await axios.post(
           `${this.apiRoot}/api/v7/sandbox/authenticate`,
           { apiKey, version },
-          { timeout: 30000 }
+          { timeout: 30000 },
         );
 
         if (response.data.success) {
@@ -173,9 +412,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           if (response.data.traceId) {
             this.traceId = response.data.traceId;
             logger.log("");
-            logger.log(`🔗 Trace Report (Share When Reporting Bugs):`);
+            logger.log("🔗 Trace Report (Share When Reporting Bugs):");
             logger.log(
-              `https://testdriver.sentry.io/explore/traces/trace/${response.data.traceId}`
+              `https://testdriver.sentry.io/explore/traces/trace/${response.data.traceId}`,
             );
           }
 
@@ -185,118 +424,48 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           return true;
         }
       } catch (err) {
-        const errorMsg =
-          err.response?.data?.message || err.message;
+        const errorMsg = err.response?.data?.message || err.message;
         throw new Error(`Authentication failed: ${errorMsg}`);
       }
     }
 
-    /**
-     * Create a sandbox and initialize PubNub connection
-     */
-    async create(options = {}) {
-      if (!this.apiKey) {
-        throw new Error("Must authenticate before creating a sandbox");
-      }
-
-      const os = options.os || "local";
-
-      try {
-        const response = await axios.post(
-          `${this.apiRoot}/api/v7/sandbox/create`,
-          {
-            apiKey: this.apiKey,
-            os,
-            resolution: options.resolution,
-            version,
-          },
-          { timeout: 120000 }
-        );
-
-        const data = response.data;
-        if (!data.success) {
-          throw new Error(data.message || "Failed to create sandbox");
-        }
-
-        this._sandboxId = data.sandboxId;
-        this._pubnubConfig = data.pubnub;
-        this._channels = data.pubnub.channels;
-        this._sdkToken = data.pubnub.sdkToken;
-        this._runnerToken = data.pubnub.runnerToken;
-
-        // Initialize PubNub
-        this._initPubNub();
-
-        return data;
-      } catch (err) {
-        const errorMsg =
-          err.response?.data?.message || err.message;
-        throw new Error(`Failed to create sandbox: ${errorMsg}`);
-      }
-    }
+    // ─── connect() — direct call from index.js ─────────────────────────
 
     /**
-     * Connect to an existing sandbox via PubNub
-     * For compatibility with the existing SDK interface
+     * Connect to an existing sandbox via PubNub.
+     * Called by connectToSandboxDirect() in index.js.
      */
     async connect(sandboxId, persist = false, keepAlive = null) {
       this._lastConnectParams = { sandboxId, persist, keepAlive };
 
-      // If we already have PubNub config (from create()), use it
-      if (this._channels && this._sandboxId === sandboxId) {
+      const reply = await this._handleConnect({
+        sandboxId,
+        persist,
+        keepAlive,
+      });
+
+      if (reply.success) {
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
-        return { success: true, sandboxId };
-      }
-
-      // Otherwise, request a new token from the API
-      if (!this.apiKey) {
-        throw new Error("Must authenticate before connecting");
-      }
-
-      try {
-        const response = await axios.post(
-          `${this.apiRoot}/api/v7/sandbox/create`,
-          {
-            apiKey: this.apiKey,
-            os: this.os || "local",
-            version,
-          },
-          { timeout: 120000 }
-        );
-
-        const data = response.data;
-        this._sandboxId = data.sandboxId;
-        this._pubnubConfig = data.pubnub;
-        this._channels = data.pubnub.channels;
-        this._sdkToken = data.pubnub.sdkToken;
-        this._runnerToken = data.pubnub.runnerToken;
-
-        this._initPubNub();
-
-        this.instanceSocketConnected = true;
-        emitter.emit(events.sandbox.connected);
-        return {
-          success: true,
-          sandboxId: this._sandboxId,
-          sandbox: { sandboxId: this._sandboxId },
-        };
-      } catch (err) {
-        const errorMsg =
-          err.response?.data?.message || err.message;
-        throw new Error(
-          errorMsg || "Failed to connect to sandbox"
-        );
+        return reply;
+      } else {
+        throw new Error(reply.errorMessage || "Failed to connect to sandbox");
       }
     }
 
+    // ─── PubNub initialization ─────────────────────────────────────────
+
     /**
-     * Initialize PubNub client and subscribe to response/file channels
+     * Initialize PubNub client and subscribe to response/file channels.
      */
     _initPubNub() {
       if (this.pubnub) {
-        this.pubnub.unsubscribeAll();
-        this.pubnub.stop();
+        try {
+          this.pubnub.unsubscribeAll();
+          this.pubnub.stop();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
       }
 
       this.pubnub = new PubNub({
@@ -333,19 +502,25 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
       this.apiSocketConnected = true;
       logger.log(
-        `[Sandbox] PubNub connected. Channels: ${JSON.stringify(this._channels)}`
+        `[Sandbox] PubNub connected. Channels: ${JSON.stringify(this._channels)}`,
       );
     }
 
+    // ─── PubNub message handlers ───────────────────────────────────────
+
     /**
-     * Handle incoming PubNub messages on the responses channel
+     * Handle incoming PubNub messages on the responses channel.
      */
     _handleMessage(event) {
       const message = event.message;
 
-      // Runner ready signal (also treat pong as ready)
+      // Runner ready / pong signal
       if (message.type === "runner.ready" || message.type === "pong") {
         this._runnerReady = true;
+        // Store runner IP so renderSandbox can build the noVNC URL
+        if (message.ip) {
+          this._runnerIp = message.ip;
+        }
         if (this._runnerReadyResolve) {
           this._runnerReadyResolve();
           this._runnerReadyResolve = null;
@@ -354,7 +529,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         return;
       }
 
-      // Progress messages
+      // Progress messages (no requestId)
       if (message.type === "sandbox.progress") {
         emitter.emit(events.sandbox.progress, {
           step: message.step,
@@ -365,13 +540,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
       const requestId = message.requestId;
       if (!requestId || !this.ps[requestId]) {
-        if (!this.reconnecting) {
-          // Expected during reconnection or after timeout
-        }
+        // Expected during reconnection or after timeout
         return;
       }
 
-      // Screenshot response with file reference — need to download
+      // Screenshot response with file reference — download the file
       if (
         message.type === "screenshot.reply" &&
         message.fileId &&
@@ -387,9 +560,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         if (pendingMessage?.type !== "output") {
           emitter.emit(events.error.sandbox, message.errorMessage);
         }
-        const error = new Error(
-          message.errorMessage || "Sandbox error"
-        );
+        const error = new Error(message.errorMessage || "Sandbox error");
         error.responseData = message;
         this.ps[requestId].reject(error);
       } else {
@@ -400,14 +571,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     }
 
     /**
-     * Handle PubNub file events on the files channel
+     * Handle PubNub file events on the files channel.
      */
     _handleFileMessage(event) {
-      // File events may arrive before or after the response message
-      // Store file info for pending screenshot requests
       const msg = event.message;
       if (msg && msg.requestId && this.ps[msg.requestId]) {
-        // Download immediately
         this._downloadScreenshot(msg.requestId, {
           fileId: event.file.id,
           fileName: event.file.name,
@@ -416,7 +584,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     }
 
     /**
-     * Download a screenshot file from PubNub and resolve the pending promise
+     * Download a screenshot file from PubNub and resolve the pending promise.
+     * Translates the PubNub file into { base64 } so system.js needs no changes.
      */
     async _downloadScreenshot(requestId, fileInfo) {
       const pending = this.ps[requestId];
@@ -435,11 +604,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           buffer = result.data;
         } else if (result.data instanceof ArrayBuffer) {
           buffer = Buffer.from(result.data);
-        } else if (typeof result.data.arrayBuffer === 'function') {
+        } else if (typeof result.data.arrayBuffer === "function") {
           buffer = Buffer.from(await result.data.arrayBuffer());
-        } else if (typeof result.data.toArrayBuffer === 'function') {
+        } else if (typeof result.data.toArrayBuffer === "function") {
           buffer = Buffer.from(await result.data.toArrayBuffer());
-        } else if (typeof result.data.toBuffer === 'function') {
+        } else if (typeof result.data.toBuffer === "function") {
           buffer = await result.data.toBuffer();
         } else {
           buffer = Buffer.from(result.data);
@@ -455,19 +624,19 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         });
       } catch (err) {
         pending.reject(
-          new Error(`Failed to download screenshot: ${err.message}`)
+          new Error(`Failed to download screenshot: ${err.message}`),
         );
       }
       delete this.ps[requestId];
     }
 
     /**
-     * Handle PubNub status events
+     * Handle PubNub status events (connection, access, network).
      */
     _handleStatus(event) {
       switch (event.category) {
         case "PNConnectedCategory":
-          logger.log("[Sandbox] PubNub connected");
+          logger.log("[Sandbox] PubNub subscription connected");
           break;
         case "PNReconnectedCategory":
           logger.log("[Sandbox] PubNub reconnected");
@@ -475,11 +644,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           break;
         case "PNAccessDeniedCategory":
           logger.log(
-            "[Sandbox] PubNub access denied - token may be expired"
+            "[Sandbox] PubNub access denied — token may be expired",
           );
           emitter.emit(
             events.error.sandbox,
-            "PubNub access denied - token expired"
+            "PubNub access denied — token expired",
           );
           break;
         case "PNNetworkDownCategory":
@@ -491,6 +660,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
     }
 
+    // ─── Reconnection ──────────────────────────────────────────────────
+
     async handleConnectionLoss() {
       if (this.intentionalDisconnect) return;
       if (this.reconnecting) return;
@@ -500,7 +671,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       const pendingRequestIds = Object.keys(this.ps);
       if (pendingRequestIds.length > 0) {
         console.log(
-          `[Sandbox] Queuing ${pendingRequestIds.length} pending request(s) for retry after reconnection`
+          `[Sandbox] Queuing ${pendingRequestIds.length} pending request(s) for retry after reconnection`,
         );
         for (const requestId of pendingRequestIds) {
           const pending = this.ps[requestId];
@@ -527,18 +698,24 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         const errorMsg =
-          "Unable to reconnect to TestDriver sandbox after multiple attempts.";
+          "Unable to reconnect to TestDriver sandbox after multiple attempts. Please check your internet connection.";
         emitter.emit(events.error.sandbox, errorMsg);
         console.error(errorMsg);
 
         if (this.pendingRetryQueue.length > 0) {
+          console.log(
+            `[Sandbox] Rejecting ${this.pendingRetryQueue.length} queued request(s) — reconnection failed`,
+          );
           for (const queued of this.pendingRetryQueue) {
             queued.reject(
-              new Error("Sandbox reconnection failed")
+              new Error(
+                "Sandbox reconnection failed after multiple attempts",
+              ),
             );
           }
           this.pendingRetryQueue = [];
         }
+
         this.reconnecting = false;
         return;
       }
@@ -546,38 +723,45 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.reconnectAttempts++;
       const delay = Math.min(
         1000 * 2 ** (this.reconnectAttempts - 1),
-        60000
+        60000,
       );
 
       console.log(
-        `[Sandbox] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+        `[Sandbox] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
       );
 
       this.reconnectTimer = setTimeout(async () => {
         this.reconnectTimer = null;
         try {
-          // PubNub SDK auto-reconnects, but we may need to refresh token
+          // PubNub SDK auto-reconnects, but we may need fresh tokens
           if (this.apiKey && this._lastConnectParams) {
             await this.auth(this.apiKey);
             const { sandboxId, persist, keepAlive } =
               this._lastConnectParams;
+            console.log(
+              `[Sandbox] Re-establishing sandbox connection (${sandboxId})...`,
+            );
             await this.connect(sandboxId, persist, keepAlive);
           }
           console.log("[Sandbox] Reconnected successfully.");
           await this._retryQueuedRequests();
         } catch (e) {
-          // Will retry via next handleConnectionLoss
+          // Will retry on next cycle
         } finally {
           this.reconnecting = false;
         }
       }, delay);
     }
 
+    /**
+     * Retry queued requests after successful reconnection.
+     * @private
+     */
     async _retryQueuedRequests() {
       if (this.pendingRetryQueue.length === 0) return;
 
       console.log(
-        `[Sandbox] Retrying ${this.pendingRetryQueue.length} queued request(s)...`
+        `[Sandbox] Retrying ${this.pendingRetryQueue.length} queued request(s)...`,
       );
       const toRetry = this.pendingRetryQueue.splice(0);
 
@@ -589,12 +773,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           queued.reject(err);
         }
       }
+
+      console.log("[Sandbox] Finished retrying queued requests.");
     }
+
+    // ─── boot() ────────────────────────────────────────────────────────
 
     /**
      * Boot the sandbox connection.
-     * In PubNub mode, this just stores the API root.
-     * The actual PubNub connection happens in create()/connect().
+     * In PubNub mode this just stores the API root for REST calls.
+     * The actual PubNub connection happens when create/connect is called.
      */
     async boot(apiRoot) {
       if (apiRoot) this.apiRoot = apiRoot;
@@ -604,8 +792,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       return this;
     }
 
+    // ─── Runner readiness ──────────────────────────────────────────────
+
     /**
-     * Wait for the runner to be ready
+     * Wait for the runner to signal readiness (via pong or runner.ready).
      * @param {number} timeout - Max wait time in ms (default 60s)
      */
     async waitForRunner(timeout = 60000) {
@@ -614,27 +804,26 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         throw new Error("Not connected to PubNub");
       }
 
-      // Poll the runner with pings until we get a pong or runner.ready
       await new Promise((resolve, reject) => {
         const deadline = setTimeout(() => {
           clearInterval(pollInterval);
           reject(new Error("Runner did not become ready within timeout"));
         }, timeout);
 
-        // Poll every 2s
         const pollInterval = setInterval(() => {
           if (this._runnerReady) {
             clearTimeout(deadline);
             clearInterval(pollInterval);
             return resolve();
           }
-          this.pubnub.publish({
-            channel: this._channels.commands,
-            message: { type: 'ping', requestId: `ping-${Date.now()}` },
-          }).catch(() => {});
+          this.pubnub
+            .publish({
+              channel: this._channels.commands,
+              message: { type: "ping", requestId: `ping-${Date.now()}` },
+            })
+            .catch(() => {});
         }, 2000);
 
-        // Also check if already ready
         const check = () => {
           if (this._runnerReady) {
             clearTimeout(deadline);
@@ -649,7 +838,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     }
 
     /**
-     * Get the runner PubNub token (for passing to a local runner process)
+     * Get the runner PubNub token (for passing to a local runner process).
      */
     getRunnerConfig() {
       if (!this._pubnubConfig) {
@@ -664,8 +853,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       };
     }
 
+    // ─── close() ───────────────────────────────────────────────────────
+
     /**
-     * Close the PubNub connection and clean up
+     * Close the PubNub connection and clean up all resources.
      */
     close() {
       this.intentionalDisconnect = true;
@@ -698,7 +889,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.authenticated = false;
       this.instance = null;
 
-      // Silently clear pending promises
+      // Silently clear pending promises and retry queue
       this.ps = {};
       this.pendingRetryQueue = [];
     }

@@ -1,119 +1,210 @@
-const WebSocket = require("ws");
-const crypto = require("crypto");
+const PubNub = require("pubnub");
+const axios = require("axios");
 const { events } = require("../events");
 const logger = require("./logger");
 const { version } = require("../../package.json");
 
 /**
- * Generate Sentry trace headers for distributed tracing
- * Uses the same trace ID derivation as the API (MD5 hash of session ID)
- * @param {string} sessionId - The session ID
- * @returns {Object} Headers object with sentry-trace and baggage
+ * PubNub-based sandbox client.
+ *
+ * Simplified flow:
+ *   1. boot(apiRoot) — store API root
+ *   2. auth(apiKey) — authenticate via REST
+ *   3. connect(sandboxId?) — call /api/v7/sandbox/connect, init PubNub, claim runner
+ *   4. send(message) — publish commands to runner via PubNub
+ *   5. close() — release runner, disconnect PubNub
+ *
+ * If sandboxId is omitted in connect(), the API auto-claims
+ * the first idle runner from the team's pool via PubNub Presence.
  */
-function getSentryTraceHeaders(sessionId) {
-  if (!sessionId) return {};
-
-  // Same logic as API: derive trace ID from session ID
-  const traceId = crypto.createHash("md5").update(sessionId).digest("hex");
-  const spanId = crypto.randomBytes(8).toString("hex");
-
-  return {
-    "sentry-trace": `${traceId}-${spanId}-1`,
-    baggage: `sentry-trace_id=${traceId},sentry-sample_rate=1.0,sentry-sampled=true`,
-  };
-}
-
 const createSandbox = (emitter, analytics, sessionInstance) => {
   class Sandbox {
     constructor() {
-      this.socket = null;
+      this.pubnub = null;
       this.ps = {};
-      this.heartbeat = null;
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
       this.authenticated = false;
       this.instance = null;
       this.messageId = 0;
       this.uniqueId = Math.random().toString(36).substring(7);
-      this.os = null; // Store OS value to send with every message
-      this.sessionInstance = sessionInstance; // Store session instance to include in messages
-      this.traceId = null; // Sentry trace ID for debugging
+      this.os = null;
+      this.sessionInstance = sessionInstance;
+      this.traceId = null;
       this.reconnectAttempts = 0;
       this.maxReconnectAttempts = 10;
       this.intentionalDisconnect = false;
       this.apiRoot = null;
       this.apiKey = null;
-      this.reconnectTimer = null; // Track reconnect setTimeout
-      this.reconnecting = false; // Prevent duplicate reconnection attempts
-      this.pendingTimeouts = new Map(); // Track per-message timeouts
-      this.pendingRetryQueue = []; // Queue of requests to retry after reconnection
+      this.reconnectTimer = null;
+      this.reconnecting = false;
+      this.pendingTimeouts = new Map();
+      this.pendingRetryQueue = [];
+
+      // PubNub state
+      this._channels = null;
+      this._pubnubConfig = null;
+      this._sandboxId = null;
+      this._sdkToken = null;
+      this._runnerReady = false;
+      this._runnerReadyPromise = null;
+      this._runnerReadyResolve = null;
+      this._runnerIp = null;
+      this._lastConnectParams = null;
+
+      // Log batching state (≥1s flush interval)
+      this._logBuffer = [];
+      this._logFlushInterval = null;
+    }
+
+    // ─── Lifecycle ─────────────────────────────────────────────────────
+
+    /**
+     * Store the API root. Called once at startup.
+     */
+    async boot(apiRoot) {
+      if (apiRoot) this.apiRoot = apiRoot;
+      this.apiSocketConnected = true;
+      this.reconnectAttempts = 0;
+      this.reconnecting = false;
+      return this;
     }
 
     /**
-     * Get the Sentry trace ID for this session
-     * Useful for debugging with customers - they can share this ID to look up their traces
-     * @returns {string|null} The trace ID or null if not authenticated
+     * Authenticate with the API via REST.
      */
-    getTraceId() {
-      return this.traceId;
-    }
+    async auth(apiKey) {
+      this.apiKey = apiKey;
 
-    /**
-     * Get the Sentry trace URL for this session
-     * @returns {string|null} The full Sentry trace URL or null if no trace ID
-     */
-    getTraceUrl() {
-      if (!this.traceId) return null;
-      return `https://testdriver.sentry.io/explore/traces/trace/${this.traceId}`;
-    }
+      const response = await axios.post(
+        `${this.apiRoot}/api/v7/sandbox/authenticate`,
+        { apiKey, version },
+        { timeout: 30000 },
+      );
 
-    send(message, timeout = 300000) {
-      let resolvePromise;
-      let rejectPromise;
+      if (response.data.success) {
+        this.authenticated = true;
 
-      if (this.socket) {
-        this.messageId++;
-        message.requestId = `${this.uniqueId}-${this.messageId}`;
-
-        // If os is set in the message, store it for future messages
-        if (message.os) {
-          this.os = message.os;
+        if (response.data.traceId) {
+          this.traceId = response.data.traceId;
+          logger.log("");
+          logger.log("🔗 Trace Report (Share When Reporting Bugs):");
+          logger.log(
+            `https://testdriver.sentry.io/explore/traces/trace/${response.data.traceId}`,
+          );
         }
 
-        // Add os to every message if it's been set
-        if (this.os && !message.os) {
-          message.os = this.os;
-        }
-
-        // Add session to every message if available (for interaction tracking)
-        if (this.sessionInstance && !message.session) {
-          const sessionId = this.sessionInstance.get();
-          if (sessionId) {
-            message.session = sessionId;
-          }
-        }
-
-        // Add sandboxId to every message if we have a connected sandbox
-        // This allows the API to reconnect if the connection was rerouted
-        if (this._lastConnectParams?.sandboxId && !message.sandboxId) {
-          message.sandboxId = this._lastConnectParams.sandboxId;
-        }
-
-        let p = new Promise((resolve, reject) => {
-          this.socket.send(JSON.stringify(message));
-          emitter.emit(events.sandbox.sent, message);
-          resolvePromise = resolve;
-          rejectPromise = reject;
+        emitter.emit(events.sandbox.authenticated, {
+          traceId: response.data.traceId,
         });
+        return true;
+      }
 
-        const requestId = message.requestId;
+      throw new Error("Authentication failed");
+    }
 
-        // Set up timeout to prevent hanging requests
+    /**
+     * Connect to a runner via the API.
+     *
+     * If sandboxId is provided, connects to that specific runner.
+     * If omitted, the API auto-claims an idle runner from the pool.
+     *
+     * After connecting, sends a `claim` message to mark the runner busy.
+     */
+    async connect(sandboxId = null) {
+      this._lastConnectParams = { sandboxId };
+
+      const response = await axios.post(
+        `${this.apiRoot}/api/v7/sandbox/connect`,
+        {
+          apiKey: this.apiKey,
+          ...(sandboxId ? { sandboxId } : {}),
+        },
+        { timeout: 30000 },
+      );
+
+      const data = response.data;
+      if (!data.success) {
+        throw new Error(data.message || "Failed to connect to runner");
+      }
+
+      this._sandboxId = data.sandboxId;
+      this._pubnubConfig = data.pubnub;
+      this._channels = data.pubnub.channels;
+      this._sdkToken = data.pubnub.token;
+
+      this._initPubNub();
+
+      this.instanceSocketConnected = true;
+      emitter.emit(events.sandbox.connected);
+
+      return {
+        success: true,
+        sandboxId: this._sandboxId,
+        sandbox: {
+          sandboxId: this._sandboxId,
+          os: this.os || "linux",
+        },
+      };
+    }
+
+    /**
+     * Claim the runner (mark it busy in the pool).
+     * Called after connect + waitForRunner.
+     */
+    async claim() {
+      if (!this.pubnub || !this._channels) {
+        throw new Error("Not connected");
+      }
+      return this.send({ type: "claim" }, 15000);
+    }
+
+    /**
+     * Release the runner (mark it idle in the pool).
+     * Called before close() so the runner goes back to the pool.
+     */
+    async release() {
+      if (!this.pubnub || !this._channels) return;
+      try {
+        await this.send({ type: "release" }, 10000);
+      } catch {
+        // Best-effort — runner may already be gone
+      }
+    }
+
+    // ─── send() ────────────────────────────────────────────────────────
+
+    /**
+     * Send a command to the runner via PubNub.
+     */
+    send(message, timeout = 300000) {
+      if (!this.pubnub || !this._channels) {
+        return Promise.reject(new Error("Sandbox not connected to PubNub"));
+      }
+
+      this.messageId++;
+      message.requestId = `${this.uniqueId}-${this.messageId}`;
+
+      if (message.os) this.os = message.os;
+      if (this.os && !message.os) message.os = this.os;
+
+      if (this.sessionInstance && !message.session) {
+        const sessionId = this.sessionInstance.get();
+        if (sessionId) message.session = sessionId;
+      }
+
+      if (this._sandboxId && !message.sandboxId) {
+        message.sandboxId = this._sandboxId;
+      }
+
+      const requestId = message.requestId;
+
+      return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
           this.pendingTimeouts.delete(requestId);
           if (this.ps[requestId]) {
             delete this.ps[requestId];
-            rejectPromise(
+            reject(
               new Error(
                 `Sandbox message '${message.type}' timed out after ${timeout}ms`,
               ),
@@ -121,117 +212,376 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           }
         }, timeout);
 
-        // Track timeout so close() can clear it
         this.pendingTimeouts.set(requestId, timeoutId);
 
         this.ps[requestId] = {
-          promise: p,
           resolve: (result) => {
             clearTimeout(timeoutId);
             this.pendingTimeouts.delete(requestId);
-            resolvePromise(result);
+            resolve(result);
           },
           reject: (error) => {
             clearTimeout(timeoutId);
             this.pendingTimeouts.delete(requestId);
-            rejectPromise(error);
+            reject(error);
           },
           message,
           startTime: Date.now(),
         };
 
-        // Fire-and-forget message types: attach .catch() to prevent
-        // unhandled promise rejections if nobody awaits the result
+        // Fire-and-forget types — buffer for log batching instead of publishing individually
         const fireAndForgetTypes = ["output", "trackInteraction"];
         if (fireAndForgetTypes.includes(message.type)) {
-          p.catch(() => {});
+          clearTimeout(timeoutId);
+          this.pendingTimeouts.delete(requestId);
+          delete this.ps[requestId];
+          this._bufferLog(message);
+          resolve({ success: true });
+          return;
         }
 
-        return p;
-      }
-
-      // Return a rejected promise if socket is not available
-      return Promise.reject(new Error("Sandbox socket not connected"));
+        // Publish to commands channel
+        this.pubnub
+          .publish({ channel: this._channels.commands, message })
+          .then(() => emitter.emit(events.sandbox.sent, message))
+          .catch((err) => {
+            clearTimeout(timeoutId);
+            this.pendingTimeouts.delete(requestId);
+            delete this.ps[requestId];
+            // Log full PubNub Status for debugging
+            if (err.status) {
+              logger.error(`[PubNub] Publish failed — category: ${err.status.category}, statusCode: ${err.status.statusCode}, operation: ${err.status.operation}`);
+              if (err.status.errorData) {
+                logger.error(`[PubNub] errorData: ${JSON.stringify(err.status.errorData)}`);
+              }
+            }
+            const publishError = new Error(`Failed to publish command: ${err.message}`);
+            publishError.status = err.status;
+            reject(publishError);
+          });
+      });
     }
 
-    async auth(apiKey) {
-      this.apiKey = apiKey;
-      let reply = await this.send({
-        type: "authenticate",
-        apiKey,
-        version,
-      });
+    // ─── PubNub ────────────────────────────────────────────────────────
 
-      if (reply.success) {
-        this.authenticated = true;
-
-        // Log and store the Sentry trace ID for debugging
-        if (reply.traceId) {
-          this.traceId = reply.traceId;
-          logger.log('');
-          logger.log(`🔗 Trace Report (Share When Reporting Bugs):`);
-          logger.log(`https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`);
+    _initPubNub() {
+      if (this.pubnub) {
+        try {
+          this._stopLogBatching();
+          this.pubnub.unsubscribeAll();
+          this.pubnub.stop();
+        } catch {
+          // Ignore cleanup errors
         }
-
-        emitter.emit(events.sandbox.authenticated, { traceId: reply.traceId });
-        return true;
       }
-    }
 
-    async connect(sandboxId, persist = false, keepAlive = null) {
-      // Store connection params so we can re-establish after reconnection
-      this._lastConnectParams = { sandboxId, persist, keepAlive };
-
-      let reply = await this.send({
-        type: "connect",
-        persist,
-        sandboxId,
-        keepAlive,
+      this.pubnub = new PubNub({
+        subscribeKey: this._pubnubConfig.subscribeKey,
+        publishKey: this._pubnubConfig.publishKey,
+        userId: `sdk-${this._sandboxId}`,
       });
 
-      if (reply.success) {
-        this.instanceSocketConnected = true;
-        emitter.emit(events.sandbox.connected);
-        // Return the full reply (includes url and sandbox)
-        return reply;
+      this.pubnub.setToken(this._sdkToken);
+
+      // Runner ready promise
+      this._runnerReady = false;
+      this._runnerReadyPromise = new Promise((resolve) => {
+        this._runnerReadyResolve = resolve;
+      });
+
+      // Attach listener BEFORE subscribing
+      this.pubnub.addListener({
+        message: (event) => this._handleMessage(event),
+        file: (event) => this._handleFileMessage(event),
+        status: (event) => this._handleStatus(event),
+      });
+
+      this.pubnub.subscribe({
+        channels: [
+          this._channels.responses,
+          this._channels.files,
+          this._channels.control,
+        ].filter(Boolean),
+      });
+
+      // Start log batching interval
+      this._startLogBatching();
+
+      this.apiSocketConnected = true;
+      logger.log(
+        `[Sandbox] PubNub connected. Channels: ${JSON.stringify(this._channels)}`,
+      );
+    }
+
+    _handleMessage(event) {
+      const message = event.message;
+
+      // ─── Control channel messages from server ──────────────────────
+      if (this._channels.control && event.channel === this._channels.control) {
+        if (message.type === "session.terminated") {
+          logger.log(
+            `[Sandbox] Session terminated by server: ${message.reason} — ${message.message}`,
+          );
+          emitter.emit(events.error.sandbox, message.message || "Session terminated by server");
+          this.close();
+          return;
+        }
+        if (message.type === "session.warning") {
+          logger.log(
+            `[Sandbox] Server warning: ${message.message} (usage: ${message.usagePercentage}%)`,
+          );
+          emitter.emit(events.sandbox.progress, {
+            step: "warning",
+            message: message.message,
+          });
+          return;
+        }
+        logger.log(`[Sandbox] Control message: ${message.type}`);
+        return;
+      }
+
+      // Runner ready / pong
+      if (message.type === "runner.ready" || message.type === "pong") {
+        this._runnerReady = true;
+        if (message.ip) this._runnerIp = message.ip;
+        if (this._runnerReadyResolve) {
+          this._runnerReadyResolve();
+          this._runnerReadyResolve = null;
+        }
+        logger.log("[Sandbox] Runner is ready");
+        return;
+      }
+
+      // Progress messages (no requestId)
+      if (message.type === "sandbox.progress") {
+        emitter.emit(events.sandbox.progress, {
+          step: message.step,
+          message: message.message,
+        });
+        return;
+      }
+
+      // Batched log entries from runner — emit each individually
+      if (message.type === "logs.batch" && Array.isArray(message.entries)) {
+        for (const entry of message.entries) {
+          const payload = entry.payload || entry;
+          emitter.emit(events.sandbox.received, payload);
+        }
+        return;
+      }
+
+      const requestId = message.requestId;
+      if (!requestId || !this.ps[requestId]) return;
+
+      // Screenshot with file reference
+      if (
+        message.type === "screenshot.reply" &&
+        message.fileId &&
+        message.fileName
+      ) {
+        this._downloadScreenshot(requestId, message);
+        return;
+      }
+
+      // Error response
+      if (message.error) {
+        const pendingMessage = this.ps[requestId]?.message;
+        if (pendingMessage?.type !== "output") {
+          emitter.emit(events.error.sandbox, message.errorMessage);
+        }
+        const error = new Error(message.errorMessage || "Sandbox error");
+        error.responseData = message;
+        this.ps[requestId].reject(error);
       } else {
-        // Throw error to trigger fallback to creating new sandbox
-        throw new Error(reply.errorMessage || "Failed to connect to sandbox");
+        emitter.emit(events.sandbox.received);
+        this.ps[requestId].resolve(message);
+      }
+      delete this.ps[requestId];
+    }
+
+    _handleFileMessage(event) {
+      const msg = event.message;
+      if (!msg || !msg.requestId || !this.ps[msg.requestId]) return;
+
+      // Only process explicit screenshot files — ignore auto before/after screenshots
+      // Auto-screenshots have type 'before.file' or 'after.file' and are fire-and-forget
+      if (msg.type && msg.type !== "screenshot.file") return;
+
+      this._downloadScreenshot(msg.requestId, {
+        fileId: event.file.id,
+        fileName: event.file.name,
+      });
+    }
+
+    // ─── Log batching (≥1s flush) ──────────────────────────────────────
+
+    _bufferLog(message) {
+      this._logBuffer.push({
+        type: message.type,
+        payload: message,
+        timestamp: Date.now(),
+      });
+    }
+
+    _startLogBatching() {
+      this._stopLogBatching();
+      this._logFlushInterval = setInterval(() => {
+        this._flushLogs();
+      }, 1000);
+    }
+
+    _stopLogBatching() {
+      if (this._logFlushInterval) {
+        clearInterval(this._logFlushInterval);
+        this._logFlushInterval = null;
+      }
+      // Final flush
+      this._flushLogs();
+    }
+
+    _flushLogs() {
+      if (this._logBuffer.length === 0) return;
+      if (!this.pubnub || !this._channels) return;
+      const entries = this._logBuffer.splice(0, this._logBuffer.length);
+      this.pubnub
+        .publish({
+          channel: this._channels.commands,
+          message: { type: "logs.batch", entries },
+        })
+        .then(() => emitter.emit(events.sandbox.sent, { type: "logs.batch", count: entries.length }))
+        .catch((err) => {
+          logger.error(`[Sandbox] Failed to flush ${entries.length} log entries: ${err.message}`);
+        });
+    }
+
+    async _downloadScreenshot(requestId, fileInfo) {
+      const pending = this.ps[requestId];
+      if (!pending) return;
+
+      try {
+        const result = await this.pubnub.downloadFile({
+          channel: this._channels.files,
+          id: fileInfo.fileId,
+          name: fileInfo.fileName,
+        });
+
+        let buffer;
+        if (result.data instanceof Buffer) {
+          buffer = result.data;
+        } else if (result.data instanceof ArrayBuffer) {
+          buffer = Buffer.from(result.data);
+        } else if (typeof result.data.arrayBuffer === "function") {
+          buffer = Buffer.from(await result.data.arrayBuffer());
+        } else if (typeof result.data.toArrayBuffer === "function") {
+          buffer = Buffer.from(await result.data.toArrayBuffer());
+        } else if (typeof result.data.toBuffer === "function") {
+          buffer = await result.data.toBuffer();
+        } else {
+          buffer = Buffer.from(result.data);
+        }
+
+        pending.resolve({
+          type: "screenshot.reply",
+          requestId,
+          base64: buffer.toString("base64"),
+          success: true,
+        });
+      } catch (err) {
+        pending.reject(
+          new Error(`Failed to download screenshot: ${err.message}`),
+        );
+      }
+      delete this.ps[requestId];
+    }
+
+    _handleStatus(event) {
+      switch (event.category) {
+        case "PNConnectedCategory":
+          logger.log("[Sandbox] PubNub subscription connected");
+          break;
+        case "PNReconnectedCategory":
+          logger.log("[Sandbox] PubNub reconnected");
+          this.reconnecting = false;
+          break;
+        case "PNAccessDeniedCategory":
+          logger.log(
+            "[Sandbox] PubNub access denied — token expired or revoked",
+          );
+          emitter.emit(
+            events.error.sandbox,
+            "Session ended — access token revoked by server",
+          );
+          // Token revoked = session terminated by the server ("kicked")
+          this.close();
+          break;
+        case "PNNetworkDownCategory":
+          logger.log("[Sandbox] Network down");
+          this._handleConnectionLoss();
+          break;
+        default:
+          break;
       }
     }
 
-    async handleConnectionLoss() {
-      if (this.intentionalDisconnect) return;
+    // ─── Runner readiness ──────────────────────────────────────────────
 
-      // Prevent duplicate reconnection attempts (both 'error' and 'close' fire)
+    async waitForRunner(timeout = 60000) {
+      if (this._runnerReady) return;
+      if (!this.pubnub || !this._channels) {
+        throw new Error("Not connected to PubNub");
+      }
+
+      await new Promise((resolve, reject) => {
+        const deadline = setTimeout(() => {
+          clearInterval(pollInterval);
+          reject(new Error("Runner did not become ready within timeout"));
+        }, timeout);
+
+        const pollInterval = setInterval(() => {
+          if (this._runnerReady) {
+            clearTimeout(deadline);
+            clearInterval(pollInterval);
+            return resolve();
+          }
+          this.pubnub
+            .publish({
+              channel: this._channels.commands,
+              message: { type: "ping", requestId: `ping-${Date.now()}` },
+            })
+            .catch(() => {});
+        }, 2000);
+
+        const check = () => {
+          if (this._runnerReady) {
+            clearTimeout(deadline);
+            clearInterval(pollInterval);
+            resolve();
+          } else {
+            setTimeout(check, 500);
+          }
+        };
+        check();
+      });
+    }
+
+    // ─── Reconnection ──────────────────────────────────────────────────
+
+    async _handleConnectionLoss() {
+      if (this.intentionalDisconnect) return;
       if (this.reconnecting) return;
       this.reconnecting = true;
 
-      // Remove listeners from the old socket to prevent "No pending promise found" warnings
-      // when late responses arrive on the dying connection
-      if (this.socket) {
-        try {
-          this.socket.removeAllListeners("message");
-        } catch (e) {
-          // Ignore errors removing listeners from closed socket
-        }
-      }
-
-      // Queue pending requests for retry after reconnection
-      // (they were sent on the old socket and will never receive responses)
+      // Queue pending requests for retry
       const pendingRequestIds = Object.keys(this.ps);
       if (pendingRequestIds.length > 0) {
-        console.log(`[Sandbox] Queuing ${pendingRequestIds.length} pending request(s) for retry after reconnection`);
         for (const requestId of pendingRequestIds) {
           const pending = this.ps[requestId];
           if (pending) {
-            // Clear the timeout - we'll set a new one when we retry
             const timeoutId = this.pendingTimeouts.get(requestId);
             if (timeoutId) {
               clearTimeout(timeoutId);
               this.pendingTimeouts.delete(requestId);
             }
-            // Queue for retry (store message and promise handlers)
             this.pendingRetryQueue.push({
               message: pending.message,
               resolve: pending.resolve,
@@ -242,27 +592,21 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         this.ps = {};
       }
 
-      // Cancel any existing reconnect timer
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
 
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        const errorMsg =
-          "Unable to reconnect to TestDriver sandbox after multiple attempts. Please check your internet connection.";
-        emitter.emit(events.error.sandbox, errorMsg);
-        console.error(errorMsg);
-        
-        // Reject all queued requests since reconnection failed
-        if (this.pendingRetryQueue.length > 0) {
-          console.log(`[Sandbox] Rejecting ${this.pendingRetryQueue.length} queued request(s) - reconnection failed`);
-          for (const queued of this.pendingRetryQueue) {
-            queued.reject(new Error("Sandbox reconnection failed after multiple attempts"));
-          }
-          this.pendingRetryQueue = [];
+        emitter.emit(
+          events.error.sandbox,
+          "Unable to reconnect to TestDriver sandbox after multiple attempts.",
+        );
+
+        for (const queued of this.pendingRetryQueue) {
+          queued.reject(new Error("Sandbox reconnection failed"));
         }
-        
+        this.pendingRetryQueue = [];
         this.reconnecting = false;
         return;
       }
@@ -271,209 +615,90 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 60000);
 
       console.log(
-        `[Sandbox] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+        `[Sandbox] Reconnecting in ${delay}ms... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
       );
 
       this.reconnectTimer = setTimeout(async () => {
         this.reconnectTimer = null;
         try {
-          await this.boot(this.apiRoot);
-          if (this.apiKey) {
+          if (this.apiKey && this._lastConnectParams) {
             await this.auth(this.apiKey);
-          }
-          // Re-establish sandbox connection on the new API instance
-          // Without this, the new API instance has no connection.desktop
-          // and all Linux operations will fail with "sandbox not initialized"
-          if (this._lastConnectParams) {
-            const { sandboxId, persist, keepAlive } = this._lastConnectParams;
-            console.log(`[Sandbox] Re-establishing sandbox connection (${sandboxId})...`);
-            await this.connect(sandboxId, persist, keepAlive);
+            await this.connect(this._lastConnectParams.sandboxId);
           }
           console.log("[Sandbox] Reconnected successfully.");
-          
-          // Retry queued requests
           await this._retryQueuedRequests();
-        } catch (e) {
-          // boot's close handler will trigger handleConnectionLoss again
+        } catch {
+          // Will retry on next cycle
         } finally {
           this.reconnecting = false;
         }
       }, delay);
     }
 
-    /**
-     * Retry queued requests after successful reconnection
-     * @private
-     */
     async _retryQueuedRequests() {
       if (this.pendingRetryQueue.length === 0) return;
 
-      console.log(`[Sandbox] Retrying ${this.pendingRetryQueue.length} queued request(s)...`);
-      
-      // Take all queued requests and clear the queue
       const toRetry = this.pendingRetryQueue.splice(0);
-      
       for (const queued of toRetry) {
         try {
-          // Re-send the message and resolve/reject the original promise
           const result = await this.send(queued.message);
           queued.resolve(result);
         } catch (err) {
           queued.reject(err);
         }
       }
-      
-      console.log(`[Sandbox] Finished retrying queued requests.`);
     }
 
-    async boot(apiRoot) {
-      if (apiRoot) this.apiRoot = apiRoot;
-      return new Promise((resolve, reject) => {
-        // Get session ID for Sentry trace headers
-        const sessionId = this.sessionInstance?.get();
+    // ─── Getters ───────────────────────────────────────────────────────
 
-        if (!sessionId) {
-          console.warn(
-            "[Sandbox] No session ID available at boot time - Sentry tracing will not be available",
-          );
-        }
-
-        const sentryHeaders = getSentryTraceHeaders(sessionId);
-
-        // Build WebSocket URL with Sentry trace headers as query params
-        const wsUrl = new URL(apiRoot.replace("https://", "wss://"));
-        if (sentryHeaders["sentry-trace"]) {
-          wsUrl.searchParams.set("sentry-trace", sentryHeaders["sentry-trace"]);
-        }
-        if (sentryHeaders["baggage"]) {
-          wsUrl.searchParams.set("baggage", sentryHeaders["baggage"]);
-        }
-
-        this.socket = new WebSocket(wsUrl.toString());
-
-        // handle errors
-        this.socket.on("close", () => {
-          clearInterval(this.heartbeat);
-          this.apiSocketConnected = false;
-          // Reset reconnecting flag so handleConnectionLoss can run for this new disconnection
-          this.reconnecting = false;
-          this.handleConnectionLoss();
-          reject();
-        });
-
-        this.socket.on("error", (err) => {
-          logger.log("Socket Error");
-          err && logger.log(err);
-          clearInterval(this.heartbeat);
-          emitter.emit(events.error.sandbox, err);
-          this.apiSocketConnected = false;
-          // Don't call handleConnectionLoss here - the 'close' event always fires
-          // after 'error', so let 'close' handle reconnection to avoid duplicate attempts
-          reject(err);
-        });
-
-        this.socket.on("open", async () => {
-          this.reconnectAttempts = 0;
-          this.reconnecting = false;
-          this.apiSocketConnected = true;
-
-          this.heartbeat = setInterval(() => {
-            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-              this.socket.ping();
-            }
-          }, 5000);
-          // Don't let the heartbeat interval prevent Node process from exiting
-          if (this.heartbeat.unref) {
-            this.heartbeat.unref();
-          }
-
-          resolve(this);
-        });
-
-        this.socket.on("message", async (raw) => {
-          let message = JSON.parse(raw);
-
-          // Handle progress messages (no requestId needed)
-          if (message.type === "sandbox.progress") {
-            emitter.emit(events.sandbox.progress, {
-              step: message.step,
-              message: message.message,
-            });
-            return;
-          }
-
-          if (!this.ps[message.requestId]) {
-            // This can happen during reconnection (ps was cleared) or after timeout
-            // (promise was deleted). Only log at debug level since it's expected.
-            if (!this.reconnecting) {
-              console.warn(
-                "No pending promise found for requestId:",
-                message.requestId,
-              );
-            }
-            return;
-          }
-
-          if (message.error) {
-            // Don't emit error:sandbox for output (log forwarding) messages
-            // to prevent infinite loops: error → log → sendToSandbox → error → ...
-            const pendingMessage = this.ps[message.requestId]?.message;
-            if (pendingMessage?.type !== "output") {
-              emitter.emit(events.error.sandbox, message.errorMessage);
-            }
-            const error = new Error(message.errorMessage || "Sandbox error");
-            error.responseData = message;
-            this.ps[message.requestId].reject(error);
-          } else {
-            emitter.emit(events.sandbox.received);
-            this.ps[message.requestId]?.resolve(message);
-          }
-          delete this.ps[message.requestId];
-        });
-      });
+    getTraceId() {
+      return this.traceId;
     }
+
+    getTraceUrl() {
+      if (!this.traceId) return null;
+      return `https://testdriver.sentry.io/explore/traces/trace/${this.traceId}`;
+    }
+
+    // ─── close() ───────────────────────────────────────────────────────
 
     /**
-     * Close the WebSocket connection and clean up resources
+     * Release the runner and close PubNub.
      */
-    close() {
+    async close() {
       this.intentionalDisconnect = true;
       this.reconnecting = false;
-      // Cancel any pending reconnect timer
+
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
 
-      if (this.heartbeat) {
-        clearInterval(this.heartbeat);
-        this.heartbeat = null;
-      }
-
-      // Clear all pending message timeouts to prevent timers keeping the process alive
       for (const timeoutId of this.pendingTimeouts.values()) {
         clearTimeout(timeoutId);
       }
       this.pendingTimeouts.clear();
 
-      if (this.socket) {
-        // Remove all listeners before closing to prevent reconnect attempts
-        this.socket.removeAllListeners();
+      // Flush and stop log batching
+      this._stopLogBatching();
+
+      // Release the runner back to the pool
+      await this.release();
+
+      if (this.pubnub) {
         try {
-          this.socket.close();
-        } catch (err) {
-          // Ignore close errors
+          this.pubnub.unsubscribeAll();
+          this.pubnub.stop();
+        } catch {
+          // Ignore
         }
-        this.socket = null;
+        this.pubnub = null;
       }
 
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
       this.authenticated = false;
       this.instance = null;
-
-      // Silently clear pending promises and retry queue without rejecting
-      // (rejecting causes unhandled promise rejections during cleanup)
       this.ps = {};
       this.pendingRetryQueue = [];
     }
