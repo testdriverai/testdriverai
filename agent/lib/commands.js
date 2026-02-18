@@ -936,6 +936,11 @@ const createCommands = (
       const { delay = 250, secret = false, redraw: redrawOpts, ...elementData } = options;
       const redrawOptions = extractRedrawOptions({ redraw: redrawOpts, ...options });
       
+      // Validate that text parameter is provided
+      if (text === undefined || text === null) {
+        throw new CommandError("type() requires a text parameter. Received: " + text);
+      }
+      
       // Log parent action with text
       if (secret) {
         emitter.emit(events.log.narration, formatter.getPrefix("type") + " " + theme.yellow.bold("Type") + " " + theme.dim(`secret "****"`));

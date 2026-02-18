@@ -27,6 +27,15 @@ Scale your test suite with reusable code snippets to reduce duplication and main
     }
     ```
 
+    <Warning>
+      **Avoid hardcoding dynamic values in element descriptions.** Element selectors should describe the *type* of element, not specific content that might change.
+
+      **❌ Bad:** `await testdriver.find('profile name TestDriver in the top right')`  
+      **✅ Good:** `await testdriver.find('user profile name in the top right')`
+
+      Hardcoded values like usernames, product names, or prices will cause tests to fail when the data changes. Use generic descriptions that work regardless of the specific content displayed.
+    </Warning>
+
     ```javascript test/checkout.test.js
     import { login } from './helpers/auth.js';
 
