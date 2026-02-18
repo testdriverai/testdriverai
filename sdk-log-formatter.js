@@ -1078,24 +1078,32 @@ class SDKLogFormatter {
       const content = this._truncate(el.content || "", maxContentLength);
       
       // Format interactivity with color
+      // Note: interactivity can be boolean (true/false) or string ("clickable", "non-interactive")
       let interactivity = el.interactivity || "-";
+      let interactivityDisplay;
       if (interactivity === "clickable" || interactivity === true) {
-        interactivity = chalk.green("✓ clickable");
+        interactivityDisplay = chalk.green("✓ clickable");
       } else if (interactivity === false || interactivity === "non-interactive") {
-        interactivity = chalk.dim("-");
+        interactivityDisplay = chalk.dim("-");
+      } else {
+        interactivityDisplay = chalk.dim(String(interactivity));
       }
       
       // Format position from bbox
       let position = "-";
       if (el.bbox) {
-        position = `(${el.bbox.x0},${el.bbox.y0})`;
+        position = `(${el.bbox.x0}, ${el.bbox.y0})`;
       }
+      
+      // For interactivity column, we need to pad based on visible text, not chalk codes
+      // "✓ clickable" = 11 chars, "-" = 1 char, so we pad manually after getting visible length
+      const interactPadded = this._padRight(interactivityDisplay, interactWidth);
       
       const dataLine = [
         chalk.yellow(this._padRight(idx, idxWidth)),
         chalk.white(this._padRight(type, typeWidth)),
         chalk.gray(this._padRight(content, contentWidth)),
-        this._padRight(interactivity, interactWidth),
+        interactPadded,
         chalk.dim(position),
       ].join(chalk.dim(" │ "));
       
