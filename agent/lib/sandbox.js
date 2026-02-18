@@ -183,11 +183,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         60000,
       );
 
-      if (!reply.success && !reply.sandboxId) {
+      const replySandboxId = reply.sandbox?.sandboxId || reply.sandboxId;
+
+      if (!reply.success && !replySandboxId) {
         throw new Error(reply.errorMessage || "Failed to connect to runner");
       }
 
-      this._sandboxId = reply.sandboxId || sandboxId;
+      this._sandboxId = replySandboxId || sandboxId;
       this.instanceSocketConnected = true;
 
       // Start log batching
