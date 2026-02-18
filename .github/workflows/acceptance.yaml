@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test-linux:
-    runs-on: ubuntu-latest
+    runs-on: testdriver-32
 
     steps:
       - uses: actions/checkout@v4
