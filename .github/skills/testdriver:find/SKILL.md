@@ -37,6 +37,18 @@ const element = await testdriver.find(description, options)
       Maximum time in milliseconds to poll for the element. Retries every 5 seconds until found or timeout expires.
     </ParamField>
     
+    <ParamField path="confidence" type="number">
+      Minimum confidence threshold (0-1). If the AI's confidence score for the found element is below this value, the find will be treated as a failure (`element.found()` returns `false`). Useful for ensuring high-quality matches in critical test steps.
+    </ParamField>
+    
+    <ParamField path="type" type="string">
+      Element type hint that wraps the description for better matching. Accepted values:
+      - `"text"` — Wraps the prompt as `The text "..."`
+      - `"image"` — Wraps the prompt as `The image "..."`
+      - `"ui"` — Wraps the prompt as `The UI element "..."`
+      - `"any"` — No wrapping, uses the description as-is (default behavior)
+    </ParamField>
+    
     <ParamField path="zoom" type="boolean" default={false}>
       Enable two-phase zoom mode for better precision in crowded UIs with many similar elements.
     </ParamField>
