@@ -476,6 +476,9 @@ class Element {
       let zoom = false; // Default to disabled, enable with zoom: true
       let perCommandAi = null; // Per-command AI config override
 
+      let minConfidence = null; // Minimum confidence threshold
+      let elementType = null; // Element type hint: "text", "image", "ui", or "any"
+
       if (typeof options === "number") {
         // Legacy: options is just a number threshold
         cacheThreshold = options;
@@ -485,6 +488,10 @@ class Element {
         cacheThreshold = options.cacheThreshold ?? null;
         // zoom defaults to false unless explicitly set to true
         zoom = options.zoom === true;
+        // Minimum confidence threshold: fail find if AI confidence is below this value
+        minConfidence = options.confidence ?? null;
+        // Element type hint for prompt wrapping
+        elementType = options.type ?? null;
         // Per-command cache thresholds: { cache: { thresholds: { screen: 0.1, element: 0.2 } } }
         if (typeof options.cache === "object" && options.cache?.thresholds) {
           perCommandThresholds = options.cache.thresholds;
@@ -554,6 +561,8 @@ class Element {
         os: this.sdk.os,
         resolution: this.sdk.resolution,
         zoom: zoom,
+        confidence: minConfidence,
+        type: elementType,
         ai: {
           ...this.sdk.aiConfig,
           ...(perCommandAi || {}),

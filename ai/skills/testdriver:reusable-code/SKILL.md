@@ -36,6 +36,15 @@ export async function logout(testdriver) {
 }
 ```
 
+<Warning>
+**Avoid hardcoding dynamic values in element descriptions.** Element selectors should describe the *type* of element, not specific content that might change.
+
+**❌ Bad:** `await testdriver.find('profile name TestDriver in the top right')`  
+**✅ Good:** `await testdriver.find('user profile name in the top right')`
+
+Hardcoded values like usernames, product names, or prices will cause tests to fail when the data changes. Use generic descriptions that work regardless of the specific content displayed.
+</Warning>
+
 Now import and use these helpers in any test:
 
 ```javascript test/checkout.test.mjs
