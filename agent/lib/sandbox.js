@@ -1,27 +1,44 @@
-const PubNub = require("pubnub");
-const axios = require("axios");
+const WebSocket = require("ws");
+const crypto = require("crypto");
+const https = require("https");
+const http = require("http");
 const { events } = require("../events");
 const logger = require("./logger");
 const { version } = require("../../package.json");
 
 /**
- * PubNub-based sandbox client.
+ * WebSocket-based sandbox client for self-hosted runners.
  *
- * Simplified flow:
- *   1. boot(apiRoot) — store API root
- *   2. auth(apiKey) — authenticate via REST
- *   3. connect(sandboxId?) — call /api/v7/sandbox/connect, init PubNub, claim runner
- *   4. send(message) — publish commands to runner via PubNub
- *   5. close() — release runner, disconnect PubNub
+ * Flow:
+ *   1. boot(apiRoot) — open WebSocket to API sandboxes service
+ *   2. auth(apiKey) — authenticate via WS message
+ *   3. connect(sandboxId?) — send create message (runner: true), API sets up SQS proxy
+ *   4. waitForRunner() — ping until runner responds via SQS → API → WS
+ *   5. claim() — mark runner busy (forwarded to runner via SQS)
+ *   6. send(message) — publish commands via WS → API → SQS → runner
+ *   7. close() — release runner, close WS
  *
- * If sandboxId is omitted in connect(), the API auto-claims
- * the first idle runner from the team's pool via PubNub Presence.
+ * Commands flow: SDK → WS → API → SQS → Runner
+ * Responses flow: Runner → SQS → API → WS → SDK
+ * Screenshots: Runner uploads to S3, API returns presigned download URL
  */
+
+function getSentryTraceHeaders(sessionId) {
+  if (!sessionId) return {};
+  const traceId = crypto.createHash("md5").update(sessionId).digest("hex");
+  const spanId = crypto.randomBytes(8).toString("hex");
+  return {
+    "sentry-trace": `${traceId}-${spanId}-1`,
+    baggage: `sentry-trace_id=${traceId},sentry-sample_rate=1.0,sentry-sampled=true`,
+  };
+}
+
 const createSandbox = (emitter, analytics, sessionInstance) => {
   class Sandbox {
     constructor() {
-      this.pubnub = null;
+      this.socket = null;
       this.ps = {};
+      this.heartbeat = null;
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
       this.authenticated = false;
@@ -41,13 +58,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.pendingTimeouts = new Map();
       this.pendingRetryQueue = [];
 
-      // PubNub state
-      this._channels = null;
-      this._pubnubConfig = null;
+      // Runner state
       this._sandboxId = null;
-      this._sdkToken = null;
       this._runnerReady = false;
-      this._runnerReadyPromise = null;
       this._runnerReadyResolve = null;
       this._runnerIp = null;
       this._lastConnectParams = null;
@@ -60,42 +73,88 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     // ─── Lifecycle ─────────────────────────────────────────────────────
 
     /**
-     * Store the API root. Called once at startup.
+     * Open WebSocket connection to the API sandboxes service.
+     * Called once at startup.
      */
     async boot(apiRoot) {
       if (apiRoot) this.apiRoot = apiRoot;
-      this.apiSocketConnected = true;
-      this.reconnectAttempts = 0;
-      this.reconnecting = false;
-      return this;
+
+      return new Promise((resolve, reject) => {
+        const sessionId = this.sessionInstance?.get();
+        const sentryHeaders = getSentryTraceHeaders(sessionId);
+
+        // Build WebSocket URL with Sentry trace headers as query params
+        const wsUrl = new URL(apiRoot.replace("https://", "wss://").replace("http://", "ws://"));
+        if (sentryHeaders["sentry-trace"]) {
+          wsUrl.searchParams.set("sentry-trace", sentryHeaders["sentry-trace"]);
+        }
+        if (sentryHeaders["baggage"]) {
+          wsUrl.searchParams.set("baggage", sentryHeaders["baggage"]);
+        }
+
+        this.socket = new WebSocket(wsUrl.toString());
+
+        this.socket.on("close", () => {
+          clearInterval(this.heartbeat);
+          this.apiSocketConnected = false;
+          this._handleConnectionLoss();
+        });
+
+        this.socket.on("error", (err) => {
+          logger.log("Socket Error");
+          if (err) logger.log(err);
+          clearInterval(this.heartbeat);
+          emitter.emit(events.error.sandbox, err);
+          this.apiSocketConnected = false;
+        });
+
+        this.socket.on("open", () => {
+          this.reconnectAttempts = 0;
+          this.reconnecting = false;
+          this.apiSocketConnected = true;
+
+          // WS keepalive ping
+          this.heartbeat = setInterval(() => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+              this.socket.ping();
+            }
+          }, 5000);
+
+          resolve(this);
+        });
+
+        this.socket.on("message", (raw) => {
+          this._handleMessage(JSON.parse(raw));
+        });
+      });
     }
 
     /**
-     * Authenticate with the API via REST.
+     * Authenticate with the API via WebSocket.
      */
     async auth(apiKey) {
       this.apiKey = apiKey;
 
-      const response = await axios.post(
-        `${this.apiRoot}/api/v7/sandbox/authenticate`,
-        { apiKey, version },
-        { timeout: 30000 },
-      );
+      const reply = await this.send({
+        type: "authenticate",
+        apiKey,
+        version,
+      });
 
-      if (response.data.success) {
+      if (reply.success) {
         this.authenticated = true;
 
-        if (response.data.traceId) {
-          this.traceId = response.data.traceId;
+        if (reply.traceId) {
+          this.traceId = reply.traceId;
           logger.log("");
           logger.log("🔗 Trace Report (Share When Reporting Bugs):");
           logger.log(
-            `https://testdriver.sentry.io/explore/traces/trace/${response.data.traceId}`,
+            `https://testdriver.sentry.io/explore/traces/trace/${reply.traceId}`,
           );
         }
 
         emitter.emit(events.sandbox.authenticated, {
-          traceId: response.data.traceId,
+          traceId: reply.traceId,
         });
         return true;
       }
@@ -104,38 +163,36 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     }
 
     /**
-     * Connect to a runner via the API.
+     * Connect to a self-hosted runner via the API's SQS proxy.
+     *
+     * Sends a create message with runner: true. The API finds an idle runner
+     * from the pool, sets up an SQS command proxy, and returns the sandboxId.
      *
      * If sandboxId is provided, connects to that specific runner.
      * If omitted, the API auto-claims an idle runner from the pool.
-     *
-     * After connecting, sends a `claim` message to mark the runner busy.
      */
     async connect(sandboxId = null) {
       this._lastConnectParams = { sandboxId };
 
-      const response = await axios.post(
-        `${this.apiRoot}/api/v7/sandbox/connect`,
+      const reply = await this.send(
         {
-          apiKey: this.apiKey,
+          type: "create",
+          runner: true,
           ...(sandboxId ? { sandboxId } : {}),
         },
-        { timeout: 30000 },
+        60000,
       );
 
-      const data = response.data;
-      if (!data.success) {
-        throw new Error(data.message || "Failed to connect to runner");
+      if (!reply.success && !reply.sandboxId) {
+        throw new Error(reply.errorMessage || "Failed to connect to runner");
       }
 
-      this._sandboxId = data.sandboxId;
-      this._pubnubConfig = data.pubnub;
-      this._channels = data.pubnub.channels;
-      this._sdkToken = data.pubnub.token;
-
-      this._initPubNub();
-
+      this._sandboxId = reply.sandboxId || sandboxId;
       this.instanceSocketConnected = true;
+
+      // Start log batching
+      this._startLogBatching();
+
       emitter.emit(events.sandbox.connected);
 
       return {
@@ -150,10 +207,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
     /**
      * Claim the runner (mark it busy in the pool).
-     * Called after connect + waitForRunner.
+     * Forwarded via SQS proxy to the runner.
      */
     async claim() {
-      if (!this.pubnub || !this._channels) {
+      if (!this.socket || !this._sandboxId) {
         throw new Error("Not connected");
       }
       return this.send({ type: "claim" }, 15000);
@@ -164,7 +221,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
      * Called before close() so the runner goes back to the pool.
      */
     async release() {
-      if (!this.pubnub || !this._channels) return;
+      if (!this.socket || !this._sandboxId) return;
       try {
         await this.send({ type: "release" }, 10000);
       } catch {
@@ -175,11 +232,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     // ─── send() ────────────────────────────────────────────────────────
 
     /**
-     * Send a command to the runner via PubNub.
+     * Send a command to the runner via WebSocket → API → SQS.
      */
     send(message, timeout = 300000) {
-      if (!this.pubnub || !this._channels) {
-        return Promise.reject(new Error("Sandbox not connected to PubNub"));
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        return Promise.reject(new Error("Sandbox WebSocket not connected"));
       }
 
       this.messageId++;
@@ -229,7 +286,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           startTime: Date.now(),
         };
 
-        // Fire-and-forget types — buffer for log batching instead of publishing individually
+        // Fire-and-forget types — buffer for log batching instead of sending individually
         const fireAndForgetTypes = ["output", "trackInteraction"];
         if (fireAndForgetTypes.includes(message.type)) {
           clearTimeout(timeoutId);
@@ -240,107 +297,44 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           return;
         }
 
-        // Publish to commands channel
-        this.pubnub
-          .publish({ channel: this._channels.commands, message })
-          .then(() => emitter.emit(events.sandbox.sent, message))
-          .catch((err) => {
-            clearTimeout(timeoutId);
-            this.pendingTimeouts.delete(requestId);
-            delete this.ps[requestId];
-            // Log full PubNub Status for debugging
-            if (err.status) {
-              logger.error(`[PubNub] Publish failed — category: ${err.status.category}, statusCode: ${err.status.statusCode}, operation: ${err.status.operation}`);
-              if (err.status.errorData) {
-                logger.error(`[PubNub] errorData: ${JSON.stringify(err.status.errorData)}`);
-              }
-            }
-            const publishError = new Error(`Failed to publish command: ${err.message}`);
-            publishError.status = err.status;
-            reject(publishError);
-          });
-      });
-    }
-
-    // ─── PubNub ────────────────────────────────────────────────────────
-
-    _initPubNub() {
-      if (this.pubnub) {
+        // Send via WebSocket
         try {
-          this._stopLogBatching();
-          this.pubnub.unsubscribeAll();
-          this.pubnub.stop();
-        } catch {
-          // Ignore cleanup errors
+          this.socket.send(JSON.stringify(message));
+          emitter.emit(events.sandbox.sent, message);
+        } catch (err) {
+          clearTimeout(timeoutId);
+          this.pendingTimeouts.delete(requestId);
+          delete this.ps[requestId];
+          reject(new Error(`Failed to send command: ${err.message}`));
         }
-      }
-
-      this.pubnub = new PubNub({
-        subscribeKey: this._pubnubConfig.subscribeKey,
-        publishKey: this._pubnubConfig.publishKey,
-        userId: `sdk-${this._sandboxId}`,
       });
-
-      this.pubnub.setToken(this._sdkToken);
-
-      // Runner ready promise
-      this._runnerReady = false;
-      this._runnerReadyPromise = new Promise((resolve) => {
-        this._runnerReadyResolve = resolve;
-      });
-
-      // Attach listener BEFORE subscribing
-      this.pubnub.addListener({
-        message: (event) => this._handleMessage(event),
-        file: (event) => this._handleFileMessage(event),
-        status: (event) => this._handleStatus(event),
-      });
-
-      this.pubnub.subscribe({
-        channels: [
-          this._channels.responses,
-          this._channels.files,
-          this._channels.control,
-        ].filter(Boolean),
-      });
-
-      // Start log batching interval
-      this._startLogBatching();
-
-      this.apiSocketConnected = true;
-      logger.log(
-        `[Sandbox] PubNub connected. Channels: ${JSON.stringify(this._channels)}`,
-      );
     }
 
-    _handleMessage(event) {
-      const message = event.message;
+    // ─── Message handling ──────────────────────────────────────────────
 
-      // ─── Control channel messages from server ──────────────────────
-      if (this._channels.control && event.channel === this._channels.control) {
-        if (message.type === "session.terminated") {
-          logger.log(
-            `[Sandbox] Session terminated by server: ${message.reason} — ${message.message}`,
-          );
-          emitter.emit(events.error.sandbox, message.message || "Session terminated by server");
-          this.close();
-          return;
-        }
-        if (message.type === "session.warning") {
-          logger.log(
-            `[Sandbox] Server warning: ${message.message} (usage: ${message.usagePercentage}%)`,
-          );
-          emitter.emit(events.sandbox.progress, {
-            step: "warning",
-            message: message.message,
-          });
-          return;
-        }
-        logger.log(`[Sandbox] Control message: ${message.type}`);
+    _handleMessage(message) {
+      // ─── Control messages from server ──────────────────────────────
+      if (message.type === "session.terminated") {
+        logger.log(
+          `[Sandbox] Session terminated by server: ${message.reason} — ${message.message}`,
+        );
+        emitter.emit(events.error.sandbox, message.message || "Session terminated by server");
+        this.close();
         return;
       }
 
-      // Runner ready / pong
+      if (message.type === "session.warning") {
+        logger.log(
+          `[Sandbox] Server warning: ${message.message} (usage: ${message.usagePercentage}%)`,
+        );
+        emitter.emit(events.sandbox.progress, {
+          step: "warning",
+          message: message.message,
+        });
+        return;
+      }
+
+      // Runner ready / pong — resolve waitForRunner
       if (message.type === "runner.ready" || message.type === "pong") {
         this._runnerReady = true;
         if (message.ip) this._runnerIp = message.ip;
@@ -349,6 +343,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           this._runnerReadyResolve = null;
         }
         logger.log("[Sandbox] Runner is ready");
+
+        // Also resolve pending ping request if it has a requestId
+        if (message.requestId && this.ps[message.requestId]) {
+          this.ps[message.requestId].resolve(message);
+          delete this.ps[message.requestId];
+        }
         return;
       }
 
@@ -373,13 +373,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       const requestId = message.requestId;
       if (!requestId || !this.ps[requestId]) return;
 
-      // Screenshot with file reference
+      // Screenshot with S3 download URL — download and convert to base64
       if (
         message.type === "screenshot.reply" &&
-        message.fileId &&
-        message.fileName
+        message.downloadUrl &&
+        !message.base64
       ) {
-        this._downloadScreenshot(requestId, message);
+        this._downloadScreenshotFromUrl(requestId, message.downloadUrl);
         return;
       }
 
@@ -399,18 +399,41 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       delete this.ps[requestId];
     }
 
-    _handleFileMessage(event) {
-      const msg = event.message;
-      if (!msg || !msg.requestId || !this.ps[msg.requestId]) return;
+    // ─── Screenshot download via S3 presigned URL ──────────────────
 
-      // Only process explicit screenshot files — ignore auto before/after screenshots
-      // Auto-screenshots have type 'before.file' or 'after.file' and are fire-and-forget
-      if (msg.type && msg.type !== "screenshot.file") return;
+    async _downloadScreenshotFromUrl(requestId, downloadUrl) {
+      const pending = this.ps[requestId];
+      if (!pending) return;
 
-      this._downloadScreenshot(msg.requestId, {
-        fileId: event.file.id,
-        fileName: event.file.name,
-      });
+      try {
+        const buffer = await new Promise((resolve, reject) => {
+          const client = downloadUrl.startsWith("https") ? https : http;
+          client
+            .get(downloadUrl, (res) => {
+              if (res.statusCode !== 200) {
+                reject(new Error(`Screenshot download failed: HTTP ${res.statusCode}`));
+                return;
+              }
+              const chunks = [];
+              res.on("data", (chunk) => chunks.push(chunk));
+              res.on("end", () => resolve(Buffer.concat(chunks)));
+              res.on("error", reject);
+            })
+            .on("error", reject);
+        });
+
+        pending.resolve({
+          type: "screenshot.reply",
+          requestId,
+          base64: buffer.toString("base64"),
+          success: true,
+        });
+      } catch (err) {
+        pending.reject(
+          new Error(`Failed to download screenshot: ${err.message}`),
+        );
+      }
+      delete this.ps[requestId];
     }
 
     // ─── Log batching (≥1s flush) ──────────────────────────────────────
@@ -441,85 +464,15 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
     _flushLogs() {
       if (this._logBuffer.length === 0) return;
-      if (!this.pubnub || !this._channels) return;
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
       const entries = this._logBuffer.splice(0, this._logBuffer.length);
-      this.pubnub
-        .publish({
-          channel: this._channels.commands,
-          message: { type: "logs.batch", entries },
-        })
-        .then(() => emitter.emit(events.sandbox.sent, { type: "logs.batch", count: entries.length }))
-        .catch((err) => {
-          logger.error(`[Sandbox] Failed to flush ${entries.length} log entries: ${err.message}`);
-        });
-    }
-
-    async _downloadScreenshot(requestId, fileInfo) {
-      const pending = this.ps[requestId];
-      if (!pending) return;
-
       try {
-        const result = await this.pubnub.downloadFile({
-          channel: this._channels.files,
-          id: fileInfo.fileId,
-          name: fileInfo.fileName,
-        });
-
-        let buffer;
-        if (result.data instanceof Buffer) {
-          buffer = result.data;
-        } else if (result.data instanceof ArrayBuffer) {
-          buffer = Buffer.from(result.data);
-        } else if (typeof result.data.arrayBuffer === "function") {
-          buffer = Buffer.from(await result.data.arrayBuffer());
-        } else if (typeof result.data.toArrayBuffer === "function") {
-          buffer = Buffer.from(await result.data.toArrayBuffer());
-        } else if (typeof result.data.toBuffer === "function") {
-          buffer = await result.data.toBuffer();
-        } else {
-          buffer = Buffer.from(result.data);
-        }
-
-        pending.resolve({
-          type: "screenshot.reply",
-          requestId,
-          base64: buffer.toString("base64"),
-          success: true,
-        });
-      } catch (err) {
-        pending.reject(
-          new Error(`Failed to download screenshot: ${err.message}`),
+        this.socket.send(
+          JSON.stringify({ type: "logs.batch", entries }),
         );
-      }
-      delete this.ps[requestId];
-    }
-
-    _handleStatus(event) {
-      switch (event.category) {
-        case "PNConnectedCategory":
-          logger.log("[Sandbox] PubNub subscription connected");
-          break;
-        case "PNReconnectedCategory":
-          logger.log("[Sandbox] PubNub reconnected");
-          this.reconnecting = false;
-          break;
-        case "PNAccessDeniedCategory":
-          logger.log(
-            "[Sandbox] PubNub access denied — token expired or revoked",
-          );
-          emitter.emit(
-            events.error.sandbox,
-            "Session ended — access token revoked by server",
-          );
-          // Token revoked = session terminated by the server ("kicked")
-          this.close();
-          break;
-        case "PNNetworkDownCategory":
-          logger.log("[Sandbox] Network down");
-          this._handleConnectionLoss();
-          break;
-        default:
-          break;
+        emitter.emit(events.sandbox.sent, { type: "logs.batch", count: entries.length });
+      } catch (err) {
+        logger.error(`[Sandbox] Failed to flush ${entries.length} log entries: ${err.message}`);
       }
     }
 
@@ -527,8 +480,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
     async waitForRunner(timeout = 60000) {
       if (this._runnerReady) return;
-      if (!this.pubnub || !this._channels) {
-        throw new Error("Not connected to PubNub");
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+        throw new Error("Not connected to WebSocket");
       }
 
       await new Promise((resolve, reject) => {
@@ -537,20 +490,34 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           reject(new Error("Runner did not become ready within timeout"));
         }, timeout);
 
+        // Store the resolve for _handleMessage to call
+        this._runnerReadyResolve = () => {
+          clearTimeout(deadline);
+          clearInterval(pollInterval);
+          resolve();
+        };
+
         const pollInterval = setInterval(() => {
           if (this._runnerReady) {
             clearTimeout(deadline);
             clearInterval(pollInterval);
-            return resolve();
+            if (this._runnerReadyResolve) {
+              this._runnerReadyResolve();
+              this._runnerReadyResolve = null;
+            }
+            return;
           }
-          this.pubnub
-            .publish({
-              channel: this._channels.commands,
-              message: { type: "ping", requestId: `ping-${Date.now()}` },
-            })
-            .catch(() => {});
+          // Send ping, forwarded to runner via SQS proxy
+          try {
+            this.socket.send(
+              JSON.stringify({ type: "ping", requestId: `ping-${Date.now()}` }),
+            );
+          } catch {
+            // ignore
+          }
         }, 2000);
 
+        // Quick check loop
         const check = () => {
           if (this._runnerReady) {
             clearTimeout(deadline);
@@ -621,8 +588,11 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.reconnectTimer = setTimeout(async () => {
         this.reconnectTimer = null;
         try {
-          if (this.apiKey && this._lastConnectParams) {
+          await this.boot(this.apiRoot);
+          if (this.apiKey) {
             await this.auth(this.apiKey);
+          }
+          if (this._lastConnectParams) {
             await this.connect(this._lastConnectParams.sandboxId);
           }
           console.log("[Sandbox] Reconnected successfully.");
@@ -663,7 +633,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     // ─── close() ───────────────────────────────────────────────────────
 
     /**
-     * Release the runner and close PubNub.
+     * Release the runner and close WebSocket.
      */
     async close() {
       this.intentionalDisconnect = true;
@@ -685,14 +655,18 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       // Release the runner back to the pool
       await this.release();
 
-      if (this.pubnub) {
+      if (this.heartbeat) {
+        clearInterval(this.heartbeat);
+        this.heartbeat = null;
+      }
+
+      if (this.socket) {
         try {
-          this.pubnub.unsubscribeAll();
-          this.pubnub.stop();
+          this.socket.close();
         } catch {
           // Ignore
         }
-        this.pubnub = null;
+        this.socket = null;
       }
 
       this.apiSocketConnected = false;
