@@ -75,7 +75,6 @@ if (isSentryEnabled()) {
         // Don't send expected test/element failures - these are normal test outcomes, not crashes
         if (
           msg.includes("Element not found") ||
-          msg.includes("not found") ||
           msg.includes("No elements found") ||
           msg.includes("No element found") ||
           msg.includes("Assertion failed") ||
