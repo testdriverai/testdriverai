@@ -12,8 +12,8 @@ describe("Parse Test", () => {
     const testdriver = TestDriver(context, { ...getDefaults(context) });
     await testdriver.provision.chrome({ url: "https://www.airbnb.com" });
 
+    // The SDK automatically outputs elements as a formatted table
     const result = await testdriver.parse();
     console.log(`Found ${result.elements?.length || 0} elements`);
-    console.log(JSON.stringify(result, null, 2));
   });
 });

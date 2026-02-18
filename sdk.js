@@ -3664,6 +3664,12 @@ CAPTCHA_SOLVER_EOF`,
       `✅ Parse complete: ${response.elements?.length || 0} elements detected`,
     );
 
+    // Output elements as a formatted table
+    if (response.elements && response.elements.length > 0) {
+      const tableOutput = formatter.formatParseElements(response.elements);
+      this.emitter.emit(events.log.log, tableOutput);
+    }
+
     return response;
   }
 

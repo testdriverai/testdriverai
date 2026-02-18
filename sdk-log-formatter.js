@@ -1022,6 +1022,122 @@ class SDKLogFormatter {
     
     return parts.join(" ");
   }
+
+  /**
+   * Format parse() elements as a formatted table for console output 📋
+   * @param {Array} elements - Array of parsed elements from parse()
+   * @param {Object} options - Formatting options
+   * @param {number} options.maxContentLength - Max length for content column (default: 30)
+   * @param {number} options.maxRows - Max number of rows to display (default: 50)
+   * @returns {string} Formatted table string
+   */
+  formatParseElements(elements, options = {}) {
+    if (!elements || elements.length === 0) {
+      return chalk.dim("  No elements found");
+    }
+
+    const maxContentLength = options.maxContentLength || 30;
+    const maxRows = options.maxRows || 50;
+    
+    // Column widths
+    const idxWidth = 5;
+    const typeWidth = 10;
+    const contentWidth = maxContentLength + 2;
+    const interactWidth = 14;
+    const posWidth = 18;
+    
+    const lines = [];
+    
+    // Header
+    const headerLine = [
+      chalk.bold.cyan(this._padRight("Idx", idxWidth)),
+      chalk.bold.cyan(this._padRight("Type", typeWidth)),
+      chalk.bold.cyan(this._padRight("Content", contentWidth)),
+      chalk.bold.cyan(this._padRight("Interactive", interactWidth)),
+      chalk.bold.cyan("Position"),
+    ].join(chalk.dim(" │ "));
+    
+    lines.push("  " + headerLine);
+    
+    // Separator line
+    const separatorLine = [
+      chalk.dim("─".repeat(idxWidth)),
+      chalk.dim("─".repeat(typeWidth)),
+      chalk.dim("─".repeat(contentWidth)),
+      chalk.dim("─".repeat(interactWidth)),
+      chalk.dim("─".repeat(posWidth)),
+    ].join(chalk.dim("─┼─"));
+    
+    lines.push("  " + separatorLine);
+    
+    // Data rows
+    const displayElements = elements.slice(0, maxRows);
+    for (const el of displayElements) {
+      const idx = String(el.index ?? "?");
+      const type = el.type || "unknown";
+      const content = this._truncate(el.content || "", maxContentLength);
+      
+      // Format interactivity with color
+      let interactivity = el.interactivity || "-";
+      if (interactivity === "clickable" || interactivity === true) {
+        interactivity = chalk.green("✓ clickable");
+      } else if (interactivity === false || interactivity === "non-interactive") {
+        interactivity = chalk.dim("-");
+      }
+      
+      // Format position from bbox
+      let position = "-";
+      if (el.bbox) {
+        position = `(${el.bbox.x0},${el.bbox.y0})`;
+      }
+      
+      const dataLine = [
+        chalk.yellow(this._padRight(idx, idxWidth)),
+        chalk.white(this._padRight(type, typeWidth)),
+        chalk.gray(this._padRight(content, contentWidth)),
+        this._padRight(interactivity, interactWidth),
+        chalk.dim(position),
+      ].join(chalk.dim(" │ "));
+      
+      lines.push("  " + dataLine);
+    }
+    
+    // Show truncation message if needed
+    if (elements.length > maxRows) {
+      lines.push(chalk.dim(`  ... and ${elements.length - maxRows} more elements (showing first ${maxRows})`));
+    }
+    
+    return lines.join("\n");
+  }
+
+  /**
+   * Truncate a string to a maximum length with ellipsis
+   * @private
+   * @param {string} str - String to truncate
+   * @param {number} maxLength - Maximum length
+   * @returns {string} Truncated string
+   */
+  _truncate(str, maxLength) {
+    if (!str) return "";
+    // Remove newlines and extra whitespace
+    const cleaned = str.replace(/\s+/g, " ").trim();
+    if (cleaned.length <= maxLength) return cleaned;
+    return cleaned.substring(0, maxLength - 1) + "…";
+  }
+
+  /**
+   * Pad a string to the right to a fixed width
+   * @private
+   * @param {string} str - String to pad
+   * @param {number} width - Target width
+   * @returns {string} Padded string
+   */
+  _padRight(str, width) {
+    // Handle chalk strings by getting visible length
+    const visibleStr = String(str).replace(/\x1b\[[0-9;]*m/g, "");
+    const padding = Math.max(0, width - visibleStr.length);
+    return str + " ".repeat(padding);
+  }
 }
 
 // Export singleton instance
