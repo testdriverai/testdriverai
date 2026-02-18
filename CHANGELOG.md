@@ -1,3 +1,12 @@
+## [7.3.17](https://github.com/testdriverai/testdriverai/compare/v7.3.16...v7.3.17) (2026-02-18)
+
+
+### Features
+
+* add type option to find(), move confidence to API, rename ocr to parse ([#640](https://github.com/testdriverai/testdriverai/issues/640)) ([d98a94b](https://github.com/testdriverai/testdriverai/commit/d98a94bd05c135c74d9fed2ebb72c709fc643337))
+
+
+
 ## [7.3.16](https://github.com/testdriverai/testdriverai/compare/v7.3.14...v7.3.16) (2026-02-18)
 
 
