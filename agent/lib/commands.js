@@ -528,11 +528,45 @@ const createCommands = (
       // Add absolute timestamp for sandbox events
       elementData.timestamp = Date.now();
 
-      await sandbox.send({ type: "moveMouse", x, y, ...elementData });
+      // Move mouse to target, then verify position — retry up to 3 times
+      // if the user (or something else) moved the mouse in the meantime.
+      const MOUSE_TOLERANCE = 15; // px
+      const MAX_MOVE_RETRIES = 3;
+      let moveVerified = false;
 
-      emitter.emit(events.mouseMove, { x, y });
+      for (let attempt = 1; attempt <= MAX_MOVE_RETRIES; attempt++) {
+        await sandbox.send({ type: "moveMouse", x, y, ...elementData });
+        emitter.emit(events.mouseMove, { x, y });
+        await delay(500); // brief settle time
 
-      await delay(2500); // wait for the mouse to move
+        // Query actual mouse position
+        try {
+          const posResult = await sandbox.send({ type: "system.get-mouse-position" });
+          const pos = posResult.result || posResult.out || posResult;
+          if (pos && typeof pos.x === "number" && typeof pos.y === "number") {
+            const dx = Math.abs(pos.x - x);
+            const dy = Math.abs(pos.y - y);
+            if (dx <= MOUSE_TOLERANCE && dy <= MOUSE_TOLERANCE) {
+              moveVerified = true;
+              break;
+            }
+            emitter.emit(
+              events.log.narration,
+              theme.yellow(`⚠️  Mouse drifted: expected (${x}, ${y}) but got (${pos.x}, ${pos.y}) — retrying (${attempt}/${MAX_MOVE_RETRIES})`),
+            );
+          }
+        } catch (posErr) {
+          // If we can't query position, assume it's fine
+          moveVerified = true;
+          break;
+        }
+      }
+
+      if (!moveVerified) {
+        const errMsg = `Mouse position verification failed after ${MAX_MOVE_RETRIES} retries — target (${x}, ${y}) could not be held. Is something else moving the mouse?`;
+        emitter.emit(events.log.narration, theme.red(`❌ ${errMsg}`));
+        throw new Error(errMsg);
+      }
       
       // Update the action log with duration
       const clickMoveEndTime = Date.now();

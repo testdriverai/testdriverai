@@ -41,8 +41,38 @@ const createSystem = (emitter, sandbox, config) => {
     return path.join(os.tmpdir(), `td-${Date.now()}-${randomUUID().slice(0, 8)}-${countImages}.png`);
   };
 
+  // Lazily query the runner's actual screen size on first screenshot so that
+  // TD_RESOLUTION matches the real logical resolution.  This prevents a
+  // coordinate-space mismatch on displays whose logical resolution differs
+  // from the hardcoded 1366×768 default (e.g. Retina Macs at 1512×982).
+  let _screenSizeQueried = false;
+  const ensureScreenSizeKnown = async () => {
+    if (_screenSizeQueried) return;
+    _screenSizeQueried = true;
+    try {
+      const result = await sandbox.send({ type: "getScreenSize" });
+      const out = result.result || result.out || result;
+      if (out && out.width && out.height) {
+        config.TD_RESOLUTION = [out.width, out.height];
+        emitter.emit(
+          events.log.debug,
+          `[system] Updated TD_RESOLUTION to actual screen size: ${out.width}×${out.height}`,
+        );
+      }
+    } catch (err) {
+      // If querying fails, fall back to the configured TD_RESOLUTION
+      emitter.emit(
+        events.log.debug,
+        `[system] Could not query screen size, using default TD_RESOLUTION: ${config.TD_RESOLUTION.join("×")} (${err.message})`,
+      );
+    }
+  };
+
   const captureAndResize = async (scale = 1, silent = false, mouse = false) => {
     try {
+      // Ensure TD_RESOLUTION reflects the actual screen size
+      await ensureScreenSizeKnown();
+
       if (!silent) {
         emitter.emit(events.screenCapture.start, {
           scale,
