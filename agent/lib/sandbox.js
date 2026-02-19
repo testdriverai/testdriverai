@@ -71,7 +71,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       let resolvePromise;
       let rejectPromise;
 
-      if (this.socket) {
+      // Check if socket exists and is actually open before sending
+      // This prevents sending to a closed connection (e.g., sandbox killed due to test failure)
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
         this.messageId++;
         message.requestId = `${this.uniqueId}-${this.messageId}`;
 
@@ -150,8 +152,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         return p;
       }
 
-      // Return a rejected promise if socket is not available
-      return Promise.reject(new Error("Sandbox socket not connected"));
+      // Return a rejected promise if socket is not available or not open
+      // This can happen when the sandbox is killed (e.g., due to test failure)
+      const state = this.socket?.readyState;
+      const stateMap = {
+        [WebSocket.CONNECTING]: "connecting",
+        [WebSocket.CLOSING]: "closing",
+        [WebSocket.CLOSED]: "closed",
+      };
+      const stateDesc = stateMap[state] || "unavailable";
+      return Promise.reject(new Error(`Sandbox socket not connected (state: ${stateDesc})`));
     }
 
     async auth(apiKey) {
@@ -355,6 +365,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         this.socket.on("close", () => {
           clearInterval(this.heartbeat);
           this.apiSocketConnected = false;
+          // Also mark instance socket as disconnected to prevent sending messages
+          // to a closed connection (e.g., when sandbox is killed due to test failure)
+          this.instanceSocketConnected = false;
           // Reset reconnecting flag so handleConnectionLoss can run for this new disconnection
           this.reconnecting = false;
           this.handleConnectionLoss();
