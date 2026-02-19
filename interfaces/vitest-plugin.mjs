@@ -641,6 +641,31 @@ export async function cleanupTestDriver(testdriver) {
 }
 
 /**
+ * Verify an assertion using TestDriver
+ * This is a backward-compatible wrapper around testdriver.assert()
+ *
+ * @param {TestDriver} testdriver - TestDriver client instance
+ * @param {string} assertion - The assertion text to verify
+ * @param {object} [options] - Optional configuration (e.g., timeout)
+ * @returns {Promise<boolean>} Result of the assertion
+ *
+ * @example
+ * import { verify } from 'testdriverai/vitest-plugin';
+ * 
+ * await verify(testdriver, 'Login button is visible', { timeout: 30000 });
+ */
+export async function verify(testdriver, assertion, options = {}) {
+  if (!testdriver) {
+    throw new Error("verify() requires a TestDriver instance as the first parameter");
+  }
+  if (typeof assertion !== "string") {
+    throw new Error("verify() requires an assertion string as the second parameter");
+  }
+  
+  return await testdriver.assert(assertion, options);
+}
+
+/**
  * Handle process termination and mark test run as cancelled
  */
 async function handleProcessExit() {
