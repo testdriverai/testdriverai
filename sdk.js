@@ -1712,39 +1712,35 @@ class TestDriverSDK {
    */
   async _waitForChromeDebuggerReady(timeoutMs = 60000) {
     const shell = this.os === "windows" ? "pwsh" : "sh";
+    const portCheckCmd = this.os === "windows"
+      ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
+      : `nc -z localhost 9222 && echo 'open'`;
+    const pageCheckCmd = this.os === "windows"
+      ? `(Invoke-RestMethod -Uri 'http://localhost:9222/json' -TimeoutSec 2) | Where-Object { $_.type -eq 'page' } | Select-Object -First 1 | ConvertTo-Json`
+      : `curl -s http://localhost:9222/json 2>/dev/null | grep '"type": "page"'`;
 
-    if (this.os === "windows") {
-      // Wait for port 9222 to be listening
-      await this.exec(
-        shell,
-        `$timeout = ${Math.floor(timeoutMs / 1000)}; $elapsed = 0; while ($elapsed -lt $timeout) { try { $tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); break } catch { Start-Sleep -Milliseconds 200; $elapsed += 0.2 } }`,
-        timeoutMs,
-        true,
-      );
+    const deadline = Date.now() + timeoutMs;
 
-      // Wait for a page target to appear via CDP
-      await this.exec(
-        shell,
-        `$timeout = ${Math.floor(timeoutMs / 1000)}; $elapsed = 0; while ($elapsed -lt $timeout) { try { $r = Invoke-RestMethod -Uri 'http://localhost:9222/json' -TimeoutSec 2; if ($r | Where-Object { $_.type -eq 'page' }) { break } } catch {} Start-Sleep -Milliseconds 500; $elapsed += 0.5 }`,
-        timeoutMs,
-        true,
-      );
-    } else {
-      // Wait for port 9222 to be listening
-      await this.exec(
-        shell,
-        `timeout=${Math.floor(timeoutMs / 1000)}; elapsed=0; while [ $elapsed -lt $timeout ]; do nc -z localhost 9222 && break; sleep 0.2; elapsed=$((elapsed + 1)); done`,
-        timeoutMs,
-        true,
-      );
+    // Wait for port 9222 to be listening
+    while (Date.now() < deadline) {
+      try {
+        const result = await this.exec(shell, portCheckCmd, 5000, true);
+        if (result && result.includes("open")) break;
+      } catch (_) {
+        // Port not ready yet
+      }
+      await new Promise((r) => setTimeout(r, 200));
+    }
 
-      // Wait for a page target to appear via CDP
-      await this.exec(
-        shell,
-        `timeout=${Math.floor(timeoutMs / 1000)}; elapsed=0; while [ $elapsed -lt $timeout ]; do curl -s http://localhost:9222/json 2>/dev/null | grep -q '"type": "page"' && break; sleep 0.5; elapsed=$((elapsed + 1)); done`,
-        timeoutMs,
-        true,
-      );
+    // Wait for a page target to appear via CDP
+    while (Date.now() < deadline) {
+      try {
+        const result = await this.exec(shell, pageCheckCmd, 5000, true);
+        if (result && result.trim().length > 0) break;
+      } catch (_) {
+        // No page target yet
+      }
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
