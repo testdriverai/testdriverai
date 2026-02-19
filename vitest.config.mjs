@@ -11,6 +11,7 @@ const setupFiles = [
 
 export default defineConfig({
   test: {
+    globals: true,
     retry: 1,
     testTimeout: 900000,
     hookTimeout: 900000,
