@@ -155,9 +155,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       // Return a rejected promise if socket is not available or not open
       // This can happen when the sandbox is killed (e.g., due to test failure)
       const state = this.socket?.readyState;
-      const stateDesc = state === WebSocket.CONNECTING ? "connecting" :
-                        state === WebSocket.CLOSING ? "closing" :
-                        state === WebSocket.CLOSED ? "closed" : "unavailable";
+      const stateMap = {
+        [WebSocket.CONNECTING]: "connecting",
+        [WebSocket.CLOSING]: "closing",
+        [WebSocket.CLOSED]: "closed",
+      };
+      const stateDesc = stateMap[state] || "unavailable";
       return Promise.reject(new Error(`Sandbox socket not connected (state: ${stateDesc})`));
     }
 
