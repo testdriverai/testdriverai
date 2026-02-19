@@ -1714,7 +1714,7 @@ class TestDriverSDK {
     const shell = this.os === "windows" ? "pwsh" : "sh";
     const portCheckCmd = this.os === "windows"
       ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
-      : `nc -z localhost 9222 && echo 'open'`;
+      : `curl -s -o /dev/null --connect-timeout 2 http://localhost:9222 2>/dev/null && echo 'open' || echo 'closed'`;
     const pageCheckCmd = this.os === "windows"
       ? `(Invoke-RestMethod -Uri 'http://localhost:9222/json' -TimeoutSec 2) | Where-Object { $_.type -eq 'page' } | Select-Object -First 1 | ConvertTo-Json`
       : `curl -s http://localhost:9222/json 2>/dev/null | grep '"type": "page"'`;
