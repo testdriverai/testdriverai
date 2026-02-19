@@ -60,15 +60,35 @@ if (isSentryEnabled()) {
         nodeVersion: process.version,
       },
     },
+    // Filter out expected test/element failures - only report actual exceptions and crashes
     beforeSend(event, hint) {
       const error = hint.originalException;
-      // Don't send user-initiated exits
+      
       if (error && typeof error === "object" && "message" in error) {
         const msg = (error as { message: string }).message;
+        
+        // Don't send user-initiated exits
         if (msg.includes("User cancelled")) {
           return null;
         }
+        
+        // Don't send expected test/element failures - these are normal test outcomes, not crashes
+        if (
+          msg.includes("Element not found") ||
+          msg.includes("No elements found") ||
+          msg.includes("No element found") ||
+          msg.includes("Assertion failed") ||
+          msg.includes("assertion failed")
+        ) {
+          return null;
+        }
       }
+      
+      // Filter out TestFailure errors (test failures, not crashes)
+      if (error && typeof error === "object" && "name" in error && (error as { name: string }).name === "TestFailure") {
+        return null;
+      }
+      
       return event;
     },
   });
