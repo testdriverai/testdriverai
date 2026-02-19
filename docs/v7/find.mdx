@@ -38,6 +38,18 @@ const element = await testdriver.find(description, options)
       Maximum time in milliseconds to poll for the element. Retries every 5 seconds until found or timeout expires.
     </ParamField>
     
+    <ParamField path="confidence" type="number">
+      Minimum confidence threshold (0-1). If the AI's confidence score for the found element is below this value, the find will be treated as a failure (`element.found()` returns `false`). Useful for ensuring high-quality matches in critical test steps.
+    </ParamField>
+    
+    <ParamField path="type" type="string">
+      Element type hint that wraps the description for better matching. Accepted values:
+      - `"text"` — Wraps the prompt as `The text "..."`
+      - `"image"` — Wraps the prompt as `The image "..."`
+      - `"ui"` — Wraps the prompt as `The UI element "..."`
+      - `"any"` — No wrapping, uses the description as-is (default behavior)
+    </ParamField>
+    
     <ParamField path="zoom" type="boolean" default={false}>
       Enable two-phase zoom mode for better precision in crowded UIs with many similar elements.
     </ParamField>
@@ -233,6 +245,69 @@ This is useful for:
   ```
 </Check>
 
+## Confidence Threshold
+
+Require a minimum AI confidence score for element matches. If the confidence is below the threshold, `find()` treats the result as not found:
+
+```javascript
+// Require at least 90% confidence
+const element = await testdriver.find('submit button', { confidence: 0.9 });
+
+if (!element.found()) {
+  // AI found something but wasn't confident enough
+  throw new Error('Could not confidently locate submit button');
+}
+
+await element.click();
+```
+
+This is useful for:
+- Critical test steps where an incorrect click could cause cascading failures
+- Distinguishing between similar elements (e.g., multiple buttons)
+- Failing fast when the UI has changed unexpectedly
+
+```javascript
+// Combine with timeout for robust polling with confidence gate
+const element = await testdriver.find('success notification', {
+  confidence: 0.85,
+  timeout: 15000,
+});
+```
+
+<Tip>
+  The `confidence` value is a float between 0 and 1 (e.g., `0.9` = 90%). The AI returns its confidence with each find result, which you can also read from `element.confidence` after a successful find.
+</Tip>
+## Element Type
+
+Use the `type` option to hint what kind of element you're looking for. This wraps your description into a more specific prompt for the AI, improving match accuracy — especially when users provide short or ambiguous descriptions.
+
+```javascript
+// Find text on the page
+const label = await testdriver.find('Sign In', { type: 'text' });
+// AI prompt becomes: The text "Sign In"
+
+// Find an image
+const logo = await testdriver.find('company logo', { type: 'image' });
+// AI prompt becomes: The image "company logo"
+
+// Find a UI element (button, input, checkbox, etc.)
+const btn = await testdriver.find('Submit', { type: 'ui' });
+// AI prompt becomes: The UI element "Submit"
+
+// No wrapping — same as omitting the option
+const el = await testdriver.find('the blue submit button', { type: 'any' });
+```
+
+| Type | Prompt sent to AI |
+|------|----|
+| `"text"` | `The text "..."` |
+| `"image"` | `The image "..."` |
+| `"ui"` | `The UI element "..."` |
+| `"any"` | Original description (no wrapping) |
+
+<Tip>
+  This is particularly useful for short descriptions like `"Submit"` or `"Login"` where the AI may not know whether to look for a button, a link, or visible text. Specifying `type` removes the ambiguity.
+</Tip>
 ## Polling for Dynamic Elements
 
 For elements that may not be immediately visible, use the `timeout` option to automatically poll:

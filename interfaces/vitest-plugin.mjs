@@ -68,52 +68,19 @@ function initializeSentry() {
 }
 
 /**
- * Capture a test failure in Sentry
- * @param {Object} params - Test failure parameters
- * @param {string} params.testName - Name of the test
- * @param {string} params.testFile - File path of the test
- * @param {string} params.errorMessage - Error message
- * @param {string} [params.errorStack] - Error stack trace
- * @param {string} [params.sessionId] - Session ID if available
- * @param {string} [params.platform] - Platform (windows, mac, linux)
- * @param {number} [params.duration] - Test duration in ms
+ * Previously captured test failures in Sentry.
+ * Now disabled - test failures are expected behavior, not crashes.
+ * We only want to report actual exceptions and crashes to Sentry.
+ * 
+ * @param {Object} _params - Test failure parameters (ignored)
+ * @deprecated This function no longer sends data to Sentry.
  */
-function captureTestFailure({ testName, testFile, errorMessage, errorStack, sessionId, platform, duration }) {
-  if (!sentryInitialized || process.env.TD_TELEMETRY === "false") return;
-
-  try {
-    // Create an error object with the test failure details
-    const error = new Error(errorMessage);
-    error.name = "TestFailure";
-    if (errorStack) {
-      error.stack = errorStack;
-    }
-
-    Sentry.withScope((scope) => {
-      scope.setTag("test.name", testName);
-      scope.setTag("test.file", testFile);
-      scope.setTag("test.status", "failed");
-      
-      if (sessionId) {
-        scope.setTag("session", sessionId);
-      }
-      if (platform) {
-        scope.setTag("platform", platform);
-      }
-      
-      scope.setContext("test", {
-        name: testName,
-        file: testFile,
-        duration: duration,
-        sessionId: sessionId,
-        platform: platform,
-      });
-
-      Sentry.captureException(error);
-    });
-  } catch (err) {
-    logger.debug("Failed to capture test failure in Sentry:", err.message);
-  }
+// eslint-disable-next-line no-unused-vars
+function captureTestFailure(_params) {
+  // Test failures are expected behavior - they indicate a test found a bug.
+  // We should only report actual exceptions and crashes to Sentry, not every failed test.
+  // This function is now a no-op to prevent flooding Sentry with test failures.
+  return;
 }
 
 /**

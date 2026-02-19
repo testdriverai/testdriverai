@@ -337,9 +337,11 @@ const createSDK = (emitter, config, sessionInstance) => {
   }
 
   const req = async (path, data, onChunk) => {
-    // for each value of data, if it is empty remove it
+    // for each value of data, if it is null/undefined remove it
+    // Note: use == null to match both null and undefined, but preserve
+    // other falsy values like 0, false, and "" which may be intentional
     for (let key in data) {
-      if (!data[key]) {
+      if (data[key] == null) {
         delete data[key];
       }
     }

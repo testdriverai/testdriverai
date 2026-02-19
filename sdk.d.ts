@@ -1082,7 +1082,7 @@ export default class TestDriverSDK {
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
   find(
     description: string,
-    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; ai?: AIConfig; cache?: { thresholds?: { screen?: number; element?: number } } },
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; confidence?: number; type?: "text" | "image" | "ui" | "any"; ai?: AIConfig; cache?: { thresholds?: { screen?: number; element?: number } } },
   ): ChainableElementPromise;
 
   /**
