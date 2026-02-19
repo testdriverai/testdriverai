@@ -1722,25 +1722,43 @@ class TestDriverSDK {
     const deadline = Date.now() + timeoutMs;
 
     // Wait for port 9222 to be listening
+    let portReady = false;
     while (Date.now() < deadline) {
       try {
         const result = await this.exec(shell, portCheckCmd, 5000, true);
-        if (result && result.includes("open")) break;
+        if (result && result.includes("open")) {
+          portReady = true;
+          break;
+        }
       } catch (_) {
         // Port not ready yet
       }
       await new Promise((r) => setTimeout(r, 200));
     }
+    if (!portReady) {
+      throw new Error(
+        `Chrome debugger port 9222 did not become available within ${timeoutMs}ms`,
+      );
+    }
 
     // Wait for a page target to appear via CDP
+    let pageReady = false;
     while (Date.now() < deadline) {
       try {
         const result = await this.exec(shell, pageCheckCmd, 5000, true);
-        if (result && result.trim().length > 0) break;
+        if (result && result.trim().length > 0) {
+          pageReady = true;
+          break;
+        }
       } catch (_) {
         // No page target yet
       }
       await new Promise((r) => setTimeout(r, 500));
+    }
+    if (!pageReady) {
+      throw new Error(
+        `Chrome page target did not become available within ${timeoutMs}ms`,
+      );
     }
   }
 
