@@ -97,8 +97,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         // Add sandboxId to every message if we have a connected sandbox
         // This allows the API to reconnect if the connection was rerouted
+        // Don't inject IP addresses as sandboxId — only valid instance/sandbox IDs
         if (this._lastConnectParams?.sandboxId && !message.sandboxId) {
-          message.sandboxId = this._lastConnectParams.sandboxId;
+          const id = this._lastConnectParams.sandboxId;
+          // Only inject if it looks like a valid ID (not an IP address)
+          if (id && !/^\d+\.\d+\.\d+\.\d+$/.test(id)) {
+            message.sandboxId = id;
+          }
         }
 
         let p = new Promise((resolve, reject) => {
@@ -215,6 +220,27 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
     }
 
+    /**
+     * Reconnect to a direct IP-based sandbox after connection loss.
+     * Sends a 'direct' message instead of 'connect' to avoid the API
+     * treating the IP as an AWS instance ID.
+     */
+    async reconnectDirect(ip) {
+      let reply = await this.send({
+        type: "direct",
+        ip,
+      });
+
+      if (reply.success) {
+        this.instanceSocketConnected = true;
+        emitter.emit(events.sandbox.connected);
+        return reply;
+      } else {
+        throw new Error(reply.errorMessage || "Failed to reconnect to direct sandbox");
+      }
+    }
+    }
+
     async handleConnectionLoss() {
       if (this.intentionalDisconnect) return;
 
@@ -300,9 +326,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           // Without this, the new API instance has no connection.desktop
           // and all Linux operations will fail with "sandbox not initialized"
           if (this._lastConnectParams) {
-            const { sandboxId, persist, keepAlive } = this._lastConnectParams;
-            console.log(`[Sandbox] Re-establishing sandbox connection (${sandboxId})...`);
-            await this.connect(sandboxId, persist, keepAlive);
+            if (this._lastConnectParams.type === 'direct') {
+              // Direct IP connections must reconnect via 'direct' message, not 'connect'
+              const { ip, persist, keepAlive } = this._lastConnectParams;
+              console.log(`[Sandbox] Re-establishing direct connection (${ip})...`);
+              await this.reconnectDirect(ip);
+            } else {
+              const { sandboxId, persist, keepAlive } = this._lastConnectParams;
+              console.log(`[Sandbox] Re-establishing sandbox connection (${sandboxId})...`);
+              await this.connect(sandboxId, persist, keepAlive);
+            }
           }
           console.log("[Sandbox] Reconnected successfully.");
           
