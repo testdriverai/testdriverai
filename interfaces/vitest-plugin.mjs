@@ -1295,11 +1295,16 @@ function calculateStatsFromModules(testModules) {
 
   for (const testModule of testModules) {
     for (const testCase of testModule.children.allTests()) {
-      totalTests++;
       const result = testCase.result();
-      if (result.state === "passed") passedTests++;
-      else if (result.state === "failed") failedTests++;
-      else if (result.state === "skipped") skippedTests++;
+      if (result.state === "passed") {
+        passedTests++;
+        totalTests++;
+      } else if (result.state === "failed") {
+        failedTests++;
+        totalTests++;
+      } else if (result.state === "skipped") {
+        skippedTests++;
+      }
     }
   }
 
