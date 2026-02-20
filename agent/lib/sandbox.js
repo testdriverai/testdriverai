@@ -194,9 +194,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     }
 
     async connect(sandboxId, persist = false, keepAlive = null) {
-      // Store connection params so we can re-establish after reconnection
-      this._lastConnectParams = { sandboxId, persist, keepAlive };
-
       let reply = await this.send({
         type: "connect",
         persist,
@@ -205,11 +202,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       });
 
       if (reply.success) {
+        // Only store connection params after successful connection
+        // This prevents malformed sandboxId from being attached to subsequent messages
+        this._lastConnectParams = { sandboxId, persist, keepAlive };
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
         // Return the full reply (includes url and sandbox)
         return reply;
       } else {
+        // Clear any previous connection params on failure
+        this._lastConnectParams = null;
         // Throw error to trigger fallback to creating new sandbox
         throw new Error(reply.errorMessage || "Failed to connect to sandbox");
       }
