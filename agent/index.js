@@ -1791,10 +1791,13 @@ ${regression}
         ip: this.ip,
       });
 
-      // Store sandboxId (for self-hosted, use the IP as identifier) so messages include it
-      // This enables the API to reconnect if the websocket connection is rerouted
+      // Store connection params for reconnection
+      // For direct IP connections, store as a direct type so reconnection
+      // sends a 'direct' message instead of 'connect' with an IP as sandboxId
       this.sandbox._lastConnectParams = {
-        sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || this.ip,
+        type: 'direct',
+        ip: this.ip,
+        sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || null,
         persist: true,
         keepAlive: this.keepAlive,
       };
