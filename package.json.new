@@ -1,0 +1,58 @@
+{
+  "name": "testdriverai",
+  "displayName": "TestDriver.ai",
+  "description": "AI-powered end-to-end testing with live preview and MCP integration",
+  "version": "7.3.31",
+  "publisher": "testdriverai",
+  "main": "sdk.js",
+  "types": "sdk.d.ts",
+  "exports": {
+    ".": {
+      "types": "./sdk.d.ts",
+      "default": "./sdk.js"
+    },
+    "./core": {
+      "types": "./lib/core/index.d.ts",
+      "default": "./lib/core/index.js"
+    },
+    "./vitest": {
+      "types": "./interfaces/vitest-plugin.d.ts",
+      "default": "./interfaces/vitest-plugin.mjs"
+    },
+    "./vitest/plugin": {
+      "types": "./interfaces/vitest-plugin.d.ts",
+      "default": "./interfaces/vitest-plugin.mjs"
+    },
+    "./vitest/setup": "./lib/vitest/setup.mjs",
+    "./vitest/setup-aws": "./lib/vitest/setup-aws.mjs",
+    "./vitest/setup-disable-defender": "./lib/vitest/setup-disable-defender.mjs",
+    "./vitest/hooks": {
+      "types": "./lib/vitest/hooks.d.ts",
+      "default": "./lib/vitest/hooks.mjs"
+    },
+    "./presets": "./lib/presets/index.mjs"
+  },
+  "bin": {
+    "testdriverai": "bin/testdriverai.js",
+    "testdriverai-mcp": "mcp-server/dist/server.mjs"
+  },
+  "scripts": {
+    "start": "node bin/testdriverai.js",
+    "dev": "DEV=true node bin/testdriverai.js",
+    "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
+    "docs:links": "node docs/_scripts/link-replacer.js",
+    "docs:skills": "node docs/_scripts/generate-skills.js",
+    "docs:examples": "node docs/_scripts/generate-examples.js",
+    "docs:extract-urls": "node docs/_scripts/extract-example-urls.js",
+    "bundle": "node build.mjs",
+    "test:sdk:report": "open test-results/index.html",
+    "test:sdk:results": "node scripts/view-test-results.mjs",
+    "docs-lint": "cd docs && vale **/*.mdx",
+    "docs-upload": "node upload-docs-to-openai.js",
+    "runall": "dotenv testdriverai run --config testdriver.config.yaml --path './testdriver/*.testdriver.yaml'",
+    "test-assert": "node index.js run --path=testdriver/acceptance/assert.yaml",
+    "generate-report": "junit-viewer --results=out.xml --save=report.html",
+    "serve-report": "npx http-server . -p 8080 -o report.html",
+    "generate:skills": "node scripts/generate-skills.js"
+  }
+}
