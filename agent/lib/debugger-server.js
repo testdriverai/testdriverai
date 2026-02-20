@@ -75,8 +75,24 @@ function createDebuggerServer(config = {}) {
     });
 
     // Start server on available port
-    server.listen(port, "localhost", () => {
-      const actualPort = server.address().port;
+    server.listen(port, "127.0.0.1", () => {
+      const address = server.address();
+      
+      // Handle race condition where address might be null
+      if (!address) {
+        // Retry getting the address after a short delay
+        setImmediate(() => {
+          const retryAddress = server.address();
+          if (!retryAddress) {
+            reject(new Error("Server address is null after listen callback"));
+            return;
+          }
+          resolve({ port: retryAddress.port, server, wss });
+        });
+        return;
+      }
+      
+      const actualPort = address.port;
       resolve({ port: actualPort, server, wss });
     });
 
