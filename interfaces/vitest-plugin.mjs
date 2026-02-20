@@ -1299,18 +1299,30 @@ function calculateStatsFromModules(testModules) {
   let failedTests = 0;
   let skippedTests = 0;
 
+  // Guard against corrupt or circular test tree structures
+  // (can happen with --sequence.concurrent in some Vitest versions)
+  const seen = new Set();
+
   for (const testModule of testModules) {
-    for (const testCase of testModule.children.allTests()) {
-      const result = testCase.result();
-      if (result.state === "passed") {
-        passedTests++;
-        totalTests++;
-      } else if (result.state === "failed") {
-        failedTests++;
-        totalTests++;
-      } else if (result.state === "skipped") {
-        skippedTests++;
+    try {
+      for (const testCase of testModule.children.allTests()) {
+        // Deduplicate - skip if we've already counted this test
+        if (seen.has(testCase.id)) continue;
+        seen.add(testCase.id);
+
+        const result = testCase.result();
+        if (result.state === "passed") {
+          passedTests++;
+          totalTests++;
+        } else if (result.state === "failed") {
+          failedTests++;
+          totalTests++;
+        } else if (result.state === "skipped") {
+          skippedTests++;
+        }
       }
+    } catch (err) {
+      logger.warn(`Error calculating stats for module: ${err.message}`);
     }
   }
 
