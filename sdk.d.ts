@@ -13,7 +13,14 @@ export type ClickAction =
 export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
-export type ExecLanguage = "js" | "pwsh";
+export type ExecLanguage = "js" | "pwsh" | "sh";
+/**
+ * Preview mode for live test visualization
+ * - "browser": Opens debugger in default browser (default)
+ * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+ * - "none": Headless mode, no visual preview
+ */
+export type PreviewMode = "browser" | "ide" | "none";
 export type KeyboardKey =
   | "\t"
   | "\n"
@@ -215,19 +222,94 @@ export interface TestDriverOptions {
   apiRoot?: string;
   /** Sandbox resolution (default: '1366x768') */
   resolution?: string;
+  /** Operating system for the sandbox (default: 'linux') */
+  os?: "windows" | "linux";
   /** Enable analytics tracking (default: true) */
   analytics?: boolean;
   /** Enable console logging output (default: true) */
   logging?: boolean;
-  /** Enable/disable cache (default: true). Set to false to force regeneration on all find operations */
-  cache?: boolean;
-  /** Cache threshold configuration for different methods */
+  /** Enable/disable cache, or configure with thresholds
+   * @example { cache: { enabled: true, thresholds: { find: { screen: 0.05, element: 0.8 }, assert: 0.05 } } }
+   */
+  cache?: boolean | {
+    enabled?: boolean;
+    thresholds?: {
+      /** Thresholds for find operations */
+      find?: {
+        /** Pixel diff threshold for screen comparison (0-1, default 0.05 = 5% diff allowed) */
+        screen?: number;
+        /** OpenCV template match threshold for element matching (0-1, default 0.8 = 80% correlation) */
+        element?: number;
+      };
+      /** Pixel diff threshold for assert operations (0-1, default 0.05 = 5% diff allowed) */
+      assert?: number;
+    };
+  };
+  ai?: AIConfig;
+  /** @deprecated Use cache.thresholds instead */
   cacheThreshold?: {
     /** Threshold for find operations (default: 0.05 = 5% difference, 95% similarity) */
     find?: number;
     /** Threshold for findAll operations (default: 0.05 = 5% difference, 95% similarity) */
     findAll?: number;
   };
+  /** Force creation of a new sandbox (default: true) */
+  newSandbox?: boolean;
+  /**
+   * Preview mode for live test visualization (default: "browser")
+   * - "browser": Opens debugger in default browser
+   * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+   * - "none": Headless mode, no visual preview
+   */
+  preview?: PreviewMode;
+  /**
+   * @deprecated Use `preview: "none"` instead. Run in headless mode (default: false)
+   * For backward compatibility: headless: true maps to preview: "none"
+   */
+  headless?: boolean;
+  /** Direct IP address to connect to a running sandbox instance */
+  ip?: string;
+  /** Custom AMI ID for sandbox instance (e.g., 'ami-1234') */
+  sandboxAmi?: string;
+  /** EC2 instance type for sandbox (e.g., 'i3.metal') */
+  sandboxInstance?: string;
+  /** Cache key for element finding operations. If provided, enables caching tied to this key */
+  cacheKey?: string;
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
+  reconnect?: boolean;
+  /** Enable/disable Dashcam video recording (default: true) */
+  dashcam?: boolean;
+  /**
+   * Enable automatic screenshots before and after each command (default: true)
+   * Screenshots are saved to .testdriver/screenshots/<test>/ with descriptive filenames
+   * Format: <seq>-<action>-<phase>-L<line>-<description>.png
+   * Example: 001-click-before-L42-submit-button.png
+   */
+  autoScreenshots?: boolean;
+  /** Redraw configuration for screen change detection
+   * @example { redraw: { enabled: true, thresholds: { screen: 0.05, network: true } } }
+   */
+  redraw?:
+    | boolean
+    | {
+        /** Enable redraw detection (default: true) */
+        enabled?: boolean;
+        /** Threshold configuration */
+        thresholds?: {
+          /** Screen diff threshold (0-1). Set to false to disable screen redraw detection. Default: 0.05 */
+          screen?: number | false;
+          /** Enable/disable network activity monitoring (default: false) */
+          network?: boolean;
+        };
+        /** @deprecated Use thresholds.screen instead */
+        diffThreshold?: number;
+        /** @deprecated Use thresholds.screen !== false instead */
+        screenRedraw?: boolean;
+        /** @deprecated Use thresholds.network instead */
+        networkMonitor?: boolean;
+      };
+  /** @deprecated Use redraw option instead */
+  redrawThreshold?: number | object;
   /** Additional environment variables */
   environment?: Record<string, any>;
 }
@@ -237,12 +319,32 @@ export interface ConnectOptions {
   sandboxId?: string;
   /** Force creation of a new sandbox */
   newSandbox?: boolean;
-  /** Direct IP address to connect to */
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
+  reconnect?: boolean;
+  /** Direct IP address to connect to a running sandbox instance */
   ip?: string;
-  /** Custom AMI for sandbox */
+  /** Custom AMI ID for sandbox instance (e.g., 'ami-1234') */
   sandboxAmi?: string;
-  /** Instance type for sandbox */
+  /** EC2 instance type for sandbox (e.g., 'i3.metal') */
   sandboxInstance?: string;
+  /** Operating system for the sandbox (default: 'linux') */
+  os?: "windows" | "linux";
+  /**
+   * Preview mode for live test visualization (default: "browser")
+   * - "browser": Opens debugger in default browser
+   * - "ide": Opens preview in IDE panel (VSCode, Cursor, etc.)
+   * - "none": Headless mode, no visual preview
+   */
+  preview?: PreviewMode;
+  /**
+   * @deprecated Use `preview: "none"` instead. Run in headless mode (default: false)
+   * For backward compatibility: headless: true maps to preview: "none"
+   */
+  headless?: boolean;
+  /** Reuse recent connection if available (default: true) */
+  reuseConnection?: boolean;
+  /** Keep sandbox alive for specified milliseconds after disconnect (default: 60000). Set to 0 to terminate immediately on disconnect. */
+  keepAlive?: number;
 }
 
 export interface SandboxInstance {
@@ -285,6 +387,54 @@ export interface HoverResult {
   centerX: number;
   centerY: number;
   [key: string]: any;
+}
+
+/** Bounding box for a parsed element (pixel coordinates) */
+export interface ParsedElementBBox {
+  /** Left edge X coordinate */
+  x0: number;
+  /** Top edge Y coordinate */
+  y0: number;
+  /** Right edge X coordinate */
+  x1: number;
+  /** Bottom edge Y coordinate */
+  y1: number;
+}
+
+/** Bounding box as {left, top, width, height} */
+export interface ParsedElementBoundingBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** Individual element detected by OmniParser */
+export interface ParsedElement {
+  /** Element index */
+  index: number;
+  /** Element type (e.g. "text", "icon", "button") */
+  type: string;
+  /** Text content or description */
+  content: string;
+  /** Interactivity level (e.g. "clickable", "non-interactive") */
+  interactivity: string;
+  /** Bounding box in pixel coordinates */
+  bbox: ParsedElementBBox;
+  /** Bounding box as {left, top, width, height} */
+  boundingBox: ParsedElementBoundingBox;
+}
+
+/** Result from OmniParser screen analysis */
+export interface ParseResult {
+  /** Array of detected UI elements */
+  elements: ParsedElement[];
+  /** URL of the annotated screenshot */
+  annotatedImageUrl: string;
+  /** Width of the analyzed screenshot */
+  imageWidth: number;
+  /** Height of the analyzed screenshot */
+  imageHeight: number;
 }
 
 // ====================================
@@ -433,6 +583,19 @@ export interface FocusApplicationOptions {
   name: string;
 }
 
+/** AI sampling configuration for controlling model behavior */
+export interface AIConfig {
+  /** Temperature for AI sampling (0 = deterministic, higher = more creative). Default: 0 for find verification, model default for assert. */
+  temperature?: number;
+  /** Top-P and Top-K sampling parameters */
+  top?: {
+    /** Top-P (nucleus sampling). Controls diversity by limiting to top P probability mass. Range: 0-1. */
+    p?: number;
+    /** Top-K sampling. Limits choices to top K tokens. 1 = always pick most likely. 0 = disabled. */
+    k?: number;
+  };
+}
+
 /** Options for extract command */
 export interface ExtractOptions {
   /** What to extract */
@@ -443,6 +606,16 @@ export interface ExtractOptions {
 export interface AssertOptions {
   /** Assertion to check */
   assertion: string;
+  /** Cache threshold (0-1). Lower values require closer matches. Set to -1 to disable cache. */
+  threshold?: number;
+  /** Cache key for grouping cached assertions (enables caching when provided) */
+  cacheKey?: string;
+  /** Operating system identifier for cache partitioning */
+  os?: string;
+  /** Screen resolution for cache partitioning */
+  resolution?: string;
+  /** AI sampling configuration (overrides global ai config) */
+  ai?: AIConfig;
 }
 
 /** Options for exec command */
@@ -455,6 +628,36 @@ export interface ExecOptions {
   timeout?: number;
   /** Suppress output */
   silent?: boolean;
+}
+
+/** Options for captcha command */
+export interface CaptchaOptions {
+  /** 2captcha API key (required) */
+  apiKey: string;
+  /** Override auto-detected sitekey */
+  sitekey?: string;
+  /** Captcha type: 'recaptcha_v2', 'recaptcha_v3', 'hcaptcha', 'turnstile' */
+  type?: string;
+  /** reCAPTCHA v3 action (default: 'verify') */
+  action?: string;
+  /** Whether to auto-submit the form (default: true) */
+  autoSubmit?: boolean;
+  /** Polling interval in ms for 2captcha (default: 5000) */
+  pollInterval?: number;
+  /** Max time in ms to wait for solution (default: 120000) */
+  timeout?: number;
+}
+
+/** Result of captcha solving */
+export interface CaptchaResult {
+  /** Whether the captcha was solved successfully */
+  success: boolean;
+  /** Success/error message */
+  message: string;
+  /** The solved captcha token */
+  token: string | null;
+  /** Raw output from the solver script */
+  output: string;
 }
 
 /**
@@ -543,7 +746,7 @@ export class Element {
   /**
    * Find the element on screen
    * @param newDescription - Optional new description to search for
-   * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
+   * @param options - Cache options: number for threshold, or object with cache.thresholds
    */
   find(newDescription?: string, cacheThreshold?: number): Promise<Element>;
 
@@ -644,8 +847,180 @@ export class Element {
   readonly label: string | null;
 }
 
+// ====================================
+// Provision API Interfaces
+// ====================================
+
+/** Options for provision.chrome */
+export interface ProvisionChromeOptions {
+  /** URL to navigate to (default: 'http://testdriver-sandbox.vercel.app/') */
+  url?: string;
+  /** Start maximized (default: true) */
+  maximized?: boolean;
+  /** Use guest mode (default: false) */
+  guest?: boolean;
+}
+
+/** Options for provision.chromeExtension */
+export interface ProvisionChromeExtensionOptions {
+  /** Local filesystem path to the unpacked extension directory */
+  extensionPath?: string;
+  /** Chrome Web Store extension ID */
+  extensionId?: string;
+  /** Start maximized (default: true) */
+  maximized?: boolean;
+}
+
+/** Options for provision.vscode */
+export interface ProvisionVSCodeOptions {
+  /** Path to workspace or folder to open */
+  workspace?: string;
+  /** Array of extension IDs to install */
+  extensions?: string[];
+}
+
+/** Options for provision.installer */
+export interface ProvisionInstallerOptions {
+  /** URL to download the installer from */
+  url: string;
+  /** Filename to save as (auto-detected from URL if not provided) */
+  filename?: string;
+  /** Application name to focus after install */
+  appName?: string;
+  /** Whether to launch the app after installation (default: true) */
+  launch?: boolean;
+}
+
+/** Options for provision.electron */
+export interface ProvisionElectronOptions {
+  /** Path to Electron app (required) */
+  appPath: string;
+  /** Additional electron args */
+  args?: string[];
+}
+
+/** Options for provision.dashcam */
+export interface ProvisionDashcamOptions {
+  /** Path to log file (auto-generated if not provided) */
+  logPath?: string;
+  /** Display name for the log (default: 'TestDriver Log') */
+  logName?: string;
+  /** Enable web log tracking (default: true) */
+  webLogs?: boolean;
+  /** Custom title for the recording */
+  title?: string;
+}
+
+/** Provision API for launching applications */
+export interface ProvisionAPI {
+  /**
+   * Launch Chrome browser
+   * @param options - Chrome launch options
+   */
+  chrome(options?: ProvisionChromeOptions): Promise<void>;
+
+  /**
+   * Launch Chrome browser with a custom extension loaded
+   * @param options - Chrome extension launch options
+   */
+  chromeExtension(options?: ProvisionChromeExtensionOptions): Promise<void>;
+
+  /**
+   * Launch VS Code
+   * @param options - VS Code launch options
+   */
+  vscode(options?: ProvisionVSCodeOptions): Promise<void>;
+
+  /**
+   * Download and install an application
+   * @param options - Installer options
+   * @returns Path to the downloaded file
+   */
+  installer(options: ProvisionInstallerOptions): Promise<string>;
+
+  /**
+   * Launch Electron app
+   * @param options - Electron launch options
+   */
+  electron(options: ProvisionElectronOptions): Promise<void>;
+
+  /**
+   * Initialize Dashcam recording with logging
+   * @param options - Dashcam options
+   */
+  dashcam(options?: ProvisionDashcamOptions): Promise<void>;
+}
+
+/** Dashcam API for screen recording */
+export interface DashcamAPI {
+  /**
+   * Start recording
+   */
+  start(): Promise<void>;
+
+  /**
+   * Stop recording and get replay URL
+   */
+  stop(): Promise<string | null>;
+
+  /**
+   * Check if currently recording
+   */
+  isRecording(): boolean;
+}
+
 export default class TestDriverSDK {
-  constructor(apiKey: string, options?: TestDriverOptions);
+  /**
+   * Create a new TestDriverSDK instance
+   * Automatically loads environment variables from .env file via dotenv.
+   * 
+   * @param apiKey - API key (optional, defaults to TD_API_KEY environment variable)
+   * @param options - SDK configuration options
+   * 
+   * @example
+   * // API key loaded automatically from TD_API_KEY in .env
+   * const client = new TestDriver();
+   * 
+   * @example
+   * // Pass options only (API key from .env)
+   * const client = new TestDriver({ os: 'windows' });
+   * 
+   * @example
+   * // Or pass API key explicitly
+   * const client = new TestDriver('your-api-key');
+   */
+  constructor(apiKey?: string | TestDriverOptions, options?: TestDriverOptions);
+
+  /**
+   * Whether the SDK is currently connected to a sandbox
+   */
+  readonly connected: boolean;
+
+  /**
+   * The operating system of the sandbox
+   */
+  readonly os: "windows" | "linux";
+
+  /**
+   * Provision API for launching applications
+   */
+  readonly provision: ProvisionAPI;
+
+  /**
+   * Dashcam API for screen recording
+   */
+  readonly dashcam: DashcamAPI;
+
+  /**
+   * Whether Dashcam recording is enabled (default: true)
+   */
+  readonly dashcamEnabled: boolean;
+
+  /**
+   * Wait for the sandbox to be ready
+   * Called automatically by provision methods
+   */
+  ready(): Promise<void>;
 
   /**
    * Authenticate with TestDriver API
@@ -662,6 +1037,18 @@ export default class TestDriverSDK {
    */
   disconnect(): Promise<void>;
 
+  /**
+   * Get the last sandbox info from the stored file
+   * @returns Last sandbox info or null if not found
+   */
+  getLastSandboxId(): {
+    sandboxId: string | null;
+    os: "windows" | "linux";
+    ami: string | null;
+    instanceType: string | null;
+    timestamp: string | null;
+  } | null;
+
   // Element Finding API
 
   /**
@@ -669,7 +1056,7 @@ export default class TestDriverSDK {
    * Automatically locates the element and returns it
    *
    * @param description - Description of the element to find
-   * @param cacheThreshold - Cache threshold for this specific find (overrides global setting)
+   * @param options - Cache threshold (number) or options object with cache.thresholds
    * @returns Chainable promise that resolves to Element instance
    *
    * @example
@@ -682,21 +1069,21 @@ export default class TestDriverSDK {
    * await element.click();
    *
    * @example
-   * // Find with custom cache threshold
-   * const element = await client.find('login button', 0.01);
+   * // Find with custom cache thresholds
+   * const element = await client.find('login button', {
+   *   cache: { thresholds: { screen: 0.05, element: 0.9 } }
+   * });
    *
    * @example
-   * // Poll until element is found
-   * let element;
-   * while (!element?.found()) {
-   *   element = await client.find('login button');
-   *   if (!element.found()) {
-   *     await new Promise(resolve => setTimeout(resolve, 1000));
-   *   }
-   * }
+   * // Poll for element with timeout (retries every 5 seconds)
+   * const element = await client.find('loading complete indicator', { timeout: 30000 });
    * await element.click();
    */
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
+  find(
+    description: string,
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; confidence?: number; type?: "text" | "image" | "ui" | "any"; ai?: AIConfig; cache?: { thresholds?: { screen?: number; element?: number } } },
+  ): ChainableElementPromise;
 
   /**
    * Find all elements matching a description
@@ -710,9 +1097,13 @@ export default class TestDriverSDK {
    *
    * @example
    * // Find with custom cache threshold
-   * const items = await client.findAll('list item', 0.01);
+   * const items = await client.findAll('list item', 0.05);
    */
   findAll(description: string, cacheThreshold?: number): Promise<Element[]>;
+  findAll(
+    description: string,
+    options?: { cacheThreshold?: number; cacheKey?: string; cache?: { thresholds?: { screen?: number } } },
+  ): Promise<Element[]>;
 
   // Text Interaction Methods
 
@@ -741,20 +1132,23 @@ export default class TestDriverSDK {
    * Type text
    * @param text - Text to type
    * @param options - Options object with delay and secret
-   * 
+   *
    * @example
    * // Type regular text
    * await client.type('hello world');
-   * 
+   *
    * @example
    * // Type a password securely (not logged or stored)
    * await client.type(process.env.TD_PASSWORD, { secret: true });
-   * 
+   *
    * @example
    * // Type with custom delay
    * await client.type('slow typing', { delay: 100 });
    */
-  type(text: string | number, options?: { delay?: number; secret?: boolean }): Promise<void>;
+  type(
+    text: string | number,
+    options?: { delay?: number; secret?: boolean },
+  ): Promise<void>;
 
   /**
    * Wait for text to appear on screen
@@ -898,7 +1292,10 @@ export default class TestDriverSDK {
    * @param direction - Direction to scroll (default: 'down')
    * @param options - Options object with amount
    */
-  scroll(direction?: ScrollDirection, options?: { amount?: number }): Promise<void>;
+  scroll(
+    direction?: ScrollDirection,
+    options?: { amount?: number },
+  ): Promise<void>;
 
   // Application Control
 
@@ -914,9 +1311,21 @@ export default class TestDriverSDK {
   /**
    * Make an AI-powered assertion
    * @param assertion - Assertion to check
-   * @param options - Additional options (reserved for future use)
+   * @param options - Cache options for the assertion
+   *
+   * @example
+   * // Simple assertion
+   * await client.assert('the login form is visible');
+   *
+   * @example
+   * // With caching enabled via cacheKey
+   * await client.assert('the submit button is enabled', { cacheKey: 'my-test-run' });
+   *
+   * @example
+   * // With custom threshold
+   * await client.assert('the page loaded', { threshold: 0.05, cacheKey: 'login-test' });
    */
-  assert(assertion: string, options?: object): Promise<boolean>;
+  assert(assertion: string, options?: { threshold?: number; cacheKey?: string; os?: string; resolution?: string; ai?: AIConfig }): Promise<boolean>;
 
   /**
    * Extract information from the screen using AI
@@ -928,6 +1337,12 @@ export default class TestDriverSDK {
    * @param description - What to extract
    */
   extract(description: string): Promise<string>;
+
+  /**
+   * Solve a captcha on the current page using 2captcha service
+   * @param options - Captcha solving options
+   */
+  captcha(options: CaptchaOptions): Promise<CaptchaResult>;
 
   // Code Execution
 
@@ -953,26 +1368,44 @@ export default class TestDriverSDK {
   // Utility Methods
 
   /**
-   * Capture a screenshot of the current screen
-   * @param scale - Scale factor for the screenshot (default: 1 = original size)
-   * @param silent - Whether to suppress logging (default: false)
-   * @param mouse - Whether to include mouse cursor (default: false)
-   * @returns Base64 encoded PNG screenshot
+   * Capture a screenshot of the current screen and save it to .testdriver/screenshots
+   * @param filename - Custom filename (without .png extension)
+   * @returns The file path where the screenshot was saved
    *
    * @example
-   * // Capture a screenshot
-   * const screenshot = await client.screenshot();
-   * fs.writeFileSync('screenshot.png', Buffer.from(screenshot, 'base64'));
+   * // Capture a screenshot with auto-generated filename
+   * const screenshotPath = await testdriver.screenshot();
    *
    * @example
-   * // Capture with mouse cursor visible
-   * const screenshot = await client.screenshot(1, false, true);
+   * // Capture with custom filename
+   * const screenshotPath = await testdriver.screenshot("login-page");
+   * // Saves to: .testdriver/screenshots/<test>/login-page.png
    */
-  screenshot(
-    scale?: number,
-    silent?: boolean,
-    mouse?: boolean,
-  ): Promise<string>;
+  screenshot(filename?: string): Promise<string>;
+
+  /**
+   * Parse the current screen using OmniParser v2 to detect all UI elements
+   * Returns structured data with element types, bounding boxes, and content
+   * Requires enterprise or self-hosted plan.
+   *
+   * @returns Parsed screen elements with positions and types
+   *
+   * @example
+   * // Get all elements on screen
+   * const result = await testdriver.parse();
+   * console.log(`Found ${result.elements.length} elements`);
+   *
+   * @example
+   * // Find clickable elements
+   * const result = await testdriver.parse();
+   * const clickable = result.elements.filter(e => e.interactivity === 'clickable');
+   *
+   * @example
+   * // Find text content
+   * const result = await testdriver.parse();
+   * const textElements = result.elements.filter(e => e.type === 'text');
+   */
+  parse(): Promise<ParseResult>;
 
   /**
    * Wait for specified time
@@ -1005,6 +1438,7 @@ export default class TestDriverSDK {
   // AI Methods (Exploratory Loop)
 
   /**
+   * @deprecated Use ai() instead
    * Execute a natural language task using AI
    * This is the SDK equivalent of the CLI's exploratory loop
    *
@@ -1014,11 +1448,11 @@ export default class TestDriverSDK {
    *
    * @example
    * // Simple execution
-   * await client.act('Click the submit button');
+   * await client.ai('Click the submit button');
    *
    * @example
    * // With validation loop
-   * const result = await client.act('Fill out the contact form', { validateAndLoop: true });
+   * const result = await client.ai('Fill out the contact form', { validateAndLoop: true });
    * console.log(result); // AI's final assessment
    */
   act(
@@ -1027,7 +1461,6 @@ export default class TestDriverSDK {
   ): Promise<string | void>;
 
   /**
-   * @deprecated Use act() instead
    * Execute a natural language task using AI
    *
    * @param task - Natural language description of what to do

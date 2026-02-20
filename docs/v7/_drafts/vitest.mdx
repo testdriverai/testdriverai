@@ -50,7 +50,7 @@ test('my first test', async (context) => {
 ### 4. Run Your Tests
 
 ```bash
-npx vitest
+vitest
 ```
 
 That's it! TestDriver automatically handles all setup and teardown.
@@ -285,19 +285,19 @@ test('long running test', async (context) => {
 
 ```bash
 # Run all tests
-npx vitest
+vitest
 
 # Run specific file
-npx vitest login.test.js
+vitest login.test.js
 
 # Run in watch mode
-npx vitest --watch
+vitest --watch
 
 # Run with coverage
-npx vitest --coverage
+vitest --coverage
 
 # Run tests matching pattern
-npx vitest --grep "login"
+vitest --grep "login"
 ```
 
 ### CI/CD Integration
@@ -324,7 +324,7 @@ jobs:
       - name: Run tests
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        run: npx vitest --run
+        run: vitest --run
 ```
 
 ## Advanced Patterns

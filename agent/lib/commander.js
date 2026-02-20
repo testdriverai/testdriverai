@@ -109,13 +109,12 @@ commands:
           break;
         case "hover-text":
           emitter.emit(events.log.log, generator.jsonToManual(object));
-          response = await commands["hover-text"](
-            object.text,
-            object.description,
-            object.action,
-            object.method,
-            object.timeout,
-          );
+          response = await commands["hover-text"]({
+            text: object.text,
+            description: object.description,
+            action: object.action,
+            timeout: object.timeout,
+          });
           break;
         case "hover-image":
           emitter.emit(events.log.log, generator.jsonToManual(object));
@@ -236,10 +235,7 @@ commands:
       timestamp: Date.now(),
     });
 
-    await Promise.all([
-      sdk.req("ran", { command: object.command, data: object }),
-      analytics.track("command", { data: object, depth, timing }),
-    ]);
+    analytics.track("command", { data: object, depth, timing });
 
     return response;
   };

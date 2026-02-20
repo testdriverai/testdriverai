@@ -47,7 +47,7 @@ export TD_SANDBOX_ID="sandbox-id"
 ### 3. Run Tests
 
 ```bash
-npx vitest run
+vitest run
 ```
 
 The reporter will automatically:
@@ -114,7 +114,7 @@ Set the replay URL manually if needed:
 
 ```bash
 export DASHCAM_REPLAY_URL="https://app.dashcam.io/replay/691cf130c2fc02f59ae66fc1"
-npx vitest run
+vitest run
 ```
 
 #### Option 3: Explicit SDK Call
@@ -159,7 +159,7 @@ jobs:
       - name: Run tests
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        run: npx vitest run
+        run: vitest run
 ```
 
 ### GitLab CI
@@ -169,7 +169,7 @@ jobs:
 test:
   script:
     - npm install
-    - npx vitest run
+    - vitest run
   variables:
     TD_API_KEY: $CI_JOB_TOKEN
 ```
@@ -375,12 +375,6 @@ const run2 = await client.createTestRun({
 - Error messages and stack traces
 - Associated dashcam replay
 - Timing and duration
-
-### TdSandbox
-- VM/sandbox lifecycle tracking
-- Platform and OS information
-- Dashcam integration status
-- Cost and usage metrics
 
 ### Replay
 - Dashcam recordings

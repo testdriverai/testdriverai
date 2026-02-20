@@ -24,6 +24,11 @@ jobs:
     - name: Install CLI dependencies
       run: npm ci
     
+    - name: Pack local testdriverai
+      run: |
+        npm pack
+        mv testdriverai-*.tgz /tmp/testdriverai-local.tgz
+    
     - name: Create test directory
       run: |
         mkdir -p /tmp/test-init-project
@@ -39,6 +44,13 @@ jobs:
         node ${{ github.workspace }}/bin/testdriverai.js init
       env:
         TD_API_KEY: ${{ secrets.TD_API_KEY }}
+    
+    - name: Replace npm testdriverai with local build
+      working-directory: /tmp/test-init-project
+      run: |
+        # Remove npm-installed version and install local tarball
+        npm uninstall testdriverai
+        npm install /tmp/testdriverai-local.tgz
     
     - name: Verify project structure
       working-directory: /tmp/test-init-project

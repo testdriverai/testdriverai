@@ -1,0 +1,69 @@
+---
+title: "Clicking on Text Example"
+sidebarTitle: "Hover Text"
+description: "Example test that finds and clicks on text elements using natural language descriptions."
+icon: "hand-pointer"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* hover-text.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69965caa24aebb4a0ca0632a/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="hover-text.test.mjs" {13-15,18-20}
+/**
+ * TestDriver SDK - Hover Text Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Hover Text Test", () => {
+  it("should click Sign In and verify error message", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    // Click on Sign In button using new find() API
+
+    const signInButton = await testdriver.find(
+      "Sign In, black button below the password field",
+    );
+    await signInButton.click();
+
+    // Assert that an error shows that fields are required
+    const result = await testdriver.assert(
+      "an error shows that fields are required",
+    );
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/hover-text.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

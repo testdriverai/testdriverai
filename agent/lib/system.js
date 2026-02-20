@@ -2,6 +2,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { randomUUID } = require("crypto");
 const Jimp = require("jimp");
 const { events } = require("../events.js");
 
@@ -12,12 +13,18 @@ const createSystem = (emitter, sandbox, config) => {
     });
 
     if (!base64) {
-      console.error("Failed to take screenshot");
-    } else {
-      let image = Buffer.from(base64, "base64");
-      fs.writeFileSync(options.filename, image);
-      return { filename: options.filename };
+      throw new Error("Failed to take screenshot: sandbox returned empty data");
     }
+    
+    let image = Buffer.from(base64, "base64");
+    
+    // Verify we got actual image data (PNG header starts with these bytes)
+    if (image.length < 100) {
+      throw new Error(`Failed to take screenshot: received only ${image.length} bytes`);
+    }
+    
+    fs.writeFileSync(options.filename, image);
+    return { filename: options.filename };
   };
 
   let primaryDisplay = null;
@@ -31,7 +38,7 @@ const createSystem = (emitter, sandbox, config) => {
   let countImages = 0;
   const tmpFilename = () => {
     countImages = countImages + 1;
-    return path.join(os.tmpdir(), `${new Date().getTime() + countImages}.png`);
+    return path.join(os.tmpdir(), `td-${Date.now()}-${randomUUID().slice(0, 8)}-${countImages}.png`);
   };
 
   const captureAndResize = async (scale = 1, silent = false, mouse = false) => {
@@ -49,13 +56,13 @@ const createSystem = (emitter, sandbox, config) => {
 
       await screenshot({ filename: step1, format: "png" });
 
-      // Location of cursor image
-      const cursorPath = path.join(__dirname, "resources", "cursor-2.png");
-
-      const mousePos = await getMousePosition();
-
       // Load the screenshot image with Jimp
       let image = await Jimp.read(step1);
+      
+      // Validate the image was loaded correctly (not a 1x1 or tiny placeholder)
+      if (image.getWidth() < 10 || image.getHeight() < 10) {
+        throw new Error(`Screenshot appears corrupted: got ${image.getWidth()}x${image.getHeight()} pixels`);
+      }
 
       // Resize the image
       image.resize(
@@ -64,9 +71,12 @@ const createSystem = (emitter, sandbox, config) => {
       );
 
       if (mouse) {
+        // Only get mouse position when needed to avoid unnecessary websocket calls
+        const cursorPath = path.join(__dirname, "resources", "cursor-2.png");
+        const mousePos = await getMousePosition();
+        
         // Load and composite the mouse cursor image
         const cursorImage = await Jimp.read(cursorPath);
-
         image.composite(cursorImage, mousePos.x, mousePos.y);
       }
 

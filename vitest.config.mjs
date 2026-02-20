@@ -1,20 +1,26 @@
-import { config } from 'dotenv';
-import TestDriver from 'testdriverai/vitest';
-import { defineConfig } from 'vitest/config';
+import TestDriver from "testdriverai/vitest";
+import { defineConfig } from "vitest/config";
 
-// Load .env file early so it's available to the reporter (runs in main process)
-// and to worker processes
-config();
+// Always include AWS setup - it will be a no-op unless TD_OS=windows
+// Note: dotenv is loaded automatically by the TestDriver SDK
+const setupFiles = [
+  "testdriverai/vitest/setup",
+  "testdriverai/vitest/setup-aws",
+  'testdriverai/vitest/setup-disable-defender'
+];
 
 export default defineConfig({
   test: {
+    retry: 1,
     testTimeout: 900000,
     hookTimeout: 900000,
+    disableConsoleIntercept: true,
+    maxConcurrency: 100,
     reporters: [
-      'default',
-      // Don't pass apiKey/apiRoot here - they'll be read from env at runtime
+      "default",
       TestDriver(),
+      ["junit", { outputFile: "test-report.junit.xml" }],
     ],
-    setupFiles: ['testdriverai/vitest/setup'],
+    setupFiles,
   },
 });

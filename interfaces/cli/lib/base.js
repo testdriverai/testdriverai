@@ -23,6 +23,7 @@ async function openBrowser(url) {
     await open(url, {
       // Wait for the app to open
       wait: false,
+      background: true
     });
   } catch (error) {
     console.error("Failed to open browser automatically:", error);
@@ -47,6 +48,8 @@ class BaseCommand extends Command {
     this.agent.sandbox.send({
       type: "output",
       output: Buffer.from(message).toString("base64"),
+    }).catch(() => {
+      // Silently ignore output send failures to prevent infinite loops
     });
   }
 
@@ -73,12 +76,13 @@ class BaseCommand extends Command {
     };
 
     let isConnected = false;
+    const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
 
-    // Use pattern matching for log events, but skip log:Debug
+    // Use pattern matching for log events, but skip log:Debug unless debug mode is enabled
     this.agent.emitter.on("log:*", (message) => {
       const event = this.agent.emitter.event;
 
-      if (event === events.log.debug) return;
+      if (event === events.log.debug && !debugMode) return;
 
       if (event === events.log.narration && isConnected) return;
       console.log(message);
@@ -105,6 +109,10 @@ class BaseCommand extends Command {
       });
 
       this.agent.emitter.on("error:*", (message) => {
+        // Don't forward sandbox errors back to sandbox - this creates an infinite loop
+        // (sandbox error → error:* event → sendToSandbox → output message → sandbox error → ...)
+        const event = this.agent.emitter.event;
+        if (event === "error:sandbox") return;
         this.sendToSandbox(message);
       });
     });
@@ -130,8 +138,47 @@ class BaseCommand extends Command {
     }
 
     this.agent.emitter.on("exit", (exitCode) => {
+      // Ensure sandbox is closed before exiting
+      if (this.agent?.sandbox) {
+        try {
+          this.agent.sandbox.close();
+        } catch (err) {
+          // Ignore close errors
+        }
+      }
       process.exit(exitCode);
     });
+
+    // Handle process signals to ensure clean disconnection
+    let isExiting = false;
+    const cleanupAndExit = async (signal) => {
+      if (isExiting) return;
+      isExiting = true;
+      
+      console.log(`\nReceived ${signal}, cleaning up...`);
+      
+      // Use the agent's exit method for proper cleanup
+      if (this.agent) {
+        try {
+          await this.agent.exit(true, false, false);
+        } catch (err) {
+          console.error("Error during cleanup:", err.message);
+        }
+      } else {
+        // Fallback if no agent
+        if (this.agent?.sandbox) {
+          try {
+            this.agent.sandbox.close();
+          } catch (err) {
+            // Ignore close errors
+          }
+        }
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGINT', () => cleanupAndExit('SIGINT'));
+    process.on('SIGTERM', () => cleanupAndExit('SIGTERM'));
 
     // Handle unhandled promise rejections to prevent them from interfering with the exit flow
     // This is particularly important when JavaScript execution in VM contexts leaves dangling promises

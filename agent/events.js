@@ -91,6 +91,7 @@ const events = {
     request: "sdk:request",
     response: "sdk:response",
     progress: "sdk:progress",
+    retry: "sdk:retry",
   },
   sandbox: {
     connected: "sandbox:connected",
@@ -99,6 +100,7 @@ const events = {
     disconnect: "sandbox:disconnected",
     sent: "sandbox:sent",
     received: "sandbox:received",
+    progress: "sandbox:progress",
   },
   redraw: {
     status: "redraw:status",

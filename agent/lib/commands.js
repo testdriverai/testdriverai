@@ -52,23 +52,42 @@ class CommandError extends Error {
 }
 
 /**
+ * Normalize redraw options from new thresholds format or legacy format.
+ * New:    { enabled: true, thresholds: { screen: 0.05, network: true } }
+ * Legacy: { enabled: true, diffThreshold: 0.1, screenRedraw: true, networkMonitor: true }
+ * @param {Object} opts - Raw redraw options object
+ * @returns {Object} Normalised { enabled, screenRedraw, networkMonitor }
+ */
+const normalizeRedrawOpts = (opts) => {
+  if (!opts || typeof opts !== 'object') return { enabled: !!opts };
+  const result = { enabled: opts.enabled !== false };
+  if (opts.thresholds && typeof opts.thresholds === 'object') {
+    result.screenRedraw = opts.thresholds.screen !== false;
+    result.networkMonitor = !!opts.thresholds.network;
+  } else {
+    result.screenRedraw = opts.screenRedraw !== undefined ? opts.screenRedraw : true;
+    result.networkMonitor = opts.networkMonitor !== undefined ? opts.networkMonitor : false;
+  }
+  return result;
+};
+
+/**
  * Extract redraw options from command options
  * @param {Object} options - Command options that may contain redraw settings
  * @returns {Object} Redraw options object
  */
 const extractRedrawOptions = (options = {}) => {
-  const redrawOpts = {};
-  
-  // Support nested redraw object: { redraw: { enabled: false, diffThreshold: 0.5 } }
+  // Support nested redraw object (new or legacy format)
   if (options.redraw && typeof options.redraw === 'object') {
-    return options.redraw;
+    return normalizeRedrawOpts(options.redraw);
   }
   
-  // Support flat options for convenience
+  // Support flat options for convenience (legacy)
+  const redrawOpts = {};
   if ('redrawEnabled' in options) redrawOpts.enabled = options.redrawEnabled;
   if ('redrawScreenRedraw' in options) redrawOpts.screenRedraw = options.redrawScreenRedraw;
   if ('redrawNetworkMonitor' in options) redrawOpts.networkMonitor = options.redrawNetworkMonitor;
-  if ('redrawDiffThreshold' in options) redrawOpts.diffThreshold = options.redrawDiffThreshold;
+  if ('redrawDiffThreshold' in options) redrawOpts.screenRedraw = true;
   
   return redrawOpts;
 };
@@ -83,6 +102,7 @@ const createCommands = (
   getCurrentFilePath,
   redrawThreshold = 0.01,
   getDashcamElapsedTime = null,
+  getSoftAssertMode = () => false, // getter for soft assert mode (used by act())
 ) => {
   // Create SDK instance with emitter, config, and session
   const sdk = createSDK(emitter, config, sessionInstance);
@@ -114,6 +134,7 @@ const createCommands = (
   const niceSeconds = (ms) => {
     return Math.round(ms / 1000);
   };
+  
   const delay = (t) => new Promise((resolve) => setTimeout(resolve, t));
 
   const findImageOnScreen = async (
@@ -213,62 +234,100 @@ const createCommands = (
     return result;
   };
 
-  const assert = async (assertion, shouldThrow = false) => {
-    const handleAssertResponse = (response) => {
-      emitter.emit(events.log.log, response);
-
-      let valid = response.indexOf("The task passed") > -1;
-
-      if (valid) {
-        return true;
-      } else {
-        if (shouldThrow) {
-          // Is fatal, otherwise it just changes the assertion to be true
-          const errorMessage = `AI Assertion failed: ${assertion}\n${response}`;
-          throw new MatchError(errorMessage, true);
-        } else {
-          return false;
-        }
-      }
-    };
-
+  const assert = async (assertion, shouldThrow = false, options = {}) => {
     // Log asserting action
     const { formatter } = require("../../sdk-log-formatter.js");
     const assertingMessage = formatter.formatAsserting(assertion);
     emitter.emit(events.log.log, assertingMessage);
 
-    emitter.emit(events.log.narration, `thinking...`);
-
-    const assertStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const assertTimestamp = Date.now();
+    const assertStartTime = assertTimestamp;
+    
+    // Extract cache options
+    const { threshold = 0.05, cacheKey, os, resolution, ai } = options;
+    
+    // Debug log cache settings
+    emitter.emit(
+      events.log.debug,
+      `🔍 assert() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey.substring(0, 8)}...` : ""})`,
+    );
+    
+    // Use v7 endpoint for assert with caching support
     let response = await sdk.req("assert", {
       expect: assertion,
       image: await system.captureScreenBase64(),
+      threshold,
+      cacheKey,
+      os,
+      resolution,
+      ai,
     });
+
     const assertDuration = Date.now() - assertStartTime;
     
-    // Determine if assertion passed or failed
-    const assertionPassed = response.data.indexOf("The task passed") > -1;
+    // Handle both old (string) and new (object) response formats
+    // New v7 API returns: { data: { passed, reasoning, content, cacheHit... }, cacheHit, similarity }
+    // Old API returns: { data: "The task passed/failed..." }
+    let passed;
+    let responseText;
+    let cacheHit = false;
+    let similarity = null;
     
-    // Track interaction with success/failure
-    const sessionId = sessionInstance?.get();
-    if (sessionId) {
-      try {
-        await sandbox.send({
-          type: "trackInteraction",
-          interactionType: "assert",
-          session: sessionId,
-          prompt: assertion,
-          timestamp: assertStartTime,
-          duration: assertDuration,
-          success: assertionPassed,
-          error: assertionPassed ? undefined : response.data,
-        });
-      } catch (err) {
-        console.warn("Failed to track assert interaction:", err.message);
-      }
+    let confidence = null;
+    let reasoning = null;
+
+    if (typeof response.data === 'object' && response.data !== null) {
+      // New structured response
+      passed = response.data.passed;
+      responseText = response.data.content || response.data.reasoning || '';
+      cacheHit = response.cacheHit || response.data.cacheHit || false;
+      similarity = response.similarity || response.data.cacheSimilarity;
+      confidence = response.confidence != null ? response.confidence : (response.data.confidence != null ? response.data.confidence : null);
+      reasoning = response.data.reasoning || null;
+    } else {
+      // Old string response (backward compatibility)
+      responseText = response.data || '';
+      passed = responseText.indexOf("The task passed") > -1;
     }
     
-    return handleAssertResponse(response.data);
+    // Log the result with cache info
+    emitter.emit(events.log.narration, formatter.formatAssertResult(passed, responseText, assertDuration, cacheHit), true);
+    
+    // Track interaction with success/failure (fire-and-forget)
+    const sessionId = sessionInstance?.get();
+    if (sessionId) {
+      sandbox.send({
+        type: "trackInteraction",
+        interactionType: "assert",
+        session: sessionId,
+        prompt: assertion,
+        timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+        duration: assertDuration,
+        success: passed,
+        error: passed ? undefined : responseText,
+        cacheHit: cacheHit,
+        confidence: confidence,
+        reasoning: reasoning,
+        similarity: similarity,
+        screenshotUrl: response?.screenshotKey ?? null,
+      }).catch((err) => {
+        console.warn("Failed to track assert interaction:", err.message);
+      });
+    }
+    
+    if (passed) {
+      return true;
+    } else {
+      if (shouldThrow) {
+        // Is fatal, otherwise it just changes the assertion to be true
+        const errorMessage = `AI Assertion failed: ${assertion}\n${responseText}`;
+        throw new MatchError(errorMessage, true);
+      } else {
+        return false;
+      }
+    }
   };
 
   /**
@@ -278,12 +337,15 @@ const createCommands = (
    * @param {number} [options.amount=300] - Amount to scroll in pixels
    * @param {Object} [options.redraw] - Redraw detection options
    * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-   * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-   * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-   * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+   * @param {Object} [options.redraw.thresholds] - Threshold configuration
+   * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+   * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
    */
   const scroll = async (direction = 'down', options = {}) => {
-    const scrollStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const scrollTimestamp = Date.now();
+    const scrollStartTime = scrollTimestamp;
     // Convert number to object format
     if (typeof options === 'number') {
       options = { amount: options };
@@ -291,11 +353,6 @@ const createCommands = (
     
     let { amount = 300 } = options;
     const redrawOptions = extractRedrawOptions(options);
-    
-    emitter.emit(
-      events.log.narration,
-      theme.dim(`scrolling ${direction} ${amount}px...`),
-    );
 
     await redraw.start(redrawOptions);
 
@@ -304,6 +361,7 @@ const createCommands = (
     const before = await system.captureScreenBase64();
     let scrollSuccess = true;
     let scrollError;
+    let actionEndTime;
     
     try {
       switch (direction) {
@@ -313,7 +371,7 @@ const createCommands = (
             amount,
             direction,
           });
-          await redraw.wait(2500, redrawOptions);
+          actionEndTime = Date.now();
           break;
         case "down":
           await sandbox.send({
@@ -321,7 +379,7 @@ const createCommands = (
             amount,
             direction,
           });
-          await redraw.wait(2500, redrawOptions);
+          actionEndTime = Date.now();
           break;
         case "left":
           console.error("Not Supported");
@@ -339,6 +397,22 @@ const createCommands = (
           throw new CommandError("Direction not found");
       }
       
+      const actionDuration = actionEndTime ? actionEndTime - scrollStartTime : Date.now() - scrollStartTime;
+      
+      // Log nested scroll action completion
+      const { formatter } = require("../../sdk-log-formatter.js");
+      emitter.emit(
+        events.log.narration,
+        formatter.formatScrollResult(direction, amount, actionDuration),
+        true,
+      );
+      
+      // Wait for redraw and track duration
+      // Increase timeout for scroll operations as they can take 1-2 seconds to complete
+      const redrawStartTime = Date.now();
+      await redraw.wait(5000, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
       const after = await system.captureScreenBase64();
 
       if (before === after) {
@@ -348,44 +422,47 @@ const createCommands = (
         );
       }
       
-      // Track interaction success
+      // Log nested redraw completion
+      emitter.emit(
+        events.log.narration,
+        formatter.formatRedrawComplete(redrawDuration),
+        true,
+      );
+      
+      // Track interaction success (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const scrollDuration = Date.now() - scrollStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "scroll",
-            session: sessionId,
-            input: { direction, amount },
-            timestamp: scrollStartTime,
-            duration: scrollDuration,
-            success: scrollSuccess,
-            error: scrollError,
-          });
-        } catch (err) {
+        const scrollDuration = Date.now() - scrollStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "scroll",
+          session: sessionId,
+          input: { direction, amount },
+          timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: scrollDuration,
+          success: scrollSuccess,
+          error: scrollError,
+        }).catch((err) => {
           console.warn("Failed to track scroll interaction:", err.message);
-        }
+        });
       }
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const scrollDuration = Date.now() - scrollStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "scroll",
-            session: sessionId,
-            input: { direction, amount },
-            timestamp: scrollStartTime,
-            duration: scrollDuration,
-            success: false,
-            error: error.message,
-          });
-        } catch (err) {
+        const scrollDuration = Date.now() - scrollStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "scroll",
+          session: sessionId,
+          input: { direction, amount },
+          timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: scrollDuration,
+          success: false,
+          error: error.message,
+        }).catch((err) => {
           console.warn("Failed to track scroll interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -403,12 +480,15 @@ const createCommands = (
    * @param {boolean} [options.selectorUsed] - Whether selector was used
    * @param {Object} [options.redraw] - Redraw detection options
    * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-   * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-   * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-   * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+   * @param {Object} [options.redraw.thresholds] - Threshold configuration
+   * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+   * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
    */
   const click = async (...args) => {
-    const clickStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const clickTimestamp = Date.now();
+    const clickStartTime = clickTimestamp;
     let x, y, action, elementData, redrawOptions;
     
     // Handle both object and positional argument styles
@@ -438,37 +518,35 @@ const createCommands = (
         double = true;
       }
 
-      emitter.emit(
-        events.log.narration,
-        theme.dim(`${action} ${button} clicking at ${x}, ${y}...`),
-        true,
-      );
+      // Show nested action details
+      const actionText = action.split("-").join("");
+      const clickActionLogStart = Date.now();
 
       x = parseInt(x);
       y = parseInt(y);
 
-      // Add dashcam timestamp if available
-      if (getDashcamElapsedTime) {
-        const elapsed = getDashcamElapsedTime();
-        if (elapsed !== null) {
-          elementData.timestamp = elapsed;
-        }
-      }
+      // Add absolute timestamp for sandbox events
+      elementData.timestamp = Date.now();
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
       emitter.emit(events.mouseMove, { x, y });
 
       await delay(2500); // wait for the mouse to move
+      
+      // Update the action log with duration
+      const clickMoveEndTime = Date.now();
+      const { formatter } = require("../../sdk-log-formatter.js");
+      emitter.emit(
+        events.log.narration,
+        formatter.formatClickResult(button, x, y, clickMoveEndTime - clickActionLogStart),
+        true,
+      );
 
       if (action !== "hover") {
         // Update timestamp for the actual click action
-        if (getDashcamElapsedTime) {
-          const elapsed = getDashcamElapsedTime();
-          if (elapsed !== null) {
-            elementData.timestamp = elapsed;
-          }
-        }
+        elementData.timestamp = Date.now();
+        
 
         if (action === "click" || action === "left-click") {
           await sandbox.send({ type: "leftClick", x, y, ...elementData });
@@ -492,56 +570,85 @@ const createCommands = (
 
         emitter.emit(events.mouseClick, { x, y, button, click, double });
         
-        // Track interaction
+        // Track action duration (before redraw wait)
+        const actionEndTime = Date.now();
+        const actionDuration = actionEndTime - clickStartTime;
+        
+        // Track interaction (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId && elementData.prompt) {
-          try {
-            const clickDuration = Date.now() - clickStartTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "click",
-              session: sessionId,
-              prompt: elementData.prompt,
-              input: { x, y, action },
-              timestamp: clickStartTime,
-              duration: clickDuration,
-              success: true,
-              cacheHit: elementData.cacheHit,
-              selector: elementData.selector,
-              selectorUsed: elementData.selectorUsed,
-            });
-          } catch (err) {
-            console.warn("Failed to track click interaction:", err.message);
-          }
-        }
-      }
-
-      await redraw.wait(5000, redrawOptions);
-
-      return;
-    } catch (error) {
-      // Track interaction failure
-      const sessionId = sessionInstance?.get();
-      if (sessionId && elementData.prompt) {
-        try {
-          const clickDuration = Date.now() - clickStartTime;
-          await sandbox.send({
+          sandbox.send({
             type: "trackInteraction",
             interactionType: "click",
             session: sessionId,
             prompt: elementData.prompt,
             input: { x, y, action },
-            timestamp: clickStartTime,
-            duration: clickDuration,
-            success: false,
-            error: error.message,
+            timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: actionDuration,
+            success: true,
             cacheHit: elementData.cacheHit,
             selector: elementData.selector,
             selectorUsed: elementData.selectorUsed,
+            confidence: elementData.confidence ?? null,
+            reasoning: elementData.reasoning ?? null,
+            similarity: elementData.similarity ?? null,
+            screenshotUrl: elementData.screenshotUrl ?? null,
+          }).catch((err) => {
+            console.warn("Failed to track click interaction:", err.message);
           });
-        } catch (err) {
-          console.warn("Failed to track click interaction:", err.message);
         }
+        
+        // Wait for redraw and track duration
+        const redrawStartTime = Date.now();
+        await redraw.wait(5000, redrawOptions);
+        const redrawDuration = Date.now() - redrawStartTime;
+        
+        // Log nested redraw completion
+        emitter.emit(
+          events.log.narration,
+          formatter.formatRedrawComplete(redrawDuration),
+          true,
+        );
+      } else {
+        // For hover action (within click function)
+        const redrawStartTime = Date.now();
+        await redraw.wait(5000, redrawOptions);
+        const redrawDuration = Date.now() - redrawStartTime;
+        const actionDuration = Date.now() - clickStartTime - redrawDuration;
+        
+        // Log nested redraw completion
+        emitter.emit(
+          events.log.narration,
+          formatter.formatRedrawComplete(redrawDuration),
+          true,
+        );
+      }
+
+      return;
+    } catch (error) {
+      // Track interaction failure (fire-and-forget)
+      const sessionId = sessionInstance?.get();
+      if (sessionId && elementData.prompt) {
+        const clickDuration = Date.now() - clickStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "click",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y, action },
+          timestamp: clickTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: clickDuration,
+          success: false,
+          error: error.message,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+          confidence: elementData.confidence ?? null,
+          reasoning: elementData.reasoning ?? null,
+          similarity: elementData.similarity ?? null,
+        }).catch((err) => {
+          console.warn("Failed to track click interaction:", err.message);
+        });
       }
       throw error;
     }
@@ -558,7 +665,10 @@ const createCommands = (
    * @param {boolean} [options.selectorUsed] - Whether selector was used
    */
   const hover = async (...args) => {
-    const hoverStartTime = Date.now();
+    // Capture absolute timestamp at the very start of the command
+    // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+    const hoverTimestamp = Date.now();
+    const hoverStartTime = hoverTimestamp;
     let x, y, elementData, redrawOptions;
     
     // Handle both object and positional argument styles
@@ -582,65 +692,78 @@ const createCommands = (
       x = parseInt(x);
       y = parseInt(y);
 
-      // Add dashcam timestamp if available
-      if (getDashcamElapsedTime) {
-        const elapsed = getDashcamElapsedTime();
-        if (elapsed !== null) {
-          elementData.timestamp = elapsed;
-        }
-      }
+      // Add absolute timestamp for sandbox events
+      elementData.timestamp = Date.now();
 
       await sandbox.send({ type: "moveMouse", x, y, ...elementData });
 
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
+      const actionEndTime = Date.now();
+      const actionDuration = actionEndTime - hoverStartTime;
+      
       if (sessionId && elementData.prompt) {
-        try {
-          const hoverDuration = Date.now() - hoverStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "hover",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y },
-            timestamp: hoverStartTime,
-            duration: hoverDuration,
-            success: true,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "hover",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y },
+          timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: actionDuration,
+          success: true,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+          confidence: elementData.confidence ?? null,
+          reasoning: elementData.reasoning ?? null,
+          similarity: elementData.similarity ?? null,
+          screenshotUrl: elementData.screenshotUrl ?? null,
+        }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
-        }
+        });
       }
 
+      // Wait for redraw and track duration
+      const redrawStartTime = Date.now();
       await redraw.wait(2500, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Log action completion with separate durations
+      const { formatter } = require("../../sdk-log-formatter.js");
+      const completionMessage = formatter.formatActionComplete("hover", elementData.prompt, {
+        actionDuration,
+        redrawDuration,
+        cacheHit: elementData.cacheHit,
+      });
+      emitter.emit(events.log.log, completionMessage);
 
       return;
     } catch (error) {
-      // Track interaction failure
+      // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
-        try {
-          const hoverDuration = Date.now() - hoverStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "hover",
-            session: sessionId,
-            prompt: elementData.prompt,
-            input: { x, y },
-            timestamp: hoverStartTime,
-            duration: hoverDuration,
-            success: false,
-            error: error.message,
-            cacheHit: elementData.cacheHit,
-            selector: elementData.selector,
-            selectorUsed: elementData.selectorUsed,
-          });
-        } catch (err) {
+        const hoverDuration = Date.now() - hoverStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "hover",
+          session: sessionId,
+          prompt: elementData.prompt,
+          input: { x, y },
+          timestamp: hoverTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: hoverDuration,
+          success: false,
+          error: error.message,
+          cacheHit: elementData.cacheHit,
+          selector: elementData.selector,
+          selectorUsed: elementData.selectorUsed,
+          confidence: elementData.confidence ?? null,
+          reasoning: elementData.reasoning ?? null,
+          similarity: elementData.similarity ?? null,
+          screenshotUrl: elementData.screenshotUrl ?? null,
+        }).catch((err) => {
           console.warn("Failed to track hover interaction:", err.message);
-        }
+        });
       }
       throw error;
     }
@@ -652,47 +775,44 @@ const createCommands = (
     hover: hover,
     /**
      * Hover over text on screen
-     * @param {Object|string} options - Options object or text (for backward compatibility)
-     * @param {string} options.text - Text to find and hover over
-     * @param {string|null} [options.description] - Optional description of the element
+     * @param {Object|string} options - Options object or description (for backward compatibility)
+     * @param {string} options.description - Description of the element to find
      * @param {string} [options.action='click'] - Action to perform
      * @param {number} [options.timeout=5000] - Timeout in milliseconds
      */
     "hover-text": async (...args) => {
-      let text, description, action, timeout;
+      let description, text, action, timeout;
       
       // Handle both object and positional argument styles
-      if (isObjectArgs(args, ['text', 'description', 'action', 'timeout'])) {
-        ({ text, description = null, action = 'click', timeout = 5000 } = args[0]);
+      if (isObjectArgs(args, ['description', 'text', 'action', 'timeout'])) {
+        ({ description, text, action = 'click', timeout = 5000 } = args[0]);
       } else {
-        // Legacy positional: hoverText(text, description, action, timeout)
-        [text, description = null, action = 'click', timeout = 5000] = args;
+        // Legacy positional: hoverText(description, action, timeout)
+        [description, action = 'click', timeout = 5000] = args;
       }
+      
+      // Use text if provided, otherwise fall back to description
+      // This handles both the new spec (text + description) and legacy usage (just description)
+      description = text || description;
+      
+      if (!description) {
+        throw new CommandError("hover-text requires either a text or description parameter");
+      }
+      
+      description = description.toString();
       
       emitter.emit(
         events.log.narration,
-        theme.dim(
-          `searching for "${text}"${description ? ` (${description})` : ""}...`,
-        ),
+        theme.dim(`searching for "${description}"...`),
       );
 
-      text = text ? text.toString() : null;
-
       // wait for the text to appear on screen
-      await commands["wait-for-text"]({ text, timeout });
-
-      description = description ? description.toString() : null;
+      await commands["wait-for-text"]({ text: description, timeout });
 
       emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-      // Combine text and description into element parameter
-      let element = text;
-      if (description) {
-        element = `"${text}" with description ${description}`;
-      }
-
       let response = await sdk.req("find", {
-        element,
+        element: description,
         image: await system.captureScreenBase64(),
       });
 
@@ -803,59 +923,75 @@ const createCommands = (
      * @param {boolean} [options.secret=false] - If true, text is treated as sensitive (not logged or stored)
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "type": async (text, options = {}) => {
-      const typeStartTime = Date.now();
+      const { formatter } = require("../../sdk-log-formatter.js");
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const typeTimestamp = Date.now();
+      const typeStartTime = typeTimestamp;
       const { delay = 250, secret = false, redraw: redrawOpts, ...elementData } = options;
       const redrawOptions = extractRedrawOptions({ redraw: redrawOpts, ...options });
       
-      // Log masked version if secret, otherwise show actual text
+      // Validate that text parameter is provided
+      if (text === undefined || text === null) {
+        throw new CommandError("type() requires a text parameter. Received: " + text);
+      }
+      
+      // Log parent action with text
       if (secret) {
-        emitter.emit(events.log.narration, theme.dim(`typing secret "****"...`));
+        emitter.emit(events.log.narration, formatter.getPrefix("type") + " " + theme.yellow.bold("Type") + " " + theme.dim(`secret "****"`));
       } else {
-        emitter.emit(events.log.narration, theme.dim(`typing "${text}"...`));
+        emitter.emit(events.log.narration, formatter.getPrefix("type") + " " + theme.yellow.bold("Type") + " " + theme.cyan(`"${text}"`));
       }
 
       await redraw.start(redrawOptions);
 
       text = text.toString();
 
-      // Add dashcam timestamp if available
-      if (getDashcamElapsedTime) {
-        const elapsed = getDashcamElapsedTime();
-        if (elapsed !== null) {
-          elementData.timestamp = elapsed;
-        }
-      }
+      // Add absolute timestamp for sandbox events
+      elementData.timestamp = Date.now();
 
       // Actually type the text in the sandbox
       await sandbox.send({ type: "write", text, delay, ...elementData });
       
-      // Track interaction
+      // Update the action log with duration
+      const typeActionEndTime = Date.now();
+      emitter.emit(events.log.narration, formatter.formatTypeResult(text, secret, typeActionEndTime - typeStartTime), true);
+      
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const typeDuration = Date.now() - typeStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "type",
-            session: sessionId,
-            // Store masked text if secret, otherwise store actual text
-            input: { text: secret ? "****" : text, delay },
-            timestamp: typeStartTime,
-            duration: typeDuration,
-            success: true,
-            isSecret: secret, // Flag this interaction if it contains a secret
-          });
-        } catch (err) {
+        const typeDuration = Date.now() - typeStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "type",
+          session: sessionId,
+          // Store masked text if secret, otherwise store actual text
+          input: { text: secret ? "****" : text, delay },
+          timestamp: typeTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: typeDuration,
+          success: true,
+          isSecret: secret, // Flag this interaction if it contains a secret
+        }).catch((err) => {
           console.warn("Failed to track type interaction:", err.message);
-        }
+        });
       }
       
+      const redrawStartTime = Date.now();
       await redraw.wait(5000, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Log nested redraw completion
+      emitter.emit(
+        events.log.narration,
+        formatter.formatRedrawComplete(redrawDuration),
+        true,
+      );
+      
       return;
     },
     /**
@@ -864,45 +1000,68 @@ const createCommands = (
      * @param {Object} [options] - Additional options
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "press-keys": async (keys, options = {}) => {
-      const pressKeysStartTime = Date.now();
+      const { formatter } = require("../../sdk-log-formatter.js");
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const pressKeysTimestamp = Date.now();
+      const pressKeysStartTime = pressKeysTimestamp;
       const redrawOptions = extractRedrawOptions(options);
+      const keysDisplay = Array.isArray(keys) ? keys.join(", ") : keys;
+      
+      // Log parent action
       emitter.emit(
         events.log.narration,
-        theme.dim(
-          `pressing keys: ${Array.isArray(keys) ? keys.join(", ") : keys}...`,
-        ),
+        formatter.getPrefix("pressKeys") + " " + theme.yellow.bold("PressKeys") + " " + theme.cyan(`${keysDisplay}`),
       );
 
       await redraw.start(redrawOptions);
 
+      // Log nested action details
+      const pressKeysActionLogStart = Date.now();
+
       // finally, press the keys
       await sandbox.send({ type: "press", keys });
       
-      // Track interaction
+      // Update the action log with duration
+      const pressKeysActionEndTime = Date.now();
+      emitter.emit(
+        events.log.narration,
+        formatter.formatPressKeysResult(keysDisplay, pressKeysActionEndTime - pressKeysActionLogStart),
+        true,
+      );
+      
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const pressKeysDuration = Date.now() - pressKeysStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "pressKeys",
-            session: sessionId,
-            input: { keys },
-            timestamp: pressKeysStartTime,
-            duration: pressKeysDuration,
-            success: true,
-          });
-        } catch (err) {
+        const pressKeysDuration = Date.now() - pressKeysStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "pressKeys",
+          session: sessionId,
+          input: { keys },
+          timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: pressKeysDuration,
+          success: true,
+        }).catch((err) => {
           console.warn("Failed to track pressKeys interaction:", err.message);
-        }
+        });
       }
 
+      const redrawStartTime = Date.now();
       await redraw.wait(5000, redrawOptions);
+      const redrawDuration = Date.now() - redrawStartTime;
+      
+      // Log nested redraw completion
+      emitter.emit(
+        events.log.narration,
+        formatter.formatRedrawComplete(redrawDuration),
+        true,
+      );
 
       return;
     },
@@ -912,27 +1071,28 @@ const createCommands = (
      * @param {Object} [options] - Additional options (reserved for future use)
      */
     "wait": async (timeout = 3000, options = {}) => {
-      const waitStartTime = Date.now();
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const waitTimestamp = Date.now();
+      const waitStartTime = waitTimestamp;
       emitter.emit(events.log.narration, theme.dim(`waiting ${timeout}ms...`));
       const result = await delay(timeout);
       
-      // Track interaction
+      // Track interaction (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
-        try {
-          const waitDuration = Date.now() - waitStartTime;
-          await sandbox.send({
-            type: "trackInteraction",
-            interactionType: "wait",
-            session: sessionId,
-            input: { timeout },
-            timestamp: waitStartTime,
-            duration: waitDuration,
-            success: true,
-          });
-        } catch (err) {
+        const waitDuration = Date.now() - waitStartTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "wait",
+          session: sessionId,
+          input: { timeout },
+          timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
+          duration: waitDuration,
+          success: true,
+        }).catch((err) => {
           console.warn("Failed to track wait interaction:", err.message);
-        }
+        });
       }
       
       return result;
@@ -944,6 +1104,9 @@ const createCommands = (
      * @param {number} [options.timeout=10000] - Timeout in milliseconds
      */
     "wait-for-image": async (...args) => {
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const waitForImageTimestamp = Date.now();
       let description, timeout;
       
       // Handle both object and positional argument styles
@@ -989,53 +1152,49 @@ const createCommands = (
         emitter.emit(
           events.log.narration,
           theme.dim(
-            `An image matching the description "${description}" found!`,
+            `An image matching the description \"${description}\" found!`,
           ),
           true,
         );
         
-        // Track interaction success
+        // Track interaction success (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const waitForImageDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForImage",
-              session: sessionId,
-              prompt: description,
-              input: { timeout },
-              timestamp: startTime,
-              duration: waitForImageDuration,
-              success: true,
-            });
-          } catch (err) {
+          const waitForImageDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForImage",
+            session: sessionId,
+            prompt: description,
+            input: { timeout },
+            timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForImageDuration,
+            success: true,
+          }).catch((err) => {
             console.warn("Failed to track waitForImage interaction:", err.message);
-          }
+          });
         }
         
         return;
       } else {
-        // Track interaction failure
+        // Track interaction failure (fire-and-forget)
         const sessionId = sessionInstance?.get();
-        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description "${description}"`;
+        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description \"${description}\"`;
         if (sessionId) {
-          try {
-            const waitForImageDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForImage",
-              session: sessionId,
-              prompt: description,
-              input: { timeout },
-              timestamp: startTime,
-              duration: waitForImageDuration,
-              success: false,
-              error: errorMsg,
-            });
-          } catch (err) {
+          const waitForImageDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForImage",
+            session: sessionId,
+            prompt: description,
+            input: { timeout },
+            timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForImageDuration,
+            success: false,
+            error: errorMsg,
+          }).catch((err) => {
             console.warn("Failed to track waitForImage interaction:", err.message);
-          }
+          });
         }
         
         throw new MatchError(errorMsg);
@@ -1048,11 +1207,14 @@ const createCommands = (
      * @param {number} [options.timeout=5000] - Timeout in milliseconds
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "wait-for-text": async (...args) => {
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const waitForTextTimestamp = Date.now();
       let text, timeout, redrawOptions;
       
       // Handle both object and positional argument styles
@@ -1104,48 +1266,44 @@ const createCommands = (
       if (passed) {
         emitter.emit(events.log.narration, theme.dim(`"${text}" found!`), true);
         
-        // Track interaction success
+        // Track interaction success (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const waitForTextDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForText",
-              session: sessionId,
-              prompt: text,
-              input: { timeout },
-              timestamp: startTime,
-              duration: waitForTextDuration,
-              success: true,
-            });
-          } catch (err) {
+          const waitForTextDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForText",
+            session: sessionId,
+            prompt: text,
+            input: { timeout },
+            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForTextDuration,
+            success: true,
+          }).catch((err) => {
             console.warn("Failed to track waitForText interaction:", err.message);
-          }
+          });
         }
         
         return;
       } else {
-        // Track interaction failure
+        // Track interaction failure (fire-and-forget)
         const sessionId = sessionInstance?.get();
         const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`;
         if (sessionId) {
-          try {
-            const waitForTextDuration = Date.now() - startTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "waitForText",
-              session: sessionId,
-              prompt: text,
-              input: { timeout },
-              timestamp: startTime,
-              duration: waitForTextDuration,
-              success: false,
-              error: errorMsg,
-            });
-          } catch (err) {
+          const waitForTextDuration = Date.now() - startTime;
+          sandbox.send({
+            type: "trackInteraction",
+            interactionType: "waitForText",
+            session: sessionId,
+            prompt: text,
+            input: { timeout },
+            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: waitForTextDuration,
+            success: false,
+            error: errorMsg,
+          }).catch((err) => {
             console.warn("Failed to track waitForText interaction:", err.message);
-          }
+          });
         }
         
         throw new MatchError(errorMsg);
@@ -1160,9 +1318,9 @@ const createCommands = (
      * @param {boolean} [options.invert=false] - Invert the match
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "scroll-until-text": async (...args) => {
       let text, direction, maxDistance, invert, redrawOptions;
@@ -1314,9 +1472,9 @@ const createCommands = (
      * @param {Object} [options] - Additional options
      * @param {Object} [options.redraw] - Redraw detection options
      * @param {boolean} [options.redraw.enabled=true] - Enable/disable redraw detection
-     * @param {boolean} [options.redraw.screenRedraw=true] - Enable/disable screen redraw detection
-     * @param {boolean} [options.redraw.networkMonitor=true] - Enable/disable network monitoring
-     * @param {number} [options.redraw.diffThreshold=0.1] - Screen diff threshold percentage
+     * @param {Object} [options.redraw.thresholds] - Threshold configuration
+     * @param {number|boolean} [options.redraw.thresholds.screen=0.05] - Screen diff threshold (false to disable)
+     * @param {boolean} [options.redraw.thresholds.network=false] - Enable/disable network monitoring
      */
     "focus-application": async (name, options = {}) => {
       const redrawOptions = extractRedrawOptions(options);
@@ -1335,7 +1493,10 @@ const createCommands = (
      * @param {string} options.description - What to extract
      */
     "extract": async (...args) => {
-      const rememberStartTime = Date.now();
+      // Capture absolute timestamp at the very start of the command
+      // Frontend will calculate relative time using: timestamp - replay.clientStartDate
+      const rememberTimestamp = Date.now();
+      const rememberStartTime = rememberTimestamp;
       let description;
       
       // Handle both object and positional argument styles
@@ -1359,15 +1520,15 @@ const createCommands = (
             const rememberDuration = Date.now() - rememberStartTime;
             await sandbox.send({
               type: "trackInteraction",
-              interactionType: "remember",
+              interactionType: "extract",
               session: sessionId,
               prompt: description,
-              timestamp: rememberStartTime,
+              timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: rememberDuration,
               success: true,
             });
           } catch (err) {
-            console.warn("Failed to track remember interaction:", err.message);
+            console.warn("Failed to track extract interaction:", err.message);
           }
         }
         
@@ -1380,16 +1541,16 @@ const createCommands = (
             const rememberDuration = Date.now() - rememberStartTime;
             await sandbox.send({
               type: "trackInteraction",
-              interactionType: "remember",
+              interactionType: "extract",
               session: sessionId,
               prompt: description,
-              timestamp: rememberStartTime,
+              timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               duration: rememberDuration,
               success: false,
               error: error.message,
             });
           } catch (err) {
-            console.warn("Failed to track remember interaction:", err.message);
+            console.warn("Failed to track extract interaction:", err.message);
           }
         }
         throw error;
@@ -1398,10 +1559,16 @@ const createCommands = (
     /**
      * Make an AI-powered assertion
      * @param {string} assertion - Assertion to check
-     * @param {Object} [options] - Additional options (reserved for future use)
+     * @param {Object} [options] - Additional options
+     * @param {number} [options.threshold] - Cache threshold (0-1). Lower values require closer matches. Set to -1 to disable cache.
+     * @param {string} [options.cacheKey] - Cache key for grouping cached assertions (enables caching when provided)
+     * @param {string} [options.os] - Operating system identifier for cache partitioning
+     * @param {string} [options.resolution] - Screen resolution for cache partitioning
      */
     "assert": async (assertion, options = {}) => {
-      let response = await assert(assertion, true);
+      // In soft assert mode (during act()), don't throw on failure
+      const shouldThrow = !getSoftAssertMode();
+      let response = await assert(assertion, shouldThrow, options);
 
       return response;
     },
@@ -1414,7 +1581,7 @@ const createCommands = (
      * @param {boolean} [options.silent=false] - Suppress output
      */
     "exec": async (...args) => {
-      const execStartTime = Date.now();
+      const { formatter } = require("../../sdk-log-formatter.js");
       let language, code, timeout, silent;
       
       // Handle both object and positional argument styles
@@ -1425,9 +1592,13 @@ const createCommands = (
         [language = 'pwsh', code, timeout, silent = false] = args;
       }
       
-      emitter.emit(events.log.narration, theme.dim(`calling exec...`), true);
+      // Log parent action
+      emitter.emit(events.log.narration, formatter.getPrefix("action") + " " + theme.cyan.bold("Exec") + " " + theme.magenta(`[${language}]`), true);
 
-      emitter.emit(events.log.log, code);
+      // Log nested command details (truncate to first line)
+      const firstLine = code.split('\n')[0];
+      const codeDisplay = code.includes('\n') ? firstLine + '...' : firstLine;
+      emitter.emit(events.log.log, formatter.formatCodeLine(codeDisplay));
 
       let plat = system.platform();
 
@@ -1454,6 +1625,8 @@ const createCommands = (
           language = "pwsh";
         }
 
+        const execActionLogStart = Date.now();
+
         let result = null;
 
         result = await sandbox.send({
@@ -1461,64 +1634,39 @@ const createCommands = (
           command: code,
           timeout,
         }, timeout || 300000);
+        
+        const execActionEndTime = Date.now();
+        const execDuration = execActionEndTime - execActionLogStart;
 
-        const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-        if (debugMode) {
-          console.log(result);
-        }
+        // const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+        // if (debugMode) {
+        //   console.log(result);
+        // }
 
         if (result.out && result.out.returncode !== 0) {
-          // Track interaction failure
-          const sessionId = sessionInstance?.get();
-          if (sessionId) {
-            try {
-              const execDuration = Date.now() - execStartTime;
-              await sandbox.send({
-                type: "trackInteraction",
-                interactionType: "exec",
-                session: sessionId,
-                input: { language, code: code.substring(0, 100) }, // Truncate code for tracking
-                timestamp: execStartTime,
-                duration: execDuration,
-                success: false,
-                error: `Exit code ${result.out.returncode}: ${result.out.stderr}`,
-              });
-            } catch (err) {
-              console.warn("Failed to track exec interaction:", err.message);
-            }
-          }
-          
+          emitter.emit(
+            events.log.narration,
+            formatter.formatExecComplete(result.out.returncode, execDuration),
+            true,
+          );
           throw new MatchError(
             `Command failed with exit code ${result.out.returncode}: ${result.out.stderr}`,
           );
         } else {
+          emitter.emit(
+            events.log.narration,
+            formatter.formatExecComplete(0, execDuration),
+            true,
+          );
+          
           if (!silent && result.out?.stdout) {
-            emitter.emit(events.log.log, theme.dim(`stdout:`), true);
-            emitter.emit(events.log.log, `${result.out.stdout}`, true);
+            emitter.emit(events.log.log, theme.dim(`  stdout:`), true);
+            emitter.emit(events.log.log, theme.dim(`  ${result.out.stdout}`), true);
           }
 
           if (!silent && result.out.stderr) {
-            emitter.emit(events.log.log, theme.dim(`stderr:`), true);
-            emitter.emit(events.log.log, `${result.out.stderr}`, true);
-          }
-
-          // Track interaction success
-          const sessionId = sessionInstance?.get();
-          if (sessionId) {
-            try {
-              const execDuration = Date.now() - execStartTime;
-              await sandbox.send({
-                type: "trackInteraction",
-                interactionType: "exec",
-                session: sessionId,
-                input: { language, code: code.substring(0, 100) }, // Truncate code for tracking
-                timestamp: execStartTime,
-                duration: execDuration,
-                success: true,
-              });
-            } catch (err) {
-              console.warn("Failed to track exec interaction:", err.message);
-            }
+            emitter.emit(events.log.log, theme.dim(`  stderr:`), true);
+            emitter.emit(events.log.log, theme.dim(`  ${result.out.stderr}`), true);
           }
 
           return result.out?.stdout?.trim();
@@ -1575,29 +1723,13 @@ const createCommands = (
         if (!stepResult) {
           emitter.emit(events.log.log, `No result returned from script`, true);
         } else {
-          if (!silent) {
-            emitter.emit(events.log.log, theme.dim(`Result:`), true);
-            emitter.emit(events.log.log, stepResult, true);
-          }
-        }
-
-        // Track interaction success for JS execution
-        const sessionId = sessionInstance?.get();
-        if (sessionId) {
-          try {
-            const execDuration = Date.now() - execStartTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "exec",
-              session: sessionId,
-              input: { language: 'js', code: code.substring(0, 100) }, // Truncate code for tracking
-              timestamp: execStartTime,
-              duration: execDuration,
-              success: true,
-            });
-          } catch (err) {
-            console.warn("Failed to track exec interaction:", err.message);
-          }
+        /* The above JavaScript code is checking if the variable `silent` is falsy (not true) and if
+        so, it emits log events using an emitter. The emitted log events include the
+        theme.dim(`Result:`) and the value of the `stepResult` variable. */
+          // if (!silent) {
+          //   emitter.emit(events.log.log, theme.dim(`Result:`), true);
+          //   emitter.emit(events.log.log, stepResult, true);
+          // }
         }
 
         return stepResult;

@@ -6,6 +6,115 @@ const { version } = require("../../package.json");
 const axios = require("axios");
 
 /**
+ * Default retry configuration
+ */
+const DEFAULT_RETRY_CONFIG = {
+  maxRetries: 10,
+  baseDelayMs: 3000,
+  maxDelayMs: 30000,
+  // Error codes that should trigger a retry
+  retryableNetworkCodes: [
+    'ECONNRESET',
+    'ECONNREFUSED', 
+    'ETIMEDOUT',
+    'ENOTFOUND',
+    'ENETUNREACH',
+    'ERR_NETWORK',
+    'ECONNABORTED',
+    'EPIPE',
+    'EAI_AGAIN',
+  ],
+  // HTTP status codes that should trigger a retry
+  retryableStatusCodes: [429, 500, 502, 503, 504],
+};
+
+/**
+ * Determines if an error is retryable
+ * @param {Error} error - The axios error
+ * @param {Object} config - Retry configuration
+ * @returns {boolean} Whether the request should be retried
+ */
+function isRetryableError(error, config = DEFAULT_RETRY_CONFIG) {
+  // Network-level errors (no response received)
+  if (!error.response) {
+    return config.retryableNetworkCodes.includes(error.code);
+  }
+  
+  // HTTP status code based retries
+  const status = error.response?.status;
+  return config.retryableStatusCodes.includes(status);
+}
+
+/**
+ * Calculate delay for next retry using exponential backoff with jitter
+ * @param {number} attempt - Current attempt number (0-indexed)
+ * @param {Error} error - The error that triggered the retry
+ * @param {Object} config - Retry configuration
+ * @returns {number} Delay in milliseconds
+ */
+function calculateRetryDelay(attempt, error, config = DEFAULT_RETRY_CONFIG) {
+  // Respect Retry-After header for rate limiting
+  if (error.response?.status === 429) {
+    const retryAfter = error.response.headers?.['retry-after'];
+    if (retryAfter) {
+      const retryAfterMs = parseInt(retryAfter, 10) * 1000;
+      if (!isNaN(retryAfterMs) && retryAfterMs > 0) {
+        return Math.min(retryAfterMs, config.maxDelayMs);
+      }
+    }
+  }
+  
+  // Exponential backoff: baseDelay * 2^attempt + random jitter
+  const exponentialDelay = config.baseDelayMs * Math.pow(2, attempt);
+  const jitter = Math.random() * config.baseDelayMs * 0.5;
+  return Math.min(exponentialDelay + jitter, config.maxDelayMs);
+}
+
+/**
+ * Sleep for a specified duration
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Execute an async function with retry logic
+ * @param {Function} fn - Async function to execute
+ * @param {Object} options - Options
+ * @param {Object} options.retryConfig - Retry configuration (uses defaults if not provided)
+ * @param {Function} options.onRetry - Callback called before each retry (attempt, error, delayMs)
+ * @returns {Promise<*>} Result of the function
+ */
+async function withRetry(fn, options = {}) {
+  const config = { ...DEFAULT_RETRY_CONFIG, ...options.retryConfig };
+  let lastError;
+  
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry if we've exhausted attempts or error isn't retryable
+      if (attempt >= config.maxRetries || !isRetryableError(error, config)) {
+        throw error;
+      }
+      
+      const delayMs = calculateRetryDelay(attempt, error, config);
+      
+      // Call onRetry callback if provided
+      if (options.onRetry) {
+        options.onRetry(attempt + 1, error, delayMs);
+      }
+      
+      await sleep(delayMs);
+    }
+  }
+  
+  throw lastError;
+}
+
+/**
  * Generate Sentry trace headers for distributed tracing
  * Uses the same trace ID derivation as the API (MD5 hash of session ID)
  * @param {string} sessionId - The session ID
@@ -95,35 +204,144 @@ const createSDK = (emitter, config, sessionInstance) => {
   };
 
   const auth = async () => {
-    if (config["TD_API_KEY"]) {
-      const url = [config["TD_API_ROOT"], "auth/exchange-api-key"].join("/");
-      const c = {
-        method: "post",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        data: {
-          apiKey: config["TD_API_KEY"],
-          version,
-        },
-      };
+    if (!config["TD_API_KEY"]) {
+      const error = new Error(
+        "TD_API_KEY is not configured. Get your API key at https://console.testdriver.ai/team"
+      );
+      error.code = "MISSING_API_KEY";
+      error.isAuthError = true;
+      throw error;
+    }
 
-      try {
-        let res = await axios(url, c);
+    const url = [config["TD_API_ROOT"], "auth/exchange-api-key"].join("/");
+    const c = {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 15000, // 15 second timeout for auth requests
+      data: {
+        apiKey: config["TD_API_KEY"],
+        version,
+      },
+    };
 
-        token = res.data.token;
-        return token;
-      } catch (error) {
-        outputError(error);
-        throw error; // Re-throw the error so calling code can handle it properly
-      }
+    try {
+      let res = await withRetry(
+        () => axios(url, c),
+        {
+          onRetry: (attempt, error, delayMs) => {
+            emitter.emit(events.sdk.retry, {
+              path: 'auth/exchange-api-key',
+              attempt,
+              error: error.message || error.code,
+              delayMs,
+            });
+          },
+        }
+      );
+
+      token = res.data.token;
+      return token;
+    } catch (error) {
+      // Classify the error for better user feedback
+      const classifiedError = classifyAuthError(error, config["TD_API_ROOT"]);
+      outputError(classifiedError);
+      throw classifiedError;
     }
   };
 
+  /**
+   * Classify authentication errors into user-friendly categories
+   * @param {Error} error - The original axios error
+   * @param {string} apiRoot - The API root URL for context
+   * @returns {Error} A classified error with code and helpful message
+   */
+  function classifyAuthError(error, apiRoot) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+
+    // Check for network-level errors (no response received)
+    if (!error.response) {
+      const networkError = new Error(
+        `Unable to reach TestDriver API at ${apiRoot}. ` +
+        getNetworkErrorHint(error.code)
+      );
+      networkError.code = "NETWORK_ERROR";
+      networkError.isNetworkError = true;
+      networkError.originalError = error;
+      return networkError;
+    }
+
+    // Invalid API key (401)
+    if (status === 401) {
+      const authError = new Error(
+        data?.message ||
+        "Invalid API key. Please check your TD_API_KEY and try again. " +
+        "Get your API key at https://console.testdriver.ai/team"
+      );
+      authError.code = data?.error || "INVALID_API_KEY";
+      authError.isAuthError = true;
+      authError.originalError = error;
+      return authError;
+    }
+
+    // Server errors (5xx) - API is down or having issues
+    if (status >= 500) {
+      const serverError = new Error(
+        data?.message ||
+        `TestDriver API is currently unavailable (HTTP ${status}). Please try again later.`
+      );
+      serverError.code = data?.error || "API_UNAVAILABLE";
+      serverError.isServerError = true;
+      serverError.originalError = error;
+      return serverError;
+    }
+
+    // Rate limiting (429)
+    if (status === 429) {
+      const rateLimitError = new Error(
+        "Too many requests to TestDriver API. Please wait a moment and try again."
+      );
+      rateLimitError.code = "RATE_LIMITED";
+      rateLimitError.isRateLimitError = true;
+      rateLimitError.originalError = error;
+      return rateLimitError;
+    }
+
+    // Other HTTP errors - return with context
+    const genericError = new Error(
+      `Authentication failed: ${status} ${error.response?.statusText || "Unknown error"}`
+    );
+    genericError.code = "AUTH_FAILED";
+    genericError.originalError = error;
+    return genericError;
+  }
+
+  /**
+   * Get a helpful hint based on the network error code
+   * @param {string} code - The error code (ECONNREFUSED, ETIMEDOUT, etc.)
+   * @returns {string} A helpful message for the user
+   */
+  function getNetworkErrorHint(code) {
+    const hints = {
+      ECONNREFUSED: "The server refused the connection. Check if the API is running.",
+      ETIMEDOUT: "The connection timed out. Check your internet connection.",
+      ENOTFOUND: "Could not resolve the hostname. Check your internet connection or DNS settings.",
+      ENETUNREACH: "Network is unreachable. Check your internet connection.",
+      ECONNRESET: "Connection was reset. This may be a temporary network issue.",
+      ERR_NETWORK: "A network error occurred. Check your internet connection.",
+      ECONNABORTED: "The request was aborted due to a timeout.",
+    };
+    return hints[code] || "Check your internet connection and try again.";
+  }
+
   const req = async (path, data, onChunk) => {
-    // for each value of data, if it is empty remove it
+    // for each value of data, if it is null/undefined remove it
+    // Note: use == null to match both null and undefined, but preserve
+    // other falsy values like 0, false, and "" which may be intentional
     for (let key in data) {
-      if (!data[key]) {
+      if (data[key] == null) {
         delete data[key];
       }
     }
@@ -148,7 +366,7 @@ const createSDK = (emitter, config, sessionInstance) => {
         ...sentryHeaders, // Add Sentry distributed tracing headers
       },
       responseType: typeof onChunk === "function" ? "stream" : "json",
-      timeout: 60000, // 60 second timeout to prevent hanging requests
+      timeout: 120000, // 120 second timeout to prevent hanging requests
       data: {
         ...data,
         session: sessionInstance.get(),
@@ -159,7 +377,25 @@ const createSDK = (emitter, config, sessionInstance) => {
     try {
       let response;
 
-      response = await axios(url, c);
+      // Use retry logic for non-streaming requests
+      // Streaming requests are not retried as they involve ongoing data transfer
+      if (typeof onChunk !== "function") {
+        response = await withRetry(
+          () => axios(url, c),
+          {
+            onRetry: (attempt, error, delayMs) => {
+              emitter.emit(events.sdk.retry, {
+                path,
+                attempt,
+                error: error.message || error.code,
+                delayMs,
+              });
+            },
+          }
+        );
+      } else {
+        response = await axios(url, c);
+      }
 
       emitter.emit(events.sdk.response, {
         path,
@@ -219,6 +455,26 @@ const createSDK = (emitter, config, sessionInstance) => {
 
       return value;
     } catch (error) {
+      // Check for network-level errors (no response received)
+      if (!error.response) {
+        const networkError = new Error(
+          `Unable to reach TestDriver API at ${config["TD_API_ROOT"]}. ` +
+          getNetworkErrorHint(error.code)
+        );
+        networkError.code = "NETWORK_ERROR";
+        networkError.isNetworkError = true;
+        networkError.originalError = error;
+        networkError.path = path;
+        
+        emitter.emit(events.error.sdk, {
+          message: networkError.message,
+          code: networkError.code,
+          fullError: error,
+        });
+        
+        throw networkError;
+      }
+
       // Check if this is an API validation error with detailed problems
       if (error.response?.data?.problems) {
         const problems = error.response.data.problems;
@@ -238,6 +494,46 @@ const createSDK = (emitter, config, sessionInstance) => {
         });
         
         throw detailedError;
+      }
+
+      // Server errors (5xx) - API is down or having issues
+      const status = error.response?.status;
+      if (status >= 500) {
+        const serverError = new Error(
+          error.response?.data?.message ||
+          `TestDriver API is currently unavailable (HTTP ${status}). Please try again later.`
+        );
+        serverError.code = error.response?.data?.error || "API_UNAVAILABLE";
+        serverError.isServerError = true;
+        serverError.originalError = error;
+        serverError.path = path;
+        
+        emitter.emit(events.error.sdk, {
+          message: serverError.message,
+          code: serverError.code,
+          fullError: error,
+        });
+        
+        throw serverError;
+      }
+
+      // Rate limiting (429)
+      if (status === 429) {
+        const rateLimitError = new Error(
+          "Too many requests to TestDriver API. Please wait a moment and try again."
+        );
+        rateLimitError.code = "RATE_LIMITED";
+        rateLimitError.isRateLimitError = true;
+        rateLimitError.originalError = error;
+        rateLimitError.path = path;
+        
+        emitter.emit(events.error.sdk, {
+          message: rateLimitError.message,
+          code: rateLimitError.code,
+          fullError: error,
+        });
+        
+        throw rateLimitError;
       }
       
       outputError(error);

@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -177,7 +178,7 @@
       #vm-iframe {
         display: none;
         border: none;
-        pointer-events: auto;
+        pointer-events: none; /* view-only by default, enabled on user click */
         position: absolute;
         top: 0px;
         left: 0px;
@@ -185,6 +186,10 @@
         height: 100%;
         z-index: 1;
         overflow: hidden;
+      }
+
+      #vm-iframe.interactive {
+        pointer-events: auto;
       }
 
       /* Loading screen styles */
@@ -307,6 +312,7 @@
         text-align: center;
         user-select: none;
       }
+
     </style>
   </head>
   <body>
@@ -415,7 +421,29 @@
         eventHandlers.get(event).push(callback);
       };
 
+      // Activity tracking for title updates
+      let idleTimeout = null;
+      const IDLE_THRESHOLD = 5000; // 5 seconds
+
+      // Get test file name for title (use just filename, not full path)
+      const testFileName = parsedData?.testFile 
+        ? parsedData.testFile.split('/').pop().split('\\\\').pop()
+        : 'TestDriver';
+
+      const setTitle = (status) => {
+        document.title = `[${status}] ${testFileName}`;
+      };
+
+      const resetIdleTimer = () => {
+        setTitle("Running");
+        if (idleTimeout) clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(() => {
+          setTitle("Idle");
+        }, IDLE_THRESHOLD);
+      };
+
       ws.addEventListener("message", (message) => {
+        resetIdleTimer();
         try {
           const data = JSON.parse(message.data);
           console.log("WebSocket message received:", data);
@@ -451,6 +479,8 @@
 
       ws.addEventListener("close", () => {
         console.log("WebSocket disconnected");
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Done");
         document.getElementById("status").textContent = "Disconnected";
         document.getElementById("status").classList.add("visible");
       });
@@ -475,7 +505,49 @@
         vm: {
           show: "vm:show",
         },
+        test: {
+          start: "test:start",
+          stop: "test:stop",
+          success: "test:success",
+          error: "test:error",
+        },
+        error: {
+          fatal: "error:fatal",
+          general: "error:general",
+          sdk: "error:sdk",
+        },
       };
+
+      // Title state handlers for immediate feedback
+      addEventHandler(events.test.start, () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Running");
+      });
+
+      addEventHandler(events.test.stop, () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Stopped");
+      });
+
+      addEventHandler(events.test.success, () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Passed");
+      });
+
+      addEventHandler(events.test.error, () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Failed");
+      });
+
+      addEventHandler(events.error.fatal, () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Error");
+      });
+
+      addEventHandler(events.error.sdk, () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        setTitle("Error");
+      });
 
       const effects = document.getElementById("effects");
       const mouse = document.getElementById("mouse");
@@ -496,11 +568,17 @@
       const hideInteractionOverlay = () => {
         interactionOverlay.classList.remove("visible");
         isInteractionEnabled = true;
+        iframe.classList.add("interactive"); // Enable pointer events on iframe
 
         // Clear any existing timeout
         if (interactionTimeout) {
           clearTimeout(interactionTimeout);
         }
+      };
+
+      const disableInteraction = () => {
+        isInteractionEnabled = false;
+        iframe.classList.remove("interactive"); // Disable pointer events on iframe
       };
 
       // Event listeners for interaction overlay
@@ -686,7 +764,7 @@
       // Handle window blur/focus for screen locking
       window.addEventListener("blur", () => {
         showInteractionOverlay();
-        isInteractionEnabled = false;
+        disableInteraction();
       });
     </script>
   </body>

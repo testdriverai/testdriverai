@@ -44,7 +44,6 @@ This system provides comprehensive test execution tracking, linking test runs wi
 │         │                │                                   │
 │         │ • TdTestRun    │                                   │
 │         │ • TdTestCase   │                                   │
-│         │ • TdSandbox    │                                   │
 │         │ • Replay       │                                   │
 │         └────────────────┘                                   │
 │                                                               │
@@ -81,7 +80,7 @@ This system provides comprehensive test execution tracking, linking test runs wi
 ## Data Models
 
 ### TdTestRun
-Represents a complete test suite execution (e.g., `npx vitest run`).
+Represents a complete test suite execution (e.g., `vitest run`).
 
 **Key Fields:**
 - `runId`: Unique identifier
@@ -95,7 +94,6 @@ Represents a complete test suite execution (e.g., `npx vitest run`).
 
 **Relationships:**
 - `team`: Owner team
-- `sandbox`: TdSandbox where tests ran
 - `testCases`: Collection of TdTestCase
 - `replays`: Associated Replay records
 
@@ -114,36 +112,13 @@ Represents an individual test within a test run.
 
 **Relationships:**
 - `testRun`: Parent TdTestRun
-- `replay`: Associated Replay record
-
-### TdSandbox
-Represents a spawned VM/sandbox instance.
-
-**Key Fields:**
-- `sandboxId`: Unique identifier
-- `platform`: windows | mac | linux
-- `status`: provisioning | ready | running | stopped | terminated
-- `instanceId`, `instanceType`: AWS EC2 details
-- `ipAddress`, `vncUrl`, `wsUrl`: Connection details
-- `spawnTime`, `readyTime`, `terminateTime`: Lifecycle timestamps
-- `dashcamAuth`: Whether dashcam was authenticated
-- `dashcamProjectId`: Dashcam project for replays
-
-**Relationships:**
-- `team`: Owner team
-- `user`: User who spawned it
-- `testRuns`: Tests that ran on this sandbox
-- `replays`: Dashcam recordings from this sandbox
-
-**Note:** Sandbox creation/updates happen via WebSocket (not REST API) as part of the sandbox provisioning flow.
-
+- `replay`: Associated Replay recor
 ### Replay (Extended)
 Existing model extended with test run associations.
 
 **New Fields:**
 - `tdTestRun`: Associated test run
 - `tdTestCase`: Associated test case
-- `tdSandbox`: Sandbox where recorded
 
 ## API Endpoints
 
@@ -261,7 +236,7 @@ Mark test run as complete.
 ### Flow 1: Automated with Vitest Reporter
 
 ```
-1. Developer runs: npx vitest run
+1. Developer runs: vitest run
 2. Vitest starts, reporter initializes
 3. Reporter creates TdTestRun
 4. For each test:
@@ -277,7 +252,7 @@ Mark test run as complete.
 ```
 1. Start dashcam: dashcam start
 2. Set session ID: export DASHCAM_SESSION_ID=$(dashcam session-id)
-3. Run tests: npx vitest run
+3. Run tests: vitest run
 4. Reporter creates test run with dashcamSessionId
 5. Tests execute, dashcam records
 6. Stop dashcam: dashcam stop
@@ -302,7 +277,7 @@ jobs:
       - name: Run Tests
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
-        run: npx vitest run
+        run: vitest run
       - name: Publish Recording
         if: always()
         run: |

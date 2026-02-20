@@ -1,0 +1,67 @@
+---
+title: "Element Not Found Test"
+sidebarTitle: "Element Not Found"
+description: "Example test showing how to gracefully handle elements that don't exist on the page."
+icon: "crosshairs"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* element-not-found.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69965c3724aebb4a0ca0630a/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="element-not-found.test.mjs" {16-18}
+/**
+ * TestDriver SDK - Element Not Found Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Element Not Found Test", () => {
+  it("should handle non-existent element gracefully without timing out", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    //
+
+    // Try to find an element that definitely doesn't exist
+    const element = await testdriver.find(
+      "a purple unicorn dancing on the moon",
+    );
+
+    // Should return an element that is not found
+    expect(element.found()).toBe(false);
+    expect(element.coordinates).toBeNull();
+  }); // 90 second timeout for the test (should complete much faster)
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/element-not-found.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

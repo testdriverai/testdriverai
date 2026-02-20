@@ -22,11 +22,6 @@ const sharedState = {
  * Set the test run information
  */
 export function setTestRunInfo(info) {
-  console.log("[SharedState] Setting test run info:", {
-    testRunId: info.testRunId,
-    hasToken: !!info.token,
-    hasTestRun: !!info.testRun,
-  });
 
   if (info.testRun) sharedState.testRun = info.testRun;
   if (info.testRunId) sharedState.testRunId = info.testRunId;

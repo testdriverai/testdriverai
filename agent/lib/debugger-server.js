@@ -3,6 +3,7 @@ const http = require("http");
 const path = require("path");
 const fs = require("fs");
 const { eventsArray } = require("../events.js");
+const logger = require("./logger");
 
 let server = null;
 let wss = null;
@@ -112,6 +113,10 @@ async function startDebugger(config = {}, emitter) {
       });
     }
 
+    // Store the debugger URL and config for later use
+    module.exports.debuggerUrl = url;
+    module.exports.config = config;
+
     return { port, url };
   } catch (error) {
     console.error("Failed to start debugger server:", error);
@@ -131,7 +136,7 @@ function stopDebugger() {
   }
 
   clients.clear();
-  console.log("Debugger server stopped");
+  logger.log("Debugger server stopped");
 }
 
 module.exports = {
@@ -139,4 +144,6 @@ module.exports = {
   stopDebugger,
   broadcastEvent,
   createDebuggerServer,
+  debuggerUrl: null,
+  config: null,
 };

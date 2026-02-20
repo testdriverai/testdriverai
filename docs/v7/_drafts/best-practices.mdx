@@ -20,7 +20,7 @@ describe('Login Flow', () => {
       os: 'linux'
     });
     await client.auth();
-    await client.connect({ newSandbox: true });
+    await client.connect();
     testdriver = client;
   });
   

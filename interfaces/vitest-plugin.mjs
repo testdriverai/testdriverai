@@ -4,10 +4,192 @@ import fs from "fs";
 import { createRequire } from "module";
 import os from "os";
 import path from "path";
+import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
 import { setTestRunInfo } from "./shared-test-state.mjs";
 
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
+
+// Import Sentry for error reporting
+const Sentry = require("@sentry/node");
+
+// Track if Sentry has been initialized
+let sentryInitialized = false;
+
+/**
+ * Initialize Sentry for test failure reporting
+ * Uses same configuration as lib/sentry.js for consistency
+ */
+function initializeSentry() {
+  if (sentryInitialized) return;
+  
+  // Respect telemetry opt-out
+  if (process.env.TD_TELEMETRY === "false") {
+    return;
+  }
+
+  try {
+    const version = resolveTestDriverVersion() || "unknown";
+    
+    Sentry.init({
+      dsn:
+        process.env.SENTRY_DSN ||
+        "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
+      environment: "vitest",
+      release: `testdriverai@${version}`,
+      sampleRate: 1.0,
+      tracesSampleRate: 1.0,
+      enableLogs: true,
+      integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
+      initialScope: {
+        tags: {
+          platform: os.platform(),
+          arch: os.arch(),
+          nodeVersion: process.version,
+          runner: "vitest",
+        },
+      },
+      // Filter out events that should not be reported to Sentry
+      beforeSend(event, hint) {
+        const error = hint.originalException;
+        
+        // Don't send user-cancelled errors
+        if (error && error.message && error.message.includes("User cancelled")) {
+          return null;
+        }
+        
+        // Don't send test failures - these are expected behavior, not bugs in the SDK
+        // Test failures indicate the test found a problem, which is the intended use case
+        if (event.exception?.values) {
+          for (const exception of event.exception.values) {
+            // Filter out TestFailure type (from Vitest test failures)
+            if (exception.type === "TestFailure") {
+              return null;
+            }
+            
+            // Filter out common user code errors (ReferenceError, TypeError from user tests)
+            // Only report if the error originates from TestDriver SDK code, not user test code
+            const isUserCodeError = exception.stacktrace?.frames?.some(frame => {
+              const filename = frame.filename || frame.abs_path || "";
+              // Check if error is from user test files (not from SDK internals)
+              return filename.includes("/tests/") || 
+                     filename.includes("/test/") || 
+                     filename.includes(".test.") ||
+                     filename.includes(".spec.");
+            });
+            
+            if (isUserCodeError && (exception.type === "ReferenceError" || exception.type === "TypeError")) {
+              return null;
+            }
+          }
+        }
+        
+        return event;
+      },
+    });
+    
+    sentryInitialized = true;
+    logger.debug("Sentry initialized for vitest");
+  } catch (err) {
+    // Sentry init failed - continue without it
+    logger.debug("Failed to initialize Sentry:", err.message);
+  }
+}
+
+/**
+ * Flush Sentry events before process exit
+ * @param {number} [timeout=2000] - Timeout in ms
+ */
+async function flushSentry(timeout = 2000) {
+  if (!sentryInitialized) return;
+  try {
+    await Sentry.flush(timeout);
+  } catch (err) {
+    // Ignore flush errors
+  }
+}
+
+/**
+ * Resolve the TestDriver SDK version using multiple strategies.
+ * Similar to resolveVitestVersion(), guards against import.meta.url rewriting.
+ * @returns {string|null}
+ */
+function resolveTestDriverVersion() {
+  try {
+    return require("../package.json").version;
+  } catch {}
+
+  try {
+    const cwdRequire = createRequire(path.join(process.cwd(), "package.json"));
+    return cwdRequire("testdriverai/package.json").version;
+  } catch {}
+
+  try {
+    const pkgPath = path.join(process.cwd(), "node_modules", "testdriverai", "package.json");
+    return JSON.parse(fs.readFileSync(pkgPath, "utf8")).version;
+  } catch {}
+
+  return null;
+}
+
+/**
+ * Minimum required Vitest major version
+ */
+const MINIMUM_VITEST_VERSION = 4;
+
+/**
+ * Try to read vitest's package.json version using multiple resolution strategies.
+ * Vitest's Vite-based transform pipeline can rewrite import.meta.url, causing
+ * createRequire to resolve from the wrong location. We fall back to resolving
+ * from process.cwd() and then to reading directly from node_modules.
+ * @returns {string|null} The vitest version string, or null if not found
+ */
+function resolveVitestVersion() {
+  // Strategy 1: createRequire from import.meta.url (standard CJS interop)
+  try {
+    return require("vitest/package.json").version;
+  } catch {}
+
+  // Strategy 2: createRequire from process.cwd() (works when import.meta.url is rewritten)
+  try {
+    const cwdRequire = createRequire(path.join(process.cwd(), "package.json"));
+    return cwdRequire("vitest/package.json").version;
+  } catch {}
+
+  // Strategy 3: read directly from node_modules on disk
+  try {
+    const vitestPkgPath = path.join(process.cwd(), "node_modules", "vitest", "package.json");
+    return JSON.parse(fs.readFileSync(vitestPkgPath, "utf8")).version;
+  } catch {}
+
+  return null;
+}
+
+/**
+ * Check that Vitest version meets minimum requirements
+ * @throws {Error} if Vitest version is below minimum or not installed
+ */
+function checkVitestVersion() {
+  const version = resolveVitestVersion();
+
+  if (!version) {
+    throw new Error(
+      "TestDriver requires Vitest to be installed. " +
+        "Please install it: npm install vitest@latest",
+    );
+  }
+
+  const major = parseInt(version.split(".")[0], 10);
+  if (major < MINIMUM_VITEST_VERSION) {
+    throw new Error(
+      `TestDriver requires Vitest >= ${MINIMUM_VITEST_VERSION}.0.0, but found ${version}. ` +
+        `Please upgrade Vitest: npm install vitest@latest`,
+    );
+  }
+}
+
+// Check Vitest version at plugin load time
+checkVitestVersion();
 
 /**
  * Simple logger for the vitest plugin
@@ -16,7 +198,8 @@ const require = createRequire(import.meta.url);
  * Set TD_LOG_LEVEL=debug for verbose output
  */
 const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
-const currentLogLevel = LOG_LEVELS[process.env.TD_LOG_LEVEL?.toLowerCase()] ?? LOG_LEVELS.info;
+const currentLogLevel =
+  LOG_LEVELS[process.env.TD_LOG_LEVEL?.toLowerCase()] ?? LOG_LEVELS.info;
 
 const logger = {
   debug: (...args) => {
@@ -99,6 +282,7 @@ export const pluginState = {
   client: null,
   startTime: null,
   testCases: new Map(),
+  recordedTestCases: [], // Store recorded test case data for GitHub comment
   token: null,
   detectedPlatform: null,
   pendingTestCaseRecords: new Set(),
@@ -109,21 +293,32 @@ export const pluginState = {
   // TestDriver options to pass to all instances
   testDriverOptions: {},
   // Dashcam URL tracking (in-memory, no files needed!)
-  dashcamUrls: new Map(), // testId -> dashcamUrl
+  dashcamUrls: new Map(), // testId -> [{url, platform, attempt}]
   lastDashcamUrl: null, // Fallback for when test ID isn't available
   // Suite-level test run tracking
   suiteTestRuns: new Map(), // suiteId -> { runId, testRunDbId, token }
 };
 
 // Export functions that can be used by the reporter or tests
-export function registerDashcamUrl(testId, url, platform) {
-  logger.debug(`Registering dashcam URL for test ${testId}:`, url);
-  pluginState.dashcamUrls.set(testId, { url, platform });
+export function registerDashcamUrl(testId, url, platform, attempt) {
+  logger.debug(`Registering dashcam URL for test ${testId} (attempt ${attempt || 1}):`, url);
+  // Support multiple attempts per test - store as array
+  if (!pluginState.dashcamUrls.has(testId)) {
+    pluginState.dashcamUrls.set(testId, []);
+  }
+  pluginState.dashcamUrls.get(testId).push({ url, platform, attempt: attempt || 1 });
   pluginState.lastDashcamUrl = url;
 }
 
 export function getDashcamUrl(testId) {
-  return pluginState.dashcamUrls.get(testId);
+  const entries = pluginState.dashcamUrls.get(testId);
+  if (!entries) return undefined;
+  // Return the last entry for backward compatibility (single URL callers)
+  return entries[entries.length - 1];
+}
+
+export function getAllDashcamUrls(testId) {
+  return pluginState.dashcamUrls.get(testId) || [];
 }
 
 export function clearDashcamUrls() {
@@ -150,22 +345,87 @@ export function getPluginState() {
 
 // Export API helper functions for direct use from tests
 export async function authenticateWithApiKey(apiKey, apiRoot) {
+  if (!apiKey) {
+    const error = new Error(
+      "TD_API_KEY is not configured. Get your API key at https://console.testdriver.ai/team",
+    );
+    error.code = "MISSING_API_KEY";
+    error.isAuthError = true;
+    throw error;
+  }
+
   const url = `${apiRoot}/auth/exchange-api-key`;
-  const response = await withTimeout(
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ apiKey }),
-    }),
-    10000,
-    "Authentication",
-  );
+  let response;
+
+  try {
+    response = await withTimeout(
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ apiKey }),
+      }),
+      15000,
+      "Authentication",
+    );
+  } catch (fetchError) {
+    // Network-level error (fetch failed entirely)
+    const networkError = new Error(
+      `Unable to reach TestDriver API at ${apiRoot}. ` +
+        "Check your internet connection and try again.",
+    );
+    networkError.code = "NETWORK_ERROR";
+    networkError.isNetworkError = true;
+    networkError.originalError = fetchError;
+    throw networkError;
+  }
 
   if (!response.ok) {
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      // Response wasn't JSON, use empty object
+    }
+
+    // Invalid API key (401)
+    if (response.status === 401) {
+      const authError = new Error(
+        data.message ||
+          "Invalid API key. Please check your TD_API_KEY and try again. " +
+            "Get your API key at https://console.testdriver.ai/team",
+      );
+      authError.code = data.error || "INVALID_API_KEY";
+      authError.isAuthError = true;
+      throw authError;
+    }
+
+    // Server errors (5xx) - API is down or having issues
+    if (response.status >= 500) {
+      const serverError = new Error(
+        data.message ||
+          `TestDriver API is currently unavailable (HTTP ${response.status}). Please try again later.`,
+      );
+      serverError.code = data.error || "API_UNAVAILABLE";
+      serverError.isServerError = true;
+      throw serverError;
+    }
+
+    // Rate limiting (429)
+    if (response.status === 429) {
+      const rateLimitError = new Error(
+        "Too many requests to TestDriver API. Please wait a moment and try again.",
+      );
+      rateLimitError.code = "RATE_LIMITED";
+      rateLimitError.isRateLimitError = true;
+      throw rateLimitError;
+    }
+
+    // Other HTTP errors
     throw new Error(
-      `Authentication failed: ${response.status} ${response.statusText}`,
+      `Authentication failed: ${response.status} ${response.statusText}` +
+        (data.message ? ` - ${data.message}` : ""),
     );
   }
 
@@ -224,17 +484,17 @@ export async function recordTestCaseDirect(token, apiRoot, testCaseData) {
 }
 
 // Import TestDriverSDK using require to avoid esbuild transformation issues
-const TestDriverSDK = require('../sdk.js');
+const TestDriverSDK = require("../sdk.js");
 
 /**
  * Create a TestDriver client for use in beforeAll/beforeEach hooks
  * This is for the shared instance pattern where one driver is used across multiple tests
- * 
+ *
  * @param {object} options - TestDriver options
  * @param {string} [options.apiKey] - TestDriver API key (defaults to process.env.TD_API_KEY)
  * @param {boolean} [options.headless] - Run sandbox in headless mode
  * @returns {Promise<TestDriver>} Connected TestDriver client instance
- * 
+ *
  * @example
  * let testdriver;
  * beforeAll(async () => {
@@ -244,47 +504,46 @@ const TestDriverSDK = require('../sdk.js');
  */
 export async function createTestDriver(options = {}) {
   // Get global plugin options if available
-  const pluginOptions = globalThis.__testdriverPlugin?.state?.testDriverOptions || {};
-  
+  const pluginOptions =
+    globalThis.__testdriverPlugin?.state?.testDriverOptions || {};
+
   // Merge options: plugin global options < test-specific options
   const mergedOptions = { ...pluginOptions, ...options };
-  
+
   // Support TD_OS environment variable for specifying target OS (linux, mac, windows)
   // Priority: test options > plugin options > environment variable > default (linux)
   if (!mergedOptions.os && process.env.TD_OS) {
     mergedOptions.os = process.env.TD_OS;
   }
-  
+
   // Extract TestDriver-specific options
   const apiKey = mergedOptions.apiKey || process.env.TD_API_KEY;
-  
+
   // Build config for TestDriverSDK constructor
   const config = { ...mergedOptions };
   delete config.apiKey;
-  
+
   // Use TD_API_ROOT from environment if not provided in config
   if (!config.apiRoot && process.env.TD_API_ROOT) {
     config.apiRoot = process.env.TD_API_ROOT;
   }
-  
+
   const testdriver = new TestDriverSDK(apiKey, config);
-  
+
   // Connect to sandbox
-  console.log('[testdriver] Connecting to sandbox...');
   await testdriver.auth();
   await testdriver.connect();
-  console.log('[testdriver] ✅ Connected to sandbox');
-  
+
   return testdriver;
 }
 
 /**
  * Register a test with a shared TestDriver instance
  * Call this at the start of each test to associate the test context with the driver
- * 
+ *
  * @param {TestDriver} testdriver - TestDriver client instance from createTestDriver
  * @param {object} context - Vitest test context (from async (context) => {})
- * 
+ *
  * @example
  * it("step01: verify login", async (context) => {
  *   registerTest(testdriver, context);
@@ -293,12 +552,14 @@ export async function createTestDriver(options = {}) {
  */
 export function registerTest(testdriver, context) {
   if (!testdriver) {
-    throw new Error('registerTest() requires a TestDriver instance');
+    throw new Error("registerTest() requires a TestDriver instance");
   }
   if (!context || !context.task) {
-    throw new Error('registerTest() requires Vitest context. Pass the context parameter from your test function.');
+    throw new Error(
+      "registerTest() requires Vitest context. Pass the context parameter from your test function.",
+    );
   }
-  
+
   testdriver.__vitestContext = context.task;
   logger.debug(`Registered test: ${context.task.name}`);
 }
@@ -306,9 +567,9 @@ export function registerTest(testdriver, context) {
 /**
  * Clean up a TestDriver client created with createTestDriver
  * Call this in afterAll to properly disconnect and stop recordings
- * 
+ *
  * @param {TestDriver} testdriver - TestDriver client instance
- * 
+ *
  * @example
  * afterAll(async () => {
  *   await cleanupTestDriver(testdriver);
@@ -318,34 +579,44 @@ export async function cleanupTestDriver(testdriver) {
   if (!testdriver) {
     return;
   }
-  
-  console.log('[testdriver] Cleaning up TestDriver client...');
-  
+
   try {
     // Stop dashcam if it was started
     if (testdriver._dashcam && testdriver._dashcam.recording) {
       try {
         const dashcamUrl = await testdriver.dashcam.stop();
-        console.log('🎥 Dashcam URL:', dashcamUrl);
-        
+        const debugMode =
+          process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+        if (debugMode) {
+          console.log("🎥 Dashcam URL:", dashcamUrl);
+        }
+
         // Register dashcam URL in memory for the reporter
         if (dashcamUrl && globalThis.__testdriverPlugin?.registerDashcamUrl) {
-          const testId = testdriver.__vitestContext?.id || 'unknown';
-          const platform = testdriver.os || 'linux';
-          globalThis.__testdriverPlugin.registerDashcamUrl(testId, dashcamUrl, platform);
+          const testId = testdriver.__vitestContext?.id || "unknown";
+          const platform = testdriver.os || "linux";
+          globalThis.__testdriverPlugin.registerDashcamUrl(
+            testId,
+            dashcamUrl,
+            platform,
+          );
         }
       } catch (error) {
-        console.error('❌ Failed to stop dashcam:', error.message);
-        if (error.name === 'NotFoundError' || error.responseData?.error === 'NotFoundError') {
-          console.log('   ℹ️  Sandbox session already terminated - dashcam stop skipped');
+        console.error("❌ Failed to stop dashcam:", error.message);
+        if (
+          error.name === "NotFoundError" ||
+          error.responseData?.error === "NotFoundError"
+        ) {
+          console.log(
+            "   ℹ️  Sandbox session already terminated - dashcam stop skipped",
+          );
         }
       }
     }
-    
+
     await testdriver.disconnect();
-    console.log('✅ Client disconnected');
   } catch (error) {
-    console.error('Error disconnecting client:', error);
+    console.error("Error disconnecting client:", error);
   }
 }
 
@@ -353,11 +624,23 @@ export async function cleanupTestDriver(testdriver) {
  * Handle process termination and mark test run as cancelled
  */
 async function handleProcessExit() {
+  logger.debug("handleProcessExit called");
+  logger.debug("testRun:", !!pluginState.testRun);
+  logger.debug("testRunId:", pluginState.testRunId);
+  logger.debug("testRunCompleted:", pluginState.testRunCompleted);
+
   if (!pluginState.testRun || !pluginState.testRunId) {
+    logger.debug("No test run to cancel - skipping cleanup");
     return;
   }
 
-  logger.info("Process interrupted, marking test run as cancelled...");
+  // Prevent duplicate completion
+  if (pluginState.testRunCompleted) {
+    logger.debug("Test run already completed - skipping cancellation");
+    return;
+  }
+
+  logger.debug("Marking test run as cancelled...");
 
   try {
     const stats = {
@@ -383,8 +666,10 @@ async function handleProcessExit() {
       completeData.platform = platform;
     }
 
+    logger.debug("Calling completeTestRun with:", JSON.stringify(completeData));
     await completeTestRun(completeData);
-    logger.info("✅ Test run marked as cancelled");
+    pluginState.testRunCompleted = true;
+    logger.info("Test run marked as cancelled");
   } catch (error) {
     logger.error("Failed to mark test run as cancelled:", error.message);
   }
@@ -392,29 +677,79 @@ async function handleProcessExit() {
 
 // Set up process exit handlers
 let exitHandlersRegistered = false;
+let isExiting = false;
+let isCancelling = false; // Track if we're in the process of cancelling due to SIGINT/SIGTERM
 
 function registerExitHandlers() {
   if (exitHandlersRegistered) return;
   exitHandlersRegistered = true;
 
-  // Handle Ctrl+C
-  process.on("SIGINT", async () => {
-    await handleProcessExit();
-    process.exit(130); // Standard exit code for SIGINT
+  // Handle Ctrl+C - use 'once' and prepend to run before Vitest's handler
+  process.prependOnceListener("SIGINT", () => {
+    logger.debug("SIGINT received, cleaning up...");
+    if (isExiting) {
+      logger.debug("Already exiting, skipping duplicate handler");
+      return;
+    }
+    isExiting = true;
+    isCancelling = true; // Mark that we're cancelling
+
+    // Temporarily override process.exit to prevent Vitest from exiting before we're done
+    const originalExit = process.exit;
+    let exitCalled = false;
+    let exitCode = 130;
+
+    process.exit = (code) => {
+      if (!exitCalled) {
+        exitCalled = true;
+        exitCode = code ?? 130;
+        logger.debug(
+          `process.exit(${exitCode}) called, waiting for cleanup...`,
+        );
+      }
+    };
+
+    handleProcessExit()
+      .then(() => {
+        logger.debug("Cleanup completed successfully");
+      })
+      .catch((err) => {
+        logger.error("Error during SIGINT cleanup:", err.message);
+      })
+      .finally(() => {
+        logger.debug(`Exiting with code ${exitCode}`);
+        // Restore and call original exit
+        process.exit = originalExit;
+        process.exit(exitCode);
+      });
   });
 
   // Handle kill command
-  process.on("SIGTERM", async () => {
-    await handleProcessExit();
-    process.exit(143); // Standard exit code for SIGTERM
-  });
+  process.prependOnceListener("SIGTERM", () => {
+    logger.debug("SIGTERM received, cleaning up...");
+    if (isExiting) return;
+    isExiting = true;
+    isCancelling = true;
 
-  // Handle unexpected exits
-  process.on("beforeExit", async () => {
-    // Only handle if test run is still running (hasn't been completed normally)
-    if (pluginState.testRun && !pluginState.testRunCompleted) {
-      await handleProcessExit();
-    }
+    const originalExit = process.exit;
+    let exitCode = 143;
+
+    process.exit = (code) => {
+      exitCode = code ?? 143;
+    };
+
+    handleProcessExit()
+      .then(() => {
+        logger.debug("Cleanup completed successfully");
+      })
+      .catch((err) => {
+        logger.error("Error during SIGTERM cleanup:", err.message);
+      })
+      .finally(() => {
+        logger.debug(`Exiting with code ${exitCode}`);
+        process.exit = originalExit;
+        process.exit(exitCode);
+      });
   });
 }
 
@@ -426,7 +761,9 @@ export default function testDriverPlugin(options = {}) {
   // Store options but don't read env vars yet - they may not be loaded
   // Environment variables will be read in onInit after setupFiles run
   pluginState.apiRoot =
-    options.apiRoot || process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
+    options.apiRoot ||
+    process.env.TD_API_ROOT ||
+    "https://testdriver-api.onrender.com";
   pluginState.ciProvider = detectCI();
   pluginState.gitInfo = getGitInfo();
 
@@ -449,10 +786,10 @@ export default function testDriverPlugin(options = {}) {
 
   // Create reporter instance
   const reporter = new TestDriverReporter(options);
-  
+
   // Add name property for Vitest
-  reporter.name = 'testdriver';
-  
+  reporter.name = "testdriver";
+
   return reporter;
 }
 
@@ -463,12 +800,18 @@ export default function testDriverPlugin(options = {}) {
 class TestDriverReporter {
   constructor(options = {}) {
     this.options = options;
-    logger.debug("Reporter created with options:", { hasApiKey: !!options.apiKey, hasApiRoot: !!options.apiRoot });
+    logger.debug("Reporter created with options:", {
+      hasApiKey: !!options.apiKey,
+      hasApiRoot: !!options.apiRoot,
+    });
   }
 
   async onInit(ctx) {
     this.ctx = ctx;
     logger.debug("onInit called - UPDATED VERSION");
+
+    // Initialize Sentry for error reporting
+    initializeSentry();
 
     // Store project root for making file paths relative
     pluginState.projectRoot = ctx.config.root || process.cwd();
@@ -476,7 +819,10 @@ class TestDriverReporter {
 
     // NOW read the API key and API root (after setupFiles have run, including dotenv/config)
     pluginState.apiKey = this.options.apiKey || process.env.TD_API_KEY;
-    pluginState.apiRoot = this.options.apiRoot || process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
+    pluginState.apiRoot =
+      this.options.apiRoot ||
+      process.env.TD_API_ROOT ||
+      "https://testdriver-api.onrender.com";
     logger.debug("API key from options:", !!this.options.apiKey);
     logger.debug("API key from env (at onInit):", !!process.env.TD_API_KEY);
     logger.debug("API root from options:", this.options.apiRoot);
@@ -489,18 +835,21 @@ class TestDriverReporter {
   }
 
   async initializeTestRun() {
-    logger.debug("Initializing test run...");
-    logger.debug("Current API key in pluginState:", !!pluginState.apiKey);
-    logger.debug("Current API root in pluginState:", pluginState.apiRoot);
+    logger.debug("initializeTestRun called");
+    logger.debug("API key present:", !!pluginState.apiKey);
+    logger.debug("API root:", pluginState.apiRoot);
 
     // Check if we should enable the reporter
     if (!pluginState.apiKey) {
       logger.warn("No API key provided, skipping test recording");
-      logger.debug("API key sources - options:", !!this.options.apiKey, "env:", !!process.env.TD_API_KEY);
+      logger.debug(
+        "API key sources - options:",
+        !!this.options.apiKey,
+        "env:",
+        !!process.env.TD_API_KEY,
+      );
       return;
     }
-
-    logger.info("Starting test run initialization with API key...");
 
     try {
       // Exchange API key for JWT token
@@ -531,9 +880,20 @@ class TestDriverReporter {
       // Default to linux if no tests write platform info
       testRunData.platform = "linux";
 
-      logger.debug("Creating test run with data:", testRunData);
+      // Send version metadata
+      testRunData.nodeVersion = process.version;
+      const tdVer = resolveTestDriverVersion();
+      if (tdVer) {
+        testRunData.testDriverVersion = tdVer;
+      }
+      const vitestVer = resolveVitestVersion();
+      if (vitestVer) {
+        testRunData.vitestVersion = vitestVer;
+      }
+
+      logger.debug("Creating test run with data:", JSON.stringify(testRunData));
       pluginState.testRun = await createTestRun(testRunData);
-      logger.debug("Test run created successfully:", pluginState.testRun);
+      logger.debug("Test run created:", JSON.stringify(pluginState.testRun));
 
       // Store in environment variables for worker processes to access
       process.env.TD_TEST_RUN_ID = pluginState.testRunId;
@@ -549,8 +909,6 @@ class TestDriverReporter {
         apiRoot: pluginState.apiRoot,
         startTime: pluginState.startTime,
       });
-
-      logger.info(`Test run created: ${pluginState.testRunId}`);
     } catch (error) {
       logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;
@@ -559,20 +917,42 @@ class TestDriverReporter {
   }
 
   async onTestRunEnd(testModules, unhandledErrors, reason) {
-    logger.debug("Test run ending with reason:", reason);
-    logger.debug("Plugin state - API key present:", !!pluginState.apiKey, "Test run present:", !!pluginState.testRun);
+    logger.debug("onTestRunEnd called with reason:", reason);
+    logger.debug("API key present:", !!pluginState.apiKey);
+    logger.debug("Test run present:", !!pluginState.testRun);
+    logger.debug("Test run ID:", pluginState.testRunId);
+    logger.debug("isCancelling:", isCancelling);
+    logger.debug("testRunCompleted:", pluginState.testRunCompleted);
+
+    // If we're cancelling due to SIGINT/SIGTERM, skip - handleProcessExit will handle it
+    if (isCancelling) {
+      logger.debug(
+        "Cancellation in progress via signal handler, skipping onTestRunEnd",
+      );
+      return;
+    }
+
+    // If already completed (by handleProcessExit), skip
+    if (pluginState.testRunCompleted) {
+      logger.debug("Test run already completed, skipping");
+      return;
+    }
 
     if (!pluginState.apiKey) {
-      logger.warn("Skipping completion - no API key (was it cleared after init failure?)");
+      logger.warn(
+        "Skipping completion - no API key (was it cleared after init failure?)",
+      );
       return;
     }
 
     if (!pluginState.testRun) {
-      logger.warn("Skipping completion - no test run created (check initialization logs)");
+      logger.warn(
+        "Skipping completion - no test run created (check initialization logs)",
+      );
       return;
     }
 
-    logger.info("Completing test run...");
+    logger.debug("Completing test run...");
 
     try {
       // Calculate statistics from testModules
@@ -594,7 +974,9 @@ class TestDriverReporter {
       }
 
       // Complete test run via API
-      logger.debug(`Completing test run ${pluginState.testRunId} with status: ${status}`);
+      logger.debug(
+        `Completing test run ${pluginState.testRunId} with status: ${status}`,
+      );
 
       const completeData = {
         runId: pluginState.testRunId,
@@ -608,33 +990,58 @@ class TestDriverReporter {
 
       // Update platform if detected from test results
       const platform = getPlatform();
-      logger.info(`Platform detection result: ${platform}, detectedPlatform in state: ${pluginState.detectedPlatform}`);
+      logger.debug(
+        `Platform detection result: ${platform}, detectedPlatform in state: ${pluginState.detectedPlatform}`,
+      );
       if (platform) {
         completeData.platform = platform;
-        logger.info(`Updating test run with platform: ${platform}`);
+        logger.debug(`Updating test run with platform: ${platform}`);
       } else {
-        logger.warn(`No platform detected, test run will keep default platform`);
+        logger.warn(
+          `No platform detected, test run will keep default platform`,
+        );
       }
 
       // Wait for any pending operations (shouldn't be any, but just in case)
       if (pluginState.pendingTestCaseRecords.size > 0) {
-        logger.debug(`Waiting for ${pluginState.pendingTestCaseRecords.size} pending operations...`);
+        logger.debug(
+          `Waiting for ${pluginState.pendingTestCaseRecords.size} pending operations...`,
+        );
         await Promise.all(Array.from(pluginState.pendingTestCaseRecords));
       }
 
       // Test cases are reported directly from teardownTest
-      logger.debug("All test cases reported from teardown");
+      logger.debug("Calling completeTestRun API...");
+      logger.debug("Complete data:", JSON.stringify(completeData));
 
       const completeResponse = await completeTestRun(completeData);
-      logger.debug("Test run completion API response:", completeResponse);
+      logger.debug("API response:", JSON.stringify(completeResponse));
 
       // Mark test run as completed to prevent duplicate completion
       pluginState.testRunCompleted = true;
 
-      logger.info(`✅ Test run completed: ${stats.passedTests}/${stats.totalTests} passed`);
+      // Output the test run URL for CI to capture
+      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const consoleUrl = getConsoleUrl(pluginState.apiRoot);
+      if (testRunDbId) {
+        const testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
+        logger.info(`View test run: ${testRunUrl}`);
+        // Output in a parseable format for CI
+        console.log(`TESTDRIVER_RUN_URL=${testRunUrl}`);
+
+        // Post GitHub comment if in CI environment
+        await postGitHubCommentIfEnabled(testRunUrl, stats, completeData);
+      }
+
+      logger.info(
+        `Test run completed: ${stats.passedTests}/${stats.totalTests} passed`,
+      );
     } catch (error) {
       logger.error("Failed to complete test run:", error.message);
       logger.debug("Error stack:", error.stack);
+    } finally {
+      // Flush any pending Sentry events before process exits
+      await flushSentry();
     }
   }
 
@@ -658,87 +1065,30 @@ class TestDriverReporter {
           ? "skipped"
           : "failed";
 
-    logger.info(`Test case completed: ${test.name} (${status})`);
+    logger.debug(`Test case completed: ${test.name} (${status})`);
 
     // Calculate duration from tracked start time
     const testCase = pluginState.testCases.get(test.id);
     const duration = testCase ? Date.now() - testCase.startTime : 0;
-    
-    logger.debug(`Calculated duration: ${duration}ms (startTime: ${testCase?.startTime}, now: ${Date.now()})`);
 
-    // Read test metadata from file (cross-process communication)
-    let dashcamUrl = null;
-    let sessionId = null;
-    let testFile = "unknown";
-    let testOrder = 0;
-
-    const testResultFile = path.join(
-      os.tmpdir(),
-      "testdriver-results",
-      `${test.id}.json`,
+    logger.debug(
+      `Calculated duration: ${duration}ms (startTime: ${testCase?.startTime}, now: ${Date.now()})`,
     );
 
-    logger.debug(`Looking for test result file with test.id: ${test.id}`);
-    logger.debug(`Test result file path: ${testResultFile}`);
+    // Read test metadata from Vitest's task.meta (set in test hooks)
+    const meta = test.meta();
+    logger.debug(`Test meta for ${test.id}:`, meta);
 
-    try {
-      if (fs.existsSync(testResultFile)) {
-        const testResult = JSON.parse(fs.readFileSync(testResultFile, "utf-8"));
-        dashcamUrl = testResult.dashcamUrl || null;
-        const platform = testResult.platform || null;
-        sessionId = testResult.sessionId || null;
-        const absolutePath =
-          testResult.testFile ||
-          test.file?.filepath ||
-          test.file?.name ||
-          "unknown";
-        // Make path relative to project root
-        testFile = pluginState.projectRoot && absolutePath !== "unknown"
-          ? path.relative(pluginState.projectRoot, absolutePath)
-          : absolutePath;
-        testOrder =
-          testResult.testOrder !== undefined ? testResult.testOrder : 0;
-        // Don't override duration from file - use Vitest's result.duration
-        // duration is already set above from result.duration
+    const dashcamUrl = meta.dashcamUrl || null;
+    const dashcamUrls = meta.dashcamUrls || []; // Per-attempt URLs
+    const sessionId = meta.sessionId || null;
+    const platform = meta.platform || null;
+    const sandboxId = meta.sandboxId || null;
+    let testFile = meta.testFile || "unknown";
+    const testOrder = meta.testOrder !== undefined ? meta.testOrder : 0;
 
-        logger.info(`Read from file - dashcam: ${dashcamUrl}, platform: ${platform}, sessionId: ${sessionId}, testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms`);
-
-        // Update test run platform from first test that reports it
-        if (platform && !pluginState.detectedPlatform) {
-          pluginState.detectedPlatform = platform;
-          logger.info(`✅ Detected platform from test result file: ${platform}`);
-        }
-
-        // Clean up the file after reading
-        try {
-          fs.unlinkSync(testResultFile);
-        } catch {
-          // Ignore cleanup errors
-        }
-      } else {
-        logger.debug(`No result file found for test: ${test.id}`);
-        // Fallback to test object properties - try multiple sources
-        // In Vitest, the file path is on test.module.task.filepath
-        const absolutePath =
-          test.module?.task?.filepath ||
-          test.module?.file?.filepath ||
-          test.module?.file?.name ||
-          test.file?.filepath ||
-          test.file?.name ||
-          test.suite?.file?.filepath ||
-          test.suite?.file?.name ||
-          test.location?.file ||
-          "unknown";
-        // Make path relative to project root
-        testFile = pluginState.projectRoot && absolutePath !== "unknown"
-          ? path.relative(pluginState.projectRoot, absolutePath)
-          : absolutePath;
-        logger.debug(`Resolved testFile: ${testFile}`);
-      }
-    } catch (error) {
-      logger.error("Failed to read test result file:", error.message);
-      // Fallback to test object properties - try multiple sources
-      // In Vitest, the file path is on test.module.task.filepath
+    // If testFile not in meta, fallback to test object properties
+    if (testFile === "unknown") {
       const absolutePath =
         test.module?.task?.filepath ||
         test.module?.file?.filepath ||
@@ -749,11 +1099,16 @@ class TestDriverReporter {
         test.suite?.file?.name ||
         test.location?.file ||
         "unknown";
-      // Make path relative to project root
-      testFile = pluginState.projectRoot && absolutePath !== "unknown"
-        ? path.relative(pluginState.projectRoot, absolutePath)
-        : absolutePath;
+      testFile =
+        pluginState.projectRoot && absolutePath !== "unknown"
+          ? path.relative(pluginState.projectRoot, absolutePath)
+          : absolutePath;
       logger.debug(`Resolved testFile from fallback: ${testFile}`);
+    }
+
+    // Update test run platform from first test that reports it
+    if (platform && !pluginState.detectedPlatform) {
+      pluginState.detectedPlatform = platform;
     }
 
     // Get test run info from environment variables
@@ -761,7 +1116,9 @@ class TestDriverReporter {
     const token = process.env.TD_TEST_RUN_TOKEN;
 
     if (!testRunId || !token) {
-      logger.warn(`Test run not initialized, skipping test case recording for: ${test.name}`);
+      logger.warn(
+        `Test run not initialized, skipping test case recording for: ${test.name}`,
+      );
       return;
     }
 
@@ -777,12 +1134,20 @@ class TestDriverReporter {
         const error = result.errors[0];
         errorMessage = error.message;
         errorStack = error.stack;
+        
+        // Note: We do NOT report test failures to Sentry.
+        // Test failures are expected behavior (they indicate a test found a bug).
+        // We only want actual SDK crashes and exceptions reported to Sentry.
       }
 
       const suiteName = test.suite?.name;
       const startTime = Date.now() - duration; // Calculate start time from duration
+      const retryCount = result.retryCount || 0;
+      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const consoleUrl = getConsoleUrl(pluginState.apiRoot);
+      const hasRetries = retryCount > 0 && dashcamUrls.length > 1;
 
-      // Record test case with all metadata
+      // Record a single test case with all metadata
       const testCaseData = {
         runId: testRunId,
         testName: test.name,
@@ -792,7 +1157,7 @@ class TestDriverReporter {
         startTime: startTime,
         endTime: Date.now(),
         duration: duration,
-        retries: result.retryCount || 0,
+        retries: retryCount,
       };
 
       // Add sessionId if available
@@ -805,11 +1170,20 @@ class TestDriverReporter {
         testCaseData.replayUrl = dashcamUrl;
       }
 
+      // Include per-attempt replay URLs for retry visibility
+      if (dashcamUrls.length > 0) {
+        const attemptUrls = dashcamUrls
+          .map(a => ({ attempt: a.attempt, url: a.url || null, sessionId: a.sessionId || null }));
+        testCaseData.replayUrls = attemptUrls;
+      }
+
       if (suiteName) testCaseData.suiteName = suiteName;
       if (errorMessage) testCaseData.errorMessage = errorMessage;
       if (errorStack) testCaseData.errorStack = errorStack;
 
-      logger.debug(`Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`);
+      logger.debug(
+        `Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`,
+      );
 
       const testCaseResponse = await recordTestCaseDirect(
         token,
@@ -818,10 +1192,36 @@ class TestDriverReporter {
       );
 
       const testCaseDbId = testCaseResponse.data?.id;
-      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
 
-      logger.debug(`Reported test case to API${dashcamUrl ? " with dashcam URL" : ""}`);
-      logger.info(`🔗 View test: ${pluginState.apiRoot.replace("testdriver-api.onrender.com", "console.testdriver.ai")}/runs/${testRunDbId}/${testCaseDbId}`);
+      // Store test case data for GitHub comment generation
+      pluginState.recordedTestCases.push({
+        ...testCaseData,
+        id: testCaseDbId,
+      });
+
+      console.log("");
+      console.log(
+        `🔗 Test Report: ${consoleUrl}/runs/${testRunDbId}/${testCaseDbId}`,
+      );
+
+      // If there were retries, list all per-attempt dashcam URLs for debugging
+      if (hasRetries) {
+        const validAttempts = dashcamUrls.filter(a => a.url);
+        if (validAttempts.length > 0) {
+          console.log(`📋 Retry attempts (${dashcamUrls.length} total):`);
+          for (const attempt of validAttempts) {
+            console.log(`   Attempt ${attempt.attempt}: ${attempt.url}`);
+          }
+        }
+      }
+      
+      // Output parseable format for docs generation (examples only)
+      if (testFile.startsWith("examples/")) {
+        const testFileName = path.basename(testFile);
+        console.log(
+          `TESTDRIVER_EXAMPLE_URL::${testFileName}::${consoleUrl}/runs/${testRunDbId}/${testCaseDbId}`,
+        );
+      }
     } catch (error) {
       logger.error("Failed to report test case:", error.message);
     }
@@ -831,6 +1231,32 @@ class TestDriverReporter {
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Maps an API root URL to its corresponding web console URL.
+ * The API and web console are served from different domains/ports.
+ *
+ * @param {string} apiRoot - The API root URL (e.g., https://testdriver-api.onrender.com)
+ * @returns {string} The corresponding web console URL
+ */
+function getConsoleUrl(apiRoot) {
+  if (!apiRoot) return "https://console.testdriver.ai";
+
+  // Production: API on render.com -> Console on testdriver.ai
+  if (apiRoot.includes("testdriver-api.onrender.com")) {
+    return "https://console.testdriver.ai";
+  }
+
+  // Local development: API on localhost:1337 -> Web on localhost:3001
+  if (apiRoot.includes("ngrok.io")) {
+    return `http://localhost:3001`;
+  }
+
+  // Ngrok or other tunnels: assume same host, different path structure
+  // For ngrok, the API and web might be on same domain or user needs to configure
+  // Return as-is since we can't reliably determine the mapping
+  return apiRoot;
+}
 
 function generateRunId() {
   return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
@@ -843,15 +1269,23 @@ function getSuiteName() {
 function getPlatform() {
   // First try to get platform from SDK client detected during test execution
   if (pluginState.detectedPlatform) {
-    logger.debug(`Using platform from SDK client: ${pluginState.detectedPlatform}`);
+    logger.debug(
+      `Using platform from SDK client: ${pluginState.detectedPlatform}`,
+    );
     return pluginState.detectedPlatform;
   }
 
   // Try to get platform from dashcam URLs (registered during test cleanup)
-  for (const [, data] of pluginState.dashcamUrls) {
-    if (data.platform) {
-      logger.debug(`Using platform from dashcam URL registration: ${data.platform}`);
-      return data.platform;
+  for (const [, entries] of pluginState.dashcamUrls) {
+    // entries is now an array of {url, platform, attempt}
+    const arr = Array.isArray(entries) ? entries : [entries];
+    for (const data of arr) {
+      if (data.platform) {
+        logger.debug(
+          `Using platform from dashcam URL registration: ${data.platform}`,
+        );
+        return data.platform;
+      }
     }
   }
 
@@ -867,11 +1301,16 @@ function calculateStatsFromModules(testModules) {
 
   for (const testModule of testModules) {
     for (const testCase of testModule.children.allTests()) {
-      totalTests++;
       const result = testCase.result();
-      if (result.state === "passed") passedTests++;
-      else if (result.state === "failed") failedTests++;
-      else if (result.state === "skipped") skippedTests++;
+      if (result.state === "passed") {
+        passedTests++;
+        totalTests++;
+      } else if (result.state === "failed") {
+        failedTests++;
+        totalTests++;
+      } else if (result.state === "skipped") {
+        skippedTests++;
+      }
     }
   }
 
@@ -921,7 +1360,7 @@ function getGitInfo() {
     try {
       info.commit = execSync("git rev-parse HEAD", {
         encoding: "utf8",
-        stdio: ["pipe", "pipe", "ignore"]
+        stdio: ["pipe", "pipe", "ignore"],
       }).trim();
       logger.debug("Git commit from local:", info.commit);
     } catch (e) {
@@ -933,7 +1372,7 @@ function getGitInfo() {
     try {
       info.branch = execSync("git rev-parse --abbrev-ref HEAD", {
         encoding: "utf8",
-        stdio: ["pipe", "pipe", "ignore"]
+        stdio: ["pipe", "pipe", "ignore"],
       }).trim();
       logger.debug("Git branch from local:", info.branch);
     } catch (e) {
@@ -945,7 +1384,7 @@ function getGitInfo() {
     try {
       info.author = execSync("git config user.name", {
         encoding: "utf8",
-        stdio: ["pipe", "pipe", "ignore"]
+        stdio: ["pipe", "pipe", "ignore"],
       }).trim();
       logger.debug("Git author from local:", info.author);
     } catch (e) {
@@ -957,7 +1396,7 @@ function getGitInfo() {
     try {
       const remoteUrl = execSync("git config --get remote.origin.url", {
         encoding: "utf8",
-        stdio: ["pipe", "pipe", "ignore"]
+        stdio: ["pipe", "pipe", "ignore"],
       }).trim();
 
       // Extract repo from git URL (supports both SSH and HTTPS)
@@ -973,8 +1412,150 @@ function getGitInfo() {
     }
   }
 
-  logger.info("Collected git info:", info);
+  logger.debug("Collected git info:", info);
   return info;
+}
+
+// ============================================================================
+// GitHub Comment Helper
+// ============================================================================
+
+/**
+ * Extract PR number from GitHub Actions environment
+ * Checks multiple sources: env vars, event file, and GITHUB_REF
+ * @returns {string|null} PR number or null if not found
+ */
+function extractPRNumber() {
+  // Try direct environment variables first
+  let prNumber =
+    process.env.GITHUB_PR_NUMBER ||
+    process.env.TD_GITHUB_PR ||
+    process.env.PR_NUMBER;
+
+  if (prNumber) {
+    return prNumber;
+  }
+
+  // Try to extract from GitHub Actions event path
+  if (process.env.GITHUB_EVENT_PATH) {
+    try {
+      const eventData = JSON.parse(
+        fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"),
+      );
+      if (eventData.pull_request?.number) {
+        return String(eventData.pull_request.number);
+      }
+    } catch (err) {
+      logger.debug("Could not read GitHub event file:", err.message);
+    }
+  }
+
+  // Try to extract from GITHUB_REF (refs/pull/123/merge or refs/pull/123/head)
+  if (process.env.GITHUB_REF) {
+    const match = process.env.GITHUB_REF.match(
+      /refs\/pull\/(\d+)\/(merge|head)/,
+    );
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Post GitHub comment with test results if enabled
+ * Checks for GitHub token and PR number in environment variables
+ * @param {string} testRunUrl - URL to the test run
+ * @param {Object} stats - Test statistics
+ * @param {Object} completeData - Test run completion data
+ */
+async function postGitHubCommentIfEnabled(testRunUrl, stats, completeData) {
+  try {
+    // Check if GitHub comments are explicitly disabled
+    if (process.env.TESTDRIVER_SKIP_GITHUB_COMMENT === "true") {
+      logger.debug(
+        "GitHub comments disabled via TESTDRIVER_SKIP_GITHUB_COMMENT",
+      );
+      return;
+    }
+
+    // Check if GitHub comment posting is enabled
+    const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    const prNumber = extractPRNumber();
+    const commitSha = process.env.GITHUB_SHA || pluginState.gitInfo.commit;
+
+    // Only post if we have a token and either a PR number or commit SHA
+    if (!githubToken) {
+      logger.debug("GitHub token not found, skipping comment posting");
+      return;
+    }
+
+    if (!prNumber && !commitSha) {
+      logger.debug(
+        "Neither PR number nor commit SHA found, skipping comment posting",
+      );
+      return;
+    }
+
+    // Extract owner/repo from git info
+    const repo = pluginState.gitInfo.repo;
+    if (!repo) {
+      logger.warn("Repository info not available, skipping GitHub comment");
+      return;
+    }
+
+    const [owner, repoName] = repo.split("/");
+    if (!owner || !repoName) {
+      logger.warn("Invalid repository format, expected owner/repo");
+      return;
+    }
+
+    logger.debug("Preparing GitHub comment...");
+
+    // Prepare test run data for comment
+    const testRunData = {
+      runId: pluginState.testRunId,
+      status: completeData.status,
+      totalTests: stats.totalTests,
+      passedTests: stats.passedTests,
+      failedTests: stats.failedTests,
+      skippedTests: stats.skippedTests,
+      duration: completeData.duration,
+      testRunUrl,
+      platform:
+        completeData.platform || pluginState.detectedPlatform || "unknown",
+      branch: pluginState.gitInfo.branch || "unknown",
+      commit: commitSha || "unknown",
+    };
+
+    // Use recorded test cases from pluginState
+    const testCases = pluginState.recordedTestCases || [];
+
+    logger.info(
+      `Posting GitHub comment with ${testCases.length} test cases...`,
+    );
+
+    // Post or update GitHub comment
+    const githubOptions = {
+      token: githubToken,
+      owner,
+      repo: repoName,
+      prNumber: prNumber ? parseInt(prNumber, 10) : undefined,
+      commitSha: commitSha,
+    };
+
+    const comment = await postOrUpdateTestResults(
+      testRunData,
+      testCases,
+      githubOptions,
+    );
+    logger.info(`✅ GitHub comment posted: ${comment.html_url}`);
+    console.log(`\n🔗 GitHub Comment: ${comment.html_url}\n`);
+  } catch (error) {
+    logger.warn("Failed to post GitHub comment:", error.message);
+    logger.debug("GitHub comment error stack:", error.stack);
+  }
 }
 
 // ============================================================================
@@ -1034,27 +1615,38 @@ async function createTestRun(data) {
 
 async function completeTestRun(data) {
   const url = `${pluginState.apiRoot}/api/v1/testdriver/test-run-complete`;
-  const response = await withTimeout(
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${pluginState.token}`,
-      },
-      body: JSON.stringify(data),
-    }),
-    10000,
-    "Internal Complete Test Run",
-  );
+  logger.debug(`completeTestRun: POSTing to ${url}`);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `API error: ${response.status} ${response.statusText} - ${errorText}`,
+  try {
+    const response = await withTimeout(
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${pluginState.token}`,
+        },
+        body: JSON.stringify(data),
+      }),
+      10000,
+      "Internal Complete Test Run",
     );
-  }
 
-  return await response.json();
+    logger.debug(`completeTestRun: Response status ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `API error: ${response.status} ${response.statusText} - ${errorText}`,
+      );
+    }
+
+    const result = await response.json();
+    logger.debug(`completeTestRun: Success`);
+    return result;
+  } catch (error) {
+    logger.error(`completeTestRun: Error - ${error.message}`);
+    throw error;
+  }
 }
 
 // Global state setup moved to setup file (vitestSetup.mjs)

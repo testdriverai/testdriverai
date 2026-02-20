@@ -17,7 +17,6 @@ const diff = require("diff");
 
 // global utilities
 const generator = require("./lib/generator.js");
-const promptCache = require("./lib/cache.js");
 const theme = require("./lib/theme.js");
 const SourceMapper = require("./lib/source-mapper.js");
 
@@ -37,6 +36,7 @@ const { createOutputs } = require("./lib/outputs.js");
 const isValidVersion = require("./lib/valid-version.js");
 const { events, createEmitter } = require("./events.js");
 const { createDebuggerProcess } = require("./lib/debugger.js");
+const logger = require("./lib/logger.js");
 let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
 let debuggerStarted = false;
 
@@ -110,6 +110,10 @@ class TestDriverAgent extends EventEmitter2 {
     // Create sandbox instance with this agent's emitter, analytics, and session
     this.sandbox = createSandbox(this.emitter, this.analytics, this.session);
 
+    // Attach Sentry log listeners to capture CLI logs as breadcrumbs
+    const sentry = require("../lib/sentry");
+    sentry.attachLogListeners(this.emitter);
+
     // Set the OS for the sandbox to use
     this.sandbox.os = this.sandboxOs;
 
@@ -126,6 +130,7 @@ class TestDriverAgent extends EventEmitter2 {
       () => this.sourceMapper.currentFilePath || this.thisFile,
       this.cliArgs.options.redrawThreshold,
       null, // getDashcamElapsedTime - will be set by SDK when dashcam is available
+      () => this.softAssertMode, // getter for soft assert mode (used by act())
     );
     this.commands = commandsResult.commands;
     this.redraw = commandsResult.redraw;
@@ -166,6 +171,9 @@ class TestDriverAgent extends EventEmitter2 {
     // Flag to indicate if the agent should stop execution
     this.stopped = false;
 
+    // Flag to suppress assertion throws (used by act() to make check-phase assertions non-fatal)
+    this.softAssertMode = false;
+
     this.emitter.emit(events.log.log, JSON.stringify(environment));
     this.emitter.emit(events.log.log, JSON.stringify(cliArgs));
   }
@@ -183,11 +191,28 @@ class TestDriverAgent extends EventEmitter2 {
   // single function to handle all program exits
   // allows us to save the current state, run lifecycle hooks, and track analytics
   async exit(failed = true, shouldSave = false, shouldRunPostrun = false) {
-    this.emitter.emit(events.log.narration, theme.dim("exiting..."), true);
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("disconnect") +
+        " " +
+        theme.yellow.bold("Exiting") +
+        theme.dim("..."),
+      true,
+    );
 
     // Clean up redraw interval
     if (this.redraw && this.redraw.cleanup) {
       this.redraw.cleanup();
+    }
+
+    // Close sandbox connection to release the connection slot
+    if (this.sandbox) {
+      try {
+        this.sandbox.close();
+      } catch (err) {
+        // Ignore sandbox close errors during exit
+      }
     }
 
     shouldRunPostrun =
@@ -223,9 +248,7 @@ class TestDriverAgent extends EventEmitter2 {
     if (errorContext) {
       this.emitter.emit(events.error.fatal, errorContext);
     } else {
-      this.emitter.emit(
-        events.error.fatal,error,
-      );
+      this.emitter.emit(events.error.fatal, error);
     }
 
     if (skipPostrun) {
@@ -355,7 +378,7 @@ class TestDriverAgent extends EventEmitter2 {
           image,
         },
         (chunk) => {
-          if (chunk.type === "data") {
+          if (chunk.type === "data" && chunk.data) {
             this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
           }
         },
@@ -414,30 +437,23 @@ class TestDriverAgent extends EventEmitter2 {
     this.emitter.emit(events.log.narration, theme.dim("checking..."));
 
     // check asks the ai if the task is complete
-    let thisScreenshot = await this.system.captureScreenBase64(1, false, true);
+    // Parallelize system calls for better performance
+    const [thisScreenshot, mousePosition, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(1, false, true),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
     let images = [this.lastScreenshot, thisScreenshot];
-    let mousePosition = await this.system.getMousePosition();
-    let activeWindow = await this.system.activeWin();
 
-    const streamId = `check-${Date.now()}`;
-    this.emitter.emit(events.log.markdown.start, streamId);
+    let response = await this.sdk.req("check", {
+      tasks: this.tasks,
+      images,
+      mousePosition,
+      activeWindow,
+    });
 
-    let response = await this.sdk.req(
-      "check",
-      {
-        tasks: this.tasks,
-        images,
-        mousePosition,
-        activeWindow,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
-    );
-
-    this.emitter.emit(events.log.markdown.end, streamId);
+    // Use log.log (not markdown.static) so output goes through console spy to sandbox
+    this.emitter.emit(events.log.log, response.data);
 
     this.lastScreenshot = thisScreenshot;
 
@@ -869,7 +885,6 @@ commands:
     dry = false,
     validateAndLoop = false,
     shouldSave = true,
-    useCache = true,
   ) {
     // Check if execution has been stopped
     if (this.stopped) {
@@ -888,116 +903,26 @@ commands:
 
     this.tasks.push(currentTask);
 
-    // Check cache first (if enabled via parameter)
-    const cachedYaml = useCache ? promptCache.readCache(currentTask) : null;
-
-    if (cachedYaml) {
-      // Cache hit - load and execute the cached YAML file
-      this.emitter.emit(
-        events.log.debug,
-        `Using cached response for prompt: "${currentTask}"`,
-      );
-      this.emitter.emit(events.log.log, theme.dim("(using cached response)"));
-
-      try {
-        // Load the YAML using hydrateFromYML
-        const parsed = await generator.hydrateFromYML(
-          cachedYaml,
-          this.sessionInstance,
-        );
-
-        // Execute the commands from the first step
-        if (parsed.steps && parsed.steps.length > 0) {
-          const step = parsed.steps[0];
-          if (step.commands) {
-            await this.executeCommands(
-              step.commands,
-              0,
-              false,
-              dry,
-              shouldSave,
-            );
-          }
-        }
-      } catch (err) {
-        this.emitter.emit(
-          events.log.debug,
-          `Error loading cached YAML: ${err.message}, falling back to API`,
-        );
-        // Fall through to make API call if cache is invalid
-      }
-
-      return;
-    }
-
-    // Cache miss - call the API
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    this.lastScreenshot = await this.system.captureScreenBase64();
+    // Parallelize system calls for better performance
+    const [screenshot, mousePosition, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
+    this.lastScreenshot = screenshot;
 
-    const streamId = `input-${Date.now()}`;
-    this.emitter.emit(events.log.markdown.start, streamId);
+    let message = await this.sdk.req("input", {
+      input: currentTask,
+      mousePosition,
+      activeWindow,
+      image: this.lastScreenshot,
+    });
 
-    let message = await this.sdk.req(
-      "input",
-      {
-        input: currentTask,
-        mousePosition: await this.system.getMousePosition(),
-        activeWindow: await this.system.activeWin(),
-        image: this.lastScreenshot,
-      },
-      (chunk) => {
-        if (chunk.type === "data") {
-          this.emitter.emit(events.log.markdown.chunk, streamId, chunk.data);
-        }
-      },
-    );
-
-    this.emitter.emit(events.log.markdown.end, streamId);
+    this.emitter.emit(events.log.log, message.data);
 
     if (message && message.data) {
-      // Save the YAML to cache (if enabled)
-      if (useCache) {
-        try {
-          // Extract YAML code blocks from the markdown response
-          const codeblocks = await this.parser.findCodeBlocks(message.data);
-          if (codeblocks && codeblocks.length > 0) {
-            // Parse commands from all code blocks
-            const allCommands = [];
-            for (const block of codeblocks) {
-              const commands = await this.parser.getCommands(block);
-              allCommands.push(...commands);
-            }
-
-            // Create a proper step with prompt
-            const step = {
-              prompt: currentTask,
-              commands: allCommands,
-            };
-
-            // Use dumpToYML to create a valid testdriver yaml file
-            const yamlContent = await generator.dumpToYML(
-              [step],
-              this.sessionInstance,
-            );
-
-            const cachePath = promptCache.writeCache(currentTask, yamlContent);
-            if (cachePath) {
-              this.emitter.emit(
-                events.log.debug,
-                `Cached YAML saved to: ${cachePath}`,
-              );
-            }
-          }
-        } catch (err) {
-          // If we can't extract YAML, just skip caching
-          this.emitter.emit(
-            events.log.debug,
-            `Could not cache response: ${err.message}`,
-          );
-        }
-      }
-
       await this.aiExecute(message.data, validateAndLoop, dry, shouldSave);
       this.emitter.emit(
         events.log.debug,
@@ -1022,13 +947,15 @@ commands:
 
     this.emitter.emit(events.log.narration, theme.dim("thinking..."), true);
 
-    let image = await this.system.captureScreenBase64();
-
     const streamId = `generate-${Date.now()}`;
     this.emitter.emit(events.log.markdown.start, streamId);
 
-    let mouse = await this.system.getMousePosition();
-    let activeWindow = await this.system.activeWin();
+    // Parallelize system calls for better performance
+    const [image, mouse, activeWindow] = await Promise.all([
+      this.system.captureScreenBase64(),
+      this.system.getMousePosition(),
+      this.system.activeWin(),
+    ]);
 
     let message = await this.sdk.req(
       "generate",
@@ -1072,9 +999,9 @@ commands:
       const generateDir = path.join(this.workingDir, "testdriver", "generate");
       if (!fs.existsSync(generateDir)) {
         fs.mkdirSync(generateDir);
-        console.log("Created generate directory:", generateDir);
+        logger.log("Created generate directory:", generateDir);
       } else {
-        console.log("Generate directory already exists:", generateDir);
+        logger.log("Generate directory already exists:", generateDir);
       }
 
       let list = testPrompt.steps;
@@ -1708,49 +1635,35 @@ ${regression}
     this.emitter.emit(events.log.log, `${inputFile} (end)`);
   }
 
-  // Returns sandboxId to use (either from file if recent, or null)
-  getRecentSandboxId() {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+  // Returns the path to the last sandbox file
+  getLastSandboxFilePath() {
+    const testdriverDir = path.join(process.cwd(), ".testdriver");
+    return path.join(testdriverDir, "last-sandbox");
+  }
+
+  // Returns full sandbox info from last-sandbox file (no timeout - let API validate)
+  getLastSandboxId() {
+    const lastSandboxFile = this.getLastSandboxFilePath();
 
     if (fs.existsSync(lastSandboxFile)) {
       try {
-        const stats = fs.statSync(lastSandboxFile);
-        const mtime = new Date(stats.mtime);
-        const now = new Date();
-        const diffMinutes = (now - mtime) / (1000 * 60);
-        if (diffMinutes < 10) {
-          const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
+        const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
 
-          // Parse sandbox info (supports both old format and new format)
-          let sandboxInfo;
-          try {
-            sandboxInfo = JSON.parse(fileContent);
-          } catch {
-            return fileContent || null;
-          }
-
-          // Check if AMI and instance type match current requirements
-          const currentAmi = this.sandboxAmi || null;
-          const currentInstance = this.sandboxInstance || null;
-          const storedAmi = sandboxInfo.ami || null;
-          const storedInstance = sandboxInfo.instanceType || null;
-
-          if (currentAmi === storedAmi && currentInstance === storedInstance) {
-            // Return sandboxId (new format) or instanceId (old format for backwards compatibility)
-            return sandboxInfo.sandboxId || sandboxInfo.instanceId;
-          } else {
-            this.emitter.emit(
-              events.log.log,
-              theme.dim(
-                "Recent sandbox found but AMI/instance type doesn't match current requirements",
-              ),
-            );
-            return null;
-          }
+        // Parse sandbox info (supports both old format and new format)
+        let sandboxInfo;
+        try {
+          sandboxInfo = JSON.parse(fileContent);
+        } catch {
+          return { sandboxId: fileContent || null };
         }
+
+        return {
+          sandboxId: sandboxInfo.sandboxId || sandboxInfo.instanceId || null,
+          os: sandboxInfo.os || "linux",
+          ami: sandboxInfo.ami || null,
+          instanceType: sandboxInfo.instanceType || null,
+          timestamp: sandboxInfo.timestamp || null,
+        };
       } catch {
         // ignore errors
       }
@@ -1758,12 +1671,43 @@ ${regression}
     return null;
   }
 
+  // Returns sandboxId to use if AMI/instance type match current requirements
+  getRecentSandboxId() {
+    const sandboxInfo = this.getLastSandboxId();
+
+    if (!sandboxInfo || !sandboxInfo.sandboxId) {
+      return null;
+    }
+
+    // Check if AMI and instance type match current requirements
+    const currentAmi = this.sandboxAmi || null;
+    const currentInstance = this.sandboxInstance || null;
+    const storedAmi = sandboxInfo.ami || null;
+    const storedInstance = sandboxInfo.instanceType || null;
+
+    if (currentAmi === storedAmi && currentInstance === storedInstance) {
+      return sandboxInfo.sandboxId;
+    } else {
+      this.emitter.emit(
+        events.log.log,
+        theme.dim(
+          "Recent sandbox found but AMI/instance type doesn't match current requirements",
+        ),
+      );
+      return null;
+    }
+  }
+
   saveLastSandboxId(sandboxId, osType = "linux") {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    const lastSandboxFile = this.getLastSandboxFilePath();
+    const testdriverDir = path.dirname(lastSandboxFile);
+
     try {
+      // Ensure .testdriver directory exists
+      if (!fs.existsSync(testdriverDir)) {
+        fs.mkdirSync(testdriverDir, { recursive: true });
+      }
+
       const sandboxInfo = {
         sandboxId: sandboxId,
         os: osType,
@@ -1771,7 +1715,7 @@ ${regression}
         instanceType: this.sandboxInstance || null,
         timestamp: new Date().toISOString(),
       };
-      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo), {
+      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo, null, 2), {
         encoding: "utf-8",
       });
     } catch {
@@ -1780,10 +1724,7 @@ ${regression}
   }
 
   clearRecentSandboxId() {
-    const lastSandboxFile = path.join(
-      os.homedir(),
-      ".testdriverai-last-sandbox",
-    );
+    const lastSandboxFile = this.getLastSandboxFilePath();
     try {
       if (fs.existsSync(lastSandboxFile)) {
         fs.unlinkSync(lastSandboxFile);
@@ -1792,6 +1733,7 @@ ${regression}
       // ignore errors
     }
   }
+
   async buildEnv(options = {}) {
     // If instance already exists, do not build environment again
     if (this.instance) {
@@ -1826,15 +1768,9 @@ ${regression}
       // Also clear this.sandboxId to prevent reconnection attempts
       this.sandboxId = null;
       if (!this.config.CI && !this.newSandbox) {
-        this.emitter.emit(
-          events.log.log,
-          theme.dim("--`new` flag detected, will create a new sandbox"),
-        );
+        this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
       } else if (this.newSandbox) {
-        this.emitter.emit(
-          events.log.log,
-          theme.dim("--new-sandbox flag detected, will create a new sandbox"),
-        );
+        this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
       }
     }
 
@@ -1855,6 +1791,16 @@ ${regression}
         ip: this.ip,
       });
 
+      // Store sandboxId (for self-hosted, use the IP as identifier) so messages include it
+      // This enables the API to reconnect if the websocket connection is rerouted
+      this.sandbox._lastConnectParams = {
+        sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || this.ip,
+        persist: true,
+        keepAlive: this.keepAlive,
+      };
+
+      // Mark instance socket as connected so console logs are forwarded
+      this.sandbox.instanceSocketConnected = true;
       this.emitter.emit(events.sandbox.connected);
 
       this.instance = instance.instance;
@@ -1869,11 +1815,12 @@ ${regression}
         theme.dim(`using recent sandbox: ${recentId}`),
       );
       this.sandboxId = recentId;
-      
+
       try {
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
           true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
         );
 
         this.instance = instance;
@@ -1888,11 +1835,6 @@ ${regression}
         );
         console.error("Failed to reconnect to sandbox:", error);
       }
-    } else if (!createNew && !recentId) {
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`no recent sandbox found, creating a new one.`),
-      );
     } else if (!createNew && this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
@@ -1905,6 +1847,7 @@ ${regression}
         let instance = await this.connectToSandboxDirect(
           this.sandboxId,
           true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
         );
 
         this.instance = instance;
@@ -1920,12 +1863,17 @@ ${regression}
         console.error("Failed to reconnect to sandbox:", error);
       }
     }
-    
+
     // Create new sandbox (either because createNew is true, or no existing sandbox to connect to)
     if (!this.instance) {
+      const { formatter } = require("../sdk-log-formatter.js");
       this.emitter.emit(
         events.log.narration,
-        theme.dim(`creating new sandbox...`),
+        formatter.getPrefix("connect") +
+          " " +
+          theme.green.bold("Creating") +
+          " " +
+          theme.cyan(`new sandbox...`),
       );
       // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
       // to see if that fixes the issue.
@@ -1938,20 +1886,20 @@ ${regression}
       });
 
       // Extract the sandbox ID from the newly created sandbox
-      this.sandboxId = newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
-      
+      this.sandboxId =
+        newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
+
       // Use the configured sandbox OS type
       this.saveLastSandboxId(this.sandboxId, this.sandboxOs);
-      
+
       let instance = await this.connectToSandboxDirect(
         this.sandboxId,
         true, // always persist by default
+        this.keepAlive, // pass keepAlive TTL
       );
       this.instance = instance;
       await this.renderSandbox(instance, headless);
       await this.runLifecycle("provision");
-
-      console.log("provision run");
     }
   }
 
@@ -2072,8 +2020,6 @@ ${regression}
   }
 
   async renderSandbox(instance, headless = false) {
-    console.log("renderSandbox", instance);
-
     if (!headless) {
       let url;
 
@@ -2090,7 +2036,7 @@ ${regression}
           "/vnc_lite.html?token=V3b8wG9";
       } else {
         // If we don't have URL or IP, we can't render
-        console.warn("renderSandbox: Missing URL and IP in instance", instance);
+        logger.warn("renderSandbox: Missing URL and IP in instance", instance);
         return;
       }
 
@@ -2098,6 +2044,8 @@ ${regression}
         resolution: this.config.TD_RESOLUTION,
         url: url,
         token: "V3b8wG9",
+        testFile: this.testFile || null,
+        os: this.sandboxOs || "linux",
       };
 
       // Base64 encode the data (the debugger expects base64, not URL encoding)
@@ -2106,8 +2054,178 @@ ${regression}
       // Use the debugger URL instead of the VNC URL
       const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
 
-      this.emitter.emit(events.showWindow, urlToOpen);
+      // Check preview mode from CLI options (SDK passes it directly)
+      const previewMode = (this.cliArgs.options && this.cliArgs.options.preview) || this.config.TD_PREVIEW || "browser";
+      console.log("[DEBUG renderSandbox] preview:", previewMode);
+
+      if (previewMode === "ide") {
+        // Send session to VS Code extension via HTTP
+        this.writeIdeSessionFile(urlToOpen, data);
+      } else if (previewMode !== "none") {
+        // Open in browser (default behavior)
+        this.emitter.emit(events.showWindow, urlToOpen);
+      }
+      // If preview is "none", don't open anything
     }
+  }
+
+  // Write session file for IDE preview (VSCode extension watches for these)
+  writeIdeSessionFile(debuggerUrl, data) {
+    const fs = require("fs");
+    const path = require("path");
+
+    const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const previewsDir = path.join(process.cwd(), ".testdriver", ".previews");
+
+    // Create the previews directory if it doesn't exist
+    if (!fs.existsSync(previewsDir)) {
+      fs.mkdirSync(previewsDir, { recursive: true });
+    }
+
+    const sessionData = {
+      sessionId,
+      debuggerUrl,
+      resolution: Array.isArray(data.resolution) ? data.resolution : (data.resolution ? data.resolution.split("x").map(Number) : [1920, 1080]),
+      testFile: data.testFile || this.testFile || null,
+      os: data.os || this.sandboxOs || "linux",
+      timestamp: Date.now(),
+    };
+
+    const filePath = path.join(previewsDir, `${sessionId}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+
+    logger.log(`IDE preview session written to ${filePath}`);
+  }
+
+  // Find the VS Code instance that contains the test file
+  findTargetIdeInstance(testFilePath) {
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+
+    const instancesDir = path.join(os.homedir(), ".testdriver", "ide-instances");
+    
+    if (!fs.existsSync(instancesDir)) {
+      return null;
+    }
+
+    const files = fs.readdirSync(instancesDir);
+    const normalizedTestPath = testFilePath ? path.normalize(testFilePath) : null;
+    
+    let matchingInstance = null;
+    let longestMatchLength = 0;
+
+    for (const file of files) {
+      if (!file.endsWith('.json')) continue;
+      
+      try {
+        const registrationPath = path.join(instancesDir, file);
+        const registration = JSON.parse(fs.readFileSync(registrationPath, 'utf-8'));
+        
+        // Check if this instance is still alive (registration within last 60 seconds or process exists)
+        const isRecent = Date.now() - registration.timestamp < 60000;
+        
+        // Skip stale registrations
+        if (!isRecent) {
+          // Try to clean up stale file
+          try { fs.unlinkSync(registrationPath); } catch {}
+          continue;
+        }
+
+        // If we have a test file path, find the best matching workspace
+        if (normalizedTestPath && registration.workspacePaths) {
+          for (const workspacePath of registration.workspacePaths) {
+            const normalizedWorkspace = path.normalize(workspacePath);
+            if (normalizedTestPath.startsWith(normalizedWorkspace + path.sep) || 
+                normalizedTestPath === normalizedWorkspace) {
+              // Prefer longest match (most specific workspace)
+              if (normalizedWorkspace.length > longestMatchLength) {
+                longestMatchLength = normalizedWorkspace.length;
+                matchingInstance = registration;
+              }
+            }
+          }
+        } else if (!matchingInstance) {
+          // If no test file path, just use the first available instance
+          matchingInstance = registration;
+        }
+      } catch (error) {
+        // Ignore malformed registration files
+      }
+    }
+
+    return matchingInstance;
+  }
+
+  // Send session notification to VS Code extension via HTTP
+  sendIdeSessionNotification(debuggerUrl, data) {
+    const http = require("http");
+    const path = require("path");
+
+    const testFilePath = data.testFile || this.thisFile;
+    const targetInstance = this.findTargetIdeInstance(testFilePath);
+
+    if (!targetInstance) {
+      logger.warn("No VS Code instance found for IDE preview. Make sure VS Code with TestDriver extension is open.");
+      // Fall back to browser
+      this.emitter.emit(events.showWindow, debuggerUrl);
+      return;
+    }
+
+    // Generate a unique session ID
+    const testFileName = (testFilePath || "test")
+      .split(path.sep).pop()
+      .replace(/\.[^/.]+$/, "");
+    const sessionId = `${testFileName}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
+    const sessionData = {
+      sessionId: sessionId,
+      debuggerUrl: debuggerUrl,
+      resolution: data.resolution || this.config.TD_RESOLUTION,
+      testFile: testFilePath,
+      os: data.os || this.sandboxOs || "linux",
+      timestamp: Date.now(),
+    };
+
+    const postData = JSON.stringify(sessionData);
+
+    const options = {
+      hostname: '127.0.0.1',
+      port: targetInstance.port,
+      path: '/session',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 5000
+    };
+
+    const req = http.request(options, (res) => {
+      if (res.statusCode === 200) {
+        logger.log(`IDE session notification sent to port ${targetInstance.port}`);
+      } else {
+        logger.warn(`IDE session notification failed with status ${res.statusCode}`);
+        // Fall back to browser on failure
+        this.emitter.emit(events.showWindow, debuggerUrl);
+      }
+    });
+
+    req.on('error', (error) => {
+      logger.warn(`Failed to send IDE session notification: ${error.message}`);
+      // Fall back to browser on error
+      this.emitter.emit(events.showWindow, debuggerUrl);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      logger.warn('IDE session notification timed out');
+      // Fall back to browser on timeout
+      this.emitter.emit(events.showWindow, debuggerUrl);
+    });
+
+    req.write(postData);
+    req.end();
   }
 
   async connectToSandboxService() {
@@ -2125,7 +2243,14 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       );
     }
 
-    this.emitter.emit(events.log.narration, theme.dim(`authenticating...`));
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("connect") +
+        " " +
+        theme.green.bold("Authenticating") +
+        theme.dim("..."),
+    );
     let ableToAuth = await this.sandbox.auth(this.config.TD_API_KEY);
 
     if (!ableToAuth) {
@@ -2137,9 +2262,17 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
   }
 
-  async connectToSandboxDirect(sandboxId, persist = false) {
-    this.emitter.emit(events.log.narration, theme.dim(`connecting...`));
-    let reply = await this.sandbox.connect(sandboxId, persist);
+  async connectToSandboxDirect(sandboxId, persist = false, keepAlive = null) {
+    const { formatter } = require("../sdk-log-formatter.js");
+    this.emitter.emit(
+      events.log.narration,
+      formatter.getPrefix("connect") +
+        " " +
+        theme.green.bold("Connecting") +
+        " " +
+        theme.cyan(`to sandbox...`),
+    );
+    let reply = await this.sandbox.connect(sandboxId, persist, keepAlive);
 
     // reply includes { success, url, sandbox: {...} }
     // For renderSandbox, we need the sandbox object with url merged in
@@ -2168,27 +2301,56 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     if (this.sandboxInstance) {
       sandboxConfig.instanceType = this.sandboxInstance;
     }
-
-    let instance = await this.sandbox.send(sandboxConfig, 60000 * 8);
-
-    // Save the sandbox ID for reconnection with the correct OS type
-    if (instance.sandbox && instance.sandbox.sandboxId) {
-      this.saveLastSandboxId(instance.sandbox.sandboxId, this.sandboxOs);
-    } else if (instance.sandbox && instance.sandbox.instanceId) {
-      this.saveLastSandboxId(instance.sandbox.instanceId, this.sandboxOs);
+    // Add keepAlive TTL if specified
+    if (this.keepAlive !== undefined && this.keepAlive !== null) {
+      sandboxConfig.keepAlive = this.keepAlive;
     }
 
-    return instance;
+    const { formatter } = require("../sdk-log-formatter.js");
+    const retryDelay = 15000; // 15 seconds between retries
+
+    while (true) {
+      let response = await this.sandbox.send(sandboxConfig, 60000 * 8);
+
+      // Check if queued (all slots in use)
+      if (response.type === "create.queued") {
+        this.emitter.emit(
+          events.log.narration,
+          formatter.getPrefix("queue") +
+            " " +
+            theme.yellow.bold("Waiting") +
+            " " +
+            theme.dim(response.message),
+        );
+
+        // Wait then retry
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        continue;
+      }
+
+      // Success - got a sandbox
+      if (response.sandbox && response.sandbox.sandboxId) {
+        this.saveLastSandboxId(response.sandbox.sandboxId, this.sandboxOs);
+      } else if (response.sandbox && response.sandbox.instanceId) {
+        this.saveLastSandboxId(response.sandbox.instanceId, this.sandboxOs);
+      }
+
+      return response;
+    }
   }
 
   async newSession() {
     // should be start of new session
     // If sandbox is connected, get system info; otherwise pass empty objects
     const isSandboxConnected = this.sandbox.apiSocketConnected;
-    
+
     const sessionRes = await this.sdk.req("session/start", {
-      systemInformationOsInfo: isSandboxConnected ? await this.system.getSystemInformationOsInfo() : {},
-      mousePosition: isSandboxConnected ? await this.system.getMousePosition() : {},
+      systemInformationOsInfo: isSandboxConnected
+        ? await this.system.getSystemInformationOsInfo()
+        : {},
+      mousePosition: isSandboxConnected
+        ? await this.system.getMousePosition()
+        : {},
       activeWindow: isSandboxConnected ? await this.system.activeWin() : {},
     });
 
@@ -2199,6 +2361,15 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
 
     this.session.set(sessionRes.data.id);
+
+    // Set Sentry session trace context for distributed tracing
+    // This links CLI errors/logs to the same trace as API calls
+    try {
+      const sentry = require("../lib/sentry");
+      sentry.setSessionTraceContext(sessionRes.data.id);
+    } catch (e) {
+      // Sentry module may not be available, ignore
+    }
   }
 
   // Helper method to find testdriver directory by traversing up from a file path
@@ -2267,9 +2438,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     // If sourceMapper doesn't have a current file, use thisFile which should be the file being run
     let currentFilePath = this.sourceMapper.currentFilePath || this.thisFile;
 
-    this.emitter.emit(events.log.log, ``);
-    this.emitter.emit(events.log.log, "Running lifecycle: " + lifecycleName);
-
     // If we still don't have a currentFilePath, fall back to the default testdriver directory
     if (!currentFilePath) {
       currentFilePath = path.join(
@@ -2277,7 +2445,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
         "testdriver",
         "testdriver.yaml",
       );
-      console.log("No currentFilePath found, using fallback:", currentFilePath);
     }
 
     // Ensure we have an absolute path

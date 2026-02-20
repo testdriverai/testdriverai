@@ -1,0 +1,92 @@
+---
+title: "Typing Test Example"
+sidebarTitle: "Typing"
+description: "Example test demonstrating how to type text into input fields and verify the content."
+icon: "keyboard"
+mode: "wide"
+---
+
+## Demo Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* type.test.mjs output */}
+<iframe 
+  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69965b5c887d56872d5c96fc/replay" 
+  width="100%" 
+  height="390" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="type.test.mjs" {13}
+/**
+ * TestDriver SDK - Type Test
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "../lib/vitest/hooks.mjs";
+
+describe("Type Test", () => {
+  it("should enter standard_user in username field", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    //
+    const usernameField = await testdriver.find(
+      "Username, input field for username",
+    );
+    await usernameField.click();
+    await testdriver.type("standard_user");
+
+    const result = await testdriver.assert(
+      'the username field contains "standard_user"',
+    );
+    expect(result).toBeTruthy();
+  });
+
+  it("should show validation message when clicking Sign In without password", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    // First fill in username
+    const usernameField = await testdriver.find(
+      "Username, input field for username",
+    );
+    await usernameField.click();
+    await testdriver.type("standard_user");
+
+    //
+    const signInButton = await testdriver.find(
+      "Sign in, black button below the password field",
+    );
+    await signInButton.click();
+
+    await testdriver.focusApplication("Google Chrome");
+    const result = await testdriver.assert(
+      "Please fill out this field is visible near the password field",
+    );
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/type.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

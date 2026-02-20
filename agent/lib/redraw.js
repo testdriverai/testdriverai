@@ -7,8 +7,7 @@ const theme = require("./theme");
 const DEFAULT_REDRAW_OPTIONS = {
   enabled: true,           // Master switch to enable/disable redraw detection
   screenRedraw: true,      // Enable screen redraw detection
-  networkMonitor: true,    // Enable network activity monitoring
-  diffThreshold: 0.1,     // Percentage threshold for screen diff (0.01 = 0.01%)
+  networkMonitor: false,    // Enable network activity monitoring
 };
 
 // Factory function that creates redraw functionality with the provided system instance
@@ -20,12 +19,9 @@ const createRedraw = (
 ) => {
   // Merge default options with provided defaults
   const baseOptions = { ...DEFAULT_REDRAW_OPTIONS, ...defaultOptions };
-  // Support legacy redrawThresholdPercent number argument
-  if (typeof defaultOptions === 'number') {
-    baseOptions.diffThreshold = defaultOptions;
-  }
   
-  const networkUpdateInterval = 15000;
+  // Network check interval (ms) - used for speed calculation display
+  const networkCheckInterval = 250;
 
   let lastTxBytes = null;
   let lastRxBytes = null;
@@ -35,7 +31,13 @@ const createRedraw = (
 
   let measurements = [];
   let networkSettled = true;
-  let screenHasRedrawn = null;
+  
+  // Screen stability tracking
+  let initialScreenImage = null;    // The image captured at start() - reference point
+  let lastScreenImage = null;       // Previous frame for consecutive comparison
+  let hasChangedFromInitial = false; // Has screen changed from initial state?
+  let consecutiveFramesStable = false; // Are consecutive frames now stable?
+  let screenMeasurements = [];      // Track consecutive frame diffs for stability detection
 
   // Track network interval to ensure only one exists
   let networkInterval = null;
@@ -45,7 +47,11 @@ const createRedraw = (
     lastRxBytes = null;
     measurements = [];
     networkSettled = true;
-    screenHasRedrawn = false;
+    initialScreenImage = null;
+    lastScreenImage = null;
+    hasChangedFromInitial = false;
+    consecutiveFramesStable = false;
+    screenMeasurements = [];
   };
 
   const parseNetworkStats = (thisRxBytes, thisTxBytes) => {
@@ -85,15 +91,66 @@ const createRedraw = (
     }
   };
 
+  // Parse screen diff stats for consecutive frame stability
+  // Detects when consecutive frames have stopped changing
+  const parseConsecutiveDiffStats = (diffPercent) => {
+    screenMeasurements.push(diffPercent);
+
+    // Keep last 10 measurements for stability detection
+    if (screenMeasurements.length > 10) {
+      screenMeasurements.shift();
+    }
+
+    // Need at least 2 measurements to determine stability
+    if (screenMeasurements.length < 2) {
+      consecutiveFramesStable = false;
+      return;
+    }
+
+    let avgDiff = screenMeasurements.reduce((acc, d) => acc + d, 0) / screenMeasurements.length;
+
+    let stdDevDiff = Math.sqrt(
+      screenMeasurements.reduce((acc, d) => acc + Math.pow(d - avgDiff, 2), 0) /
+        screenMeasurements.length,
+    );
+
+    let zIndexDiff = stdDevDiff !== 0 ? (diffPercent - avgDiff) / stdDevDiff : 0;
+
+    // Consecutive frames are stable when z-index is negative (current diff is below average)
+    // or diff is essentially zero (< 0.1% accounts for compression artifacts)
+    if (screenMeasurements.length >= 2 && (diffPercent < 0.1 || zIndexDiff < 0)) {
+      consecutiveFramesStable = true;
+    } else {
+      consecutiveFramesStable = false;
+    }
+  };
+
+  // Track if a network request is in flight to prevent overlapping requests
+  let networkRequestInFlight = false;
+
   async function updateNetwork() {
+    // Prevent overlapping requests - if one is already in flight, skip this cycle
+    if (networkRequestInFlight) {
+      emitter.emit(events.log.debug, '[redraw] updateNetwork() - skipping, request already in flight');
+      return;
+    }
+
     if (sandbox && sandbox.instanceSocketConnected) {
-      let network = await sandbox.send({
-        type: "system.network",
-      });
-      parseNetworkStats(
-        network.out.totalBytesReceived,
-        network.out.totalBytesSent,
-      );
+      networkRequestInFlight = true;
+      try {
+        let network = await sandbox.send({
+          type: "system.network",
+        }, 10000); // Use a shorter 10 second timeout for network stats
+        parseNetworkStats(
+          network.out.totalBytesReceived,
+          network.out.totalBytesSent,
+        );
+      } catch (error) {
+        // Log the error but don't throw - network monitoring is non-critical
+        emitter.emit(events.log.debug, `[redraw] updateNetwork() failed: ${error.message}`);
+      } finally {
+        networkRequestInFlight = false;
+      }
     }
   }
 
@@ -141,16 +198,7 @@ const createRedraw = (
     }
   }
 
-  let startImage = null;
-
-  // Start network monitoring only when needed
-  function startNetworkMonitoring() {
-    if (!networkInterval) {
-      networkInterval = setInterval(updateNetwork, networkUpdateInterval);
-    }
-  }
-
-  // Stop network monitoring
+  // Stop network monitoring (cleanup any residual interval)
   function stopNetworkMonitoring() {
     if (networkInterval) {
       clearInterval(networkInterval);
@@ -182,22 +230,18 @@ const createRedraw = (
     
     resetState();
     
-    // Only start network monitoring if enabled
-    if (currentOptions.networkMonitor) {
-      startNetworkMonitoring();
-    }
-    
-    // Only capture start image if screen redraw is enabled
+    // Capture initial image for screen stability monitoring
     if (currentOptions.screenRedraw) {
-      startImage = await system.captureScreenPNG(0.25, true);
-      emitter.emit(events.log.debug, `[redraw] start() - captured startImage: ${startImage}`);
+      initialScreenImage = await system.captureScreenPNG(0.25, true);
+      lastScreenImage = initialScreenImage;
+      emitter.emit(events.log.debug, `[redraw] start() - captured initial image: ${initialScreenImage}`);
     }
     
-    return startImage;
+    return initialScreenImage;
   }
 
   async function checkCondition(resolve, startTime, timeoutMs, options) {
-    const { enabled, screenRedraw, networkMonitor, diffThreshold } = options;
+    const { enabled, screenRedraw, networkMonitor } = options;
     
     // If redraw is disabled, resolve immediately
     if (!enabled) {
@@ -205,41 +249,64 @@ const createRedraw = (
       return;
     }
     
-    let nowImage = screenRedraw ? await system.captureScreenPNG(0.25, true) : null;
-    let timeElapsed = Date.now() - startTime;
-    let diffPercent = 0;
-    let isTimeout = timeElapsed > timeoutMs;
-
-    // Check screen redraw if enabled and we have a start image to compare against
-    if (screenRedraw && !screenHasRedrawn && startImage && nowImage) {
-      emitter.emit(events.log.debug, `[redraw] checkCondition() - comparing images: ${JSON.stringify({ startImage, nowImage })}`);
-      diffPercent = await imageDiffPercent(startImage, nowImage);
-      emitter.emit(events.log.debug, `[redraw] checkCondition() - diffPercent: ${diffPercent}, threshold: ${diffThreshold}`);
-      screenHasRedrawn = diffPercent > diffThreshold;
-      emitter.emit(events.log.debug, `[redraw] checkCondition() - screenHasRedrawn: ${screenHasRedrawn}`);
-    } else if (screenRedraw && !startImage) {
-      // If no start image was captured, capture one now and wait for next check
-      emitter.emit(events.log.debug, '[redraw] checkCondition() - no startImage, capturing now');
-      startImage = await system.captureScreenPNG(0.25, true);
+    // Update network stats on each check (with guard against overlapping requests)
+    if (networkMonitor) {
+      await updateNetwork();
     }
     
-    // If screen redraw is disabled, consider it as "redrawn"
-    const effectiveScreenRedrawn = screenRedraw ? screenHasRedrawn : true;
+    let nowImage = screenRedraw ? await system.captureScreenPNG(0.25, true) : null;
+    let timeElapsed = Date.now() - startTime;
+    let diffFromInitial = 0;
+    let diffFromLast = 0;
+    let isTimeout = timeElapsed > timeoutMs;
+
+    // Screen stability detection:
+    // 1. Check if screen has changed from initial (detect transition)
+    // 2. Check if consecutive frames are stable (detect settling)
+    if (screenRedraw && nowImage) {
+      // Compare to initial image - has the screen changed at all?
+      if (initialScreenImage && !hasChangedFromInitial) {
+        diffFromInitial = await imageDiffPercent(initialScreenImage, nowImage);
+        emitter.emit(events.log.debug, `[redraw] checkCondition() - diffFromInitial: ${diffFromInitial}`);
+        // Consider changed if diff > 0.1% (accounts for compression artifacts)
+        if (diffFromInitial > 0.1) {
+          hasChangedFromInitial = true;
+          emitter.emit(events.log.debug, `[redraw] checkCondition() - screen has changed from initial!`);
+        }
+      }
+      
+      // Compare consecutive frames - has the screen stopped changing?
+      if (lastScreenImage && lastScreenImage !== initialScreenImage) {
+        diffFromLast = await imageDiffPercent(lastScreenImage, nowImage);
+        emitter.emit(events.log.debug, `[redraw] checkCondition() - diffFromLast: ${diffFromLast}`);
+        parseConsecutiveDiffStats(diffFromLast);
+        emitter.emit(events.log.debug, `[redraw] checkCondition() - consecutiveFramesStable: ${consecutiveFramesStable}, measurements: ${screenMeasurements.length}`);
+      }
+      
+      // Update last image for next comparison
+      lastScreenImage = nowImage;
+    }
+    
+    // Screen is settled when it has changed from initial AND consecutive frames are now stable
+    const screenSettled = hasChangedFromInitial && consecutiveFramesStable;
+    
+    // If screen redraw is disabled, consider it as "settled"
+    const effectiveScreenSettled = screenRedraw ? screenSettled : true;
     // If network monitor is disabled, consider it as "settled"
     const effectiveNetworkSettled = networkMonitor ? networkSettled : true;
 
-    // Log redraw status
+    // Log redraw status - show both change detection and stability
     let redrawText = !screenRedraw
       ? theme.dim(`disabled`)
-      : effectiveScreenRedrawn
+      : effectiveScreenSettled
         ? theme.green(`y`)
-        : theme.dim(`${diffPercent}/${diffThreshold}%`);
+        : theme.dim(`${hasChangedFromInitial ? '✓' : '?'}→${consecutiveFramesStable ? '✓' : diffFromLast.toFixed(1)}%`);
     let networkText = !networkMonitor
       ? theme.dim(`disabled`)
       : effectiveNetworkSettled
         ? theme.green(`y`)
         : theme.dim(
-            `${Math.trunc((diffRxBytes + diffTxBytes) / networkUpdateInterval)}b/s`,
+            `${Math.trunc((diffRxBytes + diffTxBytes) / (networkCheckInterval / 1000))}b/s`,
           );
     let timeoutText = isTimeout
       ? theme.green(`y`)
@@ -248,9 +315,11 @@ const createRedraw = (
     emitter.emit(events.redraw.status, {
       redraw: {
         enabled: screenRedraw,
-        hasRedrawn: effectiveScreenRedrawn,
-        diffPercent,
-        threshold: diffThreshold,
+        settled: effectiveScreenSettled,
+        hasChangedFromInitial,
+        consecutiveFramesStable,
+        diffFromInitial,
+        diffFromLast,
         text: redrawText,
       },
       network: {
@@ -268,15 +337,19 @@ const createRedraw = (
       },
     });
 
-    if ((effectiveScreenRedrawn && effectiveNetworkSettled) || isTimeout) {
+    if ((effectiveScreenSettled && effectiveNetworkSettled) || isTimeout) {
       emitter.emit(events.redraw.complete, {
-        screenHasRedrawn: effectiveScreenRedrawn,
+        screenSettled: effectiveScreenSettled,
+        hasChangedFromInitial,
+        consecutiveFramesStable,
         networkSettled: effectiveNetworkSettled,
         isTimeout,
         timeElapsed,
       });
       resolve("true");
     } else {
+      // Poll at 500ms intervals to reduce websocket traffic
+      // (previously 250ms = up to 20 polls per 5s timeout, now max 10)
       setTimeout(() => {
         checkCondition(resolve, startTime, timeoutMs, options);
       }, 500);
@@ -299,10 +372,6 @@ const createRedraw = (
     
     return new Promise((resolve) => {
       const startTime = Date.now();
-      // Start network monitoring if not already started and enabled
-      if (waitOptions.networkMonitor) {
-        startNetworkMonitoring();
-      }
       checkCondition(resolve, startTime, timeoutMs, waitOptions);
     });
   }
