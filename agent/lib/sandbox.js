@@ -239,7 +239,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         throw new Error(reply.errorMessage || "Failed to reconnect to direct sandbox");
       }
     }
-    }
 
     async handleConnectionLoss() {
       if (this.intentionalDisconnect) return;
