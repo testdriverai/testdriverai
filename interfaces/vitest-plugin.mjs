@@ -49,12 +49,41 @@ function initializeSentry() {
           runner: "vitest",
         },
       },
-      // Don't send user-cancelled errors
+      // Filter out events that should not be reported to Sentry
       beforeSend(event, hint) {
         const error = hint.originalException;
+        
+        // Don't send user-cancelled errors
         if (error && error.message && error.message.includes("User cancelled")) {
           return null;
         }
+        
+        // Don't send test failures - these are expected behavior, not bugs in the SDK
+        // Test failures indicate the test found a problem, which is the intended use case
+        if (event.exception?.values) {
+          for (const exception of event.exception.values) {
+            // Filter out TestFailure type (from Vitest test failures)
+            if (exception.type === "TestFailure") {
+              return null;
+            }
+            
+            // Filter out common user code errors (ReferenceError, TypeError from user tests)
+            // Only report if the error originates from TestDriver SDK code, not user test code
+            const isUserCodeError = exception.stacktrace?.frames?.some(frame => {
+              const filename = frame.filename || frame.abs_path || "";
+              // Check if error is from user test files (not from SDK internals)
+              return filename.includes("/tests/") || 
+                     filename.includes("/test/") || 
+                     filename.includes(".test.") ||
+                     filename.includes(".spec.");
+            });
+            
+            if (isUserCodeError && (exception.type === "ReferenceError" || exception.type === "TypeError")) {
+              return null;
+            }
+          }
+        }
+        
         return event;
       },
     });
@@ -64,55 +93,6 @@ function initializeSentry() {
   } catch (err) {
     // Sentry init failed - continue without it
     logger.debug("Failed to initialize Sentry:", err.message);
-  }
-}
-
-/**
- * Capture a test failure in Sentry
- * @param {Object} params - Test failure parameters
- * @param {string} params.testName - Name of the test
- * @param {string} params.testFile - File path of the test
- * @param {string} params.errorMessage - Error message
- * @param {string} [params.errorStack] - Error stack trace
- * @param {string} [params.sessionId] - Session ID if available
- * @param {string} [params.platform] - Platform (windows, mac, linux)
- * @param {number} [params.duration] - Test duration in ms
- */
-function captureTestFailure({ testName, testFile, errorMessage, errorStack, sessionId, platform, duration }) {
-  if (!sentryInitialized || process.env.TD_TELEMETRY === "false") return;
-
-  try {
-    // Create an error object with the test failure details
-    const error = new Error(errorMessage);
-    error.name = "TestFailure";
-    if (errorStack) {
-      error.stack = errorStack;
-    }
-
-    Sentry.withScope((scope) => {
-      scope.setTag("test.name", testName);
-      scope.setTag("test.file", testFile);
-      scope.setTag("test.status", "failed");
-      
-      if (sessionId) {
-        scope.setTag("session", sessionId);
-      }
-      if (platform) {
-        scope.setTag("platform", platform);
-      }
-      
-      scope.setContext("test", {
-        name: testName,
-        file: testFile,
-        duration: duration,
-        sessionId: sessionId,
-        platform: platform,
-      });
-
-      Sentry.captureException(error);
-    });
-  } catch (err) {
-    logger.debug("Failed to capture test failure in Sentry:", err.message);
   }
 }
 
@@ -1155,16 +1135,9 @@ class TestDriverReporter {
         errorMessage = error.message;
         errorStack = error.stack;
         
-        // Report test failure to Sentry
-        captureTestFailure({
-          testName: test.name,
-          testFile,
-          errorMessage,
-          errorStack,
-          sessionId,
-          platform: platform || pluginState.detectedPlatform,
-          duration,
-        });
+        // Note: We do NOT report test failures to Sentry.
+        // Test failures are expected behavior (they indicate a test found a bug).
+        // We only want actual SDK crashes and exceptions reported to Sentry.
       }
 
       const suiteName = test.suite?.name;
@@ -1328,11 +1301,16 @@ function calculateStatsFromModules(testModules) {
 
   for (const testModule of testModules) {
     for (const testCase of testModule.children.allTests()) {
-      totalTests++;
       const result = testCase.result();
-      if (result.state === "passed") passedTests++;
-      else if (result.state === "failed") failedTests++;
-      else if (result.state === "skipped") skippedTests++;
+      if (result.state === "passed") {
+        passedTests++;
+        totalTests++;
+      } else if (result.state === "failed") {
+        failedTests++;
+        totalTests++;
+      } else if (result.state === "skipped") {
+        skippedTests++;
+      }
     }
   }
 
