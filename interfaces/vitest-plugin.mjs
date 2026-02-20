@@ -865,7 +865,8 @@ class TestDriverReporter {
       // Create test run via direct API call
       const testRunData = {
         runId: pluginState.testRunId,
-        suiteName: getSuiteName(),
+        projectName: getProjectName(),
+        suiteName: getProjectName(), // backward compat for older API
         ...pluginState.gitInfo,
       };
 
@@ -1140,7 +1141,8 @@ class TestDriverReporter {
         // We only want actual SDK crashes and exceptions reported to Sentry.
       }
 
-      const suiteName = test.suite?.name;
+      const suitePath = getSuitePath(test);
+      const suiteName = test.suite?.name; // backward compat
       const startTime = Date.now() - duration; // Calculate start time from duration
       const retryCount = result.retryCount || 0;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
@@ -1177,7 +1179,8 @@ class TestDriverReporter {
         testCaseData.replayUrls = attemptUrls;
       }
 
-      if (suiteName) testCaseData.suiteName = suiteName;
+      if (suitePath) testCaseData.suitePath = suitePath;
+      if (suiteName) testCaseData.suiteName = suiteName; // backward compat
       if (errorMessage) testCaseData.errorMessage = errorMessage;
       if (errorStack) testCaseData.errorStack = errorStack;
 
@@ -1262,8 +1265,40 @@ function generateRunId() {
   return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 }
 
-function getSuiteName() {
+function getProjectName() {
   return process.env.npm_package_name || path.basename(process.cwd());
+}
+
+// DEPRECATED: kept for backward compat with older API versions
+function getSuiteName() {
+  return getProjectName();
+}
+
+/**
+ * Build the full describe() block path for a test by walking
+ * up the suite parent chain.
+ *
+ * Vitest hierarchy: File → Suite (describe) → Nested Suite → Test
+ * For `describe('Auth', () => describe('Login', () => it('works')))`
+ * this returns "Auth > Login".
+ *
+ * Returns null when the test sits directly in the file (no describe block).
+ */
+function getSuitePath(test) {
+  const names = [];
+  let suite = test.suite;
+  while (suite) {
+    // Stop at the file-level suite (its name is the filepath, not a describe label)
+    if (suite.file && suite === suite.file) break;
+    // Vitest v2 file-level suites have no user-defined name — skip them
+    if (suite.name && suite.name !== '' && suite.name !== suite.file?.name) {
+      names.push(suite.name);
+    }
+    suite = suite.parent;
+  }
+  if (names.length === 0) return null;
+  names.reverse();
+  return names.join(' > ');
 }
 
 function getPlatform() {
