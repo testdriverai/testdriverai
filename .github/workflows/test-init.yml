@@ -5,15 +5,26 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  pull_request_target:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 jobs:
   test-init:
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
     
     steps:
     - name: Checkout CLI repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        persist-credentials: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
