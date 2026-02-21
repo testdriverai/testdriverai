@@ -21,6 +21,7 @@
             "pages": [
               "/v7/quickstart",
               "/v7/what-is-testdriver",
+              "/v7/mcp-server",
               {
                 "group": "Examples",
                 "icon": "code",
