@@ -529,9 +529,20 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.authenticated = false;
       this.instance = null;
 
-      // Silently clear pending promises and retry queue without rejecting
-      // (rejecting causes unhandled promise rejections during cleanup)
+      // Reject all pending promises so that any awaiting caller (e.g. dashcam.stop()
+      // running in the background after a cleanup timeout) unblocks immediately
+      // instead of hanging until the individual send() timeouts fire (up to 300 s)
+      // or reconnection attempts exhaust (up to ~240 s of back-off).
+      // Note: fire-and-forget message types (output, trackInteraction) already have
+      // .catch(() => {}) attached in send(), so their rejections are always handled.
+      const closeError = new Error("Sandbox connection closed");
+      for (const pending of Object.values(this.ps)) {
+        pending.reject(closeError);
+      }
       this.ps = {};
+      for (const queued of this.pendingRetryQueue) {
+        queued.reject(closeError);
+      }
       this.pendingRetryQueue = [];
     }
   }
