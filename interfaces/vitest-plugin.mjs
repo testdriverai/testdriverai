@@ -1023,15 +1023,16 @@ class TestDriverReporter {
       // Output the test run URL for CI to capture
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
+      let testRunUrl;
       if (testRunDbId) {
-        const testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
+        testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
         logger.info(`View test run: ${testRunUrl}`);
         // Output in a parseable format for CI
         console.log(`TESTDRIVER_RUN_URL=${testRunUrl}`);
-
-        // Post GitHub comment if in CI environment
-        await postGitHubCommentIfEnabled(testRunUrl, stats, completeData);
       }
+
+      // Post GitHub comment if in CI environment
+      await postGitHubCommentIfEnabled(testRunUrl, stats, completeData);
 
       logger.info(
         `Test run completed: ${stats.passedTests}/${stats.totalTests} passed`,
