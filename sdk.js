@@ -972,7 +972,7 @@ class Element {
   /**
    * Click on the element
    * @param {ClickAction} [action='click'] - Type of click action
-   * @returns {Promise<void>}
+   * @returns {Promise<Element>} This element instance for chaining
    */
   async click(action = "click") {
     if (!this._found || !this.coordinates) {
@@ -1025,11 +1025,13 @@ class Element {
         elementData,
       );
     }
+    
+    return this;
   }
 
   /**
    * Hover over the element
-   * @returns {Promise<void>}
+   * @returns {Promise<Element>} This element instance for chaining
    */
   async hover() {
     if (!this._found || !this.coordinates) {
@@ -1066,11 +1068,13 @@ class Element {
       this.coordinates.y,
       elementData,
     );
+    
+    return this;
   }
 
   /**
    * Double-click on the element
-   * @returns {Promise<void>}
+   * @returns {Promise<Element>} This element instance for chaining
    */
   async doubleClick() {
     return this.click("double-click");
@@ -1078,7 +1082,7 @@ class Element {
 
   /**
    * Right-click on the element
-   * @returns {Promise<void>}
+   * @returns {Promise<Element>} This element instance for chaining
    */
   async rightClick() {
     return this.click("right-click");
@@ -1086,7 +1090,7 @@ class Element {
 
   /**
    * Press mouse button down on this element
-   * @returns {Promise<void>}
+   * @returns {Promise<Element>} This element instance for chaining
    */
   async mouseDown() {
     return this.click("mouseDown");
@@ -1094,7 +1098,7 @@ class Element {
 
   /**
    * Release mouse button on this element
-   * @returns {Promise<void>}
+   * @returns {Promise<Element>} This element instance for chaining
    */
   async mouseUp() {
     return this.click("mouseUp");
