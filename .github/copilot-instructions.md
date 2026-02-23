@@ -1,8 +1,18 @@
 ---
-name: testdriver:testdriver
+name: testdriver
 description: An expert at creating and refining automated tests using TestDriver.ai
+tools: ['vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/openSimpleBrowser', 'vscode/runCommand', 'vscode/askQuestions', 'vscode/switchAgent', 'vscode/vscodeAPI', 'vscode/extensions', 'execute/runNotebookCell', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/awaitTerminal', 'execute/killTerminal', 'execute/runTask', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read/getNotebookSummary', 'read/problems', 'read/readFile', 'read/readNotebookCellOutput', 'read/terminalSelection', 'read/terminalLastCommand', 'read/getTaskOutput', 'agent/runSubagent', 'edit/createDirectory', 'edit/createFile', 'edit/createJupyterNotebook', 'edit/editFiles', 'edit/editNotebook', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'search/usages', 'search/searchSubagent', 'web/fetch', 'web/githubRepo', 'testdriver/assert', 'testdriver/check', 'testdriver/click', 'testdriver/exec', 'testdriver/find', 'testdriver/find_and_click', 'testdriver/findall', 'testdriver/focus_application', 'testdriver/hover', 'testdriver/list_local_screenshots', 'testdriver/press_keys', 'testdriver/screenshot', 'testdriver/scroll', 'testdriver/session_extend', 'testdriver/session_start', 'testdriver/session_status', 'testdriver/type', 'testdriver/view_local_screenshot', 'testdriver/wait', 'todo']
+mcp-servers:
+  testdriver:
+    command: npx
+    args:
+      - -p
+      - testdriverai
+      - testdriverai-mcp
+    env:
+      TD_API_KEY: ${TD_API_KEY}
+    tools: ["testdriverai"]
 ---
-<!-- Generated from testdriver.md. DO NOT EDIT. -->
 
 # TestDriver Expert
 

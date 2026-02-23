@@ -8,20 +8,60 @@ description: View and analyze saved screenshots using MCP commands for test debu
 
 TestDriver MCP provides powerful commands to view and analyze screenshots saved during test execution. This enables rapid debugging, test development, and comparison workflows without manually opening image files.
 
+<Note>
+  **Automatic Screenshots (Default: Enabled)**: TestDriver automatically captures screenshots before and after every command. Screenshots are named with the line number and action, making it easy to trace exactly which line of code produced each screenshot. For example: `001-click-before-L42-submit-button.png`
+</Note>
+
 ## MCP Commands
 
 ### list_local_screenshots
 
-List all screenshots saved in the `.testdriver/screenshots/` directory:
+List and filter screenshots saved in the `.testdriver/screenshots/` directory:
 
 ```
 list_local_screenshots()
 ```
 
-**Optional Parameters:**
+**Filter Parameters:**
 
 <ParamField path="directory" type="string" optional>
-  Filter screenshots by subdirectory (e.g., specific test file). If omitted, lists all screenshots.
+  Filter screenshots by test file or subdirectory (e.g., "login.test", "mcp-screenshots"). If omitted, lists all screenshots.
+</ParamField>
+
+<ParamField path="line" type="number" optional>
+  Filter by exact line number from test file (e.g., 42 matches L42 in filename).
+</ParamField>
+
+<ParamField path="lineRange" type="object" optional>
+  Filter by line number range. Example: `{ start: 10, end: 20 }` matches screenshots from lines 10-20.
+</ParamField>
+
+<ParamField path="action" type="string" optional>
+  Filter by action type: `click`, `find`, `type`, `assert`, `provision`, `scroll`, `hover`, etc.
+</ParamField>
+
+<ParamField path="phase" type="string" optional>
+  Filter by phase: `"before"` (state before action) or `"after"` (state after action).
+</ParamField>
+
+<ParamField path="pattern" type="string" optional>
+  Regex pattern to match against filename. Example: `"login|signin"` or `"button.*click"`.
+</ParamField>
+
+<ParamField path="sequence" type="number" optional>
+  Filter by exact sequence number.
+</ParamField>
+
+<ParamField path="sequenceRange" type="object" optional>
+  Filter by sequence range. Example: `{ start: 1, end: 10 }` matches first 10 screenshots.
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of results to return (default: 50).
+</ParamField>
+
+<ParamField path="sortBy" type="string" optional>
+  Sort results by: `"modified"` (newest first, default), `"sequence"` (execution order), or `"line"` (line number).
 </ParamField>
 
 **Returns:**
@@ -29,24 +69,31 @@ list_local_screenshots()
 Array of screenshot metadata including:
 - `path` - Full absolute path to the screenshot file
 - `relativePath` - Path relative to `.testdriver/screenshots/`
-- `testFile` - The test file that created this screenshot
-- `filename` - Screenshot filename
-- `size` - File size in bytes
+- `name` - Screenshot filename
+- `sizeBytes` - File size in bytes
 - `modified` - Last modification timestamp
-- `created` - Creation timestamp
+- `sequence` - Sequential number (from auto-screenshots)
+- `action` - Action type (click, find, etc.)
+- `phase` - Before/after phase
+- `lineNumber` - Line number from test file
+- `description` - Element or action description
 
-**Example Response:**
+**Example Responses:**
 
 ```json
+// Basic listing
 [
   {
-    "path": "/Users/user/project/.testdriver/screenshots/login.test/screenshot-1737633600000.png",
-    "relativePath": "login.test/screenshot-1737633600000.png",
-    "testFile": "login.test",
-    "filename": "screenshot-1737633600000.png",
-    "size": 145632,
+    "path": "/Users/user/project/.testdriver/screenshots/login.test/001-click-before-L42-submit-button.png",
+    "relativePath": "login.test/001-click-before-L42-submit-button.png",
+    "name": "001-click-before-L42-submit-button.png",
+    "sizeBytes": 145632,
     "modified": "2026-01-23T10:00:00.000Z",
-    "created": "2026-01-23T10:00:00.000Z"
+    "sequence": 1,
+    "action": "click",
+    "phase": "before",
+    "lineNumber": 42,
+    "description": "submit-button"
   }
 ]
 ```
@@ -75,34 +122,85 @@ view_local_screenshot({ path: "/full/path/to/screenshot.png" })
 
 ### Test Debugging After Failures
 
-When a test fails, view the saved screenshots to understand what went wrong:
+When a test fails, use powerful filtering to quickly find relevant screenshots:
 
-1. **List screenshots from the failed test:**
-
-```
-list_local_screenshots({ directory: "login.test" })
-```
-
-2. **View screenshots in chronological order** (sorted by creation time) to trace the test execution:
+**1. Find screenshots at the failing line:**
 
 ```
-view_local_screenshot({ path: ".testdriver/screenshots/login.test/screenshot-1737633600000.png" })
-view_local_screenshot({ path: ".testdriver/screenshots/login.test/screenshot-1737633610000.png" })
-view_local_screenshot({ path: ".testdriver/screenshots/login.test/screenshot-1737633620000.png" })
+// If test failed at line 42
+list_local_screenshots({ line: 42 })
+
+// View before and after states at that line
+view_local_screenshot({ path: ".testdriver/screenshots/login.test/005-click-before-L42-submit-button.png" })
+view_local_screenshot({ path: ".testdriver/screenshots/login.test/006-click-after-L42-submit-button.png" })
 ```
 
-3. **Analyze the UI state** at each step to identify where things went wrong
+**2. See what happened leading up to the failure:**
 
-4. **Compare expected vs actual** - if you added descriptive filenames with `screenshot("step-name")`, you can easily identify key moments
+```
+// Get screenshots from lines 35-45 to see context
+list_local_screenshots({ directory: "login.test", lineRange: { start: 35, end: 45 } })
+```
+
+**3. Find all assertion screenshots:**
+
+```
+// See what the screen looked like during assertions
+list_local_screenshots({ action: "assert" })
+```
+
+**4. View the final state before failure:**
+
+```
+// Get the last 5 screenshots in execution order
+list_local_screenshots({ directory: "login.test", sortBy: "sequence", limit: 5 })
+```
+
+### Finding Specific Actions
+
+When debugging element interactions:
+
+```
+// Find all click actions
+list_local_screenshots({ action: "click" })
+
+// Find what the screen looked like BEFORE each click
+list_local_screenshots({ action: "click", phase: "before" })
+
+// Find screenshots related to a specific element using regex
+list_local_screenshots({ pattern: "submit|button" })
+
+// Find all type actions (for form filling issues)
+list_local_screenshots({ action: "type" })
+```
+
+### Understanding Test Flow
+
+View screenshots in execution order to trace test behavior:
+
+```
+// Get screenshots in execution order
+list_local_screenshots({ directory: "checkout.test", sortBy: "sequence" })
+
+// Get just the first 10 actions
+list_local_screenshots({ sequenceRange: { start: 1, end: 10 }, sortBy: "sequence" })
+
+// Get just the last 10 actions
+list_local_screenshots({ directory: "checkout.test", sortBy: "sequence", limit: 10 })
+```
 
 ### Interactive Test Development
 
 While building tests using MCP tools, view screenshots to verify your test logic:
 
-1. **After a test run**, list screenshots to see what was captured:
+1. **After a test run**, filter screenshots to see specific actions:
 
 ```
-list_local_screenshots()
+// See all assertions
+list_local_screenshots({ action: "assert" })
+
+// See what happened at a specific line you're debugging
+list_local_screenshots({ line: 25 })
 ```
 
 2. **Review key points** in the test execution:
@@ -117,21 +215,31 @@ view_local_screenshot({ path: ".testdriver/screenshots/my-test.test/after-login.
 
 ### Comparison and Analysis
 
-Compare screenshots across multiple test runs to identify flaky behavior or UI changes:
+Compare screenshots to identify issues:
 
-1. **List screenshots from multiple test runs** (note: each test run clears the folder, so copy screenshots elsewhere for comparison if needed)
-
-2. **View screenshots side-by-side** to spot differences:
+**Using phase filtering for before/after comparison:**
 
 ```
-view_local_screenshot({ path: ".testdriver/screenshots/test.test/before-click.png" })
-// Analyze first run
+// See state before all clicks
+list_local_screenshots({ action: "click", phase: "before" })
 
-view_local_screenshot({ path: ".testdriver/screenshots-backup/test.test/before-click.png" })
-// Compare with previous run
+// See state after all clicks  
+list_local_screenshots({ action: "click", phase: "after" })
 ```
 
-3. **Identify timing issues** - if element positions or states vary between runs, you may have timing/race condition issues
+**Using line-based debugging:**
+
+```
+// Something went wrong around line 50
+list_local_screenshots({ lineRange: { start: 45, end: 55 } })
+```
+
+**Using regex patterns:**
+
+```
+// Find screenshots related to login functionality
+list_local_screenshots({ pattern: "login|signin|email|password" })
+```
 
 ## Best Practices
 
@@ -188,20 +296,37 @@ Understanding the directory structure helps with efficient screenshot viewing:
 .testdriver/
   screenshots/
     login.test/              # Test file name (without .mjs extension)
-      screenshot-1737633600000.png   # Auto-generated timestamp filename
-      initial-state.png              # Custom descriptive filename
-      after-click.png
+      001-find-before-L15-email-input.png     # Auto: before find() at line 15
+      002-find-after-L15-email-input.png      # Auto: after find() at line 15
+      003-click-before-L16-email-input.png    # Auto: before click() at line 16
+      004-click-after-L16-email-input.png     # Auto: after click() at line 16
+      login-complete.png                       # Manual: screenshot("login-complete")
     checkout.test/
-      screenshot-1737633700000.png
-      product-page.png
-    profile.test/
-      screenshot-1737633800000.png
+      001-find-before-L12-add-to-cart.png
+      002-find-after-L12-add-to-cart.png
+      ...
 ```
 
+### Automatic Screenshot Naming Format
+
+`<seq>-<action>-<phase>-L<line>-<description>.png`
+
+| Component | Description | Example |
+|-----------|-------------|---------|
+| `seq` | Sequential number | `001`, `002` |
+| `action` | Command name | `click`, `type`, `find` |
+| `phase` | Before, after, or error | `before`, `after`, `error` |
+| `L<line>` | Line number from test file | `L42` |
+| `description` | Element/action description | `submit-button` |
+
+### Key Points
+
 - Each test file gets its own subdirectory
-- Filenames are either timestamps (default) or custom names you provide
+- Automatic screenshots include line numbers for easy tracing
+- Manual `screenshot()` calls use custom names you provide
 - Folders are cleared at the start of each test run
 - All screenshots are PNG format
+- Disable automatic screenshots with `autoScreenshots: false` if needed
 
 ## Integration with Test Development
 
@@ -248,11 +373,16 @@ When tests fail or behave unexpectedly:
   </Accordion>
 
   <Accordion title="Too many screenshots">
-    If you have hundreds of screenshots making it hard to find what you need:
+    If you have hundreds of screenshots making it hard to find what you need, use filtering:
     
-    - Use the `directory` parameter to filter by test file
-    - Consider adding more descriptive filenames in your tests
-    - Clean up old screenshot folders: `rm -rf .testdriver/screenshots/*`
+    - Filter by test file: `list_local_screenshots({ directory: "my-test.test" })`
+    - Filter by line number: `list_local_screenshots({ line: 42 })` or `list_local_screenshots({ lineRange: { start: 40, end: 50 } })`
+    - Filter by action: `list_local_screenshots({ action: "click" })`
+    - Filter by phase: `list_local_screenshots({ phase: "before" })`
+    - Use regex: `list_local_screenshots({ pattern: "submit|login" })`
+    - Limit results: `list_local_screenshots({ limit: 10 })`
+    - Sort by line: `list_local_screenshots({ sortBy: "line" })`
+    - Clean up old folders: `rm -rf .testdriver/screenshots/*`
   </Accordion>
 
   <Accordion title="Screenshots from old test runs">
