@@ -810,6 +810,19 @@ class TestDriverReporter {
     this.ctx = ctx;
     logger.debug("onInit called - UPDATED VERSION");
 
+    // Check for incompatible pool configuration
+    const pool = ctx.config?.pool;
+    if (pool === 'threads' || pool === 'vmThreads') {
+      logger.error(
+        `Incompatible pool: "${pool}". TestDriver requires pool: "forks". ` +
+        'Tests will fail. Remove the pool option or set pool: "forks" in your Vitest config. ' +
+        'See: https://testdriver.ai/docs/v7/concurrency',
+      );
+    }
+    if (pool) {
+      logger.debug(`Vitest pool: ${pool}`);
+    }
+
     // Initialize Sentry for error reporting
     initializeSentry();
 
