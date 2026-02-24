@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { events } = require("../events");
 const logger = require("./logger");
 const { version } = require("../../package.json");
+const sentry = require("../../lib/sentry");
 
 /**
  * Generate Sentry trace headers for distributed tracing
@@ -48,6 +49,8 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.pendingTimeouts = new Map(); // Track per-message timeouts
       this.pendingRetryQueue = []; // Queue of requests to retry after reconnection
       this._lastConnectParams = null; // Connection params for reconnection (per-instance, not shared)
+      this.psHighWaterMark = 0; // Track peak pending promise count
+      this.psWarningThreshold = 10; // Warn when pending promises exceed this
     }
 
     /**
@@ -153,9 +156,56 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           startTime: Date.now(),
         };
 
+        // Monitor pending promise backlog
+        const pendingCount = Object.keys(this.ps).length;
+        if (pendingCount > this.psHighWaterMark) {
+          this.psHighWaterMark = pendingCount;
+        }
+        if (pendingCount >= this.psWarningThreshold) {
+          const types = {};
+          const now = Date.now();
+          let oldest = 0;
+          for (const id of Object.keys(this.ps)) {
+            const entry = this.ps[id];
+            const t = entry.message?.type || 'unknown';
+            types[t] = (types[t] || 0) + 1;
+            const age = now - (entry.startTime || now);
+            if (age > oldest) oldest = age;
+          }
+          const oldestSec = Math.round(oldest / 1000);
+          console.warn(
+            `[Sandbox] ⚠️  Promise backlog: ${pendingCount} pending (high water mark: ${this.psHighWaterMark}, oldest: ${oldestSec}s) — types: ${JSON.stringify(types)}`
+          );
+
+          // Log as Sentry structured metric
+          try {
+            sentry.Sentry.logger.warn(
+              `sandbox.promise_backlog: ${pendingCount} pending`,
+              {
+                "sandbox.promise_backlog.count": pendingCount,
+                "sandbox.promise_backlog.high_water_mark": this.psHighWaterMark,
+                "sandbox.promise_backlog.oldest_seconds": oldestSec,
+                "sandbox.promise_backlog.types": JSON.stringify(types),
+                category: "sandbox.metrics",
+              },
+            );
+          } catch (e) {
+            // Sentry logging is best-effort
+          }
+
+          // Track as analytics metric (same pattern as interaction-track)
+          analytics.track("sandbox.promise_backlog", {
+            count: pendingCount,
+            highWaterMark: this.psHighWaterMark,
+            oldestSeconds: oldestSec,
+            types,
+            messageType: message.type,
+          });
+        }
+
         // Fire-and-forget message types: attach .catch() to prevent
         // unhandled promise rejections if nobody awaits the result
-        const fireAndForgetTypes = ["output", "trackInteraction"];
+        const fireAndForgetTypes = ["output"];
         if (fireAndForgetTypes.includes(message.type)) {
           p.catch(() => {});
         }

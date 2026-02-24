@@ -298,9 +298,8 @@ const createCommands = (
     // Track interaction with success/failure (fire-and-forget)
     const sessionId = sessionInstance?.get();
     if (sessionId) {
-      sandbox.send({
-        type: "trackInteraction",
-        interactionType: "assert",
+      sdk.req("interaction-track", {
+        type: "assert",
         session: sessionId,
         prompt: assertion,
         timestamp: assertTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
@@ -312,9 +311,7 @@ const createCommands = (
         reasoning: reasoning,
         similarity: similarity,
         screenshotUrl: response?.screenshotKey ?? null,
-      }).catch((err) => {
-        console.warn("Failed to track assert interaction:", err.message);
-      });
+      }).catch(() => {});
     }
     
     if (passed) {
@@ -433,36 +430,30 @@ const createCommands = (
       const sessionId = sessionInstance?.get();
       if (sessionId) {
         const scrollDuration = Date.now() - scrollStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "scroll",
+        sdk.req("interaction-track", {
+          type: "scroll",
           session: sessionId,
           input: { direction, amount },
           timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
           duration: scrollDuration,
           success: scrollSuccess,
           error: scrollError,
-        }).catch((err) => {
-          console.warn("Failed to track scroll interaction:", err.message);
-        });
+        }).catch(() => {});
       }
     } catch (error) {
       // Track interaction failure (fire-and-forget)
       const sessionId = sessionInstance?.get();
       if (sessionId) {
         const scrollDuration = Date.now() - scrollStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "scroll",
+        sdk.req("interaction-track", {
+          type: "scroll",
           session: sessionId,
           input: { direction, amount },
           timestamp: scrollTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
           duration: scrollDuration,
           success: false,
           error: error.message,
-        }).catch((err) => {
-          console.warn("Failed to track scroll interaction:", err.message);
-        });
+        }).catch(() => {});
       }
       throw error;
     }
@@ -577,9 +568,8 @@ const createCommands = (
         // Track interaction (fire-and-forget)
         const sessionId = sessionInstance?.get();
         if (sessionId && elementData.prompt) {
-          sandbox.send({
-            type: "trackInteraction",
-            interactionType: "click",
+          sdk.req("interaction-track", {
+            type: "click",
             session: sessionId,
             prompt: elementData.prompt,
             input: { x, y, action },
@@ -593,9 +583,7 @@ const createCommands = (
             reasoning: elementData.reasoning ?? null,
             similarity: elementData.similarity ?? null,
             screenshotUrl: elementData.screenshotUrl ?? null,
-          }).catch((err) => {
-            console.warn("Failed to track click interaction:", err.message);
-          });
+          }).catch(() => {});
         }
         
         // Wait for redraw and track duration
@@ -630,9 +618,8 @@ const createCommands = (
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
         const clickDuration = Date.now() - clickStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "click",
+        sdk.req("interaction-track", {
+          type: "click",
           session: sessionId,
           prompt: elementData.prompt,
           input: { x, y, action },
@@ -646,9 +633,7 @@ const createCommands = (
           confidence: elementData.confidence ?? null,
           reasoning: elementData.reasoning ?? null,
           similarity: elementData.similarity ?? null,
-        }).catch((err) => {
-          console.warn("Failed to track click interaction:", err.message);
-        });
+        }).catch(() => {});
       }
       throw error;
     }
@@ -703,9 +688,8 @@ const createCommands = (
       const actionDuration = actionEndTime - hoverStartTime;
       
       if (sessionId && elementData.prompt) {
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "hover",
+        sdk.req("interaction-track", {
+          type: "hover",
           session: sessionId,
           prompt: elementData.prompt,
           input: { x, y },
@@ -719,9 +703,7 @@ const createCommands = (
           reasoning: elementData.reasoning ?? null,
           similarity: elementData.similarity ?? null,
           screenshotUrl: elementData.screenshotUrl ?? null,
-        }).catch((err) => {
-          console.warn("Failed to track hover interaction:", err.message);
-        });
+        }).catch(() => {});
       }
 
       // Wait for redraw and track duration
@@ -744,9 +726,8 @@ const createCommands = (
       const sessionId = sessionInstance?.get();
       if (sessionId && elementData.prompt) {
         const hoverDuration = Date.now() - hoverStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "hover",
+        sdk.req("interaction-track", {
+          type: "hover",
           session: sessionId,
           prompt: elementData.prompt,
           input: { x, y },
@@ -761,9 +742,7 @@ const createCommands = (
           reasoning: elementData.reasoning ?? null,
           similarity: elementData.similarity ?? null,
           screenshotUrl: elementData.screenshotUrl ?? null,
-        }).catch((err) => {
-          console.warn("Failed to track hover interaction:", err.message);
-        });
+        }).catch(() => {});
       }
       throw error;
     }
@@ -966,9 +945,8 @@ const createCommands = (
       const sessionId = sessionInstance?.get();
       if (sessionId) {
         const typeDuration = Date.now() - typeStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "type",
+        sdk.req("interaction-track", {
+          type: "type",
           session: sessionId,
           // Store masked text if secret, otherwise store actual text
           input: { text: secret ? "****" : text, delay },
@@ -976,9 +954,7 @@ const createCommands = (
           duration: typeDuration,
           success: true,
           isSecret: secret, // Flag this interaction if it contains a secret
-        }).catch((err) => {
-          console.warn("Failed to track type interaction:", err.message);
-        });
+        }).catch(() => {});
       }
       
       const redrawStartTime = Date.now();
@@ -1039,17 +1015,14 @@ const createCommands = (
       const sessionId = sessionInstance?.get();
       if (sessionId) {
         const pressKeysDuration = Date.now() - pressKeysStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "pressKeys",
+        sdk.req("interaction-track", {
+          type: "pressKeys",
           session: sessionId,
           input: { keys },
           timestamp: pressKeysTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
           duration: pressKeysDuration,
           success: true,
-        }).catch((err) => {
-          console.warn("Failed to track pressKeys interaction:", err.message);
-        });
+        }).catch(() => {});
       }
 
       const redrawStartTime = Date.now();
@@ -1082,17 +1055,14 @@ const createCommands = (
       const sessionId = sessionInstance?.get();
       if (sessionId) {
         const waitDuration = Date.now() - waitStartTime;
-        sandbox.send({
-          type: "trackInteraction",
-          interactionType: "wait",
+        sdk.req("interaction-track", {
+          type: "wait",
           session: sessionId,
           input: { timeout },
           timestamp: waitTimestamp, // Use dashcam elapsed time instead of absolute time
           duration: waitDuration,
           success: true,
-        }).catch((err) => {
-          console.warn("Failed to track wait interaction:", err.message);
-        });
+        }).catch(() => {});
       }
       
       return result;
@@ -1161,18 +1131,15 @@ const createCommands = (
         const sessionId = sessionInstance?.get();
         if (sessionId) {
           const waitForImageDuration = Date.now() - startTime;
-          sandbox.send({
-            type: "trackInteraction",
-            interactionType: "waitForImage",
+          sdk.req("interaction-track", {
+            type: "waitForImage",
             session: sessionId,
             prompt: description,
             input: { timeout },
             timestamp: waitForImageTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: waitForImageDuration,
             success: true,
-          }).catch((err) => {
-            console.warn("Failed to track waitForImage interaction:", err.message);
-          });
+          }).catch(() => {});
         }
         
         return;
@@ -1182,9 +1149,8 @@ const createCommands = (
         const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for an image matching the description \"${description}\"`;
         if (sessionId) {
           const waitForImageDuration = Date.now() - startTime;
-          sandbox.send({
-            type: "trackInteraction",
-            interactionType: "waitForImage",
+          sdk.req("interaction-track", {
+            type: "waitForImage",
             session: sessionId,
             prompt: description,
             input: { timeout },
@@ -1192,9 +1158,7 @@ const createCommands = (
             duration: waitForImageDuration,
             success: false,
             error: errorMsg,
-          }).catch((err) => {
-            console.warn("Failed to track waitForImage interaction:", err.message);
-          });
+          }).catch(() => {});
         }
         
         throw new MatchError(errorMsg);
@@ -1270,18 +1234,15 @@ const createCommands = (
         const sessionId = sessionInstance?.get();
         if (sessionId) {
           const waitForTextDuration = Date.now() - startTime;
-          sandbox.send({
-            type: "trackInteraction",
-            interactionType: "waitForText",
+          sdk.req("interaction-track", {
+            type: "waitForText",
             session: sessionId,
             prompt: text,
             input: { timeout },
             timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
             duration: waitForTextDuration,
             success: true,
-          }).catch((err) => {
-            console.warn("Failed to track waitForText interaction:", err.message);
-          });
+          }).catch(() => {});
         }
         
         return;
@@ -1291,9 +1252,8 @@ const createCommands = (
         const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`;
         if (sessionId) {
           const waitForTextDuration = Date.now() - startTime;
-          sandbox.send({
-            type: "trackInteraction",
-            interactionType: "waitForText",
+          sdk.req("interaction-track", {
+            type: "waitForText",
             session: sessionId,
             prompt: text,
             input: { timeout },
@@ -1301,9 +1261,7 @@ const createCommands = (
             duration: waitForTextDuration,
             success: false,
             error: errorMsg,
-          }).catch((err) => {
-            console.warn("Failed to track waitForText interaction:", err.message);
-          });
+          }).catch(() => {});
         }
         
         throw new MatchError(errorMsg);
@@ -1516,20 +1474,15 @@ const createCommands = (
         // Track interaction success
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const rememberDuration = Date.now() - rememberStartTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "extract",
-              session: sessionId,
-              prompt: description,
-              timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: rememberDuration,
-              success: true,
-            });
-          } catch (err) {
-            console.warn("Failed to track extract interaction:", err.message);
-          }
+          const rememberDuration = Date.now() - rememberStartTime;
+          sdk.req("interaction-track", {
+            type: "extract",
+            session: sessionId,
+            prompt: description,
+            timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: rememberDuration,
+            success: true,
+          }).catch(() => {});
         }
         
         return result.data;
@@ -1537,21 +1490,16 @@ const createCommands = (
         // Track interaction failure
         const sessionId = sessionInstance?.get();
         if (sessionId) {
-          try {
-            const rememberDuration = Date.now() - rememberStartTime;
-            await sandbox.send({
-              type: "trackInteraction",
-              interactionType: "extract",
-              session: sessionId,
-              prompt: description,
-              timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              duration: rememberDuration,
-              success: false,
-              error: error.message,
-            });
-          } catch (err) {
-            console.warn("Failed to track extract interaction:", err.message);
-          }
+          const rememberDuration = Date.now() - rememberStartTime;
+          sdk.req("interaction-track", {
+            type: "extract",
+            session: sessionId,
+            prompt: description,
+            timestamp: rememberTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            duration: rememberDuration,
+            success: false,
+            error: error.message,
+          }).catch(() => {});
         }
         throw error;
       }

@@ -615,31 +615,26 @@ class Element {
 
     // Track find interaction once at the end (fire-and-forget, don't block)
     const sessionId = this.sdk.getSessionId();
-    if (sessionId && this.sdk.sandbox?.send) {
-      await this.sdk.sandbox
-        .send({
-          type: "trackInteraction",
-          interactionType: "find",
-          session: sessionId,
-          prompt: description,
-          timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-          success: this._found,
-          error: findError,
-          cacheHit:
-            response?.cacheHit ||
-            response?.cache_hit ||
-            response?.cached ||
-            false,
-          selector: response?.selector,
-          selectorUsed: !!response?.selector,
-          confidence: response?.confidence ?? null,
-          reasoning: response?.reasoning ?? null,
-          similarity: response?.similarity ?? null,
-          screenshotUrl: response?.screenshotKey ?? null,
-        })
-        .catch((err) => {
-          console.warn("Failed to track find interaction:", err.message);
-        });
+    if (sessionId && this.sdk.apiClient?.req) {
+      this.sdk.apiClient.req("interaction-track", {
+        type: "find",
+        session: sessionId,
+        prompt: description,
+        timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+        success: this._found,
+        error: findError,
+        cacheHit:
+          response?.cacheHit ||
+          response?.cache_hit ||
+          response?.cached ||
+          false,
+        selector: response?.selector,
+        selectorUsed: !!response?.selector,
+        confidence: response?.confidence ?? null,
+        reasoning: response?.reasoning ?? null,
+        similarity: response?.similarity ?? null,
+        screenshotUrl: response?.screenshotKey ?? null,
+      }).catch(() => {});
     }
 
     return this;
@@ -3165,24 +3160,19 @@ CAPTCHA_SOLVER_EOF`,
 
         // Track successful findAll interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
-        if (sessionId && this.sandbox?.send) {
-          this.sandbox
-            .send({
-              type: "trackInteraction",
-              interactionType: "findAll",
-              session: sessionId,
-              prompt: description,
-              timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              success: true,
-              input: { count: elements.length },
-              cacheHit: response.cached || false,
-              selector: response.selector,
-              selectorUsed: !!response.selector,
-              screenshotUrl: response.screenshotKey ?? null,
-            })
-            .catch((err) => {
-              console.warn("Failed to track findAll interaction:", err.message);
-            });
+        if (sessionId && this.apiClient?.req) {
+          this.apiClient.req("interaction-track", {
+            type: "findAll",
+            session: sessionId,
+            prompt: description,
+            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            success: true,
+            input: { count: elements.length },
+            cacheHit: response.cached || false,
+            selector: response.selector,
+            selectorUsed: !!response.selector,
+            screenshotUrl: response.screenshotKey ?? null,
+          }).catch(() => {});
         }
 
         // Log debug information when elements are found
@@ -3221,25 +3211,20 @@ CAPTCHA_SOLVER_EOF`,
 
         // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
-        if (sessionId && this.sandbox?.send) {
-          this.sandbox
-            .send({
-              type: "trackInteraction",
-              interactionType: "findAll",
-              session: sessionId,
-              prompt: description,
-              timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-              success: false,
-              error: "No elements found",
-              input: { count: 0 },
-              cacheHit: response?.cached || false,
-              selector: response?.selector,
-              selectorUsed: !!response?.selector,
-              screenshotUrl: response?.screenshotKey ?? null,
-            })
-            .catch((err) => {
-              console.warn("Failed to track findAll interaction:", err.message);
-            });
+        if (sessionId && this.apiClient?.req) {
+          this.apiClient.req("interaction-track", {
+            type: "findAll",
+            session: sessionId,
+            prompt: description,
+            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+            success: false,
+            error: "No elements found",
+            input: { count: 0 },
+            cacheHit: response?.cached || false,
+            selector: response?.selector,
+            selectorUsed: !!response?.selector,
+            screenshotUrl: response?.screenshotKey ?? null,
+          }).catch(() => {});
         }
 
         // Take "after" screenshot if enabled (no elements found)
@@ -3266,21 +3251,16 @@ CAPTCHA_SOLVER_EOF`,
 
       // Track findAll error interaction (fire-and-forget, don't block)
       const sessionId = this.getSessionId();
-      if (sessionId && this.sandbox?.send) {
-        this.sandbox
-          .send({
-            type: "trackInteraction",
-            interactionType: "findAll",
-            session: sessionId,
-            prompt: description,
-            timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            success: false,
-            error: error.message,
-            input: { count: 0 },
-          })
-          .catch((err) => {
-            console.warn("Failed to track findAll interaction:", err.message);
-          });
+      if (sessionId && this.apiClient?.req) {
+        this.apiClient.req("interaction-track", {
+          type: "findAll",
+          session: sessionId,
+          prompt: description,
+          timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          success: false,
+          error: error.message,
+          input: { count: 0 },
+        }).catch(() => {});
       }
 
       // Take "error" screenshot if enabled
