@@ -1758,28 +1758,6 @@ class TestDriverSDK {
       );
     }
 
-<<<<<<< Updated upstream
-    // Wait for a page target to appear via CDP
-    let pageReady = false;
-    while (Date.now() < deadline) {
-      try {
-        const result = await execDirect(shell, pageCheckCmd, 10000, true);
-        if (result && result.trim().length > 0) {
-          pageReady = true;
-          break;
-        }
-      } catch (_) {
-        // No page target yet
-      }
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-    if (!pageReady) {
-      throw new Error(
-        `Chrome page target did not become available within ${timeoutMs}ms`,
-      );
-    }
-=======
->>>>>>> Stashed changes
   }
 
   _createProvisionAPI() {
