@@ -1432,6 +1432,12 @@ class TestDriverSDK {
       ...options.environment,
     };
 
+    // Auto-detect CI environment (GitHub Actions, etc.) and pass through
+    // This ensures the API creates fresh sandboxes instead of reusing hot-pool instances
+    if (!environment.CI && process.env.CI) {
+      environment.CI = process.env.CI;
+    }
+
     // Create the underlying agent with minimal CLI args
     this.agent = new TestDriverAgent(environment, {
       command: "sdk",
@@ -1441,6 +1447,16 @@ class TestDriverSDK {
         preview: previewMode,
       },
     });
+
+    // Set a per-instance suffix on the agent's sandbox file path
+    // This prevents parallel tests from clobbering each other's last-sandbox file
+    this.agent._sandboxFileSuffix = `-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    if (process.env.TD_DEBUG_SANDBOX === "true") {
+      process.stdout.write(
+        `[DEBUG sandbox-file] SDK constructor: assigned suffix=${this.agent._sandboxFileSuffix}\n`,
+      );
+    }
 
     // Auto-generate cache key from caller file hash if not explicitly provided
     // This allows caching to be tied to the specific test file
@@ -1865,6 +1881,19 @@ class TestDriverSDK {
           chromeArgs.push(`--load-extension=${dashcamChromePath}`);
         }
 
+        // Kill any existing Chrome processes and clean up stale locks
+        // This prevents port 9222 conflicts when sandboxes are reused (e.g. hot-pool)
+        const killChromeCmd = this.os === "windows"
+          ? `Get-Process chrome -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500`
+          : `pkill -9 -f chrome 2>/dev/null; sleep 0.5`;
+        await this.exec(shell, killChromeCmd, 10000, true).catch(() => {});
+
+        // Remove Chrome profile lock files to prevent "already running" errors
+        const removeLockCmd = this.os === "windows"
+          ? `Remove-Item "${userDataDir}\\lockfile" -Force -ErrorAction SilentlyContinue; Remove-Item "${userDataDir}\\SingletonLock" -Force -ErrorAction SilentlyContinue`
+          : `rm -f "${userDataDir}/SingletonLock" "${userDataDir}/lockfile" 2>/dev/null`;
+        await this.exec(shell, removeLockCmd, 10000, true).catch(() => {});
+
         // Launch Chrome
 
         if (this.os === "windows") {
@@ -2134,6 +2163,19 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           // If dashcam-chrome unavailable, just load user extension
           chromeArgs.push(`--load-extension=${extensionPath}`);
         }
+
+        // Kill any existing Chrome processes and clean up stale locks
+        // This prevents port 9222 conflicts when sandboxes are reused (e.g. hot-pool)
+        const killChromeCmd = this.os === "windows"
+          ? `Get-Process chrome -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500`
+          : `pkill -9 -f chrome 2>/dev/null; sleep 0.5`;
+        await this.exec(shell, killChromeCmd, 10000, true).catch(() => {});
+
+        // Remove Chrome profile lock files to prevent "already running" errors
+        const removeLockCmd = this.os === "windows"
+          ? `Remove-Item "${userDataDir}\\lockfile" -Force -ErrorAction SilentlyContinue; Remove-Item "${userDataDir}\\SingletonLock" -Force -ErrorAction SilentlyContinue`
+          : `rm -f "${userDataDir}/SingletonLock" "${userDataDir}/lockfile" 2>/dev/null`;
+        await this.exec(shell, removeLockCmd, 10000, true).catch(() => {});
 
         // Launch Chrome (opens to New Tab by default)
         if (this.os === "windows") {
@@ -2895,6 +2937,11 @@ CAPTCHA_SOLVER_EOF`,
     // This ensures we don't leave orphaned connections even if connect() failed
     if (this.sandbox && typeof this.sandbox.close === "function") {
       this.sandbox.close();
+    }
+
+    // Clean up per-instance last-sandbox file to avoid leftover files
+    if (this.agent?._sandboxFileSuffix) {
+      this.agent.clearRecentSandboxId();
     }
 
     // Remove all event listeners on the emitter to release references
