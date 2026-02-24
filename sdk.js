@@ -1720,7 +1720,7 @@ class TestDriverSDK {
    * @param {number} [timeoutMs=60000] - Maximum time to wait in ms
    * @returns {Promise<void>}
    */
-  async _waitForChromeDebuggerReady(timeoutMs = 1200000) {
+  async _waitForChromeDebuggerReady(timeoutMs = 60000) {
     const shell = this.os === "windows" ? "pwsh" : "sh";
     const portCheckCmd = this.os === "windows"
       ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
@@ -1731,11 +1731,21 @@ class TestDriverSDK {
 
     const deadline = Date.now() + timeoutMs;
 
+    // Use commands.exec directly to bypass auto-screenshots wrapper.
+    // The polling loop fires many rapid exec calls with short timeouts;
+    // going through the wrapper adds 2-3 extra sandbox messages
+    // (screenshot before/after/error) per iteration, overwhelming the
+    // WebSocket and generating cascading "No pending promise" warnings
+    // when timed-out responses arrive after the promise has been cleaned up.
+    const execDirect = this.commands?.exec
+      ? (...args) => this.commands.exec(...args)
+      : (...args) => this.exec(...args); // fallback if commands not ready
+
     // Wait for port 9222 to be listening
     let portReady = false;
     while (Date.now() < deadline) {
       try {
-        const result = await this.exec(shell, portCheckCmd, 5000, true);
+        const result = await execDirect(shell, portCheckCmd, 10000, true);
         if (result && result.includes("open")) {
           portReady = true;
           break;
@@ -1743,7 +1753,7 @@ class TestDriverSDK {
       } catch (_) {
         // Port not ready yet
       }
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 2000));
     }
     if (!portReady) {
       throw new Error(
@@ -1755,7 +1765,7 @@ class TestDriverSDK {
     let pageReady = false;
     while (Date.now() < deadline) {
       try {
-        const result = await this.exec(shell, pageCheckCmd, 5000, true);
+        const result = await execDirect(shell, pageCheckCmd, 10000, true);
         if (result && result.trim().length > 0) {
           pageReady = true;
           break;
@@ -1763,7 +1773,7 @@ class TestDriverSDK {
       } catch (_) {
         // No page target yet
       }
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 2000));
     }
     if (!pageReady) {
       throw new Error(

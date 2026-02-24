@@ -478,12 +478,17 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
           if (!this.ps[message.requestId]) {
             // This can happen during reconnection (ps was cleared) or after timeout
-            // (promise was deleted). Only log at debug level since it's expected.
+            // (promise was deleted). Expected during polling loops (e.g. Chrome
+            // debugger readiness checks) where short-timeout exec calls regularly
+            // expire before the sandbox responds.  Only log in debug/verbose mode.
             if (!this.reconnecting) {
-              console.warn(
-                "No pending promise found for requestId:",
-                message.requestId,
-              );
+              const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+              if (debugMode) {
+                console.warn(
+                  "No pending promise found for requestId:",
+                  message.requestId,
+                );
+              }
             }
             return;
           }
