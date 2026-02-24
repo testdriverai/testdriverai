@@ -1399,6 +1399,10 @@ const TestDriverAgent = require("./agent/index.js");
 const { events } = require("./agent/events.js");
 const { createMarkdownLogger } = require("./interfaces/logger.js");
 
+// Track screenshot directories already cleaned in this process to avoid
+// concurrent tests in the same file from nuking each other's screenshots.
+const _cleanedScreenshotDirs = new Set();
+
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
     // Support calling with just options: new TestDriver({ os: 'windows' })
@@ -1431,6 +1435,12 @@ class TestDriverSDK {
       TD_PREVIEW: previewMode,
       ...options.environment,
     };
+
+    // Auto-detect CI environment (GitHub Actions, etc.) and pass through
+    // This ensures the API creates fresh sandboxes instead of reusing hot-pool instances
+    if (!environment.CI && process.env.CI) {
+      environment.CI = process.env.CI;
+    }
 
     // Create the underlying agent with minimal CLI args
     this.agent = new TestDriverAgent(environment, {
@@ -1710,22 +1720,29 @@ class TestDriverSDK {
    * @param {number} [timeoutMs=60000] - Maximum time to wait in ms
    * @returns {Promise<void>}
    */
-  async _waitForChromeDebuggerReady(timeoutMs = 300000) {
+  async _waitForChromeDebuggerReady(timeoutMs = 60000) {
     const shell = this.os === "windows" ? "pwsh" : "sh";
     const portCheckCmd = this.os === "windows"
       ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
       : `curl -s -o /dev/null --connect-timeout 2 http://localhost:9222 2>/dev/null && echo 'open' || echo 'closed'`;
-    const pageCheckCmd = this.os === "windows"
-      ? `(Invoke-RestMethod -Uri 'http://localhost:9222/json' -TimeoutSec 2) | Where-Object { $_.type -eq 'page' } | Select-Object -First 1 | ConvertTo-Json`
-      : `curl -s http://localhost:9222/json 2>/dev/null | grep '"type": "page"'`;
 
     const deadline = Date.now() + timeoutMs;
+
+    // Use commands.exec directly to bypass auto-screenshots wrapper.
+    // The polling loop fires many rapid exec calls with short timeouts;
+    // going through the wrapper adds 2-3 extra sandbox messages
+    // (screenshot before/after/error) per iteration, overwhelming the
+    // WebSocket and generating cascading "No pending promise" warnings
+    // when timed-out responses arrive after the promise has been cleaned up.
+    const execDirect = this.commands?.exec
+      ? (...args) => this.commands.exec(...args)
+      : (...args) => this.exec(...args); // fallback if commands not ready
 
     // Wait for port 9222 to be listening
     let portReady = false;
     while (Date.now() < deadline) {
       try {
-        const result = await this.exec(shell, portCheckCmd, 5000, true);
+        const result = await execDirect(shell, portCheckCmd, 10000, true);
         if (result && result.includes("open")) {
           portReady = true;
           break;
@@ -1733,7 +1750,7 @@ class TestDriverSDK {
       } catch (_) {
         // Port not ready yet
       }
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 2000));
     }
     if (!portReady) {
       throw new Error(
@@ -1741,25 +1758,6 @@ class TestDriverSDK {
       );
     }
 
-    // Wait for a page target to appear via CDP
-    let pageReady = false;
-    while (Date.now() < deadline) {
-      try {
-        const result = await this.exec(shell, pageCheckCmd, 5000, true);
-        if (result && result.trim().length > 0) {
-          pageReady = true;
-          break;
-        }
-      } catch (_) {
-        // No page target yet
-      }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    if (!pageReady) {
-      throw new Error(
-        `Chrome page target did not become available within ${timeoutMs}ms`,
-      );
-    }
   }
 
   _createProvisionAPI() {
@@ -2706,7 +2704,9 @@ CAPTCHA_SOLVER_EOF`,
       );
     }
 
-    // Clean up screenshots folder for this test file before running
+    // Clean up screenshots folder for this test file before running.
+    // Only clean once per directory per process to avoid concurrent tests
+    // in the same file (--sequence.concurrent) from nuking each other's screenshots.
     if (this.testFile) {
       const testFileName = path.basename(
         this.testFile,
@@ -2718,8 +2718,11 @@ CAPTCHA_SOLVER_EOF`,
         "screenshots",
         testFileName,
       );
-      if (fs.existsSync(screenshotsDir)) {
-        fs.rmSync(screenshotsDir, { recursive: true, force: true });
+      if (!_cleanedScreenshotDirs.has(screenshotsDir)) {
+        _cleanedScreenshotDirs.add(screenshotsDir);
+        if (fs.existsSync(screenshotsDir)) {
+          fs.rmSync(screenshotsDir, { recursive: true, force: true });
+        }
       }
     }
 
@@ -2745,33 +2748,6 @@ CAPTCHA_SOLVER_EOF`,
           ? connectOptions.newSandbox
           : this.newSandbox,
     };
-
-    // Handle reconnect option - use last sandbox file
-    // Check both connectOptions and constructor options
-    const shouldReconnect =
-      connectOptions.reconnect !== undefined
-        ? connectOptions.reconnect
-        : this.reconnect;
-
-    // Skip reconnect if IP is supplied - directly connect to the provided IP
-    const hasIp = Boolean(connectOptions.ip || this.ip);
-
-    if (shouldReconnect && !hasIp) {
-      const lastSandbox = this.agent.getLastSandboxId();
-      if (!lastSandbox || !lastSandbox.sandboxId) {
-        throw new Error(
-          "Cannot reconnect: No previous sandbox found. Run a test first to create a sandbox, or remove the reconnect option.",
-        );
-      }
-      this.agent.sandboxId = lastSandbox.sandboxId;
-      buildEnvOptions.new = false;
-
-      // Use OS from last sandbox if not explicitly specified
-      if (!connectOptions.os && lastSandbox.os) {
-        this.agent.sandboxOs = lastSandbox.os;
-        this.os = lastSandbox.os;
-      }
-    }
 
     // Set agent properties for buildEnv to use
     if (connectOptions.sandboxId) {
@@ -2883,10 +2859,11 @@ CAPTCHA_SOLVER_EOF`,
       }
     }
 
-    // Stop the debugger server (HTTP + WebSocket server) to release the port
+    // Release our reference to the shared debugger server.
+    // The server only actually stops when the last concurrent test disconnects.
     try {
-      const { stopDebugger } = require("./agent/lib/debugger-server.js");
-      stopDebugger();
+      const { releaseDebugger } = require("./agent/lib/debugger-server.js");
+      releaseDebugger();
     } catch (err) {
       // Ignore if debugger wasn't started
     }
@@ -2914,14 +2891,6 @@ CAPTCHA_SOLVER_EOF`,
    */
   getSessionId() {
     return this.session?.get() || null;
-  }
-
-  /**
-   * Get the last sandbox info from the stored file
-   * @returns {Object|null} Last sandbox info including sandboxId, os, ami, instanceType, timestamp, or null if not found
-   */
-  getLastSandboxId() {
-    return this.agent.getLastSandboxId();
   }
 
   // ====================================
@@ -3924,16 +3893,13 @@ CAPTCHA_SOLVER_EOF`,
    * @private
    */
   async _initializeDebugger() {
-    // Import createDebuggerProcess at the module level if not already done
-    const { createDebuggerProcess } = require("./agent/lib/debugger.js");
+    // Use reference-counted debugger server so concurrent tests share one
+    // server and it only shuts down when the last test disconnects.
+    const { acquireDebugger } = require("./agent/lib/debugger-server.js");
 
-    // Only initialize once
     if (!this.agent.debuggerUrl) {
-      const debuggerProcess = await createDebuggerProcess(
-        this.config,
-        this.emitter,
-      );
-      this.agent.debuggerUrl = debuggerProcess.url || null;
+      const result = await acquireDebugger(this.config, this.emitter);
+      this.agent.debuggerUrl = result.url || null;
     }
   }
 

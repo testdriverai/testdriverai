@@ -8,6 +8,8 @@ const logger = require("./logger");
 let server = null;
 let wss = null;
 let clients = new Set();
+let refCount = 0; // Number of active consumers (for concurrent test safety)
+let debuggerUrl = null; // Stored URL of running debugger
 
 function createDebuggerServer(config = {}) {
   const port = config.TD_DEBUGGER_PORT || 0; // 0 means find available port
@@ -76,7 +78,12 @@ function createDebuggerServer(config = {}) {
 
     // Start server on available port
     server.listen(port, "localhost", () => {
-      const actualPort = server.address().port;
+      const address = server.address();
+      if (!address) {
+        reject(new Error("Server started but address is not available"));
+        return;
+      }
+      const actualPort = address.port;
       resolve({ port: actualPort, server, wss });
     });
 
@@ -124,7 +131,43 @@ async function startDebugger(config = {}, emitter) {
   }
 }
 
-function stopDebugger() {
+/**
+ * Acquire a reference to the debugger server.
+ * Starts the server on first call; subsequent calls reuse the existing server.
+ * Each call increments a reference count — call releaseDebugger() when done.
+ *
+ * @param {Object} config - Debugger configuration
+ * @param {EventEmitter} emitter - Event emitter for broadcasting
+ * @returns {Promise<{port: number, url: string}>} Debugger connection info
+ */
+async function acquireDebugger(config = {}, emitter) {
+  refCount++;
+  if (server && debuggerUrl) {
+    // Server already running — reuse it
+    return { url: debuggerUrl };
+  }
+  // First consumer — start the server
+  const result = await startDebugger(config, emitter);
+  debuggerUrl = result.url;
+  return result;
+}
+
+/**
+ * Release a reference to the debugger server.
+ * Only actually stops the server when the last consumer releases.
+ */
+function releaseDebugger() {
+  if (refCount > 0) refCount--;
+  if (refCount > 0) return; // Other tests still using it
+  forceStopDebugger();
+}
+
+/**
+ * Forcefully stop the debugger server regardless of reference count.
+ * Used for process exit cleanup.
+ */
+function forceStopDebugger() {
+  refCount = 0;
   if (wss) {
     wss.close();
     wss = null;
@@ -136,12 +179,23 @@ function stopDebugger() {
   }
 
   clients.clear();
+  debuggerUrl = null;
+  module.exports.debuggerUrl = null;
+  module.exports.config = null;
   logger.log("Debugger server stopped");
+}
+
+// Keep stopDebugger as alias for forceStopDebugger for backward compatibility
+function stopDebugger() {
+  forceStopDebugger();
 }
 
 module.exports = {
   startDebugger,
   stopDebugger,
+  acquireDebugger,
+  releaseDebugger,
+  forceStopDebugger,
   broadcastEvent,
   createDebuggerServer,
   debuggerUrl: null,

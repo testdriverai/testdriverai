@@ -1635,105 +1635,6 @@ ${regression}
     this.emitter.emit(events.log.log, `${inputFile} (end)`);
   }
 
-  // Returns the path to the last sandbox file
-  getLastSandboxFilePath() {
-    const testdriverDir = path.join(process.cwd(), ".testdriver");
-    return path.join(testdriverDir, "last-sandbox");
-  }
-
-  // Returns full sandbox info from last-sandbox file (no timeout - let API validate)
-  getLastSandboxId() {
-    const lastSandboxFile = this.getLastSandboxFilePath();
-
-    if (fs.existsSync(lastSandboxFile)) {
-      try {
-        const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
-
-        // Parse sandbox info (supports both old format and new format)
-        let sandboxInfo;
-        try {
-          sandboxInfo = JSON.parse(fileContent);
-        } catch {
-          return { sandboxId: fileContent || null };
-        }
-
-        return {
-          sandboxId: sandboxInfo.sandboxId || sandboxInfo.instanceId || null,
-          os: sandboxInfo.os || "linux",
-          ami: sandboxInfo.ami || null,
-          instanceType: sandboxInfo.instanceType || null,
-          timestamp: sandboxInfo.timestamp || null,
-        };
-      } catch {
-        // ignore errors
-      }
-    }
-    return null;
-  }
-
-  // Returns sandboxId to use if AMI/instance type match current requirements
-  getRecentSandboxId() {
-    const sandboxInfo = this.getLastSandboxId();
-
-    if (!sandboxInfo || !sandboxInfo.sandboxId) {
-      return null;
-    }
-
-    // Check if AMI and instance type match current requirements
-    const currentAmi = this.sandboxAmi || null;
-    const currentInstance = this.sandboxInstance || null;
-    const storedAmi = sandboxInfo.ami || null;
-    const storedInstance = sandboxInfo.instanceType || null;
-
-    if (currentAmi === storedAmi && currentInstance === storedInstance) {
-      return sandboxInfo.sandboxId;
-    } else {
-      this.emitter.emit(
-        events.log.log,
-        theme.dim(
-          "Recent sandbox found but AMI/instance type doesn't match current requirements",
-        ),
-      );
-      return null;
-    }
-  }
-
-  saveLastSandboxId(sandboxId, osType = "linux") {
-    const lastSandboxFile = this.getLastSandboxFilePath();
-    const testdriverDir = path.dirname(lastSandboxFile);
-
-    try {
-      // Ensure .testdriver directory exists
-      if (!fs.existsSync(testdriverDir)) {
-        fs.mkdirSync(testdriverDir, { recursive: true });
-      }
-
-      const sandboxInfo = {
-        sandboxId: sandboxId,
-        os: osType,
-        ami: this.sandboxAmi || null,
-        instanceType: this.sandboxInstance || null,
-        timestamp: new Date().toISOString(),
-      };
-      fs.writeFileSync(lastSandboxFile, JSON.stringify(sandboxInfo, null, 2), {
-        encoding: "utf-8",
-      });
-    } catch {
-      // ignore errors
-    }
-  }
-
-  clearRecentSandboxId() {
-    const lastSandboxFile = this.getLastSandboxFilePath();
-    try {
-      if (fs.existsSync(lastSandboxFile)) {
-        fs.unlinkSync(lastSandboxFile);
-      }
-    } catch {
-      // ignore errors
-    }
-  }
-
   async buildEnv(options = {}) {
     // If instance already exists, do not build environment again
     if (this.instance) {
@@ -1762,10 +1663,8 @@ ${regression}
 
     if (heal) this.healMode = heal;
 
-    // If createNew flag is set, clear the recent sandbox file to force creating a new sandbox
+    // If createNew flag is set, clear sandboxId to prevent reconnection attempts
     if (createNew) {
-      this.clearRecentSandboxId();
-      // Also clear this.sandboxId to prevent reconnection attempts
       this.sandboxId = null;
       if (!this.config.CI && !this.newSandbox) {
         this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
@@ -1780,8 +1679,6 @@ ${regression}
     // order is important!
     await this.connectToSandboxService();
 
-    const recentId = createNew ? null : this.getRecentSandboxId();
-
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (this.ip) {
       let instance = await this.sandbox.send({
@@ -1794,13 +1691,13 @@ ${regression}
       // Store connection params for reconnection
       // For direct IP connections, store as a direct type so reconnection
       // sends a 'direct' message instead of 'connect' with an IP as sandboxId
-      this.sandbox._lastConnectParams = {
+      this.sandbox.setConnectionParams({
         type: 'direct',
         ip: this.ip,
         sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || null,
         persist: true,
         keepAlive: this.keepAlive,
-      };
+      });
 
       // Mark instance socket as connected so console logs are forwarded
       this.sandbox.instanceSocketConnected = true;
@@ -1811,33 +1708,6 @@ ${regression}
       await this.runLifecycle("provision");
 
       return;
-    } else if (!createNew && recentId) {
-      // Only attempt to connect to existing sandbox if not in CI mode and not creating new
-      this.emitter.emit(
-        events.log.narration,
-        theme.dim(`using recent sandbox: ${recentId}`),
-      );
-      this.sandboxId = recentId;
-
-      try {
-        let instance = await this.connectToSandboxDirect(
-          this.sandboxId,
-          true, // always persist by default
-          this.keepAlive, // pass keepAlive TTL
-        );
-
-        this.instance = instance;
-
-        await this.renderSandbox(instance, headless);
-        return;
-      } catch (error) {
-        // If connection fails, fall through to creating a new sandbox
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`failed to connect to recent sandbox, creating new one...`),
-        );
-        console.error("Failed to reconnect to sandbox:", error);
-      }
     } else if (!createNew && this.sandboxId && !this.config.CI) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
@@ -1891,9 +1761,6 @@ ${regression}
       // Extract the sandbox ID from the newly created sandbox
       this.sandboxId =
         newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
-
-      // Use the configured sandbox OS type
-      this.saveLastSandboxId(this.sandboxId, this.sandboxOs);
 
       let instance = await this.connectToSandboxDirect(
         this.sandboxId,
@@ -2332,12 +2199,6 @@ Please check your network connection, TD_API_KEY, or the service status.`,
       }
 
       // Success - got a sandbox
-      if (response.sandbox && response.sandbox.sandboxId) {
-        this.saveLastSandboxId(response.sandbox.sandboxId, this.sandboxOs);
-      } else if (response.sandbox && response.sandbox.instanceId) {
-        this.saveLastSandboxId(response.sandbox.instanceId, this.sandboxOs);
-      }
-
       return response;
     }
   }
