@@ -1640,13 +1640,7 @@ ${regression}
   getLastSandboxFilePath() {
     const testdriverDir = path.join(process.cwd(), ".testdriver");
     const suffix = this._sandboxFileSuffix || "";
-    const filePath = path.join(testdriverDir, `last-sandbox${suffix}`);
-    if (process.env.TD_DEBUG_SANDBOX === "true") {
-      process.stdout.write(
-        `[DEBUG sandbox-file] getLastSandboxFilePath() => ${filePath} (suffix=${JSON.stringify(suffix)}, testFile=${this.testFile || "unknown"})\n`,
-      );
-    }
-    return filePath;
+    return path.join(testdriverDir, `last-sandbox${suffix}`);
   }
 
   // Returns full sandbox info from last-sandbox file (no timeout - let API validate)
@@ -1656,11 +1650,6 @@ ${regression}
     if (fs.existsSync(lastSandboxFile)) {
       try {
         const fileContent = fs.readFileSync(lastSandboxFile, "utf-8").trim();
-        if (process.env.TD_DEBUG_SANDBOX === "true") {
-          process.stdout.write(
-            `[DEBUG sandbox-file] getLastSandboxId() read file=${lastSandboxFile} content=${fileContent.slice(0, 200)} (testFile=${this.testFile || "unknown"})\n`,
-          );
-        }
 
         // Parse sandbox info (supports both old format and new format)
         let sandboxInfo;
@@ -1715,12 +1704,6 @@ ${regression}
     const lastSandboxFile = this.getLastSandboxFilePath();
     const testdriverDir = path.dirname(lastSandboxFile);
 
-    if (process.env.TD_DEBUG_SANDBOX === "true") {
-      process.stdout.write(
-        `[DEBUG sandbox-file] saveLastSandboxId(${sandboxId}, ${osType}) => ${lastSandboxFile} (testFile=${this.testFile || "unknown"})\n`,
-      );
-    }
-
     try {
       // Ensure .testdriver directory exists
       if (!fs.existsSync(testdriverDir)) {
@@ -1744,11 +1727,6 @@ ${regression}
 
   clearRecentSandboxId() {
     const lastSandboxFile = this.getLastSandboxFilePath();
-    if (process.env.TD_DEBUG_SANDBOX === "true") {
-      process.stdout.write(
-        `[DEBUG sandbox-file] clearRecentSandboxId() => ${lastSandboxFile} exists=${fs.existsSync(lastSandboxFile)} (testFile=${this.testFile || "unknown"})\n`,
-      );
-    }
     try {
       if (fs.existsSync(lastSandboxFile)) {
         fs.unlinkSync(lastSandboxFile);
@@ -1805,12 +1783,6 @@ ${regression}
     await this.connectToSandboxService();
 
     const recentId = createNew ? null : this.getRecentSandboxId();
-
-    if (process.env.TD_DEBUG_SANDBOX === "true") {
-      process.stdout.write(
-        `[DEBUG sandbox-file] buildEnv: createNew=${createNew} recentId=${recentId} sandboxId=${this.sandboxId} suffix=${JSON.stringify(this._sandboxFileSuffix || "")} testFile=${this.testFile || "unknown"}\n`,
-      );
-    }
 
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (this.ip) {
