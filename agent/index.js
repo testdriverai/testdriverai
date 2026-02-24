@@ -1691,13 +1691,13 @@ ${regression}
       // Store connection params for reconnection
       // For direct IP connections, store as a direct type so reconnection
       // sends a 'direct' message instead of 'connect' with an IP as sandboxId
-      this.sandbox._lastConnectParams = {
+      this.sandbox.setConnectionParams({
         type: 'direct',
         ip: this.ip,
         sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || null,
         persist: true,
         keepAlive: this.keepAlive,
-      };
+      });
 
       // Mark instance socket as connected so console logs are forwarded
       this.sandbox.instanceSocketConnected = true;

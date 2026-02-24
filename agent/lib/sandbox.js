@@ -47,6 +47,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.reconnecting = false; // Prevent duplicate reconnection attempts
       this.pendingTimeouts = new Map(); // Track per-message timeouts
       this.pendingRetryQueue = []; // Queue of requests to retry after reconnection
+      this._lastConnectParams = null; // Connection params for reconnection (per-instance, not shared)
     }
 
     /**
@@ -98,7 +99,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         // Add sandboxId to every message if we have a connected sandbox
         // This allows the API to reconnect if the connection was rerouted
         // Don't inject IP addresses as sandboxId — only valid instance/sandbox IDs
-        if (this._lastConnectParams?.sandboxId && !message.sandboxId) {
+        if (this._lastConnectParams?.sandboxId && !message.sandboxId) { 
           const id = this._lastConnectParams.sandboxId;
           // Only inject if it looks like a valid ID (not an IP address)
           if (id && !/^\d+\.\d+\.\d+\.\d+$/.test(id)) {
@@ -198,6 +199,22 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
     }
 
+    /**
+     * Set connection params for reconnection logic and sandboxId injection.
+     * Use this instead of directly assigning this._lastConnectParams from
+     * external code. Keeps the shape consistent and avoids stale state
+     * leaking across concurrent test runs.
+     * @param {Object|null} params
+     * @param {string} [params.type] - 'direct' for IP-based connections
+     * @param {string} [params.ip] - IP address for direct connections
+     * @param {string} [params.sandboxId] - Sandbox/instance ID
+     * @param {boolean} [params.persist] - Whether to persist the sandbox
+     * @param {number|null} [params.keepAlive] - Keep-alive TTL in ms
+     */
+    setConnectionParams(params) {
+      this._lastConnectParams = params ? { ...params } : null;
+    }
+
     async connect(sandboxId, persist = false, keepAlive = null) {
       let reply = await this.send({
         type: "connect",
@@ -209,14 +226,14 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       if (reply.success) {
         // Only store connection params after successful connection
         // This prevents malformed sandboxId from being attached to subsequent messages
-        this._lastConnectParams = { sandboxId, persist, keepAlive };
+        this.setConnectionParams({ sandboxId, persist, keepAlive });
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
         // Return the full reply (includes url and sandbox)
         return reply;
       } else {
         // Clear any previous connection params on failure
-        this._lastConnectParams = null;
+        this.setConnectionParams(null);
         // Throw error to trigger fallback to creating new sandbox
         throw new Error(reply.errorMessage || "Failed to connect to sandbox");
       }
@@ -528,6 +545,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.instanceSocketConnected = false;
       this.authenticated = false;
       this.instance = null;
+      this._lastConnectParams = null;
 
       // Silently clear pending promises and retry queue without rejecting
       // (rejecting causes unhandled promise rejections during cleanup)

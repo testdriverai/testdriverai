@@ -5,8 +5,7 @@ import { defineConfig } from "vitest/config";
 // Note: dotenv is loaded automatically by the TestDriver SDK
 const setupFiles = [
   "testdriverai/vitest/setup",
-  "testdriverai/vitest/setup-aws",
-  'testdriverai/vitest/setup-disable-defender'
+  "testdriverai/vitest/setup-aws"
 ];
 
 export default defineConfig({
@@ -16,7 +15,7 @@ export default defineConfig({
     hookTimeout: 900000,
     disableConsoleIntercept: true,
     maxConcurrency: 100,
-     maxWorkers: 16,
+    maxWorkers: 16,
     reporters: [
       "default",
       TestDriver(),
