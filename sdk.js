@@ -1448,10 +1448,6 @@ class TestDriverSDK {
       },
     });
 
-    // Set a per-instance suffix on the agent's sandbox file path
-    // This prevents parallel tests from clobbering each other's last-sandbox file
-    this.agent._sandboxFileSuffix = `-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
     // Auto-generate cache key from caller file hash if not explicitly provided
     // This allows caching to be tied to the specific test file
     if (!options.cacheKey) {
@@ -2756,33 +2752,6 @@ CAPTCHA_SOLVER_EOF`,
           : this.newSandbox,
     };
 
-    // Handle reconnect option - use last sandbox file
-    // Check both connectOptions and constructor options
-    const shouldReconnect =
-      connectOptions.reconnect !== undefined
-        ? connectOptions.reconnect
-        : this.reconnect;
-
-    // Skip reconnect if IP is supplied - directly connect to the provided IP
-    const hasIp = Boolean(connectOptions.ip || this.ip);
-
-    if (shouldReconnect && !hasIp) {
-      const lastSandbox = this.agent.getLastSandboxId();
-      if (!lastSandbox || !lastSandbox.sandboxId) {
-        throw new Error(
-          "Cannot reconnect: No previous sandbox found. Run a test first to create a sandbox, or remove the reconnect option.",
-        );
-      }
-      this.agent.sandboxId = lastSandbox.sandboxId;
-      buildEnvOptions.new = false;
-
-      // Use OS from last sandbox if not explicitly specified
-      if (!connectOptions.os && lastSandbox.os) {
-        this.agent.sandboxOs = lastSandbox.os;
-        this.os = lastSandbox.os;
-      }
-    }
-
     // Set agent properties for buildEnv to use
     if (connectOptions.sandboxId) {
       this.agent.sandboxId = connectOptions.sandboxId;
@@ -2907,11 +2876,6 @@ CAPTCHA_SOLVER_EOF`,
       this.sandbox.close();
     }
 
-    // Clean up per-instance last-sandbox file to avoid leftover files
-    if (this.agent?._sandboxFileSuffix) {
-      this.agent.clearRecentSandboxId();
-    }
-
     // Remove all event listeners on the emitter to release references
     if (this.emitter && typeof this.emitter.removeAllListeners === "function") {
       this.emitter.removeAllListeners();
@@ -2929,14 +2893,6 @@ CAPTCHA_SOLVER_EOF`,
    */
   getSessionId() {
     return this.session?.get() || null;
-  }
-
-  /**
-   * Get the last sandbox info from the stored file
-   * @returns {Object|null} Last sandbox info including sandboxId, os, ami, instanceType, timestamp, or null if not found
-   */
-  getLastSandboxId() {
-    return this.agent.getLastSandboxId();
   }
 
   // ====================================
