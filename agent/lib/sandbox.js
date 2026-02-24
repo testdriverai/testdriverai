@@ -128,11 +128,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             );
           }
         }, timeout);
-        // Don't let pending message timeouts prevent Node process from exiting
-        // (unref is not available in browser/non-Node environments)
-        if (timeoutId.unref) {
-          timeoutId.unref();
-        }
 
         // Track timeout so close() can clear it
         this.pendingTimeouts.set(requestId, timeoutId);
@@ -365,11 +360,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           this.reconnecting = false;
         }
       }, delay);
-      // Don't let the reconnect timer prevent Node process from exiting
-      // (unref is not available in browser/non-Node environments)
-      if (this.reconnectTimer.unref) {
-        this.reconnectTimer.unref();
-      }
     }
 
     /**
