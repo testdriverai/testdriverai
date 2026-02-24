@@ -7,6 +7,7 @@ permissions:
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -14,6 +15,7 @@ concurrency:
 
 jobs:
   test-linux:
+    if: github.event.action != 'labeled'
     runs-on: testdriver-32
 
     steps:
