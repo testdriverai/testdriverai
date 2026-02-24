@@ -1152,9 +1152,13 @@ class TestDriverReporter {
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
       const hasRetries = retryCount > 0 && dashcamUrls.length > 1;
 
-      // Record a single test case with all metadata
+      // Record a single test case with all metadata.
+      // test.id is Vitest's unique task ID (e.g. "1117014635_0_0") which
+      // encodes the full suite hierarchy by position — guaranteeing uniqueness
+      // even for describe.each / it.each iterations with identical test names.
       const testCaseData = {
         runId: testRunId,
+        testId: test.id,
         testName: test.name,
         testFile: testFile,
         testOrder: testOrder,
