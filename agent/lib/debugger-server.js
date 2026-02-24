@@ -76,7 +76,12 @@ function createDebuggerServer(config = {}) {
 
     // Start server on available port
     server.listen(port, "localhost", () => {
-      const actualPort = server.address().port;
+      const address = server.address();
+      if (!address) {
+        reject(new Error("Server started but address is not available"));
+        return;
+      }
+      const actualPort = address.port;
       resolve({ port: actualPort, server, wss });
     });
 
