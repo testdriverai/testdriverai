@@ -26,7 +26,7 @@ export function generateActionCode(
 ): string {
   switch (action) {
     case "provision.chrome": {
-      const url = (args.url as string) || "https://example.com";
+      const url = (args.url as string) || "http://testdriver-sandbox.vercel.app/";
       const maximized = args.maximized as boolean | undefined;
       const guest = args.guest as boolean | undefined;
       

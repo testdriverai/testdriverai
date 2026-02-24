@@ -2249,6 +2249,28 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         const shell = this.os === "windows" ? "pwsh" : "sh";
 
+        // Close any existing Chrome windows - the sandbox may start with Chrome
+        // pre-launched (e.g. with example.com), which should not be visible during
+        // installer-based tests. This is best-effort; no error if Chrome isn't running.
+        console.log(
+          "[provision.installer] Closing any existing Chrome instances...",
+        );
+        if (this.os === "windows") {
+          await this.exec(
+            shell,
+            "Get-Process chrome -ErrorAction SilentlyContinue | Stop-Process -Force 2>$null; $null",
+            10000,
+            true,
+          );
+        } else {
+          await this.exec(
+            shell,
+            "pkill -f 'chrome-for-testing' 2>/dev/null; pkill -f chrome 2>/dev/null; true",
+            10000,
+            true,
+          );
+        }
+
         // Determine download directory
         const downloadDir =
           this.os === "windows" ? "C:\\Users\\testdriver\\Downloads" : "/tmp";

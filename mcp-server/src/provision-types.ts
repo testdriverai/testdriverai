@@ -28,7 +28,7 @@ export type ProvisionType = typeof ProvisionTypes[number];
  * Matches SDK: ProvisionChromeOptions
  */
 export const ProvisionChromeOptionsSchema = z.object({
-  /** URL to navigate to (default: 'https://example.com') */
+  /** URL to navigate to (default: 'http://testdriver-sandbox.vercel.app/') */
   url: z.string().optional().describe("URL to navigate to"),
   /** Start maximized (default: true) */
   maximized: z.boolean().optional().describe("Start maximized"),
@@ -171,7 +171,7 @@ export function getProvisionOptions(params: SessionStartInput) {
   switch (params.type) {
     case "chrome":
       return {
-        url: params.url || "https://example.com",
+        url: params.url || "http://testdriver-sandbox.vercel.app/",
         maximized: params.maximized,
         guest: params.guest,
       };
