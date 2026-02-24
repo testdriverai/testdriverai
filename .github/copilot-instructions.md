@@ -507,15 +507,64 @@ it("should incrementally build test", async (context) => {
 
 ```javascript
 const testdriver = TestDriver(context, {
-  newSandbox: true, // Create new sandbox (default: true)
-  preview: "browser", // "browser" | "ide" | "none" (default: "browser")
-  reconnect: false, // Reconnect to last sandbox (default: false)
-  keepAlive: 30000, // Keep sandbox alive after test (default: 30000ms / 30 seconds)
-  os: "linux", // 'linux' | 'windows' (default: 'linux')
-  resolution: "1366x768", // Sandbox resolution
-  cache: true, // Enable element caching (default: true)
-  cacheKey: "my-test", // Cache key for element finding
-  autoScreenshots: true, // Capture screenshots before/after each command (default: true)
+  // === Sandbox & Connection ===
+  newSandbox: true,          // Force creation of a new sandbox (default: true)
+  reconnect: false,          // Reconnect to last sandbox (default: false)
+  keepAlive: 30000,          // Keep sandbox alive after test in ms (default: 30000)
+  os: "linux",               // 'linux' | 'windows' (default: 'linux')
+  resolution: "1366x768",   // Sandbox resolution (e.g., '1920x1080')
+  ip: "203.0.113.42",       // Direct IP for self-hosted sandbox
+  sandboxAmi: "ami-1234",   // Custom AMI ID (AWS deployments)
+  sandboxInstance: "i3.metal", // EC2 instance type (AWS deployments)
+
+  // === Preview & Debugging ===
+  preview: "browser",        // "browser" | "ide" | "none" (default: "browser")
+  headless: false,           // @deprecated - use preview: "none" instead
+  debugOnFailure: false,     // Keep sandbox alive on test failure for debugging
+
+  // === Caching ===
+  cache: true,               // Enable element caching (default: true)
+  // Or use advanced caching config:
+  // cache: {
+  //   enabled: true,
+  //   thresholds: {
+  //     find: { screen: 0.05, element: 0.8 },
+  //     assert: 0.05
+  //   }
+  // },
+  cacheKey: "my-test",       // Cache key for element finding operations
+
+  // === Recording & Screenshots ===
+  dashcam: true,             // Enable/disable Dashcam video recording (default: true)
+  autoScreenshots: true,     // Capture screenshots before/after each command (default: true)
+
+  // === AI Configuration ===
+  ai: {                      // Global AI sampling configuration
+    temperature: 0,          // 0 = deterministic, higher = more creative
+    top: {
+      p: 0.9,               // Top-P nucleus sampling (0-1)
+      k: 40,                // Top-K sampling (1 = most likely, 0 = disabled)
+    },
+  },
+
+  // === Screen Change Detection ===
+  redraw: true,              // Enable redraw detection (default: true)
+  // Or use advanced redraw config:
+  // redraw: {
+  //   enabled: true,
+  //   thresholds: {
+  //     screen: 0.05,       // Pixel diff threshold (0-1), false to disable
+  //     network: false,     // Monitor network activity (default: false)
+  //   }
+  // },
+
+  // === Logging & Analytics ===
+  logging: true,             // Enable console logging output (default: true)
+  analytics: true,           // Enable analytics tracking (default: true)
+
+  // === Advanced ===
+  apiRoot: "https://...",    // API endpoint URL (for self-hosted deployments)
+  environment: {},           // Additional environment variables for the sandbox
 });
 ```
 

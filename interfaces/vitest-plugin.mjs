@@ -1142,7 +1142,10 @@ class TestDriverReporter {
 
       const suiteName = test.suite?.name;
       const startTime = Date.now() - duration; // Calculate start time from duration
-      const retryCount = result.retryCount || 0;
+      // In Vitest v4, retryCount is on diagnostic(), not result()
+      // result() only returns { state, errors }, while diagnostic() has retryCount, duration, etc.
+      const diagnostic = test.diagnostic?.();
+      const retryCount = diagnostic?.retryCount || 0;
       const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
       const hasRetries = retryCount > 0 && dashcamUrls.length > 1;
