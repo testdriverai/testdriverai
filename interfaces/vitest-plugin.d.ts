@@ -6,47 +6,31 @@
 import TestDriverSDK, { TestDriverOptions } from '../sdk';
 
 /**
- * A single dashcam URL entry for one retry attempt
- */
-export interface DashcamUrlEntry {
-  url: string | null;
-  platform: string;
-  attempt: number;
-}
-
-/**
  * Plugin state object
  */
 export interface PluginState {
-  dashcamUrls: Map<string, DashcamUrlEntry[]>;
   suiteTestRuns: Map<string, any>;
   testDriverOptions: TestDriverOptions;
+  testRun: any;
+  testRunId: string | null;
+  testRunCompleted: boolean;
+  client: any;
+  startTime: number;
+  testCases: Map<string, any>;
+  recordedTestCases: number;
+  token: string | null;
+  detectedPlatform: string | null;
+  pendingTestCaseRecords: Set<Promise<any>>;
+  ciProvider: string | null;
+  gitInfo: any;
+  apiKey: string | null;
+  apiRoot: string;
 }
 
 /**
  * Current plugin state
  */
 export const pluginState: PluginState;
-
-/**
- * Register a Dashcam URL for a test attempt
- */
-export function registerDashcamUrl(testId: string, url: string, platform: string, attempt?: number): void;
-
-/**
- * Get the latest Dashcam URL entry for a test (backward compatible)
- */
-export function getDashcamUrl(testId: string): DashcamUrlEntry | undefined;
-
-/**
- * Get all Dashcam URL entries for a test (all retry attempts)
- */
-export function getAllDashcamUrls(testId: string): DashcamUrlEntry[];
-
-/**
- * Clear all Dashcam URLs
- */
-export function clearDashcamUrls(): void;
 
 /**
  * Get suite test run data

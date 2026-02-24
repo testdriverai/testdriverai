@@ -5,7 +5,6 @@ import { createRequire } from "module";
 import os from "os";
 import path from "path";
 import { postOrUpdateTestResults } from "../lib/github-comment.mjs";
-import { setTestRunInfo } from "./shared-test-state.mjs";
 
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
@@ -292,39 +291,9 @@ export const pluginState = {
   apiRoot: null,
   // TestDriver options to pass to all instances
   testDriverOptions: {},
-  // Dashcam URL tracking (in-memory, no files needed!)
-  dashcamUrls: new Map(), // testId -> [{url, platform, attempt}]
-  lastDashcamUrl: null, // Fallback for when test ID isn't available
   // Suite-level test run tracking
   suiteTestRuns: new Map(), // suiteId -> { runId, testRunDbId, token }
 };
-
-// Export functions that can be used by the reporter or tests
-export function registerDashcamUrl(testId, url, platform, attempt) {
-  logger.debug(`Registering dashcam URL for test ${testId} (attempt ${attempt || 1}):`, url);
-  // Support multiple attempts per test - store as array
-  if (!pluginState.dashcamUrls.has(testId)) {
-    pluginState.dashcamUrls.set(testId, []);
-  }
-  pluginState.dashcamUrls.get(testId).push({ url, platform, attempt: attempt || 1 });
-  pluginState.lastDashcamUrl = url;
-}
-
-export function getDashcamUrl(testId) {
-  const entries = pluginState.dashcamUrls.get(testId);
-  if (!entries) return undefined;
-  // Return the last entry for backward compatibility (single URL callers)
-  return entries[entries.length - 1];
-}
-
-export function getAllDashcamUrls(testId) {
-  return pluginState.dashcamUrls.get(testId) || [];
-}
-
-export function clearDashcamUrls() {
-  pluginState.dashcamUrls.clear();
-  pluginState.lastDashcamUrl = null;
-}
 
 export function getSuiteTestRun(suiteId) {
   return pluginState.suiteTestRuns.get(suiteId);
@@ -503,9 +472,9 @@ const TestDriverSDK = require("../sdk.js");
  * });
  */
 export async function createTestDriver(options = {}) {
-  // Get global plugin options if available
-  const pluginOptions =
-    globalThis.__testdriverPlugin?.state?.testDriverOptions || {};
+  // Note: We read testDriverOptions directly from pluginState (imported module)
+  // rather than going through globalThis.__testdriverPlugin (not thread-safe).
+  const pluginOptions = pluginState.testDriverOptions || {};
 
   // Merge options: plugin global options < test-specific options
   const mergedOptions = { ...pluginOptions, ...options };
@@ -591,16 +560,10 @@ export async function cleanupTestDriver(testdriver) {
           console.log("🎥 Dashcam URL:", dashcamUrl);
         }
 
-        // Register dashcam URL in memory for the reporter
-        if (dashcamUrl && globalThis.__testdriverPlugin?.registerDashcamUrl) {
-          const testId = testdriver.__vitestContext?.id || "unknown";
-          const platform = testdriver.os || "linux";
-          globalThis.__testdriverPlugin.registerDashcamUrl(
-            testId,
-            dashcamUrl,
-            platform,
-          );
-        }
+        // Note: Dashcam URL registration via globalThis.__testdriverPlugin
+        // has been removed. Dashcam URLs are now tracked exclusively via
+        // context.task.meta.dashcamUrl / context.task.meta.dashcamUrls which
+        // the reporter reads in onTestCaseResult.
       } catch (error) {
         console.error("❌ Failed to stop dashcam:", error.message);
         if (
@@ -676,80 +639,31 @@ async function handleProcessExit() {
 }
 
 // Set up process exit handlers
+// Uses process.once() instead of monkey-patching process.exit().
+// Under pool:"threads", monkey-patching process.exit() from the reporter
+// would affect ALL worker threads — a single thread's cleanup could
+// replace process.exit for the entire process.
 let exitHandlersRegistered = false;
-let isExiting = false;
-let isCancelling = false; // Track if we're in the process of cancelling due to SIGINT/SIGTERM
+let isCancelling = false;
 
 function registerExitHandlers() {
   if (exitHandlersRegistered) return;
   exitHandlersRegistered = true;
 
-  // Handle Ctrl+C - use 'once' and prepend to run before Vitest's handler
-  process.prependOnceListener("SIGINT", () => {
+  process.once("SIGINT", () => {
     logger.debug("SIGINT received, cleaning up...");
-    if (isExiting) {
-      logger.debug("Already exiting, skipping duplicate handler");
-      return;
-    }
-    isExiting = true;
-    isCancelling = true; // Mark that we're cancelling
-
-    // Temporarily override process.exit to prevent Vitest from exiting before we're done
-    const originalExit = process.exit;
-    let exitCalled = false;
-    let exitCode = 130;
-
-    process.exit = (code) => {
-      if (!exitCalled) {
-        exitCalled = true;
-        exitCode = code ?? 130;
-        logger.debug(
-          `process.exit(${exitCode}) called, waiting for cleanup...`,
-        );
-      }
-    };
-
+    isCancelling = true;
     handleProcessExit()
-      .then(() => {
-        logger.debug("Cleanup completed successfully");
-      })
-      .catch((err) => {
-        logger.error("Error during SIGINT cleanup:", err.message);
-      })
-      .finally(() => {
-        logger.debug(`Exiting with code ${exitCode}`);
-        // Restore and call original exit
-        process.exit = originalExit;
-        process.exit(exitCode);
-      });
+      .catch((err) => logger.error("Error during SIGINT cleanup:", err.message))
+      .finally(() => process.exit(130));
   });
 
-  // Handle kill command
-  process.prependOnceListener("SIGTERM", () => {
+  process.once("SIGTERM", () => {
     logger.debug("SIGTERM received, cleaning up...");
-    if (isExiting) return;
-    isExiting = true;
     isCancelling = true;
-
-    const originalExit = process.exit;
-    let exitCode = 143;
-
-    process.exit = (code) => {
-      exitCode = code ?? 143;
-    };
-
     handleProcessExit()
-      .then(() => {
-        logger.debug("Cleanup completed successfully");
-      })
-      .catch((err) => {
-        logger.error("Error during SIGTERM cleanup:", err.message);
-      })
-      .finally(() => {
-        logger.debug(`Exiting with code ${exitCode}`);
-        process.exit = originalExit;
-        process.exit(exitCode);
-      });
+      .catch((err) => logger.error("Error during SIGTERM cleanup:", err.message))
+      .finally(() => process.exit(143));
   });
 }
 
@@ -895,20 +809,10 @@ class TestDriverReporter {
       pluginState.testRun = await createTestRun(testRunData);
       logger.debug("Test run created:", JSON.stringify(pluginState.testRun));
 
-      // Store in environment variables for worker processes to access
-      process.env.TD_TEST_RUN_ID = pluginState.testRunId;
-      process.env.TD_TEST_RUN_DB_ID = pluginState.testRun.data?.id || "";
-      process.env.TD_TEST_RUN_TOKEN = pluginState.token;
-
-      // Also store in shared state module (won't work across processes but good for main)
-      setTestRunInfo({
-        testRun: pluginState.testRun,
-        testRunId: pluginState.testRunId,
-        token: pluginState.token,
-        apiKey: pluginState.apiKey,
-        apiRoot: pluginState.apiRoot,
-        startTime: pluginState.startTime,
-      });
+      // Note: We do NOT write to process.env here. Under pool:"threads",
+      // process.env is shared across all worker threads, causing race conditions.
+      // Instead, the reporter reads directly from pluginState (which lives in the
+      // main thread) and workers communicate via task.meta.
     } catch (error) {
       logger.error("Failed to initialize:", error.message);
       pluginState.apiKey = null;
@@ -1021,7 +925,7 @@ class TestDriverReporter {
       pluginState.testRunCompleted = true;
 
       // Output the test run URL for CI to capture
-      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const testRunDbId = pluginState.testRun?.data?.id || "";
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
       if (testRunDbId) {
         const testRunUrl = `${consoleUrl}/runs/${testRunDbId}`;
@@ -1111,9 +1015,9 @@ class TestDriverReporter {
       pluginState.detectedPlatform = platform;
     }
 
-    // Get test run info from environment variables
-    const testRunId = process.env.TD_TEST_RUN_ID;
-    const token = process.env.TD_TEST_RUN_TOKEN;
+    // Get test run info from pluginState (not process.env — unsafe under threads)
+    const testRunId = pluginState.testRunId;
+    const token = pluginState.token;
 
     if (!testRunId || !token) {
       logger.warn(
@@ -1143,7 +1047,7 @@ class TestDriverReporter {
       const suiteName = test.suite?.name;
       const startTime = Date.now() - duration; // Calculate start time from duration
       const retryCount = result.retryCount || 0;
-      const testRunDbId = process.env.TD_TEST_RUN_DB_ID;
+      const testRunDbId = pluginState.testRun?.data?.id || "";
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
       const hasRetries = retryCount > 0 && dashcamUrls.length > 1;
 
@@ -1273,20 +1177,6 @@ function getPlatform() {
       `Using platform from SDK client: ${pluginState.detectedPlatform}`,
     );
     return pluginState.detectedPlatform;
-  }
-
-  // Try to get platform from dashcam URLs (registered during test cleanup)
-  for (const [, entries] of pluginState.dashcamUrls) {
-    // entries is now an array of {url, platform, attempt}
-    const arr = Array.isArray(entries) ? entries : [entries];
-    for (const data of arr) {
-      if (data.platform) {
-        logger.debug(
-          `Using platform from dashcam URL registration: ${data.platform}`,
-        );
-        return data.platform;
-      }
-    }
   }
 
   logger.debug("Platform not yet detected from client");
