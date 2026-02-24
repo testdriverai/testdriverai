@@ -1720,7 +1720,7 @@ class TestDriverSDK {
    * @param {number} [timeoutMs=60000] - Maximum time to wait in ms
    * @returns {Promise<void>}
    */
-  async _waitForChromeDebuggerReady(timeoutMs = 300000) {
+  async _waitForChromeDebuggerReady(timeoutMs = 1200000) {
     const shell = this.os === "windows" ? "pwsh" : "sh";
     const portCheckCmd = this.os === "windows"
       ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
