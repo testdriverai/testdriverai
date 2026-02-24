@@ -14,8 +14,7 @@ concurrency:
 
 jobs:
   test-linux:
-    runs-on: testdriver-32
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Run Linux tests
-        run: set -o pipefail && npx vitest run examples/*.test.mjs --maxWorkers 32 2>&1 | tee test-output.log
+        run: set -o pipefail && npx vitest run examples/*.test.mjs --sequence.concurrent 2>&1 | tee test-output.log
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}

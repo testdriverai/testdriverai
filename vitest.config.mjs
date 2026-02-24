@@ -11,11 +11,12 @@ const setupFiles = [
 
 export default defineConfig({
   test: {
-    retry: 1,
-    testTimeout: 900000,
+    retry: 0,
+    testTimeout: 1800000,
     hookTimeout: 900000,
     disableConsoleIntercept: true,
     maxConcurrency: 100,
+    maxWorkers: 16,
     reporters: [
       "default",
       TestDriver(),
