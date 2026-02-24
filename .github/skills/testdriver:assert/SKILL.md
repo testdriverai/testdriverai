@@ -12,12 +12,43 @@ Make AI-powered assertions about the current screen state using natural language
 
 ```javascript
 await testdriver.assert(assertion)
+await testdriver.assert(assertion, options)
 ```
 
 ## Parameters
 
 <ParamField path="assertion" type="string" required>
   Natural language description of what should be true
+</ParamField>
+
+<ParamField path="options" type="object">
+  Optional configuration
+  
+  <Expandable title="properties">
+    <ParamField path="ai" type="object">
+      AI sampling configuration for this assert call (overrides global `ai` config from constructor).
+      
+      <Expandable title="properties">
+        <ParamField path="temperature" type="number">
+          Controls randomness. `0` = deterministic, higher = more creative. Default: model default.
+        </ParamField>
+        
+        <ParamField path="top" type="object">
+          Sampling parameters
+          
+          <Expandable title="properties">
+            <ParamField path="p" type="number">
+              Top-P (nucleus sampling). Range: 0-1.
+            </ParamField>
+            
+            <ParamField path="k" type="number">
+              Top-K sampling. `1` = most deterministic.
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
 </ParamField>
 
 ## Returns
