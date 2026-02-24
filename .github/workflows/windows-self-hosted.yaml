@@ -21,30 +21,8 @@ on:
         required: true
 
 jobs:
-  discover:
-    runs-on: ubuntu-latest
-    outputs:
-      test_files: ${{ steps.list-tests.outputs.files }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Discover test files
-        id: list-tests
-        run: |
-          files=$(ls ${{ inputs.test_pattern }} | jq -R -s -c 'split("\n") | map(select(. != ""))')
-          echo "files=$files" >> "$GITHUB_OUTPUT"
-          echo "Discovered test files: $files"
-
   test:
-    needs: discover
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test_file: ${{ fromJson(needs.discover.outputs.test_files) }}
+    runs-on: testdriver-32
 
     steps:
       - name: Checkout repository
@@ -61,26 +39,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Debug Environment
-        run: |
-          echo "Checking environment variables..."
-          echo "Running test: ${{ matrix.test_file }}"
-          if [ -n "${{ secrets.TWOCAPTCHA_API_KEY }}" ]; then
-            echo "TWOCAPTCHA_API_KEY is set (length: ${#TWOCAPTCHA_API_KEY})"
-          else
-            echo "TWOCAPTCHA_API_KEY is NOT set"
-          fi
-        env:
-          TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
-
-      - name: Compute test slug
-        id: slug
-        run: |
-          slug=$(echo "${{ matrix.test_file }}" | sed 's|[/.]|-|g')
-          echo "slug=$slug" >> "$GITHUB_OUTPUT"
-
-      - name: Run Windows test - ${{ matrix.test_file }}
-        run: set -o pipefail && npx vitest run ${{ matrix.test_file }} 2>&1 | tee test-output.log
+      - name: Run Windows tests
+        run: set -o pipefail && npx vitest run ${{ inputs.test_pattern }} --maxWorkers 32 --sequence.concurrent 2>&1 | tee test-output.log
         env:
           TD_API_KEY: ${{ secrets.TD_API_KEY }}
           TWOCAPTCHA_API_KEY: ${{ secrets.TWOCAPTCHA_API_KEY }}
@@ -93,89 +53,27 @@ jobs:
           AMI_ID: ami-0dd5fa241273a7d50
           RESOLUTION: 1920x1080
 
-      - name: Rename outputs for uniqueness
-        if: always()
-        run: |
-          slug="${{ steps.slug.outputs.slug }}"
-          [ -f test-report.junit.xml ] && mv test-report.junit.xml "test-report-${slug}.junit.xml" || true
-          [ -f test-output.log ] && mv test-output.log "test-output-${slug}.log" || true
-
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-windows-${{ steps.slug.outputs.slug }}
-          path: test-report-${{ steps.slug.outputs.slug }}.junit.xml
-          retention-days: 30
-
-      - name: Upload test output log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-output-windows-${{ steps.slug.outputs.slug }}
-          path: test-output-${{ steps.slug.outputs.slug }}.log
-          retention-days: 30
-
-      - name: Upload TestDriver AI CLI logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: testdriverai-cli-logs-windows-${{ steps.slug.outputs.slug }}
-          path: /tmp/testdriverai-cli-*.log
-          if-no-files-found: warn
-          retention-days: 30
-
-  merge-results:
-    needs: test
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Download all test results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-results-windows-*
-          merge-multiple: true
-          path: results
-
-      - name: Merge junit reports
-        run: |
-          count=$(find results -name "*.xml" | wc -l)
-          if [ "$count" -eq 0 ]; then
-            echo "No test results found"
-            echo '<?xml version="1.0" encoding="UTF-8"?><testsuites></testsuites>' > test-report.junit.xml
-          elif [ "$count" -eq 1 ]; then
-            cp results/*.xml test-report.junit.xml
-          else
-            echo '<?xml version="1.0" encoding="UTF-8"?>' > test-report.junit.xml
-            echo '<testsuites>' >> test-report.junit.xml
-            for f in results/*.xml; do
-              sed -n '/<testsuite/,/<\/testsuite>/p' "$f" >> test-report.junit.xml
-            done
-            echo '</testsuites>' >> test-report.junit.xml
-          fi
-
-      - name: Upload merged test results
         uses: actions/upload-artifact@v4
         with:
           name: test-results-windows
           path: test-report.junit.xml
           retention-days: 30
 
-      - name: Download all test output logs
-        uses: actions/download-artifact@v4
-        with:
-          pattern: test-output-windows-*
-          merge-multiple: true
-          path: outputs
-
-      - name: Merge test output logs
-        run: |
-          cat outputs/*.log > merged-test-output.log 2>/dev/null || echo "No output logs found" > merged-test-output.log
-
-      - name: Upload merged test output
+      - name: Upload test output log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-output-windows
-          path: merged-test-output.log
+          path: test-output.log
+          retention-days: 30
+
+      - name: Upload TestDriver AI CLI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testdriverai-cli-logs-windows
+          path: /tmp/testdriverai-cli-*.log
+          if-no-files-found: warn
           retention-days: 30

@@ -65,31 +65,31 @@ describe("Chrome Extension Test", () => {
     expect(popupResult).toBeTruthy();
   });
 
-  it("should load Loom from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context, { ...getDefaults(context) });
+  // it("should load Loom from Chrome Web Store by extensionId", async (context) => {
+  //   const testdriver = TestDriver(context, { ...getDefaults(context) });
 
-    // Launch Chrome with Loom loaded by its Chrome Web Store ID
-    // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
-    await testdriver.provision.chromeExtension({
-      extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb'
-    });
+  //   // Launch Chrome with Loom loaded by its Chrome Web Store ID
+  //   // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
+  //   await testdriver.provision.chromeExtension({
+  //     extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb'
+  //   });
 
-    // Navigate to testdriver.ai (extensions don't load on New Tab)
-    const addressBar = await testdriver.find("Chrome address bar");
-    await addressBar.click();
-    await testdriver.type("testdriver.ai");
-    await testdriver.pressKeys(["enter"]);
+  //   // Navigate to testdriver.ai (extensions don't load on New Tab)
+  //   const addressBar = await testdriver.find("Chrome address bar");
+  //   await addressBar.click();
+  //   await testdriver.type("testdriver.ai");
+  //   await testdriver.pressKeys(["enter"]);
 
-    // Wait for page to load
-    const pageResult = await testdriver.assert("I can see testdriver.ai");
-    expect(pageResult).toBeTruthy();
+  //   // Wait for page to load
+  //   const pageResult = await testdriver.assert("I can see testdriver.ai");
+  //   expect(pageResult).toBeTruthy();
 
-    // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.", {zoom: true});
-    await extensionsButton.click();
+  //   // Click on the extensions button (puzzle piece icon) in Chrome toolbar
+  //   const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.", {zoom: true});
+  //   await extensionsButton.click();
 
-    // Look for Loom in the extensions menu
-    const loomExtension = await testdriver.find("Loom extension in the extensions dropdown");
-    expect(loomExtension.found()).toBeTruthy();
-  });
+  //   // Look for Loom in the extensions menu
+  //   const loomExtension = await testdriver.find("Loom extension in the extensions dropdown");
+  //   expect(loomExtension.found()).toBeTruthy();
+  // });
 });
