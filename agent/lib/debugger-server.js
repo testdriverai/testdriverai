@@ -10,6 +10,9 @@ let wss = null;
 let clients = new Set();
 let refCount = 0; // Number of active consumers (for concurrent test safety)
 let debuggerUrl = null; // Stored URL of running debugger
+let shutdownScheduled = false; // True when all tests released but clients still connected
+let shutdownTimer = null; // Timer for delayed shutdown when clients disconnect
+const SHUTDOWN_GRACE_PERIOD_MS = 5000; // Grace period before stopping after last client disconnects
 
 function createDebuggerServer(config = {}) {
   const port = config.TD_DEBUGGER_PORT || 0; // 0 means find available port
@@ -66,8 +69,24 @@ function createDebuggerServer(config = {}) {
     wss.on("connection", (ws) => {
       clients.add(ws);
 
+      // Cancel any pending shutdown — a new client connected
+      if (shutdownTimer) {
+        clearTimeout(shutdownTimer);
+        shutdownTimer = null;
+      }
+
       ws.on("close", () => {
         clients.delete(ws);
+
+        // If shutdown was deferred because clients were connected, check now
+        if (shutdownScheduled && clients.size === 0) {
+          // Small grace period to allow reconnection before stopping
+          shutdownTimer = setTimeout(() => {
+            if (shutdownScheduled && clients.size === 0) {
+              forceStopDebugger();
+            }
+          }, SHUTDOWN_GRACE_PERIOD_MS);
+        }
       });
 
       ws.on("error", (error) => {
@@ -142,6 +161,12 @@ async function startDebugger(config = {}, emitter) {
  */
 async function acquireDebugger(config = {}, emitter) {
   refCount++;
+  // Cancel any pending deferred shutdown from a previous test
+  shutdownScheduled = false;
+  if (shutdownTimer) {
+    clearTimeout(shutdownTimer);
+    shutdownTimer = null;
+  }
   if (server && debuggerUrl) {
     // Server already running — reuse it
     return { url: debuggerUrl };
@@ -154,12 +179,19 @@ async function acquireDebugger(config = {}, emitter) {
 
 /**
  * Release a reference to the debugger server.
- * Only actually stops the server when the last consumer releases.
+ * Only actually stops the server when the last consumer releases AND
+ * all browser clients have disconnected (so the VM stays visible).
  */
 function releaseDebugger() {
   if (refCount > 0) refCount--;
   if (refCount > 0) return; // Other tests still using it
-  forceStopDebugger();
+
+  // If browser clients are still viewing the VM, defer shutdown until they disconnect
+  if (clients.size > 0) {
+    shutdownScheduled = true;
+  } else {
+    forceStopDebugger();
+  }
 }
 
 /**
@@ -168,6 +200,11 @@ function releaseDebugger() {
  */
 function forceStopDebugger() {
   refCount = 0;
+  shutdownScheduled = false;
+  if (shutdownTimer) {
+    clearTimeout(shutdownTimer);
+    shutdownTimer = null;
+  }
   if (wss) {
     wss.close();
     wss = null;
