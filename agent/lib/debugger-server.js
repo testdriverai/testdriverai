@@ -10,13 +10,17 @@ let wss = null;
 let clients = new Set();
 let refCount = 0; // Number of active consumers (for concurrent test safety)
 let debuggerUrl = null; // Stored URL of running debugger
+let acquirePromise = null; // In-flight startup promise (prevents concurrent double-start)
 
 function createDebuggerServer(config = {}) {
   const port = config.TD_DEBUGGER_PORT || 0; // 0 means find available port
 
   return new Promise((resolve, reject) => {
-    // Create HTTP server
-    server = http.createServer((req, res) => {
+    // Use a local reference so the listen callback always calls .address() on
+    // the correct instance even when createDebuggerServer() is called
+    // concurrently (module-level `server` could be overwritten by a second
+    // concurrent call before the first listen callback fires).
+    const localServer = http.createServer((req, res) => {
       const url = req.url;
 
       // Parse URL to get pathname without query parameters
@@ -60,10 +64,14 @@ function createDebuggerServer(config = {}) {
       }
     });
 
-    // Create WebSocket server
-    wss = new WebSocket.Server({ server });
+    // Assign to module-level variables so other functions can reference them
+    server = localServer;
 
-    wss.on("connection", (ws) => {
+    // Create WebSocket server
+    const localWss = new WebSocket.Server({ server: localServer });
+    wss = localWss;
+
+    localWss.on("connection", (ws) => {
       clients.add(ws);
 
       ws.on("close", () => {
@@ -77,17 +85,17 @@ function createDebuggerServer(config = {}) {
     });
 
     // Start server on available port
-    server.listen(port, "localhost", () => {
-      const address = server.address();
+    localServer.listen(port, "localhost", () => {
+      const address = localServer.address();
       if (!address) {
         reject(new Error("Server started but address is not available"));
         return;
       }
       const actualPort = address.port;
-      resolve({ port: actualPort, server, wss });
+      resolve({ port: actualPort, server: localServer, wss: localWss });
     });
 
-    server.on("error", (error) => {
+    localServer.on("error", (error) => {
       console.error("Server error:", error);
       reject(error);
     });
@@ -146,10 +154,22 @@ async function acquireDebugger(config = {}, emitter) {
     // Server already running — reuse it
     return { url: debuggerUrl };
   }
+  // If a startup is already in progress (concurrent calls), wait for it
+  if (acquirePromise) {
+    return acquirePromise;
+  }
   // First consumer — start the server
-  const result = await startDebugger(config, emitter);
-  debuggerUrl = result.url;
-  return result;
+  acquirePromise = startDebugger(config, emitter)
+    .then((result) => {
+      debuggerUrl = result.url;
+      acquirePromise = null;
+      return result;
+    })
+    .catch((err) => {
+      acquirePromise = null;
+      throw err;
+    });
+  return acquirePromise;
 }
 
 /**
@@ -168,6 +188,7 @@ function releaseDebugger() {
  */
 function forceStopDebugger() {
   refCount = 0;
+  acquirePromise = null;
   if (wss) {
     wss.close();
     wss = null;
