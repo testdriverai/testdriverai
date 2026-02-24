@@ -1,18 +1,105 @@
----
-name: testdriver
-description: An expert at creating and refining automated tests using TestDriver.ai
-tools: ['vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/openSimpleBrowser', 'vscode/runCommand', 'vscode/askQuestions', 'vscode/switchAgent', 'vscode/vscodeAPI', 'vscode/extensions', 'execute/runNotebookCell', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/awaitTerminal', 'execute/killTerminal', 'execute/runTask', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read/getNotebookSummary', 'read/problems', 'read/readFile', 'read/readNotebookCellOutput', 'read/terminalSelection', 'read/terminalLastCommand', 'read/getTaskOutput', 'agent/runSubagent', 'edit/createDirectory', 'edit/createFile', 'edit/createJupyterNotebook', 'edit/editFiles', 'edit/editNotebook', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'search/usages', 'search/searchSubagent', 'web/fetch', 'web/githubRepo', 'testdriver/assert', 'testdriver/check', 'testdriver/click', 'testdriver/exec', 'testdriver/find', 'testdriver/find_and_click', 'testdriver/findall', 'testdriver/focus_application', 'testdriver/hover', 'testdriver/list_local_screenshots', 'testdriver/press_keys', 'testdriver/screenshot', 'testdriver/scroll', 'testdriver/session_extend', 'testdriver/session_start', 'testdriver/session_status', 'testdriver/type', 'testdriver/view_local_screenshot', 'testdriver/wait', 'todo']
-mcp-servers:
-  testdriver:
-    command: npx
-    args:
-      - -p
-      - testdriverai
-      - testdriverai-mcp
-    env:
-      TD_API_KEY: ${TD_API_KEY}
-    tools: ["testdriverai"]
----
+# TestDriver Repository Instructions
+
+This repository contains the **TestDriver SDK** — a Computer-Use SDK for E2E QA testing. It is a JavaScript/Node.js package published to npm as `testdriverai`.
+
+## Repository Overview
+
+TestDriver enables writing E2E tests that use vision-based AI to control browsers and desktop apps in ephemeral cloud sandboxes. Tests are written using Vitest and the `TestDriver` SDK class.
+
+### Key Files and Directories
+
+| Path | Purpose |
+|------|---------|
+| `sdk.js` | Main public entry point (CommonJS) |
+| `sdk.d.ts` | TypeScript type definitions |
+| `agent/lib/` | Agent runtime (sandbox, session, redraw, etc.) |
+| `lib/vitest/` | Vitest integration hooks and setup |
+| `lib/core/` | Core SDK logic |
+| `mcp-server/` | MCP (Model Context Protocol) server (TypeScript) |
+| `interfaces/` | Vitest plugin interface |
+| `test/` | Integration tests (run against live sandboxes) |
+| `tests/` | Example test files for users |
+| `examples/` | Example test files shipped with the package |
+| `bin/` | CLI entry point (`testdriverai`) |
+| `setup/` | Project initialization helpers |
+| `docs/` | Documentation source |
+| `.github/skills/` | Reusable skill YAML files (shared test step snippets usable across tests) |
+
+## Development Setup
+
+```bash
+npm install
+```
+
+Requires a `TD_API_KEY` environment variable. Copy `.env.example` to `.env` and fill in your key.
+
+## Building
+
+```bash
+npm run bundle
+```
+
+The MCP server has its own build:
+
+```bash
+cd mcp-server && npm install && npm run build
+```
+
+## Testing
+
+Run unit/integration tests with **Mocha**:
+
+```bash
+npm test
+```
+
+Run SDK integration tests with **Vitest** (requires a live `TD_API_KEY`):
+
+```bash
+npm run test:sdk
+```
+
+Run a single SDK test file:
+
+```bash
+vitest run test/api-resilience.test.mjs --reporter=dot
+```
+
+## Linting and Formatting
+
+Lint with ESLint:
+
+```bash
+npx eslint .
+```
+
+Format with Prettier:
+
+```bash
+npx prettier --write .
+```
+
+## Code Conventions
+
+- **CommonJS** (`require`/`module.exports`) is used for all `.js` files.
+- **ESM** (`import`/`export`) is used for `.mjs` files (Vitest tests and SDK hooks).
+- **TypeScript** is only used in the `mcp-server/` directory.
+- Do not add comments unless they match the existing style in the file.
+- Avoid adding new npm dependencies unless absolutely necessary.
+- `sdk.d.ts` is hand-authored — keep it in sync with `sdk.js` when adding public API methods.
+- Vitest test files use the `.test.mjs` extension and import from `testdriverai/vitest/hooks`.
+- All Vitest tests must set `testTimeout: 900000` and `hookTimeout: 900000` in `vitest.config.mjs` (required because tests spawn and tear down cloud sandboxes, which can take several minutes).
+
+## Architecture Notes
+
+- **Sandbox lifecycle**: `agent/lib/sandbox.js` manages the WebSocket connection to cloud sandboxes. `sandbox.close()` rejects pending commands with "Sandbox connection closed".
+- **Cleanup/teardown**: `lib/vitest/hooks.mjs` wraps cleanup in `Promise.race` with 30s timeouts to prevent hanging.
+- **Log formatting**: Use `SDKLogFormatter` from `sdk-log-formatter.js` for structured console output.
+- **Redraw detection**: `agent/lib/redraw.js` detects screen changes; Windows network stats use a 30s timeout due to slow WMI queries.
+
+## Custom Agents
+
+The repository includes a custom **TestDriver** Copilot agent defined in `.github/agents/testdriver.agent.md`. Use this agent when writing or debugging TestDriver tests.
 
 # TestDriver Expert
 
