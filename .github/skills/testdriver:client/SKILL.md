@@ -44,8 +44,36 @@ const testdriver = new TestDriver(apiKey, options)
       Enable or disable console logging
     </ParamField>
     
+    <ParamField path="autoScreenshots" type="boolean" default="true">
+      Automatically capture screenshots before and after each command. Screenshots are saved to `.testdriver/screenshots/<test>/` with descriptive filenames that include the line number and action name. Format: `<seq>-<action>-<phase>-L<line>-<description>.png`
+    </ParamField>
+    
     <ParamField path="environment" type="object">
       Additional environment variables to pass to the sandbox
+    </ParamField>
+    
+    <ParamField path="ai" type="object">
+      Global AI sampling configuration. Controls how the AI model generates responses for `find()` verification and `assert()` calls. Can be overridden per call.
+      
+      <Expandable title="properties">
+        <ParamField path="temperature" type="number">
+          Controls randomness in AI responses. `0` = deterministic (best for verification), higher values = more creative. Default: `0` for find verification, model default for assert.
+        </ParamField>
+        
+        <ParamField path="top" type="object">
+          Nucleus and top-k sampling parameters
+          
+          <Expandable title="properties">
+            <ParamField path="p" type="number">
+              Top-P (nucleus sampling). Limits token choices to the smallest set whose cumulative probability exceeds P. Lower values = more focused responses. Range: 0-1.
+            </ParamField>
+            
+            <ParamField path="k" type="number">
+              Top-K sampling. Limits token choices to the top K most likely tokens. `1` = always pick the most likely token. `0` = disabled (consider all tokens).
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
     </ParamField>
   </Expandable>
 </ParamField>
@@ -61,6 +89,11 @@ const testdriver = new TestDriver({
   resolution: '1920x1080',
   logging: true,
   analytics: true
+});
+
+// With AI config for stricter verification
+const testdriver = new TestDriver({
+  ai: { temperature: 0, top: { p: 0.9, k: 40 } }
 });
 
 // Or pass API key explicitly

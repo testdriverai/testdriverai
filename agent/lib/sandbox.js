@@ -47,6 +47,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.reconnecting = false; // Prevent duplicate reconnection attempts
       this.pendingTimeouts = new Map(); // Track per-message timeouts
       this.pendingRetryQueue = []; // Queue of requests to retry after reconnection
+      this._lastConnectParams = null; // Connection params for reconnection (per-instance, not shared)
     }
 
     /**
@@ -97,8 +98,13 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         // Add sandboxId to every message if we have a connected sandbox
         // This allows the API to reconnect if the connection was rerouted
-        if (this._lastConnectParams?.sandboxId && !message.sandboxId) {
-          message.sandboxId = this._lastConnectParams.sandboxId;
+        // Don't inject IP addresses as sandboxId — only valid instance/sandbox IDs
+        if (this._lastConnectParams?.sandboxId && !message.sandboxId) { 
+          const id = this._lastConnectParams.sandboxId;
+          // Only inject if it looks like a valid ID (not an IP address)
+          if (id && !/^\d+\.\d+\.\d+\.\d+$/.test(id)) {
+            message.sandboxId = id;
+          }
         }
 
         let p = new Promise((resolve, reject) => {
@@ -193,10 +199,23 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       }
     }
 
-    async connect(sandboxId, persist = false, keepAlive = null) {
-      // Store connection params so we can re-establish after reconnection
-      this._lastConnectParams = { sandboxId, persist, keepAlive };
+    /**
+     * Set connection params for reconnection logic and sandboxId injection.
+     * Use this instead of directly assigning this._lastConnectParams from
+     * external code. Keeps the shape consistent and avoids stale state
+     * leaking across concurrent test runs.
+     * @param {Object|null} params
+     * @param {string} [params.type] - 'direct' for IP-based connections
+     * @param {string} [params.ip] - IP address for direct connections
+     * @param {string} [params.sandboxId] - Sandbox/instance ID
+     * @param {boolean} [params.persist] - Whether to persist the sandbox
+     * @param {number|null} [params.keepAlive] - Keep-alive TTL in ms
+     */
+    setConnectionParams(params) {
+      this._lastConnectParams = params ? { ...params } : null;
+    }
 
+    async connect(sandboxId, persist = false, keepAlive = null) {
       let reply = await this.send({
         type: "connect",
         persist,
@@ -205,13 +224,38 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       });
 
       if (reply.success) {
+        // Only store connection params after successful connection
+        // This prevents malformed sandboxId from being attached to subsequent messages
+        this.setConnectionParams({ sandboxId, persist, keepAlive });
         this.instanceSocketConnected = true;
         emitter.emit(events.sandbox.connected);
         // Return the full reply (includes url and sandbox)
         return reply;
       } else {
+        // Clear any previous connection params on failure
+        this.setConnectionParams(null);
         // Throw error to trigger fallback to creating new sandbox
         throw new Error(reply.errorMessage || "Failed to connect to sandbox");
+      }
+    }
+
+    /**
+     * Reconnect to a direct IP-based sandbox after connection loss.
+     * Sends a 'direct' message instead of 'connect' to avoid the API
+     * treating the IP as an AWS instance ID.
+     */
+    async reconnectDirect(ip) {
+      let reply = await this.send({
+        type: "direct",
+        ip,
+      });
+
+      if (reply.success) {
+        this.instanceSocketConnected = true;
+        emitter.emit(events.sandbox.connected);
+        return reply;
+      } else {
+        throw new Error(reply.errorMessage || "Failed to reconnect to direct sandbox");
       }
     }
 
@@ -300,9 +344,16 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           // Without this, the new API instance has no connection.desktop
           // and all Linux operations will fail with "sandbox not initialized"
           if (this._lastConnectParams) {
-            const { sandboxId, persist, keepAlive } = this._lastConnectParams;
-            console.log(`[Sandbox] Re-establishing sandbox connection (${sandboxId})...`);
-            await this.connect(sandboxId, persist, keepAlive);
+            if (this._lastConnectParams.type === 'direct') {
+              // Direct IP connections must reconnect via 'direct' message, not 'connect'
+              const { ip, persist, keepAlive } = this._lastConnectParams;
+              console.log(`[Sandbox] Re-establishing direct connection (${ip})...`);
+              await this.reconnectDirect(ip);
+            } else {
+              const { sandboxId, persist, keepAlive } = this._lastConnectParams;
+              console.log(`[Sandbox] Re-establishing sandbox connection (${sandboxId})...`);
+              await this.connect(sandboxId, persist, keepAlive);
+            }
           }
           console.log("[Sandbox] Reconnected successfully.");
           
@@ -427,12 +478,17 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
           if (!this.ps[message.requestId]) {
             // This can happen during reconnection (ps was cleared) or after timeout
-            // (promise was deleted). Only log at debug level since it's expected.
+            // (promise was deleted). Expected during polling loops (e.g. Chrome
+            // debugger readiness checks) where short-timeout exec calls regularly
+            // expire before the sandbox responds.  Only log in debug/verbose mode.
             if (!this.reconnecting) {
-              console.warn(
-                "No pending promise found for requestId:",
-                message.requestId,
-              );
+              const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+              if (debugMode) {
+                console.warn(
+                  "No pending promise found for requestId:",
+                  message.requestId,
+                );
+              }
             }
             return;
           }
@@ -494,6 +550,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.instanceSocketConnected = false;
       this.authenticated = false;
       this.instance = null;
+      this._lastConnectParams = null;
 
       // Silently clear pending promises and retry queue without rejecting
       // (rejecting causes unhandled promise rejections during cleanup)

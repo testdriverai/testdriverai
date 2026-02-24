@@ -1,4 +1,3 @@
-```skill
 ---
 name: testdriver:parse
 description: Detect all UI elements on screen using OmniParser
@@ -74,6 +73,10 @@ const result = await testdriver.parse();
 
 const clickable = result.elements.filter(e => e.interactivity === 'clickable');
 console.log(`Found ${clickable.length} clickable elements`);
+
+clickable.forEach(el => {
+  console.log(`- "${el.content}" at (${el.bbox.x0}, ${el.bbox.y0})`);
+});
 ```
 
 ### Find and Click an Element by Content
@@ -81,13 +84,16 @@ console.log(`Found ${clickable.length} clickable elements`);
 ```javascript
 const result = await testdriver.parse();
 
+// Find a "Submit" button
 const submitBtn = result.elements.find(e => 
   e.content.toLowerCase().includes('submit') && e.interactivity === 'clickable'
 );
 
 if (submitBtn) {
+  // Calculate center of the bounding box
   const x = Math.round((submitBtn.bbox.x0 + submitBtn.bbox.x1) / 2);
   const y = Math.round((submitBtn.bbox.y0 + submitBtn.bbox.y1) / 2);
+  
   await testdriver.click({ x, y });
 }
 ```
@@ -97,17 +103,130 @@ if (submitBtn) {
 ```javascript
 const result = await testdriver.parse();
 
+// Get all text elements
 const textElements = result.elements.filter(e => e.type === 'text');
+textElements.forEach(e => console.log(`Text: "${e.content}"`));
+
+// Get all icons
 const icons = result.elements.filter(e => e.type === 'icon');
+console.log(`Found ${icons.length} icons`);
+
+// Get all buttons
 const buttons = result.elements.filter(e => e.type === 'button');
+console.log(`Found ${buttons.length} buttons`);
 ```
+
+### Build Custom Assertions
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+
+describe("Login Page", () => {
+  it("should have expected form elements", async (context) => {
+    const testdriver = TestDriver(context);
+    
+    await testdriver.provision.chrome({
+      url: 'https://myapp.com/login',
+    });
+
+    const result = await testdriver.parse();
+    
+    // Assert expected elements exist
+    const textContent = result.elements.map(e => e.content.toLowerCase());
+    expect(textContent).toContain('email');
+    expect(textContent).toContain('password');
+    
+    // Assert there are clickable elements
+    const clickable = result.elements.filter(e => e.interactivity === 'clickable');
+    expect(clickable.length).toBeGreaterThan(0);
+  });
+});
+```
+
+### Use Bounding Box Coordinates
+
+```javascript
+const result = await testdriver.parse();
+
+result.elements.forEach(el => {
+  // Pixel coordinates
+  console.log(`Element "${el.content}":`);
+  console.log(`  bbox: (${el.bbox.x0}, ${el.bbox.y0}) to (${el.bbox.x1}, ${el.bbox.y1})`);
+  console.log(`  size: ${el.boundingBox.width}x${el.boundingBox.height}`);
+  console.log(`  position: left=${el.boundingBox.left}, top=${el.boundingBox.top}`);
+});
+```
+
+### View Annotated Screenshot
+
+```javascript
+const result = await testdriver.parse();
+
+// The annotated image shows all detected elements with bounding boxes
+console.log('Annotated screenshot:', result.annotatedImageUrl);
+console.log(`Image dimensions: ${result.imageWidth}x${result.imageHeight}`);
+```
+
+## How It Works
+
+1. TestDriver captures a screenshot of the current screen
+2. The image is sent to the TestDriver API
+3. OmniParser v2 analyzes the image to detect all UI elements
+4. Each element is classified by type (text, icon, button, etc.) and interactivity
+5. Bounding box coordinates are returned in pixel coordinates matching the screen resolution
+
+<Note>
+  OmniParser detects elements visually — it works with any UI framework, native apps, and even non-standard interfaces. It does not rely on DOM or accessibility trees.
+</Note>
 
 ## Best Practices
 
-- Use `find()` for targeting specific elements — `parse()` is for full UI analysis
-- Filter by `interactivity` to distinguish clickable vs non-interactive elements
-- Wait for the page to stabilize before calling `parse()`
-- Use the `annotatedImageUrl` for visual debugging
+<AccordionGroup>
+  <Accordion title="Use find() for targeting specific elements">
+    For locating and interacting with a specific element, prefer `find()` which uses AI vision. Use `parse()` when you need a complete inventory of all elements on screen.
+    
+    ```javascript
+    // Prefer this for clicking a specific element
+    await testdriver.find("Submit button").click();
+    
+    // Use parse() for full UI analysis
+    const result = await testdriver.parse();
+    const allButtons = result.elements.filter(e => e.type === 'button');
+    ```
+  </Accordion>
+  
+  <Accordion title="Filter by interactivity">
+    Use the `interactivity` field to distinguish between clickable and non-interactive elements.
+    
+    ```javascript
+    const result = await testdriver.parse();
+    const interactive = result.elements.filter(e => e.interactivity === 'clickable');
+    const static_ = result.elements.filter(e => e.interactivity === 'non-interactive');
+    ```
+  </Accordion>
+
+  <Accordion title="Wait for content to load">
+    If elements aren't being detected, the page may not be fully loaded. Add a wait first.
+    
+    ```javascript
+    // Wait for page to stabilize
+    await testdriver.wait(2000);
+    
+    // Then parse
+    const result = await testdriver.parse();
+    ```
+  </Accordion>
+  
+  <Accordion title="Use the annotated image for debugging">
+    The `annotatedImageUrl` provides a visual overlay showing all detected elements with their bounding boxes — great for debugging.
+    
+    ```javascript
+    const result = await testdriver.parse();
+    console.log('View annotated screenshot:', result.annotatedImageUrl);
+    ```
+  </Accordion>
+</AccordionGroup>
 
 ## Related
 
@@ -115,4 +234,3 @@ const buttons = result.elements.filter(e => e.type === 'button');
 - [assert()](/v7/assert) - Make AI-powered assertions about screen state
 - [screenshot()](/v7/screenshot) - Capture screenshots
 - [Elements Reference](/v7/elements) - Complete Element API
-```

@@ -14,27 +14,12 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
     Get started quickly with the TestDriver CLI.
 
     <Steps>
-      <Step title="Create a TestDriver Account">
-
-        You will need a TestDriver account to get an API key.
-
-        <Card
-          title="Get an API Key"
-          icon="user-plus"
-          href="https://console.testdriver.ai/team"
-          arrow
-          horizontal
-        >
-          Start with 60 free device minutes, no credit-card required!
-        </Card>
-
-      </Step>
       <Step title="Install TestDriver">
 
         Use `npx` to quickly set up an example project:
 
         ```bash
-        npx testdriverai@beta init
+        npx testdriverai init
         ```
 
         This will walk you through creating a new project folder, installing dependencies, and setting up your API key.
@@ -79,7 +64,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
         Install Vitest and TestDriver as dev dependencies:
 
         ```bash
-        npm install --save-dev vitest testdriverai@beta
+        npm install --save-dev vitest testdriverai
         ```
 
       </Step>
