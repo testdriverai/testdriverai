@@ -1399,6 +1399,10 @@ const TestDriverAgent = require("./agent/index.js");
 const { events } = require("./agent/events.js");
 const { createMarkdownLogger } = require("./interfaces/logger.js");
 
+// Track screenshot directories already cleaned in this process to avoid
+// concurrent tests in the same file from nuking each other's screenshots.
+const _cleanedScreenshotDirs = new Set();
+
 class TestDriverSDK {
   constructor(apiKey, options = {}) {
     // Support calling with just options: new TestDriver({ os: 'windows' })
@@ -2712,7 +2716,9 @@ CAPTCHA_SOLVER_EOF`,
       );
     }
 
-    // Clean up screenshots folder for this test file before running
+    // Clean up screenshots folder for this test file before running.
+    // Only clean once per directory per process to avoid concurrent tests
+    // in the same file (--sequence.concurrent) from nuking each other's screenshots.
     if (this.testFile) {
       const testFileName = path.basename(
         this.testFile,
@@ -2724,8 +2730,11 @@ CAPTCHA_SOLVER_EOF`,
         "screenshots",
         testFileName,
       );
-      if (fs.existsSync(screenshotsDir)) {
-        fs.rmSync(screenshotsDir, { recursive: true, force: true });
+      if (!_cleanedScreenshotDirs.has(screenshotsDir)) {
+        _cleanedScreenshotDirs.add(screenshotsDir);
+        if (fs.existsSync(screenshotsDir)) {
+          fs.rmSync(screenshotsDir, { recursive: true, force: true });
+        }
       }
     }
 
@@ -2862,10 +2871,11 @@ CAPTCHA_SOLVER_EOF`,
       }
     }
 
-    // Stop the debugger server (HTTP + WebSocket server) to release the port
+    // Release our reference to the shared debugger server.
+    // The server only actually stops when the last concurrent test disconnects.
     try {
-      const { stopDebugger } = require("./agent/lib/debugger-server.js");
-      stopDebugger();
+      const { releaseDebugger } = require("./agent/lib/debugger-server.js");
+      releaseDebugger();
     } catch (err) {
       // Ignore if debugger wasn't started
     }
@@ -3895,16 +3905,13 @@ CAPTCHA_SOLVER_EOF`,
    * @private
    */
   async _initializeDebugger() {
-    // Import createDebuggerProcess at the module level if not already done
-    const { createDebuggerProcess } = require("./agent/lib/debugger.js");
+    // Use reference-counted debugger server so concurrent tests share one
+    // server and it only shuts down when the last test disconnects.
+    const { acquireDebugger } = require("./agent/lib/debugger-server.js");
 
-    // Only initialize once
     if (!this.agent.debuggerUrl) {
-      const debuggerProcess = await createDebuggerProcess(
-        this.config,
-        this.emitter,
-      );
-      this.agent.debuggerUrl = debuggerProcess.url || null;
+      const result = await acquireDebugger(this.config, this.emitter);
+      this.agent.debuggerUrl = result.url || null;
     }
   }
 
