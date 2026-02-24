@@ -1,3 +1,12 @@
+## [7.3.36](https://github.com/testdriverai/testdriverai/compare/v7.3.35...v7.3.36) (2026-02-24)
+
+
+### Reverts
+
+* Revert "Fix hanging node processes on Ctrl+C (#654)" (#683) ([5e68748](https://github.com/testdriverai/testdriverai/commit/5e6874825c6718e006bbf84e2ba5edae57d173ac)), closes [#654](https://github.com/testdriverai/testdriverai/issues/654) [#683](https://github.com/testdriverai/testdriverai/issues/683)
+
+
+
 ## [7.3.35](https://github.com/testdriverai/testdriverai/compare/v7.3.34...v7.3.35) (2026-02-24)
 
 
