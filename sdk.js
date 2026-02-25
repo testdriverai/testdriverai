@@ -615,11 +615,10 @@ class Element {
 
     // Track find interaction once at the end (fire-and-forget, don't block)
     const sessionId = this.sdk.getSessionId();
-    if (sessionId && this.sdk.sandbox?.send) {
-      await this.sdk.sandbox
-        .send({
-          type: "trackInteraction",
-          interactionType: "find",
+    if (sessionId && this.sdk.apiClient) {
+      this.sdk.apiClient
+        .req("interaction/track", {
+          type: "find",
           session: sessionId,
           prompt: description,
           timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
@@ -3173,11 +3172,10 @@ CAPTCHA_SOLVER_EOF`,
 
         // Track successful findAll interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
-        if (sessionId && this.sandbox?.send) {
-          this.sandbox
-            .send({
-              type: "trackInteraction",
-              interactionType: "findAll",
+        if (sessionId && this.apiClient) {
+          this.apiClient
+            .req("interaction/track", {
+              type: "findAll",
               session: sessionId,
               prompt: description,
               timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
@@ -3229,11 +3227,10 @@ CAPTCHA_SOLVER_EOF`,
 
         // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
-        if (sessionId && this.sandbox?.send) {
-          this.sandbox
-            .send({
-              type: "trackInteraction",
-              interactionType: "findAll",
+        if (sessionId && this.apiClient) {
+          this.apiClient
+            .req("interaction/track", {
+              type: "findAll",
               session: sessionId,
               prompt: description,
               timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
@@ -3274,11 +3271,10 @@ CAPTCHA_SOLVER_EOF`,
 
       // Track findAll error interaction (fire-and-forget, don't block)
       const sessionId = this.getSessionId();
-      if (sessionId && this.sandbox?.send) {
-        this.sandbox
-          .send({
-            type: "trackInteraction",
-            interactionType: "findAll",
+      if (sessionId && this.apiClient) {
+        this.apiClient
+          .req("interaction/track", {
+            type: "findAll",
             session: sessionId,
             prompt: description,
             timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
