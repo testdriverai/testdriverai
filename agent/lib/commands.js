@@ -1238,10 +1238,12 @@ const createCommands = (
 
       let startTime = new Date().getTime();
       let durationPassed = 0;
+      let iterationCount = 0;
+      const maxIterations = 50; // Prevent excessive API calls and stack overflow
 
       let passed = false;
 
-      while (durationPassed < timeout && !passed) {
+      while (durationPassed < timeout && !passed && iterationCount < maxIterations) {
         const response = await sdk.req("find", {
           element: text,
           image: await system.captureScreenBase64(),
@@ -1250,6 +1252,7 @@ const createCommands = (
         passed = !!(response && response.coordinates);
 
         durationPassed = new Date().getTime() - startTime;
+        iterationCount++;
 
         if (!passed) {
           emitter.emit(
@@ -1259,7 +1262,7 @@ const createCommands = (
             ),
             true,
           );
-          await delay(2500);
+          await delay(3000);
         }
       }
 
@@ -1285,29 +1288,33 @@ const createCommands = (
         }
         
         return;
-      } else {
-        // Track interaction failure (fire-and-forget)
-        const sessionId = sessionInstance?.get();
-        const errorMsg = `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`;
-        if (sessionId) {
-          const waitForTextDuration = Date.now() - startTime;
-          sandbox.send({
-            type: "trackInteraction",
-            interactionType: "waitForText",
-            session: sessionId,
-            prompt: text,
-            input: { timeout },
-            timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
-            duration: waitForTextDuration,
-            success: false,
-            error: errorMsg,
-          }).catch((err) => {
-            console.warn("Failed to track waitForText interaction:", err.message);
-          });
-        }
-        
-        throw new MatchError(errorMsg);
       }
+      
+      // Element not found - throw error immediately to prevent further processing
+      const sessionId = sessionInstance?.get();
+      const errorMsg = iterationCount >= maxIterations 
+        ? `Max iterations (${maxIterations}) reached while searching for "${text}"`
+        : `Timed out (${niceSeconds(timeout)} seconds) while searching for "${text}"`;
+      
+      // Track interaction failure (fire-and-forget)
+      if (sessionId) {
+        const waitForTextDuration = Date.now() - startTime;
+        sandbox.send({
+          type: "trackInteraction",
+          interactionType: "waitForText",
+          session: sessionId,
+          prompt: text,
+          input: { timeout },
+          timestamp: waitForTextTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
+          duration: waitForTextDuration,
+          success: false,
+          error: errorMsg,
+        }).catch((err) => {
+          console.warn("Failed to track waitForText interaction:", err.message);
+        });
+      }
+      
+      throw new MatchError(errorMsg);
     },
     /**
      * Scroll until text is found
