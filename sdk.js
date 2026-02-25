@@ -1895,7 +1895,7 @@ class TestDriverSDK {
         // Add web log tracking with domain wildcard pattern, then start dashcam
         if (this.dashcamEnabled) {
           const domainPattern = this._getUrlDomainPattern(url);
-          await this.dashcam.addWebLog(domainPattern, "Web Logs");
+          // await this.dashcam.addWebLog(domainPattern, "Web Logs");
           
           // Start dashcam recording after logs are configured
           if (!(await this.dashcam.isRecording())) {
@@ -2462,7 +2462,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           const pattern = this._provisionedChromeUrl
             ? this._getUrlDomainPattern(this._provisionedChromeUrl)
             : "**";
-          await this.dashcam.addWebLog(pattern, "Web Logs");
+          // await this.dashcam.addWebLog(pattern, "Web Logs");
         }
 
         // Start recording if not already recording
