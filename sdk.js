@@ -1601,6 +1601,10 @@ class TestDriverSDK {
     // Set up logging if enabled (after emitter is exposed)
     this.loggingEnabled = options.logging !== false;
 
+    // Log buffer: structured entries collected during test execution.
+    // Uploaded to S3 at cleanup so they can be displayed alongside dashcam replays.
+    this._logBuffer = [];
+
     // Set up event listeners once (they live for the lifetime of the SDK instance)
     this._setupLogging();
 
@@ -3797,7 +3801,7 @@ CAPTCHA_SOLVER_EOF`,
 
     // Set up basic event logging
     // Note: We only console.log here - the console spy in vitest/hooks.mjs
-    // handles forwarding to sandbox. This prevents duplicate output to server.
+    // handles forwarding to the local log buffer.
     this.emitter.on("log:**", (message) => {
       const event = this.emitter.event;
 
@@ -3812,6 +3816,21 @@ CAPTCHA_SOLVER_EOF`,
           : message;
         console.log(prefixedMessage);
       }
+
+      // Buffer structured SDK log for later upload
+      if (message) {
+        const level = event === events.log.warn ? "warn"
+          : event === events.log.debug ? "debug"
+          : "info";
+        this._logBuffer.push({
+          time: Date.now(),
+          line: String(message),
+          level,
+          source: "sdk",
+          event,
+          logFile: "sdk",
+        });
+      }
     });
 
     this.emitter.on("error:**", (data) => {
@@ -3824,11 +3843,33 @@ CAPTCHA_SOLVER_EOF`,
           lastFatalError = data;
         }
       }
+
+      // Buffer error events for later upload
+      this._logBuffer.push({
+        time: Date.now(),
+        line: `${this.emitter.event}: ${data}`,
+        level: "error",
+        source: "sdk",
+        event: this.emitter.event,
+        logFile: "sdk",
+      });
     });
 
     this.emitter.on("status", (message) => {
       if (this.loggingEnabled) {
         console.log(`- ${message}`);
+      }
+
+      // Buffer status events
+      if (message) {
+        this._logBuffer.push({
+          time: Date.now(),
+          line: `- ${message}`,
+          level: "info",
+          source: "sdk",
+          event: "status",
+          logFile: "sdk",
+        });
       }
     });
 
@@ -4205,6 +4246,26 @@ CAPTCHA_SOLVER_EOF`,
    */
   async ai(task, options) {
     return await this.act(task, options);
+  }
+
+  /**
+   * Get buffered logs as a JSONL string for upload.
+   * Each line is a JSON object with { time, line, level, source, event }.
+   * @returns {string} JSONL-formatted log data
+   */
+  getLogs() {
+    if (this._logBuffer.length === 0) return "";
+    const startTime = this._logBuffer[0].time;
+    return this._logBuffer
+      .map((entry) => JSON.stringify({ ...entry, time: entry.time - startTime }))
+      .join("\n");
+  }
+
+  /**
+   * Clear the internal log buffer.
+   */
+  clearLogs() {
+    this._logBuffer = [];
   }
 }
 
