@@ -1617,7 +1617,7 @@ class TestDriverSDK {
     // Auto-screenshots configuration
     // When enabled, automatically captures screenshots before/after each command
     // Screenshots are saved to .testdriver/screenshots/<test>/ with descriptive names
-    this.autoScreenshots = options.autoScreenshots !== false;
+    this.autoScreenshots = options.autoScreenshots === true;
     this._screenshotSequence = 0; // Counter for sequential screenshot naming
 
     // Set up command methods that lazy-await connection
