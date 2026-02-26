@@ -3888,14 +3888,8 @@ CAPTCHA_SOLVER_EOF`,
         console.log("");
         console.log("🔗 Live test execution:");
         if (this.config.CI) {
-          // In CI mode, just print the view-only URL
-          const u = new URL(url);
-          const encodedData = u.searchParams.get("data");
-          // Data is base64 encoded, not URL encoded
-          const data = JSON.parse(
-            Buffer.from(encodedData, "base64").toString(),
-          );
-          console.log(`${data.url}&view_only=true`);
+          // In CI mode, print the URL without opening a browser
+          console.log(url);
         } else {
           // In local mode, print the URL and open it in the browser
           console.log(url);
