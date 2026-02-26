@@ -1732,7 +1732,7 @@ class TestDriverSDK {
     // PowerShell: Use async connect with 2-second timeout to match Linux curl behavior.
     // TcpClient.Connect() is synchronous and can hang indefinitely, causing exec timeouts.
     const portCheckCmd = this.os === "windows"
-      ? `$tcp = New-Object System.Net.Sockets.TcpClient; $task = $tcp.ConnectAsync('127.0.0.1', 9222); if ($task.Wait(2000)) { $tcp.Close(); echo 'open' } else { echo 'closed' }`
+      ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
       : `curl -s -o /dev/null --connect-timeout 2 http://localhost:9222 2>/dev/null && echo 'open' || echo 'closed'`;
 
     const deadline = Date.now() + timeoutMs;
