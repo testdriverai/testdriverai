@@ -13,11 +13,20 @@ import { getDefaults } from "./config.mjs";
  * @param {string} username - Username (default: 'standard_user')
  */
 async function performLogin(client, username = "standard_user") {
+  
+  console.log('Performing login with username:', username);
   await client.focusApplication("Google Chrome");
+
+  console.log('Extracting password from page');
   const password = await client.extract("the password");
+
+  console.log('Password extracted:', password ? '***' : 'not found');
+
   const usernameField = await client.find(
     "username input",
   );
+  
+  console.log('Clicking on username field and entering credentials');
   await usernameField.click();
   await client.type(username);
   await client.pressKeys(["tab"]);
@@ -34,6 +43,8 @@ describe("Hover Image Test", () => {
     await testdriver.provision.chrome({
       url: 'http://testdriver-sandbox.vercel.app/login'
     });
+
+    console.log('starting login')
 
     // Perform login first
     await performLogin(testdriver);

@@ -128,6 +128,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
             );
           }
         }, timeout);
+        // Don't let pending timeouts prevent Node process from exiting
+        if (timeoutId.unref) {
+          timeoutId.unref();
+        }
 
         // Track timeout so close() can clear it
         this.pendingTimeouts.set(requestId, timeoutId);
@@ -150,7 +154,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         // Fire-and-forget message types: attach .catch() to prevent
         // unhandled promise rejections if nobody awaits the result
-        const fireAndForgetTypes = ["output", "trackInteraction"];
+        const fireAndForgetTypes = ["output"];
         if (fireAndForgetTypes.includes(message.type)) {
           p.catch(() => {});
         }
@@ -360,6 +364,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           this.reconnecting = false;
         }
       }, delay);
+      // Don't let reconnect timer prevent Node process from exiting
+      if (this.reconnectTimer.unref) {
+        this.reconnectTimer.unref();
+      }
     }
 
     /**
