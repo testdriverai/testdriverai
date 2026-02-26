@@ -516,6 +516,11 @@
           general: "error:general",
           sdk: "error:sdk",
         },
+        command: {
+          start: "command:start",
+          success: "command:success",
+          error: "command:error",
+        },
       };
 
       // Title state handlers for immediate feedback
@@ -557,6 +562,9 @@
       let boundingBoxesTimeout;
       let interactionTimeout;
       let isInteractionEnabled = false;
+      // Track active exec commands to keep interaction enabled while exec is running
+      let activeExecCount = 0;
+      let wasInteractionEnabledBeforeBlur = false;
 
       // Show interaction overlay on hover, hide on click, and bring back after 30 seconds
       const showInteractionOverlay = () => {
@@ -663,6 +671,25 @@
         // Could be used to display terminal errors in UI
       });
 
+      // Track exec commands so the debugger does not block interaction while exec is running
+      addEventHandler(events.command.start, (event, data) => {
+        if (data && data.command === "exec") {
+          activeExecCount++;
+        }
+      });
+
+      addEventHandler(events.command.success, (event, data) => {
+        if (data && data.command === "exec" && activeExecCount > 0) {
+          activeExecCount--;
+        }
+      });
+
+      addEventHandler(events.command.error, (event, data) => {
+        if (data && data.command === "exec" && activeExecCount > 0) {
+          activeExecCount--;
+        }
+      });
+
       const toCss = (size) => {
         if (typeof size === "number") {
           return `${size}px`;
@@ -763,8 +790,20 @@
 
       // Handle window blur/focus for screen locking
       window.addEventListener("blur", () => {
-        showInteractionOverlay();
-        disableInteraction();
+        wasInteractionEnabledBeforeBlur = isInteractionEnabled;
+        // Don't disable interaction if exec commands are running so users
+        // can still interact with the VM through the debugger during exec
+        if (activeExecCount === 0) {
+          showInteractionOverlay();
+          disableInteraction();
+        }
+      });
+
+      // Restore interaction state when the window regains focus
+      window.addEventListener("focus", () => {
+        if (wasInteractionEnabledBeforeBlur) {
+          hideInteractionOverlay();
+        }
       });
     </script>
   </body>

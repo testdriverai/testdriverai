@@ -3445,10 +3445,19 @@ CAPTCHA_SOLVER_EOF`,
         sdk._lastCommandName = methodName;
         sdk._lastPromiseSettled = false;
 
+        // Require events once for exec command tracking (used in try and catch paths)
+        const _isExec = commandName === "exec";
+        const _cmdEvents = _isExec ? require("./agent/events.js").events : null;
+
         try {
           // Take "before" screenshot if enabled
           if (sdk.autoScreenshots) {
             await sdk._saveAutoScreenshot(methodName, "before", callerInfo, description);
+          }
+
+          // Emit command:start for exec so the debugger can track it and keep interaction enabled
+          if (_isExec && sdk.emitter) {
+            sdk.emitter.emit(_cmdEvents.command.start, { command: "exec", timestamp: Date.now() });
           }
 
           let result;
@@ -3486,6 +3495,11 @@ CAPTCHA_SOLVER_EOF`,
             result = await sdk.commands[commandName](...args);
           }
 
+          // Emit command:success for exec so the debugger can restore normal interaction behaviour
+          if (_isExec && sdk.emitter) {
+            sdk.emitter.emit(_cmdEvents.command.success, { command: "exec", timestamp: Date.now() });
+          }
+
           // Take "after" screenshot if enabled
           if (sdk.autoScreenshots) {
             await sdk._saveAutoScreenshot(methodName, "after", callerInfo, description);
@@ -3494,6 +3508,11 @@ CAPTCHA_SOLVER_EOF`,
           sdk._lastPromiseSettled = true;
           return result;
         } catch (error) {
+          // Emit command:error for exec so the debugger can restore normal interaction behaviour
+          if (_isExec && sdk.emitter) {
+            sdk.emitter.emit(_cmdEvents.command.error, { command: "exec", error: error?.message, timestamp: Date.now() });
+          }
+
           // Take "error" screenshot if enabled (instead of "after")
           if (sdk.autoScreenshots) {
             await sdk._saveAutoScreenshot(methodName, "error", callerInfo, description);
