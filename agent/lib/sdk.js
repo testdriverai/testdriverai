@@ -346,57 +346,6 @@ const createSDK = (emitter, config, sessionInstance) => {
       }
     }
 
-    // ── S3 image upload: replace inline base64 with S3 key ──────────────
-    // If the request contains a large `image` field (base64 screenshot),
-    // upload it to S3 via a presigned URL and send the key instead.
-    // This reduces the JSON payload from ~1-3 MB to a few hundred bytes.
-    if (data.image && typeof data.image === 'string' && data.image.length > 50000) {
-      try {
-        const uploadUrlPath = path.startsWith("/api")
-          ? [config["TD_API_ROOT"], "/api/v7.0.0/testdriver/upload-url"].join("")
-          : [config["TD_API_ROOT"], "api", version, "testdriver", "upload-url"].join("/");
-
-        const uploadRes = await axios({
-          method: "post",
-          url: uploadUrlPath,
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-          timeout: 15000,
-          data: {
-            session: sessionInstance.get(),
-          },
-        });
-
-        const { uploadUrl, imageKey } = uploadRes.data;
-
-        if (uploadUrl && imageKey) {
-          // Strip data URL prefix and decode to raw binary
-          const raw = data.image.replace(/^data:image\/\w+;base64,/, '');
-          const buffer = Buffer.from(raw, 'base64');
-
-          await axios({
-            method: "put",
-            url: uploadUrl,
-            headers: { "Content-Type": "image/png" },
-            data: buffer,
-            timeout: 30000,
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity,
-          });
-
-          // Replace the base64 image with the S3 key
-          delete data.image;
-          data.imageKey = imageKey;
-        }
-      } catch (uploadErr) {
-        // Non-fatal: fall back to sending base64 inline
-        // This ensures backward compatibility if the upload-url endpoint
-        // is not available (e.g. older API version)
-      }
-    }
-
     emitter.emit(events.sdk.request, {
       path,
     });
