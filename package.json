@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.4.4",
+  "version": "7.4.5",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "types": "sdk.d.ts",
@@ -81,6 +81,7 @@
     "@octokit/rest": "^20.1.1",
     "@sentry/node": "^9.47.1",
     "@stoplight/yaml-ast-parser": "^0.0.50",
+    "ably": "^2.18.0",
     "ajv": "^8.17.1",
     "arktype": "^2.1.19",
     "axios": "^1.7.7",
