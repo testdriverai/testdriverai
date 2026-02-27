@@ -555,12 +555,6 @@ const createCommands = (
       // Add absolute timestamp for sandbox events
       elementData.timestamp = Date.now();
 
-      await sandbox.send({ type: "moveMouse", x, y, ...elementData });
-
-      emitter.emit(events.mouseMove, { x, y });
-
-      await delay(2500); // wait for the mouse to move
-      
       // Update the action log with duration
       const clickMoveEndTime = Date.now();
       const { formatter } = require("../../sdk-log-formatter.js");
