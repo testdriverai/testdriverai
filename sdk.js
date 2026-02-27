@@ -668,7 +668,7 @@ class Element {
 
     // Create options without timeout to avoid infinite recursion
     const findOptions = typeof options === "object" ? { ...options } : {};
-    delete findOptions.timeout;
+    findOptions.timeout = 0;
 
     let attempts = 0;
     while (Date.now() - startTime < timeout) {
