@@ -1408,10 +1408,22 @@ export default class TestDriverSDK {
   parse(): Promise<ParseResult>;
 
   /**
-   * Wait for specified time
-   * @deprecated Consider using element polling with find() instead of arbitrary waits
+   * Wait for specified time. Useful for adding delays between actions, waiting for
+   * animations to complete, or pausing for state changes to settle.
+   *
+   * For waiting for specific elements to appear, prefer `find()` with a `timeout` option instead.
+   *
    * @param timeout - Time to wait in milliseconds (default: 3000)
    * @param options - Additional options (reserved for future use)
+   *
+   * @example
+   * // Wait 2 seconds for an animation to complete
+   * await testdriver.wait(2000);
+   *
+   * @example
+   * // Wait after a click for state to settle
+   * await testdriver.find('submit button').click();
+   * await testdriver.wait(1000);
    */
   wait(timeout?: number, options?: object): Promise<void>;
 

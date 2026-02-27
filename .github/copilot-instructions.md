@@ -670,7 +670,7 @@ await testdriver.screenshot(1, false, true);
 3. **⚠️ SHARE THE TEST REPORT URL** - After EVERY test run, find `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...` in the output and share it with the user. This is CRITICAL - users need to view the recording to understand what happened.
 3. **Screenshots are automatic** - TestDriver captures screenshots before/after every command by default. Each screenshot filename includes the line number (e.g., `001-click-before-L42-submit-button.png`) making it easy to trace issues.
 4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. The filenames tell you which line of code triggered each screenshot.
-5. **⚠️ NEVER USE `.wait()`** - Do NOT use any `.wait()` method. Instead, use `find()` with a `timeout` option to poll for elements, or use `assert()` / `check()` to verify state. Explicit waits are flaky and slow.
+5. **Use `wait()` for simple delays** - Use `await testdriver.wait(ms)` when you need a pause (e.g., after actions, for animations). For waiting for specific elements, prefer `find()` with a `timeout` option.
 6. **Use MCP tools for development** - Build tests interactively with visual feedback
 7. **Always check `sdk.d.ts`** for method signatures and types when debugging generated tests
 8. **Look at test samples** in `node_modules/testdriverai/test` for working examples

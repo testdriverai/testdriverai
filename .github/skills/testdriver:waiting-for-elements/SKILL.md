@@ -70,3 +70,19 @@ const testdriver = TestDriver(context, {
   }
 });
 ```
+
+## Simple Delays with `wait()`
+
+For simple pauses — waiting for animations, transitions, or state changes after an action — use `wait()`:
+
+```javascript
+// Wait for an animation to complete
+await testdriver.find('menu toggle').click();
+await testdriver.wait(2000);
+
+// Wait for a page transition to settle
+await testdriver.find('next page button').click();
+await testdriver.wait(1000);
+```
+
+For waiting for specific **elements** to appear, prefer `find()` with a `timeout` option. Use `wait()` only for simple time-based pauses.

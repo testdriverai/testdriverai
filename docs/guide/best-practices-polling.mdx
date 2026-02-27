@@ -1,10 +1,30 @@
 # Best Practices: Element Polling
 
-**⚠️ CRITICAL: Never use `wait()` for waiting for elements to appear.**
+**When waiting for elements to appear, prefer `find()` with a `timeout` option over `wait()`.**
 
-## Why Avoid `wait()`?
+## When to Use `wait()` vs `find()` with Timeout
 
-Arbitrary waits with `wait()` have several problems:
+`wait()` is useful for **simple pauses** — after actions, for animations, or for state changes to settle:
+
+```javascript
+await testdriver.find('submit button').click();
+await testdriver.wait(2000); // Wait for animation to complete
+```
+
+However, **don't use `wait()` to wait for elements to appear**. For that, use `find()` with a `timeout`:
+
+```javascript
+// ✅ GOOD: Polls until the element appears (up to 30s)
+const element = await testdriver.find('success message', { timeout: 30000 });
+
+// ❌ BAD: Arbitrary wait then hope the element is there
+await testdriver.wait(5000);
+const element = await testdriver.find('success message');
+```
+
+## Why Prefer `find()` with Timeout for Element Waiting?
+
+Using arbitrary waits for element detection has problems:
 
 1. **Brittle**: Fixed timeouts may be too short (causing flaky tests) or too long (wasting time)
 2. **Slow**: You always wait the full duration, even if the element appears sooner
@@ -147,8 +167,8 @@ await waitForElement(testdriver, "Processing complete indicator", 10, 2000);
 | Pattern | Use Case |
 |---------|----------|
 | **Polling with `find()`** | ✅ Waiting for UI elements to appear or disappear |
-| **`wait()`** | ❌ NEVER use for element waiting |
+| **`wait()`** | ✅ Simple delays (animations, state changes) — ❌ Don't use for element waiting |
 | **Helper function** | ✅ Recommended for cleaner, reusable code |
 | **Conditional polling** | ✅ For optional elements (dialogs, notifications) |
 
-Remember: **If you're waiting for something to appear on screen, use `find()` in a polling loop, not `wait()`.**
+Remember: **If you're waiting for something to appear on screen, use `find()` with a `timeout` option, not `wait()`. Use `wait()` for simple pauses between actions.**

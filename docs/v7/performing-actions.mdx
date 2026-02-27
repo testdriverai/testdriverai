@@ -29,6 +29,9 @@ await testdriver.find('dropdown menu').hover();
 await testdriver.scroll('down', 500);
 await testdriver.scrollUntilText('Footer content');
 
+// Waiting
+await testdriver.wait(2000); // Wait 2 seconds for animation/state change
+
 // Extracting information from screen
 const price = await testdriver.extract('the total price');
 const orderNumber = await testdriver.extract('the order confirmation number');

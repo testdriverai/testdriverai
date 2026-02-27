@@ -38,16 +38,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.os = null; // Store OS value to send with every message
       this.sessionInstance = sessionInstance; // Store session instance to include in messages
       this.traceId = null; // Sentry trace ID for debugging
-      this.reconnectAttempts = 0;
-      this.maxReconnectAttempts = 10;
-      this.intentionalDisconnect = false;
       this.apiRoot = null;
       this.apiKey = null;
-      this.reconnectTimer = null; // Track reconnect setTimeout
-      this.reconnecting = false; // Prevent duplicate reconnection attempts
-      this.pendingTimeouts = new Map(); // Track per-message timeouts
-      this.pendingRetryQueue = []; // Queue of requests to retry after reconnection
-      this._lastConnectParams = null; // Connection params for reconnection (per-instance, not shared)
+      this._lastConnectParams = null; // Connection params for sandboxId injection
     }
 
     /**
@@ -118,7 +111,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
 
         // Set up timeout to prevent hanging requests
         const timeoutId = setTimeout(() => {
-          this.pendingTimeouts.delete(requestId);
           if (this.ps[requestId]) {
             delete this.ps[requestId];
             rejectPromise(
@@ -133,19 +125,14 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           timeoutId.unref();
         }
 
-        // Track timeout so close() can clear it
-        this.pendingTimeouts.set(requestId, timeoutId);
-
         this.ps[requestId] = {
           promise: p,
           resolve: (result) => {
             clearTimeout(timeoutId);
-            this.pendingTimeouts.delete(requestId);
             resolvePromise(result);
           },
           reject: (error) => {
             clearTimeout(timeoutId);
-            this.pendingTimeouts.delete(requestId);
             rejectPromise(error);
           },
           message,
@@ -199,16 +186,9 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
     }
 
     /**
-     * Set connection params for reconnection logic and sandboxId injection.
-     * Use this instead of directly assigning this._lastConnectParams from
-     * external code. Keeps the shape consistent and avoids stale state
-     * leaking across concurrent test runs.
+     * Set connection params for sandboxId injection.
      * @param {Object|null} params
-     * @param {string} [params.type] - 'direct' for IP-based connections
-     * @param {string} [params.ip] - IP address for direct connections
      * @param {string} [params.sandboxId] - Sandbox/instance ID
-     * @param {boolean} [params.persist] - Whether to persist the sandbox
-     * @param {number|null} [params.keepAlive] - Keep-alive TTL in ms
      */
     setConnectionParams(params) {
       this._lastConnectParams = params ? { ...params } : null;
@@ -236,163 +216,6 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         // Throw error to trigger fallback to creating new sandbox
         throw new Error(reply.errorMessage || "Failed to connect to sandbox");
       }
-    }
-
-    /**
-     * Reconnect to a direct IP-based sandbox after connection loss.
-     * Sends a 'direct' message instead of 'connect' to avoid the API
-     * treating the IP as an AWS instance ID.
-     */
-    async reconnectDirect(ip) {
-      let reply = await this.send({
-        type: "direct",
-        ip,
-      });
-
-      if (reply.success) {
-        this.instanceSocketConnected = true;
-        emitter.emit(events.sandbox.connected);
-        return reply;
-      } else {
-        throw new Error(reply.errorMessage || "Failed to reconnect to direct sandbox");
-      }
-    }
-
-    async handleConnectionLoss() {
-      if (this.intentionalDisconnect) return;
-
-      // Prevent duplicate reconnection attempts (both 'error' and 'close' fire)
-      if (this.reconnecting) return;
-      this.reconnecting = true;
-
-      // Remove listeners from the old socket to prevent "No pending promise found" warnings
-      // when late responses arrive on the dying connection
-      if (this.socket) {
-        try {
-          this.socket.removeAllListeners("message");
-        } catch (e) {
-          // Ignore errors removing listeners from closed socket
-        }
-      }
-
-      // Queue pending requests for retry after reconnection
-      // (they were sent on the old socket and will never receive responses)
-      const pendingRequestIds = Object.keys(this.ps);
-      if (pendingRequestIds.length > 0) {
-        console.log(`[Sandbox] Queuing ${pendingRequestIds.length} pending request(s) for retry after reconnection`);
-        for (const requestId of pendingRequestIds) {
-          const pending = this.ps[requestId];
-          if (pending) {
-            // Clear the timeout - we'll set a new one when we retry
-            const timeoutId = this.pendingTimeouts.get(requestId);
-            if (timeoutId) {
-              clearTimeout(timeoutId);
-              this.pendingTimeouts.delete(requestId);
-            }
-            // Queue for retry (store message and promise handlers)
-            this.pendingRetryQueue.push({
-              message: pending.message,
-              resolve: pending.resolve,
-              reject: pending.reject,
-            });
-          }
-        }
-        this.ps = {};
-      }
-
-      // Cancel any existing reconnect timer
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        const errorMsg =
-          "Unable to reconnect to TestDriver sandbox after multiple attempts. Please check your internet connection.";
-        emitter.emit(events.error.sandbox, errorMsg);
-        console.error(errorMsg);
-        
-        // Reject all queued requests since reconnection failed
-        if (this.pendingRetryQueue.length > 0) {
-          console.log(`[Sandbox] Rejecting ${this.pendingRetryQueue.length} queued request(s) - reconnection failed`);
-          for (const queued of this.pendingRetryQueue) {
-            queued.reject(new Error("Sandbox reconnection failed after multiple attempts"));
-          }
-          this.pendingRetryQueue = [];
-        }
-        
-        this.reconnecting = false;
-        return;
-      }
-
-      this.reconnectAttempts++;
-      const delay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 60000);
-
-      console.log(
-        `[Sandbox] Connection lost. Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
-      );
-
-      this.reconnectTimer = setTimeout(async () => {
-        this.reconnectTimer = null;
-        try {
-          await this.boot(this.apiRoot);
-          if (this.apiKey) {
-            await this.auth(this.apiKey);
-          }
-          // Re-establish sandbox connection on the new API instance
-          // Without this, the new API instance has no connection.desktop
-          // and all Linux operations will fail with "sandbox not initialized"
-          if (this._lastConnectParams) {
-            if (this._lastConnectParams.type === 'direct') {
-              // Direct IP connections must reconnect via 'direct' message, not 'connect'
-              const { ip, persist, keepAlive } = this._lastConnectParams;
-              console.log(`[Sandbox] Re-establishing direct connection (${ip})...`);
-              await this.reconnectDirect(ip);
-            } else {
-              const { sandboxId, persist, keepAlive } = this._lastConnectParams;
-              console.log(`[Sandbox] Re-establishing sandbox connection (${sandboxId})...`);
-              await this.connect(sandboxId, persist, keepAlive);
-            }
-          }
-          console.log("[Sandbox] Reconnected successfully.");
-          
-          // Retry queued requests
-          await this._retryQueuedRequests();
-        } catch (e) {
-          // boot's close handler will trigger handleConnectionLoss again
-        } finally {
-          this.reconnecting = false;
-        }
-      }, delay);
-      // Don't let reconnect timer prevent Node process from exiting
-      if (this.reconnectTimer.unref) {
-        this.reconnectTimer.unref();
-      }
-    }
-
-    /**
-     * Retry queued requests after successful reconnection
-     * @private
-     */
-    async _retryQueuedRequests() {
-      if (this.pendingRetryQueue.length === 0) return;
-
-      console.log(`[Sandbox] Retrying ${this.pendingRetryQueue.length} queued request(s)...`);
-      
-      // Take all queued requests and clear the queue
-      const toRetry = this.pendingRetryQueue.splice(0);
-      
-      for (const queued of toRetry) {
-        try {
-          // Re-send the message and resolve/reject the original promise
-          const result = await this.send(queued.message);
-          queued.resolve(result);
-        } catch (err) {
-          queued.reject(err);
-        }
-      }
-      
-      console.log(`[Sandbox] Finished retrying queued requests.`);
     }
 
     async boot(apiRoot) {
@@ -424,12 +247,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
         this.socket.on("close", () => {
           clearInterval(this.heartbeat);
           this.apiSocketConnected = false;
-          // Also mark instance socket as disconnected to prevent sending messages
-          // to a closed connection (e.g., when sandbox is killed due to test failure)
           this.instanceSocketConnected = false;
-          // Reset reconnecting flag so handleConnectionLoss can run for this new disconnection
-          this.reconnecting = false;
-          this.handleConnectionLoss();
           reject();
         });
 
@@ -439,14 +257,10 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           clearInterval(this.heartbeat);
           emitter.emit(events.error.sandbox, err);
           this.apiSocketConnected = false;
-          // Don't call handleConnectionLoss here - the 'close' event always fires
-          // after 'error', so let 'close' handle reconnection to avoid duplicate attempts
           reject(err);
         });
 
         this.socket.on("open", async () => {
-          this.reconnectAttempts = 0;
-          this.reconnecting = false;
           this.apiSocketConnected = true;
 
           this.heartbeat = setInterval(() => {
@@ -475,18 +289,15 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
           }
 
           if (!this.ps[message.requestId]) {
-            // This can happen during reconnection (ps was cleared) or after timeout
-            // (promise was deleted). Expected during polling loops (e.g. Chrome
-            // debugger readiness checks) where short-timeout exec calls regularly
-            // expire before the sandbox responds.  Only log in debug/verbose mode.
-            if (!this.reconnecting) {
-              const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
-              if (debugMode) {
-                console.warn(
-                  "No pending promise found for requestId:",
-                  message.requestId,
-                );
-              }
+            // Can happen after timeout (promise was deleted). Expected during
+            // polling loops where short-timeout exec calls regularly expire
+            // before the sandbox responds. Only log in debug/verbose mode.
+            const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+            if (debugMode) {
+              console.warn(
+                "No pending promise found for requestId:",
+                message.requestId,
+              );
             }
             return;
           }
@@ -514,27 +325,12 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
      * Close the WebSocket connection and clean up resources
      */
     close() {
-      this.intentionalDisconnect = true;
-      this.reconnecting = false;
-      // Cancel any pending reconnect timer
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-
       if (this.heartbeat) {
         clearInterval(this.heartbeat);
         this.heartbeat = null;
       }
 
-      // Clear all pending message timeouts to prevent timers keeping the process alive
-      for (const timeoutId of this.pendingTimeouts.values()) {
-        clearTimeout(timeoutId);
-      }
-      this.pendingTimeouts.clear();
-
       if (this.socket) {
-        // Remove all listeners before closing to prevent reconnect attempts
         this.socket.removeAllListeners();
         try {
           this.socket.close();
@@ -549,11 +345,7 @@ const createSandbox = (emitter, analytics, sessionInstance) => {
       this.authenticated = false;
       this.instance = null;
       this._lastConnectParams = null;
-
-      // Silently clear pending promises and retry queue without rejecting
-      // (rejecting causes unhandled promise rejections during cleanup)
       this.ps = {};
-      this.pendingRetryQueue = [];
     }
   }
 
