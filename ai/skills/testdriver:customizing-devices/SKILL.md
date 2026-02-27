@@ -10,7 +10,64 @@ Configure TestDriver behavior with options passed to the `TestDriver()` function
 
 ```javascript
 const testdriver = TestDriver(context, {
-  reconnect: false,
+  // === Sandbox & Connection ===
+  newSandbox: true,          // Force creation of a new sandbox (default: true)
+  reconnect: false,          // Reconnect to last sandbox (default: false)
+  keepAlive: 60000,          // Keep sandbox alive after disconnect in ms (default: 60000)
+  os: "linux",               // 'linux' | 'windows' (default: 'linux')
+  resolution: "1366x768",    // Sandbox resolution (e.g., '1920x1080')
+  ip: "203.0.113.42",        // Direct IP for self-hosted sandbox
+  sandboxAmi: "ami-1234",    // Custom AMI ID (AWS deployments)
+  sandboxInstance: "i3.metal", // EC2 instance type (AWS deployments)
+
+  // === Preview & Debugging ===
+  preview: "browser",        // "browser" | "ide" | "none" (default: "browser")
+  headless: false,           // @deprecated - use preview: "none" instead
+  debugOnFailure: false,     // Keep sandbox alive on test failure for debugging
+
+  // === Caching ===
+  cache: true,               // Enable element caching (default: true)
+  // Or use advanced caching config:
+  // cache: {
+  //   enabled: true,
+  //   thresholds: {
+  //     find: { screen: 0.05, element: 0.8 },
+  //     assert: 0.05
+  //   }
+  // },
+  cacheKey: "my-test",       // Cache key for element finding operations
+
+  // === Recording & Screenshots ===
+  dashcam: true,             // Enable/disable Dashcam video recording (default: true)
+  autoScreenshots: true,     // Capture screenshots before/after each command (default: true)
+
+  // === AI Configuration ===
+  ai: {                      // Global AI sampling configuration
+    temperature: 0,          // 0 = deterministic, higher = more creative
+    top: {
+      p: 0.9,               // Top-P nucleus sampling (0-1)
+      k: 40,                // Top-K sampling (1 = most likely, 0 = disabled)
+    },
+  },
+
+  // === Screen Change Detection ===
+  redraw: true,              // Enable redraw detection (default: true)
+  // Or use advanced redraw config:
+  // redraw: {
+  //   enabled: true,
+  //   thresholds: {
+  //     screen: 0.05,       // Pixel diff threshold (0-1), false to disable
+  //     network: false,     // Monitor network activity (default: false)
+  //   }
+  // },
+
+  // === Logging & Analytics ===
+  logging: true,             // Enable console logging output (default: true)
+  analytics: true,           // Enable analytics tracking (default: true)
+
+  // === Advanced ===
+  apiRoot: "https://...",    // API endpoint URL (for self-hosted deployments)
+  environment: {},           // Additional environment variables for the sandbox
 });
 ```
 
@@ -53,6 +110,16 @@ const testdriver = TestDriver(context, {
 <Note>
   The legacy `headless: true` option still works for backward compatibility and maps to `preview: "none"`.
 </Note>
+
+### Debug on Failure
+
+Keep the sandbox alive when a test fails so you can reconnect and debug interactively. The sandbox ID is printed to the console along with instructions for reconnecting via MCP.
+
+```javascript
+const testdriver = TestDriver(context, {
+  debugOnFailure: true,
+});
+```
 
 ### IP Target
 
@@ -105,15 +172,114 @@ steps:
   - run: TD_OS=${{ matrix.os }} vitest run
 ```
 
+### Dashcam Recording
+
+Dashcam video recording is enabled by default. Disable it to skip recording:
+
+```javascript
+const testdriver = TestDriver(context, {
+  dashcam: false,
+});
+```
+
+### Automatic Screenshots
+
+Screenshots are automatically captured before and after every command (click, type, find, assert, etc.) by default. Each screenshot filename includes the line number from your test file.
+
+Disable automatic screenshots:
+
+```javascript
+const testdriver = TestDriver(context, {
+  autoScreenshots: false,
+});
+```
+
+### Caching
+
+Element caching speeds up repeated `find()` and `assert()` calls. Enabled by default.
+
+```javascript
+// Disable caching
+const testdriver = TestDriver(context, {
+  cache: false,
+});
+
+// Advanced: custom thresholds
+const testdriver = TestDriver(context, {
+  cache: {
+    enabled: true,
+    thresholds: {
+      find: { screen: 0.05, element: 0.8 },
+      assert: 0.05,
+    },
+  },
+  cacheKey: "my-test",
+});
+```
+
+### Redraw Detection
+
+Redraw detection waits for the screen to stabilize before taking actions. Enabled by default.
+
+```javascript
+// Disable redraw detection
+const testdriver = TestDriver(context, {
+  redraw: false,
+});
+
+// Advanced: custom thresholds with network monitoring
+const testdriver = TestDriver(context, {
+  redraw: {
+    enabled: true,
+    thresholds: {
+      screen: 0.05,
+      network: true,
+    },
+  },
+});
+```
+
+### AI Configuration
+
+Control how the AI model generates responses for `find()` verification and `assert()` calls:
+
+```javascript
+const testdriver = TestDriver(context, {
+  ai: {
+    temperature: 0,       // 0 = deterministic
+    top: { p: 0.9, k: 40 },
+  },
+});
+```
+
+### Environment Variables
+
+Pass additional environment variables to the sandbox:
+
+```javascript
+const testdriver = TestDriver(context, {
+  environment: {
+    MY_VAR: "value",
+    DEBUG: "true",
+  },
+});
+```
+
 ## Keepalive
 
-By default, sandboxes terminate immediately when the test finishes. Set this value to keep the sandbox alive for reconnection.
-
-The `keepAlive` param enables you to keep the sandbox running after the test completes for debugging or reconnection.  This will allow you to use the debugger to inspect the state of the device after the test has finished.
+By default, sandboxes stay alive for 60 seconds after disconnect. Customize this with `keepAlive`:
 
 ```javascript
 const testdriver = TestDriver(context, {
   keepAlive: 300000,  // Keep sandbox alive for 5 minutes after test
+});
+```
+
+Set to `0` to terminate immediately:
+
+```javascript
+const testdriver = TestDriver(context, {
+  keepAlive: 0,  // Terminate sandbox immediately on disconnect
 });
 ```
 

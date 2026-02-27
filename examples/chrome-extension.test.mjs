@@ -60,6 +60,8 @@ describe("Chrome Extension Test", () => {
     const helloExtension = await testdriver.find("Hello Extensions extension in the extensions dropdown");
     await helloExtension.click();
 
+    await testdriver.wait(2000); // wait for the popup to open
+
     // Verify the extension popup shows "Hello Extensions" text
     const popupResult = await testdriver.assert("a popup shows with the text 'Hello Extensions'");
     expect(popupResult).toBeTruthy();

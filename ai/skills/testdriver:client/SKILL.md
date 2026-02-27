@@ -24,7 +24,7 @@ const testdriver = new TestDriver(apiKey, options)
   Configuration options for the client
   
   <Expandable title="properties">
-    <ParamField path="os" type="string" default="windows">
+    <ParamField path="os" type="string" default="linux">
       Operating system for the sandbox: `'windows'` or `'linux'`
     </ParamField>
     
@@ -32,7 +32,7 @@ const testdriver = new TestDriver(apiKey, options)
       Screen resolution for the sandbox (e.g., `'1920x1080'`, `'1366x768'`)
     </ParamField>
     
-    <ParamField path="apiRoot" type="string" default="https://testdriver-api.onrender.com">
+    <ParamField path="apiRoot" type="string">
       API endpoint URL (typically only changed for self-hosted deployments)
     </ParamField>
     
@@ -46,6 +46,111 @@ const testdriver = new TestDriver(apiKey, options)
     
     <ParamField path="autoScreenshots" type="boolean" default="true">
       Automatically capture screenshots before and after each command. Screenshots are saved to `.testdriver/screenshots/<test>/` with descriptive filenames that include the line number and action name. Format: `<seq>-<action>-<phase>-L<line>-<description>.png`
+    </ParamField>
+    
+    <ParamField path="newSandbox" type="boolean" default="true">
+      Force creation of a new sandbox instead of reusing an existing one
+    </ParamField>
+    
+    <ParamField path="reconnect" type="boolean" default="false">
+      Reconnect to the last used sandbox instead of creating a new one. When `true`, provision methods (`chrome`, `vscode`, `installer`, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists.
+    </ParamField>
+    
+    <ParamField path="keepAlive" type="number" default="60000">
+      Keep sandbox alive for the specified number of milliseconds after disconnect. Set to `0` to terminate immediately on disconnect. Useful for debugging or reconnecting to the same sandbox.
+    </ParamField>
+    
+    <ParamField path="preview" type="string" default="browser">
+      Preview mode for live test visualization:
+      - `"browser"` — Opens debugger in default browser (default)
+      - `"ide"` — Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension)
+      - `"none"` — Headless mode, no visual preview
+    </ParamField>
+    
+    <ParamField path="headless" type="boolean" default="false">
+      **Deprecated**: Use `preview: "none"` instead. Run in headless mode without opening the debugger.
+    </ParamField>
+    
+    <ParamField path="debugOnFailure" type="boolean" default="false">
+      Keep the sandbox alive when a test fails so you can reconnect and debug interactively. The sandbox ID is printed to the console.
+    </ParamField>
+    
+    <ParamField path="ip" type="string">
+      Direct IP address to connect to a running sandbox instance (for self-hosted deployments)
+    </ParamField>
+    
+    <ParamField path="sandboxAmi" type="string">
+      Custom AMI ID for the sandbox instance (AWS deployments, e.g., `'ami-1234'`)
+    </ParamField>
+    
+    <ParamField path="sandboxInstance" type="string">
+      EC2 instance type for the sandbox (AWS deployments, e.g., `'i3.metal'`)
+    </ParamField>
+    
+    <ParamField path="cache" type="boolean | object" default="true">
+      Enable or disable element caching, or provide advanced threshold configuration.
+      
+      <Expandable title="advanced config">
+        <ParamField path="enabled" type="boolean" default="true">
+          Enable or disable caching
+        </ParamField>
+        
+        <ParamField path="thresholds" type="object">
+          Fine-tune cache matching
+          
+          <Expandable title="properties">
+            <ParamField path="find" type="object">
+              Thresholds for `find()` operations
+              
+              <Expandable title="properties">
+                <ParamField path="screen" type="number" default="0.05">
+                  Pixel diff threshold for screen comparison (0-1). `0.05` = 5% diff allowed.
+                </ParamField>
+                
+                <ParamField path="element" type="number" default="0.8">
+                  OpenCV template match threshold for element matching (0-1). `0.8` = 80% correlation.
+                </ParamField>
+              </Expandable>
+            </ParamField>
+            
+            <ParamField path="assert" type="number" default="0.05">
+              Pixel diff threshold for `assert()` operations (0-1). `0.05` = 5% diff allowed.
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    
+    <ParamField path="cacheKey" type="string">
+      Cache key for element finding operations. If provided, enables caching tied to this key.
+    </ParamField>
+    
+    <ParamField path="dashcam" type="boolean" default="true">
+      Enable or disable Dashcam video recording
+    </ParamField>
+    
+    <ParamField path="redraw" type="boolean | object" default="true">
+      Enable or disable screen-change (redraw) detection, or provide advanced configuration.
+      
+      <Expandable title="advanced config">
+        <ParamField path="enabled" type="boolean" default="true">
+          Enable or disable redraw detection
+        </ParamField>
+        
+        <ParamField path="thresholds" type="object">
+          Threshold configuration
+          
+          <Expandable title="properties">
+            <ParamField path="screen" type="number | false" default="0.05">
+              Pixel diff threshold (0-1). Set to `false` to disable screen redraw detection.
+            </ParamField>
+            
+            <ParamField path="network" type="boolean" default="false">
+              Enable or disable network activity monitoring
+            </ParamField>
+          </Expandable>
+        </ParamField>
+      </Expandable>
     </ParamField>
     
     <ParamField path="environment" type="object">

@@ -84,6 +84,13 @@ function createDebuggerServer(config = {}) {
         return;
       }
       const actualPort = address.port;
+      
+      // Don't let the debugger server prevent Node process from exiting
+      // This ensures tests can exit even if debugger cleanup fails
+      if (server.unref) {
+        server.unref();
+      }
+      
       resolve({ port: actualPort, server, wss });
     });
 
@@ -110,6 +117,9 @@ function broadcastEvent(event, data) {
 
 async function startDebugger(config = {}, emitter) {
   try {
+    // Register exit handler to ensure cleanup on process exit
+    registerExitHandler();
+    
     const { port } = await createDebuggerServer(config);
     const url = `http://localhost:${port}`;
 
@@ -188,6 +198,29 @@ function forceStopDebugger() {
 // Keep stopDebugger as alias for forceStopDebugger for backward compatibility
 function stopDebugger() {
   forceStopDebugger();
+}
+
+// Ensure debugger server is cleaned up on process exit
+// This prevents zombie processes when tests crash or cleanup fails
+let exitHandlerRegistered = false;
+function registerExitHandler() {
+  if (exitHandlerRegistered) return;
+  exitHandlerRegistered = true;
+  
+  process.on("exit", () => {
+    if (server || wss) {
+      // Synchronous cleanup - can't await in exit handler
+      if (wss) {
+        try { wss.close(); } catch (e) { /* ignore */ }
+        wss = null;
+      }
+      if (server) {
+        try { server.close(); } catch (e) { /* ignore */ }
+        server = null;
+      }
+      clients.clear();
+    }
+  });
 }
 
 module.exports = {

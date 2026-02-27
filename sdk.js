@@ -436,8 +436,10 @@ class Element {
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, options) {
-    // Handle timeout/polling option
-    const timeout = typeof options === "object" ? options?.timeout : null;
+    // Handle timeout/polling option (default: 30s)
+    const timeout = typeof options === "object" && options?.timeout !== undefined
+      ? options.timeout
+      : 10000;
     if (timeout && timeout > 0) {
       return this._findWithTimeout(newDescription, options, timeout);
     }
@@ -666,7 +668,7 @@ class Element {
 
     // Create options without timeout to avoid infinite recursion
     const findOptions = typeof options === "object" ? { ...options } : {};
-    delete findOptions.timeout;
+    findOptions.timeout = 0;
 
     let attempts = 0;
     while (Date.now() - startTime < timeout) {
@@ -1729,6 +1731,8 @@ class TestDriverSDK {
    */
   async _waitForChromeDebuggerReady(timeoutMs = 60000) {
     const shell = this.os === "windows" ? "pwsh" : "sh";
+    // PowerShell: Use async connect with 2-second timeout to match Linux curl behavior.
+    // TcpClient.Connect() is synchronous and can hang indefinitely, causing exec timeouts.
     const portCheckCmd = this.os === "windows"
       ? `$tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('127.0.0.1', 9222); $tcp.Close(); echo 'open'`
       : `curl -s -o /dev/null --connect-timeout 2 http://localhost:9222 2>/dev/null && echo 'open' || echo 'closed'`;
