@@ -436,8 +436,10 @@ class Element {
    * @returns {Promise<Element>} This element instance
    */
   async find(newDescription, options) {
-    // Handle timeout/polling option
-    const timeout = typeof options === "object" ? options?.timeout : null;
+    // Handle timeout/polling option (default: 30s)
+    const timeout = typeof options === "object" && options?.timeout !== undefined
+      ? options.timeout
+      : 10000;
     if (timeout && timeout > 0) {
       return this._findWithTimeout(newDescription, options, timeout);
     }

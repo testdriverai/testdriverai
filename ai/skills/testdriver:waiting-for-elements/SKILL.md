@@ -6,10 +6,16 @@ description: Handle async operations and prevent flaky tests
 
 ## Waiting for Elements
 
-Use the `timeout` option with `find()` to wait for elements that appear after async operations:
+By default, `find()` automatically polls for up to 10 seconds, retrying every 5 seconds until the element is found. This means most elements that appear after short async operations will be found without any extra configuration.
+
+For longer operations, increase the `timeout`:
 
 ```javascript
-// Wait up to 30 seconds for element to appear (polls every 5 seconds)
+// Default behavior - polls for up to 10 seconds automatically
+const element = await testdriver.find('Loading complete indicator');
+await element.click();
+
+// Wait up to 30 seconds for slower operations
 const element = await testdriver.find('Loading complete indicator', { timeout: 30000 });
 await element.click();
 
@@ -17,8 +23,8 @@ await element.click();
 await testdriver.find('submit button').click();
 await testdriver.find('success message', { timeout: 15000 });
 
-// Short timeout for quick checks
-const toast = await testdriver.find('notification toast', { timeout: 5000 });
+// Disable polling for instant checks
+const toast = await testdriver.find('notification toast', { timeout: 0 });
 ```
 
 ## Flake Prevention

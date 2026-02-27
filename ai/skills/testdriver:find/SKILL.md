@@ -33,8 +33,8 @@ const element = await testdriver.find(description, options)
       Similarity threshold (0-1) for cache matching. Lower values require more similarity. Set to -1 to disable cache.
     </ParamField>
     
-    <ParamField path="timeout" type="number">
-      Maximum time in milliseconds to poll for the element. Retries every 5 seconds until found or timeout expires.
+    <ParamField path="timeout" type="number" default={10000}>
+      Maximum time in milliseconds to poll for the element. Retries every 5 seconds until found or timeout expires. Defaults to `10000` (10 seconds). Set to `0` to disable polling and make a single attempt.
     </ParamField>
     
     <ParamField path="confidence" type="number">
@@ -309,19 +309,28 @@ const el = await testdriver.find('the blue submit button', { type: 'any' });
 </Tip>
 ## Polling for Dynamic Elements
 
-For elements that may not be immediately visible, use the `timeout` option to automatically poll:
+By default, `find()` polls for up to 10 seconds (retrying every 5 seconds) until the element is found. You can customize this with the `timeout` option:
 
 ```javascript
-// Poll for element (retries every 5 seconds until found or timeout)
+// Uses default 10s timeout - polls every 5 seconds
+const element = await testdriver.find('login button');
+await element.click();
+
+// Custom timeout - wait up to 30 seconds
 const element = await testdriver.find('login button', { timeout: 30000 });
 await element.click();
+
+// Disable polling - single attempt only
+const element = await testdriver.find('login button', { timeout: 0 });
 ```
 
 The `timeout` option:
+- Defaults to `10000` (10 seconds)
 - Retries finding the element every 5 seconds
 - Stops when the element is found or the timeout expires
 - Logs progress during polling
 - Returns the element (check `element.found()` if not throwing on failure)
+- Set to `0` to disable polling and make a single attempt
 
 ## Zoom Mode for Crowded UIs
 
