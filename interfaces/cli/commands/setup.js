@@ -4,7 +4,6 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const chalk = require("chalk");
-const { execSync } = require("child_process");
 const readline = require("readline");
 
 const PACKAGE_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -239,15 +238,15 @@ class SetupCommand extends Command {
     );
 
     if (apiKey && apiKey.trim()) {
-      this.addToShellProfile("TD_API_KEY", apiKey.trim());
+      this.saveApiKeyToEnv(apiKey.trim());
       process.env.TD_API_KEY = apiKey.trim();
     } else {
       console.log(
         chalk.yellow(
-          "\n  No API key entered. You can set it later:\n",
+          "\n  No API key entered. You can set it later in .env:\n",
         ),
       );
-      console.log(chalk.gray('     export TD_API_KEY="your_api_key"\n'));
+      console.log(chalk.gray('     TD_API_KEY=your_api_key\n'));
     }
   }
 
@@ -311,55 +310,27 @@ class SetupCommand extends Command {
   }
 
   /**
-   * Add an environment variable export to the user's shell profile
+   * Save API key to project .env file
    */
-  addToShellProfile(key, value) {
-    if (process.platform === "win32") {
-      try {
-        execSync(`setx ${key} "${value}"`, { stdio: "ignore" });
-        console.log(
-          chalk.green(`\n  Set ${key} as user environment variable\n`),
-        );
-      } catch (error) {
-        console.log(
-          chalk.yellow(`\n  Could not set ${key} via setx. You can set it manually:\n`),
-        );
-        console.log(chalk.gray(`     setx ${key} "your_api_key"\n`));
-      }
-      return;
-    }
+  saveApiKeyToEnv(apiKey) {
+    const envPath = path.join(process.cwd(), ".env");
+    let envContent = "";
 
-    const shell = process.env.SHELL || "/bin/bash";
-    const home = os.homedir();
-    let profilePath;
-
-    if (shell.includes("zsh")) {
-      profilePath = path.join(home, ".zshrc");
-    } else {
-      profilePath = path.join(home, ".bashrc");
-    }
-
-    const exportLine = `export ${key}="${value}"`;
-
-    if (fs.existsSync(profilePath)) {
-      const content = fs.readFileSync(profilePath, "utf8");
-      if (content.includes(`export ${key}=`)) {
-        const updated = content.replace(
-          new RegExp(`^export ${key}=.*$`, "m"),
-          exportLine,
-        );
-        fs.writeFileSync(profilePath, updated);
-        console.log(
-          chalk.green(`\n  Updated ${key} in ${profilePath}\n`),
-        );
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, "utf8");
+      if (envContent.includes("TD_API_KEY=")) {
+        // Replace existing line
+        const updated = envContent.replace(/^TD_API_KEY=.*$/m, `TD_API_KEY=${apiKey}`);
+        fs.writeFileSync(envPath, updated);
+        console.log(chalk.green(`\n  ✓ Updated TD_API_KEY in .env\n`));
         return;
       }
     }
 
-    fs.appendFileSync(profilePath, `\n${exportLine}\n`);
-    console.log(
-      chalk.green(`\n  Added ${key} to ${profilePath}\n`),
-    );
+    // Append to .env
+    const newContent = envContent.trim() + `\nTD_API_KEY=${apiKey}\n`;
+    fs.writeFileSync(envPath, newContent);
+    console.log(chalk.green(`\n  ✓ Saved TD_API_KEY to .env\n`));
   }
 
   printNextSteps() {

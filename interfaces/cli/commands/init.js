@@ -5,8 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const chalk = require("chalk");
 const readline = require("readline");
-const os = require("os");
-const { execSync } = require("child_process");
+
 
 // Load .env file for CLI usage (TD_API_ROOT, etc.)
 require("dotenv").config();
@@ -52,11 +51,6 @@ class InitCommand extends BaseCommand {
     // Print errors if any
     for (const err of result.errors) {
       console.log(chalk.yellow(`  ⚠️  ${err}`));
-    }
-
-    // Handle shell profile for API key (CLI-specific feature)
-    if (apiKey && apiKey.trim()) {
-      this.addToShellProfile("TD_API_KEY", apiKey.trim());
     }
 
     if (result.success) {
@@ -312,72 +306,6 @@ class InitCommand extends BaseCommand {
 
       stdin.on("data", onData);
     });
-  }
-
-  /**
-   * Add an environment variable export to the user's shell profile
-   */
-  addToShellProfile(key, value) {
-    if (process.platform === "win32") {
-      // On Windows, set a persistent user environment variable via setx
-      try {
-        execSync(`setx ${key} "${value}"`, { stdio: "ignore" });
-        console.log(
-          chalk.green(`  ✓ Set ${key} as user environment variable`),
-        );
-        console.log(
-          chalk.gray(`    Restart your terminal for changes to take effect\n`),
-        );
-      } catch (error) {
-        console.log(
-          chalk.yellow(`  ⚠️  Could not set ${key} via setx. You can set it manually:\n`),
-        );
-        console.log(chalk.gray(`     setx ${key} "your_api_key"\n`));
-      }
-      return;
-    }
-
-    // Unix: append export to shell profile
-    const shell = process.env.SHELL || "/bin/bash";
-    const home = os.homedir();
-    let profilePath;
-
-    if (shell.includes("zsh")) {
-      profilePath = path.join(home, ".zshrc");
-    } else {
-      profilePath = path.join(home, ".bashrc");
-    }
-
-    const exportLine = `export ${key}="${value}"`;
-
-    // Check if already present
-    if (fs.existsSync(profilePath)) {
-      const content = fs.readFileSync(profilePath, "utf8");
-      if (content.includes(`export ${key}=`)) {
-        // Replace existing line
-        const updated = content.replace(
-          new RegExp(`^export ${key}=.*$`, "m"),
-          exportLine,
-        );
-        fs.writeFileSync(profilePath, updated);
-        console.log(
-          chalk.green(`  ✓ Updated ${key} in ${profilePath}`),
-        );
-        console.log(
-          chalk.gray(`    Run: source ${profilePath}  (or open a new terminal)\n`),
-        );
-        return;
-      }
-    }
-
-    // Append to profile
-    fs.appendFileSync(profilePath, `\n${exportLine}\n`);
-    console.log(
-      chalk.green(`  ✓ Added ${key} to ${profilePath}`),
-    );
-    console.log(
-      chalk.gray(`    Run: source ${profilePath}  (or open a new terminal)\n`),
-    );
   }
 
   /**

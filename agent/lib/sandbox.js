@@ -170,6 +170,29 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           return;
         }
 
+        // Streaming exec output chunks — emit as events, don't resolve the pending promise
+        if (message.type === "exec.output") {
+          emitter.emit(events.exec.output, { chunk: message.chunk, requestId: message.requestId });
+          return;
+        }
+
+        // Runner debug logs — only received when debug mode is enabled
+        if (message.type === "runner.log") {
+          var logLevel = message.level || "info";
+          var logMsg = "[runner] " + (message.message || "");
+          if (logLevel === "error") {
+            logger.error(logMsg);
+          } else {
+            logger.log(logMsg);
+          }
+          emitter.emit(events.runner.log, {
+            level: logLevel,
+            message: message.message,
+            timestamp: message.timestamp,
+          });
+          return;
+        }
+
         if (!message.requestId || !self.ps[message.requestId]) {
           var debugMode =
             process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
@@ -285,10 +308,40 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       if (reply.ably && reply.ably.token) {
         await this._initAbly(reply.ably.token, reply.ably.channels);
         this.instanceSocketConnected = true;
+
+        // Tell the runner to enable debug log forwarding if debug mode is on
+        var debugMode =
+          process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+        if (debugMode && this._ctrlChannel) {
+          this._ctrlChannel.publish("control", {
+            type: "debug",
+            enabled: true,
+          });
+        }
       }
 
       if (message.type === "create") {
         const runnerIp = reply.runner && reply.runner.ip;
+        const noVncPort = reply.runner && reply.runner.noVncPort;
+        const runnerVncUrl = reply.runner && reply.runner.vncUrl;
+
+        logger.log(`Runner claimed — ip=${runnerIp || 'none'}, os=${reply.runner?.os || 'unknown'}, noVncPort=${noVncPort || 'not reported'}, vncUrl=${runnerVncUrl || 'not reported'}`);
+
+        // Prefer the full vncUrl reported by the runner (infrastructure-agnostic).
+        // Fall back to constructing from ip + noVncPort for older runners.
+        let url;
+        if (runnerVncUrl) {
+          url = runnerVncUrl;
+          logger.log(`Using runner-provided vncUrl: ${url}`);
+        } else if (runnerIp && noVncPort) {
+          url = `http://${runnerIp}:${noVncPort}/vnc_lite.html`;
+          logger.log(`noVNC URL constructed from runner ip+port: ${url}`);
+        } else if (runnerIp) {
+          url = "http://" + runnerIp;
+          logger.warn(`Runner did not report noVNC port — using bare IP: ${url}`);
+        } else {
+          logger.warn('Runner has no IP — preview will not be available');
+        }
         return {
           success: true,
           sandbox: {
@@ -296,7 +349,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             instanceId: reply.sandboxId,
             os: reply.runner?.os || body.os,
             ip: runnerIp,
-            url: runnerIp ? "http://" + runnerIp : undefined,
+            url: url,
+            vncPort: noVncPort || undefined,
             runner: reply.runner,
           },
         };
@@ -497,21 +551,30 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this.instanceSocketConnected = true;
       emitter.emit(events.sandbox.connected);
 
+      // Prefer runner-provided vncUrl, fall back to ip+port, then bare IP
+      const reconnectRunner = reply.runner || {};
+      const reconnectVncUrl = reconnectRunner.vncUrl;
+      const reconnectNoVncPort = reconnectRunner.noVncPort;
+      const reconnectIp = reconnectRunner.ip;
+      let reconnectUrl;
+      if (reconnectVncUrl) {
+        reconnectUrl = reconnectVncUrl;
+      } else if (reconnectIp && reconnectNoVncPort) {
+        reconnectUrl = `http://${reconnectIp}:${reconnectNoVncPort}/vnc_lite.html`;
+      } else if (reconnectIp) {
+        reconnectUrl = "http://" + reconnectIp;
+      }
+
       return {
         success: true,
-        url:
-          reply.runner && reply.runner.ip
-            ? "http://" + reply.runner.ip
-            : undefined,
+        url: reconnectUrl,
         sandbox: {
           sandboxId: reply.sandboxId,
           instanceId: reply.sandboxId,
-          os: reply.runner ? reply.runner.os : undefined,
-          ip: reply.runner ? reply.runner.ip : undefined,
-          url:
-            reply.runner && reply.runner.ip
-              ? "http://" + reply.runner.ip
-              : undefined,
+          os: reconnectRunner.os || undefined,
+          ip: reconnectIp || undefined,
+          url: reconnectUrl,
+          vncPort: reconnectNoVncPort || undefined,
         },
       };
     }

@@ -277,6 +277,21 @@ export interface TestDriverOptions {
   cacheKey?: string;
   /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
   reconnect?: boolean;
+  /**
+   * Runner claim configuration. Controls how the SDK polls for an available runner.
+   * @example { claim: { timeout: 600000, interval: 5000 } }
+   */
+  claim?: {
+    /**
+     * Maximum time in milliseconds to wait for a runner to become available (default: 300000 = 5 minutes).
+     * Set to 0 to fail immediately when no runners are available.
+     */
+    timeout?: number;
+    /**
+     * Interval in milliseconds between polls when waiting for a runner (default: 10000 = 10 seconds).
+     */
+    interval?: number;
+  };
   /** Enable/disable Dashcam video recording (default: true) */
   dashcam?: boolean;
   /**
@@ -1443,7 +1458,14 @@ export default class TestDriverSDK {
   setLogging(enabled: boolean): void;
 
   /**
-   * Get the event emitter for custom event handling
+   * Get the event emitter for custom event handling.
+   * 
+   * Available events:
+   * - `"runner:log"` — Debug log messages from the runner (level, message, timestamp)
+   * - `"exec:output"` — Streaming stdout chunks from exec commands (requestId, chunk, timestamp)
+   * - `"log:log"` / `"log:warn"` / `"log:debug"` / `"log:narration"` — SDK log messages
+   * - `"sandbox:connected"` / `"sandbox:progress"` / `"sandbox:file"` — Sandbox events
+   * - `"error:fatal"` / `"error:sandbox"` — Error events
    */
   getEmitter(): any; // EventEmitter2 type
 

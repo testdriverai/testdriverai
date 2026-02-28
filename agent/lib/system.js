@@ -24,7 +24,20 @@ const createSystem = (emitter, sandbox, config) => {
         throw new Error(`Failed to download screenshot from S3: ${response.status}`);
       }
       const buffer = await response.arrayBuffer();
-      fs.writeFileSync(options.filename, Buffer.from(buffer));
+      const buf = Buffer.from(buffer);
+      fs.writeFileSync(options.filename, buf);
+
+      // Debug: save raw S3 screenshot and log path
+      try {
+        const debugDir = path.join(os.tmpdir(), 'testdriver-screenshots', 'sdk');
+        fs.mkdirSync(debugDir, { recursive: true });
+        const debugPath = path.join(debugDir, `s3-raw-${Date.now()}.png`);
+        fs.writeFileSync(debugPath, buf);
+        console.log(`[system] DEBUG: Raw S3 screenshot saved: ${debugPath} (${buf.length} bytes)`);
+      } catch (e) {
+        console.warn(`[system] DEBUG: Failed to save raw screenshot: ${e.message}`);
+      }
+
       return { filename: options.filename };
     }
     
@@ -78,11 +91,14 @@ const createSystem = (emitter, sandbox, config) => {
         throw new Error(`Screenshot appears corrupted: got ${image.getWidth()}x${image.getHeight()} pixels`);
       }
 
+      const origWidth = image.getWidth();
+      const origHeight = image.getHeight();
+      const targetWidth = Math.floor(config.TD_RESOLUTION[0] * scale);
+      const targetHeight = Math.floor(config.TD_RESOLUTION[1] * scale);
+      console.log(`[system] Screenshot from runner: ${origWidth}x${origHeight}, resizing to ${targetWidth}x${targetHeight} (TD_RESOLUTION=${config.TD_RESOLUTION}, scale=${scale})`);
+
       // Resize the image
-      image.resize(
-        Math.floor(config.TD_RESOLUTION[0] * scale),
-        Math.floor(config.TD_RESOLUTION[1] * scale),
-      );
+      image.resize(targetWidth, targetHeight);
 
       if (mouse) {
         // Only get mouse position when needed to avoid unnecessary websocket calls
@@ -95,6 +111,17 @@ const createSystem = (emitter, sandbox, config) => {
       }
 
       await image.writeAsync(step2);
+
+      // Debug: save resized screenshot and log path
+      try {
+        const debugDir = path.join(os.tmpdir(), 'testdriver-screenshots', 'sdk');
+        fs.mkdirSync(debugDir, { recursive: true });
+        const debugPath = path.join(debugDir, `resized-${Date.now()}.png`);
+        fs.copyFileSync(step2, debugPath);
+        console.log(`[system] DEBUG: Resized screenshot saved: ${debugPath} (${origWidth}x${origHeight} -> ${targetWidth}x${targetHeight})`);
+      } catch (e) {
+        console.warn(`[system] DEBUG: Failed to save resized screenshot: ${e.message}`);
+      }
 
       emitter.emit(events.screenCapture.end, {
         scale,

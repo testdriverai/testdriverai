@@ -566,6 +566,42 @@ class SDKLogFormatter {
     return parts.join(" ");
   }
 
+  /**
+   * Format an extracting message (when extract starts) 🧠
+   * @param {string} description - What to extract
+   * @returns {string} Formatted message
+   */
+  formatExtracting(description) {
+    return this.formatFindingStyle("extract", "Extracting", description);
+  }
+
+  /**
+   * Format the extract result as a subtask line
+   * @param {string} data - The extracted data
+   * @param {number} durationMs - Duration in milliseconds
+   * @returns {string} Formatted result line
+   */
+  formatExtractResult(data, durationMs) {
+    const parts = [];
+    this.addTimestamp(parts);
+    parts.push(this.getResultPrefix());
+    parts.push(chalk.green("extracted"));
+
+    // Show a preview of the extracted data (first line, truncated)
+    if (data) {
+      const preview = String(data).trim().split('\n')[0];
+      const truncated = preview.length > 80 ? preview.substring(0, 77) + '...' : preview;
+      parts.push(chalk.dim(truncated));
+    }
+
+    // Add duration
+    if (durationMs) {
+      parts.push(this.formatDurationColored(durationMs, "action"));
+    }
+
+    return parts.join(" ");
+  }
+
   // Action color mapping (shared between formatAction and formatActionComplete)
   static ACTION_COLORS = {
     click: chalk.bold.cyan,

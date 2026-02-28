@@ -15,14 +15,15 @@ import { getDefaults } from "./config.mjs";
 async function performLogin(client, username = "standard_user") {
   await client.focusApplication("Google Chrome");
   const password = await client.extract("the password");
-  const usernameField = await client.find(
-    "username input",
-  );
+
+  console.log('password response', password)
+
+  const usernameField = await client.find("username input");
   await usernameField.click();
   await client.type(username);
-  await client.pressKeys(["tab"]);
+  const passwordField = await client.find("password input");
+  await passwordField.click();
   await client.type(password, { secret: true });
-  await client.pressKeys(["tab"]);
   await client.pressKeys(["enter"]);
 }
 
@@ -30,8 +31,9 @@ describe("Hover Image Test", () => {
   it("should click on shopping cart icon and verify empty cart", async (context) => {
     const testdriver = TestDriver(context, { 
       ...getDefaults(context),
-      preview: "ide",
+      preview: "web",
       dashcam: false,
+      autoScreenshot: true
     });
     
     // provision.chrome() automatically calls ready() and starts dashcam

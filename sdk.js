@@ -1493,6 +1493,15 @@ class TestDriverSDK {
     this.reconnect =
       options.reconnect !== undefined ? options.reconnect : false;
 
+    // Runner claim configuration
+    // claim.timeout: max time (ms) to wait for a runner to become available (default: 300000 = 5 min)
+    // claim.interval: time (ms) between polls when waiting for a runner (default: 10000 = 10s)
+    const claimOpts = typeof options.claim === 'object' ? options.claim : {};
+    this.claim = {
+      timeout: claimOpts.timeout !== undefined ? claimOpts.timeout : 300000,
+      interval: claimOpts.interval !== undefined ? claimOpts.interval : 10000,
+    };
+
     // Store dashcam preference (default: true)
     this.dashcamEnabled = options.dashcam !== false;
 
@@ -1753,7 +1762,8 @@ class TestDriverSDK {
     let portReady = false;
     while (Date.now() < deadline) {
       try {
-        const result = await execDirect(shell, portCheckCmd, 10000, true);
+        const result = await execDirect(shell, portCheckCmd, 10000);
+        console.log(result)
         if (result && result.includes("open")) {
           portReady = true;
           break;
@@ -1811,7 +1821,7 @@ class TestDriverSDK {
             ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
             : `mkdir -p "${defaultProfileDir}"`;
 
-        await this.exec(shell, createDirCmd, 60000, true);
+        await this.exec(shell, createDirCmd, 60000);
 
         // Write Chrome preferences
         const chromePrefs = {
@@ -1850,7 +1860,7 @@ class TestDriverSDK {
               `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
             : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
 
-        await this.exec(shell, writePrefCmd, 60000, true);
+        await this.exec(shell, writePrefCmd, 60000);
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -1884,6 +1894,7 @@ class TestDriverSDK {
             30000,
           );
         } else {
+          chromeArgs.push(`--no-sandbox`); // Open specified URL on launch for Linux
           const argsString = chromeArgs.join(" ");
           await this.exec(
             shell,
@@ -1960,7 +1971,7 @@ class TestDriverSDK {
             this.os === "windows"
               ? `New-Item -ItemType Directory -Path "${extensionDir}" -Force | Out-Null`
               : `mkdir -p "${extensionDir}"`;
-          await this.exec(shell, mkdirCmd, 60000, true);
+          await this.exec(shell, mkdirCmd, 60000);
 
           // Download CRX from Chrome Web Store
           // The CRX download URL format for Chrome Web Store
@@ -1975,14 +1986,12 @@ class TestDriverSDK {
               "pwsh",
               `Invoke-WebRequest -Uri "${crxUrl}" -OutFile "${crxPath}"`,
               60000,
-              true,
             );
           } else {
             await this.exec(
               "sh",
               `curl -L -o "${crxPath}" "${crxUrl}"`,
               60000,
-              true,
             );
           }
 
@@ -2009,7 +2018,6 @@ $zipPath = "${extensionDir}\\extension.zip"
 Expand-Archive -Path $zipPath -DestinationPath "${extensionDir}\\unpacked" -Force
               `,
               30000,
-              true,
             );
             extensionPath = `${extensionDir}\\unpacked`;
           } else {
@@ -2048,7 +2056,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 "
               `,
               30000,
-              true,
             );
             extensionPath = `${extensionDir}/unpacked`;
           }
@@ -2075,7 +2082,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
             : `mkdir -p "${defaultProfileDir}"`;
 
-        await this.exec(shell, createDirCmd, 60000, true);
+        await this.exec(shell, createDirCmd, 60000);
 
         // Write Chrome preferences
         const chromePrefs = {
@@ -2114,7 +2121,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
               `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
             : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
 
-        await this.exec(shell, writePrefCmd, 60000, true);
+        await this.exec(shell, writePrefCmd, 60000);
 
         // Build Chrome launch command
         const chromeArgs = [];
@@ -2153,6 +2160,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             30000,
           );
         } else {
+          chromeArgs.push(`--no-sandbox`); // Open specified URL on launch for Linux
           const argsString = chromeArgs.join(" ");
           await this.exec(
             shell,
@@ -2190,7 +2198,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             shell,
             `code --install-extension ${extension} --force`,
             120000,
-            true,
           );
           console.log(
             `[provision.vscode] ✅ Extension installed: ${extension}`,
@@ -2298,7 +2305,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             Write-Output $finalPath
           `;
 
-          const result = await this.exec(shell, downloadScript, 300000, true);
+          const result = await this.exec(shell, downloadScript, 300000);
           actualFilePath = result ? result.trim() : null;
 
           if (!actualFilePath) {
@@ -2312,7 +2319,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
             curl -L -J -O -w "%{filename_effective}" "${url}" 2>/dev/null || echo "${tempMarker}"
           `;
 
-          const result = await this.exec(shell, downloadScript, 300000, true);
+          const result = await this.exec(shell, downloadScript, 300000);
           const downloadedFile = result ? result.trim() : null;
 
           if (downloadedFile && downloadedFile !== tempMarker) {
@@ -2325,7 +2332,6 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
               shell,
               `curl -L -o "${actualFilePath}" "${url}"`,
               300000,
-              true,
             );
           }
         }
@@ -2363,7 +2369,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         if (installCommand) {
           console.log(`[provision.installer] Installing...`);
-          await this.exec(shell, installCommand, 300000, true);
+          await this.exec(shell, installCommand, 300000);
           console.log(`[provision.installer] ✅ Installation complete`);
         }
 
@@ -2793,6 +2799,10 @@ CAPTCHA_SOLVER_EOF`,
     if (connectOptions.keepAlive !== undefined) {
       this.agent.keepAlive = connectOptions.keepAlive;
     }
+
+    // Pass runner claim configuration to agent
+    this.agent.claimTimeout = this.claim.timeout;
+    this.agent.claimInterval = this.claim.interval;
 
     // Set redrawThreshold on agent's cliArgs.options
     this.agent.cliArgs.options.redrawThreshold = this.redrawThreshold;
@@ -3853,6 +3863,30 @@ CAPTCHA_SOLVER_EOF`,
         event: this.emitter.event,
         logFile: "sdk",
       });
+    });
+
+    // Handle runner debug log messages
+    this.emitter.on(events.runner.log, (data) => {
+      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      if (debugMode && this.loggingEnabled && data.message) {
+        const levelTag = data.level === "error" ? "❌" : data.level === "warn" ? "⚠️" : "🔧";
+        const prefixedMessage = this.testContext
+          ? `[${this.testContext}] ${levelTag} [runner] ${data.message}`
+          : `${levelTag} [runner] ${data.message}`;
+        console.log(prefixedMessage);
+      }
+
+      // Always buffer runner logs for later upload
+      if (data.message) {
+        this._logBuffer.push({
+          time: data.timestamp || Date.now(),
+          line: `[runner] ${data.message}`,
+          level: data.level || "info",
+          source: "runner",
+          event: events.runner.log,
+          logFile: "runner",
+        });
+      }
     });
 
     this.emitter.on("status", (message) => {

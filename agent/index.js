@@ -1899,17 +1899,23 @@ ${regression}
     if (!headless) {
       let url;
 
+      logger.log(`renderSandbox: ip=${instance.ip || 'none'}, vncPort=${instance.vncPort || 'none'}, url=${instance.url || 'none'}`);
+
       // If the instance already has a URL (from reconnection), use it
       if (instance.url) {
         url = instance.url;
+        logger.log(`renderSandbox: using instance URL: ${url}`);
       } else if (instance.ip || instance.publicIp) {
         // Otherwise construct it from IP and port
+        // Default to 6080 (standard noVNC websocket proxy port)
+        const port = instance.vncPort || "6080";
         url =
           "http://" +
           (instance.ip || instance.publicIp) +
           ":" +
-          (instance.vncPort || "5800") +
+          port +
           "/vnc_lite.html?token=V3b8wG9";
+        logger.log(`renderSandbox: constructed noVNC URL (port=${port}): ${url}`);
       } else {
         // If we don't have URL or IP, we can't render
         logger.warn("renderSandbox: Missing URL and IP in instance", instance);
@@ -2185,8 +2191,54 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     const { formatter } = require("../sdk-log-formatter.js");
     const retryDelay = 15000; // 15 seconds between retries
 
+    // Runner claim polling configuration
+    const claimTimeout = this.claimTimeout !== undefined ? this.claimTimeout : 300000; // default 5 min
+    const claimInterval = this.claimInterval !== undefined ? this.claimInterval : 10000; // default 10s
+    const startTime = Date.now();
+
     while (true) {
-      let response = await this.sandbox.send(sandboxConfig, 60000 * 8);
+      let response;
+      try {
+        response = await this.sandbox.send(sandboxConfig, 60000 * 8);
+      } catch (err) {
+        // Check if this is a "no runners available" error that we should retry
+        const errorCode = err.responseData?.errorCode || err.responseData?.error;
+        const isNoRunners = errorCode === 'NO_RUNNERS_AVAILABLE' || errorCode === 'no_runners_available';
+
+        if (isNoRunners && claimTimeout > 0) {
+          const elapsed = Date.now() - startTime;
+          const remaining = claimTimeout - elapsed;
+
+          if (remaining <= 0) {
+            // Timeout exceeded - throw the error
+            this.emitter.emit(
+              events.log.narration,
+              formatter.getPrefix("connect") +
+                " " +
+                theme.red.bold("Timed out") +
+                " " +
+                theme.dim(`waiting for runner after ${Math.round(claimTimeout / 1000)}s`),
+            );
+            throw err;
+          }
+
+          const waitTime = Math.min(claimInterval, remaining);
+          this.emitter.emit(
+            events.log.narration,
+            formatter.getPrefix("connect") +
+              " " +
+              theme.yellow.bold("Waiting for runner") +
+              " " +
+              theme.dim(`(${Math.round(remaining / 1000)}s remaining, polling every ${Math.round(claimInterval / 1000)}s)`),
+          );
+
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          continue;
+        }
+
+        // Not a retriable error - rethrow
+        throw err;
+      }
 
       // Check if queued (all slots in use)
       if (response.type === "create.queued") {

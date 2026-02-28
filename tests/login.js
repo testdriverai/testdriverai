@@ -9,6 +9,8 @@ export async function login(testdriver) {
   // The password is displayed on screen, have TestDriver extract it
   const password = await testdriver.extract('the password');
 
+  console.log('password response', password)
+
   // Find the username field
   const usernameField = await testdriver.find(
     'username input'

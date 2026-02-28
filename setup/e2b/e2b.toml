@@ -1,0 +1,13 @@
+# E2B sandbox template config
+# See: https://e2b.dev/docs/sandbox-template
+
+# Replace with your E2B team ID
+# team_id = "your-team-id"
+
+memory_mb = 8192
+cpu_count = 2
+start_cmd = "/home/user/scripts/start-desktop.sh"
+dockerfile = "Dockerfile"
+
+# After first build, e2b CLI will populate template_id here
+# template_id = "..."
