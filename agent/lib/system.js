@@ -8,23 +8,37 @@ const { events } = require("../events.js");
 
 const createSystem = (emitter, sandbox, config) => {
   const screenshot = async (options) => {
-    let { base64 } = await sandbox.send({
+    let result = await sandbox.send({
       type: "system.screenshot",
     });
 
-    if (!base64) {
-      throw new Error("Failed to take screenshot: sandbox returned empty data");
+    // Runner now returns { s3Key } instead of { base64 } to avoid Ably size limits
+    if (result.s3Key) {
+      // Download from S3 and save to file (s3Key as query param to avoid slash issues in URL path)
+      let s3Url = `${config.TD_API_ROOT}/api/v7/runner/download?s3Key=${encodeURIComponent(result.s3Key)}&apiKey=${encodeURIComponent(config.TD_API_KEY)}`;
+      if (sandbox.sandboxId) {
+        s3Url += `&sandboxId=${encodeURIComponent(sandbox.sandboxId)}`;
+      }
+      const response = await fetch(s3Url);
+      if (!response.ok) {
+        throw new Error(`Failed to download screenshot from S3: ${response.status}`);
+      }
+      const buffer = await response.arrayBuffer();
+      fs.writeFileSync(options.filename, Buffer.from(buffer));
+      return { filename: options.filename };
     }
     
-    let image = Buffer.from(base64, "base64");
-    
-    // Verify we got actual image data (PNG header starts with these bytes)
-    if (image.length < 100) {
-      throw new Error(`Failed to take screenshot: received only ${image.length} bytes`);
+    // Fallback: old base64 format (for backward compatibility)
+    if (result.base64) {
+      let image = Buffer.from(result.base64, "base64");
+      if (image.length < 100) {
+        throw new Error(`Failed to take screenshot: received only ${image.length} bytes`);
+      }
+      fs.writeFileSync(options.filename, image);
+      return { filename: options.filename };
     }
     
-    fs.writeFileSync(options.filename, image);
-    return { filename: options.filename };
+    throw new Error("Failed to take screenshot: sandbox returned empty data");
   };
 
   let primaryDisplay = null;

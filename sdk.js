@@ -2882,7 +2882,7 @@ CAPTCHA_SOLVER_EOF`,
     // Always close the sandbox WebSocket connection to clean up resources
     // This ensures we don't leave orphaned connections even if connect() failed
     if (this.sandbox && typeof this.sandbox.close === "function") {
-      this.sandbox.close();
+      await this.sandbox.close();
     }
 
     // Remove all event listeners on the emitter to release references

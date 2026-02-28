@@ -28,7 +28,11 @@ async function performLogin(client, username = "standard_user") {
 
 describe("Hover Image Test", () => {
   it("should click on shopping cart icon and verify empty cart", async (context) => {
-    const testdriver = TestDriver(context, { ...getDefaults(context) });
+    const testdriver = TestDriver(context, { 
+      ...getDefaults(context),
+      preview: "ide",
+      dashcam: false,
+    });
     
     // provision.chrome() automatically calls ready() and starts dashcam
     await testdriver.provision.chrome({

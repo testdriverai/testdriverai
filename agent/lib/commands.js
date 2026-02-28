@@ -1460,8 +1460,21 @@ const createCommands = (
       }
       
       try {
+        // Send extract command to runner - runner captures screenshot and uploads to S3
+        // Returns s3Key instead of base64 to avoid Ably size limits
+        const screenshotResult = await sandbox.send({
+          type: "commands.extract",
+          description,
+        });
+        
+        // screenshotResult = { s3Key: "..." }
+        if (!screenshotResult || !screenshotResult.s3Key) {
+          throw new Error('Failed to capture screenshot for extract');
+        }
+        
+        // Now call API with the s3Key
         let result = await sdk.req("remember", {
-          image: await system.captureScreenBase64(),
+          imageKey: screenshotResult.s3Key,
           description,
         });
         

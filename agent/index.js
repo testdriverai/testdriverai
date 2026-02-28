@@ -1758,17 +1758,23 @@ ${regression}
         return this.createNewSandbox();
       });
 
-      // Extract the sandbox ID from the newly created sandbox
-      this.sandboxId =
-        newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
+      // Extract sandbox info from the create response
+      // No need to make another API call - we already have the sandbox data
+      const sandbox = newSandbox?.sandbox || {};
+      this.sandboxId = sandbox.sandboxId || sandbox.instanceId;
+      
+      // Store connection params for future reconnection
+      this.sandbox.setConnectionParams({
+        sandboxId: this.sandboxId,
+        persist: true,
+        keepAlive: this.keepAlive,
+      });
 
-      let instance = await this.connectToSandboxDirect(
-        this.sandboxId,
-        true, // always persist by default
-        this.keepAlive, // pass keepAlive TTL
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
+      // Use the sandbox data directly - it already has ip, url, os from the runner
+      this.instance = sandbox;
+      this.sandboxOs = sandbox.os || this.sandboxOs;
+      
+      await this.renderSandbox(sandbox, headless);
       await this.runLifecycle("provision");
     }
   }

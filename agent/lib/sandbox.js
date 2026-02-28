@@ -195,7 +195,11 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         } else {
           emitter.emit(events.sandbox.received);
           if (self.ps[message.requestId]) {
-            self.ps[message.requestId].resolve(message);
+            // Unwrap the result from the Ably response envelope
+            // The runner sends { requestId, type, result, success }
+            // But SDK commands expect just the result object
+            var resolvedValue = message.result !== undefined ? message.result : message;
+            self.ps[message.requestId].resolve(resolvedValue);
           }
         }
         delete self.ps[message.requestId];
@@ -284,16 +288,16 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       }
 
       if (message.type === "create") {
+        const runnerIp = reply.runner && reply.runner.ip;
         return {
           success: true,
           sandbox: {
             sandboxId: reply.sandboxId,
             instanceId: reply.sandboxId,
-            os: body.os,
-            url:
-              reply.runner && reply.runner.ip
-                ? "http://" + reply.runner.ip
-                : undefined,
+            os: reply.runner?.os || body.os,
+            ip: runnerIp,
+            url: runnerIp ? "http://" + runnerIp : undefined,
+            runner: reply.runner,
           },
         };
       }
@@ -517,10 +521,19 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       return this;
     }
 
-    close() {
+    async close() {
       if (this.heartbeat) {
         clearInterval(this.heartbeat);
         this.heartbeat = null;
+      }
+
+      // Send end-session control message to runner before disconnecting
+      if (this._ctrlChannel && this._ably?.connection?.state === 'connected') {
+        try {
+          await this._ctrlChannel.publish('control', { type: 'end-session' });
+        } catch (e) {
+          // Ignore - best effort
+        }
       }
 
       try {
