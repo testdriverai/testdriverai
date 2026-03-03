@@ -1,6 +1,5 @@
 // the actual commands to interact with the system
 const { createSDK } = require("./sdk.js");
-const vm = require("vm");
 const theme = require("./theme.js");
 
 const fs = require("fs").promises; // Using the promises version for async operations
@@ -1509,7 +1508,7 @@ const createCommands = (
     /**
      * Execute code in the sandbox
      * @param {Object|string} options - Options object or language (for backward compatibility)
-     * @param {string} [options.language='pwsh'] - Language ('js', 'pwsh', or 'sh')
+     * @param {string} [options.language='pwsh'] - Language ('pwsh' or 'sh')
      * @param {string} options.code - Code to execute
      * @param {number} [options.timeout] - Timeout in milliseconds
      * @param {boolean} [options.silent=false] - Suppress output
@@ -1605,69 +1604,6 @@ const createCommands = (
 
           return result.out?.stdout?.trim();
         }
-      } else if (language == "js") {
-        emitter.emit(events.log.narration, theme.dim(`running js...`), true);
-
-        emitter.emit(
-          events.log.narration,
-          theme.dim(`running value of \`${plat}\` in local JS vm...`),
-          true,
-        );
-
-        emitter.emit(events.log.log, "");
-        emitter.emit(events.log.log, "------");
-
-        const context = vm.createContext({
-          require,
-          console,
-          fs,
-          process,
-          fetch,
-        });
-
-        let scriptCode = "(async function() {\n" + code + "\n})();";
-
-        const script = new vm.Script(scriptCode);
-
-        try {
-          await script.runInNewContext(context);
-        } catch (e) {
-          // Log the error to the emitter instead of console.error to maintain consistency
-          emitter.emit(
-            events.log.debug,
-            `JavaScript execution error: ${e.message}`,
-          );
-          // Wait a tick to allow any promise rejections to be handled
-          throw new CommandError(`Error running script: ${e.message}`);
-        }
-
-        // wait for context.result to resolve
-        let stepResult = await context.result;
-
-        // conver it to string
-        if (typeof stepResult === "object") {
-          stepResult = JSON.stringify(stepResult, null, 2);
-        } else if (typeof stepResult === "function") {
-          stepResult = stepResult.toString();
-        }
-
-        emitter.emit(events.log.log, "------");
-        emitter.emit(events.log.log, "");
-
-        if (!stepResult) {
-          emitter.emit(events.log.log, `No result returned from script`, true);
-        } else {
-        /* The above JavaScript code is checking if the variable `silent` is falsy (not true) and if
-        so, it emits log events using an emitter. The emitted log events include the
-        theme.dim(`Result:`) and the value of the `stepResult` variable. */
-          // if (!silent) {
-          //   emitter.emit(events.log.log, theme.dim(`Result:`), true);
-          //   emitter.emit(events.log.log, stepResult, true);
-          // }
-        }
-
-        return stepResult;
-        // }
       } else {
         throw new CommandError(`Language not supported: ${language}`);
       }

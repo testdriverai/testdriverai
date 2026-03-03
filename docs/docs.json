@@ -60,67 +60,88 @@
             ]
           },
           {
-            "group": "Creating Tests",
+            "group": "Guides",
             "pages": [
               "/v7/generating-tests",
               "/v7/device-config",
               "/v7/locating-elements",
               "/v7/waiting-for-elements",
               "/v7/performing-actions",
-              "/v7/making-assertions"
-            ]
-          },
-          {
-            "group": "Running Tests",
-            "pages": [
+              "/v7/making-assertions",
+              "/v7/variables",
+              "/v7/secrets",
+              "/v7/reusable-code",
               "/v7/running-tests",
               "/v7/caching",
               "/v7/ci-cd"
             ]
           },
           {
-            "group": "Scaling",
+            "group": "AI",
             "pages": [
-              "/v7/variables",
-              "/v7/secrets",
-              "/v7/reusable-code",
-              {
-                "group": "Self-Hosting Setup",
-                "icon": "server",
-                "pages": [
-                  "/v7/aws-setup"
-                ]
-              }
+              "/v7/ai",
+              "/v7/captcha"
             ]
           },
           {
-            "group": "Actions",
+            "group": "Queries",
             "pages": [
-              "/v7/ai",
-              "/v7/assert",
-              "/v7/captcha",
+              "/v7/find",
+              "/v7/parse",
+              "/v7/assert"
+            ]
+          },
+          {
+            "group": "Mouse",
+            "pages": [
               "/v7/click",
               "/v7/double-click",
-              "/v7/exec",
-              "/v7/find",
-              "/v7/focus-application",
+              "/v7/right-click",
               "/v7/hover",
               "/v7/mouse-down",
               "/v7/mouse-up",
-              "/v7/parse",
-              "/v7/press-keys",
-              "/v7/right-click",
-              "/v7/screenshot",
-              "/v7/type",
               "/v7/scroll"
+            ]
+          },
+          {
+            "group": "Keyboard",
+            "pages": [
+              "/v7/type",
+              "/v7/press-keys"
+            ]
+          },
+          {
+            "group": "System",
+            "pages": [
+              "/v7/exec",
+              "/v7/focus-application"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "/v7/screenshot",
+              "/v7/wait"
             ]
           },
           {
             "group": "SDK",
             "pages": [
-              "/v7/elements",
               "/v7/client",
-              "/v7/dashcam"
+              "/v7/elements",
+              "/v7/provision",
+              "/v7/dashcam",
+              "/v7/screenshots",
+              "/v7/cache",
+              "/v7/redraw",
+              "/v7/events",
+              "/v7/errors"
+            ]
+          },
+          {
+            "group": "Infrastructure",
+            "pages": [
+              "/v7/aws-setup"
             ]
           }
         ]
