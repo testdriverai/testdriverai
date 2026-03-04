@@ -13,7 +13,7 @@ export type ClickAction =
 export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
-export type ExecLanguage = "js" | "pwsh" | "sh";
+export type ExecLanguage = "pwsh" | "sh";
 /**
  * Preview mode for live test visualization
  * - "browser": Opens debugger in default browser (default)
@@ -620,7 +620,7 @@ export interface AssertOptions {
 
 /** Options for exec command */
 export interface ExecOptions {
-  /** Language ('js', 'pwsh', or 'sh') */
+  /** Language ('pwsh' or 'sh') */
   language?: ExecLanguage;
   /** Code to execute */
   code: string;
@@ -1353,7 +1353,7 @@ export default class TestDriverSDK {
   exec(options: ExecOptions): Promise<string>;
   /**
    * Execute code in the sandbox (positional arguments - legacy)
-   * @param language - Language ('js' or 'pwsh')
+   * @param language - Language ('pwsh' or 'sh')
    * @param code - Code to execute
    * @param timeout - Timeout in milliseconds
    * @param silent - Suppress output (default: false)

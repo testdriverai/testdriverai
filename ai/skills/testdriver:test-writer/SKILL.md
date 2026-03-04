@@ -291,7 +291,7 @@ verify({ testFile: "tests/login.test.mjs" })
 | `scroll` | Scroll page (up/down/left/right) |
 | `check` | AI analysis of whether a task completed |
 | `assert` | AI-powered boolean assertion (pass/fail for test files) |
-| `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
+| `exec` | Execute shell or PowerShell in sandbox |
 | `screenshot` | Capture screenshot - **only use when user explicitly asks** |
 | `commit` | Write recorded commands to test file |
 | `verify` | Run test file from scratch |

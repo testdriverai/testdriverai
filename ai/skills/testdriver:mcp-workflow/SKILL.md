@@ -161,7 +161,7 @@ Each tool returns a screenshot AND the generated code to add to your test file.
 | `check` | **For AI to understand screen state.** Analyzes current screen and tells you (the AI) whether a task/condition is met. Use this after actions to verify they worked. |
 | `assert` | AI-powered boolean assertion for test files (pass/fail for CI). Returns generated code. |
 | `screenshot` | **For showing the user the screen.** Captures and displays a screenshot. Does NOT return analysis to you (the AI). |
-| `exec` | Execute JavaScript, shell, or PowerShell in sandbox. Returns generated code. |
+| `exec` | Execute shell or PowerShell in sandbox. Returns generated code. |
 
 ### Test Validation
 

@@ -1763,9 +1763,9 @@ You can optionally provide a reference image URI to compare against a previous s
 server.registerTool(
   "exec",
   {
-    description: "Execute code in the sandbox (JavaScript, shell, or PowerShell)",
+    description: "Execute code in the sandbox (shell or PowerShell)",
     inputSchema: z.object({
-      language: z.enum(["js", "sh", "pwsh"]).default("js"),
+      language: z.enum(["sh", "pwsh"]).default("sh"),
       code: z.string().describe("Code to execute"),
       timeout: z.number().default(30000).describe("Timeout in ms"),
     }),
