@@ -1686,6 +1686,7 @@ ${regression}
         resolution: this.config.TD_RESOLUTION,
         ci: this.config.CI,
         ip: this.ip,
+        instanceId: this.instanceId || undefined,
       });
 
       // Store connection params for reconnection

@@ -133,6 +133,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           callback(null, ablyToken);
         },
         clientId: "sdk-" + this._sandboxId,
+        disconnectedRetryTimeout: 5000,   // retry reconnect every 5s (default 15s)
+        suspendedRetryTimeout: 15000,     // retry from suspended every 15s (default 30s)
       });
 
       await new Promise(function (resolve, reject) {
@@ -247,6 +249,15 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         logger.log("Ably disconnected - will auto-reconnect");
       });
 
+      this._ably.connection.on("connected", function () {
+        // Log reconnection so the user knows the blip was recovered
+        logger.log("Ably reconnected");
+      });
+
+      this._ably.connection.on("suspended", function () {
+        logger.warn("Ably suspended - connection lost for extended period, will keep retrying");
+      });
+
       this._ably.connection.on("failed", function () {
         self.apiSocketConnected = false;
         self.instanceSocketConnected = false;
@@ -286,6 +297,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         body.ip = message.ip;
         body.resolution = message.resolution;
         body.ci = message.ci;
+        if (message.instanceId) body.instanceId = message.instanceId;
       }
 
       var reply = await httpPost(
@@ -423,13 +435,78 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       }
 
       if (message.type === "direct") {
+        // If the API provisioned Ably credentials to the instance (reply.agent present),
+        // wait for the runner agent to signal readiness before sending commands.
+        // Without this gate, commands published before the agent subscribes are lost.
+        var self = this;
+        if (reply.agent && this._ctrlChannel) {
+          logger.log('Waiting for runner agent to signal readiness (direct connection)...');
+          var readyTimeout = 120000; // 120s — allows for SSM provisioning + agent startup
+          await new Promise(function (resolve, reject) {
+            var resolved = false;
+            function finish(data) {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timer);
+              self._ctrlChannel.unsubscribe('control', onCtrl);
+              logger.log('Runner agent ready (direct, os=' + ((data && data.os) || 'unknown') + ')');
+              resolve();
+            }
+
+            var timer = setTimeout(function () {
+              if (!resolved) {
+                resolved = true;
+                self._ctrlChannel.unsubscribe('control', onCtrl);
+                reject(new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms (direct connection)'));
+              }
+            }, readyTimeout);
+            if (timer.unref) timer.unref();
+
+            // Listen for live runner.ready messages
+            var onCtrl;
+            onCtrl = function (msg) {
+              var data = msg.data;
+              if (data && data.type === 'runner.ready') {
+                finish(data);
+              }
+            };
+            self._ctrlChannel.subscribe('control', onCtrl);
+
+            // Also check channel history in case runner.ready was published
+            // before we subscribed (race condition on fast-booting agents).
+            try {
+              self._ctrlChannel.history({ limit: 50 }, function (err, page) {
+                if (err) {
+                  logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
+                  return;
+                }
+                if (page && page.items) {
+                  for (var i = 0; i < page.items.length; i++) {
+                    var item = page.items[i];
+                    if (item.name === 'control' && item.data && item.data.type === 'runner.ready') {
+                      logger.log('Found runner.ready in channel history (direct)');
+                      finish(item.data);
+                      return;
+                    }
+                  }
+                }
+              });
+            } catch (histErr) {
+              logger.warn('History call threw (non-fatal): ' + (histErr.message || histErr));
+            }
+          });
+        }
+
+        // Construct VNC URL — use port 8080 (nginx noVNC proxy) for Windows instances
+        var directUrl = message.ip ? "http://" + message.ip + ":8080/vnc_lite.html" : undefined;
+
         return {
           success: true,
           instance: {
             instanceId: reply.sandboxId,
             sandboxId: reply.sandboxId,
             ip: message.ip,
-            url: "http://" + message.ip,
+            url: directUrl || "http://" + message.ip,
           },
         };
       }
@@ -440,14 +517,45 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
     _sendAbly(message, timeout) {
       if (timeout === undefined) timeout = 300000;
 
-      if (
-        !this._cmdChannel ||
-        !this._ably ||
-        this._ably.connection.state !== "connected"
-      ) {
-        var state = this._ably ? this._ably.connection.state : "unavailable";
+      if (!this._cmdChannel || !this._ably) {
         return Promise.reject(
-          new Error("Sandbox not connected (state: " + state + ")"),
+          new Error("Sandbox not connected (no Ably client)"),
+        );
+      }
+
+      // If temporarily disconnected, wait up to 30s for reconnection
+      // instead of failing immediately (dashcam uploads can cause brief blips)
+      var self = this;
+      var connState = this._ably.connection.state;
+      if (connState !== "connected") {
+        if (connState === "disconnected" || connState === "connecting" || connState === "suspended") {
+          logger.log("Ably is " + connState + ", waiting for reconnect before sending...");
+          var waitForConnect = new Promise(function (resolve, reject) {
+            var timer = setTimeout(function () {
+              self._ably.connection.off("connected", onConnected);
+              self._ably.connection.off("failed", onFailed);
+              reject(new Error("Sandbox not connected after waiting 30s (state: " + self._ably.connection.state + ")"));
+            }, 30000);
+            if (timer.unref) timer.unref();
+            function onConnected() {
+              clearTimeout(timer);
+              self._ably.connection.off("failed", onFailed);
+              resolve();
+            }
+            function onFailed() {
+              clearTimeout(timer);
+              self._ably.connection.off("connected", onConnected);
+              reject(new Error("Ably connection failed while waiting to send"));
+            }
+            self._ably.connection.once("connected", onConnected);
+            self._ably.connection.once("failed", onFailed);
+          });
+          return waitForConnect.then(function () {
+            return self._sendAbly(message, timeout);
+          });
+        }
+        return Promise.reject(
+          new Error("Sandbox not connected (state: " + connState + ")"),
         );
       }
 
