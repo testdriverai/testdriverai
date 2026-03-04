@@ -85,4 +85,6 @@ await testdriver.find('next page button').click();
 await testdriver.wait(1000);
 ```
 
-For waiting for specific **elements** to appear, prefer `find()` with a `timeout` option. Use `wait()` only for simple time-based pauses.
+<Note>
+  For waiting for specific **elements** to appear, prefer `find()` with a `timeout` option. Use `wait()` only for simple time-based pauses.
+</Note>

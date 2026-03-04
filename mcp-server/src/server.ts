@@ -9,6 +9,9 @@ process.env.TD_STDIO = "stderr";
 // Enable debug mode to preserve croppedImage in SDK responses (needed for MCP App visuals)
 process.env.TD_DEBUG = "true";
 
+// Load .env file so TD_API_KEY can be read from the workspace .env
+import "dotenv/config";
+
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
