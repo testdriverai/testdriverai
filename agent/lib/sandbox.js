@@ -334,6 +334,21 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       }
 
       if (message.type === "create") {
+        // E2B (Linux) sandboxes: the API proxies commands and returns a url directly.
+        // No runner agent involved — skip runner.ready wait.
+        if (reply.url) {
+          logger.log(`E2B sandbox ready — url=${reply.url}`);
+          return {
+            success: true,
+            sandbox: {
+              sandboxId: reply.sandboxId,
+              instanceId: reply.sandbox?.sandboxId || reply.sandboxId,
+              os: body.os || 'linux',
+              url: reply.url,
+            },
+          };
+        }
+
         const runnerIp = reply.runner && reply.runner.ip;
         const noVncPort = reply.runner && reply.runner.noVncPort;
         const runnerVncUrl = reply.runner && reply.runner.vncUrl;
