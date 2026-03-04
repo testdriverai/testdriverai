@@ -303,6 +303,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         version: version,
         os: message.os || this.os,
         session: sessionId,
+        apiRoot: this.apiRoot,
       };
 
       if (message.type === "create") {
