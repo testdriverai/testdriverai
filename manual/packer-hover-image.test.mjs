@@ -18,7 +18,7 @@
 
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
-import { getDefaults } from "./config.mjs";
+import { getDefaults } from "../examples/config.mjs";
 import { execSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";

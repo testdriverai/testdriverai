@@ -89,6 +89,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._filesChannel = null;
       this._channelNames = null;
       this.ps = {};
+      this._execBuffers = {}; // accumulate streamed exec.output chunks per requestId
       this.heartbeat = null;
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
@@ -173,8 +174,17 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           return;
         }
 
-        // Streaming exec output chunks — emit as events, don't resolve the pending promise
+        // Streaming exec output chunks — accumulate per requestId so the
+        // full stdout can be reconstructed when the final response arrives.
+        // (The runner streams stdout in ~16KB chunks and omits it from the
+        // final response to stay under Ably's 64KB message limit.)
         if (message.type === "exec.output") {
+          if (message.requestId) {
+            if (!self._execBuffers[message.requestId]) {
+              self._execBuffers[message.requestId] = '';
+            }
+            self._execBuffers[message.requestId] += (message.chunk || '');
+          }
           emitter.emit(events.exec.output, { chunk: message.chunk, requestId: message.requestId });
           return;
         }
@@ -217,6 +227,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           }
           var error = new Error(message.errorMessage || "Sandbox error");
           error.responseData = message;
+          delete self._execBuffers[message.requestId];
           self.ps[message.requestId].reject(error);
         } else {
           emitter.emit(events.sandbox.received);
@@ -225,6 +236,16 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             // The runner sends { requestId, type, result, success }
             // But SDK commands expect just the result object
             var resolvedValue = message.result !== undefined ? message.result : message;
+
+            // For exec (commands.run): the runner streams stdout via exec.output
+            // chunks and sends only returncode+stderr in the final response.
+            // Reconstruct stdout from the accumulated buffer.
+            var streamedStdout = self._execBuffers[message.requestId];
+            if (streamedStdout !== undefined && resolvedValue && resolvedValue.out) {
+              resolvedValue.out.stdout = streamedStdout;
+            }
+            delete self._execBuffers[message.requestId];
+
             self.ps[message.requestId].resolve(resolvedValue);
           }
         }
@@ -621,6 +642,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       var timeoutId = setTimeout(function () {
         if (self.ps[requestId]) {
           delete self.ps[requestId];
+          delete self._execBuffers[requestId];
           rejectPromise(
             new Error(
               "Sandbox message '" +
