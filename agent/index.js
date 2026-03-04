@@ -1686,6 +1686,7 @@ ${regression}
         resolution: this.config.TD_RESOLUTION,
         ci: this.config.CI,
         ip: this.ip,
+        instanceId: this.instanceId || undefined,
       });
 
       // Store connection params for reconnection
@@ -1748,28 +1749,34 @@ ${regression}
           " " +
           theme.cyan(`new sandbox...`),
       );
-      // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-      // to see if that fixes the issue.
-      let newSandbox = await this.createNewSandbox().catch(() => {
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`double-checking sandbox availability`),
-        );
-        return this.createNewSandbox();
-      });
+      let newSandbox = await this.createNewSandbox();
 
       // Extract the sandbox ID from the newly created sandbox
       this.sandboxId =
         newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
 
-      let instance = await this.connectToSandboxDirect(
-        this.sandboxId,
-        true, // always persist by default
-        this.keepAlive, // pass keepAlive TTL
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
-      await this.runLifecycle("provision");
+      // E2B sandboxes return a url directly from create — no separate
+      // connect step needed (the API proxies commands via Ably).
+      if (newSandbox?.sandbox?.url) {
+        this.sandbox.setConnectionParams({
+          sandboxId: this.sandboxId,
+          persist: true,
+          keepAlive: this.keepAlive,
+        });
+        this.emitter.emit(events.sandbox.connected);
+        this.instance = newSandbox.sandbox;
+        await this.renderSandbox(this.instance, headless);
+        await this.runLifecycle("provision");
+      } else {
+        let instance = await this.connectToSandboxDirect(
+          this.sandboxId,
+          true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
+        );
+        this.instance = instance;
+        await this.renderSandbox(instance, headless);
+        await this.runLifecycle("provision");
+      }
     }
   }
 

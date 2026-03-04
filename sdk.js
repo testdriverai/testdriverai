@@ -1485,6 +1485,9 @@ class TestDriverSDK {
     // Store IP address if provided for direct connection
     this.ip = options.ip || null;
 
+    // Store EC2 instance ID for direct connections (used to provision Ably credentials via SSM)
+    this.instanceId = options.instanceId || null;
+
     // Store sandbox configuration options
     this.sandboxAmi = options.sandboxAmi || null;
     this.sandboxInstance = options.sandboxInstance || null;
@@ -2769,6 +2772,13 @@ CAPTCHA_SOLVER_EOF`,
       this.agent.ip = connectOptions.ip;
     } else if (this.ip) {
       this.agent.ip = this.ip;
+    }
+    // Use instanceId from connectOptions if provided, otherwise fall back to constructor value
+    // This allows the API to provision Ably credentials via SSM for direct connections
+    if (connectOptions.instanceId !== undefined) {
+      this.agent.instanceId = connectOptions.instanceId;
+    } else if (this.instanceId) {
+      this.agent.instanceId = this.instanceId;
     }
     // Use sandboxAmi from connectOptions if provided, otherwise fall back to constructor value
     if (connectOptions.sandboxAmi !== undefined) {
