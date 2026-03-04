@@ -313,6 +313,45 @@
         user-select: none;
       }
 
+      .redirect-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        color: white;
+      }
+
+      .redirect-overlay.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .redirect-overlay .redirect-message {
+        font-size: 18px;
+        font-weight: 500;
+        color: #b0cf34;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      .redirect-overlay .redirect-link {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: underline;
+        cursor: pointer;
+        pointer-events: auto;
+      }
+
     </style>
   </head>
   <body>
@@ -340,6 +379,10 @@
             />
           </svg>
           <div class="message">Click to interact with VM</div>
+        </div>
+        <div class="redirect-overlay" id="redirect-overlay">
+          <div class="redirect-message" id="redirect-message">Test complete — redirecting to report...</div>
+          <div class="redirect-link" id="redirect-link"></div>
         </div>
       </div>
       <iframe id="vm-iframe" src="" credentialless></iframe>
@@ -524,19 +567,38 @@
         setTitle("Running");
       });
 
-      addEventHandler(events.test.stop, () => {
+      let redirectTimeout = null;
+
+      const REDIRECT_DELAY_MS = 3000;
+
+      const scheduleRedirect = (runUrl) => {
+        if (redirectTimeout) return; // only schedule once
+        const redirectOverlay = document.getElementById("redirect-overlay");
+        const redirectLink = document.getElementById("redirect-link");
+        redirectLink.textContent = runUrl;
+        redirectLink.onclick = () => { window.location.href = runUrl; };
+        redirectOverlay.classList.add("visible");
+        redirectTimeout = setTimeout(() => {
+          window.location.href = runUrl;
+        }, REDIRECT_DELAY_MS);
+      };
+
+      addEventHandler(events.test.stop, (event, data) => {
         if (idleTimeout) clearTimeout(idleTimeout);
         setTitle("Stopped");
+        if (data?.runUrl) scheduleRedirect(data.runUrl);
       });
 
-      addEventHandler(events.test.success, () => {
+      addEventHandler(events.test.success, (event, data) => {
         if (idleTimeout) clearTimeout(idleTimeout);
         setTitle("Passed");
+        if (data?.runUrl) scheduleRedirect(data.runUrl);
       });
 
-      addEventHandler(events.test.error, () => {
+      addEventHandler(events.test.error, (event, data) => {
         if (idleTimeout) clearTimeout(idleTimeout);
         setTitle("Failed");
+        if (data?.runUrl) scheduleRedirect(data.runUrl);
       });
 
       addEventHandler(events.error.fatal, () => {
