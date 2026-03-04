@@ -50,8 +50,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-2
           AWS_LAUNCH_TEMPLATE_ID: lt-0ef9bf26a945fb442
-          AMI_ID: ami-0dd5fa241273a7d50
+          AMI_ID: ami-0337d8cd7cff854a4
           RESOLUTION: 1920x1080
+          TD_API_ROOT: https://testdriver-api-pr-242.onrender.com
 
       - name: Upload test results
         if: always()
