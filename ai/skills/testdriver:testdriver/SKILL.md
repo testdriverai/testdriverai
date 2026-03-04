@@ -329,7 +329,7 @@ Analyze the output, fix any issues, and iterate until the test passes.
 | `scroll` | Scroll page (up/down/left/right) |
 | `check` | AI analysis of screen state - for YOUR understanding only, does NOT generate code |
 | `assert` | AI-powered boolean assertion - GENERATES CODE for test files |
-| `exec` | Execute JavaScript, shell, or PowerShell in sandbox |
+| `exec` | Execute shell or PowerShell in sandbox |
 | `screenshot` | Capture screenshot - **only use when user explicitly asks** |
 | `list_local_screenshots` | List/filter screenshots by line, action, phase, regex, etc. |
 | `view_local_screenshot` | View a local screenshot (returns image to AI + displays to user) |

@@ -1,19 +1,8 @@
 {
-  "inputs": [
-    {
-      "type": "promptString",
-      "id": "testdriver-api-key",
-      "description": "TestDriver API Key From https://console.testdriver.ai/team",
-      "password": true
-    }
-  ],
   "servers": {
     "testdriver": {
       "command": "npx",
-      "args": ["-p", "testdriverai", "testdriverai-mcp"],
-      "env": {
-        "TD_API_KEY": "${input:testdriver-api-key}"
-      }
+      "args": ["-p", "testdriverai", "testdriverai-mcp"]
     }
   }
 }

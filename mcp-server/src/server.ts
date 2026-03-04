@@ -9,6 +9,9 @@ process.env.TD_STDIO = "stderr";
 // Enable debug mode to preserve croppedImage in SDK responses (needed for MCP App visuals)
 process.env.TD_DEBUG = "true";
 
+// Load .env file so TD_API_KEY can be read from the workspace .env
+import "dotenv/config";
+
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -1760,9 +1763,9 @@ You can optionally provide a reference image URI to compare against a previous s
 server.registerTool(
   "exec",
   {
-    description: "Execute code in the sandbox (JavaScript, shell, or PowerShell)",
+    description: "Execute code in the sandbox (shell or PowerShell)",
     inputSchema: z.object({
-      language: z.enum(["js", "sh", "pwsh"]).default("js"),
+      language: z.enum(["sh", "pwsh"]).default("sh"),
       code: z.string().describe("Code to execute"),
       timeout: z.number().default(30000).describe("Timeout in ms"),
     }),
