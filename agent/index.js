@@ -1748,15 +1748,7 @@ ${regression}
           " " +
           theme.cyan(`new sandbox...`),
       );
-      // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-      // to see if that fixes the issue.
-      let newSandbox = await this.createNewSandbox().catch(() => {
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`double-checking sandbox availability`),
-        );
-        return this.createNewSandbox();
-      });
+      let newSandbox = await this.createNewSandbox();
 
       // Extract the sandbox ID from the newly created sandbox
       this.sandboxId =

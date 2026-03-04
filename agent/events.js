@@ -101,10 +101,17 @@ const events = {
     sent: "sandbox:sent",
     received: "sandbox:received",
     progress: "sandbox:progress",
+    file: "sandbox:file",
   },
   redraw: {
     status: "redraw:status",
     complete: "redraw:complete",
+  },
+  exec: {
+    output: "exec:output",
+  },
+  runner: {
+    log: "runner:log",
   },
   exit: "exit",
 };

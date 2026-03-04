@@ -7,10 +7,79 @@ const Jimp = require("jimp");
 const { events } = require("../events.js");
 
 const createSystem = (emitter, sandbox, config) => {
+
+  // Download a screenshot from S3 when the runner returns an s3Key
+  // (screenshots exceed Ably's 64KB message limit)
+  const downloadFromS3 = async (s3Key) => {
+    const https = require("https");
+    const http = require("http");
+    const apiRoot = config["TD_API_ROOT"] || sandbox.apiRoot;
+    const apiKey = sandbox.apiKey;
+
+    // Step 1: Get presigned download URL from API
+    const body = JSON.stringify({ apiKey, s3Key });
+    const url = new URL(apiRoot + "/api/v7/runner/download-url");
+    const transport = url.protocol === "https:" ? https : http;
+
+    const downloadUrl = await new Promise((resolve, reject) => {
+      const req = transport.request(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          "Connection": "close",
+        },
+      }, (res) => {
+        let data = "";
+        res.on("data", (chunk) => { data += chunk; });
+        res.on("end", () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.downloadUrl) {
+              resolve(parsed.downloadUrl);
+            } else {
+              reject(new Error("No downloadUrl in response: " + data));
+            }
+          } catch (e) {
+            reject(new Error("Failed to parse download-url response: " + data));
+          }
+        });
+      });
+      req.on("error", reject);
+      req.write(body);
+      req.end();
+    });
+
+    // Step 2: Download the image from S3
+    const imageUrl = new URL(downloadUrl);
+    const s3Transport = imageUrl.protocol === "https:" ? https : http;
+
+    const imageBuffer = await new Promise((resolve, reject) => {
+      s3Transport.get(downloadUrl, { headers: { "Connection": "close" } }, (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      }).on("error", reject);
+    });
+
+    return imageBuffer.toString("base64");
+  };
+
   const screenshot = async (options) => {
-    let { base64 } = await sandbox.send({
+    let response = await sandbox.send({
       type: "system.screenshot",
     });
+
+    let base64;
+
+    // Runner returns { s3Key } for Ably (screenshots too large for 64KB limit)
+    // Runner returns { base64 } for direct/local connections
+    if (response.s3Key) {
+      base64 = await downloadFromS3(response.s3Key);
+    } else {
+      base64 = response.base64;
+    }
 
     if (!base64) {
       throw new Error("Failed to take screenshot: sandbox returned empty data");
