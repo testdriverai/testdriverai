@@ -1755,14 +1755,28 @@ ${regression}
       this.sandboxId =
         newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
 
-      let instance = await this.connectToSandboxDirect(
-        this.sandboxId,
-        true, // always persist by default
-        this.keepAlive, // pass keepAlive TTL
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
-      await this.runLifecycle("provision");
+      // E2B sandboxes return a url directly from create — no separate
+      // connect step needed (the API proxies commands via Ably).
+      if (newSandbox?.sandbox?.url) {
+        this.sandbox.setConnectionParams({
+          sandboxId: this.sandboxId,
+          persist: true,
+          keepAlive: this.keepAlive,
+        });
+        this.emitter.emit(events.sandbox.connected);
+        this.instance = newSandbox.sandbox;
+        await this.renderSandbox(this.instance, headless);
+        await this.runLifecycle("provision");
+      } else {
+        let instance = await this.connectToSandboxDirect(
+          this.sandboxId,
+          true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
+        );
+        this.instance = instance;
+        await this.renderSandbox(instance, headless);
+        await this.runLifecycle("provision");
+      }
     }
   }
 
