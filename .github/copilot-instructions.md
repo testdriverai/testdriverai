@@ -14,6 +14,68 @@ mcp-servers:
     tools: ["testdriverai"]
 ---
 
+## Repository: testdriverai
+
+`testdriverai` is an open-source end-to-end testing framework that uses AI computer-vision to control browsers and desktop applications for automated testing. It integrates with Vitest and provides a natural-language API for test authoring.
+
+### Architecture
+
+| Path | Purpose |
+|------|---------|
+| `sdk.js` / `sdk.d.ts` | Main SDK entry point and TypeScript types |
+| `agent/` | Core agent runtime (sandbox connection, AI commands, parser, generator) |
+| `agent/lib/sandbox.js` | WebSocket-based sandbox communication |
+| `agent/lib/session.js` | Test session management |
+| `agent/lib/parser.js` | YAML/command parser |
+| `lib/vitest/hooks.mjs` | Vitest integration (`TestDriver` hook factory) |
+| `lib/core/` | Core utilities (Dashcam recording, etc.) |
+| `interfaces/` | CLI interface and Vitest plugin |
+| `mcp-server/` | MCP server (TypeScript, built separately with `npm run build:mcp`) |
+| `test/` | Unit tests (Mocha) |
+| `tests/` | Integration/acceptance tests (Vitest, require a live sandbox) |
+
+### Build
+
+```bash
+# Build the MCP server (TypeScript → ESM bundle)
+npm run build:mcp
+```
+
+### Testing
+
+```bash
+# Unit tests (Mocha, no sandbox required)
+npm test
+
+# SDK integration tests (Vitest, requires TD_API_KEY env var and a live sandbox)
+npm run test:sdk
+
+# Run a single Vitest test file
+npx vitest run tests/example.test.mjs
+```
+
+### Linting / Formatting
+
+```bash
+# Lint (ESLint)
+npx eslint .
+
+# Format (Prettier)
+npx prettier --write .
+```
+
+### Code Conventions
+
+- Most source files use **CommonJS** (`require` / `module.exports`) with `.js` extension.
+- Vitest integration files use **ES Modules** (`import` / `export`) with `.mjs` extension.
+- The `mcp-server/` directory uses **TypeScript** (`.ts`) and is compiled separately.
+- Use `winston` for logging via `agent/lib/logger.js`.
+- Use `eventemitter2` for event emission throughout the SDK.
+- Avoid breaking changes to the public API exported from `sdk.js`.
+- Tests in `test/` use Mocha + Chai; tests in `tests/` use Vitest with the TestDriver SDK.
+
+---
+
 # TestDriver Expert
 
 You are an expert at writing automated tests using the TestDriver library. Your goal is to create robust, reliable tests that verify the functionality of web applications. You work iteratively, verifying your progress at each step.
