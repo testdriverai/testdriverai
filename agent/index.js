@@ -35,10 +35,7 @@ const { createOutputs } = require("./lib/outputs.js");
 
 const isValidVersion = require("./lib/valid-version.js");
 const { events, createEmitter } = require("./events.js");
-const { createDebuggerProcess } = require("./lib/debugger.js");
 const logger = require("./lib/logger.js");
-let debuggerProcess = null; // single debugger process for all instances. otherwise they'll fight over ports. this should be in `web` anyway
-let debuggerStarted = false;
 
 class TestDriverAgent extends EventEmitter2 {
   constructor(environment = {}, cliArgs = {}) {
@@ -160,7 +157,6 @@ class TestDriverAgent extends EventEmitter2 {
 
     this.lastCommand = new Date().getTime();
     this.csv = [["command,time"]];
-    this.debuggerUrl = null; // the debugger server URL
 
     // Source mapping for YAML files
     this.sourceMapper = new SourceMapper();
@@ -1686,6 +1682,7 @@ ${regression}
         resolution: this.config.TD_RESOLUTION,
         ci: this.config.CI,
         ip: this.ip,
+        instanceId: this.instanceId || undefined,
       });
 
       // Store connection params for reconnection
@@ -1748,28 +1745,34 @@ ${regression}
           " " +
           theme.cyan(`new sandbox...`),
       );
-      // We don't have resiliency/retries baked in, so let's at least give it 1 attempt
-      // to see if that fixes the issue.
-      let newSandbox = await this.createNewSandbox().catch(() => {
-        this.emitter.emit(
-          events.log.narration,
-          theme.dim(`double-checking sandbox availability`),
-        );
-        return this.createNewSandbox();
-      });
+      let newSandbox = await this.createNewSandbox();
 
       // Extract the sandbox ID from the newly created sandbox
       this.sandboxId =
         newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
 
-      let instance = await this.connectToSandboxDirect(
-        this.sandboxId,
-        true, // always persist by default
-        this.keepAlive, // pass keepAlive TTL
-      );
-      this.instance = instance;
-      await this.renderSandbox(instance, headless);
-      await this.runLifecycle("provision");
+      // E2B sandboxes return a url directly from create — no separate
+      // connect step needed (the API proxies commands via Ably).
+      if (newSandbox?.sandbox?.url) {
+        this.sandbox.setConnectionParams({
+          sandboxId: this.sandboxId,
+          persist: true,
+          keepAlive: this.keepAlive,
+        });
+        this.emitter.emit(events.sandbox.connected);
+        this.instance = newSandbox.sandbox;
+        await this.renderSandbox(this.instance, headless);
+        await this.runLifecycle("provision");
+      } else {
+        let instance = await this.connectToSandboxDirect(
+          this.sandboxId,
+          true, // always persist by default
+          this.keepAlive, // pass keepAlive TTL
+        );
+        this.instance = instance;
+        await this.renderSandbox(instance, headless);
+        await this.runLifecycle("provision");
+      }
     }
   }
 
@@ -1786,15 +1789,8 @@ ${regression}
         timestamp: Date.now(),
       });
 
-      // Start the debugger server as early as possible to ensure event listeners are attached
-      if (!debuggerStarted) {
-        debuggerStarted = true; // Prevent multiple starts, especially when running test in parallel
-        debuggerProcess = await createDebuggerProcess(
-          this.config,
-          this.emitter,
-        );
-      }
-      this.debuggerUrl = debuggerProcess.url || null; // Store the debugger URL
+      // Debugger UI is hosted on the web app (console.testdriver.ai/debugger/)
+      // No local debugger server needed
       this.emitter.emit(events.log.log, `This is beta software!`);
       this.emitter.emit(events.log.log, ``);
       this.emitter.emit(
@@ -1921,12 +1917,13 @@ ${regression}
       // Base64 encode the data (the debugger expects base64, not URL encoding)
       const encodedData = Buffer.from(JSON.stringify(data)).toString("base64");
 
-      // Use the debugger URL instead of the VNC URL
-      const urlToOpen = `${this.debuggerUrl}?data=${encodedData}`;
+      // Build debugger URL — hosted on S3 (v7-vnc bucket)
+      const debuggerBase = process.env.TD_DEBUGGER_BASE_URL || "http://v7-vnc.s3.us-east-2.amazonaws.com";
+      // URL-encode the base64 data to handle +, /, = characters safely
+      const urlToOpen = `${debuggerBase}/index.html?data=${encodeURIComponent(encodedData)}`;
 
       // Check preview mode from CLI options (SDK passes it directly)
       const previewMode = (this.cliArgs.options && this.cliArgs.options.preview) || this.config.TD_PREVIEW || "browser";
-      console.log("[DEBUG renderSandbox] preview:", previewMode);
 
       if (previewMode === "ide") {
         // Send session to VS Code extension via HTTP
@@ -1937,6 +1934,23 @@ ${regression}
       }
       // If preview is "none", don't open anything
     }
+  }
+
+  // Get the console (web app) URL for the given API root
+  _getConsoleUrl(apiRoot) {
+    // Allow explicit override via env (e.g. VITE_DOMAIN from .env)
+    if (process.env.VITE_DOMAIN) return process.env.VITE_DOMAIN;
+
+    const mapping = {
+      "https://api.testdriver.ai": "https://console.testdriver.ai",
+      "https://v6.testdriver.ai": "https://console.testdriver.ai",
+    };
+    if (mapping[apiRoot]) return mapping[apiRoot];
+    // Local dev: API on localhost:1337 -> Web on localhost:3001
+    if (apiRoot.includes("localhost:1337") || apiRoot.includes("127.0.0.1:1337")) {
+      return "http://localhost:3001";
+    }
+    return "https://console.testdriver.ai";
   }
 
   // Write session file for IDE preview (VSCode extension watches for these)

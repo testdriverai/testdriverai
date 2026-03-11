@@ -137,10 +137,10 @@ The API endpoint can be configured in three ways (in order of precedence):
 
 1. **Per-session**: Pass `apiRoot` to `session_start` tool
 2. **Environment variable**: Set `TD_API_ROOT` in your MCP config
-3. **Default**: `https://testdriver-api.onrender.com`
+3. **Default**: `https://api.testdriver.ai`
 
 Common values:
-- **Production**: `https://testdriver-api.onrender.com`
+- **Production**: `https://api.testdriver.ai`
 - **Local dev**: Your ngrok URL (e.g., `https://abc123.ngrok.io`)
 
 ### Self-Hosted AWS Instances

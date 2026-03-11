@@ -330,9 +330,6 @@
 
     <div class="overlay" id="overlay">
       <div class="effects" id="effects">
-        <div class="mouse" id="mouse"></div>
-        <div class="screenshot" id="screenshot"></div>
-        <div class="status" id="status"></div>
         <div class="interaction-overlay" id="interaction-overlay">
           <svg class="lock-icon" viewBox="0 0 24 24">
             <path
@@ -346,219 +343,42 @@
     </div>
 
     <script>
-      // get data from URL parameters
+      // Parse session data from URL
       const urlParams = new URLSearchParams(window.location.search);
       const data = urlParams.get("data");
       let parsedData;
       if (data) {
         try {
           parsedData = JSON.parse(atob(data));
-          console.log("Data from URL:", parsedData);
-          // You can use parsedData here if needed
-        } catch (error) {
-          console.error("Error parsing data from URL:", error);
+        } catch (e) {
+          console.error("Error parsing data:", e);
         }
-      } else {
-        alert(
-          "Improperly formatted URL. Please ensure the data parameter is present.",
-        );
+      }
+      // Demo mode: use mock data if no data param provided (for local dev)
+      if (!parsedData || !parsedData.url) {
+        const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        if (isLocalDev) {
+          console.log("[Debugger] No data param — using demo mode");
+          parsedData = {
+            url: "about:blank",
+            resolution: [1366, 768],
+            testFile: "demo-test.mjs",
+            os: "linux",
+            token: null,
+          };
+        } else {
+          alert("Missing or invalid data parameter.");
+        }
       }
 
-      const iframe = document.querySelector("#vm-iframe");
-
-      // Detect if OS is Linux
-      const isLinux = parsedData.os === "linux";
-      const topBarOffset = isLinux ? 14 : 0;
-
-      // set overlay width and height to match the given resolution
-      const overlayWidth = parsedData.resolution[0];
-      const overlayHeight = parsedData.resolution[1];
-
-      iframe.style.display = "block";
-      iframe.src = parsedData.url;
-      iframe.style.width = overlayWidth + "px";
-      // Increase iframe height by 14px for Linux to account for top bar
-      iframe.style.height = overlayHeight + topBarOffset + "px";
-
-      // Calculate scale factor to fit within window if needed
-      const windowWidth = window.innerWidth;
-      const windowHeight = window.innerHeight;
-      const padding = 20; // Add some padding to prevent cropping
-      const scaleX = (windowWidth - padding * 2) / overlayWidth;
-      const scaleY = (windowHeight - padding * 2) / overlayHeight;
-      const scale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
-
-      console.log("window:", {
-        width: windowWidth,
-        height: windowHeight,
-      });
-      console.log("overlay:", {
-        width: overlayWidth,
-        height: overlayHeight,
-      });
-
+      // Elements
+      const iframe = document.getElementById("vm-iframe");
       const overlay = document.getElementById("overlay");
-      overlay.style.width = overlayWidth + "px";
-      overlay.style.height = overlayHeight + "px";
-
-      console.log("scale", scale);
-      // Apply scaling if needed
-      if (scale < 1) {
-        overlay.style.transform = `scale(${scale})`;
-      }
-
-      // WebSocket connection
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${protocol}//${window.location.host}`);
-
-      // WebSocket event handlers
-      const eventHandlers = new Map();
-
-      const addEventHandler = (event, callback) => {
-        if (!eventHandlers.has(event)) {
-          eventHandlers.set(event, []);
-        }
-        eventHandlers.get(event).push(callback);
-      };
-
-      // Activity tracking for title updates
-      let idleTimeout = null;
-      const IDLE_THRESHOLD = 5000; // 5 seconds
-
-      // Get test file name for title (use just filename, not full path)
-      const testFileName = parsedData?.testFile 
-        ? parsedData.testFile.split('/').pop().split('\\\\').pop()
-        : 'TestDriver';
-
-      const setTitle = (status) => {
-        document.title = `[${status}] ${testFileName}`;
-      };
-
-      const resetIdleTimer = () => {
-        setTitle("Running");
-        if (idleTimeout) clearTimeout(idleTimeout);
-        idleTimeout = setTimeout(() => {
-          setTitle("Idle");
-        }, IDLE_THRESHOLD);
-      };
-
-      ws.addEventListener("message", (message) => {
-        resetIdleTimer();
-        try {
-          const data = JSON.parse(message.data);
-          console.log("WebSocket message received:", data);
-          const handlers = eventHandlers.get(data.event);
-          if (handlers) {
-            handlers.forEach((callback) => callback(null, data.data));
-          }
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      });
-
-      ws.addEventListener("open", () => {
-        console.log("WebSocket connected to TestDriver.ai overlay");
-
-        // Hide loading screen
-        const loadingScreen = document.getElementById("loading-screen");
-        loadingScreen.classList.add("hidden");
-
-        // Show connection status briefly
-        document.getElementById("status").textContent = "Connected";
-        document.getElementById("status").classList.add("visible");
-        setTimeout(() => {
-          document.getElementById("status").classList.remove("visible");
-        }, 2000);
-      });
-
-      ws.addEventListener("error", (error) => {
-        console.error("WebSocket error:", error);
-        document.getElementById("status").textContent = "Connection Error";
-        document.getElementById("status").classList.add("visible");
-      });
-
-      ws.addEventListener("close", () => {
-        console.log("WebSocket disconnected");
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Done");
-        document.getElementById("status").textContent = "Disconnected";
-        document.getElementById("status").classList.add("visible");
-      });
-
-      // Event handling (same as original)
-      const events = {
-        mouseClick: "mouse-click",
-        mouseMove: "mouse-move",
-        screenCapture: {
-          start: "screen-capture:start",
-          end: "screen-capture:end",
-          error: "screen-capture:error",
-        },
-        interactive: "interactive",
-        terminal: {
-          stdout: "terminal:stdout",
-          stderr: "terminal:stderr",
-        },
-        matches: {
-          show: "matches:show",
-        },
-        vm: {
-          show: "vm:show",
-        },
-        test: {
-          start: "test:start",
-          stop: "test:stop",
-          success: "test:success",
-          error: "test:error",
-        },
-        error: {
-          fatal: "error:fatal",
-          general: "error:general",
-          sdk: "error:sdk",
-        },
-      };
-
-      // Title state handlers for immediate feedback
-      addEventHandler(events.test.start, () => {
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Running");
-      });
-
-      addEventHandler(events.test.stop, () => {
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Stopped");
-      });
-
-      addEventHandler(events.test.success, () => {
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Passed");
-      });
-
-      addEventHandler(events.test.error, () => {
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Failed");
-      });
-
-      addEventHandler(events.error.fatal, () => {
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Error");
-      });
-
-      addEventHandler(events.error.sdk, () => {
-        if (idleTimeout) clearTimeout(idleTimeout);
-        setTitle("Error");
-      });
-
-      const effects = document.getElementById("effects");
-      const mouse = document.getElementById("mouse");
-      const screenshotElement = document.getElementById("screenshot");
+      const loadingScreen = document.getElementById("loading-screen");
       const interactionOverlay = document.getElementById("interaction-overlay");
 
-      let boundingBoxesTimeout;
-      let interactionTimeout;
       let isInteractionEnabled = false;
 
-      // Show interaction overlay on hover, hide on click, and bring back after 30 seconds
       const showInteractionOverlay = () => {
         if (!isInteractionEnabled) {
           interactionOverlay.classList.add("visible");
@@ -568,204 +388,82 @@
       const hideInteractionOverlay = () => {
         interactionOverlay.classList.remove("visible");
         isInteractionEnabled = true;
-        iframe.classList.add("interactive"); // Enable pointer events on iframe
-
-        // Clear any existing timeout
-        if (interactionTimeout) {
-          clearTimeout(interactionTimeout);
-        }
+        iframe.classList.add("interactive");
       };
 
       const disableInteraction = () => {
         isInteractionEnabled = false;
-        iframe.classList.remove("interactive"); // Disable pointer events on iframe
+        iframe.classList.remove("interactive");
       };
 
-      // Event listeners for interaction overlay
       overlay.addEventListener("mouseenter", showInteractionOverlay);
       overlay.addEventListener("mouseleave", () => {
         if (!isInteractionEnabled) {
           interactionOverlay.classList.remove("visible");
         }
       });
-
       interactionOverlay.addEventListener("click", hideInteractionOverlay);
 
-      const drawBoxes = (boxes) => {
-        // Remove existing boxes
-        document.querySelectorAll(".bounding-box").forEach((box) => {
-          box.remove();
-        });
-
-        // Add new boxes
-        boxes.forEach((box) => {
-          const boxElement = document.createElement("div");
-          boxElement.className = "bounding-box";
-          boxElement.style.left = toCss(box.x);
-          boxElement.style.top = toCss(box.y + topBarOffset);
-          boxElement.style.width = toCss(box.width);
-          boxElement.style.height = toCss(box.height);
-          effects.appendChild(boxElement);
-        });
-      };
-      // Screen capture event handlers
-      addEventHandler(events.screenCapture.start, (event, data) => {
-        if (data?.silent) return;
-        screenshotElement.style.opacity = 0;
-      });
-
-      addEventHandler(events.screenCapture.error, (event, data) => {
-        if (data?.silent) return;
-        screenshotElement.style.opacity = 1;
-      });
-
-      addEventHandler(events.screenCapture.end, (event, data) => {
-        if (data?.silent) return;
-        screenshotElement.classList.remove("screenshot");
-        // Force reflow
-        void screenshotElement.offsetWidth;
-        screenshotElement.classList.add("screenshot");
-      });
-
-      // Mouse event handlers
-      addEventHandler(events.mouseMove, (event, { x, y } = {}) => {
-        mouse.style.marginLeft = toCss(x);
-        mouse.style.marginTop = toCss(y + topBarOffset);
-      });
-
-      addEventHandler(
-        events.mouseClick,
-        (event, { x, y, click = "single" } = {}) => {
-          mouse.style.marginLeft = toCss(x);
-          mouse.style.marginTop = toCss(y + topBarOffset);
-          // Reset class so animation can restart
-          mouse.setAttribute("class", "mouse");
-          // Force reflow
-          void mouse.offsetWidth;
-          mouse.classList.add(`${click}-click`);
-        },
-      );
-
-      // Matches and VM event handlers
-      addEventHandler(events.matches.show, (event, closeMatches = []) => {
-        if (boundingBoxesTimeout) clearTimeout(boundingBoxesTimeout);
-        drawBoxes(closeMatches);
-        boundingBoxesTimeout = setTimeout(() => drawBoxes([]), 10000);
-      });
-
-      addEventHandler(events.terminal.stdout, (event, data) => {
-        console.log("Terminal stdout:", data);
-        // Could be used to display terminal output in UI
-      });
-
-      addEventHandler(events.terminal.stderr, (event, data) => {
-        console.log("Terminal stderr:", data);
-        // Could be used to display terminal errors in UI
-      });
-
-      const toCss = (size) => {
-        if (typeof size === "number") {
-          return `${size}px`;
-        }
-        return size;
-      };
-
-      // Throttle function to limit how often a function can run
-      function throttle(fn, wait) {
-        let lastTime = 0;
-        return function (...args) {
-          const now = Date.now();
-          if (now - lastTime >= wait) {
-            lastTime = now;
-            fn.apply(this, args);
-          }
-        };
-      }
-
-      const resizeOverlay = () => {
-        if (parsedData && parsedData.resolution) {
-          const overlayWidth = parsedData.resolution[0];
-          const overlayHeight = parsedData.resolution[1];
-          const windowWidth = window.innerWidth;
-          const windowHeight = window.innerHeight;
-          const scaleX = windowWidth / overlayWidth;
-          const scaleY = windowHeight / overlayHeight;
-          const scale = Math.min(scaleX, scaleY);
-
-          console.log("scale", scale);
-
-          console.log(
-            "resolution:",
-            JSON.stringify({
-              width: overlayWidth,
-              height: overlayHeight,
-            }),
-          );
-
-          console.log(
-            "window:",
-            JSON.stringify({
-              width: windowWidth,
-              height: windowHeight,
-            }),
-          );
-          const overlay = document.getElementById("overlay");
-          if (scale < 1) {
-            overlay.style.transform = `scale(${scale})`;
-          } else {
-            overlay.style.transform = "none";
-          }
-
-          // get the new width and height after scaling
-          const scaledWidth = overlayWidth * scale;
-          const scaledHeight = overlayHeight * scale;
-
-          console.log("scaledWidth", JSON.stringify(scaledWidth));
-          console.log("scaledHeight", JSON.stringify(scaledHeight));
-
-          // use the scaled width and height to center the overlay
-          overlay.style.position = "absolute";
-          if (scale < 1) {
-            // When scaling down, use the original dimensions and let CSS transform handle the scaling
-            overlay.style.width = `${overlayWidth}px`;
-            overlay.style.height = `${overlayHeight}px`;
-            overlay.style.left = `${(windowWidth - scaledWidth) / 2}px`;
-            overlay.style.top = `${(windowHeight - scaledHeight) / 2}px`;
-          } else {
-            // When no scaling is needed, just center the overlay at its original size
-            overlay.style.width = `${overlayWidth}px`;
-            overlay.style.height = `${overlayHeight}px`;
-            overlay.style.left = `${(windowWidth - overlayWidth) / 2}px`;
-            overlay.style.top = `${(windowHeight - overlayHeight) / 2}px`;
-          }
-
-          console.log(
-            "left,top",
-            JSON.stringify({
-              left:
-                scale < 1
-                  ? (windowWidth - scaledWidth) / 2
-                  : (windowWidth - overlayWidth) / 2,
-              top:
-                scale < 1
-                  ? (windowHeight - scaledHeight) / 2
-                  : (windowHeight - overlayHeight) / 2,
-            }),
-          );
-        }
-      };
-      resizeOverlay();
-
-      // Handle window resize to recalculate scale (throttled)
-      window.addEventListener("resize", throttle(resizeOverlay, 100));
-
-      setInterval(resizeOverlay, 1000);
-
-      // Handle window blur/focus for screen locking
       window.addEventListener("blur", () => {
         showInteractionOverlay();
         disableInteraction();
       });
+
+      // Set title from test file name
+      const testFileName = parsedData?.testFile
+        ? parsedData.testFile.split("/").pop().split("\\").pop()
+        : "TestDriver";
+      document.title = `${testFileName} - Debugger`;
+
+      // Embed the VNC URL in the iframe with token
+      iframe.style.display = "block";
+      const vncUrl = new URL(parsedData.url);
+      if (parsedData.token) {
+        vncUrl.searchParams.set("token", parsedData.token);
+      }
+      iframe.src = vncUrl.toString();
+
+      // Hide loading screen once iframe loads
+      iframe.addEventListener("load", () => {
+        loadingScreen.classList.add("hidden");
+      });
+      // Fallback: hide loading screen after 5s even if load event doesn't fire
+      setTimeout(() => loadingScreen.classList.add("hidden"), 5000);
+
+      // Resolution from session data
+      const overlayWidth = parsedData.resolution?.[0] || 1366;
+      const overlayHeight = parsedData.resolution?.[1] || 768;
+
+      iframe.style.width = overlayWidth + "px";
+      iframe.style.height = overlayHeight + "px";
+
+      // Throttle helper
+      function throttle(fn, wait) {
+        let last = 0;
+        return function (...args) {
+          const now = Date.now();
+          if (now - last >= wait) { last = now; fn.apply(this, args); }
+        };
+      }
+
+      // Responsive: scale and center the overlay to fit the window
+      const resizeOverlay = () => {
+        const ww = window.innerWidth;
+        const wh = window.innerHeight;
+        const scale = Math.min(ww / overlayWidth, wh / overlayHeight, 1);
+        const sw = overlayWidth * scale;
+        const sh = overlayHeight * scale;
+
+        overlay.style.width = overlayWidth + "px";
+        overlay.style.height = overlayHeight + "px";
+        overlay.style.position = "absolute";
+        overlay.style.transform = scale < 1 ? `scale(${scale})` : "none";
+        overlay.style.left = `${(ww - sw) / 2}px`;
+        overlay.style.top = `${(wh - sh) / 2}px`;
+      };
+
+      resizeOverlay();
+      window.addEventListener("resize", throttle(resizeOverlay, 100));
     </script>
   </body>
 </html>

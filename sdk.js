@@ -4,8 +4,14 @@ const os = require("os");
 const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
 
-// Load .env file into process.env by default
-require("dotenv").config();
+// Load .env — use monorepo root .env when running inside the monorepo,
+// otherwise fall back to default dotenv.config() for end users.
+const _isMonorepo = __dirname.includes(require('path').join('mono', 'sdk'));
+if (_isMonorepo) {
+  require('../shared/load-env');
+} else {
+  require('dotenv').config();
+}
 
 /**
  * Get the file path of the caller (the file that called TestDriver)
@@ -457,7 +463,7 @@ class Element {
     let findError = null;
 
     const debugMode =
-      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      process.env.VERBOSE || process.env.TD_DEBUG;
 
     // Log finding action
     const { events } = require("./agent/events.js");
@@ -724,7 +730,7 @@ class Element {
 
     // Only keep base64 data in DEBUG mode
     const debugMode =
-      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      process.env.VERBOSE || process.env.TD_DEBUG;
     if (debugMode) {
       return response;
     }
@@ -778,7 +784,7 @@ class Element {
 
     // Log cache information in debug mode
     const debugMode =
-      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      process.env.VERBOSE || process.env.TD_DEBUG;
     if (debugMode) {
       const { events } = require("./agent/events.js");
       this.sdk.emitter.emit(events.log.debug, "Element Found:");
@@ -1396,7 +1402,7 @@ function normalizeRedrawOptions(opts) {
  * @typedef {'up' | 'down' | 'left' | 'right'} ScrollDirection
  * @typedef {'keyboard' | 'mouse'} ScrollMethod
  * @typedef {'ai' | 'turbo'} TextMatchMethod
- * @typedef {'pwsh' | 'sh'} ExecLanguage
+ * @typedef {'js' | 'pwsh'} ExecLanguage
  * @typedef {'\\t' | '\n' | '\r' | ' ' | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '{' | '|' | '}' | '~' | 'accept' | 'add' | 'alt' | 'altleft' | 'altright' | 'apps' | 'backspace' | 'browserback' | 'browserfavorites' | 'browserforward' | 'browserhome' | 'browserrefresh' | 'browsersearch' | 'browserstop' | 'capslock' | 'clear' | 'convert' | 'ctrl' | 'ctrlleft' | 'ctrlright' | 'decimal' | 'del' | 'delete' | 'divide' | 'down' | 'end' | 'enter' | 'esc' | 'escape' | 'execute' | 'f1' | 'f10' | 'f11' | 'f12' | 'f13' | 'f14' | 'f15' | 'f16' | 'f17' | 'f18' | 'f19' | 'f2' | 'f20' | 'f21' | 'f22' | 'f23' | 'f24' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8' | 'f9' | 'final' | 'fn' | 'hanguel' | 'hangul' | 'hanja' | 'help' | 'home' | 'insert' | 'junja' | 'kana' | 'kanji' | 'launchapp1' | 'launchapp2' | 'launchmail' | 'launchmediaselect' | 'left' | 'modechange' | 'multiply' | 'nexttrack' | 'nonconvert' | 'num0' | 'num1' | 'num2' | 'num3' | 'num4' | 'num5' | 'num6' | 'num7' | 'num8' | 'num9' | 'numlock' | 'pagedown' | 'pageup' | 'pause' | 'pgdn' | 'pgup' | 'playpause' | 'prevtrack' | 'print' | 'printscreen' | 'prntscrn' | 'prtsc' | 'prtscr' | 'return' | 'right' | 'scrolllock' | 'select' | 'separator' | 'shift' | 'shiftleft' | 'shiftright' | 'sleep' | 'space' | 'stop' | 'subtract' | 'tab' | 'up' | 'volumedown' | 'volumemute' | 'volumeup' | 'win' | 'winleft' | 'winright' | 'yen' | 'command' | 'option' | 'optionleft' | 'optionright'} KeyboardKey
  */
 
@@ -1434,7 +1440,7 @@ class TestDriverSDK {
     // Set up environment with API key
     const environment = {
       TD_API_KEY: resolvedApiKey,
-      TD_API_ROOT: options.apiRoot || "https://testdriver-api.onrender.com",
+      TD_API_ROOT: options.apiRoot || "https://api.testdriver.ai",
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
       TD_PREVIEW: previewMode,
@@ -1484,6 +1490,9 @@ class TestDriverSDK {
 
     // Store IP address if provided for direct connection
     this.ip = options.ip || null;
+
+    // Store EC2 instance ID for direct connections (used to provision Ably credentials via SSM)
+    this.instanceId = options.instanceId || null;
 
     // Store sandbox configuration options
     this.sandboxAmi = options.sandboxAmi || null;
@@ -1862,6 +1871,8 @@ class TestDriverSDK {
           "--no-first-run",
           "--no-experiments",
           "--disable-infobars",
+          "--disable-features=StartupBrowserCreator",
+          "--disable-features=ChromeWhatsNewUI",
           `--user-data-dir=${userDataDir}`,
         );
 
@@ -2770,6 +2781,13 @@ CAPTCHA_SOLVER_EOF`,
     } else if (this.ip) {
       this.agent.ip = this.ip;
     }
+    // Use instanceId from connectOptions if provided, otherwise fall back to constructor value
+    // This allows the API to provision Ably credentials via SSM for direct connections
+    if (connectOptions.instanceId !== undefined) {
+      this.agent.instanceId = connectOptions.instanceId;
+    } else if (this.instanceId) {
+      this.agent.instanceId = this.instanceId;
+    }
     // Use sandboxAmi from connectOptions if provided, otherwise fall back to constructor value
     if (connectOptions.sandboxAmi !== undefined) {
       this.agent.sandboxAmi = connectOptions.sandboxAmi;
@@ -2870,14 +2888,7 @@ CAPTCHA_SOLVER_EOF`,
       }
     }
 
-    // Release our reference to the shared debugger server.
-    // The server only actually stops when the last concurrent test disconnects.
-    try {
-      const { releaseDebugger } = require("./agent/lib/debugger-server.js");
-      releaseDebugger();
-    } catch (err) {
-      // Ignore if debugger wasn't started
-    }
+
 
     // Always close the sandbox WebSocket connection to clean up resources
     // This ensures we don't leave orphaned connections even if connect() failed
@@ -3108,7 +3119,7 @@ CAPTCHA_SOLVER_EOF`,
 
       // Debug log threshold
       const debugMode =
-        process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+        process.env.VERBOSE || process.env.TD_DEBUG;
       if (debugMode) {
         const autoGenMsg =
           this._autoGeneratedCacheKey && cacheKey === this.options.cacheKey
@@ -3166,7 +3177,7 @@ CAPTCHA_SOLVER_EOF`,
 
           // Only store screenshot in DEBUG mode
           const debugMode =
-            process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+            process.env.VERBOSE || process.env.TD_DEBUG;
           if (debugMode) {
             element._screenshot = screenshot;
           }
@@ -3196,7 +3207,7 @@ CAPTCHA_SOLVER_EOF`,
         }
 
         // Log debug information when elements are found
-        if (process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG) {
+        if (process.env.VERBOSE || process.env.TD_DEBUG) {
           this.emitter.emit(
             events.log.debug,
             `✓ Found ${elements.length} element(s): "${description}"`,
@@ -3310,7 +3321,7 @@ CAPTCHA_SOLVER_EOF`,
    */
   _sanitizeResponseForElement(response, elementData) {
     const debugMode =
-      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      process.env.VERBOSE || process.env.TD_DEBUG;
 
     // Combine global response data with element-specific data
     const sanitized = {
@@ -3722,7 +3733,7 @@ CAPTCHA_SOLVER_EOF`,
       fs.writeFileSync(filePath, buffer);
 
       // Debug log in verbose mode
-      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      const debugMode = process.env.VERBOSE || process.env.TD_DEBUG;
       if (debugMode) {
         this.emitter.emit("log:debug", `📸 Auto-screenshot: ${filename}`);
       }
@@ -3730,7 +3741,7 @@ CAPTCHA_SOLVER_EOF`,
       return filePath;
     } catch (error) {
       // Don't fail the command if screenshot fails
-      const debugMode = process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      const debugMode = process.env.VERBOSE || process.env.TD_DEBUG;
       if (debugMode) {
         this.emitter.emit("log:debug", `Failed to save auto-screenshot: ${error.message}`);
       }
@@ -3794,7 +3805,7 @@ CAPTCHA_SOLVER_EOF`,
     // Track the last fatal error message to throw on exit
     let lastFatalError = null;
     const debugMode =
-      process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+      process.env.VERBOSE || process.env.TD_DEBUG;
 
     // Set up markdown logger
     createMarkdownLogger(this.emitter);
@@ -3938,14 +3949,8 @@ CAPTCHA_SOLVER_EOF`,
    * @private
    */
   async _initializeDebugger() {
-    // Use reference-counted debugger server so concurrent tests share one
-    // server and it only shuts down when the last test disconnects.
-    const { acquireDebugger } = require("./agent/lib/debugger-server.js");
-
-    if (!this.agent.debuggerUrl) {
-      const result = await acquireDebugger(this.config, this.emitter);
-      this.agent.debuggerUrl = result.url || null;
-    }
+    // Debugger UI is now hosted on the web app (console.testdriver.ai/debugger/)
+    // No local debugger server needed — the agent builds the URL at render time.
   }
 
   // ====================================

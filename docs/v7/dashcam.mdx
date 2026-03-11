@@ -3,71 +3,52 @@ title: "Dashcam"
 sidebarTitle: "Dashcam"
 description: "Record test execution with video and logs"
 icon: "video"
-mode: "wide"
 ---
 
 ## Overview
 
-Dashcam provides automatic video recording and log aggregation for your tests. It captures screen recordings, application logs, and test execution details — then produces a shareable replay URL for debugging failures and reviewing test runs.
-
-Dashcam recording is **enabled by default** when using TestDriver. You can disable it via `dashcam: false` in the client options.
+Dashcam provides automatic video recording and log aggregation for your tests. It captures screen recordings, application logs, and test execution details that can be reviewed later.
 
 ## Basic Usage
 
-### With Provision API
+### With Presets
 
-The simplest way to use Dashcam is through the provision API, which handles setup automatically:
-
-```javascript
-import TestDriver from 'testdriverai';
-
-const testdriver = new TestDriver({ os: 'linux' });
-await testdriver.ready();
-
-// Provision automatically starts Dashcam recording
-await testdriver.provision.chrome({ url: 'https://example.com' });
-
-// Run your test
-await testdriver.find('login button').click();
-
-// Stop and get replay URL
-const url = await testdriver.dashcam.stop();
-console.log('Replay:', url);
-```
-
-### With Provision Dashcam
-
-You can explicitly provision Dashcam with additional options:
+Most presets automatically include Dashcam:
 
 ```javascript
-await testdriver.provision.dashcam({
-  title: 'Login Flow Test',
-  logPath: '/tmp/my-app.log',
-  logName: 'Application Log',
-  webLogs: true,
+import { test } from 'vitest';
+import { chrome } from 'testdriverai/presets';
+
+test('my test', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com'
+  });
+  
+  // Test executes with recording automatically
+  await testdriver.find('login button').then(el => el.click());
+  
+  // Dashcam URL available after test
+  console.log('Replay:', dashcam.url);
 });
 ```
 
 ### Manual Setup
 
-For full control, create a Dashcam instance directly:
+For more control, create a Dashcam instance directly:
 
 ```javascript
 import TestDriver from 'testdriverai';
 import Dashcam from 'testdriverai/lib/core/Dashcam.js';
 
-const client = new TestDriver({ os: 'linux' });
-await client.ready();
-
+const client = await TestDriver.create({ os: 'linux' });
 const dashcam = new Dashcam(client, {
-  apiKey: process.env.DASHCAM_API_KEY,
-  title: 'My Test Recording'
+  apiKey: process.env.DASHCAM_API_KEY
 });
 
 await dashcam.auth();
 await dashcam.start();
 
-// Run tests...
+// Run your tests
 
 const url = await dashcam.stop();
 console.log('Replay URL:', url);
@@ -75,50 +56,32 @@ console.log('Replay URL:', url);
 
 ## Constructor
 
+Create a new Dashcam instance:
+
 ```javascript
-new Dashcam(client, options?)
+new Dashcam(client, options)
 ```
 
+### Parameters
+
 <ParamField path="client" type="TestDriver" required>
-  TestDriver client instance that this Dashcam is attached to.
+  TestDriver client instance
 </ParamField>
 
 <ParamField path="options" type="object">
-  Configuration options.
+  Configuration options
 
-  <Expandable title="properties">
+  <Expandable title="options properties">
     <ParamField path="apiKey" type="string" default="4e93d8bf-3886-4d26-a144-116c4063522d">
-      Dashcam API key for authentication. A default key is provided for built-in recording.
+      Dashcam API key for authentication
     </ParamField>
 
     <ParamField path="autoStart" type="boolean" default={false}>
-      Automatically start recording after `auth()` completes.
+      Automatically start recording after authentication
     </ParamField>
 
-    <ParamField path="logs" type="LogConfig[]" default={[]}>
-      Log source configurations to add automatically before recording starts.
-      
-      <Expandable title="LogConfig">
-        <ParamField path="name" type="string" required>
-          Display name for the log in the Dashcam replay.
-        </ParamField>
-        <ParamField path="type" type="string" required>
-          Log source type: `'file'`, `'stdout'`, `'application'`, or `'web'`.
-        </ParamField>
-        <ParamField path="path" type="string">
-          File path (required when `type` is `'file'`).
-        </ParamField>
-        <ParamField path="application" type="string">
-          Application name (required when `type` is `'application'`).
-        </ParamField>
-        <ParamField path="pattern" type="string">
-          URL pattern (required when `type` is `'web'`).
-        </ParamField>
-      </Expandable>
-    </ParamField>
-
-    <ParamField path="title" type="string">
-      Recording title. If not set, auto-generated from the test context (e.g., `"testName - fileName"`) or a timestamp.
+    <ParamField path="logs" type="array" default={[]}>
+      Log configurations to add automatically
     </ParamField>
   </Expandable>
 </ParamField>
@@ -127,26 +90,26 @@ new Dashcam(client, options?)
 
 ### auth()
 
-Authenticate with the Dashcam service. Must be called before `start()` unless `autoStart` is `true`.
+Authenticate with Dashcam service:
 
 ```javascript
-await dashcam.auth(apiKey?)
+await dashcam.auth(apiKey)
 ```
 
-<ParamField path="apiKey" type="string">
-  Override the API key set in the constructor.
+<ParamField path="apiKey" type="string" optional>
+  Override the API key set in constructor
 </ParamField>
 
 **Returns:** `Promise<void>`
 
-**Behavior:**
-- Installs the Dashcam CLI via npm if not already present
-- Authenticates using the provided API key
-- If `autoStart` is `true`, automatically calls `start()` after authentication
+**Example:**
+```javascript
+await dashcam.auth('your-api-key');
+```
 
 ### start()
 
-Start recording. Calls `auth()` automatically if not already authenticated.
+Start recording:
 
 ```javascript
 await dashcam.start()
@@ -154,249 +117,281 @@ await dashcam.start()
 
 **Returns:** `Promise<void>`
 
-**Behavior:**
-- If not yet authenticated, calls `auth()` first
-- Adds any configured log sources
-- Begins screen recording in the sandbox
-- Sets `recording` to `true` and records `startTime`
+**Example:**
+```javascript
+await dashcam.start();
+console.log('Recording started');
+```
 
 ### stop()
 
-Stop recording and retrieve the replay URL.
+Stop recording and retrieve replay URL:
 
 ```javascript
-const url = await dashcam.stop()
+await dashcam.stop()
 ```
 
-**Returns:** `Promise<string | null>` — Replay URL, or `null` if no URL could be parsed.
+**Returns:** `Promise<string|null>` - Replay URL if available
 
-**Behavior:**
-- Sends stop command to the Dashcam CLI
-- Parses the CLI output for URLs matching `replay/` or `dashcam.io`/`testdriver.ai` patterns
-- Sets `recording` to `false`
-- Returns the replay URL for sharing
-
+**Example:**
 ```javascript
 const url = await dashcam.stop();
 if (url) {
   console.log('Watch replay:', url);
+} else {
+  console.log('No replay URL available');
 }
 ```
 
-### setTitle()
-
-Set or update the recording title.
-
-```javascript
-dashcam.setTitle(title)
-```
-
-<ParamField path="title" type="string" required>
-  New title for the recording.
-</ParamField>
-
-**Behavior:** If not explicitly set, Dashcam generates a default title:
-1. From Vitest context: `"testName - fileName"` 
-2. Fallback: timestamp-based format
-
 ### addFileLog()
 
-Track a log file in the recording.
+Track a log file in the recording:
 
 ```javascript
-dashcam.addFileLog(path, name)
+await dashcam.addFileLog(path, name)
 ```
 
 <ParamField path="path" type="string" required>
-  Absolute path to the log file on the sandbox.
+  Path to the log file
 </ParamField>
 
 <ParamField path="name" type="string" required>
-  Display name in the Dashcam replay.
+  Display name for the log in Dashcam
 </ParamField>
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
 // Linux/Mac
-dashcam.addFileLog('/tmp/app.log', 'Application Log');
+await dashcam.addFileLog('/tmp/app.log', 'Application Log');
 
 // Windows
-dashcam.addFileLog('C:\\Users\\testdriver\\app.log', 'Application Log');
+await dashcam.addFileLog('C:\\logs\\app.log', 'Application Log');
 ```
 
 ### addApplicationLog()
 
-Track application-specific logs (system log sources).
+Track application-specific logs:
 
 ```javascript
-dashcam.addApplicationLog(application, name)
+await dashcam.addApplicationLog(application, name)
 ```
 
 <ParamField path="application" type="string" required>
-  Application name to track.
+  Application name to track
 </ParamField>
 
 <ParamField path="name" type="string" required>
-  Display name in the replay.
+  Display name for the log
 </ParamField>
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
-dashcam.addApplicationLog('Google Chrome', 'Browser Logs');
-```
-
-### addWebLog()
-
-Track web traffic logs by URL pattern.
-
-```javascript
-dashcam.addWebLog(pattern, name)
-```
-
-<ParamField path="pattern" type="string" required>
-  URL pattern to match web requests.
-</ParamField>
-
-<ParamField path="name" type="string" required>
-  Display name in the replay.
-</ParamField>
-
-```javascript
-dashcam.addWebLog('*.example.com/*', 'API Traffic');
+await dashcam.addApplicationLog('Google Chrome', 'Browser Logs');
 ```
 
 ### addLog()
 
-Generic method to add any type of log source.
+Generic method to add any type of log:
 
 ```javascript
-dashcam.addLog(config)
+await dashcam.addLog(config)
 ```
 
-<ParamField path="config" type="LogConfig" required>
-  Log configuration object.
+<ParamField path="config" type="object" required>
+  Log configuration
 
-  <Expandable title="properties">
+  <Expandable title="config properties">
     <ParamField path="name" type="string" required>
-      Display name for the log.
+      Display name for the log
     </ParamField>
+
     <ParamField path="type" type="string" required>
-      Log type: `'file'`, `'stdout'`, `'application'`, or `'web'`.
+      Log type: `'file'`, `'stdout'`, or `'application'`
     </ParamField>
+
     <ParamField path="path" type="string">
-      File path (required for `type: 'file'`).
+      File path (required for type='file')
     </ParamField>
+
     <ParamField path="application" type="string">
-      Application name (required for `type: 'application'`).
-    </ParamField>
-    <ParamField path="pattern" type="string">
-      URL pattern (required for `type: 'web'`).
+      Application name (required for type='application')
     </ParamField>
   </Expandable>
 </ParamField>
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
-dashcam.addLog({
+await dashcam.addLog({
   name: 'Test Output',
   type: 'file',
   path: '/tmp/test.log'
 });
 
-dashcam.addLog({
+await dashcam.addLog({
   name: 'Chrome Logs',
   type: 'application',
   application: 'Google Chrome'
-});
-
-dashcam.addLog({
-  name: 'API Traffic',
-  type: 'web',
-  pattern: '*.api.example.com/*'
 });
 ```
 
 ### isRecording()
 
-Check if currently recording.
+Check if currently recording:
 
 ```javascript
-dashcam.isRecording() // boolean
+await dashcam.isRecording()
 ```
 
-**Returns:** `boolean` — `true` if recording is active.
+**Returns:** `Promise<boolean>` - True if recording is active
 
-### getElapsedTime()
-
-Get the elapsed recording time.
-
+**Example:**
 ```javascript
-dashcam.getElapsedTime() // number (ms)
-```
-
-**Returns:** `number` — Milliseconds since recording started.
-
-```javascript
-if (dashcam.isRecording()) {
-  const elapsed = dashcam.getElapsedTime();
-  console.log(`Recording for ${Math.round(elapsed / 1000)}s`);
+if (await dashcam.isRecording()) {
+  console.log('Recording in progress');
 }
 ```
 
 ## Properties
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `client` | `TestDriver` | — | Parent SDK client instance |
-| `apiKey` | `string` | `"4e93d8bf-..."` | Configured API key |
-| `autoStart` | `boolean` | `false` | Whether recording auto-starts after auth |
-| `logs` | `LogConfig[]` | `[]` | Configured log sources |
-| `recording` | `boolean` | `false` | Current recording state |
-| `startTime` | `number \| null` | `null` | Timestamp when recording started |
-| `title` | `string \| null` | `null` | Recording title |
+### recording
 
-## Static Methods
-
-### Dashcam.getConsoleUrl()
-
-Map an API root URL to the corresponding console URL.
+Current recording state:
 
 ```javascript
-Dashcam.getConsoleUrl(apiRoot) // string
+dashcam.recording // boolean
 ```
 
-## Types
+### apiKey
 
-```typescript
-interface DashcamOptions {
-  apiKey?: string;
-  autoStart?: boolean;
-  logs?: LogConfig[];
-  title?: string;
-}
-
-interface LogConfig {
-  name: string;
-  type: 'file' | 'stdout' | 'application' | 'web';
-  path?: string;           // Required for type: 'file'
-  application?: string;    // Required for type: 'application'
-  pattern?: string;        // Required for type: 'web'
-}
-```
-
-## Disabling Dashcam
-
-### In Client Options
+Configured API key:
 
 ```javascript
-const testdriver = new TestDriver({
-  dashcam: false  // Disable recording entirely
+dashcam.apiKey // string
+```
+
+### client
+
+Associated TestDriver client:
+
+```javascript
+dashcam.client // TestDriver instance
+```
+
+## Complete Examples
+
+### Basic Recording
+
+```javascript
+import { test } from 'vitest';
+import TestDriver from 'testdriverai';
+import Dashcam from 'testdriverai/lib/core/Dashcam.js';
+
+test('record test execution', async () => {
+  const client = await TestDriver.create({ os: 'linux' });
+  const dashcam = new Dashcam(client);
+  
+  await dashcam.auth();
+  await dashcam.start();
+  
+  // Run your test
+  await client.find('button').then(el => el.click());
+  
+  const url = await dashcam.stop();
+  console.log('Replay:', url);
+  
+  await client.cleanup();
 });
 ```
 
-### In Provision
+### With Log Tracking
 
 ```javascript
-await testdriver.provision.chrome({
-  url: 'https://example.com',
-  // Dashcam disabled at client level
+test('record with logs', async () => {
+  const client = await TestDriver.create({ os: 'linux' });
+  const dashcam = new Dashcam(client);
+  
+  await dashcam.auth();
+  
+  // Add log files before starting
+  await dashcam.addFileLog('/tmp/testdriver.log', 'TestDriver Log');
+  await dashcam.addFileLog('/tmp/app.log', 'Application Log');
+  
+  await dashcam.start();
+  
+  // Test execution
+  await client.find('login button').then(el => el.click());
+  
+  const url = await dashcam.stop();
+  console.log('Replay with logs:', url);
+  
+  await client.cleanup();
+});
+```
+
+### Auto-start Configuration
+
+```javascript
+test('auto-start recording', async () => {
+  const client = await TestDriver.create({ os: 'linux' });
+  const dashcam = new Dashcam(client, {
+    autoStart: true,
+    logs: [
+      {
+        name: 'App Log',
+        type: 'file',
+        path: '/tmp/app.log'
+      }
+    ]
+  });
+  
+  await dashcam.auth(); // Automatically starts recording
+  
+  // Test execution
+  await client.find('submit button').then(el => el.click());
+  
+  const url = await dashcam.stop();
+  console.log('Replay:', url);
+  
+  await client.cleanup();
+});
+```
+
+### Using with Presets
+
+```javascript
+import { chrome } from 'testdriverai/presets';
+
+test('preset with dashcam', async (context) => {
+  const { testdriver, dashcam } = await chrome(context, {
+    url: 'https://example.com',
+    dashcam: true // Enabled by default
+  });
+  
+  // Test runs with automatic recording
+  await testdriver.find('button').then(el => el.click());
+  
+  // URL automatically available
+  console.log('Replay:', dashcam.url);
+});
+```
+
+### Disabling Dashcam in Presets
+
+```javascript
+test('without dashcam', async (context) => {
+  const { testdriver } = await chrome(context, {
+    url: 'https://example.com',
+    dashcam: false // Disable recording
+  });
+  
+  // Test runs without recording (faster)
+  await testdriver.find('button').then(el => el.click());
 });
 ```
 
@@ -407,82 +402,18 @@ await testdriver.provision.chrome({
 On Windows, Dashcam uses PowerShell commands and installs via npm:
 
 ```javascript
-dashcam.addFileLog(
+// Windows-specific paths
+await dashcam.addFileLog(
   'C:\\Users\\testdriver\\Documents\\testdriver.log',
   'TestDriver Log'
 );
 ```
-
-The default log path is `C:\\Users\\testdriver\\testdriver.log`.
 
 ### Linux/Mac
 
 On Linux/Mac, Dashcam uses shell commands:
 
 ```javascript
-dashcam.addFileLog('/tmp/testdriver.log', 'TestDriver Log');
-```
-
-The default log path is `/tmp/testdriver.log`.
-
-## Examples
-
-### Recording with Multiple Log Sources
-
-```javascript
-const testdriver = new TestDriver({ os: 'linux' });
-await testdriver.ready();
-
-const dashcam = testdriver.dashcam;
-await dashcam.auth();
-
-// Add multiple log sources before starting
-dashcam.addFileLog('/tmp/testdriver.log', 'TestDriver Log');
-dashcam.addFileLog('/tmp/app.log', 'Application Log');
-dashcam.addApplicationLog('Google Chrome', 'Browser Logs');
-dashcam.addWebLog('*.api.example.com/*', 'API Traffic');
-
-await dashcam.start();
-
-// Run tests
-await testdriver.provision.chrome({ url: 'https://example.com' });
-await testdriver.find('login button').click();
-
-const url = await dashcam.stop();
-console.log('Replay with logs:', url);
-```
-
-### Auto-start Configuration
-
-```javascript
-const dashcam = new Dashcam(client, {
-  autoStart: true,
-  title: 'Login Flow Test',
-  logs: [
-    { name: 'App Log', type: 'file', path: '/tmp/app.log' },
-    { name: 'Browser', type: 'application', application: 'Google Chrome' }
-  ]
-});
-
-await dashcam.auth(); // Automatically starts recording
-
-// Run tests
-await client.find('submit button').click();
-
-const url = await dashcam.stop();
-console.log('Replay:', url);
-```
-
-### Checking Recording Status
-
-```javascript
-await dashcam.start();
-console.log('Recording:', dashcam.isRecording()); // true
-
-// After some test actions...
-const elapsed = dashcam.getElapsedTime();
-console.log(`Recorded ${Math.round(elapsed / 1000)} seconds`);
-
-const url = await dashcam.stop();
-console.log('Recording:', dashcam.isRecording()); // false
+// Unix-specific paths
+await dashcam.addFileLog('/tmp/testdriver.log', 'TestDriver Log');
 ```

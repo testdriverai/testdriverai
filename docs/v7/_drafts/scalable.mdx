@@ -564,7 +564,7 @@ test('integrates with existing assertions', async (context) => {
   expect(button.text).toContain('Submit');
 
   // Mix and match as needed
-  const element = await testdriver.exec('sh', 'echo "My App"');
+  const element = await testdriver.exec('js', 'document.title');
   expect(element).toBe('My App');
 });
 ```

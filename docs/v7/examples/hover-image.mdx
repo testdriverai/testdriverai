@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* hover-image.test.mjs output */}
 <iframe 
-  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69ae146d05706023437c71fc/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69a62b77fc0ac3cc632a9198/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -27,7 +27,7 @@ Watch this test execute in a real sandbox environment:
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 /**
  * Perform login flow for SauceLabs demo app

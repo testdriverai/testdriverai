@@ -1,236 +1,48 @@
 ---
-title: "Elements"
+title: "Element Finding"
 sidebarTitle: "Elements"
 description: "Locate and interact with UI elements using AI"
 icon: "mouse-pointer"
-mode: "wide"
 ---
 
 ## Overview
 
-TestDriver's element finding system uses AI to locate elements on screen using natural language descriptions. The `find()` method returns an `Element` object with coordinates, metadata, and interaction methods.
-
-`find()` returns a `ChainableElementPromise` — a `Promise<Element>` that exposes chainable interaction methods so you can find and act in a single expression.
-
-```javascript
-// Chain find + action in one line
-await testdriver.find('submit button').click();
-
-// Or capture the element for multiple interactions
-const element = await testdriver.find('submit button');
-await element.click();
-```
+TestDriver's element finding system uses AI to locate elements on screen using natural language descriptions. The `find()` method returns an `Element` object that you can interact with.
 
 ## Finding Elements
 
 ### find()
 
-Locate a single element on screen using a natural language description.
+Locate an element on screen using a natural language description.
 
 ```javascript
-const element = await testdriver.find(description, options?)
+const element = await testdriver.find(description)
 ```
 
-<ParamField path="description" type="string" required>
-  Natural language description of the element to find. Be specific — include visual details, location context, or nearby text.
-</ParamField>
+**Parameters:**
+- `description` (string) - Natural language description of the element to find
 
-<ParamField path="options" type="FindOptions">
-  Optional configuration for the find operation.
+**Returns:** `Promise<Element>` - Element instance that has been located
 
-  <Expandable title="properties">
-    <ParamField path="timeout" type="number" default={10000}>
-      Maximum time in milliseconds to search for the element. The SDK polls every 5 seconds within this window.
-    </ParamField>
-
-    <ParamField path="confidence" type="number">
-      Minimum AI confidence threshold (0–1). Matches below this score are rejected.
-    </ParamField>
-
-    <ParamField path="type" type="string">
-      Find strategy hint: `"text"`, `"image"`, `"ui"`, or `"any"`.
-    </ParamField>
-
-    <ParamField path="zoom" type="number">
-      Zoom level for the find operation. Useful for small or dense UIs.
-    </ParamField>
-
-    <ParamField path="cacheKey" type="string">
-      Cache key for this find. When provided, enables coordinate caching tied to this key.
-    </ParamField>
-
-    <ParamField path="ai" type="AIConfig">
-      Per-command AI configuration override.
-
-      <Expandable title="properties">
-        <ParamField path="temperature" type="number">
-          Controls randomness. `0` = deterministic.
-        </ParamField>
-        <ParamField path="top" type="object">
-          <Expandable title="properties">
-            <ParamField path="p" type="number">
-              Nucleus sampling threshold (0–1).
-            </ParamField>
-            <ParamField path="k" type="number">
-              Top-K sampling. `1` = greedy.
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
-    </ParamField>
-
-    <ParamField path="cache" type="object">
-      Per-command cache threshold overrides.
-
-      <Expandable title="properties">
-        <ParamField path="thresholds" type="object">
-          <Expandable title="properties">
-            <ParamField path="screen" type="number" default={0.05}>
-              Pixel diff threshold for screen comparison (0–1). `0.05` = 5% diff allowed.
-            </ParamField>
-            <ParamField path="element" type="number" default={0.8}>
-              OpenCV template match threshold (0–1). `0.8` = 80% correlation required.
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
-    </ParamField>
-  </Expandable>
-</ParamField>
-
-**Returns:** `ChainableElementPromise` — a `Promise<Element>` with chainable methods.
-
+**Example:**
 ```javascript
 // Find a button
 const submitButton = await testdriver.find('the submit button');
 
-// Find with options
-const element = await testdriver.find('email input field', {
-  timeout: 20000,
-  confidence: 0.9
-});
+// Find an input field with context
+const emailField = await testdriver.find('email input field in the login form');
 
-// Chain directly
-await testdriver.find('red button in the top right corner').click();
+// Find an element by visual characteristics
+const redButton = await testdriver.find('red button in the top right corner');
 ```
 
 <Tip>
-  Be specific in your descriptions. Include visual details, location context, or nearby text to improve accuracy. For example, `"blue submit button below the email field"` is better than `"button"`.
+  Be specific in your descriptions. Include visual details, location context, or nearby text to improve accuracy.
 </Tip>
-
-### findAll()
-
-Locate all matching elements on screen.
-
-```javascript
-const elements = await testdriver.findAll(description, options?)
-```
-
-<ParamField path="description" type="string" required>
-  Natural language description of the elements to find.
-</ParamField>
-
-<ParamField path="options" type="FindOptions">
-  Same options as `find()`.
-</ParamField>
-
-**Returns:** `Promise<Element[]>` — Array of `Element` instances.
-
-```javascript
-const buttons = await testdriver.findAll('navigation menu items');
-console.log(`Found ${buttons.length} menu items`);
-
-for (const button of buttons) {
-  console.log(`Item at (${button.x}, ${button.y}): ${button.text}`);
-}
-```
-
-### Retry Behavior
-
-The `find()` method uses a timeout-based retry loop:
-
-1. Captures a screenshot and sends it to the AI with the description
-2. If the element is not found, waits **5 seconds** and retries
-3. Repeats until the `timeout` expires (default: 10,000ms)
-4. On final failure, throws an [`ElementNotFoundError`](/v7/errors) with debug data
-
-This means a `timeout` of 10000 allows approximately 2 attempts (initial + 1 retry).
-
-## ChainableElementPromise
-
-When you call `testdriver.find()`, it returns a `ChainableElementPromise` — a special Promise that lets you chain interaction methods directly without awaiting first.
-
-```javascript
-// These are equivalent:
-await testdriver.find('button').click();
-
-const el = await testdriver.find('button');
-await el.click();
-```
-
-### Available chainable methods
-
-| Method | Description |
-|--------|-------------|
-| `.click()` | Click the element |
-| `.hover()` | Hover over the element |
-| `.doubleClick()` | Double-click the element |
-| `.rightClick()` | Right-click the element |
-| `.mouseDown()` | Press mouse button on element |
-| `.mouseUp()` | Release mouse button on element |
-| `.getCoordinates()` | Get `{ x, y }` coordinates |
-| `.getResponse()` | Get full API response |
-
-### Available chainable getters
-
-| Getter | Type | Description |
-|--------|------|-------------|
-| `.found` | `boolean` | Whether element was located |
-| `.x` | `number` | Top-left X coordinate |
-| `.y` | `number` | Top-left Y coordinate |
-| `.centerX` | `number` | Center X coordinate |
-| `.centerY` | `number` | Center Y coordinate |
 
 ## Element Class
 
-The `Element` class represents a located UI element. It provides methods for interaction and properties for element information.
-
-```typescript
-class Element {
-  description: string;
-  coordinates: ElementCoordinates | null;
-
-  // Getters
-  x: number;
-  y: number;
-  centerX: number;
-  centerY: number;
-  width: number | null;
-  height: number | null;
-  boundingBox: ElementBoundingBox | null;
-  screenshot: string | null;
-  confidence: number | null;
-  reasoning: string | null;
-  text: string | null;
-  label: string | null;
-
-  // Methods
-  found(): boolean;
-  find(newDescription?: string, options?: FindOptions): Promise<Element>;
-  click(action?: ClickAction): Promise<void>;
-  hover(): Promise<void>;
-  doubleClick(): Promise<void>;
-  rightClick(): Promise<void>;
-  mouseDown(): Promise<void>;
-  mouseUp(): Promise<void>;
-  getCoordinates(): Promise<ElementCoordinates>;
-  getResponse(): Promise<object>;
-  saveDebugScreenshot(filepath?: string): Promise<string>;
-  getDebugInfo(): object;
-  destroy(): void;
-  toJSON(): object;
-}
-```
+The `Element` class represents a located (or to-be-located) UI element. It provides methods for interaction and properties for element information.
 
 ### Methods
 
@@ -239,11 +51,12 @@ class Element {
 Check if the element was successfully located.
 
 ```javascript
-element.found() // boolean
+element.found()
 ```
 
-**Returns:** `boolean` — `true` if element coordinates were found.
+**Returns:** `boolean` - True if element coordinates were found
 
+**Example:**
 ```javascript
 const element = await testdriver.find('login button');
 if (element.found()) {
@@ -258,27 +71,23 @@ if (element.found()) {
 Re-locate the element, optionally with a new description.
 
 ```javascript
-await element.find(newDescription?, options?)
+await element.find(newDescription)
 ```
 
-<ParamField path="newDescription" type="string">
-  New description to search for. If omitted, re-uses the original description.
-</ParamField>
+**Parameters:**
+- `newDescription` (string, optional) - New description to search for
 
-<ParamField path="options" type="FindOptions">
-  Same options as `testdriver.find()`.
-</ParamField>
+**Returns:** `Promise<Element>` - This element instance
 
-**Returns:** `Promise<Element>` — This element instance (mutated in place).
-
+**Example:**
 ```javascript
+// Re-locate if the UI changed
 const element = await testdriver.find('submit button');
-
-// Page updates...
+// ... page updates ...
 await element.find(); // Re-locate with same description
 
 // Or update the description
-await element.find('blue submit button');
+await element.find('blue submit button'); // Now looking for blue button
 ```
 
 #### click()
@@ -286,20 +95,24 @@ await element.find('blue submit button');
 Click on the element.
 
 ```javascript
-await element.click(action?)
+await element.click(action)
 ```
 
-<ParamField path="action" type="ClickAction" default="click">
-  Type of click action.
-</ParamField>
+**Parameters:**
+- `action` (string, optional) - Type of click: `'click'` (default), `'double-click'`, `'right-click'`, `'hover'`, `'mouseDown'`, `'mouseUp'`
 
-**ClickAction type:** `"click" | "double-click" | "right-click" | "hover" | "mouseDown" | "mouseUp"`
+**Returns:** `Promise<void>`
 
+**Example:**
 ```javascript
 const button = await testdriver.find('submit button');
-await button.click();                  // Regular click
-await button.click('double-click');    // Double-click
-await button.click('right-click');     // Right-click
+await button.click(); // Regular click
+
+const file = await testdriver.find('document.txt');
+await file.click('double-click'); // Double-click
+
+const menu = await testdriver.find('settings icon');
+await menu.click('right-click'); // Right-click
 ```
 
 <Note>
@@ -311,13 +124,17 @@ await button.click('right-click');     // Right-click
 Hover over the element without clicking.
 
 ```javascript
-await element.hover() // Promise<void>
+await element.hover()
 ```
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
 const tooltip = await testdriver.find('info icon');
 await tooltip.hover();
-await testdriver.wait(1000); // Wait for tooltip to appear
+// Wait to see tooltip
+await new Promise(resolve => setTimeout(resolve, 1000));
 ```
 
 #### doubleClick()
@@ -325,9 +142,12 @@ await testdriver.wait(1000); // Wait for tooltip to appear
 Double-click on the element.
 
 ```javascript
-await element.doubleClick() // Promise<void>
+await element.doubleClick()
 ```
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
 const file = await testdriver.find('README.txt file icon');
 await file.doubleClick();
@@ -335,12 +155,15 @@ await file.doubleClick();
 
 #### rightClick()
 
-Right-click on the element to open a context menu.
+Right-click on the element to open context menu.
 
 ```javascript
-await element.rightClick() // Promise<void>
+await element.rightClick()
 ```
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
 const folder = await testdriver.find('Documents folder');
 await folder.rightClick();
@@ -348,208 +171,265 @@ await folder.rightClick();
 
 #### mouseDown() / mouseUp()
 
-Press or release mouse button on the element. Used for drag operations.
+Press or release mouse button on the element (for drag operations).
 
 ```javascript
-await element.mouseDown() // Promise<void>
-await element.mouseUp()   // Promise<void>
+await element.mouseDown()
+await element.mouseUp()
 ```
 
+**Returns:** `Promise<void>`
+
+**Example:**
 ```javascript
 // Drag and drop
 const item = await testdriver.find('draggable item');
 await item.mouseDown();
 
+// Move to drop target (using coordinates or another element)
 const target = await testdriver.find('drop zone');
 await target.hover();
 await target.mouseUp();
 ```
 
-#### getCoordinates()
-
-Get the element's coordinates. If the element hasn't been found yet, this triggers a lazy find.
-
-```javascript
-const coords = await element.getCoordinates()
-```
-
-**Returns:** `Promise<{ x: number, y: number }>` — Top-left coordinate.
-
-#### getResponse()
-
-Get the full API response from the find operation. If the element hasn't been found yet, this triggers a lazy find.
-
-```javascript
-const response = await element.getResponse()
-```
-
-**Returns:** `Promise<object>` — Raw API response including all metadata.
-
-#### saveDebugScreenshot()
-
-Save the screenshot used during element finding to a file.
-
-```javascript
-const path = await element.saveDebugScreenshot(filepath?)
-```
-
-<ParamField path="filepath" type="string">
-  Output file path. Default: auto-generated in temp directory.
-</ParamField>
-
-**Returns:** `Promise<string>` — Path to saved screenshot.
-
-#### getDebugInfo()
-
-Get a summary object useful for debugging.
-
-```javascript
-const info = element.getDebugInfo()
-```
-
-**Returns:** `{ description, coordinates, confidence, reasoning, boundingBox }`
-
-#### destroy()
-
-Clear internal references to free memory. Call when done with the element.
-
-```javascript
-element.destroy()
-```
-
 ### Properties
 
-#### Coordinates
+Element properties provide additional information about located elements. Properties are available after a successful `find()` call.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `coordinates` | `{ x, y } \| null` | Coordinate object after `find()` |
-| `x` | `number` | Top-left X coordinate (from `boundingBox.x`) |
-| `y` | `number` | Top-left Y coordinate (from `boundingBox.y`) |
-| `centerX` | `number` | Center X coordinate |
-| `centerY` | `number` | Center Y coordinate |
+#### coordinates
+
+Get the element's coordinates object containing all position information.
 
 ```javascript
-const button = await testdriver.find('submit button');
-console.log(`Position: (${button.x}, ${button.y})`);
-console.log(`Center: (${button.centerX}, ${button.centerY})`);
+const coords = element.getCoordinates()
+// or access directly
+element.coordinates
 ```
 
-#### Dimensions
+**Returns:** `Object | null` - Coordinate object with `{ x, y, centerX, centerY }`
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `width` | `number \| null` | Width in pixels (from boundingBox) |
-| `height` | `number \| null` | Height in pixels (from boundingBox) |
-| `boundingBox` | `ElementBoundingBox \| null` | `{ x, y, width, height }` |
-
+**Example:**
 ```javascript
-const dialog = await testdriver.find('dialog box');
-if (dialog.boundingBox) {
-  const { x, y, width, height } = dialog.boundingBox;
-  console.log(`Dialog: ${width}x${height} at (${x}, ${y})`);
+const button = await testdriver.find('submit button');
+const coords = button.coordinates;
+
+if (coords) {
+  console.log(`Top-left: (${coords.x}, ${coords.y})`);
+  console.log(`Center: (${coords.centerX}, ${coords.centerY})`);
 }
 ```
 
-#### AI Metadata
+#### x, y, centerX, centerY
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `confidence` | `number \| null` | AI confidence score (0–1) |
-| `reasoning` | `string \| null` | AI's explanation of what it found |
-| `text` | `string \| null` | Text content extracted by AI |
-| `label` | `string \| null` | Accessible label detected by AI |
+Direct access to coordinate values. Always available after successful `find()`.
 
 ```javascript
-const el = await testdriver.find('submit button');
-console.log(`Confidence: ${(el.confidence * 100).toFixed(1)}%`);
-console.log(`Reasoning: ${el.reasoning}`);
-console.log(`Text: ${el.text}`);
+element.x        // Top-left X coordinate (number)
+element.y        // Top-left Y coordinate (number)
+element.centerX  // Center X coordinate (number)
+element.centerY  // Center Y coordinate (number)
+```
+
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+console.log(`Button at: (${button.x}, ${button.y})`);
+console.log(`Button center: (${button.centerX}, ${button.centerY})`);
+
+// Use for custom mouse operations
+await testdriver.click(button.centerX, button.centerY);
+```
+
+#### width, height
+
+Element dimensions in pixels. Available when AI detects element bounds.
+
+```javascript
+element.width   // Width in pixels (number | null)
+element.height  // Height in pixels (number | null)
+```
+
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+
+if (button.width && button.height) {
+  console.log(`Button size: ${button.width}x${button.height}px`);
+  
+  // Check if button is large enough
+  if (button.width < 50) {
+    console.warn('Button might be too small');
+  }
+}
+```
+
+#### boundingBox
+
+Complete bounding box information including position and dimensions.
+
+```javascript
+element.boundingBox
+```
+
+**Returns:** `Object | null` - Bounding box with all dimension data
+
+```typescript
+{
+  x: number,        // Top-left X
+  y: number,        // Top-left Y
+  width: number,    // Width in pixels
+  height: number    // Height in pixels
+}
+```
+
+**Example:**
+```javascript
+const element = await testdriver.find('dialog box');
+
+if (element.boundingBox) {
+  const { x, y, width, height } = element.boundingBox;
+  console.log(`Dialog: ${width}x${height} at (${x}, ${y})`);
+  
+  // Calculate if element is in viewport
+  const rightEdge = x + width;
+  const bottomEdge = y + height;
+  console.log(`Element extends to (${rightEdge}, ${bottomEdge})`);
+}
+```
+
+#### screenshot
+
+Base64-encoded PNG screenshot of the screen when element was found. Only available in DEBUG mode or when an error occurs.
+
+```javascript
+element.screenshot
+```
+
+**Returns:** `string | null` - Base64-encoded PNG image
+
+**Example:**
+```javascript
+const element = await testdriver.find('error message');
+
+if (element.screenshot) {
+  // Save screenshot to file
+  const fs = require('fs');
+  const base64Data = element.screenshot.replace(/^data:image\/\w+;base64,/, '');
+  fs.writeFileSync('element-screenshot.png', Buffer.from(base64Data, 'base64'));
+  console.log('Screenshot saved');
+}
+```
+
+<Warning>
+  Screenshots can be large. They're automatically excluded from error messages to prevent memory issues.
+</Warning>
+
+#### text
+
+Text content extracted from the element by AI (if available).
+
+```javascript
+element.text
+```
+
+**Returns:** `string | null` - Element's text content
+
+**Example:**
+```javascript
+const message = await testdriver.find('notification message');
+
+if (message.text) {
+  console.log('Message says:', message.text);
+  
+  // Use text content in assertions
+  if (message.text.includes('success')) {
+    console.log('Success message detected');
+  }
+}
+
+// Another example - extracting button label
+const button = await testdriver.find('blue button');
+console.log('Button text:', button.text); // "Submit"
+```
+
+#### label
+
+Accessible label or name of the element (if available). Useful for verifying accessibility.
+
+```javascript
+element.label
+```
+
+**Returns:** `string | null` - Accessible label
+
+**Example:**
+```javascript
+const input = await testdriver.find('first input field');
+
+if (input.label) {
+  console.log('Input label:', input.label); // "Email Address"
+}
+```
+
+#### confidence
+
+AI confidence score for the element match (0-1, where 1 is perfect confidence).
+
+```javascript
+element.confidence
+```
+
+**Returns:** `number | null` - Confidence score between 0 and 1
+
+**Example:**
+```javascript
+const element = await testdriver.find('submit button');
+
+if (element.confidence !== null) {
+  const percentage = (element.confidence * 100).toFixed(1);
+  console.log(`Match confidence: ${percentage}%`);
+  
+  if (element.confidence < 0.8) {
+    console.warn('⚠️ Low confidence match - element might not be correct');
+  } else if (element.confidence > 0.95) {
+    console.log('✅ High confidence match');
+  }
+}
 ```
 
 <Tip>
   Confidence scores below 0.8 may indicate the element description was ambiguous or the wrong element was found.
 </Tip>
 
-#### Debug Data
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `screenshot` | `string \| null` | Base64-encoded PNG of screen during find |
-
-<Warning>
-  Screenshots can be large. They're automatically excluded from error messages to prevent memory issues.
-</Warning>
-
 ### Property Availability
 
 | Property | When Available |
 |----------|---------------|
-| `x`, `y`, `centerX`, `centerY` | Always after successful `find()` |
-| `coordinates` | Always after successful `find()` |
-| `width`, `height`, `boundingBox` | When AI detects element bounds |
-| `text` | When AI extracts text content |
-| `label` | When element has accessible label |
-| `confidence`, `reasoning` | Always after AI element finding |
-| `screenshot` | Only in DEBUG mode or on errors |
+| `x`, `y`, `centerX`, `centerY` | ✅ Always after successful `find()` |
+| `coordinates` | ✅ Always after successful `find()` |
+| `width`, `height` | ⚠️ When AI detects element bounds |
+| `boundingBox` | ⚠️ When AI detects element bounds |
+| `text` | ⚠️ When AI extracts text content |
+| `label` | ⚠️ When element has accessible label |
+| `confidence` | ✅ Always after AI element finding |
+| `screenshot` | ⚠️ Only in DEBUG mode or on errors |
 
-## Types
-
-```typescript
-interface ElementCoordinates {
-  x: number;
-  y: number;
-}
-
-interface ElementBoundingBox {
-  x: number;       // Top-left X
-  y: number;       // Top-left Y
-  width: number;   // Width in pixels
-  height: number;  // Height in pixels
-}
-
-type ClickAction =
-  | "click"
-  | "double-click"
-  | "right-click"
-  | "hover"
-  | "mouseDown"
-  | "mouseUp";
-
-interface FindOptions {
-  timeout?: number;          // Default: 10000
-  confidence?: number;       // Min confidence threshold
-  type?: "text" | "image" | "ui" | "any";
-  zoom?: number;
-  cacheKey?: string;
-  ai?: AIConfig;
-  cache?: {
-    thresholds?: {
-      screen?: number;       // Default: 0.05
-      element?: number;      // Default: 0.8
-    };
-  };
-}
-
-interface AIConfig {
-  temperature?: number;
-  top?: {
-    p?: number;              // Nucleus sampling
-    k?: number;              // Top-K sampling
-  };
-}
-```
+<Note>
+  Properties marked with ⚠️ may be `null` depending on what the AI could detect from the screenshot.
+</Note>
 
 ## JSON Serialization
 
-Elements implement `toJSON()` for safe serialization. Circular references and large binary data (screenshots) are automatically excluded.
+Element objects can be safely serialized using `JSON.stringify()` for logging, debugging, and data storage. Circular references are automatically removed:
 
 ```javascript
 const element = await testdriver.find('login button');
+
+// Safe to stringify - no circular reference errors!
 console.log(JSON.stringify(element, null, 2));
 ```
 
-**Serialized output:**
+**Serialized output includes:**
 
 ```json
 {
@@ -573,36 +453,70 @@ console.log(JSON.stringify(element, null, 2));
 }
 ```
 
+**Serialized properties:**
+
 | Property | Type | Description |
 |----------|------|-------------|
-| `description` | `string` | Element search description |
-| `coordinates` | `object` | `{ x, y, centerX, centerY }` |
-| `found` | `boolean` | Whether element was located |
-| `threshold` | `number` | Cache threshold used |
-| `cache.hit` | `boolean` | Whether cache was used |
-| `cache.strategy` | `string` | Cache strategy (e.g., `"pixel-diff"`) |
-| `cache.createdAt` | `string` | ISO timestamp of cache entry |
-| `cache.diffPercent` | `number` | Pixel difference from cached image |
-| `cache.imageUrl` | `string` | URL to cached screenshot |
-| `similarity` | `number` | Similarity score (0–1) |
-| `confidence` | `number` | AI confidence score (0–1) |
-| `selector` | `string` | CSS/XPath selector if available |
-| `aiResponse` | `string` | AI's explanation of what it found |
+| `description` | string | Element search description |
+| `coordinates` | object | Full coordinate object `{x, y, centerX, centerY}` |
+| `found` | boolean | Whether element was located |
+| `threshold` | number | Cache threshold used for this find |
+| `x`, `y` | number | Top-left coordinates |
+| `cache.hit` | boolean | Whether cache was used |
+| `cache.strategy` | string | Cache strategy (e.g., "pixel-diff") |
+| `cache.createdAt` | string | ISO timestamp when cache was created |
+| `cache.diffPercent` | number | Pixel difference from cached image |
+| `cache.imageUrl` | string | URL to cached screenshot |
+| `similarity` | number | Similarity score (0-1) |
+| `confidence` | number | AI confidence score (0-1) |
+| `selector` | string | CSS/XPath selector if available |
+| `aiResponse` | string | AI's explanation of what it found |
+
+**Use cases:**
+
+```javascript
+// Debugging element detection
+const element = await testdriver.find('submit button');
+if (!element.found()) {
+  console.error('Element not found:', JSON.stringify(element, null, 2));
+}
+
+// Logging cache performance
+const data = JSON.parse(JSON.stringify(element));
+if (data.cache.hit) {
+  console.log(`Cache hit! Diff: ${(data.cache.diffPercent * 100).toFixed(2)}%`);
+}
+
+// Sharing element data across processes
+const elementData = JSON.stringify(element);
+// Send to another process, log to file, etc.
+```
+
+<Tip>
+  Use JSON serialization when you need to log element data or when debugging why an element wasn't found. The serialized output excludes large binary data (screenshots) and circular references.
+</Tip>
 
 ## Examples
 
-### Chained Find + Action
+### Basic Element Interaction
 
 ```javascript
-// Most concise — chain directly
-await testdriver.find('submit button').click();
-await testdriver.find('settings icon').rightClick();
-await testdriver.find('draggable item').mouseDown();
+// Find and click
+const submitButton = await testdriver.find('submit button');
+await submitButton.click();
+
+// Find, verify, then interact
+const emailInput = await testdriver.find('email input field');
+if (emailInput.found()) {
+  await emailInput.click();
+  await testdriver.type('user@example.com');
+}
 ```
 
 ### Working with Forms
 
 ```javascript
+// Fill out a multi-field form
 const nameField = await testdriver.find('name input field');
 await nameField.click();
 await testdriver.type('John Doe');
@@ -611,43 +525,39 @@ const emailField = await testdriver.find('email input field');
 await emailField.click();
 await testdriver.type('john@example.com');
 
-await testdriver.find('submit button').click();
+const submitButton = await testdriver.find('submit button');
+await submitButton.click();
 ```
 
 ### Conditional Interactions
 
 ```javascript
+// Check if element exists before interacting
 const closeButton = await testdriver.find('close popup button');
 
 if (closeButton.found()) {
   await closeButton.click();
+  console.log('Popup closed');
 } else {
   console.log('No popup to close');
 }
 ```
 
-### Re-locating After UI Changes
+### Re-locating Dynamic Elements
 
 ```javascript
+// Element that moves or changes
 const notification = await testdriver.find('success notification');
-await testdriver.scroll('down', { amount: 300 });
 
-// Re-locate — the element may have moved
+// Do something that might cause it to move
+await testdriver.scroll('down', 300);
+
+// Re-locate the element
 await notification.find();
+
 if (notification.found()) {
   await notification.click();
 }
-```
-
-### Debugging Element Detection
-
-```javascript
-const el = await testdriver.find('submit button');
-const debug = el.getDebugInfo();
-console.log('Debug:', JSON.stringify(debug, null, 2));
-
-// Save the screenshot used during detection
-await el.saveDebugScreenshot('./debug-screenshot.png');
 ```
 
 ## Best Practices
@@ -657,16 +567,16 @@ await el.saveDebugScreenshot('./debug-screenshot.png');
     Include visual details, position context, and nearby text:
     
     ```javascript
-    // Too vague
+    // ❌ Too vague
     await testdriver.find('button');
     
-    // Specific
+    // ✅ Specific
     await testdriver.find('blue submit button below the email field');
     ```
   </Accordion>
   
   <Accordion title="Check if element was found">
-    Always verify elements were located before conditional logic:
+    Always verify elements were located before interacting:
     
     ```javascript
     const element = await testdriver.find('submit button');
@@ -677,17 +587,9 @@ await el.saveDebugScreenshot('./debug-screenshot.png');
     ```
   </Accordion>
 
-  <Accordion title="Use findAll() for multiple elements">
-    When you need all matching elements, not just the first:
-    
-    ```javascript
-    const items = await testdriver.findAll('list items in the sidebar');
-    console.log(`Found ${items.length} items`);
-    ```
-  </Accordion>
   
-  <Accordion title="Reuse element references">
-    If you need to interact with the same element multiple times:
+  <Accordion title="Reuse element references when possible">
+    If you need to interact with the same element multiple times, reuse the reference:
     
     ```javascript
     const input = await testdriver.find('search input');
@@ -695,20 +597,10 @@ await el.saveDebugScreenshot('./debug-screenshot.png');
     await testdriver.type('first search');
     await testdriver.pressKeys(['enter']);
     
+    // Re-use the same element reference
     await input.click();
-    await testdriver.pressKeys(['ctrl', 'a']);
+    await testdriver.pressKeys(['ctrl', 'a']); // Select all
     await testdriver.type('second search');
-    ```
-  </Accordion>
-
-  <Accordion title="Use timeout for slow-loading elements">
-    Increase timeout for elements that take time to appear:
-    
-    ```javascript
-    // Wait up to 30 seconds for a loading indicator to appear
-    const element = await testdriver.find('success message', {
-      timeout: 30000
-    });
     ```
   </Accordion>
 </AccordionGroup>

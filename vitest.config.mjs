@@ -13,13 +13,13 @@ export default defineConfig({
     retry: 0,
     testTimeout: 900000,
     hookTimeout: 900000,
-    disableConsoleIntercept: true,
     maxConcurrency: 100,
     maxWorkers: 16,
+    disableConsoleIntercept: false,
+    silent: false,
     reporters: [
-      "default",
-      TestDriver(),
-      ["junit", { outputFile: "test-report.junit.xml" }],
+      "verbose",
+      TestDriver()
     ],
     setupFiles,
   },

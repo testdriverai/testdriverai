@@ -36,9 +36,14 @@ function parseFrontmatter(content) {
   return { frontmatter, body };
 }
 
-// Get skill name from filename
+// Get skill name from filename (used in SKILL.md frontmatter)
 function getSkillName(filename) {
   return `testdriver:${filename.replace(".mdx", "")}`;
+}
+
+// Get directory name from filename (Windows-compatible, uses hyphen instead of colon)
+function getDirName(filename) {
+  return `testdriver-${filename.replace(".mdx", "")}`;
 }
 
 // Generate SKILL.md content
@@ -76,7 +81,7 @@ function processFiles() {
   for (const file of mdxFiles) {
     const filePath = path.join(DOCS_DIR, file);
     const skillName = getSkillName(file);
-    const outputDir = path.join(OUTPUT_DIR, skillName);
+    const outputDir = path.join(OUTPUT_DIR, getDirName(file));
     const outputPath = path.join(outputDir, "SKILL.md");
 
     try {

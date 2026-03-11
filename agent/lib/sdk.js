@@ -218,6 +218,7 @@ const createSDK = (emitter, config, sessionInstance) => {
       method: "post",
       headers: {
         "Content-Type": "application/json",
+        "User-Agent": `TestDriverSDK/${version} (Node.js ${process.version})`,
       },
       timeout: 15000, // 15 second timeout for auth requests
       data: {
@@ -309,9 +310,22 @@ const createSDK = (emitter, config, sessionInstance) => {
       return rateLimitError;
     }
 
+    // Forbidden (403) - likely Cloudflare or WAF blocking the request
+    if (status === 403) {
+      const forbiddenError = new Error(
+        "Request blocked (HTTP 403). This may be caused by a firewall or bot protection. " +
+        "If this persists, please contact support."
+      );
+      forbiddenError.code = "REQUEST_BLOCKED";
+      forbiddenError.isForbiddenError = true;
+      forbiddenError.originalError = error;
+      return forbiddenError;
+    }
+
     // Other HTTP errors - return with context
+    const url = error.config?.url || apiRoot;
     const genericError = new Error(
-      `Authentication failed: ${status} ${error.response?.statusText || "Unknown error"}`
+      `Authentication failed: ${status} ${error.response?.statusText || "Unknown error"} (${url})`
     );
     genericError.code = "AUTH_FAILED";
     genericError.originalError = error;
@@ -365,6 +379,7 @@ const createSDK = (emitter, config, sessionInstance) => {
           method: "post",
           headers: {
             "Content-Type": "application/json",
+            "User-Agent": `TestDriverSDK/${version} (Node.js ${process.version})`,
             ...(token && { Authorization: `Bearer ${token}` }),
           },
           timeout: 15000,
@@ -429,6 +444,7 @@ const createSDK = (emitter, config, sessionInstance) => {
       method: "post",
       headers: {
         "Content-Type": "application/json",
+        "User-Agent": `TestDriverSDK/${version} (Node.js ${process.version})`,
         ...(token && { Authorization: `Bearer ${token}` }), // Add the authorization bearer token only if token is set
         ...sentryHeaders, // Add Sentry distributed tracing headers
       },

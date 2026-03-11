@@ -73,7 +73,7 @@ testDriverPlugin({
   apiKey: process.env.TD_API_KEY,
   
   // Optional: Custom API endpoint (for self-hosted)
-  apiRoot: 'https://testdriver-api.onrender.com',
+  apiRoot: 'https://api.testdriver.ai',
 })
 ```
 
@@ -81,7 +81,7 @@ testDriverPlugin({
   Your TestDriver API key. Get one at [console.testdriver.ai](https://console.testdriver.ai)
 </ParamField>
 
-<ParamField path="apiRoot" type="string" default="https://testdriver-api.onrender.com">
+<ParamField path="apiRoot" type="string" default="https://api.testdriver.ai">
   API endpoint URL. Only change this if you're using a self-hosted instance.
 </ParamField>
 
@@ -345,7 +345,7 @@ Check your API key is valid:
 
 ```bash
 # Test authentication
-curl -X POST https://testdriver-api.onrender.com/auth/exchange-api-key \
+curl -X POST https://api.testdriver.ai/auth/exchange-api-key \
   -H "Content-Type: application/json" \
   -d '{"apiKey":"your-api-key-here"}'
 ```

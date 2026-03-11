@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* press-keys.test.mjs output */}
 <iframe 
-  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69ae149405706023437c7254/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69a62b800d4a5265e44e7d86/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -27,7 +27,7 @@ Watch this test execute in a real sandbox environment:
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("Press Keys Test", () => {
   it("should create tabs and navigate using keyboard shortcuts", async (context) => {

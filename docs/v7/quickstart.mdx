@@ -5,80 +5,12 @@ description: "Run your first computer-use test in minutes."
 icon: "rocket"
 ---
 
-
-![VS Code Demo](/images/content/vscode/v7-full.png)
-
 TestDriver makes it easy to write automated computer-use tests for web browsers, desktop apps, and more. Follow the directions below to run your first TestDriver test.
 
+<Tip><a href="https://discord.com/invite/cWDFW8DzPm" target="_blank" rel="noreferrer">Join our Discord</a> if you have any questions or need help getting started!</Tip>
+
 <Tabs>
-  <Tab title="VS Code Extension">
-
-    <Info>Requires GitHub Copilot</Info>
-
-    <Steps>
-      <Step title="Install the TestDriver Extension">
-
-      Click the link below to install the TestDriver extension for VS Code:
-
-      <Card
-        title="Install TestDriver Extension"
-        icon="rocket"
-        href="vscode:extension/testdriver.testdriver"
-        arrow
-      >
-        Get the TestDriver VS Code extension from the VS Code marketplace
-      </Card>
-
-      </Step>
-      <Step title="Complete the Walkthrough">
-
-        ![VS Code Demo](/images/content/vscode/v7-onboarding.png)
-    
-    The TestDriver VS Code extension supercharges your workflow by setting up everything you need automatically:
-
-    <AccordionGroup>
-      <Accordion title="Installs the TestDriver MCP Server">
-        The extension installs the [TestDriver MCP server](/mcp) into your editor, enabling AI agents like GitHub Copilot to interact with TestDriver tools directly. It configures the server with `TD_PREVIEW=ide` so live test previews open inside VS Code instead of an external browser.
-      </Accordion>
-
-      <Accordion title="Adds Agent Instructions">
-        Copies a `testdriver.agent.md` file into `.github/agents/` in your workspace. This file teaches GitHub Copilot how to use TestDriver — including how to provision sandboxes, find elements, make assertions, and write complete tests. It also sets up `copilot-instructions.md` if one doesn't already exist.
-      </Accordion>
-
-      <Accordion title="Installs Skills">
-        Copies a library of TestDriver skills into `.github/skills/`. These are structured knowledge files that give AI coding agents detailed, context-aware documentation on every TestDriver feature — from clicking and typing to CI/CD setup, caching, secrets management, and more.
-      </Accordion>
-
-      <Accordion title="Live Preview in VS Code">
-        When a test runs, the extension opens a live preview panel inside VS Code showing a real-time view of the sandbox VM. You can watch your test execute step by step without leaving the editor. The panel title updates with the test status — `[Running]`, `[Passed]`, `[Failed]`, or `[Stopped]`.
-      </Accordion>
-
-      <Accordion title="Suggests Vitest">
-        The extension bundles the [Vitest Explorer](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) extension so your tests are automatically discovered and runnable from the VS Code test panel. During project setup, it scaffolds a `vitest.config.js`, an example test file, and installs `vitest` as a dev dependency.
-      </Accordion>
-
-      <Accordion title="MCP Apps (Rich Visual Feedback)">
-        Every TestDriver action (find, click, type, scroll, assert) returns rich visual UI to the AI agent's chat. This includes annotated screenshots with element highlights, click markers, scroll indicators, confidence scores, and action timing — so the AI can *see* what happened after each step.
-      </Accordion>
-    </AccordionGroup>
-
-
-      </Step>
-      <Step title="Chat with the TestDriver agent.">
-  
-          ![Selecting the testdriverai agent](/images/content/vscode/v7-chat.png)
-
-        The TestDriver agent has been trained on how to write tests using TestDriver. You can ask it to write tests for you, or to help you debug your existing tests.
-
-        Note that TestDriver setup will add the TestDriver agent to `.github/agents/copilot-instructions.md`. However, if that file exists already, it will be written to `.github/agents/testdriver.agent.md` instead and you will need to select it as the active agent manually.
-
-        ![Selecting the testdriverai agent](/images/content/vscode/v7-choose-agent.png)
-
-      </Step>
-    </Steps>
-
-  </Tab>
-  <Tab title="CLI Guided Setup">
+  <Tab title="Automatic Setup">
 
     Get started quickly with the TestDriver CLI.
 
@@ -149,8 +81,6 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
           test: {
             testTimeout: 900000,
             hookTimeout: 900000,
-            disableConsoleIntercept: true,
-            maxConcurrency: 1, // this should match your plan's concurrency limit 
             reporters: [
               'default',
               TestDriver()

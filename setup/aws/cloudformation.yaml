@@ -161,16 +161,9 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: SG for QA desktop testing (RDP/HTTPS/NGINX/pyautogui + VNC)
+      GroupDescription: SG for QA desktop testing (RDP/HTTPS/NGINX/VNC)
       VpcId: !Ref TestDriverVpc
       SecurityGroupIngress:
-        - {
-            IpProtocol: tcp,
-            FromPort: 8765,
-            ToPort: 8765,
-            CidrIp: !Ref AllowedIngressCidr,
-            Description: "pyautogui-cli WebSockets"
-          }
         - {
             IpProtocol: tcp,
             FromPort: 5800,

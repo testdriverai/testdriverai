@@ -675,6 +675,7 @@
           "lang": {
             "type": "string",
             "enum": [
+              "js",
               "pwsh",
               "sh"
             ]

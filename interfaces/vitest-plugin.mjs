@@ -36,7 +36,7 @@ function initializeSentry() {
         process.env.SENTRY_DSN ||
         "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
       environment: "vitest",
-      release: `testdriverai@${version}`,
+      release: version,
       sampleRate: 1.0,
       tracesSampleRate: 1.0,
       enableLogs: true,
@@ -586,7 +586,7 @@ export async function cleanupTestDriver(testdriver) {
       try {
         const dashcamUrl = await testdriver.dashcam.stop();
         const debugMode =
-          process.env.VERBOSE || process.env.DEBUG || process.env.TD_DEBUG;
+          process.env.VERBOSE || process.env.TD_DEBUG;
         if (debugMode) {
           console.log("🎥 Dashcam URL:", dashcamUrl);
         }
@@ -763,7 +763,7 @@ export default function testDriverPlugin(options = {}) {
   pluginState.apiRoot =
     options.apiRoot ||
     process.env.TD_API_ROOT ||
-    "https://testdriver-api.onrender.com";
+    "https://api.testdriver.ai";
   pluginState.ciProvider = detectCI();
   pluginState.gitInfo = getGitInfo();
 
@@ -822,7 +822,7 @@ class TestDriverReporter {
     pluginState.apiRoot =
       this.options.apiRoot ||
       process.env.TD_API_ROOT ||
-      "https://testdriver-api.onrender.com";
+      "https://api.testdriver.ai";
     logger.debug("API key from options:", !!this.options.apiKey);
     logger.debug("API key from env (at onInit):", !!process.env.TD_API_KEY);
     logger.debug("API root from options:", this.options.apiRoot);
@@ -1239,25 +1239,26 @@ class TestDriverReporter {
  * Maps an API root URL to its corresponding web console URL.
  * The API and web console are served from different domains/ports.
  *
- * @param {string} apiRoot - The API root URL (e.g., https://testdriver-api.onrender.com)
+ * @param {string} apiRoot - The API root URL (e.g., https://api.testdriver.ai)
  * @returns {string} The corresponding web console URL
  */
 function getConsoleUrl(apiRoot) {
+  // Allow explicit override via env (e.g. VITE_DOMAIN from .env)
+  if (process.env.VITE_DOMAIN) return process.env.VITE_DOMAIN;
+
   if (!apiRoot) return "https://console.testdriver.ai";
 
   // Production: API on render.com -> Console on testdriver.ai
-  if (apiRoot.includes("testdriver-api.onrender.com")) {
+  if (apiRoot.includes("api.testdriver.ai")) {
     return "https://console.testdriver.ai";
   }
 
   // Local development: API on localhost:1337 -> Web on localhost:3001
-  if (apiRoot.includes("ngrok.io")) {
+  if (apiRoot.includes("ngrok.io") || apiRoot.includes("trycloudflare.com") || apiRoot.includes("localhost")) {
     return `http://localhost:3001`;
   }
 
-  // Ngrok or other tunnels: assume same host, different path structure
-  // For ngrok, the API and web might be on same domain or user needs to configure
-  // Return as-is since we can't reliably determine the mapping
+  // Other tunnels or unknown hosts: return as-is
   return apiRoot;
 }
 

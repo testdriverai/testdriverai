@@ -11,7 +11,6 @@ set -euo pipefail
 : "${RESOLUTION:=1440x900}"
 
 TAG_NAME="${AWS_TAG_PREFIX}-"$(date +%s)
-WS_CONFIG_PATH='C:\Windows\Temp\pyautogui-ws.json'
 
 echo "Launching AWS Instance..."
 
@@ -144,46 +143,12 @@ done
 
 echo "Getting Public IP..."
 
-# # --- 5) Get instance Public IP ---
+# --- 5) Get instance Public IP ---
 DESC_JSON=$(aws ec2 describe-instances --region "$AWS_REGION" --instance-ids "$INSTANCE_ID" --output json)
 PUBLIC_IP=$(jq -r '.Reservations[0].Instances[0].PublicIpAddress // empty' <<<"$DESC_JSON")
 [ -n "$PUBLIC_IP" ] || PUBLIC_IP="No public IP assigned"
 
-# echo "Getting Websocket Port..."
-
-
-# --- 6) Read WebSocket config JSON ---
-echo "Reading WebSocket configuration from: $WS_CONFIG_PATH"
-READ_JSON=$(aws ssm send-command \
-  --region "$AWS_REGION" \
-  --instance-ids "$INSTANCE_ID" \
-  --document-name "AWS-RunPowerShellScript" \
-  --parameters "commands=[\"if (Test-Path '${WS_CONFIG_PATH}') { Get-Content -Raw '${WS_CONFIG_PATH}' } else { Write-Output 'Config file not found at ${WS_CONFIG_PATH}' }\"]" \
-  --output json)
-
-READ_CMD_ID=$(jq -r '.Command.CommandId' <<<"$READ_JSON")
-echo "WebSocket config read command ID: $READ_CMD_ID"
-
-echo "Waiting for WebSocket config command to complete..."
-aws ssm wait command-executed --region "$AWS_REGION" --command-id "$READ_CMD_ID" --instance-id "$INSTANCE_ID"
-
-INVOC=$(aws ssm get-command-invocation \
-  --region "$AWS_REGION" \
-  --command-id "$READ_CMD_ID" \
-  --instance-id "$INSTANCE_ID" \
-  --output json)
-
-STDOUT=$(jq -r '.StandardOutputContent // ""' <<<"$INVOC")
-STDERR=$(jq -r '.StandardErrorContent // ""' <<<"$INVOC")
-CMD_STATUS=$(jq -r '.Status // ""' <<<"$INVOC")
-
-echo "WebSocket config command status: $CMD_STATUS"
-if [ -n "$STDERR" ] && [ "$STDERR" != "null" ]; then
-  echo "WebSocket config stderr: $STDERR"
-fi
-echo "WebSocket config raw output: $STDOUT"
-
-# --- 7) Output results ---
+# --- 6) Output results ---
 echo "Setup complete!"
 echo "PUBLIC_IP=$PUBLIC_IP"
 echo "INSTANCE_ID=$INSTANCE_ID"

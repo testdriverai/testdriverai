@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* scroll-keyboard.test.mjs output */}
 <iframe 
-  src="https://testdriver-api.onrender.com/api/v1/testdriver/testcase/69ae14ae05706023437c7283/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69a62b82258e8885264fc728/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -27,7 +27,7 @@ Watch this test execute in a real sandbox environment:
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("Scroll Keyboard Test", () => {
   it("should navigate to webhamster.com and scroll with keyboard", async (context) => {

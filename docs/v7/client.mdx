@@ -3,134 +3,119 @@ title: "TestDriver Client"
 sidebarTitle: "Client"
 description: "Initialize and configure the TestDriver SDK client"
 icon: "plug"
-mode: "wide"
 ---
 
 ## Overview
 
-The `TestDriver` client is the main entry point for the SDK. It manages authentication, sandbox connections, and provides access to all testing methods — element finding, actions, assertions, and provisioning.
+The `TestDriver` client is the main entry point for the SDK. It handles authentication, sandbox connection, and provides access to all testing methods.
 
 ## Constructor
 
 ```javascript
-import TestDriver from 'testdriverai';
-
-const testdriver = new TestDriver(options?)
-// or with explicit API key
-const testdriver = new TestDriver(apiKey, options?)
+const testdriver = new TestDriver(apiKey, options)
 ```
 
-<ParamField path="apiKey" type="string">
-  Your TestDriver API key. If omitted, loaded automatically from the `TD_API_KEY` environment variable or `.env` file.
+### Parameters
+
+<ParamField path="apiKey" type="string" required>
+  Your TestDriver API key from the [dashboard](https://console.testdriver.ai/team)
 </ParamField>
 
-<ParamField path="options" type="TestDriverOptions">
-  Configuration options for the client.
-
+<ParamField path="options" type="object">
+  Configuration options for the client
+  
   <Expandable title="properties">
-    <ParamField path="apiKey" type="string">
-      API key (alternative to passing as first argument). Falls back to `TD_API_KEY` env var.
-    </ParamField>
-    
-    <ParamField path="apiRoot" type="string" default="https://testdriver-api.onrender.com">
-      API endpoint URL. Override for self-hosted deployments. Can also be set via `TD_API_ROOT` env var.
-    </ParamField>
-    
     <ParamField path="os" type="string" default="linux">
-      Operating system for the sandbox: `'windows'` or `'linux'`. Can also be set via `TD_OS` env var.
+      Operating system for the sandbox: `'windows'` or `'linux'`
     </ParamField>
     
     <ParamField path="resolution" type="string" default="1366x768">
-      Screen resolution for the sandbox (e.g., `'1920x1080'`, `'1366x768'`).
+      Screen resolution for the sandbox (e.g., `'1920x1080'`, `'1366x768'`)
     </ParamField>
     
-    <ParamField path="analytics" type="boolean" default={true}>
-      Enable or disable usage analytics.
+    <ParamField path="apiRoot" type="string">
+      API endpoint URL (typically only changed for self-hosted deployments)
     </ParamField>
     
-    <ParamField path="logging" type="boolean" default={true}>
-      Enable or disable console logging.
+    <ParamField path="analytics" type="boolean" default="true">
+      Enable or disable usage analytics
     </ParamField>
     
-    <ParamField path="autoScreenshots" type="boolean" default={false}>
-      Automatically capture screenshots before and after each command. Screenshots are saved to `.testdriver/screenshots/<test>/` with descriptive filenames. See [Screenshots](/v7/screenshots) for details.
+    <ParamField path="logging" type="boolean" default="true">
+      Enable or disable console logging
     </ParamField>
     
-    <ParamField path="newSandbox" type="boolean" default={true}>
-      Force creation of a new sandbox instead of reusing an existing one.
+    <ParamField path="autoScreenshots" type="boolean" default="true">
+      Automatically capture screenshots before and after each command. Screenshots are saved to `.testdriver/screenshots/<test>/` with descriptive filenames that include the line number and action name. Format: `<seq>-<action>-<phase>-L<line>-<description>.png`
     </ParamField>
     
-    <ParamField path="reconnect" type="boolean" default={false}>
-      Reconnect to the last used sandbox instead of creating a new one. When `true`, all [provision](/v7/provision) methods are skipped since the application is already running. Throws error if no previous sandbox exists.
+    <ParamField path="newSandbox" type="boolean" default="true">
+      Force creation of a new sandbox instead of reusing an existing one
     </ParamField>
     
-    <ParamField path="keepAlive" type="number" default={60000}>
-      Keep sandbox alive for the specified number of milliseconds after disconnect. Set to `0` to terminate immediately. Useful for debugging or reconnecting to the same sandbox.
+    <ParamField path="reconnect" type="boolean" default="false">
+      Reconnect to the last used sandbox instead of creating a new one. When `true`, provision methods (`chrome`, `vscode`, `installer`, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists.
     </ParamField>
     
-    <ParamField path="preview" type="PreviewMode" default="browser">
+    <ParamField path="keepAlive" type="number" default="60000">
+      Keep sandbox alive for the specified number of milliseconds after disconnect. Set to `0` to terminate immediately on disconnect. Useful for debugging or reconnecting to the same sandbox.
+    </ParamField>
+    
+    <ParamField path="preview" type="string" default="browser">
       Preview mode for live test visualization:
       - `"browser"` — Opens debugger in default browser (default)
-      - `"ide"` — Opens preview in IDE panel (VS Code, Cursor — requires TestDriver extension)
+      - `"ide"` — Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension)
       - `"none"` — Headless mode, no visual preview
     </ParamField>
     
-    <ParamField path="headless" type="boolean" default={false}>
-      **Deprecated**: Use `preview: "none"` instead.
+    <ParamField path="headless" type="boolean" default="false">
+      **Deprecated**: Use `preview: "none"` instead. Run in headless mode without opening the debugger.
     </ParamField>
     
-    <ParamField path="debugOnFailure" type="boolean" default={false}>
-      Keep the sandbox alive when a test fails so you can reconnect and debug interactively. The sandbox stays alive for 5 minutes and connection instructions are logged to the console.
+    <ParamField path="debugOnFailure" type="boolean" default="false">
+      Keep the sandbox alive when a test fails so you can reconnect and debug interactively. The sandbox ID is printed to the console.
     </ParamField>
     
     <ParamField path="ip" type="string">
-      Direct IP address to connect to a running sandbox instance (for self-hosted deployments).
+      Direct IP address to connect to a running sandbox instance (for self-hosted deployments)
     </ParamField>
     
     <ParamField path="sandboxAmi" type="string">
-      Custom AMI ID for the sandbox instance (AWS deployments, e.g., `'ami-1234'`).
+      Custom AMI ID for the sandbox instance (AWS deployments, e.g., `'ami-1234'`)
     </ParamField>
     
     <ParamField path="sandboxInstance" type="string">
-      EC2 instance type for the sandbox (AWS deployments, e.g., `'i3.metal'`).
+      EC2 instance type for the sandbox (AWS deployments, e.g., `'i3.metal'`)
     </ParamField>
     
-    <ParamField path="dashcam" type="boolean" default={true}>
-      Enable or disable [Dashcam](/v7/dashcam) video recording.
-    </ParamField>
-    
-    <ParamField path="cache" type="boolean | CacheConfig" default={true}>
-      Enable or disable element [caching](/v7/cache), or provide advanced threshold configuration.
+    <ParamField path="cache" type="boolean | object" default="true">
+      Enable or disable element caching, or provide advanced threshold configuration.
       
       <Expandable title="advanced config">
-        <ParamField path="enabled" type="boolean" default={true}>
-          Enable or disable caching.
-        </ParamField>
-        
-        <ParamField path="cacheKey" type="string">
-          Cache key for grouping cached results. Auto-generated from the calling test file's content hash when not provided.
+        <ParamField path="enabled" type="boolean" default="true">
+          Enable or disable caching
         </ParamField>
         
         <ParamField path="thresholds" type="object">
-          Fine-tune cache matching.
+          Fine-tune cache matching
           
           <Expandable title="properties">
             <ParamField path="find" type="object">
-              Thresholds for `find()` operations.
+              Thresholds for `find()` operations
               
               <Expandable title="properties">
-                <ParamField path="screen" type="number" default={0.05}>
-                  Pixel diff threshold for screen comparison (0–1). `0.05` = 5% diff allowed.
+                <ParamField path="screen" type="number" default="0.05">
+                  Pixel diff threshold for screen comparison (0-1). `0.05` = 5% diff allowed.
                 </ParamField>
                 
-                <ParamField path="element" type="number" default={0.8}>
-                  OpenCV template match threshold for element matching (0–1). `0.8` = 80% correlation required.
+                <ParamField path="element" type="number" default="0.8">
+                  OpenCV template match threshold for element matching (0-1). `0.8` = 80% correlation.
                 </ParamField>
               </Expandable>
             </ParamField>
             
-            <ParamField path="assert" type="number" default={0.05}>
-              Pixel diff threshold for `assert()` operations (0–1). `0.05` = 5% diff allowed.
+            <ParamField path="assert" type="number" default="0.05">
+              Pixel diff threshold for `assert()` operations (0-1). `0.05` = 5% diff allowed.
             </ParamField>
           </Expandable>
         </ParamField>
@@ -138,27 +123,31 @@ const testdriver = new TestDriver(apiKey, options?)
     </ParamField>
     
     <ParamField path="cacheKey" type="string">
-      **Legacy**: Use `cache.cacheKey` instead. Cache key for element finding operations.
+      Cache key for element finding operations. If provided, enables caching tied to this key.
     </ParamField>
     
-    <ParamField path="redraw" type="boolean | RedrawConfig" default={false}>
-      Enable or disable screen-change (redraw) detection. Disabled by default since v7.3 — individual commands still use their own [redraw](/v7/redraw) options.
+    <ParamField path="dashcam" type="boolean" default="true">
+      Enable or disable Dashcam video recording
+    </ParamField>
+    
+    <ParamField path="redraw" type="boolean | object" default="true">
+      Enable or disable screen-change (redraw) detection, or provide advanced configuration.
       
       <Expandable title="advanced config">
-        <ParamField path="enabled" type="boolean" default={false}>
-          Enable or disable global redraw detection.
+        <ParamField path="enabled" type="boolean" default="true">
+          Enable or disable redraw detection
         </ParamField>
         
         <ParamField path="thresholds" type="object">
-          Threshold configuration.
+          Threshold configuration
           
           <Expandable title="properties">
-            <ParamField path="screen" type="number | false" default={0.05}>
-              Pixel diff threshold (0–1). Set to `false` to disable screen redraw detection.
+            <ParamField path="screen" type="number | false" default="0.05">
+              Pixel diff threshold (0-1). Set to `false` to disable screen redraw detection.
             </ParamField>
             
-            <ParamField path="network" type="boolean" default={false}>
-              Enable or disable network activity monitoring.
+            <ParamField path="network" type="boolean" default="false">
+              Enable or disable network activity monitoring
             </ParamField>
           </Expandable>
         </ParamField>
@@ -166,47 +155,27 @@ const testdriver = new TestDriver(apiKey, options?)
     </ParamField>
     
     <ParamField path="environment" type="object">
-      Additional environment variables to pass to the sandbox as key-value pairs.
+      Additional environment variables to pass to the sandbox
     </ParamField>
     
-    <ParamField path="ai" type="AIConfig">
-      Global AI sampling configuration. Controls how the AI model generates responses for `find()` verification and `assert()` calls. Can be overridden per-command.
+    <ParamField path="ai" type="object">
+      Global AI sampling configuration. Controls how the AI model generates responses for `find()` verification and `assert()` calls. Can be overridden per call.
       
       <Expandable title="properties">
-        <ParamField path="model" type="string">
-          AI model to use (e.g., `"gpt-4o"`, `"claude-3"`).
-        </ParamField>
-        
-        <ParamField path="provider" type="string">
-          AI provider name.
-        </ParamField>
-        
-        <ParamField path="apiKey" type="string">
-          Provider API key for BYOK (bring your own key).
-        </ParamField>
-        
-        <ParamField path="baseURL" type="string">
-          Custom endpoint URL for the AI provider.
-        </ParamField>
-        
-        <ParamField path="thinking" type="boolean">
-          Enable thinking/reasoning mode for the AI model.
-        </ParamField>
-        
         <ParamField path="temperature" type="number">
-          Controls randomness in AI responses. `0` = deterministic (best for verification), higher values = more creative.
+          Controls randomness in AI responses. `0` = deterministic (best for verification), higher values = more creative. Default: `0` for find verification, model default for assert.
         </ParamField>
         
         <ParamField path="top" type="object">
-          Nucleus and top-k sampling parameters.
+          Nucleus and top-k sampling parameters
           
           <Expandable title="properties">
             <ParamField path="p" type="number">
-              Top-P (nucleus sampling). Limits token choices to smallest set whose cumulative probability exceeds P. Range: 0–1.
+              Top-P (nucleus sampling). Limits token choices to the smallest set whose cumulative probability exceeds P. Lower values = more focused responses. Range: 0-1.
             </ParamField>
             
             <ParamField path="k" type="number">
-              Top-K sampling. Limits token choices to top K most likely tokens. `1` = always pick most likely. `0` = disabled.
+              Top-K sampling. Limits token choices to the top K most likely tokens. `1` = always pick the most likely token. `0` = disabled (consider all tokens).
             </ParamField>
           </Expandable>
         </ParamField>
@@ -215,139 +184,121 @@ const testdriver = new TestDriver(apiKey, options?)
   </Expandable>
 </ParamField>
 
-### Examples
+### Example
 
 ```javascript
 import TestDriver from 'testdriverai';
 
-// Minimal — API key from .env
-const testdriver = new TestDriver();
-
-// Specify OS and resolution
+// API key is automatically loaded from TD_API_KEY in .env
 const testdriver = new TestDriver({
   os: 'windows',
   resolution: '1920x1080',
+  logging: true,
+  analytics: true
 });
 
-// With explicit API key
+// With AI config for stricter verification
+const testdriver = new TestDriver({
+  ai: { temperature: 0, top: { p: 0.9, k: 40 } }
+});
+
+// Or pass API key explicitly
 const testdriver = new TestDriver('your-api-key', {
-  os: 'windows',
-});
-
-// With AI config and caching
-const testdriver = new TestDriver({
-  ai: { temperature: 0, top: { p: 0.9, k: 40 } },
-  cache: {
-    thresholds: {
-      find: { screen: 0.03, element: 0.85 },
-      assert: 0.03,
-    },
-  },
-});
-
-// Self-hosted
-const testdriver = new TestDriver({
-  ip: '192.168.1.100',
-  apiRoot: 'https://my-testdriver.internal.com',
+  os: 'windows'
 });
 ```
 
-## Lifecycle Methods
+## Authentication
 
 ### auth()
 
-Authenticate with the TestDriver API. Exchanges your API key for a session token.
+Authenticate with the TestDriver API.
 
 ```javascript
 await testdriver.auth()
 ```
 
-**Returns:** `Promise<void>`
+**Returns:** `Promise<string>` - Authentication token
+
+**Example:**
+```javascript
+await testdriver.auth();
+```
 
 <Note>
-  You must call `auth()` before `connect()`. When using the Vitest hook or presets, this is handled automatically.
+  You must call `auth()` before `connect()`. Most examples call both sequentially.
 </Note>
+
+## Connection Management
 
 ### connect()
 
-Connect to a sandbox environment. Creates or reconnects to a virtual machine where tests run.
+Connect to a sandbox environment. This creates or reconnects to a virtual machine where your tests will run.
 
 ```javascript
-await testdriver.connect(options?)
+await testdriver.connect(options)
 ```
 
-<ParamField path="options" type="ConnectOptions">
-  Connection options that override constructor settings.
+#### Parameters
 
+<ParamField path="options" type="object">
+  Connection options
+  
   <Expandable title="properties">
+    <ParamField path="newSandbox" type="boolean" default="false">
+      Force creation of a new sandbox instead of reusing an existing one
+    </ParamField>
+    
     <ParamField path="sandboxId" type="string">
-      Existing sandbox ID to reconnect to.
-    </ParamField>
-    
-    <ParamField path="newSandbox" type="boolean" default={false}>
-      Force creation of a new sandbox.
-    </ParamField>
-    
-    <ParamField path="reconnect" type="boolean" default={false}>
-      Reconnect to last used sandbox.
+      Existing sandbox ID to reconnect to
     </ParamField>
     
     <ParamField path="ip" type="string">
-      Direct IP address (self-hosted).
-    </ParamField>
-    
-    <ParamField path="os" type="string">
-      Override OS for this connection.
+      Direct IP address to connect to (for self-hosted sandboxes)
     </ParamField>
     
     <ParamField path="sandboxAmi" type="string">
-      AMI for AWS sandbox.
+      AMI to use for the sandbox (AWS deployments)
     </ParamField>
     
     <ParamField path="sandboxInstance" type="string">
-      EC2 instance type.
+      Instance type for the sandbox (AWS deployments)
     </ParamField>
     
-    <ParamField path="preview" type="PreviewMode" default="browser">
-      Preview mode: `"browser"`, `"ide"`, or `"none"`.
+    <ParamField path="preview" type="string" default="browser">
+      Preview mode for live test visualization:
+      - `"browser"` - Opens debugger in default browser (default)
+      - `"ide"` - Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension)
+      - `"none"` - Headless mode, no visual preview
     </ParamField>
     
-    <ParamField path="reuseConnection" type="boolean" default={true}>
-      Reuse existing connection if connected.
-    </ParamField>
-    
-    <ParamField path="keepAlive" type="number" default={60000}>
-      Keep sandbox alive after disconnect (ms).
+    <ParamField path="headless" type="boolean" default="false">
+      **Deprecated**: Use `preview: "none"` instead. Run in headless mode without opening the debugger.
     </ParamField>
   </Expandable>
 </ParamField>
 
-**Returns:** `Promise<Object>` — Sandbox instance details including `instanceId`, `ip`, `vncPort`.
+**Returns:** `Promise&lt;Object&gt;` - Sandbox instance details including `instanceId`, `ip`, `vncPort`, etc.
 
+#### Examples
+
+**Basic connection:**
 ```javascript
-// Basic connection
 await testdriver.connect();
-
-// Reconnect to existing sandbox
-await testdriver.connect({ sandboxId: 'existing-sandbox-id-123' });
-
-// Self-hosted
-await testdriver.connect({ ip: '192.168.1.100' });
 ```
 
-### ready()
-
-Convenience method that calls `auth()` + `connect()` in sequence.
-
+**Reconnect to existing sandbox:**
 ```javascript
-await testdriver.ready()
+const instance = await testdriver.connect({ 
+  sandboxId: 'existing-sandbox-id-123' 
+});
 ```
 
-**Returns:** `Promise<void>`
-
+**Self-hosted sandbox:**
 ```javascript
-const testdriver = new TestDriver({ os: 'linux' });
-await testdriver.ready(); // Authenticates and connects
+await testdriver.connect({ 
+  ip: '192.168.1.100'
+});
 ```
 
 ### disconnect()
@@ -360,15 +311,12 @@ await testdriver.disconnect()
 
 **Returns:** `Promise<void>`
 
+**Example:**
 ```javascript
 afterAll(async () => {
   await testdriver.disconnect();
 });
 ```
-
-<Warning>
-  Always call `disconnect()` in cleanup hooks (`afterAll`, `finally` blocks). This prevents orphaned sandboxes from consuming resources.
-</Warning>
 
 ## Instance Information
 
@@ -380,7 +328,14 @@ Get the current sandbox instance details.
 const instance = testdriver.getInstance()
 ```
 
-**Returns:** `Object | null` — Sandbox instance info (`instanceId`, `ip`, etc.)
+**Returns:** `Object | null` - Sandbox instance information
+
+**Example:**
+```javascript
+const instance = testdriver.getInstance();
+console.log('Instance ID:', instance.instanceId);
+console.log('IP Address:', instance.ip);
+```
 
 ### getSessionId()
 
@@ -390,44 +345,30 @@ Get the current session ID for tracking and debugging.
 const sessionId = testdriver.getSessionId()
 ```
 
-**Returns:** `string | null`
+**Returns:** `string | null` - Session ID
 
-## Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `connected` | `boolean` | Whether the SDK is connected to a sandbox |
-| `os` | `string` | Target operating system (`'windows'` or `'linux'`) |
-| `resolution` | `string` | Screen resolution (e.g., `'1366x768'`) |
-| `provision` | `ProvisionAPI` | [Provision](/v7/provision) API for launching apps |
-| `dashcam` | `Dashcam` | Lazy-initialized [Dashcam](/v7/dashcam) instance |
-| `dashcamEnabled` | `boolean` | Whether Dashcam recording is enabled |
-| `autoScreenshots` | `boolean` | Whether [auto-screenshots](/v7/screenshots) are enabled |
-| `options` | `object` | Resolved configuration options |
-| `emitter` | `EventEmitter2` | [Event emitter](/v7/events) for custom event handling |
-| `loggingEnabled` | `boolean` | Whether console logging is enabled |
-
-### Static Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `TestDriver.version` | `string` | SDK version string |
+**Example:**
+```javascript
+const sessionId = testdriver.getSessionId();
+console.log('Session:', sessionId);
+```
 
 ## Logging & Events
 
 ### setLogging()
 
-Toggle console logging at runtime.
+Enable or disable console logging at runtime.
 
 ```javascript
 testdriver.setLogging(enabled)
 ```
 
-<ParamField path="enabled" type="boolean" required>
-  Whether to enable logging.
-</ParamField>
+**Parameters:**
+- `enabled` (boolean) - Whether to enable logging
 
+**Example:**
 ```javascript
+// Disable logging for cleanup operations
 testdriver.setLogging(false);
 await testdriver.disconnect();
 testdriver.setLogging(true);
@@ -435,14 +376,15 @@ testdriver.setLogging(true);
 
 ### getEmitter()
 
-Get the [EventEmitter2](https://github.com/EventEmitter2/EventEmitter2) instance for custom event handling.
+Get the event emitter for custom event handling.
 
 ```javascript
 const emitter = testdriver.getEmitter()
 ```
 
-**Returns:** `EventEmitter2` — Supports wildcard events with `:` delimiter.
+**Returns:** `EventEmitter2` - Event emitter instance
 
+**Example:**
 ```javascript
 const emitter = testdriver.getEmitter();
 
@@ -459,164 +401,6 @@ emitter.on('command:error', (error) => {
 });
 ```
 
-See [Events](/v7/events) for the full list of event namespaces.
-
-### getLogs() / clearLogs()
-
-Access and manage the internal log buffer. Logs are stored in JSONL format for S3 upload.
-
-```javascript
-const logData = testdriver.getLogs()    // string (JSONL)
-testdriver.clearLogs()
-```
-
-## Test Run Tracking
-
-### createTestRun()
-
-Create a new test run in the TestDriver API.
-
-```javascript
-const run = await testdriver.createTestRun(options)
-```
-
-**Returns:** `Promise<object>` — Test run metadata.
-
-### completeTestRun()
-
-Mark a test run as complete.
-
-```javascript
-await testdriver.completeTestRun(options)
-```
-
-### recordTestCase()
-
-Record an individual test case result.
-
-```javascript
-await testdriver.recordTestCase(options)
-```
-
-### setTestContext()
-
-Set the Vitest test context for automatic test metadata tracking.
-
-```javascript
-testdriver.setTestContext(context)
-```
-
-<ParamField path="context" type="object" required>
-  Vitest task context (`context.task`).
-</ParamField>
-
-## Unawaited Promise Detection
-
-The SDK tracks the last returned promise. If a new command is called before the previous promise resolves, it logs a warning:
-
-```
-⚠️ Previous TestDriver command was not awaited!
-```
-
-Always `await` every TestDriver command to prevent race conditions:
-
-```javascript
-// ❌ Missing await — will trigger warning
-testdriver.find('button').click();
-testdriver.type('hello');
-
-// ✅ Correct
-await testdriver.find('button').click();
-await testdriver.type('hello');
-```
-
-## Types
-
-```typescript
-type PreviewMode = "browser" | "ide" | "none";
-
-interface TestDriverOptions {
-  apiKey?: string;
-  apiRoot?: string;
-  os?: "windows" | "linux";
-  resolution?: string;
-  analytics?: boolean;
-  logging?: boolean;
-  autoScreenshots?: boolean;
-  newSandbox?: boolean;
-  reconnect?: boolean;
-  keepAlive?: number;
-  preview?: PreviewMode;
-  headless?: boolean;             // @deprecated → preview: "none"
-  debugOnFailure?: boolean;
-  ip?: string;
-  sandboxAmi?: string;
-  sandboxInstance?: string;
-  dashcam?: boolean;
-  cache?: boolean | CacheConfig;
-  cacheKey?: string;              // @deprecated → cache.cacheKey
-  redraw?: boolean | RedrawConfig;
-  environment?: Record<string, any>;
-  ai?: AIConfig;
-}
-
-interface CacheConfig {
-  enabled?: boolean;
-  cacheKey?: string;
-  thresholds?: {
-    find?: {
-      screen?: number;            // Default: 0.05
-      element?: number;           // Default: 0.8
-    };
-    assert?: number;              // Default: 0.05
-  };
-}
-
-interface RedrawConfig {
-  enabled?: boolean;
-  thresholds?: {
-    screen?: number | false;      // Default: 0.05
-    network?: boolean;            // Default: false
-  };
-}
-
-interface AIConfig {
-  model?: string;
-  provider?: string;
-  apiKey?: string;
-  baseURL?: string;
-  thinking?: boolean;
-  temperature?: number;
-  top?: {
-    p?: number;
-    k?: number;
-  };
-}
-
-interface ConnectOptions {
-  sandboxId?: string;
-  newSandbox?: boolean;
-  reconnect?: boolean;
-  ip?: string;
-  os?: "windows" | "linux";
-  sandboxAmi?: string;
-  sandboxInstance?: string;
-  preview?: PreviewMode;
-  reuseConnection?: boolean;      // Default: true
-  keepAlive?: number;             // Default: 60000
-}
-```
-
-## Environment Variables
-
-The SDK reads these environment variables (also from `.env` files):
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TD_API_KEY` | API key for authentication | — |
-| `TD_API_ROOT` | API endpoint URL | `https://testdriver-api.onrender.com` |
-| `TD_OS` | Default OS | `linux` |
-
 ## Complete Example
 
 ```javascript
@@ -627,24 +411,22 @@ describe('My Test Suite', () => {
   let testdriver;
 
   beforeAll(async () => {
+    // Initialize client - API key loaded automatically from .env
     testdriver = new TestDriver({
       os: 'windows',
       resolution: '1366x768',
-      logging: true,
-      cache: {
-        thresholds: {
-          find: { screen: 0.05, element: 0.8 },
-          assert: 0.05,
-        },
-      },
+      logging: true
     });
     
+    // Set up event listeners
     const emitter = testdriver.getEmitter();
     emitter.on('log:info', (msg) => console.log('[INFO]', msg));
     
+    // Authenticate and connect
     await testdriver.auth();
     const instance = await testdriver.connect();
-    console.log('Connected:', instance.instanceId);
+    
+    console.log('Connected to sandbox:', instance.instanceId);
   });
 
   afterAll(async () => {
@@ -652,8 +434,7 @@ describe('My Test Suite', () => {
   });
 
   it('runs a test', async () => {
-    await testdriver.provision.chrome({ url: 'https://example.com' });
-    await testdriver.find('Get Started button').click();
+    // Your test code here
   });
 });
 ```
@@ -662,54 +443,36 @@ describe('My Test Suite', () => {
 
 <AccordionGroup>
   <Accordion title="Reuse sandboxes across tests">
-    Use `beforeAll`/`afterAll` to create one sandbox per test suite. This significantly reduces execution time vs creating a sandbox per test.
+    Use `beforeAll`/`afterAll` to create one sandbox per test suite rather than per test. This significantly reduces execution time.
   </Accordion>
   
   <Accordion title="Handle connection errors gracefully">
-    Wrap `connect()` in try-catch to handle network issues or quota limits:
+    Wrap `connect()` in a try-catch block to handle network issues or quota limits:
     
     ```javascript
     try {
       await testdriver.connect();
     } catch (error) {
-      console.error('Connection failed:', error.message);
+      console.error('Failed to connect:', error.message);
       throw error;
     }
     ```
   </Accordion>
   
-  <Accordion title="Always disconnect in cleanup">
-    Use `afterAll` or try-finally blocks to ensure `disconnect()` is called even if tests fail:
-    
-    ```javascript
-    afterAll(async () => {
-      await testdriver.disconnect();
-    });
-    ```
+  <Accordion title="Always disconnect">
+    Use `afterAll` or try-finally blocks to ensure `disconnect()` is called even if tests fail. This prevents orphaned sandboxes.
   </Accordion>
   
   <Accordion title="Use environment variables for API keys">
-    Never hardcode API keys:
+    Never hardcode API keys. The SDK automatically loads `TD_API_KEY` from your `.env` file:
     
     ```bash .env
     TD_API_KEY=your_api_key_here
     ```
     
     ```javascript
-    // API key loaded automatically
+    // API key is loaded automatically - no need to pass it!
     const testdriver = new TestDriver();
     ```
-  </Accordion>
-  
-  <Accordion title="Use debugOnFailure for debugging">
-    When a test fails and you need to inspect the sandbox interactively:
-    
-    ```javascript
-    const testdriver = new TestDriver({
-      debugOnFailure: true
-    });
-    ```
-    
-    The sandbox stays alive for 5 minutes after failure, and connection instructions are logged.
   </Accordion>
 </AccordionGroup>

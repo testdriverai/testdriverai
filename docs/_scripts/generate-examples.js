@@ -82,9 +82,35 @@ function getExampleFiles() {
     .sort();
 }
 
+// Rewrite internal imports and helpers to their public equivalents
+function transformContentForDocs(content) {
+  let transformed = content;
+
+  // Rewrite internal relative import to the public package path
+  transformed = transformed.replace(
+    /from\s+["']\.\.\/lib\/vitest\/hooks\.mjs["']/g,
+    'from "testdriverai/vitest/hooks"'
+  );
+
+  // Remove internal config helper import
+  transformed = transformed.replace(
+    /import\s+\{[^}]*getDefaults[^}]*\}\s+from\s+["']\.\/config\.mjs["'];\n?/g,
+    ''
+  );
+
+  // Replace getDefaults(context) spread with inline defaults
+  transformed = transformed.replace(
+    /\{\s*\.\.\.getDefaults\(context\)\s*/g,
+    '{ ip: context.ip || process.env.TD_IP'
+  );
+
+  return transformed;
+}
+
 // Parse test file to extract metadata
 function parseTestFile(filePath) {
-  const content = fs.readFileSync(filePath, "utf-8");
+  const raw = fs.readFileSync(filePath, "utf-8");
+  const content = transformContentForDocs(raw);
   const filename = path.basename(filePath);
 
   // Extract JSDoc comment at top of file
@@ -256,7 +282,7 @@ function extractTestcaseId(url) {
 // Generate replay URL from testcase ID
 function generateReplayUrl(testcaseId) {
   // Use the API replay endpoint which handles the redirect with embed=true
-  const apiRoot = process.env.TD_API_ROOT || 'https://testdriver-api.onrender.com';
+  const apiRoot = process.env.TD_API_ROOT || 'https://api.testdriver.ai';
   return `${apiRoot}/api/v1/testdriver/testcase/${testcaseId}/replay`;
 }
 

@@ -9,9 +9,6 @@ process.env.TD_STDIO = "stderr";
 // Enable debug mode to preserve croppedImage in SDK responses (needed for MCP App visuals)
 process.env.TD_DEBUG = "true";
 
-// Load .env file so TD_API_KEY can be read from the workspace .env
-import "dotenv/config";
-
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -51,7 +48,7 @@ if (isSentryEnabled()) {
       process.env.SENTRY_DSN ||
       "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
     environment: "mcp",
-    release: `testdriverai-mcp@${version}`,
+    release: version,
     sampleRate: 1.0,
     tracesSampleRate: 1.0,
     sendDefaultPii: true,
@@ -523,7 +520,7 @@ Debug mode (connect to existing sandbox):
       logger.debug("session_start: Session created", { sessionId: newSession.sessionId });
 
       // Determine API root
-      const apiRoot = params.apiRoot || process.env.TD_API_ROOT || "https://testdriver-api.onrender.com";
+      const apiRoot = params.apiRoot || process.env.TD_API_ROOT || "https://api.testdriver.ai";
       logger.debug("session_start: Using API root", { apiRoot });
 
       // Initialize SDK
@@ -1763,9 +1760,9 @@ You can optionally provide a reference image URI to compare against a previous s
 server.registerTool(
   "exec",
   {
-    description: "Execute code in the sandbox (shell or PowerShell)",
+    description: "Execute code in the sandbox (JavaScript, shell, or PowerShell)",
     inputSchema: z.object({
-      language: z.enum(["sh", "pwsh"]).default("sh"),
+      language: z.enum(["js", "sh", "pwsh"]).default("js"),
       code: z.string().describe("Code to execute"),
       timeout: z.number().default(30000).describe("Timeout in ms"),
     }),
