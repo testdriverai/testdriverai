@@ -4,6 +4,7 @@ const { events } = require("../events");
 const logger = require("./logger");
 const { version } = require("../../package.json");
 const { withRetry, getSentryTraceHeaders } = require("./sdk");
+const sentry = require("../../lib/sentry");
 
 const createSandbox = function (emitter, analytics, sessionInstance) {
   class Sandbox {
@@ -436,7 +437,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
               if (!resolved) {
                 resolved = true;
                 self._ctrlChannel.unsubscribe('control', onCtrl);
-                reject(new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms'));
+                var err = new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms');
+                sentry.captureException(err, {
+                  tags: { phase: 'runner_ready', connection_type: 'create' },
+                  extra: { readyTimeout: readyTimeout, sandboxId: reply.sandboxId },
+                });
+                reject(err);
               }
             }, readyTimeout);
             if (timer.unref) timer.unref();
@@ -549,7 +555,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
               if (!resolved) {
                 resolved = true;
                 self._ctrlChannel.unsubscribe('control', onCtrl);
-                reject(new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms (direct connection)'));
+                var err = new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms (direct connection)');
+                sentry.captureException(err, {
+                  tags: { phase: 'runner_ready', connection_type: 'direct' },
+                  extra: { readyTimeout: readyTimeout, sandboxId: reply.sandboxId, instanceId: message.instanceId },
+                });
+                reject(err);
               }
             }, readyTimeout);
             if (timer.unref) timer.unref();

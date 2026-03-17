@@ -99,6 +99,11 @@ if (isSentryEnabled()) {
       if (error && typeof error === "object" && "name" in error && (error as { name: string }).name === "TestFailure") {
         return null;
       }
+
+      // Filter out ElementNotFoundError - expected test outcome, not a crash
+      if (error && typeof error === "object" && "name" in error && (error as { name: string }).name === "ElementNotFoundError") {
+        return null;
+      }
       
       return event;
     },

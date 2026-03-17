@@ -82,6 +82,11 @@ function initializeSentry() {
             if (isUserCodeError && (exception.type === "ReferenceError" || exception.type === "TypeError")) {
               return null;
             }
+
+            // Filter out ElementNotFoundError - expected test outcome, not a crash
+            if (exception.type === "ElementNotFoundError") {
+              return null;
+            }
           }
         }
         
