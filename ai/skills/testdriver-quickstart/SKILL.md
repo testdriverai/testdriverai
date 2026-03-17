@@ -22,7 +22,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
         npx testdriverai init
         ```
 
-        This will walk you through creating a new project folder, installing dependencies, and setting up your API key.
+        This will walk you through creating a new project folder, installing dependencies, setting up your API key, and configuring MCP for your preferred AI assistant (VS Code, Cursor, Claude Desktop, etc.).
 
       </Step>
       

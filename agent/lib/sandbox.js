@@ -1,83 +1,9 @@
-const crypto = require("crypto");
 const Ably = require("ably");
+const axios = require("axios");
 const { events } = require("../events");
 const logger = require("./logger");
 const { version } = require("../../package.json");
-
-function getSentryTraceHeaders(sessionId) {
-  if (!sessionId) return {};
-  const traceId = crypto.createHash("md5").update(sessionId).digest("hex");
-  const spanId = crypto.randomBytes(8).toString("hex");
-  return {
-    "sentry-trace": traceId + "-" + spanId + "-1",
-    baggage:
-      "sentry-trace_id=" +
-      traceId +
-      ",sentry-sample_rate=1.0,sentry-sampled=true",
-  };
-}
-
-function httpPost(apiRoot, path, body, timeout) {
-  const http = require("http");
-  const https = require("https");
-  const url = new URL(apiRoot + path);
-  const transport = url.protocol === "https:" ? https : http;
-  const bodyStr = JSON.stringify(body);
-
-  return new Promise(function (resolve, reject) {
-    var timeoutId = timeout
-      ? setTimeout(function () {
-          req.destroy();
-          reject(
-            new Error("HTTP request timed out after " + timeout + "ms"),
-          );
-        }, timeout)
-      : null;
-
-    var req = transport.request(
-      url,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(bodyStr),
-          "Connection": "close",
-        },
-      },
-      function (res) {
-        var data = "";
-        res.on("data", function (chunk) {
-          data += chunk;
-        });
-        res.on("end", function () {
-          if (timeoutId) clearTimeout(timeoutId);
-          try {
-            var parsed = JSON.parse(data);
-            if (res.statusCode >= 400) {
-              var err = new Error(
-                parsed.errorMessage ||
-                  parsed.message ||
-                  "HTTP " + res.statusCode,
-              );
-              err.responseData = parsed;
-              reject(err);
-            } else {
-              resolve(parsed);
-            }
-          } catch (e) {
-            reject(new Error("Failed to parse API response: " + data));
-          }
-        });
-      },
-    );
-    req.on("error", function (err) {
-      if (timeoutId) clearTimeout(timeoutId);
-      reject(err);
-    });
-    req.write(bodyStr);
-    req.end();
-  });
-}
+const { withRetry, getSentryTraceHeaders } = require("./sdk");
 
 const createSandbox = function (emitter, analytics, sessionInstance) {
   class Sandbox {
@@ -105,6 +31,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._lastConnectParams = null;
       this._teamId = null;
       this._sandboxId = null;
+
+      // Rate limiting state for Ably publishes (Ably limits to 50 msg/sec per connection)
+      this._publishLastTime = 0;
+      this._publishMinIntervalMs = 25; // 40 msg/sec max, safely under Ably's 50 limit
+      this._publishCount = 0;
+      this._publishWindowStart = Date.now();
     }
 
     getTraceId() {
@@ -298,40 +230,79 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
     }
 
     /**
-     * Wrapper around httpPost that retries when the server responds with
-     * CONCURRENCY_LIMIT_EXCEEDED (HTTP 429).  Instead of failing the test
-     * immediately, we wait for a slot to become available — polling every
-     * 10 s until vitest's testTimeout kills the test.
+     * POST to the API with retry for transient network errors (via withRetry)
+     * and infinite polling for CONCURRENCY_LIMIT_EXCEEDED (until vitest's
+     * testTimeout kills the test).
      */
     async _httpPostWithConcurrencyRetry(path, body, timeout) {
-      var retryInterval = 10000; // 10 seconds between retries
+      var concurrencyRetryInterval = 10000; // 10 seconds between concurrency retries
       var startTime = Date.now();
+      var sessionId = this.sessionInstance ? this.sessionInstance.get() : null;
+
+      var self = this;
+      var makeRequest = function () {
+        return axios({
+          method: "post",
+          url: self.apiRoot + path,
+          data: body,
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "TestDriverSDK/" + version + " (Node.js " + process.version + ")",
+            ...getSentryTraceHeaders(sessionId),
+          },
+          timeout: timeout || 120000,
+        });
+      };
 
       while (true) {
         try {
-          return await httpPost(this.apiRoot, path, body, timeout);
+          var response = await withRetry(makeRequest, {
+            retryConfig: {
+              maxRetries: 3,
+              baseDelayMs: 2000,
+              retryableStatusCodes: [500, 502, 503, 504], // Don't retry 429 — handled below
+            },
+            onRetry: function (attempt, error, delayMs) {
+              var elapsed = Date.now() - startTime;
+              logger.warn(
+                "Transient network error: " + (error.message || error.code) +
+                  " — POST " + path +
+                  " — retry " + attempt + "/3" +
+                  " in " + (delayMs / 1000).toFixed(1) + "s" +
+                  " (" + Math.round(elapsed / 1000) + "s elapsed)...",
+              );
+            },
+          });
+          return response.data;
         } catch (err) {
-          var isConcurrencyLimit =
-            err.responseData &&
-            err.responseData.errorCode === "CONCURRENCY_LIMIT_EXCEEDED";
-
-          if (!isConcurrencyLimit) {
-            throw err;
+          // Concurrency limit — poll forever until a slot opens
+          var responseData = err.response && err.response.data;
+          if (responseData && responseData.errorCode === "CONCURRENCY_LIMIT_EXCEEDED") {
+            var elapsed = Date.now() - startTime;
+            logger.log(
+              "Concurrency limit reached — waiting " +
+                concurrencyRetryInterval / 1000 +
+                "s for a slot to become available (" +
+                Math.round(elapsed / 1000) +
+                "s elapsed)...",
+            );
+            await new Promise(function (resolve) {
+              var t = setTimeout(resolve, concurrencyRetryInterval);
+              if (t.unref) t.unref();
+            });
+            continue;
           }
 
-          var elapsed = Date.now() - startTime;
+          // Non-retryable HTTP error — preserve responseData for callers
+          if (responseData) {
+            var httpErr = new Error(
+              responseData.errorMessage || responseData.message || "HTTP " + err.response.status,
+            );
+            httpErr.responseData = responseData;
+            throw httpErr;
+          }
 
-          logger.log(
-            "Concurrency limit reached — waiting " +
-              retryInterval / 1000 +
-              "s for a slot to become available (" +
-              Math.round(elapsed / 1000) +
-              "s elapsed)...",
-          );
-          await new Promise(function (resolve) {
-            var t = setTimeout(resolve, retryInterval);
-            if (t.unref) t.unref();
-          });
+          throw err;
         }
       }
     }
@@ -511,7 +482,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           url = runnerVncUrl;
           logger.log(`Using runner-provided vncUrl: ${url}`);
         } else if (runnerIp && noVncPort) {
-          url = `http://${runnerIp}:${noVncPort}/vnc_lite.html`;
+          url = `http://${runnerIp}:${noVncPort}/vnc_lite.html?token=V3b8wG9`;
           logger.log(`noVNC URL constructed from runner ip+port: ${url}`);
         } else if (runnerIp) {
           url = "http://" + runnerIp;
@@ -619,7 +590,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         }
 
         // Construct VNC URL — use port 8080 (nginx noVNC proxy) for Windows instances
-        var directUrl = message.ip ? "http://" + message.ip + ":8080/vnc_lite.html" : undefined;
+        var directUrl = message.ip ? "http://" + message.ip + ":8080/vnc_lite.html?token=V3b8wG9" : undefined;
 
         return {
           success: true,
@@ -759,8 +730,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         p.catch(function () {});
       }
 
-      this._cmdChannel
-        .publish("command", message)
+      this._throttledPublish(this._cmdChannel, "command", message)
         .then(function () {
           emitter.emit(events.sandbox.sent, message);
         })
@@ -775,6 +745,51 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         });
 
       return p;
+    }
+
+    /**
+     * Throttled publish to stay under Ably's 50 msg/sec per-connection limit.
+     * Also tracks and logs the current publish rate for debugging.
+     * @param {Object} channel - Ably channel to publish on
+     * @param {string} eventName - Event name for the publish
+     * @param {Object} message - Message payload
+     * @returns {Promise} - Resolves when publish completes
+     */
+    async _throttledPublish(channel, eventName, message) {
+      var self = this;
+      var now = Date.now();
+
+      // Rate limiting: wait if too soon since last publish
+      var elapsed = now - this._publishLastTime;
+      if (elapsed < this._publishMinIntervalMs) {
+        var waitMs = this._publishMinIntervalMs - elapsed;
+        await new Promise(function (resolve) {
+          var timer = setTimeout(resolve, waitMs);
+          if (timer.unref) timer.unref();
+        });
+      }
+      this._publishLastTime = Date.now();
+
+      // Metrics: track messages per second
+      this._publishCount++;
+      var windowElapsed = Date.now() - this._publishWindowStart;
+      if (windowElapsed >= 1000) {
+        var rate = (this._publishCount / windowElapsed) * 1000;
+        var rateStr = rate.toFixed(1);
+
+        // Log rate - warning if approaching limit, debug otherwise
+        if (rate > 45) {
+          logger.warn("Ably publish rate: " + rateStr + " msg/sec (approaching 50/sec limit)");
+        } else if (process.env.VERBOSE || process.env.TD_DEBUG) {
+          logger.log("Ably publish rate: " + rateStr + " msg/sec");
+        }
+
+        // Reset window
+        this._publishCount = 0;
+        this._publishWindowStart = Date.now();
+      }
+
+      return channel.publish(eventName, message);
     }
 
     async auth(apiKey) {
@@ -915,10 +930,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       }
 
       try {
-        if (this._cmdChannel) this._cmdChannel.detach().catch(() => {});
-        if (this._respChannel) this._respChannel.detach().catch(() => {});
-        if (this._ctrlChannel) this._ctrlChannel.detach().catch(() => {});
-        if (this._filesChannel) this._filesChannel.detach().catch(() => {});
+        await Promise.allSettled([
+          this._cmdChannel?.detach(),
+          this._respChannel?.detach(),
+          this._ctrlChannel?.detach(),
+          this._filesChannel?.detach(),
+        ].filter(Boolean));
       } catch (e) {
         /* ignore */
       }

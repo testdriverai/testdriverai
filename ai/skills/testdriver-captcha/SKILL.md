@@ -106,7 +106,6 @@ export TWOCAPTCHA_API_KEY=your_api_key_here
 Then use it in your tests:
 
 ```javascript
-```javascript
 const result = await testdriver.captcha({
   apiKey: process.env.TWOCAPTCHA_API_KEY,
 });

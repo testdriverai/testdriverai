@@ -1,0 +1,143 @@
+---
+title: "GitHub Integration"
+sidebarTitle: "GitHub"
+description: "Use TestDriver from GitHub's web interface and mobile app"
+icon: "github"
+---
+
+TestDriver works directly in GitHub's web interface and mobile app. The same MCP server that powers VS Code integration also works in GitHub, letting you create and manage tests from anywhere.
+
+## How It Works
+
+When you add a TestDriver agent file to your repository at `.github/agents/testdriver.agent.md`, GitHub Copilot can use TestDriver's MCP tools directly in:
+
+- GitHub.com (web browser)
+- GitHub Mobile app (iOS/Android)
+- Pull request conversations
+- Issue comments
+
+## Using TestDriver in GitHub Web
+
+<Steps>
+  <Step title="Navigate to Your Repository">
+    Open your repository on GitHub.com. Make sure you have the TestDriver agent file at `.github/agents/testdriver.agent.md`.
+  </Step>
+
+  <Step title="Start a Copilot Chat">
+    Click the **Copilot icon** in the GitHub interface to open a chat. You can find this in:
+    - The repository's Code tab
+    - Pull request pages
+    - Issue pages
+  </Step>
+
+  <Step title="Invoke the TestDriver Agent">
+    Start your message with `@testdriver`:
+
+    ```
+    @testdriver Create a test that verifies the homepage loads correctly at https://myapp.com
+    ```
+
+    The agent will spawn a sandbox environment and begin executing, just like in VS Code.
+  </Step>
+
+  <Step title="View Screenshots in Chat">
+    As the test runs, screenshots appear directly in the chat. You can see what the AI sees and provide guidance if needed.
+  </Step>
+</Steps>
+
+## Creating Tests from PR Comments
+
+You can create tests directly from pull request reviews. Comment on a PR and mention Copilot:
+
+```
+@copilot create a TestDriver test that verifies this new feature works.
+Test the checkout flow with a guest user.
+```
+
+Copilot will:
+1. Use the TestDriver MCP server
+2. Create a test based on your description
+3. Commit the test file to the PR branch
+
+This is useful for:
+- Adding test coverage during code review
+- Verifying bug fixes before merging
+- Creating regression tests for new features
+
+## Creating Tests from Issues
+
+You can also create tests from issue comments:
+
+```
+@copilot Use TestDriver to create a test that reproduces this bug.
+Navigate to /settings, change the theme, and verify it persists after refresh.
+```
+
+The test will be created in a new branch and linked to the issue.
+
+## Mobile App Support
+
+The GitHub Mobile app supports Copilot chat, which means you can use TestDriver from your phone:
+
+1. Open the GitHub app
+2. Navigate to your repository
+3. Tap the Copilot icon
+4. Type `@testdriver` followed by your request
+
+Screenshots and test progress appear in the chat, letting you create and debug tests on the go.
+
+## Example: PR Review Workflow
+
+Here's a complete workflow for adding tests during code review:
+
+<Steps>
+  <Step title="Developer Opens PR">
+    A developer opens a pull request with a new feature.
+  </Step>
+
+  <Step title="Reviewer Requests Tests">
+    The reviewer comments:
+    ```
+    @copilot Create a TestDriver test for this user registration flow.
+    Test both successful registration and validation errors.
+    ```
+  </Step>
+
+  <Step title="Copilot Creates Tests">
+    Copilot spawns TestDriver, creates the tests, and commits them to the PR branch.
+  </Step>
+
+  <Step title="Tests Run in CI">
+    The new tests run automatically in CI, validating the feature works as expected.
+  </Step>
+</Steps>
+
+## Agent File Reference
+
+The agent file at `.github/agents/testdriver.agent.md` contains the configuration for GitHub Copilot to use TestDriver. Here's the structure:
+
+```yaml
+---
+name: testdriver
+description: An expert at creating and refining automated tests using TestDriver.ai
+mcp-servers:
+  testdriver:
+    command: npx
+    args:
+      - -p
+      - testdriverai
+      - testdriverai-mcp
+    env:
+      TD_API_KEY: ${TD_API_KEY}
+---
+
+# TestDriver Expert
+
+You are an expert at writing automated tests using TestDriver...
+```
+
+The `TD_API_KEY` is pulled from your repository secrets when running in GitHub Actions or from your environment when using the web interface.
+
+<Warning>
+  Make sure `TD_API_KEY` is set in your repository secrets for CI workflows. Go to **Settings → Secrets and variables → Actions** to add it.
+</Warning>

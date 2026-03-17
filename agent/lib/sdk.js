@@ -231,6 +231,7 @@ const createSDK = (emitter, config, sessionInstance) => {
       let res = await withRetry(
         () => axios(url, c),
         {
+          retryConfig: { maxRetries: 2 },
           onRetry: (attempt, error, delayMs) => {
             emitter.emit(events.sdk.retry, {
               path: 'auth/exchange-api-key',
@@ -381,6 +382,7 @@ const createSDK = (emitter, config, sessionInstance) => {
             "Content-Type": "application/json",
             "User-Agent": `TestDriverSDK/${version} (Node.js ${process.version})`,
             ...(token && { Authorization: `Bearer ${token}` }),
+            ...getSentryTraceHeaders(sessionInstance.get()),
           },
           timeout: 15000,
           data: {
@@ -627,5 +629,5 @@ const createSDK = (emitter, config, sessionInstance) => {
   return { req, auth };
 };
 
-// Export the factory function
-module.exports = { createSDK };
+// Export the factory function and shared utilities
+module.exports = { createSDK, withRetry, getSentryTraceHeaders, sleep };

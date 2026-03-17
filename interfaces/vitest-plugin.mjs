@@ -9,6 +9,7 @@ import { setTestRunInfo } from "./shared-test-state.mjs";
 
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
+const channelConfig = require("../lib/resolve-channel.js");
 
 // Import Sentry for error reporting
 const Sentry = require("@sentry/node");
@@ -763,7 +764,7 @@ export default function testDriverPlugin(options = {}) {
   pluginState.apiRoot =
     options.apiRoot ||
     process.env.TD_API_ROOT ||
-    "https://api.testdriver.ai";
+    channelConfig.channels[channelConfig.active];
   pluginState.ciProvider = detectCI();
   pluginState.gitInfo = getGitInfo();
 
@@ -822,7 +823,7 @@ class TestDriverReporter {
     pluginState.apiRoot =
       this.options.apiRoot ||
       process.env.TD_API_ROOT ||
-      "https://api.testdriver.ai";
+      channelConfig.channels[channelConfig.active];
     logger.debug("API key from options:", !!this.options.apiKey);
     logger.debug("API key from env (at onInit):", !!process.env.TD_API_KEY);
     logger.debug("API root from options:", this.options.apiRoot);
@@ -838,6 +839,9 @@ class TestDriverReporter {
     logger.debug("initializeTestRun called");
     logger.debug("API key present:", !!pluginState.apiKey);
     logger.debug("API root:", pluginState.apiRoot);
+
+    // Environment info is printed by the SDK when each test initializes,
+    // so we skip the duplicate banner here in the reporter.
 
     // Check if we should enable the reporter
     if (!pluginState.apiKey) {
@@ -1248,14 +1252,32 @@ function getConsoleUrl(apiRoot) {
 
   if (!apiRoot) return "https://console.testdriver.ai";
 
-  // Production: API on render.com -> Console on testdriver.ai
-  if (apiRoot.includes("api.testdriver.ai")) {
-    return "https://console.testdriver.ai";
+  // Map known channel API URLs to their console equivalents
+  // e.g. https://api-canary.testdriver.ai -> https://console-canary.testdriver.ai
+  for (const url of Object.values(channelConfig.channels)) {
+    if (url === apiRoot) {
+      return url.replace("api", "console").replace("1337", "3001");
+    }
   }
 
-  // Local development: API on localhost:1337 -> Web on localhost:3001
+  // Local development: ngrok/cloudflare tunnels -> localhost:3001
   if (apiRoot.includes("ngrok.io") || apiRoot.includes("trycloudflare.com") || apiRoot.includes("localhost")) {
     return `http://localhost:3001`;
+  }
+
+  // Render PR previews: map API service to Web service
+  // canary-api-pr-123.onrender.com -> canary-web-pr-123.onrender.com
+  // testdriver-api-i4m4-pr-123.onrender.com -> web-i4m4-pr-123.onrender.com
+  const renderPrMatch = apiRoot.match(/https:\/\/([\w-]+)-api(-[\w]+)?(-pr-\d+)?\.onrender\.com/);
+  if (renderPrMatch) {
+    const [, prefix, suffix, prSuffix] = renderPrMatch;
+    let webPrefix;
+    if (prefix === 'testdriver' && suffix) {
+      webPrefix = 'web' + suffix;
+    } else {
+      webPrefix = prefix + '-web';
+    }
+    return `https://${webPrefix}${prSuffix || ''}.onrender.com`;
   }
 
   // Other tunnels or unknown hosts: return as-is

@@ -13,7 +13,7 @@ export type ClickAction =
 export type ScrollDirection = "up" | "down" | "left" | "right";
 export type ScrollMethod = "keyboard" | "mouse";
 export type TextMatchMethod = "ai" | "turbo";
-export type ExecLanguage = "js" | "pwsh" | "sh";
+export type ExecLanguage = "sh" | "pwsh";
 /**
  * Preview mode for live test visualization
  * - "browser": Opens debugger in default browser (default)
@@ -218,7 +218,7 @@ export type KeyboardKey =
   | "optionright";
 
 export interface TestDriverOptions {
-  /** API endpoint URL (default: 'https://v6.testdriver.ai') */
+  /** API endpoint URL (default depends on release channel: latest → 'https://api.testdriver.ai') */
   apiRoot?: string;
   /** Sandbox resolution (default: '1366x768') */
   resolution?: string;

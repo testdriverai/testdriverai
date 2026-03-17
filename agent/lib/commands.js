@@ -580,11 +580,12 @@ const createCommands = (
         } else if (action === "mouseDown") {
           await sandbox.send({ type: "mousePress", button: "left", x, y, ...elementData });
         } else if (action === "mouseUp") {
+          // Move first to create drag motion, then release
+          // (pyautogui.mouseUp with x/y teleports instead of dragging)
+          await sandbox.send({ type: "moveMouse", x, y, ...elementData });
           await sandbox.send({
             type: "mouseRelease",
             button: "left",
-            x,
-            y,
             ...elementData
           });
         }

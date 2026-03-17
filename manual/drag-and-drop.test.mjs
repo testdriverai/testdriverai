@@ -46,7 +46,7 @@ describe("Drag and Drop Test", () => {
 
       const recycleBin = await testdriver.find(
         "Recycle Bin, recycle bin icon in the top left corner of the desktop",
-      );
+      ).hover();
       await recycleBin.mouseUp();
 
       // Assert "New Text Document" icon is not on the Desktop

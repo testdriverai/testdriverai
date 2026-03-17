@@ -399,9 +399,6 @@ await testdriver.scrollUntilImage("Product image at bottom");
 ### Executing Code in Sandbox
 
 ```javascript
-// JavaScript
-const result = await testdriver.exec("js", "return document.title", 5000);
-
 // Shell (Linux)
 const output = await testdriver.exec("sh", "ls -la", 5000);
 

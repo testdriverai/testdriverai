@@ -372,20 +372,11 @@ await testdriver.scrollUntilText('Footer', 'down', 5000);
 
 ### exec(language, code, timeout, silent) - Execute Code
 
-Execute JavaScript or PowerShell in the sandbox.
+Execute shell or PowerShell in the sandbox.
 
 ```javascript
-// JavaScript execution (in browser)
-const title = await testdriver.exec('js', 'document.title', 5000);
-
-await testdriver.exec('js', `
-  document.querySelector('#username').value = 'testuser';
-`, 5000);
-
-// Get element text
-const text = await testdriver.exec('js', `
-  document.querySelector('.notification').textContent
-`, 5000);
+// Shell execution (Linux sandbox)
+const output = await testdriver.exec('sh', 'ls -la', 5000);
 
 // PowerShell execution (Windows sandbox)
 await testdriver.exec('pwsh', 'npm install -g http-server', 30000);
@@ -843,7 +834,7 @@ Using explicit sandboxes provides:
 | `assert(text)` | Verify state | `await testdriver.assert('button is visible')` |
 | `pressKeys(keys)` | Keyboard shortcuts | `await testdriver.pressKeys(['ctrl', 'c'])` |
 | `scroll(dir, amt)` | Scroll page | `await testdriver.scroll('down', 500)` |
-| `exec(lang, code)` | Execute code | `await testdriver.exec('js', 'document.title', 5000)` |
+| `exec(lang, code)` | Execute code | `await testdriver.exec('sh', 'ls -la', 5000)` |
 | `connect(opts)` | Connect to sandbox | `await testdriver.connect({ sandboxId: 'i-123' })` |
 | `disconnect()` | Close connection | `await testdriver.disconnect()` |
 

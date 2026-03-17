@@ -30,9 +30,20 @@ import { sessionManager, type SessionState } from "./session.js";
 // =============================================================================
 
 // Read version from main package.json (../../package.json from mcp-server/dist/)
-const packageJsonPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json");
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+const sdkRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const packageJson = JSON.parse(fs.readFileSync(path.join(sdkRoot, "package.json"), "utf-8"));
 const version = packageJson.version || "1.0.0";
+
+// Derive release channel from package version prerelease tag (e.g. "7.6.0-test.5" → "test")
+import semver from "semver";
+const KNOWN_CHANNELS = new Set(["dev", "test", "canary", "latest"]);
+function resolveReleaseChannel(ver: string): string {
+  if (process.env.TD_CHANNEL && KNOWN_CHANNELS.has(process.env.TD_CHANNEL)) return process.env.TD_CHANNEL;
+  const pre = semver.prerelease(ver);
+  if (pre && pre.length > 0 && KNOWN_CHANNELS.has(String(pre[0]))) return String(pre[0]);
+  return "latest";
+}
+const releaseChannel = resolveReleaseChannel(version);
 
 const isSentryEnabled = () => {
   if (process.env.TD_TELEMETRY === "false") {
@@ -47,7 +58,7 @@ if (isSentryEnabled()) {
     dsn:
       process.env.SENTRY_DSN ||
       "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
-    environment: "mcp",
+    environment: releaseChannel,
     release: version,
     sampleRate: 1.0,
     tracesSampleRate: 1.0,
@@ -867,6 +878,7 @@ registerAppTool(
       
       // Store cropped image for resource serving (instead of inline data URL)
       let croppedImageResourceUri: string | undefined;
+      let screenshotResourceUri: string | undefined;
       const croppedImage = rawResponse.croppedImage;
       if (croppedImage) {
         const imageData = croppedImage.startsWith('data:') 
@@ -875,6 +887,18 @@ registerAppTool(
         croppedImageResourceUri = storeImage(imageData, "cropped");
         // Remove croppedImage from response to avoid context bloat
         delete rawResponse.croppedImage;
+      } else if (!found) {
+        // Element not found and no cropped image - capture a fresh screenshot
+        // so the user can see what's currently visible on screen
+        try {
+          const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+          if (screenshotBase64) {
+            screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+            logger.debug("find: Captured screenshot for not-found state");
+          }
+        } catch (e) {
+          logger.warn("find: Failed to capture screenshot for not-found state", { error: String(e) });
+        }
       }
       
       // Remove extractedText and pixelDiffImage from response to reduce context bloat
@@ -904,6 +928,7 @@ registerAppTool(
           element: elementInfo,
           ref: elementRef,
           croppedImageResourceUri,
+          screenshotResourceUri,
           duration,
         },
         generatedCode
@@ -988,6 +1013,7 @@ registerAppTool(
       
       // Store cropped image for resource serving (instead of inline data URL)
       let croppedImageResourceUri: string | undefined;
+      let screenshotResourceUri: string | undefined;
       const croppedImage = rawResponse.croppedImage;
       if (croppedImage) {
         const imageData = croppedImage.startsWith('data:') 
@@ -996,6 +1022,18 @@ registerAppTool(
         croppedImageResourceUri = storeImage(imageData, "cropped");
         // Remove croppedImage from response to avoid context bloat
         delete rawResponse.croppedImage;
+      } else if (count === 0) {
+        // No elements found and no cropped image - capture a fresh screenshot
+        // so the user can see what's currently visible on screen
+        try {
+          const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+          if (screenshotBase64) {
+            screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+            logger.debug("findall: Captured screenshot for not-found state");
+          }
+        } catch (e) {
+          logger.warn("findall: Failed to capture screenshot for not-found state", { error: String(e) });
+        }
       }
       
       // Remove extractedText and pixelDiffImage from response to reduce context bloat
@@ -1019,6 +1057,7 @@ registerAppTool(
           refs,
           elements: elementInfos,
           croppedImageResourceUri,
+          screenshotResourceUri,
           duration,
         },
         generatedCode
@@ -1317,6 +1356,7 @@ registerAppTool(
         
         // Store cropped image (screenshot) for resource serving
         let croppedImageResourceUri: string | undefined;
+        let screenshotResourceUri: string | undefined;
         const croppedImage = rawResponse.croppedImage;
         if (croppedImage) {
           const imageData = croppedImage.startsWith('data:') 
@@ -1324,6 +1364,18 @@ registerAppTool(
             : croppedImage;
           croppedImageResourceUri = storeImage(imageData, "screenshot");
           delete rawResponse.croppedImage;
+        } else {
+          // No cropped image - capture a fresh screenshot so the user can see
+          // what's currently visible on screen when element was not found
+          try {
+            const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
+            if (screenshotBase64) {
+              screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
+              logger.debug("find_and_click: Captured screenshot for not-found state");
+            }
+          } catch (e) {
+            logger.warn("find_and_click: Failed to capture screenshot for not-found state", { error: String(e) });
+          }
         }
         
         // Remove extractedText and pixelDiffImage from response to reduce context bloat
@@ -1338,6 +1390,7 @@ registerAppTool(
             action: "find_and_click",
             error: "Element not found", 
             croppedImageResourceUri,
+            screenshotResourceUri,
             duration 
           }
         );
@@ -1760,9 +1813,9 @@ You can optionally provide a reference image URI to compare against a previous s
 server.registerTool(
   "exec",
   {
-    description: "Execute code in the sandbox (JavaScript, shell, or PowerShell)",
+    description: "Execute shell or PowerShell commands in the sandbox",
     inputSchema: z.object({
-      language: z.enum(["js", "sh", "pwsh"]).default("js"),
+      language: z.enum(["sh", "pwsh"]).default("sh"),
       code: z.string().describe("Code to execute"),
       timeout: z.number().default(30000).describe("Timeout in ms"),
     }),

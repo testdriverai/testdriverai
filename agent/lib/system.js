@@ -4,6 +4,8 @@ const os = require("os");
 const path = require("path");
 const { randomUUID } = require("crypto");
 const Jimp = require("jimp");
+const axios = require("axios");
+const { withRetry } = require("./sdk");
 const { events } = require("../events.js");
 
 const createSystem = (emitter, sandbox, config) => {
@@ -11,79 +13,37 @@ const createSystem = (emitter, sandbox, config) => {
   // Download a screenshot from S3 when the runner returns an s3Key
   // (screenshots exceed Ably's 64KB message limit)
   const downloadFromS3 = async (s3Key) => {
-    const https = require("https");
-    const http = require("http");
     const apiRoot = config["TD_API_ROOT"] || sandbox.apiRoot;
     const apiKey = sandbox.apiKey;
 
-    // Step 1: Get presigned download URL from API (with retry on rate-limit)
-    const body = JSON.stringify({ apiKey, s3Key });
-    const url = new URL(apiRoot + "/api/v7/runner/download-url");
-    const transport = url.protocol === "https:" ? https : http;
+    // Step 1: Get presigned download URL from API (with retry)
+    const response = await withRetry(
+      () => axios({
+        method: "post",
+        url: apiRoot + "/api/v7/runner/download-url",
+        data: { apiKey, s3Key },
+        headers: { "Content-Type": "application/json" },
+        timeout: 15000,
+      }),
+      {
+        retryConfig: { maxRetries: 3, baseDelayMs: 1000 },
+      },
+    );
 
-    const MAX_RETRIES = 3;
-    let downloadUrl;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        downloadUrl = await new Promise((resolve, reject) => {
-          const req = transport.request(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Content-Length": Buffer.byteLength(body),
-              "Connection": "close",
-            },
-          }, (res) => {
-            let data = "";
-            res.on("data", (chunk) => { data += chunk; });
-            res.on("end", () => {
-              if (res.statusCode === 429) {
-                return reject({ retryable: true, message: "Rate limited (429) from download-url endpoint" });
-              }
-              if (res.statusCode >= 400) {
-                return reject(new Error(`download-url request failed (HTTP ${res.statusCode}): ${data}`));
-              }
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.downloadUrl) {
-                  resolve(parsed.downloadUrl);
-                } else {
-                  reject(new Error("No downloadUrl in response: " + data));
-                }
-              } catch (e) {
-                reject({ retryable: true, message: "Failed to parse download-url response: " + data });
-              }
-            });
-          });
-          req.on("error", reject);
-          req.write(body);
-          req.end();
-        });
-        break; // success — exit retry loop
-      } catch (err) {
-        if (err && err.retryable && attempt < MAX_RETRIES) {
-          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
-        throw err instanceof Error ? err : new Error(err.message || String(err));
-      }
+    const downloadUrl = response.data.downloadUrl;
+    if (!downloadUrl) {
+      throw new Error("No downloadUrl in response: " + JSON.stringify(response.data));
     }
 
     // Step 2: Download the image from S3
-    const imageUrl = new URL(downloadUrl);
-    const s3Transport = imageUrl.protocol === "https:" ? https : http;
-
-    const imageBuffer = await new Promise((resolve, reject) => {
-      s3Transport.get(downloadUrl, { headers: { "Connection": "close" } }, (res) => {
-        const chunks = [];
-        res.on("data", (chunk) => chunks.push(chunk));
-        res.on("end", () => resolve(Buffer.concat(chunks)));
-        res.on("error", reject);
-      }).on("error", reject);
+    const imageResponse = await axios({
+      method: "get",
+      url: downloadUrl,
+      responseType: "arraybuffer",
+      timeout: 30000,
     });
 
-    return imageBuffer.toString("base64");
+    return Buffer.from(imageResponse.data).toString("base64");
   };
 
   const screenshot = async (options) => {

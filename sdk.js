@@ -1402,7 +1402,7 @@ function normalizeRedrawOptions(opts) {
  * @typedef {'up' | 'down' | 'left' | 'right'} ScrollDirection
  * @typedef {'keyboard' | 'mouse'} ScrollMethod
  * @typedef {'ai' | 'turbo'} TextMatchMethod
- * @typedef {'js' | 'pwsh'} ExecLanguage
+ * @typedef {'sh' | 'pwsh'} ExecLanguage
  * @typedef {'\\t' | '\n' | '\r' | ' ' | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '=' | '>' | '?' | '@' | '[' | '\\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | '{' | '|' | '}' | '~' | 'accept' | 'add' | 'alt' | 'altleft' | 'altright' | 'apps' | 'backspace' | 'browserback' | 'browserfavorites' | 'browserforward' | 'browserhome' | 'browserrefresh' | 'browsersearch' | 'browserstop' | 'capslock' | 'clear' | 'convert' | 'ctrl' | 'ctrlleft' | 'ctrlright' | 'decimal' | 'del' | 'delete' | 'divide' | 'down' | 'end' | 'enter' | 'esc' | 'escape' | 'execute' | 'f1' | 'f10' | 'f11' | 'f12' | 'f13' | 'f14' | 'f15' | 'f16' | 'f17' | 'f18' | 'f19' | 'f2' | 'f20' | 'f21' | 'f22' | 'f23' | 'f24' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8' | 'f9' | 'final' | 'fn' | 'hanguel' | 'hangul' | 'hanja' | 'help' | 'home' | 'insert' | 'junja' | 'kana' | 'kanji' | 'launchapp1' | 'launchapp2' | 'launchmail' | 'launchmediaselect' | 'left' | 'modechange' | 'multiply' | 'nexttrack' | 'nonconvert' | 'num0' | 'num1' | 'num2' | 'num3' | 'num4' | 'num5' | 'num6' | 'num7' | 'num8' | 'num9' | 'numlock' | 'pagedown' | 'pageup' | 'pause' | 'pgdn' | 'pgup' | 'playpause' | 'prevtrack' | 'print' | 'printscreen' | 'prntscrn' | 'prtsc' | 'prtscr' | 'return' | 'right' | 'scrolllock' | 'select' | 'separator' | 'shift' | 'shiftleft' | 'shiftright' | 'sleep' | 'space' | 'stop' | 'subtract' | 'tab' | 'up' | 'volumedown' | 'volumemute' | 'volumeup' | 'win' | 'winleft' | 'winright' | 'yen' | 'command' | 'option' | 'optionleft' | 'optionright'} KeyboardKey
  */
 
@@ -1438,9 +1438,10 @@ class TestDriverSDK {
     }
 
     // Set up environment with API key
+    const channelConfig = require("./lib/resolve-channel.js");
     const environment = {
       TD_API_KEY: resolvedApiKey,
-      TD_API_ROOT: options.apiRoot || "https://api.testdriver.ai",
+      TD_API_ROOT: options.apiRoot || process.env.TD_API_ROOT || channelConfig.channels[channelConfig.active],
       TD_RESOLUTION: options.resolution || "1366x768",
       TD_ANALYTICS: options.analytics !== false,
       TD_PREVIEW: previewMode,
@@ -1910,7 +1911,7 @@ class TestDriverSDK {
         // Add web log tracking with domain wildcard pattern, then start dashcam
         if (this.dashcamEnabled) {
           const domainPattern = this._getUrlDomainPattern(url);
-          // await this.dashcam.addWebLog(domainPattern, "Web Logs");
+          await this.dashcam.addWebLog(domainPattern, "Web Logs");
           
           // Start dashcam recording after logs are configured
           if (!(await this.dashcam.isRecording())) {
@@ -2477,7 +2478,7 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           const pattern = this._provisionedChromeUrl
             ? this._getUrlDomainPattern(this._provisionedChromeUrl)
             : "**";
-          // await this.dashcam.addWebLog(pattern, "Web Logs");
+          await this.dashcam.addWebLog(pattern, "Web Logs");
         }
 
         // Start recording if not already recording
@@ -2748,6 +2749,9 @@ CAPTCHA_SOLVER_EOF`,
       }
     }
 
+    // Log environment info immediately so it's visible even if auth fails
+    this._logEnvironmentInfo();
+
     // Authenticate first if not already authenticated
     if (!this.authenticated) {
       await this.auth();
@@ -2892,8 +2896,10 @@ CAPTCHA_SOLVER_EOF`,
 
     // Always close the sandbox WebSocket connection to clean up resources
     // This ensures we don't leave orphaned connections even if connect() failed
+    // Must be awaited so presence.leave() completes before we return —
+    // otherwise the concurrency counter on the API stays stale.
     if (this.sandbox && typeof this.sandbox.close === "function") {
-      this.sandbox.close();
+      await this.sandbox.close();
     }
 
     // Remove all event listeners on the emitter to release references
@@ -3801,6 +3807,63 @@ CAPTCHA_SOLVER_EOF`,
    * Set up logging for the SDK
    * @private
    */
+  /**
+   * Log environment info (version, API URL, git commit) after connect.
+   * Fires asynchronously so it never blocks the test.
+   * Suppressed when the API reports the "stable" channel.
+   * @private
+   */
+  _logEnvironmentInfo() {
+    const apiRoot = this.config?.TD_API_ROOT || 'unknown';
+    const apiKey = this.config?.TD_API_KEY || '';
+    const maskedKey = apiKey.length > 4 ? '***' + apiKey.slice(-4) : '(not set)';
+    const env = process.env.TD_ENV || 'unknown';
+    const os = this.agent?.options?.os || process.env.TD_OS || 'linux';
+    const sdkVersion = require('./package.json').version;
+
+    // Always print local config immediately
+    const localLines = [
+      '',
+      `  ┌─ TestDriver SDK v${sdkVersion}`,
+      `  │ Environment: ${env}`,
+      `  │ API: ${apiRoot}`,
+      `  │ Key: ${maskedKey}`,
+      `  │ OS: ${os}`,
+      `  └─`,
+      '',
+    ];
+    console.log(localLines.join('\n'));
+
+    // Fetch API version info asynchronously (non-blocking, best-effort)
+    const http = apiRoot.startsWith('https') ? require('https') : require('http');
+    const url = apiRoot + '/api/entrance/version';
+    const req = http.get(url, { timeout: 5000 }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const info = JSON.parse(data);
+          const commit = info.commit || 'unknown';
+          const shortCommit = commit.substring(0, 7);
+          const commitUrl = commit !== 'unknown'
+            ? `https://github.com/testdriverai/mono/commit/${commit}`
+            : null;
+          const lines = [
+            `  ┌─ API Server`,
+            `  │ Channel: ${info.channel || 'unknown'} v${info.version || '?'}`,
+            commitUrl
+              ? `  │ Commit: ${shortCommit} → ${commitUrl}`
+              : `  │ Commit: ${shortCommit}`,
+            `  └─`,
+            '',
+          ];
+          console.log(lines.join('\n'));
+        } catch (_) { /* ignore parse errors */ }
+      });
+    });
+    req.on('error', () => { /* ignore network errors */ });
+  }
+
   _setupLogging() {
     // Track the last fatal error message to throw on exit
     let lastFatalError = null;
@@ -3902,18 +3965,8 @@ CAPTCHA_SOLVER_EOF`,
       if (this.loggingEnabled) {
         console.log("");
         console.log("🔗 Live test execution:");
-        if (this.config.CI) {
-          // In CI mode, just print the view-only URL
-          const u = new URL(url);
-          const encodedData = u.searchParams.get("data");
-          // Data is base64 encoded, not URL encoded
-          const data = JSON.parse(
-            Buffer.from(encodedData, "base64").toString(),
-          );
-          console.log(`${data.url}&view_only=true`);
-        } else {
-          // In local mode, print the URL and open it in the browser
-          console.log(url);
+        console.log(url);
+        if (!this.config.CI) {
           await this._openBrowser(url);
         }
       }

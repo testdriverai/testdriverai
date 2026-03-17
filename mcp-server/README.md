@@ -11,9 +11,19 @@ MCP server that enables AI agents to iteratively build TestDriver tests with vis
 
 ## Installation
 
-### Via npx (Recommended)
+### Quick Install (Recommended)
 
-No installation needed! Just configure your MCP client to use npx:
+Use `add-mcp` to automatically configure TestDriver for your MCP client:
+
+```bash
+npx add-mcp testdriver
+```
+
+This will prompt you to select your MCP client (VS Code, Cursor, Claude Desktop, etc.) and configure it automatically.
+
+### Manual Configuration
+
+If you prefer to configure manually, add the following to your MCP config file:
 
 ```json
 {

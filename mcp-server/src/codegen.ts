@@ -161,7 +161,7 @@ export function generateActionCode(
     }
 
     case "exec": {
-      const language = (args.language as string) || "js";
+      const language = (args.language as string) || "sh";
       const code = args.code as string;
       const timeout = args.timeout as number | undefined;
       

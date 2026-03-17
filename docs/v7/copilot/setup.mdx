@@ -1,0 +1,143 @@
+---
+title: "GitHub Copilot Setup"
+sidebarTitle: "IDE Setup"
+description: "Install the TestDriver extension and configure MCP for GitHub Copilot"
+icon: "wrench"
+---
+
+TestDriver integrates with GitHub Copilot through the VS Code extension and MCP server. This guide walks you through the complete setup.
+
+## Prerequisites
+
+Before you begin, you'll need:
+
+- **GitHub Copilot** — A subscription with MCP access. A [free tier](https://github.com/features/copilot/plans) is available.
+- **TestDriver Account** — Create a free account at [console.testdriver.ai](https://console.testdriver.ai/team) to get your API key. 60 free device minutes, no credit card required.
+- **VS Code** — The TestDriver extension provides the best experience with live preview and integrated test running.
+
+## Setup Steps
+
+<Steps>
+  <Step title="Install the TestDriver Extension">
+    <Card
+      horizontal
+      title="Install TestDriver for VS Code"
+      arrow
+      href="vscode:extension/testdriver.testdriver"
+      icon="/images/content/extension/vscode.svg"
+    ></Card>
+
+    The extension provides:
+    - One-click sign-in and project initialization
+    - Live preview panel for watching tests execute
+    - MCP server configuration
+  </Step>
+
+  <Step title="Sign Into TestDriver">
+    Sign in to connect your account and API key.
+
+    1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+    2. Run **TestDriver: Login**
+    3. Your browser will open to the TestDriver sign-in page
+    4. Sign in (or create an account)
+    5. You'll be redirected back to VS Code, now signed in
+
+    <Tip>
+      The extension automatically saves your API key to VS Code's secure storage and your workspace `.env` file.
+    </Tip>
+  </Step>
+
+  <Step title="Initialize Your Project">
+    Set up TestDriver in your project with a single command.
+
+    1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+    2. Run **TestDriver: Init Project**
+
+    This command:
+    - Creates a `package.json` with TestDriver and Vitest dependencies
+    - Generates a `vitest.config.mjs` with proper timeout settings
+    - Creates example test files in `tests/`
+    - Sets up `.env` with your API key
+    - Creates the TestDriver agent file at `.github/agents/testdriver.agent.md`
+    - Configures the MCP server
+
+    <Note>
+      If you already have a `package.json`, the command will add the necessary dependencies to it.
+    </Note>
+  </Step>
+
+  <Step title="Start the MCP Server">
+    The MCP server enables GitHub Copilot to control TestDriver sandboxes.
+
+    After initialization, the MCP configuration is created at `.vscode/mcp.json`:
+
+    ```json .vscode/mcp.json
+    {
+      "servers": {
+        "testdriver": {
+          "command": "npx",
+          "args": ["-p", "testdriverai", "testdriverai-mcp"],
+          "env": {
+            "TD_PREVIEW": "ide",
+            "TD_API_KEY": "your-api-key"
+          }
+        }
+      }
+    }
+    ```
+
+    **To start the MCP server:**
+
+    1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+    2. Run **MCP: List Servers**
+    3. Click on the **testdriver** server
+    4. Select **Start Server**
+
+    You can also click the MCP icon in the status bar to manage servers.
+
+    <Tip>
+      See the [VS Code MCP documentation](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more details on managing MCP servers.
+    </Tip>
+
+    <Warning>
+      Make sure your API key is set. The extension uses the key from your sign-in, but you can also set it via the `TD_API_KEY` environment variable.
+    </Warning>
+  </Step>
+
+  <Step title="Install Vitest Extension (Recommended)">
+    For the best experience running tests, install the Vitest extension:
+
+    <Card
+      horizontal
+      title="Vitest Extension"
+      arrow
+      href="vscode:extension/vitest.explorer"
+      icon="flask-vial"
+    >
+      Run tests with GUI mode from the Test Explorer
+    </Card>
+
+    After installation, you'll see a beaker icon in the sidebar for accessing the Test Explorer.
+  </Step>
+</Steps>
+
+## Verify Your Setup
+
+To verify everything is configured correctly:
+
+1. Open the command palette and run **TestDriver: Check Status**
+2. You should see:
+   - ✅ Signed in
+   - ✅ MCP server configured
+   - ✅ Project initialized
+
+## The Agent File
+
+During initialization, TestDriver creates an agent file at `.github/agents/testdriver.agent.md`. This file tells GitHub Copilot how to use TestDriver's MCP tools.
+
+The agent has access to tools like:
+- `session_start` — Launch a sandbox with Chrome or other apps
+- `find` / `click` / `type` — Interact with elements on screen
+- `assert` — Verify conditions using AI vision
+- `screenshot` — Capture the current screen state
+

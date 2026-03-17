@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "willow",
+  "theme": "almond",
   "name": "TestDriver",
   "colors": {
     "primary": "#b3d334",
@@ -48,19 +48,31 @@
                   "/v7/examples/windows-installer"
                 ]
               },
+
               {
-                "group": "Plans & Pricing",
+                "group": "Deployment",
                 "icon": "server",
                 "pages": [
-                  "/v7/cloud",
-                  "/v7/self-hosted",
-                  "/v7/enterprise"
+                  "/v7/hosted",
+                  "/v7/self-hosted"
                 ]
-              }
+              },
+              "/changelog"
+            ]
+          },
+
+          {
+            "group": "GitHub Copilot",
+            "pages": [
+              "/v7/copilot/setup",
+              "/v7/copilot/creating-tests",
+              "/v7/copilot/running-tests",
+              "/v7/copilot/github",
+              "/v7/copilot/auto-healing"
             ]
           },
           {
-            "group": "Creating Tests",
+            "group": "Guide",
             "pages": [
               "/v7/generating-tests",
               "/v7/device-config",
@@ -94,32 +106,33 @@
             ]
           },
           {
-            "group": "Actions",
+            "group": "SDK Reference",
             "pages": [
-              "/v7/ai",
-              "/v7/assert",
-              "/v7/captcha",
-              "/v7/click",
-              "/v7/double-click",
-              "/v7/exec",
-              "/v7/find",
-              "/v7/focus-application",
-              "/v7/hover",
-              "/v7/mouse-down",
-              "/v7/mouse-up",
-              "/v7/parse",
-              "/v7/press-keys",
-              "/v7/right-click",
-              "/v7/screenshot",
-              "/v7/type",
-              "/v7/scroll"
-            ]
-          },
-          {
-            "group": "SDK",
-            "pages": [
-              "/v7/elements",
               "/v7/client",
+              "/v7/elements",
+              {
+                "group": "Actions",
+                "icon": "bolt",
+                "pages": [
+                  "/v7/ai",
+                  "/v7/assert",
+                  "/v7/captcha",
+                  "/v7/click",
+                  "/v7/double-click",
+                  "/v7/exec",
+                  "/v7/find",
+                  "/v7/focus-application",
+                  "/v7/hover",
+                  "/v7/mouse-down",
+                  "/v7/mouse-up",
+                  "/v7/parse",
+                  "/v7/press-keys",
+                  "/v7/right-click",
+                  "/v7/screenshot",
+                  "/v7/scroll",
+                  "/v7/type"
+                ]
+              },
               "/v7/dashcam"
             ]
           }
@@ -328,6 +341,11 @@
         "icon": "gauge-high",
         "label": "Dashboard",
         "href": "https://console.testdriver.ai"
+      },
+      {
+        "icon": "megaphone",
+        "label": "Changelog",
+        "href": "/changelog"
       }
     ]
   },

@@ -1941,16 +1941,19 @@ ${regression}
     // Allow explicit override via env (e.g. VITE_DOMAIN from .env)
     if (process.env.VITE_DOMAIN) return process.env.VITE_DOMAIN;
 
+    const environments = require("../lib/environments.json");
     const mapping = {
-      "https://api.testdriver.ai": "https://console.testdriver.ai",
-      "https://v6.testdriver.ai": "https://console.testdriver.ai",
+      "https://v6.testdriver.ai": environments.stable.consoleUrl,
     };
+    for (const env of Object.values(environments)) {
+      mapping[env.apiRoot] = env.consoleUrl;
+    }
     if (mapping[apiRoot]) return mapping[apiRoot];
     // Local dev: API on localhost:1337 -> Web on localhost:3001
     if (apiRoot.includes("localhost:1337") || apiRoot.includes("127.0.0.1:1337")) {
       return "http://localhost:3001";
     }
-    return "https://console.testdriver.ai";
+    return environments.stable.consoleUrl;
   }
 
   // Write session file for IDE preview (VSCode extension watches for these)

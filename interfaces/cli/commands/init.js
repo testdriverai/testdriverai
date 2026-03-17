@@ -12,7 +12,8 @@ const { execSync } = require("child_process");
 require("dotenv").config();
 
 // API configuration
-const API_BASE_URL = process.env.TD_API_ROOT || "https://api.testdriver.ai";
+const channelConfig = require("../../../lib/resolve-channel.js");
+const API_BASE_URL = process.env.TD_API_ROOT || channelConfig.channels[channelConfig.active];
 const POLL_INTERVAL = 5000; // 5 seconds
 const POLL_TIMEOUT = 900000; // 15 minutes
 

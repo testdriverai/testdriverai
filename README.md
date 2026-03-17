@@ -63,6 +63,7 @@ This will:
 - Create a project folder
 - Install dependencies (Vitest + TestDriver)
 - Set up your API key
+- Configure MCP for your AI assistant (VS Code, Cursor, Claude Desktop, etc.)
 - Generate an example test
 
 ### Step 3: Run Your First Test

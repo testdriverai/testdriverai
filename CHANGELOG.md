@@ -1,31 +1,143 @@
-## 7.5.26 (2026-03-11)
+## 7.8.0-test.7 (2026-03-13)
+
+🔧 Maintenance
+
+- Fix version bump syntax in release workflow [f3ac61dc]
+
+## 7.8.0-test.6 (2026-03-13)
+
+🔧 Maintenance
+
+- Fix changelog generation in release workflow (04a789ec)
+
+## 7.8.0-test.5 (2026-03-13)
+
+🔧 Maintenance
+
+- Update deployment configuration to use dashes instead of dots in environment naming (baca4d32)
+
+## 7.8.0-test.4 (2026-03-13)
+
+## 📝 Documentation
+
+- Update and streamline skill documentation for captcha, exec, and quickstart features [SDK] (86d90bbf)
+- Remove outdated Moby integration references from documentation [SDK] (08fa8e18)
+
+## 7.8.0-test.3 (2026-03-13)
 
 ## ✨ Features
 
-- Add stable and canary deployment channels for better release management [API] (50347881)
-- Add version API endpoint to provide deployment channel information [API] (50347881)
-- Add new AI skill for waiting operations in test automation [SDK] (50347881)
-- Add customer testimonials section to marketing site (50347881)
-- Add contact and demo pages to marketing site (50347881)
-- Add user limit checking for team invitations [API] (50347881)
-- Improve test analytics dashboard with enhanced data visualization [Web] (50347881)
-- Improve test case management interface with better filtering and search [Web] (50347881)
-- Improve test run detail view with more comprehensive information [Web] (50347881)
-- Add PostHog analytics integration for better user tracking (50347881)
+- Add comprehensive find() cache permutation integration tests to improve test coverage and reliability [API] (6a957f69)
+- Add changelog documentation to SDK package [SDK] (6a957f69)
 
 ## 🐛 Bug Fixes
 
-- Fix network logs screenshot filename in marketing assets (50347881)
-- Improve invite validation flow for team management [API] (50347881)
+- Fix dashcam URL parsing issues that could cause recording problems [SDK] (6a957f69)
 
 ## 🔧 Maintenance
 
-- Update pricing configuration with shared pricing data structure (50347881)
-- Enhance release workflow to support dual-branch publishing (50347881)
-- Update environment configuration for stable and canary deployments (50347881)
-- Improve sandbox agent error handling and logging [Runner] (50347881)
-- Update SDK examples with better configuration handling [SDK] (50347881)
-- Enhance debugger interface with improved styling [SDK] (50347881)
+- Update subdomain routing configuration for improved service connectivity [API] (6a957f69)
+- Streamline GitHub Actions workflows by consolidating publish processes [CI] (6a957f69)
+- Update environment configuration for test, dev, and canary deployments [Infrastructure] (6a957f69)
+- Improve development container and VS Code task configurations [Development] (6a957f69)
+
+## 7.8.0-test.2 (2026-03-13)
+
+## ✨ Features
+
+- Implement automatic cleanup of unused Ably channels to improve resource management [API] (df6181de)
+
+## 🔧 Maintenance
+
+- Streamline CI/CD workflows with improved test organization and environment configuration [SDK] (df6181de)
+- Enhance development environment setup with better environment variable management (df6181de)
+- Improve connection handling and URL resolution for better reliability [SDK] (df6181de)
+
+## 7.6.0-test.8 (2026-03-13)
+
+🔧 Maintenance
+
+- Improve release workflow automation for more reliable package promotions (358bb702)
+
+## 7.6.0-test.7 (2026-03-13)
+
+## 🔧 Maintenance
+
+- Eliminate CI race conditions in promotion pipeline and streamline release workflows [CI] (9d83f886)
+- Improve VNC URL display in CI environments [API] (9d83f886)
+- Add dynamic channel resolution system for SDK configuration [SDK] (9d83f886)
+- Update MCP server dependencies and enhance error handling [SDK] (9d83f886)
+
+## 7.6.0-test.6 (2026-03-13)
+
+## 🔧 Maintenance
+
+- Improve CI/CD pipeline reliability by eliminating race conditions in release promotion workflows [c21f708d]
+- Fix VNC URL display in continuous integration environment [API] [c21f708d]
+
+## 7.6.0-test.5 (2026-03-12)
+
+## 🔧 Maintenance
+
+- Update SDK channel configuration [SDK] (274fff79)
+
+## 7.6.0-test.4 (2026-03-12)
+
+## 🔧 Maintenance
+
+- Improve release workflow and deployment configuration [SDK] (eeea7649)
+- Add enhanced web analytics tracking for better user insights [SDK] (eeea7649)
+
+## 7.6.0-test.3 (2026-03-12)
+
+## 🔧 Maintenance
+
+- Improve release workflow automation and package promotion process [bb6be95]
+
+## 7.6.0-test.2 (2026-03-12)
+
+## 🔧 Maintenance
+
+- Add automated publishing workflows for stable and canary releases [SDK] (2972b3be)
+- Update CI workflows to improve testing efficiency and reliability [SDK] (2972b3be)
+
+## 7.6.0-test.1 (2026-03-12)
+
+🔧 Maintenance
+
+- Improve CI/CD workflow reliability and testing coverage [SDK] (eb86a515)
+- Update MCP server implementation for better stability [SDK] (eb86a515)
+
+📝 Documentation
+
+- Add new visual documentation for content parsing functionality [SDK] (eb86a515)
+
+## 7.6.0-test.0 (2026-03-12)
+
+## ✨ Features
+
+- Add stable/canary deployment channels with separate environments for production and development branches [API] (64542a8d)
+- Add /version API endpoint returning deployment channel information [API] (64542a8d)
+- Implement user limits and team member invitation controls [API] (6381290a)
+- Add comprehensive GitHub Copilot skills and agent documentation for AI-assisted test development [SDK] (5ff15796)
+- Add testimonials section with customer logos and quotes to marketing site [Web] (6381290a)
+- Add contact and demo pages to marketing site [Web] (6381290a)
+- Improve test environment management with better configuration and deployment workflows [Runner] (5c96e056)
+
+## 🐛 Bug Fixes
+
+- Fix environment configuration and Tailscale connectivity issues [Runner] (5c96e056)
+- Resolve Redis URL configuration problems across environments [API] (eca334be)
+- Fix Vite API endpoint configuration for proper environment targeting [Web] (bf7fdf54)
+
+## 🔧 Maintenance
+
+- Update pricing configuration and plans structure [API] (6381290a)
+- Improve deployment workflows with promotion pipelines between test, canary, and stable branches [CI/CD] (1994d769)
+- Add toast notification system for better user feedback [Web] (multiple commits)
+- Rename TestAnalytics to TestMetrics for clarity [Web] (multiple commits)
+- Remove outdated marketing articles and legal pages [Web] (6381290a)
+- Update terms of service with new date [Web] (6381290a)
 
 ## 7.5.25 (2026-03-09)
 

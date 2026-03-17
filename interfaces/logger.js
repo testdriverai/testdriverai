@@ -24,18 +24,6 @@ class CustomTransport extends Transport {
         return;
       }
 
-      if (!this.sandbox) {
-        this.sandbox = require("../agent/lib/sandbox");
-      }
-
-      if (this.sandbox && this.sandbox.instanceSocketConnected) {
-        this.sandbox.send({
-          type: "output",
-          output: Buffer.from(message).toString("base64"),
-        }).catch((e) => {
-          console.error("Error sending log:", e);
-        });
-      }
     } catch (e) {
       console.error("Error in CustomTransport log method:", e);
     }

@@ -1,0 +1,149 @@
+---
+title: "Running Tests"
+sidebarTitle: "Running Tests"
+description: "Re-run tests with Vitest and use GUI mode for visual debugging"
+icon: "play"
+---
+
+After creating tests with the TestDriver agent, you can re-run them without starting a new MCP session. Tests are saved as standard Vitest files that run independently.
+
+## Running from VS Code (GUI Mode)
+
+For a visual testing experience, use the **Vitest extension**:
+
+<Steps>
+  <Step title="Open Test Explorer">
+    Click the **beaker icon** in the VS Code sidebar to open the Test Explorer. This shows all your test files and test cases.
+  </Step>
+
+  <Step title="Run Tests">
+    Click the **play button** next to any test file or individual test to run it. You can also:
+    - Run all tests with the "Run All" button
+    - Debug tests with the "Debug" button
+  </Step>
+
+  <Step title="View Results">
+    Test results appear inline:
+    - ✅ Green checkmark for passing tests
+    - ❌ Red X for failing tests
+    - Click on a failing test to see error details
+  </Step>
+</Steps>
+
+<Warning>
+  VS Code's Test Explorer only shows output for **failing tests**. To see output from passing tests (including screenshots and console logs), run tests from the terminal instead.
+</Warning>
+
+## Running from Terminal
+
+Use Vitest to run your tests from the command line to see full output:
+
+```bash
+# Run all tests
+vitest run
+
+# Run a specific test file
+vitest run tests/login.test.mjs
+
+# Run in watch mode (re-runs on file changes)
+vitest
+```
+
+See the [running tests guide](/v7/running-tests) for more CLI options and configuration.
+
+## Iterating on Tests
+
+When tests fail or need updates, you have two options:
+
+### Option 1: Ask the MCP Agent (Recommended)
+
+For discovering updated element descriptions or debugging failures, chat with the TestDriver agent:
+
+```
+The login test is failing because the form layout changed.
+Update tests/login.test.mjs to work with the new design.
+```
+
+The agent will:
+1. Start a new session
+2. Navigate to the page
+3. Analyze the current state
+4. Update the test code
+
+This is the best approach when:
+- Element text or layout has changed
+- You need to see what's currently on screen
+- The failure reason isn't obvious from the error message
+
+### Option 2: Edit the Code Directly
+
+For simple changes, edit the test files directly:
+
+```javascript
+// Change the element description
+const button = await testdriver.find("Submit Order button");
+
+// Add a wait
+await testdriver.wait(2000);
+
+// Update assertions
+const result = await testdriver.assert("order confirmation shows order ID");
+```
+
+This is faster for:
+- Updating text strings
+- Adjusting timeouts
+- Fixing typos
+
+## Test Configuration
+
+### Timeouts
+
+TestDriver tests require longer timeouts than typical unit tests. Your `vitest.config.mjs` should have:
+
+```javascript vitest.config.mjs
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    testTimeout: 900000,  // 15 minutes
+    hookTimeout: 900000,  // 15 minutes for setup/teardown
+  },
+});
+```
+
+### Environment Variables
+
+Tests use the `TD_API_KEY` environment variable. Set it in your `.env` file:
+
+```env .env
+TD_API_KEY=your-api-key-here
+```
+
+Or pass it when running tests:
+
+```bash
+TD_API_KEY=your-key vitest run
+```
+
+## Viewing Test Reports
+
+After each test run, TestDriver provides a link to the full test report:
+
+```
+TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/abc123
+```
+
+The report includes:
+- Video recording of the test
+- Screenshots at each step
+- Network logs and performance metrics
+- Console output and errors
+
+<Card
+  title="View Test Reports"
+  icon="chart-line"
+  href="https://console.testdriver.ai"
+>
+  Access all your test runs and recordings in the TestDriver console
+</Card>

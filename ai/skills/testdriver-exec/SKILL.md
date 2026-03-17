@@ -1,12 +1,12 @@
 ---
 name: testdriver:exec
-description: Execute code or shell commands in the sandbox
+description: Execute shell or PowerShell commands in the sandbox
 ---
 <!-- Generated from exec.mdx. DO NOT EDIT. -->
 
 ## Overview
 
-Execute JavaScript code in the browser or PowerShell commands in the Windows sandbox environment.
+Execute shell commands (Linux) or PowerShell commands (Windows) in the sandbox environment.
 
 ## Syntax
 
@@ -17,7 +17,7 @@ await testdriver.exec(language, code, timeout, silent)
 ## Parameters
 
 <ParamField path="language" type="string" required>
-  Language to execute: `'js'` (JavaScript) or `'pwsh'` (PowerShell)
+  Language to execute: `'sh'` (Shell/Linux) or `'pwsh'` (PowerShell/Windows)
 </ParamField>
 
 <ParamField path="code" type="string" required>
@@ -36,57 +36,40 @@ await testdriver.exec(language, code, timeout, silent)
 
 `Promise<string>` - Command output
 
-## JavaScript Execution
+## Shell Execution (Linux)
 
-Execute JavaScript in the browser context (Windows sandbox only).
+Execute shell commands in the Linux sandbox.
 
-### DOM Manipulation
-
-```javascript
-// Click an element via JavaScript
-await testdriver.exec('js', `
-  document.querySelector('#submit-button').click();
-`, 5000);
-
-// Fill a form
-await testdriver.exec('js', `
-  document.querySelector('#username').value = 'testuser';
-  document.querySelector('#password').value = 'password123';
-  document.querySelector('#login-form').submit();
-`, 5000);
-
-// Scroll to element
-await testdriver.exec('js', `
-  document.querySelector('#footer').scrollIntoView();
-`, 5000);
-```
-
-### Reading Page Data
+### Basic Commands
 
 ```javascript
-// Get page title
-const title = await testdriver.exec('js', 'document.title', 5000);
-console.log('Page title:', title);
+// List files
+const files = await testdriver.exec('sh', 'ls -la', 5000);
 
-// Get all links
-const links = await testdriver.exec('js', `
-  Array.from(document.querySelectorAll('a'))
-    .map(a => a.href)
-    .join('\\n')
-`, 5000);
+// Check current directory
+const pwd = await testdriver.exec('sh', 'pwd', 5000);
 
-// Check if element exists
-const exists = await testdriver.exec('js', `
-  document.querySelector('.error-message') !== null
-`, 5000);
-
-// Get element text
-const text = await testdriver.exec('js', `
-  document.querySelector('.notification').textContent
-`, 5000);
+// Run a script
+await testdriver.exec('sh', './setup.sh', 60000);
 ```
 
-## PowerShell Execution
+### File Operations
+
+```javascript
+// Create a file
+await testdriver.exec('sh', 'echo "Hello World" > test.txt', 5000);
+
+// Read a file
+const content = await testdriver.exec('sh', 'cat test.txt', 5000);
+
+// Copy files
+await testdriver.exec('sh', 'cp source.txt dest.txt', 5000);
+
+// Delete files
+await testdriver.exec('sh', 'rm test.txt', 5000);
+```
+
+## PowerShell Execution (Windows)
 
 Execute PowerShell commands in the Windows sandbox.
 
@@ -215,7 +198,7 @@ await testdriver.exec('pwsh', '.\\setup.ps1', 60000, true);
   
   ```javascript
   // Quick operations: 5000ms
-  await testdriver.exec('js', 'document.title', 5000);
+  await testdriver.exec('sh', 'ls -la', 5000);
   
   // Installations: 30000-60000ms
   await testdriver.exec('pwsh', 'npm install -g package', 30000);
@@ -288,27 +271,20 @@ describe('Code Execution', () => {
     await testdriver.disconnect();
   });
 
-  it('should execute JavaScript in browser', async () => {
-    await testdriver.focusApplication('Google Chrome');
+  it('should execute shell commands on Linux', async () => {
+    // List directory
+    const files = await testdriver.exec('sh', 'ls -la', 5000);
+    console.log('Files:', files);
     
-    // Get page info via JavaScript
-    const title = await testdriver.exec('js', 'document.title', 5000);
-    console.log('Page title:', title);
+    // Create a file
+    await testdriver.exec('sh', 'echo "Hello World" > test.txt', 5000);
     
-    // Manipulate DOM
-    await testdriver.exec('js', `
-      document.querySelector('#username').value = 'testuser';
-    `, 5000);
-    
-    // Verify
-    const value = await testdriver.exec('js', `
-      document.querySelector('#username').value
-    `, 5000);
-    
-    expect(value).toBe('testuser');
+    // Read the file
+    const content = await testdriver.exec('sh', 'cat test.txt', 5000);
+    expect(content).toContain('Hello World');
   });
 
-  it('should install and use tools', async () => {
+  it('should install and use tools on Windows', async () => {
     // Install tool
     await testdriver.exec('pwsh', 'npm install -g http-server', 30000, true);
     
@@ -330,10 +306,6 @@ describe('Code Execution', () => {
     `, 5000);
     
     await testdriver.focusApplication('Google Chrome');
-    
-    // Verify page loaded
-    const content = await testdriver.exec('js', 'document.body.textContent', 5000);
-    expect(content).toContain('Test Page');
   });
 });
 ```
@@ -341,5 +313,5 @@ describe('Code Execution', () => {
 ## Related Methods
 
 - [`focusApplication()`](/v7/focus-application) - Focus apps before exec
-- [`find()`](/v7/find) - Locate elements (alternative to DOM manipulation)
-- [`type()`](/v7/type) - Type text (alternative to JS form filling)
+- [`find()`](/v7/find) - Locate elements visually
+- [`type()`](/v7/type) - Type text into inputs

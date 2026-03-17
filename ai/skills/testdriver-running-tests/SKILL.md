@@ -133,7 +133,7 @@ export default defineConfig({
 <Card
   title="View Plans & Pricing"
   icon="credit-card"
-  href="/v7/cloud"
+  href="/v7/hosted"
 >
   Compare plans and find the right level of parallelization for your team.
 </Card>
