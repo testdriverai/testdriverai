@@ -1,4 +1,4 @@
-const Ably = require("ably");
+const Redis = require("ioredis");
 const axios = require("axios");
 const { events } = require("../events");
 const logger = require("./logger");
@@ -9,12 +9,11 @@ const sentry = require("../../lib/sentry");
 const createSandbox = function (emitter, analytics, sessionInstance) {
   class Sandbox {
     constructor() {
-      this._ably = null;
-      this._cmdChannel = null;
-      this._respChannel = null;
-      this._ctrlChannel = null;
-      this._filesChannel = null;
-      this._channelNames = null;
+      this._redis = null;
+      this._redisReader = null;
+      this._streamNames = null;
+      this._redisStopped = false;
+      this._controlHandlers = [];
       this.ps = {};
       this._execBuffers = {}; // accumulate streamed exec.output chunks per requestId
       this.heartbeat = null;
@@ -32,12 +31,6 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._lastConnectParams = null;
       this._teamId = null;
       this._sandboxId = null;
-
-      // Rate limiting state for Ably publishes (Ably limits to 50 msg/sec per connection)
-      this._publishLastTime = 0;
-      this._publishMinIntervalMs = 25; // 40 msg/sec max, safely under Ably's 50 limit
-      this._publishCount = 0;
-      this._publishWindowStart = Date.now();
     }
 
     getTraceId() {
@@ -51,183 +44,285 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       );
     }
 
-    async _initAbly(ablyToken, channelNames) {
-      if (this._ably) {
-        try {
-          this._ably.close();
-        } catch (e) {
-          /* ignore */
-        }
+    async _initRedis(redisUrl, streamNames) {
+      // Tear down any existing connection
+      if (this._redis || this._redisReader) {
+        this._redisStopped = true;
+        try { this._redis && this._redis.disconnect(); } catch (e) { /* ignore */ }
+        try { this._redisReader && this._redisReader.disconnect(); } catch (e) { /* ignore */ }
+        this._redis = null;
+        this._redisReader = null;
       }
-      this._channelNames = channelNames;
+
+      this._streamNames = streamNames;
+      this._redisStopped = false;
       var self = this;
 
-      this._ably = new Ably.Realtime({
-        authCallback: function (tokenParams, callback) {
-          callback(null, ablyToken);
-        },
-        clientId: "sdk-" + this._sandboxId,
-        disconnectedRetryTimeout: 5000,   // retry reconnect every 5s (default 15s)
-        suspendedRetryTimeout: 15000,     // retry from suspended every 15s (default 30s)
+      // Shared retry strategy: exponential backoff up to 5s, stop on intentional close
+      var makeRetryStrategy = function () {
+        return function (times) {
+          if (self._redisStopped) return null; // stop retrying on intentional close
+          return Math.min(times * 500, 5000);
+        };
+      };
+
+      // Publisher connection: offline queue enabled so commands are buffered during
+      // brief reconnects; maxRetriesPerRequest limits per-call retries.
+      var redisOpts = {
+        lazyConnect: false,
+        retryStrategy: makeRetryStrategy(),
+        enableOfflineQueue: true,
+        maxRetriesPerRequest: 3,
+      };
+
+      this._redis = new Redis(redisUrl, redisOpts);
+
+      // Reader uses separate connection — XREAD BLOCK ties up the connection.
+      // Offline queue is disabled so a reconnect causes the blocking XREAD to
+      // fail immediately and the poll loop can restart cleanly.
+      this._redisReader = new Redis(redisUrl, {
+        lazyConnect: false,
+        retryStrategy: makeRetryStrategy(),
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 0,
       });
 
       await new Promise(function (resolve, reject) {
-        self._ably.connection.on("connected", resolve);
-        self._ably.connection.on("failed", function () {
-          reject(new Error("Ably connection failed"));
-        });
-        setTimeout(function () {
-          reject(new Error("Ably connection timeout"));
+        var timer = setTimeout(function () {
+          reject(new Error("Redis connection timeout"));
         }, 30000);
-      });
-
-      this._cmdChannel = this._ably.channels.get(channelNames.commands);
-      this._respChannel = this._ably.channels.get(channelNames.responses);
-      this._ctrlChannel = this._ably.channels.get(channelNames.control);
-      this._filesChannel = this._ably.channels.get(channelNames.files);
-
-      // Enter presence on control channel so the API can count connected SDK clients
-      try {
-        await this._ctrlChannel.presence.enter({
-          sandboxId: this._sandboxId,
-          connectedAt: Date.now(),
+        if (timer.unref) timer.unref();
+        self._redis.once("ready", function () {
+          clearTimeout(timer);
+          resolve();
         });
-      } catch (e) {
-        // Non-fatal — presence is used for concurrency counting, not critical path
-        logger.warn("Failed to enter presence on control channel: " + (e.message || e));
-      }
-
-      this._respChannel.subscribe("response", function (msg) {
-        var message = msg.data;
-        if (!message) return;
-
-        if (message.type === "sandbox.progress") {
-          emitter.emit(events.sandbox.progress, {
-            step: message.step,
-            message: message.message,
-          });
-          return;
-        }
-
-        if (
-          message.type === "before.file" ||
-          message.type === "after.file" ||
-          message.type === "screenshot.file"
-        ) {
-          emitter.emit(events.sandbox.file, message);
-          return;
-        }
-
-        // Streaming exec output chunks — accumulate per requestId so the
-        // full stdout can be reconstructed when the final response arrives.
-        // (The runner streams stdout in ~16KB chunks and omits it from the
-        // final response to stay under Ably's 64KB message limit.)
-        if (message.type === "exec.output") {
-          if (message.requestId) {
-            if (!self._execBuffers[message.requestId]) {
-              self._execBuffers[message.requestId] = '';
-            }
-            self._execBuffers[message.requestId] += (message.chunk || '');
-          }
-          emitter.emit(events.exec.output, { chunk: message.chunk, requestId: message.requestId });
-          return;
-        }
-
-        // Runner debug logs — only received when debug mode is enabled
-        if (message.type === "runner.log") {
-          var logLevel = message.level || "info";
-          var logMsg = "[runner] " + (message.message || "");
-          if (logLevel === "error") {
-            logger.error(logMsg);
-          } else {
-            logger.log(logMsg);
-          }
-          emitter.emit(events.runner.log, {
-            level: logLevel,
-            message: message.message,
-            timestamp: message.timestamp,
-          });
-          return;
-        }
-
-        if (!message.requestId || !self.ps[message.requestId]) {
-          var debugMode =
-            process.env.VERBOSE || process.env.TD_DEBUG;
-          if (debugMode) {
-            console.warn(
-              "No pending promise found for requestId:",
-              message.requestId,
-            );
-          }
-          return;
-        }
-
-        if (message.error) {
-          var pendingMessage =
-            self.ps[message.requestId] &&
-            self.ps[message.requestId].message;
-          if (!pendingMessage || pendingMessage.type !== "output") {
-            emitter.emit(events.error.sandbox, message.errorMessage);
-          }
-          var error = new Error(message.errorMessage || "Sandbox error");
-          error.responseData = message;
-          delete self._execBuffers[message.requestId];
-          self.ps[message.requestId].reject(error);
-        } else {
-          emitter.emit(events.sandbox.received);
-          if (self.ps[message.requestId]) {
-            // Unwrap the result from the Ably response envelope
-            // The runner sends { requestId, type, result, success }
-            // But SDK commands expect just the result object
-            var resolvedValue = message.result !== undefined ? message.result : message;
-
-            // For exec (commands.run): the runner streams stdout via exec.output
-            // chunks and sends only returncode+stderr in the final response.
-            // Reconstruct stdout from the accumulated buffer.
-            var streamedStdout = self._execBuffers[message.requestId];
-            if (streamedStdout !== undefined && resolvedValue && resolvedValue.out) {
-              resolvedValue.out.stdout = streamedStdout;
-            }
-            delete self._execBuffers[message.requestId];
-
-            self.ps[message.requestId].resolve(resolvedValue);
-          }
-        }
-        delete self.ps[message.requestId];
+        self._redis.once("error", function (err) {
+          clearTimeout(timer);
+          reject(new Error("Redis connection failed: " + err.message));
+        });
       });
 
-      this._filesChannel.subscribe("response", function (msg) {
-        var message = msg.data;
-        if (!message) return;
-        if (message.requestId && self.ps[message.requestId]) {
-          emitter.emit(events.sandbox.received);
-          self.ps[message.requestId].resolve(message);
-          delete self.ps[message.requestId];
+      this._redis.on("error", function (err) {
+        if (!self._redisStopped) {
+          logger.error("Redis connection error: " + err.message);
         }
-        emitter.emit(events.sandbox.file, message);
+      });
+
+      this._redis.on("reconnecting", function () {
+        logger.log("Redis reconnecting...");
+      });
+
+      this._redis.on("connect", function () {
+        logger.log("Redis reconnected");
+      });
+
+      this._redisReader.on("error", function (err) {
+        if (!self._redisStopped) {
+          logger.error("Redis reader error: " + err.message);
+        }
       });
 
       this.heartbeat = setInterval(function () {}, 5000);
       if (this.heartbeat.unref) this.heartbeat.unref();
 
-      this._ably.connection.on("disconnected", function () {
-        logger.log("Ably disconnected - will auto-reconnect");
-      });
+      // Start the combined poll loop for responses, files, and control streams
+      this._startPollLoop();
+    }
 
-      this._ably.connection.on("connected", function () {
-        // Log reconnection so the user knows the blip was recovered
-        logger.log("Ably reconnected");
-      });
+    /**
+     * Single blocking XREAD loop that fans messages out to the three
+     * per-stream handlers.  Uses one Redis connection so we stay within
+     * a small connection footprint.
+     *
+     * control starts from '0' so we catch any runner.ready messages that
+     * were written before we connected (stream history check).
+     * Per-sandbox control streams are short-lived and small, so reading from
+     * the beginning is safe and avoids a separate history lookup.
+     * responses / files start from '$' — we only care about new messages.
+     */
+    _startPollLoop() {
+      var self = this;
+      var lastResponseId = "$";
+      var lastFilesId = "$";
+      var lastControlId = "0"; // read from beginning to catch history
 
-      this._ably.connection.on("suspended", function () {
-        logger.warn("Ably suspended - connection lost for extended period, will keep retrying");
-      });
+      // Batch size per XREAD call. 100 provides a good balance between
+      // throughput and memory; no per-connection rate limit with Redis.
+      var batchSize = 100;
 
-      this._ably.connection.on("failed", function () {
-        self.apiSocketConnected = false;
-        self.instanceSocketConnected = false;
-        emitter.emit(events.error.sandbox, "Ably connection failed");
-      });
+      (async function poll() {
+        while (!self._redisStopped) {
+          try {
+            var results = await self._redisReader.xread(
+              "BLOCK", 5000,
+              "COUNT", batchSize,
+              "STREAMS",
+              self._streamNames.responses,
+              self._streamNames.files,
+              self._streamNames.control,
+              lastResponseId,
+              lastFilesId,
+              lastControlId,
+            );
+
+            if (!results) continue; // timeout — no new messages
+
+            for (var i = 0; i < results.length; i++) {
+              var streamKey = results[i][0];
+              var entries = results[i][1];
+              for (var j = 0; j < entries.length; j++) {
+                var id = entries[j][0];
+                var fields = entries[j][1];
+                var dataIdx = fields.indexOf("data");
+                if (dataIdx < 0) continue;
+                try {
+                  var message = JSON.parse(fields[dataIdx + 1]);
+                  if (streamKey === self._streamNames.responses) {
+                    lastResponseId = id;
+                    self._handleResponseMessage(message);
+                  } else if (streamKey === self._streamNames.files) {
+                    lastFilesId = id;
+                    self._handleFileMessage(message);
+                  } else if (streamKey === self._streamNames.control) {
+                    lastControlId = id;
+                    self._handleControlMessage(message);
+                  }
+                } catch (parseErr) {
+                  logger.warn("Failed to parse Redis stream message: " + parseErr.message);
+                }
+              }
+            }
+          } catch (e) {
+            if (self._redisStopped) break;
+            logger.error("Redis stream poll error: " + e.message);
+            // Brief backoff before retrying
+            await new Promise(function (r) {
+              var t = setTimeout(r, 1000);
+              if (t.unref) t.unref();
+            });
+          }
+        }
+      })();
+    }
+
+    _handleResponseMessage(message) {
+      var self = this;
+      if (!message) return;
+
+      if (message.type === "sandbox.progress") {
+        emitter.emit(events.sandbox.progress, {
+          step: message.step,
+          message: message.message,
+        });
+        return;
+      }
+
+      if (
+        message.type === "before.file" ||
+        message.type === "after.file" ||
+        message.type === "screenshot.file"
+      ) {
+        emitter.emit(events.sandbox.file, message);
+        return;
+      }
+
+      // Streaming exec output chunks — accumulate per requestId so the
+      // full stdout can be reconstructed when the final response arrives.
+      if (message.type === "exec.output") {
+        if (message.requestId) {
+          if (!self._execBuffers[message.requestId]) {
+            self._execBuffers[message.requestId] = "";
+          }
+          self._execBuffers[message.requestId] += (message.chunk || "");
+        }
+        emitter.emit(events.exec.output, { chunk: message.chunk, requestId: message.requestId });
+        return;
+      }
+
+      // Runner debug logs — only received when debug mode is enabled
+      if (message.type === "runner.log") {
+        var logLevel = message.level || "info";
+        var logMsg = "[runner] " + (message.message || "");
+        if (logLevel === "error") {
+          logger.error(logMsg);
+        } else {
+          logger.log(logMsg);
+        }
+        emitter.emit(events.runner.log, {
+          level: logLevel,
+          message: message.message,
+          timestamp: message.timestamp,
+        });
+        return;
+      }
+
+      if (!message.requestId || !self.ps[message.requestId]) {
+        var debugMode = process.env.VERBOSE || process.env.TD_DEBUG;
+        if (debugMode) {
+          console.warn(
+            "No pending promise found for requestId:",
+            message.requestId,
+          );
+        }
+        return;
+      }
+
+      if (message.error) {
+        var pendingMessage =
+          self.ps[message.requestId] &&
+          self.ps[message.requestId].message;
+        if (!pendingMessage || pendingMessage.type !== "output") {
+          emitter.emit(events.error.sandbox, message.errorMessage);
+        }
+        var error = new Error(message.errorMessage || "Sandbox error");
+        error.responseData = message;
+        delete self._execBuffers[message.requestId];
+        self.ps[message.requestId].reject(error);
+      } else {
+        emitter.emit(events.sandbox.received);
+        if (self.ps[message.requestId]) {
+          // Unwrap the result from the response envelope
+          // The runner sends { requestId, type, result, success }
+          // But SDK commands expect just the result object
+          var resolvedValue = message.result !== undefined ? message.result : message;
+
+          // For exec (commands.run): the runner streams stdout via exec.output
+          // chunks and sends only returncode+stderr in the final response.
+          // Reconstruct stdout from the accumulated buffer.
+          var streamedStdout = self._execBuffers[message.requestId];
+          if (streamedStdout !== undefined && resolvedValue && resolvedValue.out) {
+            resolvedValue.out.stdout = streamedStdout;
+          }
+          delete self._execBuffers[message.requestId];
+
+          self.ps[message.requestId].resolve(resolvedValue);
+        }
+      }
+      delete self.ps[message.requestId];
+    }
+
+    _handleFileMessage(message) {
+      var self = this;
+      if (!message) return;
+      if (message.requestId && self.ps[message.requestId]) {
+        emitter.emit(events.sandbox.received);
+        self.ps[message.requestId].resolve(message);
+        delete self.ps[message.requestId];
+      }
+      emitter.emit(events.sandbox.file, message);
+    }
+
+    _handleControlMessage(message) {
+      if (!message) return;
+      // Notify all registered one-shot control handlers (e.g. runner.ready waiters)
+      var remaining = [];
+      for (var i = 0; i < this._controlHandlers.length; i++) {
+        var handled = this._controlHandlers[i](message);
+        if (!handled) {
+          remaining.push(this._controlHandlers[i]);
+        }
+      }
+      this._controlHandlers = remaining;
     }
 
     /**
@@ -313,7 +408,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       if (message.type === "create" || message.type === "direct") {
         return this._sendHttp(message, timeout);
       }
-      return this._sendAbly(message, timeout);
+      return this._sendRedis(message, timeout);
     }
 
     async _sendHttp(message, timeout) {
@@ -361,18 +456,18 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._sandboxId = reply.sandboxId;
       this._teamId = reply.teamId;
 
-      if (reply.ably && reply.ably.token) {
-        await this._initAbly(reply.ably.token, reply.ably.channels);
+      if (reply.redis && reply.redis.url) {
+        await this._initRedis(reply.redis.url, reply.redis.streams);
         this.instanceSocketConnected = true;
 
         // Tell the runner to enable debug log forwarding if debug mode is on
         var debugMode =
           process.env.VERBOSE || process.env.TD_DEBUG;
-        if (debugMode && this._ctrlChannel) {
-          this._ctrlChannel.publish("control", {
-            type: "debug",
-            enabled: true,
-          });
+        if (debugMode && this._redis) {
+          this._redis.xadd(
+            this._streamNames.control, "*", "data",
+            JSON.stringify({ type: "debug", enabled: true }),
+          ).catch(function (err) { logger.warn("Failed to enable runner debug forwarding: " + err.message); });
         }
       }
 
@@ -402,7 +497,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         // agent to signal readiness before sending commands.  Without this
         // gate, commands published before the agent subscribes are lost.
         var self = this;
-        if (!reply.runner && this._ctrlChannel) {
+        if (!reply.runner && this._redis) {
           logger.log('Waiting for runner agent to signal readiness...');
           var readyTimeout = 120000; // 120s — allows for EC2 boot + agent startup
           await new Promise(function (resolve, reject) {
@@ -411,7 +506,6 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
               if (resolved) return;
               resolved = true;
               clearTimeout(timer);
-              self._ctrlChannel.unsubscribe('control', onCtrl);
               // Update runner info if provided
               if (data && data.os) reply.runner = reply.runner || {};
               if (data && data.os && reply.runner) reply.runner.os = data.os;
@@ -436,7 +530,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             var timer = setTimeout(function () {
               if (!resolved) {
                 resolved = true;
-                self._ctrlChannel.unsubscribe('control', onCtrl);
+                // Remove our handler
+                self._controlHandlers = self._controlHandlers.filter(function (h) { return h !== onCtrl; });
                 var err = new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms');
                 sentry.captureException(err, {
                   tags: { phase: 'runner_ready', connection_type: 'create' },
@@ -447,38 +542,17 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             }, readyTimeout);
             if (timer.unref) timer.unref();
 
-            // Listen for live runner.ready messages
-            var onCtrl;
-            onCtrl = function (msg) {
-              var data = msg.data;
+            // Register a one-shot control handler.
+            // The poll loop starts from '0' so historical messages are also delivered,
+            // catching runner.ready messages written before we subscribed.
+            function onCtrl(data) {
               if (data && data.type === 'runner.ready') {
                 finish(data);
+                return true; // remove handler
               }
-            };
-            self._ctrlChannel.subscribe('control', onCtrl);
-
-            // Also check channel history in case runner.ready was published
-            // before we subscribed (race condition on fast-booting agents).
-            try {
-              self._ctrlChannel.history({ limit: 50 }, function (err, page) {
-                if (err) {
-                  logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
-                  return;
-                }
-                if (page && page.items) {
-                  for (var i = 0; i < page.items.length; i++) {
-                    var item = page.items[i];
-                    if (item.name === 'control' && item.data && item.data.type === 'runner.ready') {
-                      logger.log('Found runner.ready in channel history');
-                      finish(item.data);
-                      return;
-                    }
-                  }
-                }
-              });
-            } catch (histErr) {
-              logger.warn('History call threw (non-fatal): ' + (histErr.message || histErr));
+              return false; // keep handler
             }
+            self._controlHandlers.push(onCtrl);
           });
         }
         // Prefer the full vncUrl reported by the runner (infrastructure-agnostic).
@@ -525,7 +599,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         // wait for the runner agent to signal readiness before sending commands.
         // Without this gate, commands published before the agent subscribes are lost.
         var self = this;
-        if (reply.agent && this._ctrlChannel) {
+        if (reply.agent && this._redis) {
           logger.log('Waiting for runner agent to signal readiness (direct connection)...');
           var readyTimeout = 120000; // 120s — allows for SSM provisioning + agent startup
           await new Promise(function (resolve, reject) {
@@ -534,7 +608,6 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
               if (resolved) return;
               resolved = true;
               clearTimeout(timer);
-              self._ctrlChannel.unsubscribe('control', onCtrl);
               logger.log('Runner agent ready (direct, os=' + ((data && data.os) || 'unknown') + ', runner v' + ((data && data.runnerVersion) || 'unknown') + ')');
               if (data && data.update) {
                 var u = data.update;
@@ -554,7 +627,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             var timer = setTimeout(function () {
               if (!resolved) {
                 resolved = true;
-                self._ctrlChannel.unsubscribe('control', onCtrl);
+                self._controlHandlers = self._controlHandlers.filter(function (h) { return h !== onCtrl; });
                 var err = new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms (direct connection)');
                 sentry.captureException(err, {
                   tags: { phase: 'runner_ready', connection_type: 'direct' },
@@ -565,38 +638,16 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             }, readyTimeout);
             if (timer.unref) timer.unref();
 
-            // Listen for live runner.ready messages
-            var onCtrl;
-            onCtrl = function (msg) {
-              var data = msg.data;
+            // Register a one-shot control handler.
+            // The poll loop starts from '0' so historical messages are also delivered.
+            function onCtrl(data) {
               if (data && data.type === 'runner.ready') {
                 finish(data);
+                return true; // remove handler
               }
-            };
-            self._ctrlChannel.subscribe('control', onCtrl);
-
-            // Also check channel history in case runner.ready was published
-            // before we subscribed (race condition on fast-booting agents).
-            try {
-              self._ctrlChannel.history({ limit: 50 }, function (err, page) {
-                if (err) {
-                  logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
-                  return;
-                }
-                if (page && page.items) {
-                  for (var i = 0; i < page.items.length; i++) {
-                    var item = page.items[i];
-                    if (item.name === 'control' && item.data && item.data.type === 'runner.ready') {
-                      logger.log('Found runner.ready in channel history (direct)');
-                      finish(item.data);
-                      return;
-                    }
-                  }
-                }
-              });
-            } catch (histErr) {
-              logger.warn('History call threw (non-fatal): ' + (histErr.message || histErr));
+              return false; // keep handler
             }
+            self._controlHandlers.push(onCtrl);
           });
         }
 
@@ -617,48 +668,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       return reply;
     }
 
-    _sendAbly(message, timeout) {
+    _sendRedis(message, timeout) {
       if (timeout === undefined) timeout = 300000;
 
-      if (!this._cmdChannel || !this._ably) {
+      if (!this._redis || !this._streamNames) {
         return Promise.reject(
-          new Error("Sandbox not connected (no Ably client)"),
-        );
-      }
-
-      // If temporarily disconnected, wait up to 30s for reconnection
-      // instead of failing immediately (dashcam uploads can cause brief blips)
-      var self = this;
-      var connState = this._ably.connection.state;
-      if (connState !== "connected") {
-        if (connState === "disconnected" || connState === "connecting" || connState === "suspended") {
-          logger.log("Ably is " + connState + ", waiting for reconnect before sending...");
-          var waitForConnect = new Promise(function (resolve, reject) {
-            var timer = setTimeout(function () {
-              self._ably.connection.off("connected", onConnected);
-              self._ably.connection.off("failed", onFailed);
-              reject(new Error("Sandbox not connected after waiting 30s (state: " + self._ably.connection.state + ")"));
-            }, 30000);
-            if (timer.unref) timer.unref();
-            function onConnected() {
-              clearTimeout(timer);
-              self._ably.connection.off("failed", onFailed);
-              resolve();
-            }
-            function onFailed() {
-              clearTimeout(timer);
-              self._ably.connection.off("connected", onConnected);
-              reject(new Error("Ably connection failed while waiting to send"));
-            }
-            self._ably.connection.once("connected", onConnected);
-            self._ably.connection.once("failed", onFailed);
-          });
-          return waitForConnect.then(function () {
-            return self._sendAbly(message, timeout);
-          });
-        }
-        return Promise.reject(
-          new Error("Sandbox not connected (state: " + connState + ")"),
+          new Error("Sandbox not connected (no Redis client)"),
         );
       }
 
@@ -741,7 +756,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         p.catch(function () {});
       }
 
-      this._throttledPublish(this._cmdChannel, "command", message)
+      // Publish command to the Redis commands stream
+      this._redis.xadd(this._streamNames.commands, "*", "data", JSON.stringify(message))
         .then(function () {
           emitter.emit(events.sandbox.sent, message);
         })
@@ -756,51 +772,6 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         });
 
       return p;
-    }
-
-    /**
-     * Throttled publish to stay under Ably's 50 msg/sec per-connection limit.
-     * Also tracks and logs the current publish rate for debugging.
-     * @param {Object} channel - Ably channel to publish on
-     * @param {string} eventName - Event name for the publish
-     * @param {Object} message - Message payload
-     * @returns {Promise} - Resolves when publish completes
-     */
-    async _throttledPublish(channel, eventName, message) {
-      var self = this;
-      var now = Date.now();
-
-      // Rate limiting: wait if too soon since last publish
-      var elapsed = now - this._publishLastTime;
-      if (elapsed < this._publishMinIntervalMs) {
-        var waitMs = this._publishMinIntervalMs - elapsed;
-        await new Promise(function (resolve) {
-          var timer = setTimeout(resolve, waitMs);
-          if (timer.unref) timer.unref();
-        });
-      }
-      this._publishLastTime = Date.now();
-
-      // Metrics: track messages per second
-      this._publishCount++;
-      var windowElapsed = Date.now() - this._publishWindowStart;
-      if (windowElapsed >= 1000) {
-        var rate = (this._publishCount / windowElapsed) * 1000;
-        var rateStr = rate.toFixed(1);
-
-        // Log rate - warning if approaching limit, debug otherwise
-        if (rate > 45) {
-          logger.warn("Ably publish rate: " + rateStr + " msg/sec (approaching 50/sec limit)");
-        } else if (process.env.VERBOSE || process.env.TD_DEBUG) {
-          logger.log("Ably publish rate: " + rateStr + " msg/sec");
-        }
-
-        // Reset window
-        this._publishCount = 0;
-        this._publishWindowStart = Date.now();
-      }
-
-      return channel.publish(eventName, message);
     }
 
     async auth(apiKey) {
@@ -871,8 +842,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
 
       this._sandboxId = reply.sandboxId;
 
-      if (reply.ably && reply.ably.token) {
-        await this._initAbly(reply.ably.token, reply.ably.channels);
+      if (reply.redis && reply.redis.url) {
+        await this._initRedis(reply.redis.url, reply.redis.streams);
       }
 
       this.setConnectionParams({
@@ -922,49 +893,41 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         this.heartbeat = null;
       }
 
+      // Stop the poll loop before disconnecting
+      this._redisStopped = true;
+      this._controlHandlers = [];
+
       // Send end-session control message to runner before disconnecting
-      if (this._ctrlChannel && this._ably?.connection?.state === 'connected') {
+      if (this._redis && this._streamNames && this._streamNames.control) {
         try {
-          await this._ctrlChannel.publish('control', { type: 'end-session' });
+          await this._redis.xadd(
+            this._streamNames.control, "*", "data",
+            JSON.stringify({ type: "end-session" }),
+          );
         } catch (e) {
           // Ignore - best effort
         }
       }
 
-      // Leave presence on control channel
-      if (this._ctrlChannel) {
+      if (this._redisReader) {
         try {
-          await this._ctrlChannel.presence.leave();
-        } catch (e) {
-          // ignore - best effort, Ably will auto-leave on disconnect
-        }
-      }
-
-      try {
-        await Promise.allSettled([
-          this._cmdChannel?.detach(),
-          this._respChannel?.detach(),
-          this._ctrlChannel?.detach(),
-          this._filesChannel?.detach(),
-        ].filter(Boolean));
-      } catch (e) {
-        /* ignore */
-      }
-
-      if (this._ably) {
-        try {
-          this._ably.close();
+          this._redisReader.disconnect();
         } catch (e) {
           /* ignore */
         }
-        this._ably = null;
+        this._redisReader = null;
       }
 
-      this._cmdChannel = null;
-      this._respChannel = null;
-      this._ctrlChannel = null;
-      this._filesChannel = null;
-      this._channelNames = null;
+      if (this._redis) {
+        try {
+          this._redis.disconnect();
+        } catch (e) {
+          /* ignore */
+        }
+        this._redis = null;
+      }
+
+      this._streamNames = null;
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
       this.authenticated = false;

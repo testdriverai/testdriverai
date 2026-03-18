@@ -1752,7 +1752,7 @@ ${regression}
         newSandbox?.sandbox?.sandboxId || newSandbox?.sandbox?.instanceId;
 
       // E2B sandboxes return a url directly from create — no separate
-      // connect step needed (the API proxies commands via Ably).
+      // connect step needed (the API proxies commands directly).
       if (newSandbox?.sandbox?.url) {
         this.sandbox.setConnectionParams({
           sandboxId: this.sandboxId,

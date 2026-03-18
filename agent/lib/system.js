@@ -11,7 +11,7 @@ const { events } = require("../events.js");
 const createSystem = (emitter, sandbox, config) => {
 
   // Download a screenshot from S3 when the runner returns an s3Key
-  // (screenshots exceed Ably's 64KB message limit)
+  // (large screenshots are uploaded to S3 and referenced by key)
   const downloadFromS3 = async (s3Key) => {
     const apiRoot = config["TD_API_ROOT"] || sandbox.apiRoot;
     const apiKey = sandbox.apiKey;
@@ -53,7 +53,7 @@ const createSystem = (emitter, sandbox, config) => {
 
     let base64;
 
-    // Runner returns { s3Key } for Ably (screenshots too large for 64KB limit)
+    // Runner returns { s3Key } when screenshots are uploaded to S3
     // Runner returns { base64 } for direct/local connections
     if (response.s3Key) {
       base64 = await downloadFromS3(response.s3Key);
