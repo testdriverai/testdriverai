@@ -481,7 +481,7 @@ class Element {
       let cacheKey = null;
       let cacheThreshold = null;
       let perCommandThresholds = null; // Per-command { screen, element } override
-      let zoom = false; // Default to disabled, enable with zoom: true
+      let zoom = true; // Default to enabled
       let perCommandAi = null; // Per-command AI config override
 
       let minConfidence = null; // Minimum confidence threshold
@@ -494,8 +494,8 @@ class Element {
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
-        // zoom defaults to false unless explicitly set to true
-        zoom = options.zoom === true;
+        // zoom defaults to true unless explicitly set to false
+        zoom = options.zoom !== false;
         // Minimum confidence threshold: fail find if AI confidence is below this value
         minConfidence = options.confidence ?? null;
         // Element type hint for prompt wrapping
@@ -568,7 +568,7 @@ class Element {
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
-        zoom: zoom,
+        zoom: zoom === true ? 1 : zoom === false ? 0 : zoom,
         confidence: minConfidence,
         type: elementType,
         ai: {
@@ -623,6 +623,11 @@ class Element {
 
     // Track find interaction once at the end (fire-and-forget, don't block)
     const sessionId = this.sdk.getSessionId();
+    const findCacheHit = response?.cacheHit || response?.cache_hit || response?.cached || false;
+    // Increment local interaction counters
+    this.sdk._interactionStats.total++;
+    this.sdk._interactionStats.byType.find = (this.sdk._interactionStats.byType.find || 0) + 1;
+    if (findCacheHit) this.sdk._interactionStats.cached++;
     if (sessionId && this.sdk.apiClient) {
       this.sdk.apiClient
         .req("interaction/track", {
@@ -632,11 +637,7 @@ class Element {
           timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
           success: this._found,
           error: findError,
-          cacheHit:
-            response?.cacheHit ||
-            response?.cache_hit ||
-            response?.cached ||
-            false,
+          cacheHit: findCacheHit,
           selector: response?.selector,
           selectorUsed: !!response?.selector,
           confidence: response?.confidence ?? null,
@@ -1498,6 +1499,7 @@ class TestDriverSDK {
     // Store sandbox configuration options
     this.sandboxAmi = options.sandboxAmi || null;
     this.sandboxInstance = options.sandboxInstance || null;
+    this.e2bTemplateId = options.e2bTemplateId || null;
 
     // Store reconnect preference from options
     this.reconnect =
@@ -1615,6 +1617,12 @@ class TestDriverSDK {
     // Log buffer: structured entries collected during test execution.
     // Uploaded to S3 at cleanup so they can be displayed alongside dashcam replays.
     this._logBuffer = [];
+
+    // API version discovered by _logEnvironmentInfo()
+    this._apiVersion = null;
+
+    // Local interaction counters — incremented at each interaction/track call site
+    this._interactionStats = { total: 0, cached: 0, byType: {} };
 
     // Set up event listeners once (they live for the lifetime of the SDK instance)
     this._setupLogging();
@@ -2716,6 +2724,7 @@ CAPTCHA_SOLVER_EOF`,
    * @param {string} options.ip - Direct IP address to connect to
    * @param {string} options.sandboxAmi - AMI to use for the sandbox
    * @param {string} options.sandboxInstance - Instance type for the sandbox
+   * @param {string} options.e2bTemplateId - E2B template ID to use when creating the sandbox
    * @param {string} options.os - Operating system for the sandbox (windows or linux)
    * @param {boolean} options.reuseConnection - Reuse recent connection if available (default: true)
    * @returns {Promise<Object>} Sandbox instance details
@@ -2803,6 +2812,12 @@ CAPTCHA_SOLVER_EOF`,
       this.agent.sandboxInstance = connectOptions.sandboxInstance;
     } else if (this.sandboxInstance) {
       this.agent.sandboxInstance = this.sandboxInstance;
+    }
+    // Use e2bTemplateId from connectOptions if provided, otherwise fall back to constructor value
+    if (connectOptions.e2bTemplateId !== undefined) {
+      this.agent.e2bTemplateId = connectOptions.e2bTemplateId;
+    } else if (this.e2bTemplateId) {
+      this.agent.e2bTemplateId = this.e2bTemplateId;
     }
     // Use os from connectOptions if provided, otherwise fall back to this.os
     if (connectOptions.os !== undefined) {
@@ -3193,6 +3208,11 @@ CAPTCHA_SOLVER_EOF`,
 
         // Track successful findAll interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
+        const findAllCacheHit = response.cached || false;
+        // Increment local interaction counters
+        this._interactionStats.total++;
+        this._interactionStats.byType.findAll = (this._interactionStats.byType.findAll || 0) + 1;
+        if (findAllCacheHit) this._interactionStats.cached++;
         if (sessionId && this.apiClient) {
           this.apiClient
             .req("interaction/track", {
@@ -3202,7 +3222,7 @@ CAPTCHA_SOLVER_EOF`,
               timestamp: absoluteTimestamp, // Absolute epoch timestamp - frontend calculates relative using clientStartDate
               success: true,
               input: { count: elements.length },
-              cacheHit: response.cached || false,
+              cacheHit: findAllCacheHit,
               selector: response.selector,
               selectorUsed: !!response.selector,
               screenshotUrl: response.screenshotKey ?? null,
@@ -3248,6 +3268,11 @@ CAPTCHA_SOLVER_EOF`,
 
         // No elements found - track interaction (fire-and-forget, don't block)
         const sessionId = this.getSessionId();
+        const noResultCacheHit = response?.cached || false;
+        // Increment local interaction counters
+        this._interactionStats.total++;
+        this._interactionStats.byType.findAll = (this._interactionStats.byType.findAll || 0) + 1;
+        if (noResultCacheHit) this._interactionStats.cached++;
         if (sessionId && this.apiClient) {
           this.apiClient
             .req("interaction/track", {
@@ -3258,7 +3283,7 @@ CAPTCHA_SOLVER_EOF`,
               success: false,
               error: "No elements found",
               input: { count: 0 },
-              cacheHit: response?.cached || false,
+              cacheHit: noResultCacheHit,
               selector: response?.selector,
               selectorUsed: !!response?.selector,
               screenshotUrl: response?.screenshotKey ?? null,
@@ -3292,6 +3317,9 @@ CAPTCHA_SOLVER_EOF`,
 
       // Track findAll error interaction (fire-and-forget, don't block)
       const sessionId = this.getSessionId();
+      // Increment local interaction counters
+      this._interactionStats.total++;
+      this._interactionStats.byType.findAll = (this._interactionStats.byType.findAll || 0) + 1;
       if (sessionId && this.apiClient) {
         this.apiClient
           .req("interaction/track", {
@@ -3817,7 +3845,7 @@ CAPTCHA_SOLVER_EOF`,
     const apiRoot = this.config?.TD_API_ROOT || 'unknown';
     const apiKey = this.config?.TD_API_KEY || '';
     const maskedKey = apiKey.length > 4 ? '***' + apiKey.slice(-4) : '(not set)';
-    const env = process.env.TD_ENV || 'unknown';
+    const env = process.env.TD_CHANNEL || process.env.TD_ENV || 'unknown';
     const os = this.agent?.options?.os || process.env.TD_OS || 'linux';
     const sdkVersion = require('./package.json').version;
 
@@ -3843,6 +3871,8 @@ CAPTCHA_SOLVER_EOF`,
       res.on('end', () => {
         try {
           const info = JSON.parse(data);
+          // Persist API version for test result metadata
+          this._apiVersion = info.version || null;
           const commit = info.commit || 'unknown';
           const shortCommit = commit.substring(0, 7);
           const commitUrl = commit !== 'unknown'

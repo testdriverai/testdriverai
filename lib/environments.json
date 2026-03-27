@@ -1,18 +1,22 @@
 {
   "dev": {
     "apiRoot": "https://api-dev.testdriver.ai",
-    "consoleUrl": "https://console-dev.testdriver.ai"
+    "consoleUrl": "https://console-dev.testdriver.ai",
+    "tdEnv": "dev"
   },
   "test": {
     "apiRoot": "https://api-test.testdriver.ai",
-    "consoleUrl": "https://console-test.testdriver.ai"
+    "consoleUrl": "https://console-test.testdriver.ai",
+    "tdEnv": "staging"
   },
   "canary": {
     "apiRoot": "https://api-canary.testdriver.ai",
-    "consoleUrl": "https://console-canary.testdriver.ai"
+    "consoleUrl": "https://console-canary.testdriver.ai",
+    "tdEnv": "production"
   },
   "stable": {
     "apiRoot": "https://api.testdriver.ai",
-    "consoleUrl": "https://console.testdriver.ai"
+    "consoleUrl": "https://console.testdriver.ai",
+    "tdEnv": "production"
   }
 }

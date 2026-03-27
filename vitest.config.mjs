@@ -14,11 +14,15 @@ const setupFiles = [
 
 const sharedTestConfig = {
   retry: 0,
-  testTimeout: 900000,
-  hookTimeout: 900000,
+  testTimeout: 480000,
+  hookTimeout: 480000,
   maxConcurrency: 100,
   disableConsoleIntercept: false,
   silent: false,
+  // Use child-process forks so each test FILE gets a completely clean
+  // Node.js process — no shared Ably connections, module-level singletons,
+  // or Sentry globals bleeding between files.
+  pool: "forks",
   reporters: [
     "verbose",
     TestDriver()
@@ -31,7 +35,7 @@ const sharedTestConfig = {
 // Uses: environments.json (URLs) + envs/{env}.env (overlay) + fixtures (API keys)
 // TD_PLAN selects which plan's API key to use (default: enterprise)
 const plan = process.env.TD_PLAN || "enterprise";
-const defaultEnv = process.env.TD_ENV || "dev";
+const defaultEnv = process.env.TD_CHANNEL || "dev";
 const environments = getEnvironmentNames();
 
 // Apply default env to the main process so the reporter/plugin picks it up

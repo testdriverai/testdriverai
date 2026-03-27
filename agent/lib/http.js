@@ -16,13 +16,31 @@ const { version } = require("../../package.json");
 const USER_AGENT = `TestDriverSDK/${version} (Node.js ${process.version})`;
 
 /**
- * Generate Sentry distributed-tracing headers from a session ID.
- * Both sandbox.js and sdk.js duplicated this — it now lives here.
+ * Generate Sentry distributed-tracing headers.
+ *
+ * When Sentry is initialized and a span is active, uses Sentry.getTraceData()
+ * so the headers reference the real active span (proper parent-child linkage).
+ * Falls back to MD5(sessionId)-based headers when Sentry is not available or
+ * has no active span (e.g. TD_TELEMETRY=false).
  *
  * @param {string} sessionId
- * @returns {object} Headers object (empty if no sessionId)
+ * @returns {object} Headers object (empty if no sessionId and no active span)
  */
 function getSentryTraceHeaders(sessionId) {
+  // Prefer Sentry's own trace propagation when available
+  try {
+    const Sentry = require("@sentry/node");
+    if (typeof Sentry.getTraceData === "function") {
+      const traceData = Sentry.getTraceData();
+      if (traceData && traceData["sentry-trace"]) {
+        return traceData;
+      }
+    }
+  } catch (e) {
+    // Sentry not available — fall through to manual derivation
+  }
+
+  // Fallback: derive deterministic trace from session ID
   if (!sessionId) return {};
   const traceId = crypto.createHash("md5").update(sessionId).digest("hex");
   const spanId = crypto.randomBytes(8).toString("hex");

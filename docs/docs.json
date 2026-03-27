@@ -87,7 +87,8 @@
             "pages": [
               "/v7/running-tests",
               "/v7/caching",
-              "/v7/ci-cd"
+              "/v7/ci-cd",
+              "/v7/test-results-json"
             ]
           },
           {

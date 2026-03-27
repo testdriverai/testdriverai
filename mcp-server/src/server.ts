@@ -34,16 +34,33 @@ const sdkRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 const packageJson = JSON.parse(fs.readFileSync(path.join(sdkRoot, "package.json"), "utf-8"));
 const version = packageJson.version || "1.0.0";
 
-// Derive release channel from package version prerelease tag (e.g. "7.6.0-test.5" → "test")
+// Derive release channel and infrastructure environment from package version
 import semver from "semver";
-const KNOWN_CHANNELS = new Set(["dev", "test", "canary", "latest"]);
-function resolveReleaseChannel(ver: string): string {
-  if (process.env.TD_CHANNEL && KNOWN_CHANNELS.has(process.env.TD_CHANNEL)) return process.env.TD_CHANNEL;
+
+const CHANNEL_TO_ENV: Record<string, string> = {
+  dev: "dev",
+  test: "staging",
+  canary: "production",
+  stable: "production",
+};
+const VALID_CHANNELS = new Set(Object.keys(CHANNEL_TO_ENV));
+const VALID_ENVS = new Set(["dev", "staging", "production"]);
+
+function resolveChannel(ver: string): string {
+  if (process.env.TD_CHANNEL && VALID_CHANNELS.has(process.env.TD_CHANNEL)) return process.env.TD_CHANNEL;
+  if (process.env.TD_ENV && VALID_CHANNELS.has(process.env.TD_ENV)) return process.env.TD_ENV;
   const pre = semver.prerelease(ver);
-  if (pre && pre.length > 0 && KNOWN_CHANNELS.has(String(pre[0]))) return String(pre[0]);
-  return "latest";
+  if (pre && pre.length > 0 && VALID_CHANNELS.has(String(pre[0]))) return String(pre[0]);
+  return "stable";
 }
-const releaseChannel = resolveReleaseChannel(version);
+
+function resolveSentryEnvironment(ver: string): string {
+  if (process.env.TD_ENV && VALID_ENVS.has(process.env.TD_ENV)) return process.env.TD_ENV;
+  return CHANNEL_TO_ENV[resolveChannel(ver)] || "production";
+}
+
+const activeChannel = resolveChannel(version);
+const sentryEnvironment = resolveSentryEnvironment(version);
 
 const isSentryEnabled = () => {
   if (process.env.TD_TELEMETRY === "false") {
@@ -58,7 +75,7 @@ if (isSentryEnabled()) {
     dsn:
       process.env.SENTRY_DSN ||
       "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
-    environment: releaseChannel,
+    environment: sentryEnvironment,
     release: version,
     sampleRate: 1.0,
     tracesSampleRate: 1.0,
@@ -66,6 +83,7 @@ if (isSentryEnabled()) {
     integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
     initialScope: {
       tags: {
+        channel: activeChannel,
         platform: os.platform(),
         arch: os.arch(),
         nodeVersion: process.version,

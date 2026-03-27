@@ -273,6 +273,8 @@ export interface TestDriverOptions {
   sandboxAmi?: string;
   /** EC2 instance type for sandbox (e.g., 'i3.metal') */
   sandboxInstance?: string;
+  /** E2B template ID to use when creating the sandbox (e.g., 'my-template-id') */
+  e2bTemplateId?: string;
   /** Cache key for element finding operations. If provided, enables caching tied to this key */
   cacheKey?: string;
   /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
@@ -327,6 +329,8 @@ export interface ConnectOptions {
   sandboxAmi?: string;
   /** EC2 instance type for sandbox (e.g., 'i3.metal') */
   sandboxInstance?: string;
+  /** E2B template ID to use when creating the sandbox (e.g., 'my-template-id') */
+  e2bTemplateId?: string;
   /** Operating system for the sandbox (default: 'linux') */
   os?: "windows" | "linux";
   /**

@@ -12,19 +12,8 @@ import { getDefaults } from "./config.mjs";
 describe("Scroll Test", () => {
   it("should navigate and scroll down the page", async (context) => {
     const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
-    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+    await testdriver.provision.chrome({ url: 'https://www.webhamster.com/' });
 
-    // Give Chrome a moment to fully render the UI
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Navigate to webhamster.com - just look for the domain, not the full path
-    const urlBar = await testdriver.find(
-      "testdriver-sandbox.vercel.app, the URL in the address bar",
-    );
-    await urlBar.click();
-    await testdriver.pressKeys(["ctrl", "a"]);
-    await testdriver.type("https://www.webhamster.com/");
-    await testdriver.pressKeys(["enter"]);
 
     // Wait for page to load and click heading
     const heading = await testdriver.find(

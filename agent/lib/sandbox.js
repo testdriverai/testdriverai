@@ -10,11 +10,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
   class Sandbox {
     constructor() {
       this._ably = null;
-      this._cmdChannel = null;
-      this._respChannel = null;
-      this._ctrlChannel = null;
-      this._filesChannel = null;
-      this._channelNames = null;
+      this._sessionChannel = null;
+      this._channelName = null;
       this.ps = {};
       this._execBuffers = {}; // accumulate streamed exec.output chunks per requestId
       this.heartbeat = null;
@@ -32,6 +29,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._lastConnectParams = null;
       this._teamId = null;
       this._sandboxId = null;
+      this._disconnectedAt = null; // tracks when Realtime connection dropped (for timeout extension on reconnect)
 
       // Rate limiting state for Ably publishes (Ably limits to 50 msg/sec per connection)
       this._publishLastTime = 0;
@@ -51,7 +49,11 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       );
     }
 
-    async _initAbly(ablyToken, channelNames) {
+    getPublishCount() {
+      return this._publishCount;
+    }
+
+    async _initAbly(ablyToken, channelName) {
       if (this._ably) {
         try {
           this._ably.close();
@@ -59,47 +61,68 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           /* ignore */
         }
       }
-      this._channelNames = channelNames;
+      this._channelName = channelName;
       var self = this;
 
       this._ably = new Ably.Realtime({
-        authCallback: function (tokenParams, callback) {
-          callback(null, ablyToken);
+        authCallback: async function (tokenParams, callback) {
+          // On initial connect Ably may supply the token directly; on renewal
+          // we must fetch a fresh one from the API (the original token will
+          // have expired, causing 40143 token.unrecognized if reused).
+          try {
+            const response = await axios({
+              method: "post",
+              url: self.apiRoot + "/api/v7/sandbox/ably-token",
+              data: { apiKey: self.apiKey, sandboxId: self._sandboxId },
+              headers: { "Content-Type": "application/json" },
+              timeout: 15000,
+            });
+            callback(null, response.data.token);
+          } catch (err) {
+            logger.warn("[ably] Token renewal failed, falling back to original token: " + (err.message || err));
+            callback(null, ablyToken);
+          }
         },
         clientId: "sdk-" + this._sandboxId,
+        echoMessages: false,              // don't receive our own published messages
         disconnectedRetryTimeout: 5000,   // retry reconnect every 5s (default 15s)
         suspendedRetryTimeout: 15000,     // retry from suspended every 15s (default 30s)
       });
 
+      logger.debug(`[realtime] Connecting as sdk-${this._sandboxId}...`);
+
       await new Promise(function (resolve, reject) {
         self._ably.connection.on("connected", resolve);
         self._ably.connection.on("failed", function () {
-          reject(new Error("Ably connection failed"));
+          reject(new Error("Realtime connection failed"));
         });
         setTimeout(function () {
-          reject(new Error("Ably connection timeout"));
+          reject(new Error("Realtime connection timeout"));
         }, 30000);
       });
 
-      this._cmdChannel = this._ably.channels.get(channelNames.commands);
-      this._respChannel = this._ably.channels.get(channelNames.responses);
-      this._ctrlChannel = this._ably.channels.get(channelNames.control);
-      this._filesChannel = this._ably.channels.get(channelNames.files);
+      this._sessionChannel = this._ably.channels.get(channelName);
 
-      // Enter presence on control channel so the API can count connected SDK clients
+      logger.debug(`[realtime] Channel initialized: ${channelName}`);
+
+      // Enter presence on the session channel so the API can count connected SDK clients
       try {
-        await this._ctrlChannel.presence.enter({
+        await this._sessionChannel.presence.enter({
           sandboxId: this._sandboxId,
           connectedAt: Date.now(),
         });
+        logger.debug(`[realtime] Entered presence on session channel (sandbox=${this._sandboxId})`);
       } catch (e) {
         // Non-fatal — presence is used for concurrency counting, not critical path
-        logger.warn("Failed to enter presence on control channel: " + (e.message || e));
+        logger.warn("Failed to enter presence on session channel: " + (e.message || e));
       }
 
-      this._respChannel.subscribe("response", function (msg) {
+      // Save subscription references for historyBeforeSubscribe() during discontinuity recovery
+      this._onResponseMsg = function (msg) {
         var message = msg.data;
         if (!message) return;
+
+        logger.debug(`[realtime] Received response: type=${message.type || 'unknown'} (requestId=${message.requestId || 'none'})`);
 
         if (message.type === "sandbox.progress") {
           emitter.emit(events.sandbox.progress, {
@@ -151,31 +174,53 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         }
 
         if (!message.requestId || !self.ps[message.requestId]) {
-          var debugMode =
-            process.env.VERBOSE || process.env.TD_DEBUG;
-          if (debugMode) {
-            console.warn(
-              "No pending promise found for requestId:",
-              message.requestId,
-            );
-          }
+          var pendingIds = Object.keys(self.ps);
+          var pendingSummary = pendingIds.length > 0
+            ? pendingIds.map(function (rid) {
+              var e = self.ps[rid];
+              return rid + '(' + (e && e.message ? e.message.type : '?') + ')';
+            }).join(', ')
+            : 'none';
+          logger.debug(
+            '[realtime] No pending promise for requestId=' + (message.requestId || 'null') +
+            ' | response type=' + (message.type || 'unknown') +
+            ' | error=' + (message.error ? (message.errorMessage || 'true') : 'false') +
+            ' | currently pending: [' + pendingSummary + ']'
+          );
           return;
         }
 
         if (message.error) {
-          var pendingMessage =
-            self.ps[message.requestId] &&
-            self.ps[message.requestId].message;
+          var pendingEntry = self.ps[message.requestId];
+          var pendingMessage = pendingEntry && pendingEntry.message;
+          var pendingAge = pendingEntry && pendingEntry.startTime
+            ? ((Date.now() - pendingEntry.startTime) / 1000).toFixed(1) + 's'
+            : '?';
+          logger.debug(
+            '[realtime] Promise REJECTED: requestId=' + message.requestId +
+            ' | type=' + (pendingMessage ? pendingMessage.type : 'unknown') +
+            ' | age=' + pendingAge +
+            ' | error=' + (message.errorMessage || 'Sandbox error')
+          );
           if (!pendingMessage || pendingMessage.type !== "output") {
             emitter.emit(events.error.sandbox, message.errorMessage);
           }
           var error = new Error(message.errorMessage || "Sandbox error");
           error.responseData = message;
           delete self._execBuffers[message.requestId];
-          self.ps[message.requestId].reject(error);
+          pendingEntry.reject(error);
         } else {
           emitter.emit(events.sandbox.received);
           if (self.ps[message.requestId]) {
+            var resolveEntry = self.ps[message.requestId];
+            var resolveAge = resolveEntry.startTime
+              ? ((Date.now() - resolveEntry.startTime) / 1000).toFixed(1) + 's'
+              : '?';
+            logger.debug(
+              '[realtime] Promise RESOLVED: requestId=' + message.requestId +
+              ' | type=' + (resolveEntry.message ? resolveEntry.message.type : 'unknown') +
+              ' | age=' + resolveAge
+            );
             // Unwrap the result from the Ably response envelope
             // The runner sends { requestId, type, result, success }
             // But SDK commands expect just the result object
@@ -194,40 +239,154 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           }
         }
         delete self.ps[message.requestId];
-      });
+      };
+      this._responseSubscription = await this._sessionChannel.subscribe("response", this._onResponseMsg);
 
-      this._filesChannel.subscribe("response", function (msg) {
+      this._onFileMsg = function (msg) {
         var message = msg.data;
         if (!message) return;
+        logger.debug(`[realtime] Received file: type=${message.type || 'unknown'} (requestId=${message.requestId || 'none'})`);
         if (message.requestId && self.ps[message.requestId]) {
           emitter.emit(events.sandbox.received);
           self.ps[message.requestId].resolve(message);
           delete self.ps[message.requestId];
         }
         emitter.emit(events.sandbox.file, message);
-      });
+      };
+      this._fileSubscription = await this._sessionChannel.subscribe("file", this._onFileMsg);
 
-      this.heartbeat = setInterval(function () {}, 5000);
+      this.heartbeat = setInterval(function () { }, 5000);
       if (this.heartbeat.unref) this.heartbeat.unref();
 
+      // ─── Periodic stats logging ────────────────────────────────────────
+      this._statsInterval = setInterval(() => {
+        const connState = this._ably ? this._ably.connection.state : 'no-client';
+        const chState = this._sessionChannel ? this._sessionChannel.state : 'null';
+        const pendingIds = Object.keys(this.ps);
+        const pending = pendingIds.length;
+        logger.debug(`[realtime][stats] connection=${connState} | sandbox=${this._sandboxId} | pending=${pending} | channel=${chState}`);
+        if (pending > 0) {
+          const now = Date.now();
+          for (const rid of pendingIds) {
+            const entry = this.ps[rid];
+            if (!entry) continue;
+            const type = entry.message ? entry.message.type : 'unknown';
+            const ageSec = ((now - (entry.startTime || now)) / 1000).toFixed(1);
+            logger.debug(`[realtime][stats]   pending: requestId=${rid} | type=${type} | age=${ageSec}s`);
+          }
+        }
+      }, 10000);
+      if (this._statsInterval.unref) this._statsInterval.unref();
+
       this._ably.connection.on("disconnected", function () {
-        logger.log("Ably disconnected - will auto-reconnect");
+        logger.debug("[realtime] Connection: disconnected - will auto-reconnect");
+        self._disconnectedAt = Date.now();
       });
 
       this._ably.connection.on("connected", function () {
         // Log reconnection so the user knows the blip was recovered
-        logger.log("Ably reconnected");
+        logger.debug("[realtime] Connection: reconnected");
+        // Extend any pending command timeouts by the disconnection duration so
+        // commands whose timer was counting down while the connection was down
+        // don't get incorrectly timed out.
+        if (self._disconnectedAt) {
+          var disconnectionDurationMs = Date.now() - self._disconnectedAt;
+          self._disconnectedAt = null;
+          var pendingIds = Object.keys(self.ps);
+          if (pendingIds.length > 0) {
+            logger.debug(
+              '[realtime] Extending ' + pendingIds.length + ' pending timeout(s) by ' +
+              disconnectionDurationMs + 'ms after disconnection'
+            );
+            for (var i = 0; i < pendingIds.length; i++) {
+              var entry = self.ps[pendingIds[i]];
+              if (entry && typeof entry.extendTimeout === 'function') {
+                entry.extendTimeout(disconnectionDurationMs);
+              }
+            }
+          }
+        }
       });
 
       this._ably.connection.on("suspended", function () {
-        logger.warn("Ably suspended - connection lost for extended period, will keep retrying");
+        logger.debug("[realtime] Connection: suspended - connection lost for extended period, will keep retrying");
       });
 
       this._ably.connection.on("failed", function () {
+        logger.debug("[realtime] Connection: failed");
         self.apiSocketConnected = false;
         self.instanceSocketConnected = false;
-        emitter.emit(events.error.sandbox, "Ably connection failed");
+        emitter.emit(events.error.sandbox, "Realtime connection failed");
       });
+
+      // ─── Channel discontinuity detection ──────────────────────────────
+      // Set up BEFORE subscribing so we catch any continuity loss during
+      // the initial attachment. Fires at the channel level, covering all
+      // message types (response, file, control).
+      this._sessionChannel.on(function (stateChange) {
+        var current = stateChange.current;
+        var previous = stateChange.previous;
+        var reason = stateChange.reason;
+        var reasonMsg = reason ? (reason.message || reason.code || String(reason)) : '';
+
+        if (current === 'attached' && stateChange.resumed === false && previous === 'attached') {
+          logger.debug('[realtime] Channel DISCONTINUITY detected (resumed=false)' + (reasonMsg ? ' — ' + reasonMsg : ''));
+          emitter.emit(events.sandbox.progress, {
+            step: 'discontinuity',
+            message: 'Recovering missed messages after connection interruption...',
+          });
+          self._recoverFromDiscontinuity();
+        }
+      });
+    }
+
+    /**
+     * Recover missed messages after a channel discontinuity.
+     * Uses historyBeforeSubscribe() on each subscription, which guarantees
+     * no gap between historical and live messages.  Each recovered message
+     * is dispatched through the same handler that processes live messages
+     * so that pending promises are resolved/rejected correctly.
+     */
+    async _recoverFromDiscontinuity() {
+      var subs = [
+        { name: 'response', sub: this._responseSubscription, handler: this._onResponseMsg },
+        { name: 'file', sub: this._fileSubscription, handler: this._onFileMsg },
+      ];
+      var totalRecovered = 0;
+      for (var i = 0; i < subs.length; i++) {
+        var entry = subs[i];
+        if (!entry.sub) continue;
+        try {
+          logger.debug('[realtime] Discontinuity recovery: fetching historyBeforeSubscribe for ' + entry.name + '...');
+          var page = await entry.sub.historyBeforeSubscribe({ limit: 100 });
+          var recovered = 0;
+          while (page) {
+            // Replay each missed message through the handler so pending
+            // promises get resolved instead of timing out.
+            for (var j = 0; j < page.items.length; j++) {
+              recovered++;
+              try {
+                if (entry.handler) {
+                  logger.debug('[realtime] Replaying recovered ' + entry.name + ' message (requestId=' + (page.items[j].data && page.items[j].data.requestId || 'none') + ')');
+                  entry.handler(page.items[j]);
+                }
+              } catch (replayErr) {
+                logger.debug('[realtime] Error replaying recovered message: ' + (replayErr.message || replayErr));
+              }
+            }
+            page = page.hasNext() ? await page.next() : null;
+          }
+          totalRecovered += recovered;
+          logger.debug('[realtime] Discontinuity recovery: replayed ' + recovered + ' ' + entry.name + ' message(s) from gap');
+        } catch (err) {
+          logger.debug('[realtime] Discontinuity recovery failed for ' + entry.name + ': ' + (err.message || err));
+        }
+      }
+      if (totalRecovered > 0) {
+        logger.debug('[realtime] Recovered and replayed ' + totalRecovered + ' message(s) that were missed during connection interruption');
+      } else {
+        logger.debug('[realtime] Discontinuity recovery: no missed messages found');
+      }
     }
 
     /**
@@ -267,10 +426,10 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
               var elapsed = Date.now() - startTime;
               logger.warn(
                 "Transient network error: " + (error.message || error.code) +
-                  " — POST " + path +
-                  " — retry " + attempt + "/3" +
-                  " in " + (delayMs / 1000).toFixed(1) + "s" +
-                  " (" + Math.round(elapsed / 1000) + "s elapsed)...",
+                " — POST " + path +
+                " — retry " + attempt + "/3" +
+                " in " + (delayMs / 1000).toFixed(1) + "s" +
+                " (" + Math.round(elapsed / 1000) + "s elapsed)...",
               );
             },
           });
@@ -282,10 +441,10 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             var elapsed = Date.now() - startTime;
             logger.log(
               "Concurrency limit reached — waiting " +
-                concurrencyRetryInterval / 1000 +
-                "s for a slot to become available (" +
-                Math.round(elapsed / 1000) +
-                "s elapsed)...",
+              concurrencyRetryInterval / 1000 +
+              "s for a slot to become available (" +
+              Math.round(elapsed / 1000) +
+              "s elapsed)...",
             );
             await new Promise(function (resolve) {
               var t = setTimeout(resolve, concurrencyRetryInterval);
@@ -334,6 +493,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         body.ci = message.ci;
         if (message.ami) body.ami = message.ami;
         if (message.instanceType) body.instanceType = message.instanceType;
+        if (message.e2bTemplateId) body.e2bTemplateId = message.e2bTemplateId;
         if (message.keepAlive !== undefined) body.keepAlive = message.keepAlive;
       }
 
@@ -362,62 +522,238 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._teamId = reply.teamId;
 
       if (reply.ably && reply.ably.token) {
-        await this._initAbly(reply.ably.token, reply.ably.channels);
+        await this._initAbly(reply.ably.token, reply.ably.channel);
         this.instanceSocketConnected = true;
 
         // Tell the runner to enable debug log forwarding if debug mode is on
         var debugMode =
           process.env.VERBOSE || process.env.TD_DEBUG;
-        if (debugMode && this._ctrlChannel) {
-          this._ctrlChannel.publish("control", {
+        if (debugMode && this._sessionChannel) {
+          this._sessionChannel.publish("control", {
             type: "debug",
             enabled: true,
           });
         }
       }
 
-      if (message.type === "create") {
-        // E2B (Linux) sandboxes: the API proxies commands and returns a url directly.
-        // No runner agent involved — skip runner.ready wait.
-        if (reply.url) {
-          logger.log(`E2B sandbox ready — url=${reply.url}`);
-          return {
-            success: true,
-            sandbox: {
-              sandboxId: reply.sandboxId,
-              instanceId: reply.sandbox?.sandboxId || reply.sandboxId,
-              os: body.os || 'linux',
-              url: reply.url,
-            },
-          };
+      // ─── Handle pending slot claim (trigger.dev waitpoint flow) ────
+      // The API returned early with status: 'pending'. The SDK has now
+      // connected to Ably and entered presence (done in _initAbly above).
+      // Wait for the claim-slot task to publish slot-approved or slot-denied
+      // on the control channel, then re-call authenticate with slotApproved.
+      // On slot-denied, we poll forever (re-calling authenticate every 10s)
+      // until a slot opens, matching _httpPostWithConcurrencyRetry behavior.
+      var concurrencyRetryInterval = 10000;
+      var slotPollStart = Date.now();
+      while (reply.status === 'pending') {
+        logger.log('Slot claim pending — waiting for approval via Ably...');
+
+        var self = this;
+        var slotResolved = false;
+        var slotResolve, slotReject;
+        var slotDecisionPromise = new Promise(function (resolve, reject) {
+          slotResolve = resolve;
+          slotReject = reject;
+        });
+
+        var slotTimeout = setTimeout(function () {
+          if (slotResolved) return;
+          slotResolved = true;
+          try { self._sessionChannel.unsubscribe('control', onSlotControl); } catch (_) {}
+          slotReject(new Error('Slot claim timed out waiting for approval'));
+        }, 60000); // 60s timeout
+        if (slotTimeout.unref) slotTimeout.unref();
+
+        function onSlotControl(msg) {
+          var data = msg.data;
+          if (!data) return;
+          if (data.type === 'slot-approved') {
+            if (slotResolved) return;
+            slotResolved = true;
+            clearTimeout(slotTimeout);
+            try { self._sessionChannel.unsubscribe('control', onSlotControl); } catch (_) {}
+            slotResolve({ approved: true, data: data });
+          } else if (data.type === 'slot-denied') {
+            if (slotResolved) return;
+            slotResolved = true;
+            clearTimeout(slotTimeout);
+            try { self._sessionChannel.unsubscribe('control', onSlotControl); } catch (_) {}
+            slotResolve({ approved: false, data: data });
+          }
         }
 
+        // Subscribe FIRST, then check history to close the race window
+        // between presence enter (done in _initAbly) and this subscription.
+        // The claim-slot task fires in response to presence enter, so the
+        // decision may already be published by the time we get here.
+        var slotControlSub = await self._sessionChannel.subscribe('control', onSlotControl);
+
+        // Check for decisions published before this subscription was active
+        if (!slotResolved && slotControlSub) {
+          try {
+            var histPage = await slotControlSub.historyBeforeSubscribe({ limit: 10 });
+            while (histPage && !slotResolved) {
+              for (var hi = 0; hi < histPage.items.length; hi++) {
+                onSlotControl(histPage.items[hi]);
+                if (slotResolved) break;
+              }
+              histPage = (!slotResolved && histPage.hasNext()) ? await histPage.next() : null;
+            }
+          } catch (histErr) {
+            logger.warn('[slots] Failed to check history for slot decision: ' + (histErr.message || histErr));
+          }
+        }
+
+        var slotDecision = await slotDecisionPromise;
+
+        if (!slotDecision.approved) {
+          // Slot denied — disconnect Ably and re-try the full authenticate
+          // flow after a delay, polling forever until a slot opens.
+          var elapsed = Date.now() - slotPollStart;
+          logger.log(
+            'Slot denied: ' + (slotDecision.data.message || 'concurrency limit reached') +
+            ' — waiting ' + (concurrencyRetryInterval / 1000) + 's before retrying' +
+            ' (' + Math.round(elapsed / 1000) + 's elapsed)...'
+          );
+          logger.log('Upgrade for more slots → https://console.testdriver.ai/checkout/team');
+          try {
+            if (this._ably) this._ably.close();
+            this._ably = null;
+            this._sessionChannel = null;
+          } catch (_) {}
+
+          await new Promise(function (resolve) {
+            var t = setTimeout(resolve, concurrencyRetryInterval);
+            if (t.unref) t.unref();
+          });
+
+          // Re-call authenticate — this goes through _httpPostWithConcurrencyRetry
+          // so transient HTTP errors are also handled. The new reply will either
+          // be 'pending' again (loop continues) or succeed directly.
+          reply = await this._httpPostWithConcurrencyRetry(
+            "/api/v7/sandbox/authenticate",
+            body,
+            timeout,
+          );
+
+          if (!reply.success && reply.status !== 'pending') {
+            var retryErr = new Error(
+              reply.errorMessage || "Failed to allocate sandbox",
+            );
+            retryErr.responseData = reply;
+            throw retryErr;
+          }
+
+          // Re-init Ably if we got a new pending reply with fresh credentials
+          if (reply.status === 'pending' && reply.ably && reply.ably.token) {
+            this._sandboxId = reply.sandboxId;
+            this._teamId = reply.teamId;
+            await this._initAbly(reply.ably.token, reply.ably.channel);
+            this.instanceSocketConnected = true;
+          }
+
+          continue; // loop back to wait for the next slot decision
+        }
+
+        logger.log('Slot approved — provisioning sandbox...');
+
+        // Re-call authenticate with slotApproved flag to trigger provisioning
+        // Keep the same sandboxId so the Ably channel stays valid
+        var provisionBody = {
+          apiKey: this.apiKey,
+          version: version,
+          os: message.os || this.os || 'linux',
+          session: sessionId,
+          apiRoot: this.apiRoot,
+          sandboxId: this._sandboxId,
+          slotApproved: true,
+        };
+        if (message.resolution) provisionBody.resolution = message.resolution;
+        if (message.ci) provisionBody.ci = message.ci;
+        if (message.ami) provisionBody.ami = message.ami;
+        if (message.instanceType) provisionBody.instanceType = message.instanceType;
+        if (message.e2bTemplateId) provisionBody.e2bTemplateId = message.e2bTemplateId;
+        if (message.keepAlive !== undefined) provisionBody.keepAlive = message.keepAlive;
+
+        reply = await this._httpPostWithConcurrencyRetry(
+          "/api/v7/sandbox/authenticate",
+          provisionBody,
+          timeout,
+        );
+
+        if (!reply.success) {
+          var provisionErr = new Error(
+            reply.errorMessage || "Failed to provision sandbox after approval",
+          );
+          provisionErr.responseData = reply;
+          throw provisionErr;
+        }
+
+        break; // slot approved and provisioned — exit the while loop
+      }
+
+      if (message.type === "create") {
+        // E2B (Linux) sandboxes return a url directly.
+        // We still need to wait for runner.ready since sandbox-agent.js runs inside E2B.
+        const isE2B = !!reply.url;
+        
         const runnerIp = reply.runner && reply.runner.ip;
         const noVncPort = reply.runner && reply.runner.noVncPort;
         const runnerVncUrl = reply.runner && reply.runner.vncUrl;
 
-        logger.log(`Runner claimed — ip=${runnerIp || 'none'}, os=${reply.runner?.os || 'unknown'}, noVncPort=${noVncPort || 'not reported'}, vncUrl=${runnerVncUrl || 'not reported'}`);
+        // Log image version info (AMI for Windows, E2B template for Linux)
+        if (reply.imageVersion) {
+          if (isE2B) {
+            logger.log('E2B image version: v' + reply.imageVersion + (reply.e2bTemplateId ? ' (template: ' + reply.e2bTemplateId + ')' : ''));
+          } else {
+            logger.log('AMI image version: v' + reply.imageVersion + (reply.amiId ? ' (ami: ' + reply.amiId + ')' : ''));
+          }
+        }
 
-        // For cloud Windows sandboxes (no runner in reply), wait for the
-        // agent to signal readiness before sending commands.  Without this
-        // gate, commands published before the agent subscribes are lost.
+        if (!isE2B) {
+          logger.log(`Runner claimed — ip=${runnerIp || 'none'}, os=${reply.runner?.os || 'unknown'}, noVncPort=${noVncPort || 'not reported'}, vncUrl=${runnerVncUrl || 'not reported'}`);
+        }
+
+        // Wait for the runner agent to signal readiness before sending commands.
+        // Without this gate, commands published before the agent subscribes are lost.
+        // This applies to:
+        //   - E2B Linux sandboxes (native runner agent via sandbox-agent.js)
+        //   - Windows EC2 sandboxes without presence runners
+        // For presence-based Windows runners (reply.runner already set), the runner
+        // is already listening so we can skip the wait.
         var self = this;
-        if (!reply.runner && this._ctrlChannel) {
+        const needsReadyWait = this._sessionChannel && (isE2B || !reply.runner);
+        if (needsReadyWait) {
           logger.log('Waiting for runner agent to signal readiness...');
-          var readyTimeout = 120000; // 120s — allows for EC2 boot + agent startup
+          // E2B (Linux) sandboxes need extra time: S3 upload + npm install can add 60-120s on top of sandbox boot
+          // EC2 (Windows) cold starts can be slow due to AV scanning and native module loading
+          var readyTimeout = isE2B ? 300000 : 180000; // 5 min for E2B (S3+npm), 3 min for EC2
           await new Promise(function (resolve, reject) {
             var resolved = false;
+            var waitStart = Date.now();
             function finish(data) {
               if (resolved) return;
               resolved = true;
               clearTimeout(timer);
-              self._ctrlChannel.unsubscribe('control', onCtrl);
+              clearInterval(progressTimer);
+              self._sessionChannel.unsubscribe('control', onCtrl);
               // Update runner info if provided
               if (data && data.os) reply.runner = reply.runner || {};
               if (data && data.os && reply.runner) reply.runner.os = data.os;
               if (data && data.ip && reply.runner) reply.runner.ip = data.ip;
               if (data && data.runnerVersion && reply.runner) reply.runner.version = data.runnerVersion;
+              // Persist version metadata for test result reporting
+              self._runnerVersionBefore = reply.imageVersion || null;
+              self._runnerVersionAfter = (data && data.runnerVersion) || reply.imageVersion || null;
+              self._wasUpdated = !!(data && data.runnerVersion && reply.imageVersion && data.runnerVersion !== reply.imageVersion);
               logger.log('Runner agent ready (os=' + ((data && data.os) || 'unknown') + ', runner v' + ((data && data.runnerVersion) || 'unknown') + ')');
+              // Show upgrade info: if the runner's npm version differs from the baked image version,
+              // the runner was upgraded during provisioning.
+              var runnerVer = data && data.runnerVersion;
+              var imageVer = reply.imageVersion;
+              if (runnerVer && imageVer && runnerVer !== imageVer) {
+                logger.log('Runner upgraded during provisioning: v' + imageVer + ' \u2192 v' + runnerVer);
+              }
               if (data && data.update) {
                 var u = data.update;
                 if (u.status === 'up-to-date') {
@@ -436,7 +772,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             var timer = setTimeout(function () {
               if (!resolved) {
                 resolved = true;
-                self._ctrlChannel.unsubscribe('control', onCtrl);
+                clearInterval(progressTimer);
+                self._sessionChannel.unsubscribe('control', onCtrl);
                 var err = new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms');
                 sentry.captureException(err, {
                   tags: { phase: 'runner_ready', connection_type: 'create' },
@@ -447,6 +784,13 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             }, readyTimeout);
             if (timer.unref) timer.unref();
 
+            // Log progress every 15s so the user knows we're still waiting
+            var progressTimer = setInterval(function () {
+              if (resolved) return;
+              var elapsed = Math.round((Date.now() - waitStart) / 1000);
+              logger.log('Still waiting for runner agent... (' + elapsed + 's elapsed, timeout=' + Math.round(readyTimeout / 1000) + 's)');
+            }, 15000);
+
             // Listen for live runner.ready messages
             var onCtrl;
             onCtrl = function (msg) {
@@ -455,12 +799,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
                 finish(data);
               }
             };
-            self._ctrlChannel.subscribe('control', onCtrl);
+            self._sessionChannel.subscribe('control', onCtrl);
 
             // Also check channel history in case runner.ready was published
             // before we subscribed (race condition on fast-booting agents).
             try {
-              self._ctrlChannel.history({ limit: 50 }, function (err, page) {
+              self._sessionChannel.history({ limit: 50 }, function (err, page) {
                 if (err) {
                   logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
                   return;
@@ -482,9 +826,13 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           });
         }
         // Prefer the full vncUrl reported by the runner (infrastructure-agnostic).
+        // For E2B sandboxes, use the url from the API reply.
         // Fall back to constructing from ip + noVncPort for older runners.
         let url;
-        if (runnerVncUrl) {
+        if (isE2B && reply.url) {
+          url = reply.url;
+          logger.log(`E2B sandbox ready — url=${url}`);
+        } else if (runnerVncUrl) {
           url = runnerVncUrl;
           logger.log(`Using runner-provided vncUrl: ${url}`);
         } else if (runnerIp && noVncPort) {
@@ -506,35 +854,57 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             url: url,
             vncPort: noVncPort || undefined,
             runner: reply.runner,
+            // Extra metadata for test result reporting
+            amiId: reply.amiId || null,
+            e2bTemplateId: reply.e2bTemplateId || null,
+            imageVersion: reply.imageVersion || null,
+            runnerVersionBefore: this._runnerVersionBefore || reply.imageVersion || null,
+            runnerVersionAfter: this._runnerVersionAfter || reply.runner?.version || null,
+            wasUpdated: this._wasUpdated || false,
+            vncUrl: url || null,
+            channelName: this._channelName || null,
           },
         };
       }
 
       if (message.type === "direct") {
-        // If the API returned agent config and we have an instanceId,
-        // provision the config to the instance via SSM (client-side).
+        // If the API returned provisioning commands and we have an instanceId,
+        // send them to the instance via SSM (client-side).
         // This runs from the user's infrastructure where AWS permissions exist,
         // rather than from the API server.
-        if (reply.agentConfig && message.instanceId) {
-          logger.log('Provisioning agent config to instance ' + message.instanceId + ' via SSM...');
-          await this._provisionAgentConfig(message.instanceId, reply.agentConfig);
+        // NOTE: For direct connections, the user MUST provide the AWS instanceId
+        // because the API only knows the sandboxId, not the actual EC2 instance ID.
+        var instanceId = message.instanceId;
+        if (instanceId && reply.provisionCommands) {
+          // New path: API generated full provisioning commands (runner install + config + start)
+          logger.log('Provisioning instance ' + instanceId + ' via SSM (API-generated commands)...');
+          await this._sendSSMCommands(instanceId, reply.provisionCommands);
+          logger.log('Instance provisioned successfully.');
+        } else if (reply.agentConfig && instanceId) {
+          // Fallback: older API that only returns agentConfig (config-only, no runner install)
+          logger.log('Provisioning agent config to instance ' + instanceId + ' via SSM (legacy)...');
+          await this._provisionAgentConfig(instanceId, reply.agentConfig);
           logger.log('Agent config provisioned successfully.');
+        } else if ((reply.agentConfig || reply.provisionCommands) && !instanceId) {
+          logger.log('Warning: agentConfig/provisionCommands returned but no instanceId provided - cannot provision via SSM');
         }
 
         // If the API returned agent credentials (reply.agent present),
         // wait for the runner agent to signal readiness before sending commands.
         // Without this gate, commands published before the agent subscribes are lost.
         var self = this;
-        if (reply.agent && this._ctrlChannel) {
+        if (reply.agent && this._sessionChannel) {
           logger.log('Waiting for runner agent to signal readiness (direct connection)...');
-          var readyTimeout = 120000; // 120s — allows for SSM provisioning + agent startup
+          var readyTimeout = 60000 * 5;
           await new Promise(function (resolve, reject) {
             var resolved = false;
+            var waitStart = Date.now();
             function finish(data) {
               if (resolved) return;
               resolved = true;
               clearTimeout(timer);
-              self._ctrlChannel.unsubscribe('control', onCtrl);
+              clearInterval(progressTimer);
+              self._sessionChannel.unsubscribe('control', onCtrl);
               logger.log('Runner agent ready (direct, os=' + ((data && data.os) || 'unknown') + ', runner v' + ((data && data.runnerVersion) || 'unknown') + ')');
               if (data && data.update) {
                 var u = data.update;
@@ -554,7 +924,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             var timer = setTimeout(function () {
               if (!resolved) {
                 resolved = true;
-                self._ctrlChannel.unsubscribe('control', onCtrl);
+                clearInterval(progressTimer);
+                self._sessionChannel.unsubscribe('control', onCtrl);
                 var err = new Error('Runner agent did not signal readiness within ' + readyTimeout + 'ms (direct connection)');
                 sentry.captureException(err, {
                   tags: { phase: 'runner_ready', connection_type: 'direct' },
@@ -565,6 +936,13 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             }, readyTimeout);
             if (timer.unref) timer.unref();
 
+            // Log progress every 15s so the user knows we're still waiting
+            var progressTimer = setInterval(function () {
+              if (resolved) return;
+              var elapsed = Math.round((Date.now() - waitStart) / 1000);
+              logger.log('Still waiting for runner agent... (' + elapsed + 's elapsed, timeout=' + Math.round(readyTimeout / 1000) + 's)');
+            }, 15000);
+
             // Listen for live runner.ready messages
             var onCtrl;
             onCtrl = function (msg) {
@@ -573,12 +951,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
                 finish(data);
               }
             };
-            self._ctrlChannel.subscribe('control', onCtrl);
+            self._sessionChannel.subscribe('control', onCtrl);
 
             // Also check channel history in case runner.ready was published
             // before we subscribed (race condition on fast-booting agents).
             try {
-              self._ctrlChannel.history({ limit: 50 }, function (err, page) {
+              self._sessionChannel.history({ limit: 50 }, function (err, page) {
                 if (err) {
                   logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
                   return;
@@ -620,7 +998,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
     _sendAbly(message, timeout) {
       if (timeout === undefined) timeout = 300000;
 
-      if (!this._cmdChannel || !this._ably) {
+      if (!this._sessionChannel || !this._ably) {
         return Promise.reject(
           new Error("Sandbox not connected (no Ably client)"),
         );
@@ -648,7 +1026,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             function onFailed() {
               clearTimeout(timer);
               self._ably.connection.off("connected", onConnected);
-              reject(new Error("Ably connection failed while waiting to send"));
+              reject(new Error("Realtime connection failed while waiting to send"));
             }
             self._ably.connection.once("connected", onConnected);
             self._ably.connection.once("failed", onFailed);
@@ -706,21 +1084,41 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
 
       var requestId = message.requestId;
 
-      var timeoutId = setTimeout(function () {
+      // timeoutId and timeoutExpiresAt are declared as vars so they can be
+      // updated by extendTimeout() (closure mutation).
+      var timeoutId;
+      var timeoutExpiresAt;
+
+      var timeoutFn = function () {
         if (self.ps[requestId]) {
+          var pendingIds = Object.keys(self.ps);
+          var pendingSummary = pendingIds.map(function (rid) {
+            var e = self.ps[rid];
+            var age = e && e.startTime ? ((Date.now() - e.startTime) / 1000).toFixed(1) + 's' : '?';
+            return rid + '(' + (e && e.message ? e.message.type : '?') + ', ' + age + ')';
+          }).join(', ');
+          logger.error(
+            '[realtime] Promise TIMEOUT: requestId=' + requestId +
+            ' | type=' + message.type +
+            ' | timeout=' + timeout + 'ms' +
+            ' | all pending: [' + pendingSummary + ']'
+          );
           delete self.ps[requestId];
           delete self._execBuffers[requestId];
           rejectPromise(
             new Error(
               "Sandbox message '" +
-                message.type +
-                "' timed out after " +
-                timeout +
-                "ms",
+              message.type +
+              "' timed out after " +
+              timeout +
+              "ms",
             ),
           );
         }
-      }, timeout);
+      };
+
+      timeoutId = setTimeout(timeoutFn, timeout);
+      timeoutExpiresAt = Date.now() + timeout;
       if (timeoutId.unref) timeoutId.unref();
 
       this.ps[requestId] = {
@@ -733,15 +1131,35 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           clearTimeout(timeoutId);
           rejectPromise(error);
         },
+        /**
+         * Extend the pending timeout by disconnectionDurationMs — called on Ably reconnect
+         * to compensate for time spent disconnected.
+         */
+        extendTimeout: function (disconnectionDurationMs) {
+          clearTimeout(timeoutId);
+          // Clamp remaining to 0 so a command whose timer expired during the
+          // outage still gets the full disconnection duration as its new budget.
+          var remaining = Math.max(0, timeoutExpiresAt - Date.now());
+          // Minimum 5s remaining after extension to allow the response to arrive.
+          var MIN_REMAINING_MS = 5000;
+          var newRemaining = Math.max(remaining + disconnectionDurationMs, MIN_REMAINING_MS);
+          timeoutExpiresAt = Date.now() + newRemaining;
+          timeoutId = setTimeout(timeoutFn, newRemaining);
+          if (timeoutId.unref) timeoutId.unref();
+          logger.log(
+            '[realtime] Extended timeout for requestId=' + requestId +
+            ' by ' + disconnectionDurationMs + 'ms (new remaining: ' + Math.round(newRemaining / 1000) + 's)'
+          );
+        },
         message: message,
         startTime: Date.now(),
       };
 
       if (message.type === "output") {
-        p.catch(function () {});
+        p.catch(function () { });
       }
 
-      this._throttledPublish(this._cmdChannel, "command", message)
+      this._throttledPublish(this._sessionChannel, "command", message)
         .then(function () {
           emitter.emit(events.sandbox.sent, message);
         })
@@ -800,7 +1218,9 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         this._publishWindowStart = Date.now();
       }
 
-      return channel.publish(eventName, message);
+      return channel.publish(eventName, message).then(function () {
+        logger.debug(`[realtime] Published: channel=${channel.name.split(':').pop()}, event=${eventName}, type=${message.type || 'unknown'} (requestId=${message.requestId || 'none'})`);
+      });
     }
 
     async auth(apiKey) {
@@ -829,7 +1249,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           logger.log("Trace Report (Share When Reporting Bugs):");
           logger.log(
             "https://testdriver.sentry.io/explore/traces/trace/" +
-              reply.traceId,
+            reply.traceId,
           );
         }
 
@@ -872,7 +1292,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._sandboxId = reply.sandboxId;
 
       if (reply.ably && reply.ably.token) {
-        await this._initAbly(reply.ably.token, reply.ably.channels);
+        await this._initAbly(reply.ably.token, reply.ably.channel);
       }
 
       this.setConnectionParams({
@@ -921,38 +1341,43 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         clearInterval(this.heartbeat);
         this.heartbeat = null;
       }
+      if (this._statsInterval) {
+        clearInterval(this._statsInterval);
+        this._statsInterval = null;
+      }
 
       // Send end-session control message to runner before disconnecting
-      if (this._ctrlChannel && this._ably?.connection?.state === 'connected') {
+      if (this._sessionChannel && this._ably?.connection?.state === 'connected') {
         try {
-          await this._ctrlChannel.publish('control', { type: 'end-session' });
+          logger.debug('[realtime] Publishing control: type=end-session');
+          await this._sessionChannel.publish('control', { type: 'end-session' });
         } catch (e) {
           // Ignore - best effort
         }
       }
 
-      // Leave presence on control channel
-      if (this._ctrlChannel) {
+      // Leave presence on session channel
+      if (this._sessionChannel) {
         try {
-          await this._ctrlChannel.presence.leave();
+          logger.debug('[realtime] Leaving presence on session channel');
+          await this._sessionChannel.presence.leave();
         } catch (e) {
           // ignore - best effort, Ably will auto-leave on disconnect
         }
       }
 
       try {
-        await Promise.allSettled([
-          this._cmdChannel?.detach(),
-          this._respChannel?.detach(),
-          this._ctrlChannel?.detach(),
-          this._filesChannel?.detach(),
-        ].filter(Boolean));
+        logger.debug('[realtime] Detaching session channel');
+        if (this._sessionChannel) {
+          await this._sessionChannel.detach();
+        }
       } catch (e) {
         /* ignore */
       }
 
       if (this._ably) {
         try {
+          logger.debug('[realtime] Closing Realtime connection');
           this._ably.close();
         } catch (e) {
           /* ignore */
@@ -960,11 +1385,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         this._ably = null;
       }
 
-      this._cmdChannel = null;
-      this._respChannel = null;
-      this._ctrlChannel = null;
-      this._filesChannel = null;
-      this._channelNames = null;
+      this._sessionChannel = null;
+      this._channelName = null;
       this.apiSocketConnected = false;
       this.instanceSocketConnected = false;
       this.authenticated = false;
@@ -974,8 +1396,65 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
     }
 
     /**
+     * Send pre-generated PowerShell commands to an EC2 instance via AWS SSM.
+     * The commands are generated by the API (sdk/agent/lib/provision-commands.js)
+     * so provisioning logic lives in one place.
+     */
+    async _sendSSMCommands(instanceId, commands) {
+      const { execSync } = require('child_process');
+      const { writeFileSync, unlinkSync } = require('fs');
+      const { join } = require('path');
+      const { tmpdir } = require('os');
+      const { randomUUID } = require('crypto');
+
+      const region = process.env.AWS_REGION || 'us-east-2';
+      const paramsJson = JSON.stringify({ commands: commands });
+      const tmpFile = join(tmpdir(), 'td-provision-' + randomUUID() + '.json');
+      writeFileSync(tmpFile, paramsJson);
+
+      try {
+        const output = execSync(
+          'aws ssm send-command --region "' + region + '" --instance-ids "' + instanceId + '" ' +
+          '--document-name "AWS-RunPowerShellScript" ' +
+          '--parameters file://' + tmpFile + ' --output json',
+          { encoding: 'utf-8', timeout: 30000 }
+        );
+        var cmdId = JSON.parse(output).Command.CommandId;
+        logger.log('SSM command sent: ' + cmdId);
+
+        // Wait for the command to complete
+        execSync(
+          'aws ssm wait command-executed --region "' + region + '" ' +
+          '--command-id "' + cmdId + '" --instance-id "' + instanceId + '"',
+          { encoding: 'utf-8', timeout: 300000 } // 5 min — runner install can take a while
+        );
+
+        // Get the command output for debugging
+        try {
+          var invocationOutput = execSync(
+            'aws ssm get-command-invocation --region "' + region + '" ' +
+            '--command-id "' + cmdId + '" --instance-id "' + instanceId + '" --output json',
+            { encoding: 'utf-8', timeout: 30000 }
+          );
+          var invocation = JSON.parse(invocationOutput);
+          if (invocation.StandardOutputContent) {
+            logger.log('SSM output:\n' + invocation.StandardOutputContent);
+          }
+          if (invocation.StandardErrorContent) {
+            logger.warn('SSM errors:\n' + invocation.StandardErrorContent);
+          }
+        } catch (e) {
+          logger.warn('Could not retrieve SSM command output: ' + e.message);
+        }
+      } finally {
+        try { unlinkSync(tmpFile); } catch (e) { /* ignore */ }
+      }
+    }
+
+    /**
      * Write the agent config JSON to an EC2 instance via AWS SSM.
      * Runs client-side so the API doesn't need AWS permissions on user infra.
+     * LEGACY: Used when connecting to an API that doesn't return provisionCommands.
      */
     async _provisionAgentConfig(instanceId, agentConfig) {
       const { execSync } = require('child_process');
@@ -987,14 +1466,55 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       const region = process.env.AWS_REGION || 'us-east-2';
 
       // Write SSM parameters to a temp file to avoid shell quoting issues
+      // Log key config details for debugging
+      logger.log('Agent config being provisioned:');
+      logger.log('  sandboxId: ' + agentConfig.sandboxId);
+      logger.log('  apiRoot: ' + agentConfig.apiRoot);
+      logger.log('  channel: ' + (agentConfig.ably?.channel || 'N/A'));
+      logger.log('  token length: ' + (agentConfig.ably?.token ? JSON.stringify(agentConfig.ably.token).length : 0));
+
       const paramsJson = JSON.stringify({
         commands: [
+          // Debug: show existing state
+          "Write-Host '=== Checking existing state ==='",
+          "$task = Get-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
+          "if ($task) { Write-Host \"Task exists, state: $($task.State)\" } else { Write-Host 'Task does NOT exist!' }",
+          "if (Test-Path 'C:\\Windows\\Temp\\testdriver-agent.json') { Write-Host 'Old config:'; Get-Content 'C:\\Windows\\Temp\\testdriver-agent.json' | Write-Host } else { Write-Host 'Config file does NOT exist yet' }",
+          // Stop any running runner
+          "Write-Host '=== Stopping runner ==='",
+          "Stop-Process -Name node -Force -ErrorAction SilentlyContinue",
+          "Stop-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
+          // Write config
+          "Write-Host '=== Writing config ==='",
           "$config = '" + configJson.replace(/'/g, "''") + "'",
           "[System.IO.File]::WriteAllText('C:\\Windows\\Temp\\testdriver-agent.json', $config)",
           "Write-Host 'Config written for sandbox " + agentConfig.sandboxId + "'",
+          // Show what was written (redact token)
+          "Write-Host '=== New config (token redacted) ==='",
+          "$cfg = Get-Content 'C:\\Windows\\Temp\\testdriver-agent.json' | ConvertFrom-Json",
+          "Write-Host \"sandboxId: $($cfg.sandboxId)\"",
+          "Write-Host \"apiRoot: $($cfg.apiRoot)\"",
+          "Write-Host \"channel: $($cfg.ably.channel)\"",
+          "Write-Host \"token type: $($cfg.ably.token.GetType().Name)\"",
+          // Start the runner
+          "Write-Host '=== Starting runner ==='",
+          "Start-Sleep -Seconds 1",
+          "Start-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction Stop",
+          "$task = Get-ScheduledTask -TaskName RunTestDriverAgent",
+          "Write-Host \"Task state after start: $($task.State)\"",
+          // Check if node process started
+          "Start-Sleep -Seconds 3",
+          "Write-Host '=== Checking runner process ==='",
+          "$procs = Get-Process -Name node -ErrorAction SilentlyContinue",
+          "if ($procs) { Write-Host \"Node processes: $($procs.Count)\"; $procs | ForEach-Object { Write-Host \"  PID: $($_.Id), StartTime: $($_.StartTime)\" } } else { Write-Host 'No node process found!' }",
+          // Check runner logs
+          "Write-Host '=== Runner log (last 30 lines) ==='",
+          "if (Test-Path 'C:\\testdriver\\logs\\sandbox-agent.log') { Get-Content 'C:\\testdriver\\logs\\sandbox-agent.log' -Tail 30 | Write-Host } else { Write-Host 'No log file found' }",
+          "Write-Host '=== Done ==='",
         ],
       });
-      const tmpFile = join(tmpdir(), 'td-provision-' + Date.now() + '.json');
+      const { randomUUID } = require('crypto');
+      const tmpFile = join(tmpdir(), 'td-provision-' + randomUUID() + '.json');
       writeFileSync(tmpFile, paramsJson);
 
       try {
@@ -1013,6 +1533,24 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           '--command-id "' + cmdId + '" --instance-id "' + instanceId + '"',
           { encoding: 'utf-8', timeout: 60000 }
         );
+
+        // Get the command output for debugging
+        try {
+          const invocationOutput = execSync(
+            'aws ssm get-command-invocation --region "' + region + '" ' +
+            '--command-id "' + cmdId + '" --instance-id "' + instanceId + '" --output json',
+            { encoding: 'utf-8', timeout: 30000 }
+          );
+          const invocation = JSON.parse(invocationOutput);
+          if (invocation.StandardOutputContent) {
+            logger.log('SSM output:\n' + invocation.StandardOutputContent);
+          }
+          if (invocation.StandardErrorContent) {
+            logger.warn('SSM errors:\n' + invocation.StandardErrorContent);
+          }
+        } catch (e) {
+          logger.warn('Could not retrieve SSM command output: ' + e.message);
+        }
       } finally {
         try { unlinkSync(tmpFile); } catch (e) { /* ignore */ }
       }

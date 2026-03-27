@@ -7,6 +7,7 @@
  */
 
 const useStderr = process.env.TD_STDIO === 'stderr';
+const isDebug = process.env.TD_DEBUG === 'true' || process.env.VERBOSE === 'true';
 
 /**
  * Log a message - uses stdout by default, stderr if TD_STDIO=stderr
@@ -41,6 +42,19 @@ function warn(...args) {
 }
 
 /**
+ * Log a debug message - only outputs when DEBUG=true
+ * @param {...any} args - Arguments to log
+ */
+function debug(...args) {
+  if (!isDebug) return;
+  if (useStderr) {
+    console.error(...args);
+  } else {
+    console.log(...args);
+  }
+}
+
+/**
  * Check if logger is configured to use stderr
  * @returns {boolean}
  */
@@ -50,6 +64,7 @@ function isStderrMode() {
 
 module.exports = {
   log,
+  debug,
   error,
   warn,
   isStderrMode,

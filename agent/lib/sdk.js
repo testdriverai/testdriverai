@@ -1,5 +1,5 @@
 const { events } = require("../events");
-const crypto = require("crypto");
+const { getSentryTraceHeaders } = require("./http");
 
 // get the version from package.json
 const { version } = require("../../package.json");
@@ -112,25 +112,6 @@ async function withRetry(fn, options = {}) {
   }
   
   throw lastError;
-}
-
-/**
- * Generate Sentry trace headers for distributed tracing
- * Uses the same trace ID derivation as the API (MD5 hash of session ID)
- * @param {string} sessionId - The session ID
- * @returns {Object} Headers object with sentry-trace and baggage
- */
-function getSentryTraceHeaders(sessionId) {
-  if (!sessionId) return {};
-  
-  // Same logic as API: derive trace ID from session ID
-  const traceId = crypto.createHash('md5').update(sessionId).digest('hex');
-  const spanId = crypto.randomBytes(8).toString('hex');
-  
-  return {
-    'sentry-trace': `${traceId}-${spanId}-1`,
-    'baggage': `sentry-trace_id=${traceId},sentry-sample_rate=1.0,sentry-sampled=true`
-  };
 }
 
 // Factory function that creates SDK with the provided emitter, config, and session

@@ -49,8 +49,8 @@ const element = await testdriver.find(description, options)
       - `"any"` — No wrapping, uses the description as-is (default behavior)
     </ParamField>
     
-    <ParamField path="zoom" type="boolean" default={false}>
-      Enable two-phase zoom mode for better precision in crowded UIs with many similar elements.
+    <ParamField path="zoom" type="boolean" default={true}>
+      Two-phase zoom mode for better precision in crowded UIs with many similar elements. Enabled by default.
     </ParamField>
     
     <ParamField path="ai" type="object">
@@ -332,14 +332,19 @@ The `timeout` option:
 - Returns the element (check `element.found()` if not throwing on failure)
 - Set to `0` to disable polling and make a single attempt
 
-## Zoom Mode for Crowded UIs
+## Zoom Mode
 
-When dealing with many similar icons or elements clustered together (like browser toolbars), enable `zoom` mode for better precision:
+Zoom mode is **enabled by default**. It uses a two-phase approach for better precision when locating elements, especially in crowded UIs with many similar elements.
+
+To disable zoom for a specific find call, pass `zoom: false`:
 
 ```javascript
-// Enable zoom for better precision in crowded UIs
-const extensionsBtn = await testdriver.find('extensions puzzle icon in Chrome toolbar', { zoom: true });
+// Zoom is on by default — no option needed
+const extensionsBtn = await testdriver.find('extensions puzzle icon in Chrome toolbar');
 await extensionsBtn.click();
+
+// Disable zoom for a specific call if needed
+const largeButton = await testdriver.find('big hero button', { zoom: false });
 ```
 
 ### How Zoom Mode Works
@@ -352,21 +357,10 @@ await extensionsBtn.click();
 This two-phase approach gives the AI a higher-resolution view of the target area, improving accuracy when multiple similar elements are close together.
 
 <Tip>
-  Use `zoom: true` when:
-  - Clicking small icons in toolbars
-  - Selecting from a grid of similar items
-  - Targeting elements in dense UI areas
-  - The default locate is clicking the wrong similar element
-  - You get an AI verification rejection like "The crosshair is located in the empty space of the browser's tab bar/title bar area" — this means the initial locate was imprecise and zoom will help the AI pinpoint the correct element
+  You may want to disable zoom with `zoom: false` when:
+  - Targeting large, isolated elements where the extra precision isn't needed
+  - You want to speed up find calls in simple UIs
 </Tip>
-
-```javascript
-// Without zoom - may click wrong icon in toolbar
-const icon = await testdriver.find('settings icon');
-
-// With zoom - better precision for crowded areas
-const icon = await testdriver.find('settings icon', { zoom: true });
-```
 
 ## Cache Options
 

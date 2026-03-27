@@ -16,7 +16,7 @@ describe("Scroll Keyboard Test", () => {
     // Navigate to https://www.webhamster.com/
     await testdriver.focusApplication("Google Chrome");
     const urlBar = await testdriver.find(
-      "testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page", {zoom: true}
+      "the URL in the omnibox", {zoom: true}
     );
     await urlBar.click();
     await testdriver.pressKeys(["ctrl", "a"]);

@@ -1,39 +1,33 @@
 #!/usr/bin/env node
 
 /**
- * Extract Example URLs from CI Logs
- * 
- * Parses vitest output to extract TESTDRIVER_EXAMPLE_URL lines
- * and updates the examples-manifest.json file.
- * 
+ * Extract Example URLs from Test Result JSON Files
+ *
+ * Reads per-test-case JSON result files written by the vitest plugin
+ * to .testdriver/results/ and updates examples-manifest.json.
+ *
  * Usage:
- *   cat ci-log.txt | node extract-example-urls.js
- *   node extract-example-urls.js < ci-log.txt
- *   node extract-example-urls.js --file=ci-log.txt
+ *   node extract-example-urls.js --results-dir=.testdriver/results
  */
 
 const fs = require("fs");
 const path = require("path");
-const readline = require("readline");
 
 const MANIFEST_PATH = path.join(__dirname, "../_data/examples-manifest.json");
-
-// Regex to match TESTDRIVER_EXAMPLE_URL::filename::url (handles optional timestamp prefix from CI logs)
-const URL_PATTERN = /TESTDRIVER_EXAMPLE_URL::([^:]+)::(.+)$/;
 
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
-    file: null,
+    resultsDir: null,
     help: false,
   };
 
   for (const arg of args) {
     if (arg === "--help" || arg === "-h") {
       options.help = true;
-    } else if (arg.startsWith("--file=")) {
-      options.file = arg.slice(7);
+    } else if (arg.startsWith("--results-dir=")) {
+      options.resultsDir = arg.slice(14);
     }
   }
 
@@ -62,40 +56,51 @@ function saveManifest(manifest) {
   fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + "\n", "utf-8");
 }
 
-// Process a single line and extract URL if present
-function processLine(line, manifest, stats) {
-  const match = line.match(URL_PATTERN);
-  if (match) {
-    const [, filename, url] = match;
-    const isNew = !manifest.examples[filename];
-    
-    manifest.examples[filename] = {
-      url: url.trim(),
-      lastUpdated: new Date().toISOString(),
-    };
-    
-    if (isNew) {
-      stats.added++;
-    } else {
-      stats.updated++;
-    }
-    
-    console.log(`${isNew ? "➕" : "🔄"} ${filename}: ${url}`);
-  }
-}
-
-// Process input stream
-async function processInput(inputStream) {
+// Process JSON result files from .testdriver/results/
+function processResultsDir(resultsDir) {
   const manifest = loadManifest();
   const stats = { added: 0, updated: 0 };
 
-  const rl = readline.createInterface({
-    input: inputStream,
-    crlfDelay: Infinity,
-  });
+  // Look for JSON files under examples/ subdirectories
+  const examplesDir = path.join(resultsDir, "examples");
+  if (!fs.existsSync(examplesDir)) {
+    console.log(`\n⚠️  No examples results found in ${examplesDir}`);
+    return stats;
+  }
 
-  for await (const line of rl) {
-    processLine(line, manifest, stats);
+  // Walk example test directories (e.g., examples/assert.test.mjs/)
+  const testDirs = fs.readdirSync(examplesDir, { withFileTypes: true });
+  for (const entry of testDirs) {
+    if (!entry.isDirectory()) continue;
+    const testDir = path.join(examplesDir, entry.name);
+    const jsonFiles = fs.readdirSync(testDir).filter(f => f.endsWith(".json"));
+
+    for (const jsonFile of jsonFiles) {
+      try {
+        const content = fs.readFileSync(path.join(testDir, jsonFile), "utf-8");
+        const result = JSON.parse(content);
+        const testFileName = path.basename(result.test?.file || result.testFile || entry.name);
+        const url = result.urls?.testRun || result.testRunLink;
+
+        if (!url) continue;
+
+        const isNew = !manifest.examples[testFileName];
+        manifest.examples[testFileName] = {
+          url: url,
+          lastUpdated: result.date || new Date().toISOString(),
+        };
+
+        if (isNew) {
+          stats.added++;
+        } else {
+          stats.updated++;
+        }
+
+        console.log(`${isNew ? "➕" : "🔄"} ${testFileName}: ${url}`);
+      } catch (err) {
+        console.warn(`⚠️  Failed to read ${jsonFile}: ${err.message}`);
+      }
+    }
   }
 
   if (stats.added > 0 || stats.updated > 0) {
@@ -103,7 +108,7 @@ async function processInput(inputStream) {
     console.log(`\n✨ Manifest updated: ${stats.added} added, ${stats.updated} updated`);
     console.log(`📂 Written to: ${MANIFEST_PATH}`);
   } else {
-    console.log("\n⚠️  No TESTDRIVER_EXAMPLE_URL entries found in input");
+    console.log("\n⚠️  No example URLs found in result files");
   }
 
   return stats;
@@ -112,28 +117,24 @@ async function processInput(inputStream) {
 // Show help
 function showHelp() {
   console.log(`
-Extract Example URLs from CI Logs
+Extract Example URLs from Test Result JSON Files
 
 Usage:
-  cat ci-log.txt | node extract-example-urls.js
-  node extract-example-urls.js < ci-log.txt
-  node extract-example-urls.js --file=ci-log.txt
+  node extract-example-urls.js --results-dir=.testdriver/results
 
 Options:
-  --file=<path>   Read from file instead of stdin
-  --help, -h      Show this help message
+  --results-dir=<path>  Path to .testdriver/results directory (required)
+  --help, -h            Show this help message
 
 Description:
-  Parses CI log output looking for lines matching:
-    TESTDRIVER_EXAMPLE_URL::<filename>::<url>
-  
-  Updates docs/_data/examples-manifest.json with the extracted URLs.
+  Reads per-test-case JSON result files from .testdriver/results/examples/
+  and updates docs/_data/examples-manifest.json with the extracted URLs.
   Existing entries are updated, new entries are added.
 `);
 }
 
 // Main function
-async function main() {
+function main() {
   const options = parseArgs();
 
   if (options.help) {
@@ -141,25 +142,19 @@ async function main() {
     process.exit(0);
   }
 
-  console.log("🔍 Extracting example URLs from input...\n");
-
-  let inputStream;
-  if (options.file) {
-    if (!fs.existsSync(options.file)) {
-      console.error(`❌ File not found: ${options.file}`);
-      process.exit(1);
-    }
-    inputStream = fs.createReadStream(options.file);
-  } else {
-    inputStream = process.stdin;
-  }
-
-  try {
-    await processInput(inputStream);
-  } catch (error) {
-    console.error(`❌ Error: ${error.message}`);
+  if (!options.resultsDir) {
+    console.error("❌ --results-dir is required. Example: --results-dir=.testdriver/results");
     process.exit(1);
   }
+
+  console.log("🔍 Reading example URLs from JSON result files...\n");
+
+  if (!fs.existsSync(options.resultsDir)) {
+    console.error(`❌ Results directory not found: ${options.resultsDir}`);
+    process.exit(1);
+  }
+
+  processResultsDir(options.resultsDir);
 }
 
 main();

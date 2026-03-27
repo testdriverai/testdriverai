@@ -70,6 +70,7 @@ class TestDriverAgent extends EventEmitter2 {
     this.sandboxId = flags["sandbox-id"] || null;
     this.sandboxAmi = flags["sandbox-ami"] || null;
     this.sandboxInstance = flags["sandbox-instance"] || null;
+    this.e2bTemplateId = flags["e2b-template-id"] || null;
     this.sandboxOs = flags.os || "linux";
     this.ip = flags.ip || null;
     this.workingDir = flags.workingDir || process.cwd();
@@ -209,6 +210,14 @@ class TestDriverAgent extends EventEmitter2 {
       } catch (err) {
         // Ignore sandbox close errors during exit
       }
+    }
+
+    // End the Sentry root session span so the trace is finalized
+    try {
+      const sentry = require("../lib/sentry");
+      sentry.clearSessionTraceContext(this.session && this.session.get());
+    } catch (e) {
+      // Sentry module may not be available, ignore
     }
 
     shouldRunPostrun =
@@ -2187,6 +2196,9 @@ Please check your network connection, TD_API_KEY, or the service status.`,
     }
     if (this.sandboxInstance) {
       sandboxConfig.instanceType = this.sandboxInstance;
+    }
+    if (this.e2bTemplateId) {
+      sandboxConfig.e2bTemplateId = this.e2bTemplateId;
     }
     // Add keepAlive TTL if specified
     if (this.keepAlive !== undefined && this.keepAlive !== null) {

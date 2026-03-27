@@ -141,6 +141,171 @@ while :; do
   sleep 20
 done
 
+# --- 4) Install/update runner ---
+echo "Installing runner..."
+
+# Determine environment and version
+TD_CHANNEL="${TD_CHANNEL:-stable}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SDK_PKG_JSON="${SCRIPT_DIR}/../../../sdk/package.json"
+RUNNER_DIR="${SCRIPT_DIR}/../../../runner"
+
+if [ -f "$SDK_PKG_JSON" ]; then
+  RUNNER_VERSION=$(jq -r '.version' "$SDK_PKG_JSON")
+  echo "Runner version from SDK: $RUNNER_VERSION"
+else
+  RUNNER_VERSION="$TD_CHANNEL"
+  echo "SDK package.json not found, using env tag: $RUNNER_VERSION"
+fi
+
+if [ "$TD_CHANNEL" = "dev" ]; then
+  echo "Dev mode: packing and uploading local runner to S3..."
+  
+  # Pack local runner
+  TMPDIR=$(mktemp -d)
+  pushd "$RUNNER_DIR" > /dev/null
+  npm pack --pack-destination "$TMPDIR" > /dev/null 2>&1
+  TARBALL=$(ls "$TMPDIR"/*.tgz | head -1)
+  popd > /dev/null
+  
+  # Upload to S3
+  S3_BUCKET="${AWS_BUCKET_IMAGE_TRANSFER:-v7-transfer}"
+  S3_KEY="runner-dev/$(date +%s)-$(openssl rand -hex 4)/runner.tgz"
+  aws s3 cp "$TARBALL" "s3://${S3_BUCKET}/${S3_KEY}" --region "$AWS_REGION"
+  
+  # Generate presigned URL (15 min)
+  DOWNLOAD_URL=$(aws s3 presign "s3://${S3_BUCKET}/${S3_KEY}" --expires-in 900 --region "$AWS_REGION")
+  rm -rf "$TMPDIR"
+  
+  # Build SSM parameters JSON in a temp file to avoid shell escaping issues with URL
+  PARAMS_FILE=$(mktemp)
+  cat > "$PARAMS_FILE" << 'PARAMS_EOF'
+{
+  "commands": [
+    "Write-Host '=== Starting runner dev install ==='",
+    "Write-Host 'Stopping existing runner processes...'",
+    "Stop-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
+    "Stop-Process -Name node -Force -ErrorAction SilentlyContinue",
+    "Start-Sleep -Seconds 2",
+    "Write-Host 'Current runner version:'",
+    "Get-Content 'C:\\testdriver\\sandbox-agent\\package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Set-Location 'C:\\testdriver\\sandbox-agent'",
+    "Write-Host 'Dev mode: downloading runner from S3...'",
+    "$tarball = 'C:\\Windows\\Temp\\runner-dev.tgz'",
+PARAMS_EOF
+  
+  # Add the URL line with proper JSON escaping
+  echo "    \"Invoke-WebRequest -Uri '$(echo "$DOWNLOAD_URL" | sed 's/"/\\"/g')' -OutFile \$tarball\"," >> "$PARAMS_FILE"
+  
+  cat >> "$PARAMS_FILE" << 'PARAMS_EOF'
+    "Write-Host 'Downloaded tarball size:'",
+    "(Get-Item $tarball).Length",
+    "Write-Host 'Extracting runner...'",
+    "tar -xzf $tarball -C 'C:\\Windows\\Temp'",
+    "Write-Host 'Extracted package contents:'",
+    "Get-ChildItem 'C:\\Windows\\Temp\\package' -Recurse | Select-Object FullName",
+    "Write-Host 'New runner version in package:'",
+    "Get-Content 'C:\\Windows\\Temp\\package\\package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Write-Host 'Clearing old lib folder...'",
+    "Remove-Item 'C:\\testdriver\\sandbox-agent\\lib' -Recurse -Force -ErrorAction SilentlyContinue",
+    "Write-Host 'Copying files to sandbox-agent...'",
+    "xcopy 'C:\\Windows\\Temp\\package\\*' 'C:\\testdriver\\sandbox-agent\\' /E /Y /I",
+    "Write-Host 'Files after copy:'",
+    "Get-ChildItem 'C:\\testdriver\\sandbox-agent' | Select-Object Name",
+    "Remove-Item 'C:\\Windows\\Temp\\package' -Recurse -Force -ErrorAction SilentlyContinue",
+    "Remove-Item $tarball -Force -ErrorAction SilentlyContinue",
+    "Write-Host 'Runner version after copy:'",
+    "Get-Content 'C:\\testdriver\\sandbox-agent\\package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Write-Host 'Installing npm dependencies...'",
+    "npm install --omit=dev 2>&1 | Write-Host",
+    "Write-Host 'Final verification - ably-service.js exists:'",
+    "Test-Path 'C:\\testdriver\\sandbox-agent\\lib\\ably-service.js'",
+    "Write-Host 'Restarting RunTestDriverAgent scheduled task...'",
+    "Start-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
+    "Write-Host '=== Runner install complete (dev) ==='"
+  ]
+}
+PARAMS_EOF
+
+  echo "Sending SSM command to download and install runner from S3..."
+  INSTALL_CMD=$(aws ssm send-command \
+    --region "$AWS_REGION" \
+    --instance-ids "$INSTANCE_ID" \
+    --document-name "AWS-RunPowerShellScript" \
+    --parameters "file://$PARAMS_FILE" \
+    --timeout-seconds 180 \
+    --output json)
+  rm -f "$PARAMS_FILE"
+else
+  echo "Installing @testdriverai/runner@${RUNNER_VERSION} via npm pack + extract..."
+
+  # Build SSM parameters JSON in a temp file (same approach as dev mode)
+  PARAMS_FILE=$(mktemp)
+  cat > "$PARAMS_FILE" << PARAMS_EOF
+{
+  "commands": [
+    "Write-Host '=== Starting runner install (npm pack) ==='",
+    "Write-Host 'Stopping existing runner processes...'",
+    "Stop-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
+    "Stop-Process -Name node -Force -ErrorAction SilentlyContinue",
+    "Start-Sleep -Seconds 2",
+    "Write-Host 'Current runner version:'",
+    "Get-Content 'C:\\\\testdriver\\\\sandbox-agent\\\\package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Set-Location 'C:\\\\Windows\\\\Temp'",
+    "Write-Host 'Downloading @testdriverai/runner@${RUNNER_VERSION} via npm pack...'",
+    "npm pack @testdriverai/runner@${RUNNER_VERSION} 2>&1 | Write-Host",
+    "\$tarball = (Get-ChildItem 'C:\\\\Windows\\\\Temp\\\\testdriverai-runner-*.tgz' | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName",
+    "Write-Host \"Downloaded tarball: \$tarball\"",
+    "Write-Host 'Extracting runner...'",
+    "tar -xzf \$tarball -C 'C:\\\\Windows\\\\Temp'",
+    "Write-Host 'New runner version in package:'",
+    "Get-Content 'C:\\\\Windows\\\\Temp\\\\package\\\\package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Write-Host 'Clearing old lib folder...'",
+    "Remove-Item 'C:\\\\testdriver\\\\sandbox-agent\\\\lib' -Recurse -Force -ErrorAction SilentlyContinue",
+    "Write-Host 'Copying files to sandbox-agent...'",
+    "xcopy 'C:\\\\Windows\\\\Temp\\\\package\\\\*' 'C:\\\\testdriver\\\\sandbox-agent\\\\' /E /Y /I",
+    "Write-Host 'Runner version after copy:'",
+    "Get-Content 'C:\\\\testdriver\\\\sandbox-agent\\\\package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Remove-Item 'C:\\\\Windows\\\\Temp\\\\package' -Recurse -Force -ErrorAction SilentlyContinue",
+    "Remove-Item \$tarball -Force -ErrorAction SilentlyContinue",
+    "Set-Location 'C:\\\\testdriver\\\\sandbox-agent'",
+    "Write-Host 'Installing npm dependencies...'",
+    "npm install --omit=dev 2>&1 | Write-Host",
+    "Write-Host 'Restarting RunTestDriverAgent scheduled task...'",
+    "Start-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
+    "Write-Host '=== Runner install complete (npm pack) ==='"
+  ]
+}
+PARAMS_EOF
+
+  INSTALL_CMD=$(aws ssm send-command \
+    --region "$AWS_REGION" \
+    --instance-ids "$INSTANCE_ID" \
+    --document-name "AWS-RunPowerShellScript" \
+    --parameters "file://$PARAMS_FILE" \
+    --timeout-seconds 180 \
+    --output json)
+  rm -f "$PARAMS_FILE"
+fi
+
+INSTALL_CMD_ID=$(jq -r '.Command.CommandId' <<<"$INSTALL_CMD")
+echo "Runner install command sent (Command ID: $INSTALL_CMD_ID)"
+
+# Wait for install to complete
+echo "Waiting for runner install to complete..."
+if aws ssm wait command-executed --region "$AWS_REGION" --command-id "$INSTALL_CMD_ID" --instance-id "$INSTANCE_ID" 2>/dev/null; then
+  echo "✓ Runner install succeeded"
+else
+  INSTALL_STATUS=$(aws ssm get-command-invocation \
+    --region "$AWS_REGION" \
+    --command-id "$INSTALL_CMD_ID" \
+    --instance-id "$INSTANCE_ID" \
+    --output json 2>/dev/null || echo '{}')
+  echo "⚠ Runner install status: $(jq -r '.Status // "Unknown"' <<<"$INSTALL_STATUS")"
+  echo "Output: $(jq -r '.StandardOutputContent // "No output"' <<<"$INSTALL_STATUS" | head -20)"
+  echo "Errors: $(jq -r '.StandardErrorContent // "No errors"' <<<"$INSTALL_STATUS" | head -10)"
+fi
+
 echo "Getting Public IP..."
 
 # --- 5) Get instance Public IP ---
