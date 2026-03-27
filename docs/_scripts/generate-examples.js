@@ -297,8 +297,9 @@ function updateExistingMDX(existingContent, filename, testcaseId) {
   const replayUrl = generateReplayUrl(testcaseId);
   
   // Pattern to match the marker followed by the iframe tag
+  const escapedFilename = filename.replace(/\./g, '\\.');
   const pattern = new RegExp(
-    `(\\{/\\* ${filename.replace('.', '\\.')} output \\*/\\}\\s*)<iframe[^>]*src="[^"]*"([^]*)/>`,
+    `(\\{/\\* ${escapedFilename} output \\*/\\}\\s*)<iframe[^>]*src="[^"]*"([^]*?)/>`,
     's'
   );
   
@@ -310,6 +311,25 @@ function updateExistingMDX(existingContent, filename, testcaseId) {
   }
   
   return updated;
+}
+
+// Update the source code block in an existing MDX file with fresh content from the test file
+function updateSourceCodeBlock(existingContent, testMeta) {
+  const escapedFilename = testMeta.filename.replace(/\./g, '\\.');
+  const codeBlockPattern = new RegExp(
+    '(```javascript\\s+title="' + escapedFilename + '"[^\\n]*\\n)[\\s\\S]*?(\\n```)',
+    ''
+  );
+
+  const match = existingContent.match(codeBlockPattern);
+  if (!match) {
+    return null;
+  }
+
+  return existingContent.replace(
+    codeBlockPattern,
+    `$1${testMeta.content.trim()}$2`
+  );
 }
 
 // Generate MDX content
@@ -399,13 +419,29 @@ function updateDocsNavigation(docsJson, examplePages, options) {
     return false;
   }
 
-  // Find or create Examples group
-  let examplesGroup = v7Version.groups.find((g) => 
-    g.group === "Examples" || 
-    (typeof g === "object" && g.group === "Examples")
+  // Find Examples group - it may be nested inside Overview's pages
+  const examplesPages = examplePages.map((slug) => `/v7/examples/${slug}`);
+  let examplesGroup = null;
+
+  // Search top-level groups first
+  examplesGroup = v7Version.groups.find((g) =>
+    typeof g === "object" && g.group === "Examples"
   );
 
-  const examplesPages = examplePages.map((slug) => `/v7/examples/${slug}`);
+  // If not found at top level, search inside each group's pages (nested groups)
+  if (!examplesGroup) {
+    for (const group of v7Version.groups) {
+      if (group.pages) {
+        const nested = group.pages.find((p) =>
+          typeof p === "object" && p.group === "Examples"
+        );
+        if (nested) {
+          examplesGroup = nested;
+          break;
+        }
+      }
+    }
+  }
 
   if (examplesGroup) {
     // Update existing group
@@ -414,20 +450,22 @@ function updateDocsNavigation(docsJson, examplePages, options) {
       console.log("🔄 Updated existing Examples group in navigation");
     }
   } else {
-    // Create new group after Overview
-    const overviewIndex = v7Version.groups.findIndex((g) => g.group === "Overview");
+    // Create new group nested inside Overview
+    const overviewGroup = v7Version.groups.find((g) => g.group === "Overview");
     const newGroup = {
       group: "Examples",
       icon: "code",
       pages: examplesPages,
     };
-    
-    if (overviewIndex !== -1) {
-      v7Version.groups.splice(overviewIndex + 1, 0, newGroup);
+
+    if (overviewGroup && overviewGroup.pages) {
+      // Insert after the second page in Overview (after what-is-testdriver)
+      const insertIdx = Math.min(2, overviewGroup.pages.length);
+      overviewGroup.pages.splice(insertIdx, 0, newGroup);
     } else {
       v7Version.groups.push(newGroup);
     }
-    
+
     if (options.verbose) {
       console.log("➕ Added new Examples group to navigation");
     }
@@ -439,7 +477,7 @@ function updateDocsNavigation(docsJson, examplePages, options) {
 // Show help
 function showHelp() {
   console.log(`
-Update Example Docs Iframe URLs
+Update Example Docs from Test Files
 
 Usage:
   node generate-examples.js [options]
@@ -453,12 +491,16 @@ Environment Variables:
   TD_API_ROOT       API root URL (default: https://api.testdriver.ai)
 
 Description:
-  Reads existing MDX files in docs/v7/examples/ and updates the iframe
-  src URLs based on the examples-manifest.json.
+  Reads example test files and updates/generates MDX documentation pages.
   
-  Files must contain a marker comment like: {/* filename.test.mjs output */}
-  The iframe following the marker will have its src updated to the
-  API replay endpoint.
+  For existing MDX files:
+    - Updates the source code block from the test file
+    - Updates the iframe src URL from examples-manifest.json
+  
+  For new test files without an MDX page:
+    - Generates a new MDX documentation page
+  
+  Also updates the docs.json navigation with the current example pages.
 `);
 }
 
@@ -471,7 +513,7 @@ async function main() {
     process.exit(0);
   }
 
-  console.log("🚀 Updating example documentation iframes...\n");
+  console.log("🚀 Updating example documentation...\n");
 
   if (options.dryRun) {
     console.log("📋 DRY RUN - no files will be written\n");
@@ -480,67 +522,92 @@ async function main() {
   // Load manifest
   const manifest = loadManifest();
 
-  // Get existing MDX files in output directory
-  const existingFiles = fs.existsSync(OUTPUT_DIR) 
-    ? fs.readdirSync(OUTPUT_DIR).filter((f) => f.endsWith(".mdx"))
-    : [];
+  // Get all test files
+  const testFiles = getExampleFiles();
+  console.log(`📂 Found ${testFiles.length} example test files\n`);
 
-  console.log(`📂 Found ${existingFiles.length} existing MDX files\n`);
+  // Ensure output dir exists
+  if (!fs.existsSync(OUTPUT_DIR)) {
+    fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  }
 
   let updated = 0;
+  let created = 0;
   let skipped = 0;
   let errors = 0;
+  const exampleSlugs = [];
 
-  for (const mdxFile of existingFiles) {
-    const outputPath = path.join(OUTPUT_DIR, mdxFile);
+  for (const file of testFiles) {
+    const filePath = path.join(EXAMPLES_DIR, file);
+    const testMeta = parseTestFile(filePath);
+    const slug = generateSlug(testMeta.filename);
+    exampleSlugs.push(slug);
+
+    const outputPath = path.join(OUTPUT_DIR, `${slug}.mdx`);
 
     try {
-      const existingContent = fs.readFileSync(outputPath, 'utf-8');
-      
-      // Find the marker in the file to get the test filename
-      const markerMatch = existingContent.match(/\{\/\* ([^*]+\.test\.mjs) output \*\/\}/);
-      
-      if (!markerMatch) {
-        skipped++;
-        if (options.verbose) {
-          console.log(`⏭️  ${mdxFile} (no marker)`);
+      if (fs.existsSync(outputPath)) {
+        // Update existing MDX file
+        let content = fs.readFileSync(outputPath, 'utf-8');
+        let changed = false;
+
+        // Update source code block from the test file
+        const sourceUpdated = updateSourceCodeBlock(content, testMeta);
+        if (sourceUpdated && sourceUpdated !== content) {
+          content = sourceUpdated;
+          changed = true;
         }
-        continue;
-      }
-      
-      const testFilename = markerMatch[1];
-      const manifestEntry = manifest.examples[testFilename];
-      const testcaseId = manifestEntry?.url ? extractTestcaseId(manifestEntry.url) : null;
-      
-      if (!testcaseId) {
-        skipped++;
-        if (options.verbose) {
-          console.log(`⏭️  ${mdxFile} (no URL in manifest for ${testFilename})`);
+
+        // Update iframe URL if manifest entry exists
+        const manifestEntry = manifest.examples[testMeta.filename];
+        const testcaseId = manifestEntry?.url ? extractTestcaseId(manifestEntry.url) : null;
+        if (testcaseId) {
+          const iframeUpdated = updateExistingMDX(content, testMeta.filename, testcaseId);
+          if (iframeUpdated && iframeUpdated !== content) {
+            content = iframeUpdated;
+            changed = true;
+          }
         }
-        continue;
-      }
-      
-      const updatedContent = updateExistingMDX(existingContent, testFilename, testcaseId);
-      
-      if (updatedContent) {
-        if (!options.dryRun) {
-          fs.writeFileSync(outputPath, updatedContent, 'utf-8');
+
+        if (changed) {
+          if (!options.dryRun) {
+            fs.writeFileSync(outputPath, content, 'utf-8');
+          }
+          updated++;
+          console.log(`🔄 ${slug}.mdx (updated)`);
+        } else {
+          skipped++;
+          if (options.verbose) {
+            console.log(`⏭️  ${slug}.mdx (unchanged)`);
+          }
         }
-        updated++;
-        console.log(`🔄 ${mdxFile} (updated iframe)`);
       } else {
-        skipped++;
-        if (options.verbose) {
-          console.log(`⏭️  ${mdxFile} (unchanged)`);
+        // Generate new MDX file
+        const description = generateFallbackDescription(testMeta);
+        const mdx = generateMDX(testMeta, manifest, description);
+        if (!options.dryRun) {
+          fs.writeFileSync(outputPath, mdx, 'utf-8');
         }
+        created++;
+        console.log(`✨ ${slug}.mdx (created)`);
       }
     } catch (error) {
-      console.error(`❌ ${mdxFile}: ${error.message}`);
+      console.error(`❌ ${file}: ${error.message}`);
       errors++;
     }
   }
 
+  // Update docs.json navigation
+  if (!options.dryRun) {
+    const docsJson = loadDocsJson();
+    if (updateDocsNavigation(docsJson, exampleSlugs, options)) {
+      saveDocsJson(docsJson);
+      console.log("\n📝 Updated docs.json navigation");
+    }
+  }
+
   console.log(`\n✨ Complete!`);
+  console.log(`   Created: ${created} new docs`);
   console.log(`   Updated: ${updated} docs`);
   console.log(`   Skipped: ${skipped} unchanged`);
   if (errors > 0) {

@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* press-keys.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d036058ffe89003c6ada/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d036058ffe89003c6ada/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,8 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="press-keys.test.mjs" {17,24,36}
 /**
- * TestDriver SDK - Press Keys Test
+ * TestDriver SDK - Press Keys Test (Vitest)
+ * Converted from: testdriver/acceptance/press-keys.yaml
  */
 
 import { describe, expect, it } from "vitest";
@@ -43,23 +44,16 @@ describe("Press Keys Test", () => {
     await testdriver.pressKeys(["ctrl", "t"]);
 
     // Poll for "Learn more" to appear
-    let learnMore = await testdriver.find("Learn more");
-    for (let i = 0; i < 10; i++) {
-      learnMore = await learnMore.find();
-      if (learnMore.found()) break;
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+    let imagesLink = await testdriver.find("Images", {timeout: 5000});
+
+    expect(imagesLink.found()).toBeTruthy();
 
     // Open DevTools
     await testdriver.pressKeys(["ctrl", "shift", "i"]);
 
     // Poll for "Elements" to appear
-    let elements = await testdriver.find("Elements");
-    for (let i = 0; i < 10; i++) {
-      elements = await elements.find();
-      if (elements.found()) break;
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
+    let elements = await testdriver.find("Elements", {timeout: 5000});
+    expect(elements.found()).toBeTruthy();
 
     // Open another tab and navigate
     await testdriver.pressKeys(["ctrl", "t"]);

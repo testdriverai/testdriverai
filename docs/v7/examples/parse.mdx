@@ -1,0 +1,66 @@
+---
+title: "Parse Test"
+sidebarTitle: "Parse"
+description: "TestDriver SDK - Parse Test (Vitest) Opens Airbnb and runs the .parse() SDK command to analyze the screen."
+icon: "play"
+---
+
+## Overview
+
+TestDriver SDK - Parse Test (Vitest) Opens Airbnb and runs the .parse() SDK command to analyze the screen.
+
+Review the source code below to understand the implementation details and patterns used.
+
+## Live Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* parse.test.mjs output */}
+<iframe 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d04d0201196437256ce7/replay" 
+  width="100%" 
+  height="600" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="parse.test.mjs"
+/**
+ * TestDriver SDK - Parse Test (Vitest)
+ * Opens Airbnb and runs the .parse() SDK command to analyze the screen.
+ */
+
+import { describe, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Parse Test", () => {
+  it("should open Airbnb and parse the screen", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP});
+    await testdriver.provision.chrome({ url: "https://www.airbnb.com" });
+
+    // The SDK automatically outputs elements as a formatted table
+    const result = await testdriver.parse();
+    console.log(`Found ${result.elements?.length || 0} elements`);
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/parse.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

@@ -183,6 +183,10 @@ if [ "$TD_CHANNEL" = "dev" ]; then
 {
   "commands": [
     "Write-Host '=== Starting runner dev install ==='",
+    "Write-Host 'Bootstrapping sandbox-agent directory...'",
+    "New-Item -ItemType Directory -Path 'C:\\testdriver\\sandbox-agent' -Force | Out-Null",
+    "New-Item -ItemType Directory -Path 'C:\\testdriver\\logs' -Force | Out-Null",
+    "if (-not (Test-Path 'C:\\testdriver\\sandbox-agent\\package.json')) { '{\"name\":\"td-sandbox\",\"private\":true}' | Set-Content 'C:\\testdriver\\sandbox-agent\\package.json' }",
     "Write-Host 'Stopping existing runner processes...'",
     "Stop-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
     "Stop-Process -Name node -Force -ErrorAction SilentlyContinue",
@@ -220,6 +224,8 @@ PARAMS_EOF
     "npm install --omit=dev 2>&1 | Write-Host",
     "Write-Host 'Final verification - ably-service.js exists:'",
     "Test-Path 'C:\\testdriver\\sandbox-agent\\lib\\ably-service.js'",
+    "Write-Host 'Ensuring scheduled task exists...'",
+    "if (-not (Get-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue)) { $agentScript = if (Test-Path 'C:\\testdriver\\sandbox-agent\\sandbox-agent.js') { 'sandbox-agent.js' } else { 'node_modules/@testdriverai/runner/sandbox-agent.js' }; @(\"Set-Location 'C:\\testdriver\\sandbox-agent'\", \"while (`$true) { & node $agentScript 2>&1 | Tee-Object -Append -FilePath C:\\testdriver\\logs\\sandbox-agent.log; Start-Sleep -Seconds 2 }\") | Set-Content 'C:\\testdriver\\run_testdriver.ps1'; $a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File C:\\testdriver\\run_testdriver.ps1'; $t = New-ScheduledTaskTrigger -AtLogOn -User 'testdriver'; $p = New-ScheduledTaskPrincipal -UserId 'testdriver' -RunLevel Highest; $s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -StartWhenAvailable; Register-ScheduledTask -TaskName RunTestDriverAgent -Action $a -Trigger $t -Principal $p -Settings $s -Force }",
     "Write-Host 'Restarting RunTestDriverAgent scheduled task...'",
     "Start-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
     "Write-Host '=== Runner install complete (dev) ==='"
@@ -245,6 +251,10 @@ else
 {
   "commands": [
     "Write-Host '=== Starting runner install (npm pack) ==='",
+    "Write-Host 'Bootstrapping sandbox-agent directory...'",
+    "New-Item -ItemType Directory -Path 'C:\\\\testdriver\\\\sandbox-agent' -Force | Out-Null",
+    "New-Item -ItemType Directory -Path 'C:\\\\testdriver\\\\logs' -Force | Out-Null",
+    "if (-not (Test-Path 'C:\\\\testdriver\\\\sandbox-agent\\\\package.json')) { '{\"name\":\"td-sandbox\",\"private\":true}' | Set-Content 'C:\\\\testdriver\\\\sandbox-agent\\\\package.json' }",
     "Write-Host 'Stopping existing runner processes...'",
     "Stop-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
     "Stop-Process -Name node -Force -ErrorAction SilentlyContinue",
@@ -271,6 +281,8 @@ else
     "Set-Location 'C:\\\\testdriver\\\\sandbox-agent'",
     "Write-Host 'Installing npm dependencies...'",
     "npm install --omit=dev 2>&1 | Write-Host",
+    "Write-Host 'Ensuring scheduled task exists...'",
+    "if (-not (Get-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue)) { \$agentScript = if (Test-Path 'C:\\\\testdriver\\\\sandbox-agent\\\\sandbox-agent.js') { 'sandbox-agent.js' } else { 'node_modules/@testdriverai/runner/sandbox-agent.js' }; @(\"Set-Location 'C:\\\\testdriver\\\\sandbox-agent'\", \"while (`\$true) { & node \$agentScript 2>&1 | Tee-Object -Append -FilePath C:\\\\testdriver\\\\logs\\\\sandbox-agent.log; Start-Sleep -Seconds 2 }\") | Set-Content 'C:\\\\testdriver\\\\run_testdriver.ps1'; \$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File C:\\\\testdriver\\\\run_testdriver.ps1'; \$t = New-ScheduledTaskTrigger -AtLogOn -User 'testdriver'; \$p = New-ScheduledTaskPrincipal -UserId 'testdriver' -RunLevel Highest; \$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -StartWhenAvailable; Register-ScheduledTask -TaskName RunTestDriverAgent -Action \$a -Trigger \$t -Principal \$p -Settings \$s -Force }",
     "Write-Host 'Restarting RunTestDriverAgent scheduled task...'",
     "Start-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
     "Write-Host '=== Runner install complete (npm pack) ==='"

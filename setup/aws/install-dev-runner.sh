@@ -33,6 +33,9 @@ url = sys.argv[1]
 
 commands = [
     "Write-Host '=== Stopping runner ==='",
+    "New-Item -ItemType Directory -Path 'C:\\testdriver\\sandbox-agent' -Force | Out-Null",
+    "New-Item -ItemType Directory -Path 'C:\\testdriver\\logs' -Force | Out-Null",
+    "if (-not (Test-Path 'C:\\testdriver\\sandbox-agent\\package.json')) { '{\"name\":\"td-sandbox\",\"private\":true}' | Set-Content 'C:\\testdriver\\sandbox-agent\\package.json' }",
     "Stop-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
     "Stop-Process -Name node -Force -ErrorAction SilentlyContinue", 
     "Start-Sleep -Seconds 2",
@@ -43,10 +46,12 @@ commands = [
     "Remove-Item -Path lib -Recurse -Force -ErrorAction SilentlyContinue", 
     "tar -xzf $tarball --strip-components=1 -C .",
     "Get-Content 'package.json' | ConvertFrom-Json | Select-Object -ExpandProperty version",
+    "Write-Host '=== Ensuring scheduled task exists ==='",
+    "if (-not (Get-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue)) { $agentScript = if (Test-Path 'sandbox-agent.js') { 'sandbox-agent.js' } else { 'node_modules/@testdriverai/runner/sandbox-agent.js' }; @(\"Set-Location 'C:\\testdriver\\sandbox-agent'\", \"while (`$true) { & node $agentScript 2>&1 | Tee-Object -Append -FilePath C:\\testdriver\\logs\\sandbox-agent.log; Start-Sleep -Seconds 2 }\") | Set-Content 'C:\\testdriver\\run_testdriver.ps1'; $a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File C:\\testdriver\\run_testdriver.ps1'; $t = New-ScheduledTaskTrigger -AtLogOn -User 'testdriver'; $p = New-ScheduledTaskPrincipal -UserId 'testdriver' -RunLevel Highest; $s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -StartWhenAvailable; Register-ScheduledTask -TaskName RunTestDriverAgent -Action $a -Trigger $t -Principal $p -Settings $s -Force }",
     "Write-Host '=== Starting runner ==='",
-    "Start-ScheduledTask -TaskName RunTestDriverAgent",
+    "Start-ScheduledTask -TaskName RunTestDriverAgent -ErrorAction SilentlyContinue",
     "Start-Sleep -Seconds 3",
-    "Get-Content 'C:\\testdriver\\log.txt' -Tail 20"
+    "Get-Content 'C:\\testdriver\\log.txt' -Tail 20 -ErrorAction SilentlyContinue"
 ]
 
 params = {"commands": commands}

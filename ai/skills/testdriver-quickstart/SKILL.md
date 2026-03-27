@@ -9,7 +9,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
 <Tip><a href="https://discord.com/invite/cWDFW8DzPm" target="_blank" rel="noreferrer">Join our Discord</a> if you have any questions or need help getting started!</Tip>
 
 <Tabs>
-  <Tab title="Automatic Setup">
+  <Tab title="CLI" icon="terminal">
 
     Get started quickly with the TestDriver CLI.
 
@@ -39,7 +39,35 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Step>
     </Steps>
   </Tab>
-  <Tab title="Manual Setup">
+  <Tab title="GitHub Copilot" icon="github">
+
+    Use the TestDriver VS Code extension with GitHub Copilot for an AI-powered testing workflow.
+
+    <Card
+      title="Install TestDriver for VS Code"
+      icon="/images/content/extension/vscode.svg"
+      href="vscode:extension/testdriver.testdriver"
+      arrow
+      horizontal
+    >
+    </Card>
+
+    The extension provides one-click sign-in, project initialization, a live preview panel for watching tests execute, and MCP server configuration for GitHub Copilot.
+
+    Once installed, follow the full setup guide to configure MCP and start building tests with AI assistance:
+
+    <Card
+      title="VS Code + Copilot Setup Guide"
+      icon="arrow-right"
+      href="/v7/copilot/setup"
+      arrow
+      horizontal
+    >
+      Sign in, initialize your project, and configure MCP for GitHub Copilot.
+    </Card>
+
+  </Tab>
+  <Tab title="Manual" icon="wrench">
 
     Install TestDriver and manually create the files yourself.
 

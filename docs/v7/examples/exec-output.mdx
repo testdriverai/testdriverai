@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* exec-output.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d02ee8a04db4b705cbeb/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d02ee8a04db4b705cbeb/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -28,14 +28,13 @@ Watch this test execute in a real sandbox environment:
  */
 
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "../lib/vitest/hooks.mjs";
-import { getDefaults } from "./config.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe.skip("Exec Output Test", () => {
   it(
     "should set date using PowerShell and navigate to calendar",
     async (context) => {
-      const testdriver = TestDriver(context, { ...getDefaults(context), headless: true });
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
       await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
 
       //

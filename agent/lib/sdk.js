@@ -273,9 +273,9 @@ const createSDK = (emitter, config, sessionInstance) => {
     if (status >= 500) {
       const serverError = new Error(
         data?.message ||
-        `TestDriver API is currently unavailable (HTTP ${status}). Please try again later.`
+        `An error occurred on the TestDriver server (HTTP ${status}). Please try again later.`
       );
-      serverError.code = data?.error || "API_UNAVAILABLE";
+      serverError.code = data?.error || "SERVER_ERROR";
       serverError.isServerError = true;
       serverError.originalError = error;
       return serverError;
@@ -567,9 +567,9 @@ const createSDK = (emitter, config, sessionInstance) => {
       if (status >= 500) {
         const serverError = new Error(
           error.response?.data?.message ||
-          `TestDriver API is currently unavailable (HTTP ${status}). Please try again later.`
+          `An error occurred on the TestDriver server (HTTP ${status}). Please try again later.`
         );
-        serverError.code = error.response?.data?.error || "API_UNAVAILABLE";
+        serverError.code = error.response?.data?.error || "SERVER_ERROR";
         serverError.isServerError = true;
         serverError.originalError = error;
         serverError.path = path;

@@ -1,0 +1,257 @@
+---
+name: testdriver:test-results-json
+description: Per-test JSON result files with metadata, versions, and infrastructure details
+---
+<!-- Generated from test-results-json.mdx. DO NOT EDIT. -->
+
+## Overview
+
+TestDriver automatically writes a JSON result file for each test case after it finishes. These files contain comprehensive metadata about the test run, including SDK and runner versions, infrastructure details, interaction statistics, and links to recordings.
+
+Result files are written to:
+
+```
+.testdriver/results/<testFile>/<testName>.json
+```
+
+For example, a test file `tests/login.test.mjs` with a test named `"should log in"` produces:
+
+```
+.testdriver/results/tests/login.test.mjs/should_log_in.json
+```
+
+<Note>
+  Test names are sanitized for filesystem use — special characters are replaced with underscores and names are truncated to 200 characters.
+</Note>
+
+## Enabling
+
+No configuration is required. The JSON files are written automatically by the TestDriver Vitest reporter plugin whenever tests run.
+
+## JSON Schema
+
+Each result file is organized into logical groups:
+
+### `versions`
+
+| Field | Type | Description |
+|---|---|---|
+| `versions.sdk` | `string \| null` | TestDriver SDK version (e.g. `"7.8.0"`) |
+| `versions.vitest` | `string \| null` | Vitest version used to run the test |
+| `versions.api` | `string \| null` | TestDriver API server version |
+| `versions.runnerBefore` | `string \| null` | Runner version at sandbox start |
+| `versions.runnerAfter` | `string \| null` | Runner version after auto-update |
+| `versions.runnerWasUpdated` | `boolean` | Whether the runner was auto-updated during provisioning |
+
+### `test`
+
+| Field | Type | Description |
+|---|---|---|
+| `test.file` | `string \| null` | Relative path to the test file |
+| `test.name` | `string \| null` | Name of the test case |
+| `test.suite` | `string \| null` | Name of the parent `describe` block |
+| `test.passed` | `boolean` | Whether the test passed |
+| `test.caseId` | `string \| null` | Database ID for this test case |
+| `test.runId` | `string \| null` | Database ID for the overall test run |
+| `test.error` | `string \| null` | Error message if the test failed |
+| `test.errorStack` | `string \| null` | Error stack trace if the test failed |
+
+### `urls`
+
+| Field | Type | Description |
+|---|---|---|
+| `urls.api` | `string \| null` | API root URL used for this test |
+| `urls.console` | `string \| null` | TestDriver console base URL |
+| `urls.vnc` | `string \| null` | VNC URL for the sandbox |
+| `urls.testRun` | `string \| null` | Direct link to this test case in the console |
+
+### `replay`
+
+The `replay` object contains the recording replay URL and derived embed links. The `gifUrl` and `embedUrl` are generated automatically from the replay URL.
+
+| Field | Type | Description |
+|---|---|---|
+| `replay.url` | `string \| null` | Recording replay URL |
+| `replay.gifUrl` | `string \| null` | Animated GIF thumbnail of the recording |
+| `replay.embedUrl` | `string \| null` | Embeddable replay URL (appends `&embed=true`) |
+| `replay.markdown` | `string \| null` | Ready-to-use Markdown embed with GIF linking to the replay |
+
+The `replay.markdown` field produces a clickable GIF badge you can paste directly into PR comments, README files, or issue descriptions:
+
+```markdown
+[![Test Recording](https://api.testdriver.ai/replay/abc123/gif?shareKey=xyz)](https://console.testdriver.ai/replay/abc123?share=xyz)
+```
+
+### `date`
+
+| Field | Type | Description |
+|---|---|---|
+| `date` | `string` | ISO 8601 timestamp when the test finished |
+
+### `team`
+
+| Field | Type | Description |
+|---|---|---|
+| `team.id` | `string \| null` | Team ID from the sandbox |
+| `team.sessionId` | `string \| null` | SDK session ID |
+
+### `infrastructure`
+
+| Field | Type | Description |
+|---|---|---|
+| `infrastructure.sandboxId` | `string \| null` | Sandbox instance ID |
+| `infrastructure.instanceId` | `string \| null` | Instance ID |
+| `infrastructure.os` | `string \| null` | Operating system of the sandbox (`"linux"` or `"windows"`) |
+| `infrastructure.amiId` | `string \| null` | AWS AMI ID used for provisioning |
+| `infrastructure.e2bTemplateId` | `string \| null` | E2B template ID used for provisioning |
+| `infrastructure.imageVersion` | `string \| null` | Sandbox image version |
+
+### `realtime`
+
+| Field | Type | Description |
+|---|---|---|
+| `realtime.channel` | `string \| null` | Ably channel name used for communication |
+| `realtime.messageCount` | `number` | Number of messages published to the realtime channel |
+
+### `interactions`
+
+| Field | Type | Description |
+|---|---|---|
+| `interactions.total` | `number` | Total number of interactions recorded |
+| `interactions.cached` | `number` | Number of interactions served from cache |
+| `interactions.byType` | `object` | Breakdown of interactions by type (e.g. `find`, `click`, `assert`) |
+
+## Example Output
+
+```json
+{
+  "sdkVersion": "7.8.0",
+  "vitestVersion": "4.0.0",
+  "apiVersion": "1.45.0",
+  "runnerVersionBefore": "2.1.0",
+  "runnerVersionAfter": "2.1.1",
+  "wasUpdated": true,
+  "apiUrl": "https://api.testdriver.ai",
+  "consoleUrl": "https://console.testdriver.ai",
+  "testRunLink": "https://console.testdriver.ai/runs/abc123/def456",
+  "dashcamUrl": "https://app.dashcam.io/replay/abc123",
+  "vncUrl": "wss://sandbox-123.testdriver.ai/vnc",
+  "date": "2025-01-15T14:30:00.000Z",
+  "team": {
+    "id": "team_abc123",
+    "sessionId": "sess_xyz789"
+  },
+  "infrastructure": {
+    "sandboxId": "sandbox-123",
+    "instanceId": "i-abc123",
+    "os": "linux",
+    "amiId": "ami-0abc123",
+    "e2bTemplateId": null,
+    "imageVersion": "v2.1.0"
+  },
+  "realtime": {
+    "channel": "sandbox:sandbox-123",
+    "messageCount": 42
+  },
+  "interactions": {
+    "total": 15,
+    "cached": 3,
+    "byType": {
+      "find": 8,
+      "click": 5,
+      "assert": 2
+    }
+  }
+}
+```
+
+## Using Result Files in CI
+
+Result files are useful for extracting test metadata in CI pipelines without parsing log output.
+
+### GitHub Actions Example
+
+Use `fromJSON` to parse a result file into a GitHub Actions expression you can reference in subsequent steps:
+
+```yaml
+- name: Run tests
+  run: npx vitest run tests/login.test.mjs
+
+- name: Parse result
+  id: result
+  run: |
+    # Read the first JSON result file
+    FILE=$(find .testdriver/results -name '*.json' | head -n 1)
+    echo "json=$(cat "$FILE")" >> "$GITHUB_OUTPUT"
+
+- name: Comment on PR
+  if: fromJSON(steps.result.outputs.json).test.passed == false
+  uses: actions/github-script@v7
+  with:
+    script: |
+      const result = ${{ steps.result.outputs.json }};
+      await github.rest.issues.createComment({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        issue_number: context.issue.number,
+        body: [
+          `❌ **${result.test.name}** failed`,
+          ``,
+          `Error: ${result.test.error}`,
+          ``,
+          result.replay.markdown,
+          ``,
+          `[View full recording](${result.urls.testRun})`
+        ].join('\n')
+      });
+```
+
+You can also load all results into a matrix or iterate over them:
+
+```yaml
+- name: Run tests
+  run: npx vitest run tests/*.test.mjs
+
+- name: Collect results
+  id: results
+  run: |
+    # Merge all result files into a JSON array
+    echo "json=$(find .testdriver/results -name '*.json' -exec cat {} + | jq -s '.')" >> "$GITHUB_OUTPUT"
+
+- name: Summary
+  run: |
+    echo '## Test Results' >> $GITHUB_STEP_SUMMARY
+    RESULTS='${{ steps.results.outputs.json }}'
+    echo "$RESULTS" | jq -r '.[] | "| \(.test.name) | \(if .test.passed then "✅" else "❌" end) | \(.urls.testRun) |"' >> $GITHUB_STEP_SUMMARY
+```
+
+### Reading Results Programmatically
+
+```javascript
+import fs from "fs";
+import path from "path";
+
+const resultsDir = ".testdriver/results";
+
+function readResults(dir) {
+  const results = [];
+  for (const testDir of fs.readdirSync(dir, { recursive: true })) {
+    const fullPath = path.join(dir, testDir);
+    if (fullPath.endsWith(".json") && fs.statSync(fullPath).isFile()) {
+      results.push(JSON.parse(fs.readFileSync(fullPath, "utf-8")));
+    }
+  }
+  return results;
+}
+
+const results = readResults(resultsDir);
+const passed = results.filter(r => r.test.passed);
+const failed = results.filter(r => !r.test.passed);
+
+console.log(`${passed.length} passed, ${failed.length} failed`);
+for (const r of failed) {
+  console.log(`  FAIL: ${r.test.name} — ${r.test.error}`);
+  console.log(`  Recording: ${r.urls.testRun}`);
+  console.log(`  Embed: ${r.replay.markdown}`);
+}
+```

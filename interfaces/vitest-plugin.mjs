@@ -412,9 +412,9 @@ export async function authenticateWithApiKey(apiKey, apiRoot) {
     if (response.status >= 500) {
       const serverError = new Error(
         data.message ||
-        `TestDriver API is currently unavailable (HTTP ${response.status}). Please try again later.`,
+        `An error occurred on the TestDriver server (HTTP ${response.status}). Please try again later.`,
       );
-      serverError.code = data.error || "API_UNAVAILABLE";
+      serverError.code = data.error || "SERVER_ERROR";
       serverError.isServerError = true;
       throw serverError;
     }

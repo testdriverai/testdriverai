@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* chrome-extension.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d024c2e6e94933886763/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d024c2e6e94933886763/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,12 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="chrome-extension.test.mjs" {31-33}
 /**
- * TestDriver SDK - Chrome Extension Test
+ * TestDriver SDK - Chrome Extension Test (Vitest)
+ * Tests loading a Chrome extension using provision.chromeExtension()
+ * 
+ * This test suite covers:
+ * 1. Loading extension from local path (extensionPath)
+ * 2. Loading extension from Chrome Web Store (extensionId)
  */
 
 import { describe, expect, it } from "vitest";
@@ -78,38 +83,40 @@ describe("Chrome Extension Test", () => {
     const helloExtension = await testdriver.find("Hello Extensions extension in the extensions dropdown");
     await helloExtension.click();
 
+    await testdriver.wait(2000); // wait for the popup to open
+
     // Verify the extension popup shows "Hello Extensions" text
     const popupResult = await testdriver.assert("a popup shows with the text 'Hello Extensions'");
     expect(popupResult).toBeTruthy();
   });
 
-  it("should load Loom from Chrome Web Store by extensionId", async (context) => {
-    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+  // it("should load Loom from Chrome Web Store by extensionId", async (context) => {
+  //   const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP});
 
-    // Launch Chrome with Loom loaded by its Chrome Web Store ID
-    // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
-    await testdriver.provision.chromeExtension({
-      extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb'
-    });
+  //   // Launch Chrome with Loom loaded by its Chrome Web Store ID
+  //   // Loom ID: liecbddmkiiihnedobmlmillhodjkdmb
+  //   await testdriver.provision.chromeExtension({
+  //     extensionId: 'liecbddmkiiihnedobmlmillhodjkdmb'
+  //   });
 
-    // Navigate to testdriver.ai (extensions don't load on New Tab)
-    const addressBar = await testdriver.find("Chrome address bar");
-    await addressBar.click();
-    await testdriver.type("testdriver.ai");
-    await testdriver.pressKeys(["enter"]);
+  //   // Navigate to testdriver.ai (extensions don't load on New Tab)
+  //   const addressBar = await testdriver.find("Chrome address bar");
+  //   await addressBar.click();
+  //   await testdriver.type("testdriver.ai");
+  //   await testdriver.pressKeys(["enter"]);
 
-    // Wait for page to load
-    const pageResult = await testdriver.assert("I can see testdriver.ai");
-    expect(pageResult).toBeTruthy();
+  //   // Wait for page to load
+  //   const pageResult = await testdriver.assert("I can see testdriver.ai");
+  //   expect(pageResult).toBeTruthy();
 
-    // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.", {zoom: true});
-    await extensionsButton.click();
+  //   // Click on the extensions button (puzzle piece icon) in Chrome toolbar
+  //   const extensionsButton = await testdriver.find("The puzzle-shaped icon in the Chrome toolbar.", {zoom: true});
+  //   await extensionsButton.click();
 
-    // Look for Loom in the extensions menu
-    const loomExtension = await testdriver.find("Loom extension in the extensions dropdown");
-    expect(loomExtension.found()).toBeTruthy();
-  });
+  //   // Look for Loom in the extensions menu
+  //   const loomExtension = await testdriver.find("Loom extension in the extensions dropdown");
+  //   expect(loomExtension.found()).toBeTruthy();
+  // });
 });
 ```
 

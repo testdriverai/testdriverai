@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* installer.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d032c2e6e94933886769/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d032c2e6e94933886769/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,8 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="installer.test.mjs" {16-18}
 /**
- * TestDriver SDK - Installer Test
+ * TestDriver SDK - Installer Test (Vitest)
+ * Tests the provision.installer() method for downloading and installing apps
  */
 
 import { describe, expect, it } from "vitest";
@@ -35,7 +36,7 @@ describe("Provision Installer", () => {
   it.skipIf(!isLinux)(
     "should download and install a .deb package on Linux",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP});
       
       // Install bat (a cat clone with syntax highlighting) using provision.installer
       const filePath = await testdriver.provision.installer({
@@ -53,7 +54,7 @@ describe("Provision Installer", () => {
   it.skipIf(!isLinux)(
     "should download a shell script and verify it exists",
     async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP });
+      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP});
       
       // Download a shell script (nvm installer)
       const filePath = await testdriver.provision.installer({

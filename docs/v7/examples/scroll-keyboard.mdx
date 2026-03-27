@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* scroll-keyboard.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d03da0a3ef8239de474f/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d03da0a3ef8239de474f/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,8 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="scroll-keyboard.test.mjs" {26}
 /**
- * TestDriver SDK - Scroll Keyboard Test
+ * TestDriver SDK - Scroll Keyboard Test (Vitest)
+ * Converted from: testdriver/acceptance/scroll-keyboard.yaml
  */
 
 import { describe, expect, it } from "vitest";
@@ -38,7 +39,7 @@ describe("Scroll Keyboard Test", () => {
     // Navigate to https://www.webhamster.com/
     await testdriver.focusApplication("Google Chrome");
     const urlBar = await testdriver.find(
-      "testdriver-sandbox.vercel.app/login, the URL in the omnibox showing the current page", {zoom: true}
+      "the URL in the omnibox", {zoom: true}
     );
     await urlBar.click();
     await testdriver.pressKeys(["ctrl", "a"]);

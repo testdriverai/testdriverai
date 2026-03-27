@@ -1,0 +1,104 @@
+---
+title: "Hover Text With Description Test"
+sidebarTitle: "Hover Text With Description"
+description: "TestDriver SDK - Hover Text With Description Test (Vitest) Converted from: testdriver/acceptance/hover-text-with-description.yaml."
+icon: "hand-pointer"
+mode: "wide"
+---
+
+## Overview
+
+TestDriver SDK - Hover Text With Description Test (Vitest) Converted from: testdriver/acceptance/hover-text-with-description.yaml
+
+Review the source code below to understand the implementation details and patterns used.
+
+## Live Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* hover-text-with-description.test.mjs output */}
+<iframe 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d029c2e6e94933886764/replay" 
+  width="100%" 
+  height="600" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="hover-text-with-description.test.mjs"
+/**
+ * TestDriver SDK - Hover Text With Description Test (Vitest)
+ * Converted from: testdriver/acceptance/hover-text-with-description.yaml
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+/**
+ * Perform login flow for SauceLabs demo app
+ * @param {TestDriver} client - TestDriver client
+ * @param {string} username - Username (default: 'standard_user')
+ */
+async function performLogin(client, username = "standard_user") {
+  await client.focusApplication("Google Chrome");
+  const password = await client.extract("the password");
+  const usernameField = await client.find("username input");
+  await usernameField.click();
+  await client.type(username);
+  await client.pressKeys(["tab"]);
+  await client.type(password, { secret: true });
+  await client.pressKeys(["tab"]);
+  await client.pressKeys(["enter"]);
+}
+
+describe("Hover Text With Description Test", () => {
+  it("should add TestDriver Hat to cart and verify", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP,
+      headless: true,
+    });
+    await testdriver.provision.chrome({
+      url: "http://testdriver-sandbox.vercel.app/login",
+    });
+
+    //
+    // Perform login first
+    await performLogin(testdriver);
+
+    // Click on "Add to Cart" under TestDriver Hat
+    const addToCartButton = await testdriver.find(
+      "Add to Cart, add to cart button under TestDriver Hat",
+    );
+    await addToCartButton.click();
+
+    // Click on the cart
+    const cartButton = await testdriver.find(
+      "Cart, cart button in the top right corner",
+    );
+    await cartButton.click();
+
+    // Assert the TestDriver Hat is in the cart
+    const result = await testdriver.assert("There is an item in the cart");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/hover-text-with-description.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

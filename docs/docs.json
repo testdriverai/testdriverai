@@ -27,28 +27,29 @@
                 "pages": [
                   "/v7/examples/ai",
                   "/v7/examples/assert",
-                  "/v7/examples/captcha-api",
                   "/v7/examples/chrome-extension",
-                  "/v7/examples/drag-and-drop",
                   "/v7/examples/element-not-found",
                   "/v7/examples/exec-output",
                   "/v7/examples/exec-pwsh",
+                  "/v7/examples/findall-coffee-icons",
                   "/v7/examples/focus-window",
+                  "/v7/examples/formatted-logging",
                   "/v7/examples/hover-image",
+                  "/v7/examples/hover-text-with-description",
                   "/v7/examples/hover-text",
                   "/v7/examples/installer",
                   "/v7/examples/launch-vscode-linux",
                   "/v7/examples/match-image",
+                  "/v7/examples/parse",
                   "/v7/examples/press-keys",
+                  "/v7/examples/prompt",
                   "/v7/examples/scroll-keyboard",
                   "/v7/examples/scroll-until-image",
-                  "/v7/examples/scroll-until-text",
                   "/v7/examples/scroll",
                   "/v7/examples/type",
                   "/v7/examples/windows-installer"
                 ]
               },
-
               {
                 "group": "Deployment",
                 "icon": "server",
@@ -60,7 +61,6 @@
               "/changelog"
             ]
           },
-
           {
             "group": "GitHub Copilot",
             "pages": [
@@ -107,33 +107,32 @@
             ]
           },
           {
+            "group": "Actions",
+            "pages": [
+              "/v7/ai",
+              "/v7/assert",
+              "/v7/captcha",
+              "/v7/click",
+              "/v7/double-click",
+              "/v7/exec",
+              "/v7/find",
+              "/v7/focus-application",
+              "/v7/hover",
+              "/v7/mouse-down",
+              "/v7/mouse-up",
+              "/v7/parse",
+              "/v7/press-keys",
+              "/v7/right-click",
+              "/v7/screenshot",
+              "/v7/scroll",
+              "/v7/type"
+            ]
+          },
+          {
             "group": "SDK Reference",
             "pages": [
               "/v7/client",
               "/v7/elements",
-              {
-                "group": "Actions",
-                "icon": "bolt",
-                "pages": [
-                  "/v7/ai",
-                  "/v7/assert",
-                  "/v7/captcha",
-                  "/v7/click",
-                  "/v7/double-click",
-                  "/v7/exec",
-                  "/v7/find",
-                  "/v7/focus-application",
-                  "/v7/hover",
-                  "/v7/mouse-down",
-                  "/v7/mouse-up",
-                  "/v7/parse",
-                  "/v7/press-keys",
-                  "/v7/right-click",
-                  "/v7/screenshot",
-                  "/v7/scroll",
-                  "/v7/type"
-                ]
-              },
               "/v7/dashcam"
             ]
           }

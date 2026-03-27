@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* assert.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d038058ffe89003c6adc/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d038058ffe89003c6adc/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,8 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="assert.test.mjs" {22-24}
 /**
- * TestDriver SDK - Assert Test
+ * TestDriver SDK - Assert Test (Vitest)
+ * Converted from: testdriver/acceptance/assert.yaml
  */
 
 import { describe, expect, it } from "vitest";
@@ -31,8 +32,7 @@ import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("Assert Test", () => {
   it("should assert the testdriver login page shows", async (context) => {
-    const testdriver = TestDriver(context, {
-      ip: context.ip || process.env.TD_IP,
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP,
     });
     
     // provision.chrome() automatically calls ready() and starts dashcam
@@ -50,6 +50,21 @@ describe("Assert Test", () => {
 
     expect(result).toBeTruthy();
   });
+  // it("should assert the testdriver login page shows 2", async (context) => {
+  //   const testdriver = TestDriver(context);
+    
+  //   // provision.chrome() automatically calls ready() and starts dashcam
+  //   await testdriver.provision.chrome({
+  //     url: 'http://testdriver-sandbox.vercel.app/login',
+  //   });
+
+  //   // Assert the TestDriver.ai Sandbox login page is displayed
+  //   const result = await testdriver.assert(
+  //     "the TestDriver.ai Sandbox login page is displayed",
+  //   );
+
+  //   expect(result).toBeTruthy();
+  // });
 });
 ```
 

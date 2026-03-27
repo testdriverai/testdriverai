@@ -1,23 +1,48 @@
 ---
 name: testdriver:self-hosted
-description: Unlimited test execution, complete privacy, and the ability to customize everything — all for a predictable flat license fee.
+description: Our enterprise solution with unlimited test execution, assisted setup, and dedicated support.
 ---
 <!-- Generated from self-hosted.mdx. DO NOT EDIT. -->
 
-Self-hosted pricing is based on **parallel test capacity**: the number of tests you can run simultaneously on **your infrastructure**. 
+Self-hosted is our enterprise solution for teams that need unlimited test execution, infrastructure control, and dedicated support. Pricing is based on **parallel test capacity** with a flat license fee — no per-second billing.
 
-With self-hosting, you get:.
+<CardGroup cols={2}>
+  <Card title="Unlimited Execution" icon="infinity">
+    Run as many tests as you want with no device-second metering. Predictable monthly costs.
+  </Card>
+  <Card title="Assisted Setup & Support" icon="headset">
+    Our team helps you deploy, configure, and optimize your infrastructure. Dedicated engineering support included.
+  </Card>
+  <Card title="Full Control" icon="gear">
+    Use your own AI keys, custom hardware, specific software, and network configurations. RDP into test machines for debugging.
+  </Card>
+  <Card title="Security & Compliance" icon="shield-check">
+    Keep data in your environment. Air-gapped deployment available for regulated industries.
+  </Card>
+</CardGroup>
 
-- **Flat license fee** per parallel test slot
-- **Unlimited test execution** — run as many tests as you want
-- **No device-second metering** — predictable monthly costs
-- **Use your own AI keys** — control data usage with your own OpenAI, Anthropic, or other AI provider keys
-- **Custom hardware & software** — choose instance types, resolution, install specific software, and configure networking as needed
-- **Debug & Customize** — RDP into test machines, install custom software, modify the AMI, and debug issues directly. No black boxes.
+## Deployment Options
 
-## Get Started
+Choose the level of control you need:
 
-Ready to self-host? Follow our comprehensive AWS setup guide:
+| Component | Standard | Air-Gapped |
+|-----------|----------|------------|
+| **Test Sandboxes** | Your AWS | Your infrastructure (any cloud or on-prem) |
+| **Dashboard** | TestDriver hosted | Your infrastructure |
+| **API** | TestDriver hosted | Your infrastructure |
+| **AI Processing** | Your API keys | Your infrastructure |
+| **Data Storage** | Your AWS account | 100% your infrastructure |
+| **Network** | Internet access required | Fully air-gapped |
+| **Cloud Providers** | AWS | AWS, Azure, GCP, on-prem |
+
+### Standard Deployment
+
+Run test sandboxes on your AWS infrastructure while using TestDriver's hosted dashboard and API:
+
+- **Quick setup** via CloudFormation — deploy in hours
+- **Dashboard access** at [console.testdriver.ai](https://console.testdriver.ai)
+- **Your AI keys** — control costs with your own OpenAI, Anthropic, or other provider
+- **Custom AMIs** — install specific software, configure networking
 
 <Card
   title="AWS Setup Guide"
@@ -27,39 +52,96 @@ Ready to self-host? Follow our comprehensive AWS setup guide:
   Step-by-step instructions for deploying TestDriver on your AWS infrastructure using CloudFormation.
 </Card>
 
+### Air-Gapped Deployment
 
-## Who Should Self-Host?
+Deploy the entire TestDriver stack in your environment for complete isolation:
 
-Self-hosting is ideal for teams that:
+- **Full stack** — dashboard, API, and test infrastructure all in your environment
+- **No external dependencies** — data never leaves your network perimeter
+- **Any infrastructure** — AWS, Azure, GCP, or on-premises
+- **Regulated industries** — government, defense, healthcare, finance
 
-- **Run high test volumes** — Flat pricing becomes more economical at scale
-- **Want infrastructure control** — Custom hardware, specific software dependencies, or network configurations
-- **Prefer predictable costs** — Budget with confidence using flat monthly fees
+## Custom VM Images
 
+Build test environments with your applications, dependencies, and user data pre-installed. You get full access to:
 
-## How It Works
+- **Golden VM** — our pre-configured base image with TestDriver agent, drivers, and optimizations
+- **Packer scripts** — build custom AMIs with your applications, user data, and configurations
+- **Faster test startup** — skip installation steps by baking dependencies into your image
+- **Consistent environments** — every test runs on an identical, reproducible machine
 
-With self-hosting, you run test sandboxes on your own AWS infrastructure. TestDriver still provides:
+<AccordionGroup>
+  <Accordion title="What can you customize?">
+    - Install applications (browsers, desktop apps, dev tools)
+    - Configure user accounts and credentials
+    - Set up network proxies and certificates
+    - Install fonts, language packs, and locales
+    - Pre-seed databases or test fixtures
+    - Configure Windows/Linux settings
+  </Accordion>
+  
+  <Accordion title="How it works">
+    1. We provide our golden VM base image and Packer scripts
+    2. You customize the scripts to install your software and configuration
+    3. Run Packer to build your custom AMI
+    4. Configure TestDriver to use your custom AMI for test sandboxes
+    5. Tests spin up with everything pre-installed — no setup time wasted
+  </Accordion>
+</AccordionGroup>
 
-- **Dashboard** — View test results, analytics, and reports at [console.testdriver.ai](https://console.testdriver.ai)
-- **API** — Orchestration and AI-powered test execution
-- **License Management** — Your parallel test capacity
+## Implementation Process
 
-You provide:
+<Steps>
+  <Step title="Discovery Call">
+    Discuss your requirements, security constraints, and integration needs with our team.
+  </Step>
+  
+  <Step title="Architecture Review">
+    Our engineers design a deployment architecture that meets your security and compliance requirements.
+  </Step>
+  
+  <Step title="Deployment">
+    We work with your team to deploy TestDriver, including assisted setup and configuration.
+  </Step>
+  
+  <Step title="Integration">
+    Connect TestDriver to your CI/CD pipelines, internal tools, and workflows.
+  </Step>
+  
+  <Step title="Training & Handoff">
+    Comprehensive training for your team on operating and maintaining the deployment.
+  </Step>
+</Steps>
 
-- **AWS Infrastructure** — EC2 instances running in your account
-- **AI API Keys** — Use your own OpenAI, Anthropic, or other AI provider keys
-- **Custom Configuration** — Hardware specs, networking, installed software
+## What's Included
 
-## Comparison vs Cloud
+- **Flat license fee** per parallel test slot
+- **Unlimited test execution** — no device-second charges
+- **Assisted setup** — our team helps you deploy and configure
+- **Dedicated support** — direct access to our engineering team
+- **Custom contract terms** — volume-based pricing, custom SLAs
+- **Professional services** — implementation assistance and training
 
-| Feature | Cloud | Self-Hosted |
-|---------|-------|-------------|
-| **Setup Time** | Minutes | Hours |
+## Comparison: Hosted vs Self-Hosted
+
+| Feature | Hosted | Self-Hosted |
+|---------|--------|-------------|
+| **Setup Time** | Minutes | Hours (assisted) |
 | **Pricing Model** | Device-seconds | Flat license fee |
-| **Infrastructure Management** | TestDriver | You |
-| **Device Location** | TestDriver cloud | Your AWS account |
+| **Infrastructure** | TestDriver | Your AWS or any cloud |
 | **AI API Keys** | TestDriver's | Your own |
 | **Custom Software** | Limited | Full control |
 | **Hardware Selection** | Standard | Your choice |
 | **Debugging Access** | Replays only | Full RDP access |
+| **Support** | Community/Standard | Dedicated engineering |
+| **Air-Gapped Option** | No | Yes |
+
+## Get Started
+
+<Card
+  title="Schedule a Consultation"
+  icon="calendar"
+  href="https://testdriver.ai/demo"
+>
+  Discuss your requirements with our team and get a custom proposal for your self-hosted deployment.
+</Card>

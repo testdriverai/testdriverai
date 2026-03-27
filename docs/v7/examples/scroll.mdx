@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* scroll.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d043058ffe89003c6ae0/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d043058ffe89003c6ae0/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,10 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="scroll.test.mjs" {29}
 /**
- * TestDriver SDK - Scroll Test
+ * TestDriver SDK - Scroll Test (Vitest)
+ * Converted from: testdriver/acceptance/scroll.yaml
+ * 
+ * UPDATED: Now using chrome preset for automatic setup
  */
 
 import { describe, expect, it } from "vitest";
@@ -32,19 +35,8 @@ import { TestDriver } from "testdriverai/vitest/hooks";
 describe("Scroll Test", () => {
   it("should navigate and scroll down the page", async (context) => {
     const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
-    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+    await testdriver.provision.chrome({ url: 'https://www.webhamster.com/' });
 
-    // Give Chrome a moment to fully render the UI
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Navigate to webhamster.com - just look for the domain, not the full path
-    const urlBar = await testdriver.find(
-      "testdriver-sandbox.vercel.app, the URL in the address bar",
-    );
-    await urlBar.click();
-    await testdriver.pressKeys(["ctrl", "a"]);
-    await testdriver.type("https://www.webhamster.com/");
-    await testdriver.pressKeys(["enter"]);
 
     // Wait for page to load and click heading
     const heading = await testdriver.find(

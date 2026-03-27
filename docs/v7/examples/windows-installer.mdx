@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* windows-installer.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d02ce8a04db4b705cbe9/replay" 
+  src="https://api.testdriver.ai/api/v1/testdriver/testcase/69c5d02ce8a04db4b705cbe9/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -23,7 +23,14 @@ Watch this test execute in a real sandbox environment:
 
 ```javascript title="windows-installer.test.mjs" {22-25}
 /**
- * TestDriver SDK - Windows Installer Example
+ * TestDriver SDK - Windows Installer Example (Vitest)
+ * 
+ * This example demonstrates how to download and install a Windows application
+ * using PowerShell commands, then launch and interact with it.
+ * 
+ * Based on the v6 GitButler provisioning workflow.
+ * 
+ * Run: TD_OS=windows vitest run examples/windows-installer.test.mjs
  */
 
 import { describe, it } from "vitest";
@@ -35,8 +42,7 @@ describe("Windows App Installation", () => {
     
   it.skipIf(isLinux)("should download, install, and launch GitButler on Windows", async (context) => {
     // Alternative approach using provision.installer helper
-    const testdriver = TestDriver(context, { 
-      ip: context.ip || process.env.TD_IP,
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP,
       os: 'windows'
     });
 
