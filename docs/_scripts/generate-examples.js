@@ -279,22 +279,36 @@ function extractTestcaseId(url) {
   return pathParts.length >= 2 ? pathParts[pathParts.length - 1] : null;
 }
 
+// Derive API root from a console URL (e.g. console-test.testdriver.ai → api-test.testdriver.ai)
+function apiRootFromConsoleUrl(sourceUrl) {
+  if (!sourceUrl) return null;
+  try {
+    const url = new URL(sourceUrl);
+    // Map console* hostname to api* hostname
+    const apiHostname = url.hostname.replace(/^console/, 'api');
+    return `${url.protocol}//${apiHostname}`;
+  } catch {
+    return null;
+  }
+}
+
 // Generate replay URL from testcase ID
-function generateReplayUrl(testcaseId) {
+// sourceUrl is the manifest URL used to infer the correct API environment
+function generateReplayUrl(testcaseId, sourceUrl) {
   // Use the API replay endpoint which handles the redirect with embed=true
-  const apiRoot = process.env.TD_API_ROOT || 'https://api.testdriver.ai';
+  const apiRoot = apiRootFromConsoleUrl(sourceUrl) || process.env.TD_API_ROOT || 'https://api.testdriver.ai';
   return `${apiRoot}/api/v1/testdriver/testcase/${testcaseId}/replay`;
 }
 
 // Update existing MDX file by finding the marker comment and replacing the iframe
-function updateExistingMDX(existingContent, filename, testcaseId) {
+function updateExistingMDX(existingContent, filename, testcaseId, sourceUrl) {
   const marker = `{/* ${filename} output */}`;
   
   if (!existingContent.includes(marker)) {
     return null; // Marker not found, can't update
   }
   
-  const replayUrl = generateReplayUrl(testcaseId);
+  const replayUrl = generateReplayUrl(testcaseId, sourceUrl);
   
   // Pattern to match the marker followed by the iframe tag
   const escapedFilename = filename.replace(/\./g, '\\.');
@@ -356,7 +370,7 @@ ${description}
 
   // Add Live Test Run section if URL exists
   if (testcaseId) {
-    const replayUrl = generateReplayUrl(testcaseId);
+    const replayUrl = generateReplayUrl(testcaseId, manifestEntry?.url);
     mdx += `## Live Test Run
 
 Watch this test execute in a real sandbox environment:
@@ -562,7 +576,7 @@ async function main() {
         const manifestEntry = manifest.examples[testMeta.filename];
         const testcaseId = manifestEntry?.url ? extractTestcaseId(manifestEntry.url) : null;
         if (testcaseId) {
-          const iframeUpdated = updateExistingMDX(content, testMeta.filename, testcaseId);
+          const iframeUpdated = updateExistingMDX(content, testMeta.filename, testcaseId, manifestEntry.url);
           if (iframeUpdated && iframeUpdated !== content) {
             content = iframeUpdated;
             changed = true;

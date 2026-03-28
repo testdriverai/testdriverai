@@ -1565,11 +1565,26 @@ const createCommands = (
         let result = null;
 
         const execTimeout = timeout || 300000;
-        result = await sandbox.send({
-          type: "commands.run",
-          command: code,
-          timeout: execTimeout,
-        }, execTimeout);
+
+        // Stream output chunks in real-time as they arrive from the runner
+        let streamedOutput = false;
+        const onExecOutput = ({ chunk }) => {
+          if (!silent && chunk) {
+            emitter.emit(events.log.log, theme.dim(chunk), true);
+            streamedOutput = true;
+          }
+        };
+        emitter.on(events.exec.output, onExecOutput);
+
+        try {
+          result = await sandbox.send({
+            type: "commands.run",
+            command: code,
+            timeout: execTimeout,
+          }, execTimeout);
+        } finally {
+          emitter.off(events.exec.output, onExecOutput);
+        }
         
         const execActionEndTime = Date.now();
         const execDuration = execActionEndTime - execActionLogStart;
@@ -1595,7 +1610,8 @@ const createCommands = (
             true,
           );
           
-          if (!silent && result.out?.stdout) {
+          // Skip stdout log if already streamed in real-time to avoid duplication
+          if (!silent && !streamedOutput && result.out?.stdout) {
             emitter.emit(events.log.log, theme.dim(`  stdout:`), true);
             emitter.emit(events.log.log, theme.dim(`  ${result.out.stdout}`), true);
           }

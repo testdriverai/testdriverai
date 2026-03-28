@@ -1,0 +1,74 @@
+---
+title: "Formatted Logging Test"
+sidebarTitle: "Formatted Logging"
+description: "TestDriver SDK - Formatted Logging Demo Demonstrates nice Vitest-style formatted logs for Dashcam replay."
+icon: "play"
+---
+
+## Overview
+
+TestDriver SDK - Formatted Logging Demo Demonstrates nice Vitest-style formatted logs for Dashcam replay
+
+Review the source code below to understand the implementation details and patterns used.
+
+## Live Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* formatted-logging.test.mjs output */}
+<iframe 
+  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d045058ffe89003c6ae1/replay" 
+  width="100%" 
+  height="600" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="formatted-logging.test.mjs"
+/**
+ * TestDriver SDK - Formatted Logging Demo
+ * Demonstrates nice Vitest-style formatted logs for Dashcam replay
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Formatted Logging Test", () => {
+  it("should demonstrate formatted logs in dashcam replay", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    // Find and click - logs will be nicely formatted
+    const signInButton = await testdriver.find(
+      "Sign In, black button below the password field",
+    );
+    await signInButton.click();
+
+    // Assert - logs will show pass/fail with nice formatting
+    const result = await testdriver.assert(
+      "an error shows that fields are required",
+    );
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/formatted-logging.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

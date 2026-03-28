@@ -31,6 +31,7 @@
                   "/v7/examples/element-not-found",
                   "/v7/examples/exec-output",
                   "/v7/examples/exec-pwsh",
+                  "/v7/examples/exec-stream-logs",
                   "/v7/examples/findall-coffee-icons",
                   "/v7/examples/focus-window",
                   "/v7/examples/formatted-logging",

@@ -1,0 +1,81 @@
+---
+title: "Prompt"
+sidebarTitle: "Prompt"
+description: "TestDriver SDK - Prompt Test (Vitest) Converted from: testdriver/acceptance/prompt.yaml."
+icon: "message"
+---
+
+## Overview
+
+TestDriver SDK - Prompt Test (Vitest) Converted from: testdriver/acceptance/prompt.yaml
+
+Review the source code below to understand the implementation details and patterns used.
+
+## Live Test Run
+
+Watch this test execute in a real sandbox environment:
+
+{/* prompt.test.mjs output */}
+<iframe 
+  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d040c2e6e9493388676f/replay" 
+  width="100%" 
+  height="600" 
+  style={{ border: "1px solid #333", borderRadius: "8px" }}
+  allow="fullscreen"
+/>
+
+## Source Code
+
+```javascript title="prompt.test.mjs"
+/**
+ * TestDriver SDK - Prompt Test (Vitest)
+ * Converted from: testdriver/acceptance/prompt.yaml
+ */
+
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe.skip("Prompt Test", () => {
+  it("should execute AI-driven prompts", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: 'http://testdriver-sandbox.vercel.app/login' });
+
+    //
+    // Note: The SDK doesn't have a direct equivalent to YAML prompts without commands.
+    // This would typically be handled by the AI agent interpreting natural language.
+    // For SDK usage, you need to use explicit commands.
+
+    // Original prompts were:
+    // 1. "log in"
+    // 2. "add an item to the cart"
+    // 3. "click on the cart icon"
+    // 4. "complete checkout"
+
+    // This test is skipped as it requires explicit SDK implementation
+    // You would need to implement these as explicit SDK calls
+
+    await testdriver.act("log in");
+
+    const result = await testdriver.assert("the testdriver sandbox is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/prompt.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

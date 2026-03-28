@@ -1,0 +1,65 @@
+---
+title: "Exec Log Streaming"
+sidebarTitle: "Exec Stream Logs"
+description: "Example: should stream exec logs every second for 20 seconds"
+icon: "terminal"
+---
+
+## Overview
+
+This example demonstrates the "Exec Log Streaming" test suite. Specifically, it shows how to should stream exec logs every second for 20 seconds.
+
+Review the source code below to understand the implementation details and patterns used.
+
+## Live Test Run
+
+<Note>
+  A live test recording will be available after the next CI run.
+</Note>
+
+## Source Code
+
+```javascript title="exec-stream-logs.test.mjs"
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Exec Log Streaming", () => {
+  it("should stream exec logs every second for 20 seconds", async (context) => {
+    const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP, headless: true });
+    await testdriver.provision.chrome({ url: "about:blank" });
+
+    const code = `for i in $(seq 1 20); do echo "log line $i at $(date +%T)"; sleep 1; done`;
+
+    const result = await testdriver.exec({
+      language: "sh",
+      code,
+      timeout: 30000,
+    });
+
+    console.log("exec result:", result);
+
+    // Verify we got all 20 log lines
+    for (let i = 1; i <= 20; i++) {
+      expect(result).toContain(`log line ${i}`);
+    }
+  });
+});
+```
+
+## Running This Example
+
+```bash
+# Clone the TestDriver repository
+git clone https://github.com/testdriverai/testdriverai
+
+# Install dependencies
+cd testdriverai
+npm install
+
+# Run this specific example
+npx vitest run examples/exec-stream-logs.test.mjs
+```
+
+<Note>
+  Make sure you have `TD_API_KEY` set in your environment. Get one at [testdriver.ai](https://testdriver.ai).
+</Note>

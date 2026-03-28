@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TestDriver } from "../lib/vitest/hooks.mjs";
-import { getDefaults } from "../examples/config.mjs";
+import { getDefaults } from "./config.mjs";
 
 describe("Exec Log Streaming", () => {
   it("should stream exec logs every second for 20 seconds", async (context) => {
