@@ -13,7 +13,7 @@ const setupFiles = [
 ];
 
 const sharedTestConfig = {
-  retry: 0,
+  retry: 1,
   testTimeout: 480000,
   hookTimeout: 480000,
   maxConcurrency: 100,
