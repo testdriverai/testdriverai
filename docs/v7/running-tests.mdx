@@ -71,21 +71,29 @@ TestDriver runs each test in its own cloud sandbox, enabling true parallel execu
 ### Control Concurrency
 
 ```bash
-vitest run --maxConcurrency=5
+vitest run --maxWorkers=8
 ```
 
-The `--maxConcurrency` flag limits how many tests run simultaneously. This should match your TestDriver license slots to avoid failures from exhausted slots.
+The `--maxWorkers` flag limits how many test files run simultaneously. This should match your TestDriver license slots to avoid failures from exhausted slots.
 
-### Thread Configuration
+### Worker Pool Configuration
 
 ```bash
-vitest run --pool=threads --minThreads=2 --maxThreads=8
+vitest run --pool=forks --maxWorkers=16
 ```
 
-Fine-tune thread allocation for optimal performance:
-- `--pool=threads` — Uses worker threads for test isolation
-- `--minThreads` — Minimum number of threads to keep alive (reduces startup overhead)
-- `--maxThreads` — Maximum threads to spawn (limits resource usage)
+Fine-tune worker allocation for optimal performance:
+- `--pool=forks` — Each worker is a separate process (**required** for TestDriver, and the Vitest default)
+- `--maxWorkers` — Maximum workers to spawn (match your license slots and CPU cores)
+- `--minWorkers` — Minimum number of workers to keep alive (reduces startup overhead)
+
+<Warning>
+  `pool: "threads"` is not supported. TestDriver requires `pool: "forks"` for process isolation.
+</Warning>
+
+<Info>
+  For detailed concurrency tuning, including CI runner sizing and sharding, see the [Concurrency guide](/v7/concurrency).
+</Info>
 
 ### License Slots
 

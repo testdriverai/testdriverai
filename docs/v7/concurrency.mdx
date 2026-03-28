@@ -1,0 +1,298 @@
+---
+title: "Concurrency & Parallel Testing"
+sidebarTitle: "Concurrency"
+description: "Maximize test throughput with parallel execution, worker pools, and larger CI runners"
+icon: "arrows-split-up-and-left"
+---
+
+TestDriver runs each test in its own isolated cloud sandbox, so tests never interfere with each other. This makes TestDriver uniquely suited for massive parallelization — the only limits are your license slots and CI runner resources.
+
+## How Concurrency Works
+
+When Vitest runs your test suite, it distributes test files across **workers**. Each worker runs one test file at a time. Within each test, TestDriver provisions a fresh cloud sandbox, executes the test, and tears it down.
+
+```
+┌─────────────────────────────────────────┐
+│           Vitest Test Runner            │
+├──────────┬──────────┬──────────┬────────┤
+│ Worker 1 │ Worker 2 │ Worker 3 │  ...   │
+│ login.ts │ cart.ts  │ pay.ts   │        │
+│    ↓     │    ↓     │    ↓     │        │
+│ Sandbox  │ Sandbox  │ Sandbox  │        │
+│ (cloud)  │ (cloud)  │ (cloud)  │        │
+└──────────┴──────────┴──────────┴────────┘
+```
+
+Each sandbox is an independent machine with its own browser, so there's zero shared state between tests.
+
+## Vitest Configuration
+
+### Basic Setup
+
+```javascript vitest.config.mjs
+import { config as loadEnv } from 'dotenv';
+import TestDriver from 'testdriverai/vitest';
+import { defineConfig } from 'vitest/config';
+
+loadEnv();
+
+export default defineConfig({
+  test: {
+    testTimeout: 1800000,
+    hookTimeout: 900000,
+    setupFiles: ['testdriverai/vitest/setup'],
+    reporters: [
+      'default',
+      TestDriver(),
+      ['junit', { outputFile: 'test-report.junit.xml' }],
+    ],
+  },
+});
+```
+
+### Worker Pool
+
+TestDriver requires `pool: "forks"` (the Vitest default). Each test needs its own process for full isolation — independent environment variables, signal handlers, and child process management.
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    pool: 'forks', // Required for TestDriver (this is the default)
+    // ...
+  },
+});
+```
+
+<Warning>
+  `pool: "threads"` and `pool: "vmThreads"` are **not supported**. Thread-based pools share a single process, which causes race conditions with sandbox connections and environment variables. If you're using `pool: "threads"`, remove it or change it to `"forks"`.
+</Warning>
+
+<Tip>
+  You don't need threads for performance. TestDriver tests are I/O-bound (waiting for cloud sandboxes), so `forks` with more workers on a larger runner gives you all the concurrency you need.
+</Tip>
+
+### Controlling Worker Count
+
+The `maxWorkers` and `minWorkers` settings control how many test files run simultaneously:
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    pool: 'forks',
+    maxWorkers: 16,
+    minWorkers: 1,
+    // ...
+  },
+});
+```
+
+- **`maxWorkers`** — Maximum number of workers running at the same time. Each worker runs one test file.
+- **`minWorkers`** — Minimum workers to keep alive between test files (reduces startup overhead).
+
+<Warning>
+  `maxWorkers` should not exceed your TestDriver **license slot** count. If more workers try to provision sandboxes than you have slots, the excess tests will fail. Check your slots at [console.testdriver.ai](https://console.testdriver.ai).
+</Warning>
+
+### Concurrent Tests Within a File
+
+By default, tests within a single file run sequentially. You can run them concurrently with `describe.concurrent` or `test.concurrent`:
+
+```javascript checkout.test.mjs
+import { describe, expect, test } from 'vitest';
+import { TestDriver } from 'testdriverai/vitest/hooks';
+
+describe.concurrent('checkout flows', () => {
+  test('guest checkout', async (context) => {
+    const testdriver = TestDriver(context);
+    await testdriver.provision.chrome({ url: 'https://mystore.com' });
+    // ...
+  });
+
+  test('registered user checkout', async (context) => {
+    const testdriver = TestDriver(context);
+    await testdriver.provision.chrome({ url: 'https://mystore.com' });
+    // ...
+  });
+});
+```
+
+Use `maxConcurrency` to control how many concurrent tests can run **within a single worker**:
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    maxConcurrency: 5,
+    // ...
+  },
+});
+```
+
+<Note>
+  Total parallel tests = `maxWorkers` × `maxConcurrency`. Make sure this product doesn't exceed your license slots.
+</Note>
+
+## Scaling with Larger CI Runners
+
+Each Vitest worker consumes CPU and memory on your CI runner. If you need more concurrency, **use a larger runner** — more cores means more workers can run without contention.
+
+### GitHub Actions: Larger Runners
+
+GitHub offers [larger hosted runners](https://docs.github.com/en/actions/using-github-hosted-runners/using-larger-runners/about-larger-runners) with more cores, RAM, and disk. More cores directly translate to more parallel workers.
+
+| Runner | Cores | RAM | Recommended `maxWorkers` |
+|--------|-------|-----|--------------------------|
+| `ubuntu-latest` | 4 | 16 GB | 4 |
+| 8-core runner | 8 | 32 GB | 8 |
+| 16-core runner | 16 | 64 GB | 16 |
+| 32-core runner | 32 | 128 GB | 32 |
+| 64-core runner | 64 | 256 GB | 64 |
+
+<Tip>
+  **Rule of thumb:** Set `maxWorkers` equal to your runner's core count. TestDriver tests are I/O-bound (waiting for cloud sandboxes), so each worker uses very little CPU locally.
+</Tip>
+
+### Configuring a Larger Runner
+
+1. **Create the runner** in your GitHub organization under **Settings** → **Actions** → **Runners** → **New GitHub-hosted runner**
+2. Choose the size (e.g. 32-core, 128 GB RAM)
+3. Set **Maximum concurrency** to match your TestDriver license slots
+4. Reference it in your workflow with `runs-on`:
+
+```yaml .github/workflows/testdriver.yml
+name: TestDriver Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: testdriver-32  # Your custom 32-core runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run TestDriver tests
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: vitest run
+```
+
+### Matching Vitest Config to Your Runner
+
+Set `maxWorkers` in your Vitest config to match the runner:
+
+```javascript vitest.config.mjs
+import { config as loadEnv } from 'dotenv';
+import TestDriver from 'testdriverai/vitest';
+import { defineConfig } from 'vitest/config';
+
+loadEnv();
+
+export default defineConfig({
+  test: {
+    testTimeout: 1800000,
+    hookTimeout: 900000,
+    globalSetup: './tests/setup/global-setup.mjs',
+    setupFiles: [
+      'testdriverai/vitest/setup',
+      './tests/setup/screenshot-on-fail.mjs',
+    ],
+    pool: 'forks',
+    maxWorkers: 32,  // Match your runner's core count
+    minWorkers: 1,
+    reporters: [
+      'default',
+      TestDriver(),
+      ['junit', { outputFile: 'test-report.junit.xml' }],
+    ],
+  },
+});
+```
+
+## Sharding Across Multiple Runners
+
+For even more parallelism, combine large runners with **Vitest sharding** to split your test suite across multiple CI jobs:
+
+```yaml .github/workflows/testdriver.yml
+jobs:
+  test:
+    runs-on: testdriver-32
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run tests (shard ${{ matrix.shard }}/4)
+        env:
+          TD_API_KEY: ${{ secrets.TD_API_KEY }}
+        run: vitest run --shard=${{ matrix.shard }}/4
+```
+
+This runs 4 jobs in parallel, each on a 32-core runner with 32 workers. That's **128 tests running simultaneously**.
+
+<Warning>
+  Make sure your total parallelism (shards × maxWorkers) doesn't exceed your license slot limit.
+</Warning>
+
+## Concurrency Scaling Reference
+
+| Setup | Parallel Tests | Approx. Time for 100 Tests (2 min each) |
+|-------|---------------|------------------------------------------|
+| `ubuntu-latest`, 4 workers | 4 | 50 min |
+| 16-core runner, 16 workers | 16 | 14 min |
+| 32-core runner, 32 workers | 32 | 8 min |
+| 32-core × 2 shards | 64 | 4 min |
+| 32-core × 4 shards | 128 | 2 min |
+
+## License Slots
+
+Your TestDriver plan determines how many sandboxes can run at the same time. Each active test occupies one slot. When a test finishes and the sandbox is destroyed, the slot is immediately released.
+
+<Info>
+  View your current slot usage at [console.testdriver.ai](https://console.testdriver.ai). Upgrade anytime to increase parallelization.
+</Info>
+
+### What Happens When You Exceed Slots
+
+If more tests try to provision sandboxes than you have slots, the excess tests will receive a provisioning error and fail. To avoid this:
+
+1. Set `maxWorkers` ≤ your license slot count
+2. If using sharding, ensure `shards × maxWorkers` ≤ your license slots
+3. If using `maxConcurrency` within files, factor that in too
+
+<Card
+  title="View Plans & Pricing"
+  icon="credit-card"
+  href="/v7/cloud"
+>
+  Compare plans and find the right level of parallelization for your team.
+</Card>
+
+## Self-Hosted AWS Instances
+
+When using TestDriver with self-hosted AWS instances (`testdriverai/vitest/setup-aws`), the same `pool: 'forks'` requirement applies. This ensures each test's AWS instance lifecycle is completely independent.
+
+```javascript vitest.config.mjs
+export default defineConfig({
+  test: {
+    pool: 'forks',
+    setupFiles: [
+      'testdriverai/vitest/setup',
+      'testdriverai/vitest/setup-aws',
+    ],
+    // ...
+  },
+});
+```
