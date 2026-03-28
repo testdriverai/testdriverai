@@ -12,6 +12,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._ably = null;
       this._sessionChannel = null;
       this._channelName = null;
+      this._membersChannelName = null;
       this.ps = {};
       this._execBuffers = {}; // accumulate streamed exec.output chunks per requestId
       this.heartbeat = null;
@@ -53,7 +54,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       return this._publishCount;
     }
 
-    async _initAbly(ablyToken, channelName) {
+    async _initAbly(ablyToken, channelName, membersChannelName) {
       if (this._ably) {
         try {
           this._ably.close();
@@ -62,6 +63,19 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         }
       }
       this._channelName = channelName;
+
+      // Derive the members channel from the session channel if not supplied.
+      // Format: testdriver:{env}:{teamId}:{sandboxId} → testdriver:{env}:{teamId}:members
+      if (!membersChannelName) {
+        const parts = channelName.split(":");
+        if (parts.length >= 3) {
+          membersChannelName = parts.slice(0, 3).join(":") + ":members";
+        } else {
+          logger.warn("[ably] Channel name format unexpected (" + channelName + "), cannot derive members channel");
+        }
+      }
+      this._membersChannelName = membersChannelName;
+
       var self = this;
 
       this._ably = new Ably.Realtime({
@@ -103,9 +117,32 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
 
       this._sessionChannel = this._ably.channels.get(channelName);
 
-      logger.debug(`[realtime] Channel initialized: ${channelName}`);
+      // Explicitly attach the session channel BEFORE entering presence on the
+      // members channel. Entering members-presence triggers the API's waitpoint
+      // completion → claim-slot task → publishes slot-approved on the session
+      // channel. If the session channel isn't attached yet, that message lands
+      // before our attachment point and historyBeforeSubscribe() won't see it.
+      await this._sessionChannel.attach();
+      logger.debug(`[realtime] Channel attached: ${channelName}`);
 
-      // Enter presence on the session channel so the API can count connected SDK clients
+      // Enter presence on the team members channel so the API can count
+      // connected SDK clients with a single direct lookup per team.
+      if (membersChannelName) {
+        try {
+          var membersChannel = this._ably.channels.get(membersChannelName);
+          await membersChannel.presence.enter({
+            sandboxId: this._sandboxId,
+            connectedAt: Date.now(),
+          });
+          logger.debug(`[realtime] Entered presence on members channel (sandbox=${this._sandboxId})`);
+        } catch (e) {
+          // Non-fatal — presence is used for concurrency counting, not critical path
+          logger.warn("Failed to enter presence on members channel: " + (e.message || e));
+        }
+      }
+
+      // Enter presence on the session channel so the API's session monitor can
+      // detect SDK connect/disconnect events for this sandbox.
       try {
         await this._sessionChannel.presence.enter({
           sandboxId: this._sandboxId,
@@ -113,7 +150,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         });
         logger.debug(`[realtime] Entered presence on session channel (sandbox=${this._sandboxId})`);
       } catch (e) {
-        // Non-fatal — presence is used for concurrency counting, not critical path
+        // Non-fatal — presence is used for disconnect detection, not critical path
         logger.warn("Failed to enter presence on session channel: " + (e.message || e));
       }
 
@@ -510,6 +547,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         timeout,
       );
 
+      logger.debug(`[sandbox] authenticate response: success=${reply.success} status=${reply.status || 'none'} sandboxId=${reply.sandboxId || 'none'}`);
+
       if (!reply.success) {
         var err = new Error(
           reply.errorMessage || "Failed to allocate sandbox",
@@ -522,7 +561,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this._teamId = reply.teamId;
 
       if (reply.ably && reply.ably.token) {
-        await this._initAbly(reply.ably.token, reply.ably.channel);
+        logger.debug(`[sandbox] Initializing Ably with channel=${reply.ably.channel}, membersChannel=${reply.ably.membersChannel || '(derived)'}`);
+        await this._initAbly(reply.ably.token, reply.ably.channel, reply.ably.membersChannel);
         this.instanceSocketConnected = true;
 
         // Tell the runner to enable debug log forwarding if debug mode is on
@@ -547,6 +587,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       var slotPollStart = Date.now();
       while (reply.status === 'pending') {
         logger.log('Slot claim pending — waiting for approval via Ably...');
+        logger.debug(`[slots] sandboxId=${this._sandboxId} channel=${this._channelName} membersChannel=${this._membersChannelName}`);
 
         var self = this;
         var slotResolved = false;
@@ -587,24 +628,32 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         // The claim-slot task fires in response to presence enter, so the
         // decision may already be published by the time we get here.
         var slotControlSub = await self._sessionChannel.subscribe('control', onSlotControl);
+        logger.debug(`[slots] Subscribed to control channel for slot decision (sandboxId=${this._sandboxId})`);
 
         // Check for decisions published before this subscription was active
         if (!slotResolved && slotControlSub) {
           try {
+            logger.debug(`[slots] Checking history for pre-subscription slot decisions (sandboxId=${this._sandboxId})`);
+            logger.debug(`[slots] Checking history for pre-subscription slot decisions (sandboxId=${this._sandboxId})`);
             var histPage = await slotControlSub.historyBeforeSubscribe({ limit: 10 });
+            var histItemCount = 0;
             while (histPage && !slotResolved) {
               for (var hi = 0; hi < histPage.items.length; hi++) {
+                histItemCount++;
+                logger.debug(`[slots] History item: type=${histPage.items[hi].data && histPage.items[hi].data.type} (sandboxId=${this._sandboxId})`);
                 onSlotControl(histPage.items[hi]);
                 if (slotResolved) break;
               }
               histPage = (!slotResolved && histPage.hasNext()) ? await histPage.next() : null;
             }
+            logger.debug(`[slots] History check done: ${histItemCount} items checked, resolved=${slotResolved} (sandboxId=${this._sandboxId})`);
           } catch (histErr) {
             logger.warn('[slots] Failed to check history for slot decision: ' + (histErr.message || histErr));
           }
         }
 
         var slotDecision = await slotDecisionPromise;
+        logger.debug(`[slots] Slot decision received: approved=${slotDecision.approved} sandboxId=${this._sandboxId} elapsedMs=${Date.now() - slotPollStart}`);
 
         if (!slotDecision.approved) {
           // Slot denied — disconnect Ably and re-try the full authenticate
@@ -648,7 +697,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           if (reply.status === 'pending' && reply.ably && reply.ably.token) {
             this._sandboxId = reply.sandboxId;
             this._teamId = reply.teamId;
-            await this._initAbly(reply.ably.token, reply.ably.channel);
+            await this._initAbly(reply.ably.token, reply.ably.channel, reply.ably.membersChannel);
             this.instanceSocketConnected = true;
           }
 
