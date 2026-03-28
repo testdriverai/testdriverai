@@ -1741,6 +1741,17 @@ class TestDriverSDK {
   }
 
   /**
+   * Get the web log pattern for dashcam tracking.
+   * Uses the provisioned Chrome URL domain if available, otherwise matches all traffic.
+   * @returns {string} URL pattern for dashcam web log tracking
+   */
+  _getDashcamWebLogPattern() {
+    return this._provisionedChromeUrl
+      ? this._getUrlDomainPattern(this._provisionedChromeUrl)
+      : "**";
+  }
+
+  /**
    * Wait for Chrome DevTools Protocol debugger to be ready on port 9222,
    * then wait for a page to report loaded.
    * Works on both Windows (PowerShell) and Linux (sh).
@@ -1918,9 +1929,8 @@ class TestDriverSDK {
 
         // Add web log tracking with domain wildcard pattern, then start dashcam
         if (this.dashcamEnabled) {
-          const domainPattern = this._getUrlDomainPattern(url);
-          await this.dashcam.addWebLog(domainPattern, "Web Logs");
-          
+          await this.dashcam.addWebLog(this._getDashcamWebLogPattern(), "Web Logs");
+
           // Start dashcam recording after logs are configured
           if (!(await this.dashcam.isRecording())) {
             await this.dashcam.start();
@@ -2185,14 +2195,18 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         await this._waitForChromeDebuggerReady();
         await this.focusApplication("Google Chrome");
 
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
+        // Add web log tracking, then start dashcam recording
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog(this._getDashcamWebLogPattern(), "Web Logs");
+
+          if (!(await this.dashcam.isRecording())) {
+            await this.dashcam.start();
+          }
         }
       },
 
       /**
-       * Launch VS Code
+
        * @param {Object} options - VS Code launch options
        * @param {string} [options.workspace] - Workspace/folder to open
        * @param {string[]} [options.extensions=[]] - Extensions to install
@@ -2240,9 +2254,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         // Wait for VS Code to be ready
         await this.focusApplication("Visual Studio Code");
 
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
+        // Add web log tracking, then start dashcam recording
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog(this._getDashcamWebLogPattern(), "Web Logs");
+
+          if (!(await this.dashcam.isRecording())) {
+            await this.dashcam.start();
+          }
         }
       },
 
@@ -2393,9 +2411,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
           await this.focusApplication(appName);
         }
 
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
+        // Add web log tracking, then start dashcam recording
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog(this._getDashcamWebLogPattern(), "Web Logs");
+
+          if (!(await this.dashcam.isRecording())) {
+            await this.dashcam.start();
+          }
         }
 
         return actualFilePath;
@@ -2435,9 +2457,13 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
 
         await this.focusApplication("Electron");
 
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
+        // Add web log tracking, then start dashcam recording
+        if (this.dashcamEnabled) {
+          await this.dashcam.addWebLog(this._getDashcamWebLogPattern(), "Web Logs");
+
+          if (!(await this.dashcam.isRecording())) {
+            await this.dashcam.start();
+          }
         }
       },
 
@@ -2481,12 +2507,8 @@ with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
         await this.dashcam.addFileLog(actualLogPath, logName);
 
         // Add web log tracking if enabled
-        // Use domain pattern from provisioned Chrome URL if available
         if (webLogs) {
-          const pattern = this._provisionedChromeUrl
-            ? this._getUrlDomainPattern(this._provisionedChromeUrl)
-            : "**";
-          await this.dashcam.addWebLog(pattern, "Web Logs");
+          await this.dashcam.addWebLog(this._getDashcamWebLogPattern(), "Web Logs");
         }
 
         // Start recording if not already recording
