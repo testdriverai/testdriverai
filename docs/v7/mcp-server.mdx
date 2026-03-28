@@ -1,0 +1,362 @@
+---
+title: "MCP Server"
+sidebarTitle: "MCP Server"
+description: "Install and use the TestDriver MCP server with your favorite AI coding assistant"
+icon: "plug"
+---
+
+The TestDriver MCP (Model Context Protocol) server lets AI coding assistants like GitHub Copilot, Cursor, Claude, and Windsurf **build and run TestDriver tests interactively** with visual feedback. Every action returns a screenshot so the AI can see exactly what happened on screen.
+
+## How It Works
+
+1. Your AI assistant calls TestDriver MCP tools to control a cloud sandbox
+2. Each tool call provisions a browser or desktop app and performs an action
+3. The result includes a screenshot **and** the generated test code to save
+4. The AI iterates — clicking, typing, asserting — until the test is complete
+
+## Prerequisites
+
+- A TestDriver API key — [get one free at console.testdriver.ai](https://console.testdriver.ai/team)
+- Node.js 18 or later
+- An MCP-compatible AI coding assistant (see below)
+
+---
+
+## Installation by IDE / Client
+
+<Tabs>
+  <Tab title="VS Code (GitHub Copilot)">
+
+    ### Option A — TestDriver Extension (Recommended)
+
+    The easiest way to get started in VS Code is the **TestDriver.ai extension**, which installs the MCP server automatically.
+
+    <Steps>
+      <Step title="Install the extension">
+        Open the Extensions panel (`Cmd+Shift+X` / `Ctrl+Shift+X`), search for **TestDriver.ai**, and click **Install**.
+      </Step>
+      <Step title="Install the MCP server">
+        Press `Cmd+Shift+P` / `Ctrl+Shift+P`, type **TestDriver: Install MCP Server**, and press Enter. Accept the prompt to save the configuration.
+
+        When installed this way the MCP server automatically uses IDE preview mode, so live test execution appears directly inside VS Code instead of an external browser.
+      </Step>
+      <Step title="Set your API key">
+        When prompted, paste your TestDriver API key from [console.testdriver.ai/team](https://console.testdriver.ai/team).
+      </Step>
+    </Steps>
+
+    ### Option B — Manual Configuration
+
+    Add the server to `.vscode/mcp.json` in your project root (creates the file if it doesn't exist):
+
+    ```json .vscode/mcp.json
+    {
+      "inputs": [
+        {
+          "type": "promptString",
+          "id": "testdriver-api-key",
+          "description": "TestDriver API Key from https://console.testdriver.ai/team",
+          "password": true
+        }
+      ],
+      "servers": {
+        "testdriver": {
+          "command": "npx",
+          "args": ["-p", "testdriverai", "testdriverai-mcp"],
+          "env": {
+            "TD_API_KEY": "${input:testdriver-api-key}"
+          }
+        }
+      }
+    }
+    ```
+
+    VS Code will prompt you for your API key the first time it starts the server.
+
+    ### Option C — GitHub Copilot Coding Agent
+
+    To use TestDriver with the **GitHub Copilot coding agent** (autonomous PR workflows):
+
+    <Steps>
+      <Step title="Add a Copilot environment secret">
+        Go to your repository **Settings → Environments**, open (or create) the `copilot` environment, and add a secret named `COPILOT_MCP_TD_API_KEY` set to your TestDriver API key.
+      </Step>
+      <Step title="Add MCP configuration">
+        Go to **Settings → Copilot → Coding agent → MCP configuration** and paste:
+
+        ```json
+        {
+          "mcpServers": {
+            "testdriver": {
+              "type": "local",
+              "command": "npx",
+              "args": ["-p", "testdriverai", "testdriverai-mcp"],
+              "tools": ["*"],
+              "env": {
+                "TD_API_KEY": "COPILOT_MCP_TD_API_KEY"
+              }
+            }
+          }
+        }
+        ```
+      </Step>
+    </Steps>
+
+    <Note>
+      The MCP server accepts both `TD_API_KEY` and `COPILOT_MCP_TD_API_KEY` for compatibility with the GitHub Copilot coding agent.
+    </Note>
+
+  </Tab>
+
+  <Tab title="Cursor">
+
+    Add the TestDriver server to `~/.cursor/mcp.json`:
+
+    ```json ~/.cursor/mcp.json
+    {
+      "inputs": [
+        {
+          "type": "promptString",
+          "id": "testdriver-api-key",
+          "description": "TestDriver API Key from https://console.testdriver.ai/team",
+          "password": true
+        }
+      ],
+      "servers": {
+        "testdriver": {
+          "command": "npx",
+          "args": ["-p", "testdriverai", "testdriverai-mcp"],
+          "env": {
+            "TD_API_KEY": "${input:testdriver-api-key}"
+          }
+        }
+      }
+    }
+    ```
+
+    <Steps>
+      <Step title="Open Cursor settings">
+        Press `Cmd+Shift+P` / `Ctrl+Shift+P` and choose **Cursor Settings**, or navigate to **Settings → MCP**.
+      </Step>
+      <Step title="Add the configuration">
+        Paste the JSON above into `~/.cursor/mcp.json` (or use the **Add new global MCP server** button in settings).
+      </Step>
+      <Step title="Restart Cursor">
+        Reload the window (`Cmd+Shift+P` → **Developer: Reload Window**) to activate the server.
+      </Step>
+      <Step title="Verify">
+        Open the Cursor chat panel and look for the **TestDriver** tools in the MCP section. You should see tools like `session_start`, `find`, `click`, and `assert`.
+      </Step>
+    </Steps>
+
+  </Tab>
+
+  <Tab title="Claude Desktop">
+
+    Add the TestDriver server to your Claude Desktop config file.
+
+    **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`  
+    **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+    ```json claude_desktop_config.json
+    {
+      "mcpServers": {
+        "testdriver": {
+          "command": "npx",
+          "args": ["-p", "testdriverai", "testdriverai-mcp"],
+          "env": {
+            "TD_API_KEY": "your_api_key_here"
+          }
+        }
+      }
+    }
+    ```
+
+    <Steps>
+      <Step title="Open the config file">
+        Open the file path above in a text editor. Create it if it doesn't exist.
+      </Step>
+      <Step title="Paste the configuration">
+        Replace `your_api_key_here` with your TestDriver API key from [console.testdriver.ai/team](https://console.testdriver.ai/team).
+      </Step>
+      <Step title="Restart Claude Desktop">
+        Fully quit and relaunch Claude Desktop to load the new configuration.
+      </Step>
+      <Step title="Verify">
+        In a new conversation, click the **hammer icon** (🔨) to see available MCP tools. TestDriver tools should appear in the list.
+      </Step>
+    </Steps>
+
+  </Tab>
+
+  <Tab title="Windsurf">
+
+    Add the TestDriver server to `~/.codeium/windsurf/mcp_config.json`:
+
+    ```json ~/.codeium/windsurf/mcp_config.json
+    {
+      "mcpServers": {
+        "testdriver": {
+          "command": "npx",
+          "args": ["-p", "testdriverai", "testdriverai-mcp"],
+          "env": {
+            "TD_API_KEY": "your_api_key_here"
+          }
+        }
+      }
+    }
+    ```
+
+    <Steps>
+      <Step title="Open MCP settings">
+        In Windsurf, go to **Settings → MCP** (or open the command palette and search for **MCP**).
+      </Step>
+      <Step title="Add the configuration">
+        Paste the JSON above, replacing `your_api_key_here` with your API key.
+      </Step>
+      <Step title="Restart Windsurf">
+        Reload the window to activate the server.
+      </Step>
+    </Steps>
+
+  </Tab>
+</Tabs>
+
+---
+
+## Usage Examples
+
+Once the MCP server is running, open the AI chat panel in your IDE and describe what you want to test. The AI will use TestDriver tools to build your test step by step.
+
+### Example 1 — Test a login flow
+
+```
+Write a TestDriver test that:
+1. Opens https://practicetestautomation.com/practice-test-login/
+2. Types "student" into the username field
+3. Types "Password123" into the password field
+4. Clicks the Submit button
+5. Asserts that the page says "Logged In Successfully"
+```
+
+The AI will call tools in sequence and show you a screenshot after each step:
+
+```
+[AI] → session_start({ type: "chrome", url: "https://practicetestautomation.com/..." })
+[AI] → find("username input field")
+[AI] → type("student")
+[AI] → find("password input field")
+[AI] → type("Password123")
+[AI] → find_and_click("Submit button")
+[AI] → assert("page says Logged In Successfully")
+```
+
+Each tool returns a screenshot and the TestDriver YAML/JS code to save in your test file.
+
+---
+
+### Example 2 — Test a search experience
+
+```
+Use TestDriver to test DuckDuckGo search:
+- Navigate to duckduckgo.com
+- Search for "testdriver.ai"
+- Assert that results appear on the page
+Save the generated code to tests/search.test.mjs
+```
+
+---
+
+### Example 3 — Test a desktop application
+
+```
+Start a TestDriver session on Windows, open Notepad,
+type "Hello World", and assert the text appears in the editor.
+```
+
+---
+
+### Example 4 — Explore and assert
+
+```
+Open https://news.ycombinator.com and assert that 
+at least one story title is visible on the page.
+```
+
+---
+
+## Available Tools
+
+The MCP server exposes these tools to your AI assistant:
+
+### Session Management
+
+| Tool | Description |
+|------|-------------|
+| `session_start` | Provision a sandbox with a browser or desktop app |
+| `session_status` | Check session health and time remaining |
+| `session_extend` | Extend session keepAlive time |
+
+### Interacting with the Screen
+
+| Tool | Description |
+|------|-------------|
+| `find` | Find an element using a natural-language description |
+| `click` | Click on an element or coordinates |
+| `find_and_click` | Find and click in one step |
+| `type` | Type text into the focused field |
+| `press_keys` | Press keyboard shortcuts (e.g. `Enter`, `Ctrl+A`) |
+| `scroll` | Scroll the page |
+
+### Verification
+
+| Tool | Description |
+|------|-------------|
+| `assert` | AI-powered assertion about the current screen state |
+| `check` | Ask the AI to analyze the screen (no code generated) |
+| `exec` | Execute code inside the sandbox |
+| `screenshot` | Capture and display the current screen |
+
+### Local Screenshots
+
+| Tool | Description |
+|------|-------------|
+| `list_local_screenshots` | List screenshots saved in `.testdriver/` |
+| `view_local_screenshot` | View and analyze a saved screenshot |
+
+---
+
+## Saving the Generated Test
+
+After each tool call the MCP server returns the **TestDriver YAML/JS code** for that step. Ask your AI assistant to collect this code and save it to a test file:
+
+```
+Collect all the generated code from the TestDriver session 
+and save it as tests/login.test.mjs
+```
+
+Then run the saved test with Vitest to verify it works end-to-end:
+
+```bash
+vitest run tests/login.test.mjs
+```
+
+---
+
+## Tips
+
+<Tip>
+  Start each session by telling the AI which URL or application to open. For example: "Start a TestDriver session and open https://myapp.com in Chrome."
+</Tip>
+
+<Tip>
+  Use `assert` after every meaningful action (login, form submit, navigation) so the AI can verify things are working as expected.
+</Tip>
+
+<Tip>
+  If the AI gets confused about what's on screen, ask it to call `screenshot` to get a fresh view.
+</Tip>
+
+<Tip>
+  Sessions time out after a period of inactivity. Call `session_extend` or start a new session if you need more time.
+</Tip>
