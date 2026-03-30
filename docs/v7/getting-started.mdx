@@ -1,0 +1,138 @@
+---
+title: "Getting Started"
+sidebarTitle: "Getting Started"
+description: "Set up TestDriver in VS Code with GitHub Copilot and run your first AI-generated test."
+icon: "flag-checkered"
+---
+
+This guide walks you through setting up TestDriver in **Visual Studio Code** with **GitHub Copilot**. By the end, you'll have an AI-generated test running in a cloud sandbox—visible right inside your editor.
+
+<Tip><a href="https://discord.com/invite/cWDFW8DzPm" target="_blank" rel="noreferrer">Join our Discord</a> if you have any questions or need help getting started!</Tip>
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- [Visual Studio Code](https://code.visualstudio.com/)
+- [Node.js](https://nodejs.org/) (v18 or later)
+- A [GitHub Copilot](https://github.com/features/copilot) subscription (for AI test generation)
+
+<Info>
+  GitHub Copilot is recommended for the best experience. You can still write tests manually without it—see the [Quickstart](/v7/quickstart) for a step-by-step walkthrough.
+</Info>
+
+## Setup
+
+<Steps>
+  <Step title="Install the TestDriver Extension">
+
+    Open VS Code and install the **TestDriver** extension from the marketplace:
+
+    <Card
+      horizontal
+      title="TestDriver for VS Code"
+      arrow
+      href="vscode:extension/testdriver.testdriver"
+      icon="puzzle-piece"
+    >
+      Install testdriver.testdriver from the VS Code Marketplace
+    </Card>
+
+    You can also find it by searching **"TestDriver"** in the VS Code Extensions panel (`Ctrl+Shift+X`).
+
+  </Step>
+  <Step title="Initialize Your Project">
+
+    The extension will guide you to run the init command during setup. You can also run it manually in your project directory:
+
+    ```bash
+    npx testdriverai init
+    ```
+
+    This command will:
+    - Walk you through creating or configuring your project
+    - Install **agent skills** for AI-powered test generation
+    - Set up the **MCP server** locally so Copilot can interact with TestDriver
+    - Configure your API key
+
+    <Info>
+      Need an API key? Create a free account at [console.testdriver.ai](https://console.testdriver.ai/team)—no credit card required.
+    </Info>
+
+  </Step>
+  <Step title="Verify Copilot Can See TestDriver">
+
+    Once setup is complete, the TestDriver MCP server is available to GitHub Copilot. Open the **Copilot Chat** panel in VS Code (`Ctrl+Shift+I`) and verify it's connected—you should see TestDriver listed as an available tool.
+
+  </Step>
+</Steps>
+
+## Create Your First Test
+
+With the extension and MCP server running, you can ask GitHub Copilot to generate a test for you. Open Copilot Chat and try a prompt like:
+
+```md
+Make me a TestDriver test that does the following:
+
+1. Navigate to https://practicetestautomation.com/practice-test-login/
+2. Type "student" into the Username field
+3. Type "Password123" into the Password field
+4. Click the Submit button
+5. Verify the page contains "Congratulations" or "successfully logged in"
+```
+
+Copilot will use the TestDriver MCP server to **spawn a cloud sandbox** and generate a working test file. The sandbox VM will appear in a **webview panel** inside VS Code so you can watch the test being built in real time.
+
+<Tip>
+  To enable the in-editor preview, make sure your test passes `preview: "ide"` to the TestDriver constructor. See [Customizing Devices](/v7/customizing-devices) for all preview options.
+
+  ```javascript
+  const testdriver = TestDriver(context, {
+    preview: "ide",
+  });
+  ```
+</Tip>
+
+## Run Your Tests
+
+TestDriver uses [Vitest](https://vitest.dev/) as its test runner. You can run tests from the terminal:
+
+```bash
+vitest run
+```
+
+### Run from the VS Code Test Panel
+
+For a fully integrated experience, install the [Vitest VS Code extension](https://marketplace.visualstudio.com/items?itemName=vitest.explorer) so tests appear in the **Testing** panel (`Ctrl+Shift+T`):
+
+1. Install the **Vitest** extension from the VS Code Marketplace.
+2. Open the **Testing** sidebar panel.
+3. Your TestDriver test files will appear in the test tree.
+4. Click the **Run** button next to any test to execute it.
+
+Test results, logs, and status are displayed inline—no need to leave your editor.
+
+## What's Next?
+
+You now have a working TestDriver setup inside VS Code. Here are some next steps to explore:
+
+<CardGroup cols={2}>
+  <Card title="Test Syntax" icon="code" href="/v7/performing-actions">
+    Learn the full API for clicking, typing, scrolling, and more.
+  </Card>
+  <Card title="Locating Elements" icon="crosshairs" href="/v7/locating-elements">
+    Find UI elements using natural language descriptions.
+  </Card>
+  <Card title="Making Assertions" icon="check" href="/v7/making-assertions">
+    Verify that your app is in the expected state.
+  </Card>
+  <Card title="Running Tests" icon="play" href="/v7/running-tests">
+    Run tests in parallel, filter by name, and generate coverage reports.
+  </Card>
+  <Card title="Generating Tests" icon="wand-magic-sparkles" href="/v7/generating-tests">
+    Use AI agents and exploration mode to create tests automatically.
+  </Card>
+  <Card title="CI/CD Integration" icon="rotate" href="/v7/ci-cd">
+    Run TestDriver tests in GitHub Actions and other CI pipelines.
+  </Card>
+</CardGroup>

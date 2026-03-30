@@ -20,6 +20,7 @@
             "group": "Overview",
             "pages": [
               "/v7/quickstart",
+              "/v7/getting-started",
               "/v7/what-is-testdriver",
               {
                 "group": "Examples",
