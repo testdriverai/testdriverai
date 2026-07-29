@@ -1,13 +1,13 @@
 ---
-title: "Debugging with Screenshots"
-sidebarTitle: "Debugging with Screenshots"
-description: "View and analyze saved screenshots using MCP commands for test debugging and development"
-icon: "magnifying-glass"
+title: "Debug"
+sidebarTitle: "Debug"
+description: "Diagnose failing tests with screenshots, replays, and logs"
+icon: "bug"
 ---
 
 ## Overview
 
-TestDriver MCP provides powerful commands to view and analyze screenshots saved during test execution. This enables rapid debugging, test development, and comparison workflows without manually opening image files.
+When a test fails, debug it by seeing exactly what happened — don't guess. TestDriver captures screenshots, video replays, and logs as your test runs, so you can replay the moment of failure instead of squinting at a stack trace. TestDriver MCP provides powerful commands to view and analyze the screenshots saved during test execution, enabling rapid debugging, test development, and comparison workflows without manually opening image files.
 
 <Note>
   **Automatic Screenshots (Default: Enabled)**: TestDriver automatically captures screenshots before and after every command. Screenshots are named with the line number and action, making it easy to trace exactly which line of code produced each screenshot. For example: `001-click-before-L42-submit-button.png`
@@ -123,7 +123,7 @@ view_local_screenshot({ path: "/full/path/to/screenshot.png" })
 
 ### Test Debugging After Failures
 
-When a test fails, use powerful filtering to quickly find relevant screenshots:
+When a test fails, you don't have to wonder what went wrong — use powerful filtering to quickly find the screenshots that show exactly what happened:
 
 **1. Find screenshots at the failing line:**
 
@@ -329,6 +329,20 @@ Understanding the directory structure helps with efficient screenshot viewing:
 - All screenshots are PNG format
 - Disable automatic screenshots with `autoScreenshots: false` if needed
 
+## Interaction List Sidebar (Source of Truth)
+
+When viewing a test run in the TestDriver console, the **interaction list sidebar** displays a screenshot for each interaction call (find, click, type, assert, etc.). These screenshots show exactly what was on the screen at the time each interaction was executed.
+
+<Note>
+  **The sidebar screenshots are the source of truth.** If a test is behaving unexpectedly, check the screenshot attached to the specific interaction in the sidebar — it shows precisely what the AI saw when making its decision. This is more reliable than inferring screen state from test logs or local screenshots alone.
+</Note>
+
+Use the interaction list to:
+- **Verify what the AI saw** — confirm the correct page/state was visible when `find()` or `assert()` ran
+- **Debug misclicks** — see whether the target element was actually on screen
+- **Identify timing issues** — spot cases where the UI hadn't finished loading before an interaction fired
+- **Compare runs** — review interaction screenshots across multiple runs to catch flaky behavior
+
 ## Integration with Test Development
 
 ### During MCP Interactive Development
@@ -345,7 +359,7 @@ This helps verify your test logic before running the full test file.
 
 ### After Test Runs
 
-When tests fail or behave unexpectedly:
+When tests fail or behave unexpectedly, replay what happened step by step:
 
 1. **Run the test** with `vitest run tests/my-test.test.mjs`
 2. **List screenshots** using `list_local_screenshots`
@@ -395,8 +409,18 @@ When tests fail or behave unexpectedly:
   </Accordion>
 </AccordionGroup>
 
+## Where this fits in the Guide
+
+Debugging is what you reach for when a [Run](/v7/copilot/running-tests) goes sideways or a [Validate](/v7/making-assertions) assertion fails — the screenshots show you precisely what the AI saw before it acted. Once you've diagnosed the failure, the next step is to stop it from recurring.
+
 ## Related
 
 - [screenshot()](/v7/screenshot) - Capture screenshots during test execution
 - [Dashcam](/v7/dashcam) - Record full test sessions with video and logs
 - [assert()](/v7/assert) - Make AI-powered assertions that benefit from screenshot context
+
+## Next
+
+<Card title="Prevent" icon="shield-check" href="/v7/copilot/auto-healing">
+  You've seen what went wrong — now keep it from happening again. Let auto-healing repair flaky tests automatically before they fail your suite.
+</Card>

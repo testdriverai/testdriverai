@@ -1,6 +1,7 @@
 const BaseCommand = require("../lib/base.js");
 const { createCommandDefinitions } = require("../../../agent/interface.js");
 const { initProject } = require("../../../lib/init-project.js");
+const { CLIENTS, detectClients } = require("../../../lib/install-clients.js");
 const fs = require("fs");
 const path = require("path");
 const chalk = require("chalk");
@@ -22,12 +23,23 @@ const POLL_TIMEOUT = 900000; // 15 minutes
  */
 class InitCommand extends BaseCommand {
   async run() {
-    await this.parse(InitCommand);
+    const { flags } = await this.parse(InitCommand);
 
     console.log(chalk.cyan("\n🚀 Initializing TestDriver project...\n"));
 
     // Prompt for API key first
     const apiKey = await this.promptForApiKey();
+
+    // Determine which AI clients to wire up: from --client flag, or interactively.
+    let clients;
+    if (flags.client) {
+      clients = flags.client
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+    } else {
+      clients = await this.promptForClients();
+    }
 
     // Helper to print progress messages with appropriate colors
     const printProgress = (msg) => {
@@ -47,6 +59,10 @@ class InitCommand extends BaseCommand {
       targetDir: process.cwd(),
       apiKey: apiKey,
       skipInstall: false,
+      // --no-sample-test sets flags["sample-test"] to false
+      skipSampleTest: flags["sample-test"] === false,
+      clients: clients && clients.length ? clients : undefined,
+      channel: channelConfig.active,
       onProgress: printProgress,
     });
 
@@ -157,6 +173,72 @@ class InitCommand extends BaseCommand {
       console.log(chalk.gray("     TD_API_KEY=your_api_key\n"));
       return null;
     }
+  }
+
+  /**
+   * Prompt the user to select which AI clients to install TestDriver into.
+   * Returns an array of client ids (possibly empty).
+   * @returns {Promise<string[]>}
+   */
+  async promptForClients() {
+    const ids = Object.keys(CLIENTS);
+    const detected = new Set(detectClients(process.cwd()));
+
+    // Non-interactive stdin (CI, piped input, no TTY): don't prompt — fall back
+    // to detected clients so init can still scaffold all files unattended.
+    if (!process.stdin.isTTY) {
+      return [...detected];
+    }
+
+    console.log(chalk.cyan("\n  Which AI clients should TestDriver be installed into?\n"));
+    ids.forEach((id, i) => {
+      const c = CLIENTS[id];
+      const tag = detected.has(id) ? chalk.green(" (detected)") : "";
+      const web = c.type === "web" ? chalk.gray(" — web, manual steps") : "";
+      console.log(`  ${chalk.cyan(i + 1)}. ${c.label}${tag}${web}`);
+    });
+    console.log(`  ${chalk.cyan("a")}. All of the above`);
+    console.log(
+      chalk.gray(
+        "\n  Enter numbers separated by commas (e.g. 1,3), 'a' for all, or press Enter to skip.\n",
+      ),
+    );
+
+    const answer = await new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      // Default to detected clients if any, else skip.
+      const defaultHint = detected.size
+        ? ` [${[...detected].map((d) => ids.indexOf(d) + 1).join(",")}]`
+        : "";
+      let answered = false;
+      rl.question(`  Select clients${defaultHint}: `, (a) => {
+        answered = true;
+        rl.close();
+        resolve(a.trim());
+      });
+      // If stdin closes (EOF) before a line is entered, the question callback
+      // never fires — resolve empty so init doesn't hang.
+      rl.on("close", () => {
+        if (!answered) resolve("");
+      });
+    });
+
+    if (!answer) {
+      // Enter pressed: use detected clients if any, otherwise none.
+      return [...detected];
+    }
+    if (answer.toLowerCase() === "a" || answer.toLowerCase() === "all") {
+      return ["all"];
+    }
+    const selected = answer
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= ids.length)
+      .map((n) => ids[n - 1]);
+    return selected;
   }
 
   /**
@@ -411,7 +493,7 @@ class InitCommand extends BaseCommand {
     console.log("  2. Use AI agents to write tests:");
     console.log(chalk.gray("     Open VSCode/Cursor and use @testdriver agent\n"));
     console.log("  3. MCP server configured:");
-    console.log(chalk.gray("     TestDriver tools available via MCP in .vscode/mcp.json\n"));
+    console.log(chalk.gray("     TestDriver tools are now available in your selected AI client(s)\n"));
     console.log(
       "  4. For CI/CD, add TD_API_KEY to your GitHub repository secrets",
     );

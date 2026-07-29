@@ -72,8 +72,8 @@ new Dashcam(client, options)
   Configuration options
 
   <Expandable title="options properties">
-    <ParamField path="apiKey" type="string" default="4e93d8bf-3886-4d26-a144-116c4063522d">
-      Dashcam API key for authentication
+    <ParamField path="apiKey" type="string">
+      Dashcam API key for authentication. Set via `TD_API_KEY` environment variable.
     </ParamField>
 
     <ParamField path="autoStart" type="boolean" default={false}>
@@ -193,6 +193,29 @@ await dashcam.addApplicationLog(application, name)
 await dashcam.addApplicationLog('Google Chrome', 'Browser Logs');
 ```
 
+### addWebLog()
+
+Track web request logs by URL pattern:
+
+```javascript
+await dashcam.addWebLog(pattern, name)
+```
+
+<ParamField path="pattern" type="string" required>
+  URL pattern to match (e.g., `"*example.com*"`)
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  Display name for the log
+</ParamField>
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+await dashcam.addWebLog('*example.com*', 'Web Logs');
+```
+
 ### addLog()
 
 Generic method to add any type of log:
@@ -210,7 +233,7 @@ await dashcam.addLog(config)
     </ParamField>
 
     <ParamField path="type" type="string" required>
-      Log type: `'file'`, `'stdout'`, or `'application'`
+      Log type: `'file'`, `'application'`, or `'web'`
     </ParamField>
 
     <ParamField path="path" type="string">
@@ -219,6 +242,10 @@ await dashcam.addLog(config)
 
     <ParamField path="application" type="string">
       Application name (required for type='application')
+    </ParamField>
+
+    <ParamField path="pattern" type="string">
+      URL pattern to match (required for type='web', e.g., `"*example.com*"`)
     </ParamField>
   </Expandable>
 </ParamField>
@@ -237,6 +264,12 @@ await dashcam.addLog({
   name: 'Chrome Logs',
   type: 'application',
   application: 'Google Chrome'
+});
+
+await dashcam.addLog({
+  name: 'Web Logs',
+  type: 'web',
+  pattern: '*example.com*'
 });
 ```
 

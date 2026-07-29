@@ -50,12 +50,12 @@ Get your API key at: **https://console.testdriver.ai/team**
 
 ### Installation
 
-Always use the **beta** tag when installing TestDriver:
+Always use the **canary** tag when installing TestDriver:
 
 ```bash
-npm install --save-dev testdriverai@beta
+npm install --save-dev testdriverai@canary
 # or
-npx testdriverai@beta init
+npx testdriverai@canary init
 ```
 
 ### Test Runner
@@ -392,8 +392,6 @@ await element.click();
 
 ```javascript
 await testdriver.scroll("down");
-await testdriver.scrollUntilText("Footer text");
-await testdriver.scrollUntilImage("Product image at bottom");
 ```
 
 ### Executing Code in Sandbox

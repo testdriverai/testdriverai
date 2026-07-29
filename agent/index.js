@@ -494,65 +494,89 @@ class TestDriverAgent extends EventEmitter2 {
       );
     }
 
-    try {
-      let response;
+    const sentry = require("../lib/sentry");
+    return sentry.withSpan(
+      {
+        name: `command.${commandName}`,
+        op: "command",
+        attributes: { "command.name": commandName, "command.depth": depth },
+      },
+      async (span) => {
+        try {
+          let response;
 
-      // "run" and "if" commands are special meta commands
-      // that change the flow of execution
-      if (command.command == "run") {
-        response = await this.embed(command.file, depth, pushToHistory);
-      } else if (command.command == "if") {
-        response = await this.iffy(
-          command.condition,
-          command.then,
-          command.else,
-          depth,
-        );
-      } else {
-        response = await this.commander.run(command, depth);
-      }
+          // "run" and "if" commands are special meta commands
+          // that change the flow of execution
+          if (command.command == "run") {
+            response = await this.embed(command.file, depth, pushToHistory);
+          } else if (command.command == "if") {
+            response = await this.iffy(
+              command.condition,
+              command.then,
+              command.else,
+              depth,
+            );
+          } else {
+            response = await this.commander.run(command, depth);
+          }
 
-      const endTime = Date.now();
-      const duration = endTime - startTime;
+          const endTime = Date.now();
+          const duration = endTime - startTime;
 
-      // Emit command success event with source mapping
-      this.emitter.emit(events.command.success, {
-        command: commandName,
-        depth,
-        data: command,
-        duration,
-        response,
-        timestamp: endTime,
-        sourcePosition: sourcePosition,
-      });
+          if (span) {
+            span.setStatus({ code: 1 }); // OK
+          }
 
-      // if the result of a command contains more commands, we perform the process again
-      if (response && typeof response === "string") {
-        return await this.actOnMarkdown(response, depth, false, false, false);
-      }
-    } catch (error) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
+          // Emit command success event with source mapping
+          this.emitter.emit(events.command.success, {
+            command: commandName,
+            depth,
+            data: command,
+            duration,
+            response,
+            timestamp: endTime,
+            sourcePosition: sourcePosition,
+          });
 
-      // Emit command error event with source mapping
-      this.emitter.emit(events.command.error, {
-        command: commandName,
-        depth,
-        data: command,
-        error: error.message,
-        duration,
-        timestamp: endTime,
-        sourcePosition: sourcePosition,
-      });
+          // if the result of a command contains more commands, we perform the process again
+          if (response && typeof response === "string") {
+            return await this.actOnMarkdown(
+              response,
+              depth,
+              false,
+              false,
+              false,
+            );
+          }
+        } catch (error) {
+          const endTime = Date.now();
+          const duration = endTime - startTime;
 
-      return await this.haveAIResolveError(
-        error,
-        yaml.dump({ commands: [yml] }),
-        depth,
-        true,
-        shouldSave,
-      );
-    }
+          if (span) {
+            span.setStatus({ code: 2, message: error.message });
+          }
+
+          // Emit command error event with source mapping
+          this.emitter.emit(events.command.error, {
+            command: commandName,
+            depth,
+            data: command,
+            error: error.message,
+            duration,
+            timestamp: endTime,
+            sourcePosition: sourcePosition,
+          });
+
+          return await this.haveAIResolveError(
+            error,
+            yaml.dump({ commands: [yml] }),
+            depth,
+            true,
+            shouldSave,
+          );
+        }
+      },
+    );
   }
 
   async executeCommands(
@@ -1652,13 +1676,23 @@ ${regression}
 
     let { headless = false, heal, new: createNew = false } = options;
 
+    // The caller named a specific sandbox and cannot accept a substitute: attach
+    // to THAT sandbox or fail. Durable adapters (the eve agent) reconnect to a
+    // sandbox they already provisioned and whose state they depend on — the
+    // browser/app is only launched once, by `provision.*` at session_start, and
+    // is never re-run on a reconnect. Silently handing back a fresh sandbox
+    // therefore yields a blank desktop that no later step can repair, while the
+    // adapter reports "reconnected, state preserved". It must see the failure so
+    // it can drop the dead handle and provision properly.
+    const requireSandbox = options.requireSandbox === true;
+
     // Prioritize this.newSandbox flag if it's set
-    if (this.newSandbox) {
+    if (this.newSandbox && !requireSandbox) {
       createNew = true;
     }
 
     // If CI environment variable is true, always create a new sandbox
-    if (this.config.CI) {
+    if (this.config.CI && !requireSandbox) {
       createNew = true;
       this.emitter.emit(
         events.log.log,
@@ -1669,13 +1703,22 @@ ${regression}
     if (heal) this.healMode = heal;
 
     // If createNew flag is set, clear sandboxId to prevent reconnection attempts
-    if (createNew) {
+    if (createNew && !requireSandbox) {
       this.sandboxId = null;
       if (!this.config.CI && !this.newSandbox) {
         this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
       } else if (this.newSandbox) {
         this.emitter.emit(events.log.log, theme.dim("Creating a new sandbox"));
       }
+    }
+
+    // A strict reconnect with nothing to reconnect to is a caller bug, not a cue
+    // to provision: fail here rather than below, where the miss would look like a
+    // connect failure.
+    if (requireSandbox && !this.sandboxId) {
+      throw new Error(
+        "buildEnv({ requireSandbox: true }) requires a sandboxId to reconnect to, but none was set.",
+      );
     }
 
     // Create session first so session ID is available for Sentry tracing in WebSocket connection
@@ -1714,7 +1757,10 @@ ${regression}
       await this.runLifecycle("provision");
 
       return;
-    } else if (!createNew && this.sandboxId && !this.config.CI) {
+    } else if (
+      this.sandboxId &&
+      (requireSandbox || (!createNew && !this.config.CI))
+    ) {
       // Only attempt to connect to existing sandbox if not in CI mode and not creating new
       // Attempt to connect to known instance
       this.emitter.emit(
@@ -1734,6 +1780,15 @@ ${regression}
         await this.renderSandbox(instance, headless);
         return;
       } catch (error) {
+        // Strict callers get the truth. Falling through here would give them a
+        // brand-new sandbox that has never been through `provision.*` — a blank
+        // desktop reported as a successful reconnect (see `requireSandbox`).
+        if (requireSandbox) {
+          throw new Error(
+            `Failed to reconnect to sandbox ${this.sandboxId}: ${error?.message ?? error}`,
+            { cause: error },
+          );
+        }
         // If connection fails, fall through to creating a new sandbox
         this.emitter.emit(
           events.log.narration,
@@ -1968,29 +2023,50 @@ ${regression}
   // Write session file for IDE preview (VSCode extension watches for these)
   writeIdeSessionFile(debuggerUrl, data) {
     const fs = require("fs");
+    const os = require("os");
     const path = require("path");
 
+    // Base dir for the preview file. `process.cwd()` is read-only in some hosts
+    // (e.g. Vercel/Lambda serverless, where cwd is /var/task), which makes the
+    // mkdir below throw. Allow an explicit override and otherwise fall back to a
+    // writable temp dir, so a preview write never blocks the session.
+    const baseDir =
+      process.env.TD_PREVIEWS_DIR ||
+      (this.config && this.config.TD_PREVIEWS_DIR) ||
+      process.cwd();
+    const previewsDir = path.join(baseDir, ".testdriver", ".previews");
+
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const previewsDir = path.join(process.cwd(), ".testdriver", ".previews");
 
-    // Create the previews directory if it doesn't exist
-    if (!fs.existsSync(previewsDir)) {
-      fs.mkdirSync(previewsDir, { recursive: true });
+    // The IDE preview file is a best-effort convenience (the VSCode extension
+    // watches for it). It must never break session start — if the target dir
+    // isn't writable, fall back to os.tmpdir(), and if that also fails, log and
+    // move on rather than throwing out of the provisioning path.
+    try {
+      const sessionData = {
+        sessionId,
+        debuggerUrl,
+        resolution: Array.isArray(data.resolution) ? data.resolution : (data.resolution ? data.resolution.split("x").map(Number) : [1920, 1080]),
+        testFile: data.testFile || this.testFile || null,
+        os: data.os || this.sandboxOs || "linux",
+        timestamp: Date.now(),
+      };
+
+      let dir = previewsDir;
+      try {
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      } catch {
+        // cwd/base wasn't writable — retry under the OS temp dir.
+        dir = path.join(os.tmpdir(), ".testdriver", ".previews");
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const filePath = path.join(dir, `${sessionId}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+      logger.log(`IDE preview session written to ${filePath}`);
+    } catch (error) {
+      logger.log(`Skipped IDE preview session file (non-fatal): ${error.message}`);
     }
-
-    const sessionData = {
-      sessionId,
-      debuggerUrl,
-      resolution: Array.isArray(data.resolution) ? data.resolution : (data.resolution ? data.resolution.split("x").map(Number) : [1920, 1080]),
-      testFile: data.testFile || this.testFile || null,
-      os: data.os || this.sandboxOs || "linux",
-      timestamp: Date.now(),
-    };
-
-    const filePath = path.join(previewsDir, `${sessionId}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
-
-    logger.log(`IDE preview session written to ${filePath}`);
   }
 
   // Find the VS Code instance that contains the test file

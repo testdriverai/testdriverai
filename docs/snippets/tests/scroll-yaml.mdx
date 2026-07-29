@@ -14,7 +14,7 @@ steps:
       - command: press-keys
         keys:
           - enter
-  - prompt: scroll down with the mouse 1000 pixels
+  - prompt: scroll down with the mouse 10 clicks
     commands:
       - command: hover-text
         text: "HTML: HyperText Markup Language"
@@ -22,7 +22,7 @@ steps:
         action: click
       - command: scroll
         direction: down
-        amount: 1000
+        amount: 10
   - prompt: assert the page is scrolled
     commands:
       - command: assert

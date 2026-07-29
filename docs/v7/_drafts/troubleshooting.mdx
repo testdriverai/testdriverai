@@ -331,11 +331,8 @@ test('slow test', async () => {
 
 **2. Optimize test:**
 ```javascript
-// Use faster actions
+// Use explicit actions
 await testdriver.find('button').then(el => el.click());
-
-// Instead of
-await testdriver.ai('click the button');
 ```
 
 ### Tests Fail in CI

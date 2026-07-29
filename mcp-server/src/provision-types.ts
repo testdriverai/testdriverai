@@ -143,7 +143,7 @@ export const SessionStartInputSchema = z.object({
   
   // Common session options
   /** Operating system for the sandbox */
-  os: z.enum(["linux", "windows"]).default("linux").describe("Sandbox OS"),
+  os: z.enum(["linux", "windows"]).optional().describe("Sandbox OS (default: 'linux', or TD_OS environment variable if set)"),
   /** Keep sandbox alive duration in ms (default: 5 minutes) */
   keepAlive: z.number().default(300000).describe("Keep sandbox alive for this many ms"),
   /** Path to test file - when provided, you MUST append generated code to this file after each action */
@@ -156,6 +156,9 @@ export const SessionStartInputSchema = z.object({
   // Self-hosted connection options
   /** Direct IP address of self-hosted instance (bypasses cloud provisioning) */
   ip: z.string().optional().describe("Direct IP address of self-hosted Windows instance (e.g., from AWS). When provided, connects directly to this IP instead of using cloud provisioning."),
+  
+  /** E2B sandbox template ID (overrides TD_E2B_TEMPLATE_ID env var) */
+  e2bTemplateId: z.string().optional().describe("E2B sandbox template ID. Overrides the TD_E2B_TEMPLATE_ID environment variable when provided."),
   
   // Debug mode - connect to existing sandbox
   /** Sandbox ID to connect to (for debug-on-failure mode). When provided, connects to an existing sandbox instead of creating a new one. Skip provisioning. */

@@ -145,17 +145,38 @@ done
 echo "Installing runner..."
 
 # Determine environment and version
-TD_CHANNEL="${TD_CHANNEL:-stable}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SDK_PKG_JSON="${SCRIPT_DIR}/../../../sdk/package.json"
+# SDK package.json — works both from monorepo (sdk/setup/aws/) and npm install (setup/aws/)
+SDK_PKG_JSON="${SCRIPT_DIR}/../../package.json"
 RUNNER_DIR="${SCRIPT_DIR}/../../../runner"
+
+# Derive channel from TD_CHANNEL env, or from the SDK version's prerelease tag
+# (mirrors sdk/lib/resolve-channel.js logic)
+if [ -z "${TD_CHANNEL:-}" ]; then
+  if [ -f "$SDK_PKG_JSON" ]; then
+    SDK_VERSION=$(jq -r '.version' "$SDK_PKG_JSON")
+    # Extract prerelease tag: "7.6.0-canary.5" → "canary", "7.6.0" → ""
+    PRE_TAG=$(echo "$SDK_VERSION" | sed -n 's/^[0-9]*\.[0-9]*\.[0-9]*-\([a-z]*\).*/\1/p')
+    if [ -n "$PRE_TAG" ] && echo "$PRE_TAG" | grep -qE '^(dev|test|canary|stable)$'; then
+      TD_CHANNEL="$PRE_TAG"
+      echo "Channel derived from SDK version ($SDK_VERSION): $TD_CHANNEL"
+    else
+      TD_CHANNEL="stable"
+      echo "SDK version $SDK_VERSION has no prerelease tag, defaulting to: $TD_CHANNEL"
+    fi
+  else
+    TD_CHANNEL="stable"
+    echo "SDK package.json not found, defaulting channel to: $TD_CHANNEL"
+  fi
+fi
+echo "Using channel: $TD_CHANNEL"
 
 if [ -f "$SDK_PKG_JSON" ]; then
   RUNNER_VERSION=$(jq -r '.version' "$SDK_PKG_JSON")
   echo "Runner version from SDK: $RUNNER_VERSION"
 else
   RUNNER_VERSION="$TD_CHANNEL"
-  echo "SDK package.json not found, using env tag: $RUNNER_VERSION"
+  echo "SDK package.json not found, using channel as runner version: $RUNNER_VERSION"
 fi
 
 if [ "$TD_CHANNEL" = "dev" ]; then

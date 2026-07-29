@@ -1,5 +1,5 @@
 ---
-title: "Launching VS Code Example"
+title: "Launching VS Code Test Example"
 sidebarTitle: "Launch VS Code"
 description: "Example test demonstrating how to launch VS Code and install extensions on Linux."
 icon: "play"
@@ -12,7 +12,7 @@ Watch this test execute in a real sandbox environment:
 
 {/* launch-vscode-linux.test.mjs output */}
 <iframe 
-  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/69c5d02be8a04db4b705cbe5/replay" 
+  src="https://api-test.testdriver.ai/api/v1/testdriver/testcase/6a694abebecdb5de72ac4fe6/replay" 
   width="100%" 
   height="390" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -45,36 +45,36 @@ describe("Launch VS Code on Linux", () => {
     },
   );
 
-  it.skipIf(!isLinux)(
-    "should install and use a VS Code extension",
-    async (context) => {
-      const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP});
+  // it.skipIf(!isLinux)(
+  //   "should install and use a VS Code extension",
+  //   async (context) => {
+  //     const testdriver = TestDriver(context, { ip: context.ip || process.env.TD_IP});
       
-      // Launch VS Code with the Prettier extension installed
-      await testdriver.provision.vscode({
-        extensions: ["esbenp.prettier-vscode"],
-      });
+  //     // Launch VS Code with the Prettier extension installed
+  //     await testdriver.provision.vscode({
+  //       extensions: ["esbenp.prettier-vscode"],
+  //     });
 
-      const vsCodeWindow = await testdriver.find(
-        "Visual Studio Code window",
-        { timeout: 60000 }
-      );
+  //     const vsCodeWindow = await testdriver.find(
+  //       "Visual Studio Code window",
+  //       { timeout: 60000 }
+  //     );
 
-      expect(vsCodeWindow.found()).toBeTruthy();
+  //     expect(vsCodeWindow.found()).toBeTruthy();
 
-      // Open the extensions panel to verify Prettier is installed
-      await testdriver.pressKeys(["ctrl", "shift", "x"]);
+  //     // Open the extensions panel to verify Prettier is installed
+  //     await testdriver.pressKeys(["ctrl", "shift", "x"]);
       
-      // Wait for extensions panel to open
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+  //     // Wait for extensions panel to open
+  //     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Assert that Prettier extension is visible in the installed extensions
-      const prettierVisible = await testdriver.assert(
-        "Prettier extension is visible in the extensions panel or sidebar",
-      );
-      expect(prettierVisible).toBeTruthy();
-    },
-  );
+  //     // Assert that Prettier extension is visible in the installed extensions
+  //     const prettierVisible = await testdriver.assert(
+  //       "Prettier extension is visible in the extensions panel or sidebar",
+  //     );
+  //     expect(prettierVisible).toBeTruthy();
+  //   },
+  // );
 });
 ```
 

@@ -302,10 +302,12 @@ const createCommands = (
       `🔍 assert() threshold: ${threshold} (cache ${threshold < 0 ? "DISABLED" : "ENABLED"}${cacheKey ? `, cacheKey: ${cacheKey.substring(0, 8)}...` : ""})`,
     );
     
-    // Use v7 endpoint for assert with caching support
+    // Use v7 endpoint for assert with caching support.
+    // captureScreenImage returns { imageKey } (fast S3-key path) or { image }
+    // (base64 fallback) — see system.captureScreenImage.
     let response = await sdk.req("assert", {
       expect: assertion,
-      image: await system.captureScreenBase64(),
+      ...(await system.captureScreenImage()),
       threshold,
       cacheKey,
       os,
@@ -815,7 +817,7 @@ const createCommands = (
 
       let response = await sdk.req("find", {
         element: description,
-        image: await system.captureScreenBase64(),
+        ...(await system.captureScreenImage()),
       });
 
       if (!response || !response.coordinates) {
@@ -855,7 +857,7 @@ const createCommands = (
 
       let response = await sdk.req("find", {
         element: description,
-        image: await system.captureScreenBase64(),
+        ...(await system.captureScreenImage()),
       });
 
       if (!response || !response.coordinates) {
@@ -1211,7 +1213,7 @@ const createCommands = (
       while (durationPassed < timeout && !passed) {
         const response = await sdk.req("find", {
           element: text,
-          image: await system.captureScreenBase64(),
+          ...(await system.captureScreenImage()),
         });
 
         passed = !!(response && response.coordinates);
@@ -1304,7 +1306,7 @@ const createCommands = (
       while (scrollDistance <= maxDistance && !passed) {
         const response = await sdk.req("find", {
           element: text,
-          image: await system.captureScreenBase64(),
+          ...(await system.captureScreenImage()),
         });
 
         passed = !!(response && response.coordinates);
@@ -1531,9 +1533,11 @@ const createCommands = (
       emitter.emit(events.log.narration, formatter.getPrefix("action") + " " + theme.cyan.bold("Exec") + " " + theme.magenta(`[${language}]`), true);
 
       // Log nested command details (truncate to first line)
-      const firstLine = code.split('\n')[0];
-      const codeDisplay = code.includes('\n') ? firstLine + '...' : firstLine;
-      emitter.emit(events.log.log, formatter.formatCodeLine(codeDisplay));
+      if (!silent) {
+        const firstLine = code.split('\n')[0];
+        const codeDisplay = code.includes('\n') ? firstLine + '...' : firstLine;
+        emitter.emit(events.log.log, formatter.formatCodeLine(codeDisplay));
+      }
 
       let plat = system.platform();
 

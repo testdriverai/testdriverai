@@ -1,5 +1,6 @@
 const { events } = require("../events");
 const { getSentryTraceHeaders } = require("./http");
+const sentry = require("../../lib/sentry");
 
 // get the version from package.json
 const { version } = require("../../package.json");
@@ -20,6 +21,7 @@ const DEFAULT_RETRY_CONFIG = {
     'ENOTFOUND',
     'ENETUNREACH',
     'ERR_NETWORK',
+    'ERR_BAD_RESPONSE',
     'ECONNABORTED',
     'EPIPE',
     'EAI_AGAIN',
@@ -35,14 +37,7 @@ const DEFAULT_RETRY_CONFIG = {
  * @returns {boolean} Whether the request should be retried
  */
 function isRetryableError(error, config = DEFAULT_RETRY_CONFIG) {
-  // Network-level errors (no response received)
-  if (!error.response) {
-    return config.retryableNetworkCodes.includes(error.code);
-  }
-  
-  // HTTP status code based retries
-  const status = error.response?.status;
-  return config.retryableStatusCodes.includes(status);
+  return true;
 }
 
 /**
@@ -102,6 +97,18 @@ async function withRetry(fn, options = {}) {
       
       const delayMs = calculateRetryDelay(attempt, error, config);
       
+      // Log retry errors to Sentry for visibility
+      sentry.captureException(error, {
+        tags: { phase: 'retry', attempt: attempt + 1 },
+        extra: {
+          maxRetries: config.maxRetries,
+          delayMs,
+          code: error.code,
+          status: error.response?.status,
+          url: error.config?.url?.replace(/X-Amz-\w+=[\w%]+/g, 'X-Amz-***=REDACTED'),
+        },
+      });
+
       // Call onRetry callback if provided
       if (options.onRetry) {
         options.onRetry(attempt + 1, error, delayMs);
@@ -395,10 +402,7 @@ const createSDK = (emitter, config, sessionInstance) => {
           const savedKB = (data.image.length / 1024).toFixed(0);
           delete data.image;
           data.imageKey = imageKey;
-          emitter.emit(events.log?.debug || events.sdk.request, {
-            path,
-            message: `[sdk] uploaded screenshot to S3 (saved ${savedKB}KB inline), imageKey=${imageKey}`,
-          });
+
         }
       } catch (uploadErr) {
         // Non-fatal: fall back to sending base64 inline

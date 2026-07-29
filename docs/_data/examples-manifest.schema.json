@@ -14,8 +14,18 @@
         "properties": {
           "url": {
             "type": "string",
-            "description": "Full URL to the test run (without ?embed=true)",
-            "pattern": "^https://console\\.testdriver\\.ai/runs/.+"
+            "description": "Full URL to the test run (legacy source for testcase ID)",
+            "pattern": "^https://console(?:-(?:test|canary))?\\.testdriver\\.ai/runs/.+"
+          },
+          "replayUrl": {
+            "type": "string",
+            "description": "Public replay URL with share key",
+            "pattern": "^https://console(?:-(?:test|canary))?\\.testdriver\\.ai/replay/.+"
+          },
+          "embedUrl": {
+            "type": "string",
+            "description": "Public replay embed URL used by docs iframes",
+            "pattern": "^https://console(?:-(?:test|canary))?\\.testdriver\\.ai/replay/.+"
           },
           "lastUpdated": {
             "type": "string",

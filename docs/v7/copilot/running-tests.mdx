@@ -1,13 +1,834 @@
 ---
-title: "Running Tests"
-sidebarTitle: "Running Tests"
-description: "Re-run tests with Vitest and use GUI mode for visual debugging"
+title: "Run"
+sidebarTitle: "Run"
+description: "Set up your environment and run TestDriver tests locally and in CI"
 icon: "play"
 ---
 
-After creating tests with the TestDriver agent, you can re-run them without starting a new MCP session. Tests are saved as standard Vitest files that run independently.
+Run the tests you've explored and learned, anywhere. TestDriver tests are plain [Vitest](https://vitest.dev) files, so they run the same way on your machine and in CI — across web, desktop, and extensions on real VMs. This page walks through getting set up, configuring **where** and **how** your tests run (the device and app under test, and the sandbox machine), and actually running them locally and in CI.
 
-## Running from VS Code (GUI Mode)
+If you haven't written tests yet, start with [Explore](/v7/generating-tests) to generate your first tests and [Learn](/v7/caching) to make them fast and reliable.
+
+## Setup
+
+TestDriver integrates with AI coding assistants through the VS Code extension and MCP server. The same MCP server works with GitHub Copilot, Cursor, Claude Desktop, and any other MCP-capable assistant. This section walks you through the complete setup.
+
+### Prerequisites
+
+Before you begin, you'll need:
+
+- **An MCP-capable AI assistant** — Such as GitHub Copilot, Cursor, or Claude Desktop. For Copilot, a [free tier](https://github.com/features/copilot/plans) is available.
+- **TestDriver Account** — Create a free account at [console.testdriver.ai](https://console.testdriver.ai/team) to get your API key. 60 free device minutes, no credit card required.
+- **VS Code** — The TestDriver extension provides the best experience with live preview and integrated test running.
+
+### Setup Steps
+
+<Steps>
+  <Step title="Install the TestDriver Extension">
+    <Card
+      horizontal
+      title="Install TestDriver for VS Code"
+      arrow
+      href="vscode:extension/testdriver.testdriver"
+      icon="/images/content/extension/vscode.svg"
+    ></Card>
+
+    The extension provides:
+    - One-click sign-in and project initialization
+    - Live preview panel for watching tests execute
+    - MCP server configuration
+  </Step>
+
+  <Step title="Sign Into TestDriver">
+    Sign in to connect your account and API key.
+
+    1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+    2. Run **TestDriver: Login**
+    3. Your browser will open to the TestDriver sign-in page
+    4. Sign in (or create an account)
+    5. You'll be redirected back to VS Code, now signed in
+
+    <Tip>
+      The extension automatically saves your API key to VS Code's secure storage and your workspace `.env` file.
+    </Tip>
+  </Step>
+
+  <Step title="Initialize Your Project">
+    Set up TestDriver in your project with a single command.
+
+    1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+    2. Run **TestDriver: Init Project**
+
+    This command:
+    - Creates a `package.json` with TestDriver and Vitest dependencies
+    - Generates a `vitest.config.mjs` with proper timeout settings
+    - Creates example test files in `tests/`
+    - Sets up `.env` with your API key
+    - Creates the TestDriver agent file at `.github/agents/testdriver.agent.md`
+    - Configures the MCP server
+
+    <Note>
+      If you already have a `package.json`, the command will add the necessary dependencies to it.
+    </Note>
+  </Step>
+
+  <Step title="Start the MCP Server">
+    The MCP server enables your AI assistant to control TestDriver sandboxes.
+
+    After initialization, the MCP configuration is created at `.vscode/mcp.json`:
+
+    ```json .vscode/mcp.json
+    {
+      "servers": {
+        "testdriver": {
+          "command": "npx",
+          "args": ["-p", "testdriverai", "testdriverai-mcp"],
+          "env": {
+            "TD_PREVIEW": "ide",
+            "TD_API_KEY": "your-api-key"
+          }
+        }
+      }
+    }
+    ```
+
+    **To start the MCP server:**
+
+    1. Open the command palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+    2. Run **MCP: List Servers**
+    3. Click on the **testdriver** server
+    4. Select **Start Server**
+
+    You can also click the MCP icon in the status bar to manage servers.
+
+    <Tip>
+      See the [VS Code MCP documentation](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more details on managing MCP servers.
+    </Tip>
+
+    <Warning>
+      Make sure your API key is set. The extension uses the key from your sign-in, but you can also set it via the `TD_API_KEY` environment variable.
+    </Warning>
+  </Step>
+
+  <Step title="Install Vitest Extension (Recommended)">
+    For the best experience running tests, install the Vitest extension:
+
+    <Card
+      horizontal
+      title="Vitest Extension"
+      arrow
+      href="vscode:extension/vitest.explorer"
+      icon="flask-vial"
+    >
+      Run tests with GUI mode from the Test Explorer
+    </Card>
+
+    After installation, you'll see a beaker icon in the sidebar for accessing the Test Explorer.
+  </Step>
+</Steps>
+
+### Verify Your Setup
+
+To verify everything is configured correctly:
+
+1. Open the command palette and run **TestDriver: Check Status**
+2. You should see:
+   - ✅ Signed in
+   - ✅ MCP server configured
+   - ✅ Project initialized
+
+### The Agent File
+
+During initialization, TestDriver creates an agent file at `.github/agents/testdriver.agent.md`. This file tells your AI assistant how to use TestDriver's MCP tools.
+
+The agent has access to tools like:
+- `session_start` — Launch a sandbox with Chrome or other apps
+- `find` / `click` / `type` — Interact with elements on screen
+- `assert` — Verify conditions using AI vision
+- `screenshot` — Capture the current screen state
+
+## Configuring the Device
+
+Provision methods are the starting point for most tests. They launch applications in your sandbox and prepare the environment for testing — a browser, a desktop app, a Chrome extension, or VS Code.
+
+### Chrome Browser
+
+The most common starting point for web testing. Launches Chrome browser and navigates to a URL.
+
+```javascript
+await testdriver.provision.chrome({
+  url: 'https://example.com',
+});
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | string | `'http://testdriver-sandbox.vercel.app/'` | URL to navigate to |
+| `maximized` | boolean | `true` | Start browser maximized |
+| `guest` | boolean | `false` | Use guest mode (no profile) |
+
+#### Example: Basic Web Test
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Login Flow", () => {
+  it("should log in successfully", async (context) => {
+    const testdriver = TestDriver(context);
+    
+    await testdriver.provision.chrome({
+      url: 'https://myapp.com/login',
+    });
+
+    await testdriver.find("Email input").click();
+    await testdriver.type("user@example.com");
+    
+    await testdriver.find("Password input").click();
+    await testdriver.type("password123");
+    
+    await testdriver.find("Sign In button").click();
+    
+    const result = await testdriver.assert("the dashboard is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+<Info>
+  `provision.chrome()` automatically starts Dashcam recording and waits for Chrome to be ready before returning.
+</Info>
+
+### Chrome Extensions
+
+Launch Chrome with a custom extension loaded. Supports both local extensions and Chrome Web Store extensions.
+
+#### Load from Local Path
+
+Clone or create an extension locally, then load it:
+
+```javascript
+// First, get the extension onto the sandbox
+await testdriver.exec(
+  'sh',
+  'git clone https://github.com/user/my-extension.git /tmp/my-extension',
+  60000
+);
+
+// Launch Chrome with the extension
+await testdriver.provision.chromeExtension({
+  extensionPath: '/tmp/my-extension',
+  url: 'https://example.com'
+});
+```
+
+#### Load from Chrome Web Store
+
+Load any published extension by its Chrome Web Store ID:
+
+```javascript
+await testdriver.provision.chromeExtension({
+  extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm', // uBlock Origin
+  url: 'https://example.com'
+});
+```
+
+<Tip>
+  Find the extension ID in the Chrome Web Store URL. For example, `https://chrome.google.com/webstore/detail/ublock-origin/cjpalhdlnbpafiamejdnhcphjbkeiagm` → ID is `cjpalhdlnbpafiamejdnhcphjbkeiagm`
+</Tip>
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `extensionPath` | string | - | Local path to unpacked extension directory |
+| `extensionId` | string | - | Chrome Web Store extension ID |
+| `url` | string | - | URL to navigate to after launch |
+| `maximized` | boolean | `true` | Start browser maximized |
+
+<Warning>
+  You must provide either `extensionPath` or `extensionId`, but not both.
+</Warning>
+
+#### Example: Testing a Chrome Extension
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Chrome Extension Test", () => {
+  it("should load and interact with extension", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Clone extension from GitHub
+    await testdriver.exec(
+      'sh',
+      'git clone https://github.com/user/my-extension.git /tmp/my-extension',
+      60000,
+      true
+    );
+
+    // Launch Chrome with extension loaded
+    await testdriver.provision.chromeExtension({
+      extensionPath: '/tmp/my-extension',
+      url: 'https://testdriver.ai'
+    });
+
+    // Click extensions puzzle icon
+    const extensionsButton = await testdriver.find("puzzle-shaped icon in Chrome toolbar");
+    await extensionsButton.click();
+
+    // Interact with your extension
+    const myExtension = await testdriver.find("My Extension in the dropdown");
+    await myExtension.click();
+
+    const result = await testdriver.assert("extension popup is visible");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+### Desktop Apps
+
+Download and install desktop applications. Supports `.deb`, `.rpm`, `.msi`, `.exe`, `.AppImage`, `.dmg`, `.pkg`, and shell scripts.
+
+```javascript
+const filePath = await testdriver.provision.installer({
+  url: 'https://example.com/app.deb',
+  appName: 'MyApp',  // Focus this app after install
+  launch: true,      // Auto-launch after install
+});
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | string | **required** | URL to download the installer from |
+| `filename` | string | auto-detected | Filename to save as |
+| `appName` | string | - | Application name to focus after install |
+| `launch` | boolean | `true` | Launch the app after installation |
+
+#### Supported File Types
+
+| Extension | OS | Install Method |
+|-----------|-----|----------------|
+| `.deb` | Linux | `dpkg -i` + `apt-get install -f` |
+| `.rpm` | Linux | `rpm -i` |
+| `.AppImage` | Linux | `chmod +x` |
+| `.sh` | Linux | `chmod +x` + execute |
+| `.msi` | Windows | `msiexec /i /quiet` |
+| `.exe` | Windows | Silent install (`/S`) |
+| `.dmg` | macOS | Mount + copy to Applications |
+| `.pkg` | macOS | `installer -pkg` |
+
+#### Example: Install and Test a Desktop App
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Desktop App Test", () => {
+  it("should install and launch app", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Download and install
+    const installerPath = await testdriver.provision.installer({
+      url: 'https://github.com/sharkdp/bat/releases/download/v0.24.0/bat_0.24.0_amd64.deb',
+    });
+
+    // Verify installation
+    const output = await testdriver.exec('sh', 'bat --version', 5000);
+    expect(output).toContain('bat');
+  });
+});
+```
+
+#### Example: Windows Installer
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("Windows App Test", () => {
+  it("should install on Windows", async (context) => {
+    const testdriver = TestDriver(context, { 
+      os: 'windows'
+    });
+
+    // Download MSI installer
+    const installerPath = await testdriver.provision.installer({
+      url: 'https://example.com/app.msi',
+      launch: false,  // Don't auto-launch
+    });
+
+    // Custom installation if needed
+    await testdriver.exec(
+      'pwsh',
+      `Start-Process msiexec.exe -ArgumentList "/i", "${installerPath}", "/qn" -Wait`,
+      120000
+    );
+
+    // Verify installation
+    const result = await testdriver.assert("application is installed");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+#### Manual Installation
+
+Set `launch: false` to download without auto-installing:
+
+```javascript
+const filePath = await testdriver.provision.installer({
+  url: 'https://example.com/custom-script.sh',
+  launch: false,
+});
+
+// Run custom install commands
+await testdriver.exec('sh', `chmod +x "${filePath}"`, 5000);
+await testdriver.exec('sh', `"${filePath}" --custom-flag`, 60000);
+```
+
+### VS Code
+
+Launch Visual Studio Code with optional workspace and extensions.
+
+```javascript
+await testdriver.provision.vscode({
+  workspace: '/home/testdriver/my-project',
+  extensions: ['ms-python.python', 'esbenp.prettier-vscode'],
+});
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `workspace` | string | - | Workspace folder to open |
+| `extensions` | string[] | `[]` | Extensions to install (by ID) |
+
+#### Example: VS Code Extension Test
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("VS Code Test", () => {
+  it("should open workspace with extensions", async (context) => {
+    const testdriver = TestDriver(context);
+
+    // Create a test project
+    await testdriver.exec('sh', 'mkdir -p /tmp/test-project && echo "print(1)" > /tmp/test-project/test.py', 10000);
+
+    // Launch VS Code
+    await testdriver.provision.vscode({
+      workspace: '/tmp/test-project',
+      extensions: ['ms-python.python'],
+    });
+
+    // Verify VS Code is ready
+    const result = await testdriver.assert("VS Code is open with the project");
+    expect(result).toBeTruthy();
+
+    // Open the Python file
+    await testdriver.find("test.py in the explorer").click();
+  });
+});
+```
+
+### Choosing the Right Provision Method
+
+| Use Case | Method |
+|----------|--------|
+| Testing a website | `provision.chrome` |
+| Testing a Chrome extension | `provision.chromeExtension` |
+| Testing a desktop app (needs installation) | `provision.installer` |
+| Testing VS Code or VS Code extensions | `provision.vscode` |
+
+<Tip>
+  All provision methods automatically start Dashcam recording and wait for the application to be ready before returning. You don't need to call `dashcam.start()` manually.
+</Tip>
+
+## Configuring the Machine
+
+TestDriver provisions a fresh cloud VM for every test by default. This section covers how to configure Linux and Windows machines, reduce startup time by keeping machines alive between runs, use provision scripts for repeatable setup, and install custom software on the fly.
+
+### Linux Machines
+
+Linux is the default operating system. No extra configuration is required.
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+describe("My Test", () => {
+  it("runs on Linux", async (context) => {
+    const testdriver = TestDriver(context);
+
+    await testdriver.provision.chrome({ url: "https://example.com" });
+
+    const result = await testdriver.assert("the page loaded successfully");
+    expect(result).toBeTruthy();
+  });
+});
+```
+
+#### Common Linux Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `os` | string | `"linux"` | Operating system |
+| `resolution` | string | `"1366x768"` | Screen resolution (Enterprise only) |
+| `e2bTemplateId` | string | — | Custom E2B template ID (see [Self-Hosted](/v7/self-hosted)) |
+| `keepAlive` | number | `60000` | Ms to keep VM alive after disconnect |
+| `reconnect` | boolean | `false` | Reconnect to last used sandbox |
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: "linux",
+  resolution: "1920x1080",
+  keepAlive: 5 * 60 * 1000, // keep alive 5 minutes
+});
+```
+
+### Windows Machines
+
+Set `os: "windows"` to provision a Windows VM instead. Everything else works the same way.
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: "windows",
+});
+
+await testdriver.provision.chrome({ url: "https://example.com" });
+```
+
+Windows sandboxes use EC2 instances and take longer to boot than Linux (E2B) sandboxes — typically 1–3 minutes for a cold start. See [Keeping Machines Alive](#keeping-machines-alive-between-runs) below to avoid this cost on repeated runs.
+
+#### Common Windows Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `os` | string | — | Set to `"windows"` |
+| `resolution` | string | `"1366x768"` | Screen resolution (Enterprise only) |
+| `sandboxAmi` | string | — | Custom AMI ID (self-hosted) |
+| `sandboxInstance` | string | — | EC2 instance type (self-hosted) |
+| `keepAlive` | number | `60000` | Ms to keep VM alive after disconnect |
+| `reconnect` | boolean | `false` | Reconnect to last used sandbox |
+
+```javascript
+const testdriver = TestDriver(context, {
+  os: "windows",
+  resolution: "1920x1080",
+  keepAlive: 10 * 60 * 1000, // keep alive 10 minutes
+});
+```
+
+### Keeping Machines Alive Between Runs
+
+Windows (and Linux) cold starts can be expensive if you're iterating quickly. Use `keepAlive` + `reconnect` to reuse the same VM across multiple test runs.
+
+#### How it works
+
+Every time the SDK successfully connects to a sandbox, it records the sandbox id in `.testdriver/last-sandbox` inside your project directory. The next test that opts in with `reconnect: true` reads that file and reattaches automatically — no manual id tracking required.
+
+Provision calls (`testdriver.provision.chrome(...)`, `vscode(...)`, etc.) are **skipped** when reconnecting, because the application is already running inside the sandbox from the previous run.
+
+<Note>
+  `.testdriver/last-sandbox` is already covered by the default TestDriver `.gitignore`. Don't commit it.
+</Note>
+
+#### Step 1 — Start the machine with a long `keepAlive`
+
+```javascript
+// first.test.mjs
+const testdriver = TestDriver(context, {
+  os: "windows",
+  keepAlive: 30 * 60 * 1000, // keep alive 30 minutes after this test ends
+});
+
+await testdriver.provision.chrome({ url: "https://example.com" });
+// ... your test steps
+```
+
+When this test finishes, the sandbox stays running for 30 minutes instead of being terminated immediately.
+
+#### Step 2 — Reattach automatically with `reconnect: true`
+
+```javascript
+// second.test.mjs
+const testdriver = TestDriver(context, {
+  os: "windows",
+  reconnect: true,            // ← reads .testdriver/last-sandbox
+  keepAlive: 30 * 60 * 1000,
+});
+
+// No provision call — Chrome is already open from the previous run.
+await testdriver.find("Sign In button").click();
+```
+
+#### Step 2 (alternative) — Reattach to an explicit id
+
+If you need to pin to a specific sandbox (CI matrix, multiple chains in parallel, etc.) pass the id directly:
+
+```javascript
+await testdriver.connect({ sandboxId: "sandbox-abc123" });
+```
+
+When reattaching to a sandbox:
+- You reuse a specific running machine directly
+- You continue from the app state created in the earlier run
+- You must run within the previous test's `keepAlive` window
+
+<Tip>
+  Use `testdriver.getLastSandboxId()` to read the recorded sandbox id (and optional metadata) for scripting purposes.
+</Tip>
+
+#### Chaining describe blocks within one test file
+
+A common pattern is to break a long flow into focused `describe` blocks that share one sandbox — the first block provisions and signs in, later blocks reconnect and continue:
+
+```javascript
+import { describe, expect, it } from "vitest";
+import { TestDriver } from "testdriverai/vitest/hooks";
+
+const KEEP_ALIVE_MS = 5 * 60 * 1000;
+
+describe("step 1 — log in", () => {
+  it("signs in and lands on the dashboard", async (context) => {
+    const testdriver = TestDriver(context, { keepAlive: KEEP_ALIVE_MS });
+    await testdriver.provision.chrome({ url: "https://example.com/login" });
+    await testdriver.find("username input").click();
+    await testdriver.type("standard_user");
+    await testdriver.pressKeys(["tab"]);
+    await testdriver.type("secret_sauce", { secret: true });
+    await testdriver.pressKeys(["enter"]);
+    expect(await testdriver.assert("the dashboard is visible")).toBeTruthy();
+  });
+});
+
+describe("step 2 — add to cart", () => {
+  it("reuses the logged-in sandbox", async (context) => {
+    const testdriver = TestDriver(context, {
+      reconnect: true,           // ← skip provisioning, reattach
+      keepAlive: KEEP_ALIVE_MS,
+    });
+    await testdriver.find("Add to cart").click();
+    await testdriver.find("cart icon").click();
+    expect(await testdriver.assert("the cart has an item")).toBeTruthy();
+  });
+});
+
+describe("step 3 — check out", () => {
+  it("continues from the cart state", async (context) => {
+    const testdriver = TestDriver(context, { reconnect: true, keepAlive: 30_000 });
+    await testdriver.find("Checkout").click();
+    expect(await testdriver.assert("the checkout form is visible")).toBeTruthy();
+  });
+});
+```
+
+A runnable copy of this pattern lives at [`examples/reconnect-sequential.test.mjs`](https://github.com/testdriverai/mono/blob/main/sdk/examples/reconnect-sequential.test.mjs).
+
+<Warning>
+  Vitest runs **test files** in parallel by default. Within a single file, `describe`/`it` blocks run in source order, so reconnect chaining works as written. To chain across multiple files, run them sequentially (e.g. `vitest run --sequence.concurrent=false` or place them in a single project pool with workers set to 1).
+</Warning>
+
+#### How `keepAlive` works
+
+`keepAlive` is a duration in milliseconds. After the SDK disconnects, the server keeps the VM running for that long before terminating it. The default is `60000` (1 minute). Note: `keepAlive: 0` currently falls back to the default disconnect grace period rather than terminating immediately, so use a positive duration when you want to control the grace window explicitly.
+
+```javascript
+const testdriver = TestDriver(context, {
+  keepAlive: 0,           // currently uses the default 1 minute grace period
+  // keepAlive: 60000,    // default — 1 minute
+  // keepAlive: 600000,   // 10 minutes
+  // keepAlive: 3600000,  // 1 hour
+});
+```
+
+<Warning>
+  Machines kept alive beyond your test session continue to consume credits. Always set a `keepAlive` value appropriate for your workflow.
+</Warning>
+
+### Using Provision Scripts
+
+Provision scripts let you run arbitrary setup steps before your test starts — downloading fixtures, seeding a database, configuring environment variables, and more. Use `testdriver.exec()` to run shell or PowerShell commands directly in the sandbox.
+
+<Card
+  title="exec() Reference"
+  icon="terminal"
+  href="/v7/exec"
+>
+  Full reference for running shell and PowerShell commands in the sandbox.
+</Card>
+
+#### Linux setup script
+
+```javascript
+await testdriver.provision.chrome({ url: "https://myapp.com" });
+
+// Run a setup script from your repo
+await testdriver.exec("sh", `
+  curl -s https://myapp.com/api/reset-test-db -X POST
+  echo "Test DB reset"
+`, 30000);
+```
+
+#### Windows setup script (PowerShell)
+
+```javascript
+await testdriver.provision.chrome({ url: "https://myapp.com" });
+
+await testdriver.exec("pwsh", `
+  $env:API_URL = "https://staging.myapp.com"
+  Write-Host "Environment configured"
+`, 15000);
+```
+
+#### Clone a repo and run a script
+
+```javascript
+await testdriver.exec("sh", `
+  git clone https://github.com/myorg/test-fixtures.git /tmp/fixtures
+  bash /tmp/fixtures/seed.sh
+`, 120000);
+```
+
+### Installing Custom Software
+
+You can install software at the start of a test using `exec()`. This works for any package available via `apt`, `brew`, `choco`, `winget`, npm, pip, or direct download.
+
+#### Linux — apt packages
+
+```javascript
+await testdriver.exec("sh", `
+  sudo apt-get update -qq
+  sudo apt-get install -y ffmpeg imagemagick
+`, 120000);
+```
+
+#### Linux — Node.js tools
+
+```javascript
+await testdriver.exec("sh", "npm install -g @playwright/test", 60000);
+```
+
+#### Windows — winget
+
+```javascript
+await testdriver.exec("pwsh", `
+  winget install --id=7zip.7zip -e --silent
+`, 120000);
+```
+
+#### Windows — Chocolatey
+
+```javascript
+await testdriver.exec("pwsh", `
+  choco install googlechrome --yes --no-progress
+`, 180000);
+```
+
+#### Download and run an installer
+
+```javascript
+// Linux
+await testdriver.exec("sh", `
+  curl -L https://example.com/installer.sh -o /tmp/installer.sh
+  chmod +x /tmp/installer.sh
+  /tmp/installer.sh --silent
+`, 300000);
+
+// Windows
+await testdriver.exec("pwsh", `
+  Invoke-WebRequest -Uri "https://example.com/installer.exe" -OutFile "$env:TEMP\\installer.exe"
+  Start-Process "$env:TEMP\\installer.exe" -ArgumentList "/S" -Wait
+`, 300000);
+```
+
+<Note>
+  Installing software at test start adds to your test duration. For software you use in every test, consider preloading it into a custom VM image via the Enterprise self-hosted plan.
+</Note>
+
+#### Want Software Pre-Installed on Every Machine?
+
+Installing packages at runtime works well for occasional or lightweight dependencies. But if you're installing the same 5-minute setup on every test run, you're wasting time and credits.
+
+With the **Self-Hosted Enterprise plan** you get access to our golden VM base image and Packer scripts, so you can bake your applications, dependencies, and configuration directly into a custom AMI. Tests spin up with everything already installed — zero setup time.
+
+<Card
+  title="Self-Hosted Enterprise"
+  icon="server"
+  href="/v7/self-hosted"
+>
+  Preload software, configure custom hardware, and run unlimited tests with a flat license fee. Our team assists with deployment and setup.
+</Card>
+
+## Running Tests
+
+After creating tests with the TestDriver agent, you can re-run them without starting a new MCP session. Tests are saved as standard Vitest files that run independently — the same way on your machine and in CI.
+
+### Running from Terminal
+
+TestDriver works with [Vitest's](https://vitest.dev) test runner. Use Vitest to run your tests from the command line to see full output:
+
+```bash
+# Run all tests
+vitest run
+
+# Run a specific test file
+vitest run tests/login.test.mjs
+
+# Run in watch mode (re-runs on file changes)
+vitest
+```
+
+<Info>
+  Install Vitest globally for best results: `npm install vitest -g`
+</Info>
+
+Vitest automatically discovers files matching patterns like `*.test.js`, `*.test.mjs`, or `*.spec.js`.
+
+#### Common CLI options
+
+```bash
+# Run multiple specific files
+vitest run login.test.mjs checkout.test.mjs
+
+# Run every test in a folder
+vitest run tests/e2e/
+
+# Filter tests by name (supports regex)
+vitest run --grep "login"
+
+# Generate a coverage report
+vitest run --coverage
+```
+
+<Info>
+  Coverage requires the `@vitest/coverage-v8` package. Install it with `npm install -D @vitest/coverage-v8`.
+</Info>
+
+#### Vitest UI
+
+For interactive debugging, launch the web-based UI (starts in watch mode):
+
+```bash
+vitest --ui
+```
+
+Open http://localhost:51204 to browse your test tree, see pass/fail states and timing, view inline console output, and re-run individual tests.
+
+<Tip>
+  Combine with `--open` to open the UI in your browser automatically: `vitest --ui --open`
+</Tip>
+
+### Running from VS Code (GUI Mode)
 
 For a visual testing experience, use the **Vitest extension**:
 
@@ -34,70 +855,9 @@ For a visual testing experience, use the **Vitest extension**:
   VS Code's Test Explorer only shows output for **failing tests**. To see output from passing tests (including screenshots and console logs), run tests from the terminal instead.
 </Warning>
 
-## Running from Terminal
+### Test Configuration
 
-Use Vitest to run your tests from the command line to see full output:
-
-```bash
-# Run all tests
-vitest run
-
-# Run a specific test file
-vitest run tests/login.test.mjs
-
-# Run in watch mode (re-runs on file changes)
-vitest
-```
-
-See the [running tests guide](/v7/running-tests) for more CLI options and configuration.
-
-## Iterating on Tests
-
-When tests fail or need updates, you have two options:
-
-### Option 1: Ask the MCP Agent (Recommended)
-
-For discovering updated element descriptions or debugging failures, chat with the TestDriver agent:
-
-```
-The login test is failing because the form layout changed.
-Update tests/login.test.mjs to work with the new design.
-```
-
-The agent will:
-1. Start a new session
-2. Navigate to the page
-3. Analyze the current state
-4. Update the test code
-
-This is the best approach when:
-- Element text or layout has changed
-- You need to see what's currently on screen
-- The failure reason isn't obvious from the error message
-
-### Option 2: Edit the Code Directly
-
-For simple changes, edit the test files directly:
-
-```javascript
-// Change the element description
-const button = await testdriver.find("Submit Order button");
-
-// Add a wait
-await testdriver.wait(2000);
-
-// Update assertions
-const result = await testdriver.assert("order confirmation shows order ID");
-```
-
-This is faster for:
-- Updating text strings
-- Adjusting timeouts
-- Fixing typos
-
-## Test Configuration
-
-### Timeouts
+#### Timeouts
 
 TestDriver tests require longer timeouts than typical unit tests. Your `vitest.config.mjs` should have:
 
@@ -112,7 +872,7 @@ export default defineConfig({
 });
 ```
 
-### Environment Variables
+#### Environment Variables
 
 Tests use the `TD_API_KEY` environment variable. Set it in your `.env` file:
 
@@ -126,7 +886,50 @@ Or pass it when running tests:
 TD_API_KEY=your-key vitest run
 ```
 
-## Viewing Test Reports
+### Parallel Execution
+
+TestDriver runs each test in its own cloud sandbox, enabling true parallel execution. Run your entire test suite in minutes instead of hours.
+
+Your TestDriver plan includes a set number of **license slots** that determine how many tests can run simultaneously. Each running test occupies one slot — when the test completes and the sandbox is destroyed, the slot is immediately freed for the next test.
+
+Set `maxConcurrency` in your Vitest config to match your license slot limit:
+
+```javascript vitest.config.mjs
+import { defineConfig } from 'vitest/config';
+import TestDriver from 'testdriverai/vitest';
+
+export default defineConfig({
+  test: {
+    testTimeout: 900000,
+    hookTimeout: 900000,
+    maxConcurrency: 5, // Match your license slot limit
+    reporters: ['default', TestDriver()],
+    setupFiles: ['testdriverai/vitest/setup'],
+  },
+});
+```
+
+You can also cap concurrency from the CLI:
+
+```bash
+vitest run --maxConcurrency=5
+```
+
+<Warning>
+  Setting `maxConcurrency` higher than your license slots will cause tests to fail when slots are exhausted. Always match this value to your plan's limit.
+</Warning>
+
+| Test Suite | Sequential (1 slot) | Parallel (5 slots) | Parallel (10 slots) |
+|------------|--------------------|--------------------|---------------------|
+| 10 tests @ 2min each | 20 min | 4 min | 2 min |
+| 50 tests @ 2min each | 100 min | 20 min | 10 min |
+| 100 tests @ 2min each | 200 min | 40 min | 20 min |
+
+<Info>
+  View your available slots at [console.testdriver.ai](https://console.testdriver.ai). Upgrade anytime to increase parallelization.
+</Info>
+
+### Viewing Test Reports
 
 After each test run, TestDriver provides a link to the full test report:
 
@@ -146,4 +949,62 @@ The report includes:
   href="https://console.testdriver.ai"
 >
   Access all your test runs and recordings in the TestDriver console
+</Card>
+
+### Iterating on Tests
+
+When tests fail or need updates, you have two options:
+
+#### Option 1: Ask the AI Assistant (Recommended)
+
+For discovering updated element descriptions or debugging failures, chat with the TestDriver agent through your AI assistant:
+
+```
+The login test is failing because the form layout changed.
+Update tests/login.test.mjs to work with the new design.
+```
+
+The agent will:
+1. Start a new session
+2. Navigate to the page
+3. Analyze the current state
+4. Update the test code
+
+This is the best approach when:
+- Element text or layout has changed
+- You need to see what's currently on screen
+- The failure reason isn't obvious from the error message
+
+#### Option 2: Edit the Code Directly
+
+For simple changes, edit the test files directly:
+
+```javascript
+// Change the element description
+const button = await testdriver.find("Submit Order button");
+
+// Add a wait
+await testdriver.wait(2000);
+
+// Update assertions
+const result = await testdriver.assert("order confirmation shows order ID");
+```
+
+This is faster for:
+- Updating text strings
+- Adjusting timeouts
+- Fixing typos
+
+<Tip>
+  When a test fails because the UI shifted, let TestDriver fix it for you automatically. See [Prevent](/v7/copilot/auto-healing) for auto-healing, and [Debug](/v7/debugging-with-screenshots) for inspecting screenshots when a run goes wrong.
+</Tip>
+
+## Next
+
+<Card
+  title="Validate"
+  icon="circle-check"
+  href="/v7/making-assertions"
+>
+  Now that your tests run anywhere, learn how to make strong assertions that catch real bugs.
 </Card>

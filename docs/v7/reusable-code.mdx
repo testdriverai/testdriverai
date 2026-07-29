@@ -49,7 +49,7 @@ Now import and use these helpers in any test:
 
 ```javascript test/checkout.test.mjs
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 import { login } from './helpers/auth.js';
 
 describe("Checkout", () => {
@@ -120,7 +120,7 @@ Use the page object in your tests:
 
 ```javascript test/auth.test.mjs
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 import { LoginPage } from './pages/LoginPage.js';
 
 describe("Authentication", () => {
@@ -190,7 +190,7 @@ export async function setupAuthenticatedSession(testdriver, user = testUsers.reg
 
 ```javascript test/admin.test.mjs
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 import { testUsers, testUrls, setupAuthenticatedSession } from './fixtures/index.js';
 
 describe("Admin Panel", () => {

@@ -5,6 +5,33 @@ rss: true
 icon: "code-compare"
 ---
 
+<Update label="v7.9.51-canary" description="April 2026" tags={["canary"]}>
+
+🚀 Canary release
+
+This release promotes changes from `v7.9.4-test` through `v7.9.51-test` to canary, rolling up all updates since `v7.9.3`.
+
+✨ New features
+
+- (Internal) **Autoscaling**
+- (Internal) **End-to-end distributed tracing**
+
+🔧 Improvements
+
+- **Faster image matching**
+- **Storage and infra hardening**
+- **Sentry environment consistency**
+- **Chrome extension interaction reliability**
+- **Docs and onboarding refresh** — Updated v7 docs, SDK examples, and VS Code onboarding/init flows.
+
+🐛 Bug fixes
+
+- **Windows AMI build stability** — Fixed `chrome.exe` startup/build failures.
+- **Realtime cleanup reliability** — Fixed connection cleanup leaks in session shutdown paths.
+- **Environment and deployment fixes** 
+
+</Update>
+
 <Update label="v7.8.0-test.22" description="March 2026" tags={["test"]}>
 
 Releases test.11 through test.22 include version bumps and internal CI improvements across all packages. No new user-facing changes — see [v7.8.0-test.10](#v780-test10) for the latest updates in this release stream.
@@ -66,7 +93,7 @@ This release includes all changes from v7.8.0-test.6 with version bumps across a
 
 ✨ New features
 
-- **[GitHub Copilot integration](/v7/copilot/setup)** — Use TestDriver directly from GitHub Copilot in VS Code. The new MCP server lets Copilot launch sandboxes, interact with elements, and run assertions through natural language. Includes guides for [creating tests](/v7/copilot/creating-tests), [running tests](/v7/copilot/running-tests), [GitHub Actions integration](/v7/copilot/github), and [auto-healing](/v7/copilot/auto-healing).
+- **[GitHub Copilot integration](/v7/copilot/running-tests)** — Use TestDriver directly from GitHub Copilot in VS Code. The new MCP server lets Copilot launch sandboxes, interact with elements, and run assertions through natural language. Includes guides for [creating tests](/v7/generating-tests), [running tests](/v7/copilot/running-tests), [GitHub Actions integration](/v7/copilot/auto-healing#use-testdriver-in-github), and [auto-healing](/v7/copilot/auto-healing).
 
 🔧 Improvements
 
@@ -83,7 +110,7 @@ This release includes all changes from v7.8.0-canary.4 with version bumps.
 ✨ New features
 
 - **[Cache API](/v7/cache)** — Speed up repeated test runs with screenshot-based caching. The system compares screenshots to cached results and reuses element positions when the screen hasn't changed, reducing AI calls.
-- **[Custom error classes](/v7/errors)** — New `ElementNotFoundError` and `AIError` classes with rich debugging info including screenshot paths, pixel diffs, and detailed messages.
+- **[Custom error classes](/v7/errors)** — New `ElementNotFoundError` class with rich debugging info including screenshot paths, pixel diffs, and detailed messages.
 - **[Events system](/v7/events)** — Listen to SDK lifecycle events with wildcard support via `testdriver.emitter`. Uses colon-delimited namespaces (e.g., `command:start`, `log:*`).
 - **[Provision API](/v7/provision)** — Launch browsers, desktop apps, VS Code, and Chrome extensions in your sandbox before tests run. Access via `testdriver.provision.*`.
 - **[Redraw detection](/v7/redraw)** — Wait for screens to stabilize after interactions using two-phase detection with pixel comparison and z-score analysis.

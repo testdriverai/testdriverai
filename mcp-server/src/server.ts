@@ -12,8 +12,13 @@ process.env.TD_DEBUG = "true";
 import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { randomUUID } from "crypto";
+import * as http from "http";
+import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
-import type { CallToolResult, ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult, ReadResourceResult, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import * as Sentry from "@sentry/node";
 import * as fs from "fs";
 import * as os from "os";
@@ -21,9 +26,11 @@ import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { z } from "zod";
 
-import { generateActionCode } from "./codegen.js";
-import { getProvisionOptions, SessionStartInputSchema, type SessionStartInput } from "./provision-types.js";
-import { sessionManager, type SessionState } from "./session.js";
+import * as core from "./core/actions.js";
+import { NoActiveSessionError, type ActionResult } from "./core/actions.js";
+import { resolveE2bTemplateId, resolveOs } from "./env-utils.js";
+import { SessionStartInputSchema, type SessionStartInput } from "./provision-types.js";
+import { type SessionState } from "./session.js";
 
 // =============================================================================
 // Sentry
@@ -55,8 +62,7 @@ function resolveChannel(ver: string): string {
 }
 
 function resolveSentryEnvironment(ver: string): string {
-  if (process.env.TD_ENV && VALID_ENVS.has(process.env.TD_ENV)) return process.env.TD_ENV;
-  return CHANNEL_TO_ENV[resolveChannel(ver)] || "production";
+  return resolveChannel(ver);
 }
 
 const activeChannel = resolveChannel(version);
@@ -77,8 +83,8 @@ if (isSentryEnabled()) {
       "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
     environment: sentryEnvironment,
     release: version,
-    sampleRate: 1.0,
-    tracesSampleRate: 1.0,
+    sampleRate: 0.01,
+    tracesSampleRate: 0.01,
     sendDefaultPii: true,
     integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
     initialScope: {
@@ -210,12 +216,6 @@ const RESOURCE_URI = "ui://testdriver/mcp-app.html";
 const SCREENSHOT_RESOURCE_BASE = "screenshot://testdriver/screenshot";
 const CROPPED_IMAGE_RESOURCE_BASE = "screenshot://testdriver/cropped";
 
-// SDK instance (will be initialized on session start)
-let sdk: any = null;
-
-// Last screenshot base64 for check comparisons
-let lastScreenshotBase64: string | null = null;
-
 // =============================================================================
 // Image Store - Stores images with unique IDs for reload persistence
 // =============================================================================
@@ -226,21 +226,41 @@ interface StoredImage {
   timestamp: number;
 }
 
-// Map of image ID -> image data
-const imageStore = new Map<string, StoredImage>();
-
-// Counter for generating unique image IDs
-let imageIdCounter = 0;
-
 // Maximum number of images to store (to prevent memory leaks)
 const MAX_STORED_IMAGES = 100;
+
+/**
+ * Per-connection image store. It lives in the active {@link core.CoreContext}'s
+ * adapter scratch space (not a module global), so concurrent HTTP MCP clients
+ * don't share — or evict — each other's screenshots. The stdio/eve hosts have a
+ * single context, so this behaves exactly like the old module-level Map for them.
+ * Resource reads (which also run inside the connection's context) resolve the
+ * same per-connection store, so a screenshot URI only resolves for the client
+ * that produced it.
+ */
+interface ImageStoreState {
+  images: Map<string, StoredImage>;
+  counter: number;
+}
+
+function imageStoreState(): ImageStoreState {
+  const adapter = core.getAdapterState();
+  let state = adapter.imageStore as ImageStoreState | undefined;
+  if (!state) {
+    state = { images: new Map(), counter: 0 };
+    adapter.imageStore = state;
+  }
+  return state;
+}
 
 /**
  * Store an image and return its unique resource URI
  */
 function storeImage(data: string, type: "screenshot" | "cropped"): string {
-  const id = `${type}-${++imageIdCounter}`;
-  
+  const state = imageStoreState();
+  const imageStore = state.images;
+  const id = `${type}-${++state.counter}`;
+
   // Clean up old images if we exceed the limit
   if (imageStore.size >= MAX_STORED_IMAGES) {
     // Remove oldest images (first entries in the map)
@@ -251,15 +271,15 @@ function storeImage(data: string, type: "screenshot" | "cropped"): string {
     }
     logger.debug("storeImage: Cleaned up old images", { removed: entriesToRemove, remaining: imageStore.size });
   }
-  
+
   imageStore.set(id, {
     data,
     type,
     timestamp: Date.now(),
   });
-  
+
   logger.debug("storeImage: Stored image", { id, type, dataLength: data.length });
-  
+
   const base = type === "screenshot" ? SCREENSHOT_RESOURCE_BASE : CROPPED_IMAGE_RESOURCE_BASE;
   return `${base}/${id}`;
 }
@@ -268,7 +288,13 @@ function storeImage(data: string, type: "screenshot" | "cropped"): string {
  * Get an image by its ID
  */
 function getStoredImage(id: string): StoredImage | undefined {
-  return imageStore.get(id);
+  return imageStoreState().images.get(id);
+}
+
+/** Diagnostics for the active connection's image store (used in debug logs). */
+function imageStoreDiagnostics(): { imageStoreSize: number; availableKeys: string[] } {
+  const images = imageStoreState().images;
+  return { imageStoreSize: images.size, availableKeys: Array.from(images.keys()) };
 }
 
 /**
@@ -278,66 +304,194 @@ function getSessionData(session: SessionState | null) {
   if (!session) return { id: null, expiresIn: 0 };
   return {
     id: session.sessionId,
-    expiresIn: sessionManager.getTimeRemaining(session.sessionId),
+    expiresIn: core.getSessionTimeRemaining(session.sessionId),
   };
 }
 
 /**
- * Check if session is ready for use - returns error result if not
- * This helper provides clear, actionable error messages for the AI
- * 
- * Auto-extends the session on each successful check to prevent expiry during active use
+ * Map a {@link NoActiveSessionError} thrown by the core into the exact same
+ * "no/expired session" tool result the server's old `requireActiveSession`
+ * produced. Kept byte-identical so external behavior is unchanged.
  */
-function requireActiveSession(): { valid: true } | { valid: false; error: CallToolResult } {
-  const session = sessionManager.getCurrentSession();
-  
-  // No session ever created
-  if (!sdk || !session) {
+function noSessionResult(err: NoActiveSessionError): CallToolResult {
+  if (err.code === "SESSION_EXPIRED") {
+    return createToolResult(
+      false,
+      "ERROR: Session has expired or timed out. The sandbox is no longer available. You must call session_start again to create a new sandbox session before continuing.",
+      {
+        error: "SESSION_EXPIRED",
+        action: "session_start",
+        message: "The previous sandbox session has expired. Call session_start to create a new one.",
+        expiredSessionId: err.expiredSessionId,
+      }
+    );
+  }
+  return createToolResult(
+    false,
+    "ERROR: No active session. You must call session_start first to create a sandbox before using any other tools.",
+    {
+      error: "NO_SESSION",
+      action: "session_start",
+      message: "No sandbox session exists. Call session_start to create one.",
+    }
+  );
+}
+
+/**
+ * Map a core {@link ActionResult} into an MCP CallToolResult, storing images as
+ * resource URIs (the core returns BARE base64, which is what `storeImage` wants).
+ */
+function resultToMcp(r: ActionResult): CallToolResult {
+  const data: Record<string, unknown> = { ...r.data };
+  for (const img of r.images ?? []) {
+    const uri = storeImage(img.base64, img.kind);
+    if (img.kind === "cropped") data.croppedImageResourceUri = uri;
+    else data.screenshotResourceUri = uri;
+  }
+  return createToolResult(r.ok, r.text, data, r.code);
+}
+
+// =============================================================================
+// Progress reporting (MCP `notifications/progress`)
+// =============================================================================
+
+/** The `extra` argument every tool callback receives from the MCP SDK. */
+type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
+
+/**
+ * Reports progress for a long-running tool back to the client.
+ *
+ * Per the MCP spec, progress is only sent when the caller included a
+ * `progressToken` in the request's `_meta`. When no token is present this is a
+ * no-op, so callers can report unconditionally without branching.
+ *
+ * Each `report()` call increments an internal counter (indeterminate progress —
+ * we rarely know a real total ahead of time) and forwards a human-readable
+ * `message`. A `heartbeat()` helper keeps the client's idle timeout alive while
+ * a single long SDK call is in flight (e.g. provisioning a sandbox, polling a
+ * find), which is the situation that was tripping the `session_start` timeout.
+ */
+interface ProgressReporter {
+  /** Emit one progress step with an optional human-readable message. */
+  report(message?: string): void;
+  /**
+   * Emit a progress tick every `intervalMs` until the returned stop function is
+   * called. Use this around a single long `await` so the client keeps receiving
+   * activity. Always pair with the returned `stop()` in a `finally`.
+   */
+  heartbeat(message: string, intervalMs?: number): () => void;
+}
+
+const DEFAULT_HEARTBEAT_MS = 3000;
+
+function makeProgressReporter(extra: ToolExtra): ProgressReporter {
+  const progressToken = extra?._meta?.progressToken;
+
+  // No token → client did not opt into progress. Return a no-op reporter.
+  if (progressToken === undefined || progressToken === null) {
     return {
-      valid: false,
-      error: createToolResult(
-        false,
-        "ERROR: No active session. You must call session_start first to create a sandbox before using any other tools.",
-        { 
-          error: "NO_SESSION",
-          action: "session_start",
-          message: "No sandbox session exists. Call session_start to create one."
-        }
-      )
+      report: () => {},
+      heartbeat: () => () => {},
     };
   }
-  
-  // Session exists but has expired
-  if (!sessionManager.isSessionValid(session.sessionId)) {
-    // Clear the SDK reference since the sandbox is no longer available
-    sdk = null;
-    return {
-      valid: false,
-      error: createToolResult(
-        false,
-        "ERROR: Session has expired or timed out. The sandbox is no longer available. You must call session_start again to create a new sandbox session before continuing.",
-        { 
-          error: "SESSION_EXPIRED",
-          action: "session_start",
-          message: "The previous sandbox session has expired. Call session_start to create a new one.",
-          expiredSessionId: session.sessionId
-        }
-      )
-    };
+
+  let progress = 0;
+
+  const send = (message?: string) => {
+    progress += 1;
+    // Fire-and-forget: a failed notification must never break the tool call.
+    void extra
+      .sendNotification({
+        method: "notifications/progress",
+        params: { progressToken, progress, message },
+      })
+      .catch((err) => {
+        logger.debug("progress: sendNotification failed", { error: String(err) });
+      });
+  };
+
+  return {
+    report: (message) => send(message),
+    heartbeat: (message, intervalMs = DEFAULT_HEARTBEAT_MS) => {
+      send(message);
+      const timer = setInterval(() => send(message), intervalMs);
+      // Don't let the heartbeat keep the event loop alive on its own.
+      timer.unref?.();
+      return () => clearInterval(timer);
+    },
+  };
+}
+
+// =============================================================================
+// Cancellation (MCP `notifications/cancelled` → `extra.signal`)
+// =============================================================================
+
+/** Thrown when a tool call is aborted by the client. */
+class ToolAbortError extends Error {
+  constructor(tool: string) {
+    super(`${tool} was cancelled by the client`);
+    this.name = "ToolAbortError";
   }
-  
-  // Auto-extend session on each command to prevent expiry during active use
-  // This resets the expiry timer back to the original keepAlive duration
-  sessionManager.refreshSession(session.sessionId);
-  
-  return { valid: true };
+}
+
+/** Reject as soon as `signal` aborts. Used to race against long SDK calls. */
+function rejectOnAbort(signal: AbortSignal | undefined, tool: string): { promise: Promise<never>; cleanup: () => void } {
+  if (!signal) {
+    // Never-resolving promise with a no-op cleanup — Promise.race ignores it.
+    return { promise: new Promise<never>(() => {}), cleanup: () => {} };
+  }
+  let onAbort: () => void = () => {};
+  const promise = new Promise<never>((_, reject) => {
+    onAbort = () => reject(new ToolAbortError(tool));
+    if (signal.aborted) {
+      onAbort();
+    } else {
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  });
+  return { promise, cleanup: () => signal.removeEventListener("abort", onAbort) };
+}
+
+/**
+ * Run a long-running SDK call, but settle as soon as the client aborts.
+ *
+ * The wrapped SDK methods are not themselves signal-aware, so on abort the
+ * underlying work keeps running to completion in the background — but the tool
+ * call returns promptly with a `ToolAbortError` instead of blocking the client.
+ * Callers that hold cleanable resources (e.g. `session_start`) should catch
+ * `ToolAbortError` and tear them down.
+ */
+async function raceAbort<T>(signal: AbortSignal | undefined, tool: string, work: Promise<T>): Promise<T> {
+  if (signal?.aborted) {
+    throw new ToolAbortError(tool);
+  }
+  const { promise, cleanup } = rejectOnAbort(signal, tool);
+  try {
+    return await Promise.race([work, promise]);
+  } finally {
+    cleanup();
+  }
+}
+
+/**
+ * If `error` is a client cancellation, return a "cancelled" tool result so the
+ * caller can `return` it; otherwise return null so normal error handling (log +
+ * Sentry + rethrow) proceeds. Keeps abort out of error reporting — a user
+ * cancelling is not a failure.
+ */
+function cancelledResultOrNull(error: unknown, tool: string): CallToolResult | null {
+  if (error instanceof ToolAbortError) {
+    logger.info(`${tool}: Cancelled by client`);
+    return createToolResult(false, `${tool} was cancelled.`, { action: tool, cancelled: true });
+  }
+  return null;
 }
 
 /**
  * Create tool result with structured content for MCP App
  * Images: imageUrl (data URL) goes to structuredContent for UI to display
  * The croppedImage from find() is small (~10KB) so it's acceptable as data URL
- * 
+ *
  * If generatedCode is provided, it's appended to the text response with instructions
  * for the agent to write it to the test file.
  */
@@ -351,7 +505,7 @@ function createToolResult(
   let fullText = textContent;
   if (generatedCode && success) {
     // Get the test file from the current session
-    const session = sessionManager.getCurrentSession();
+    const session = core.getCurrentSession();
     const testFile = session?.testFile;
     
     if (testFile) {
@@ -374,7 +528,7 @@ function createToolResult(
   // structuredContent goes to UI (includes imageUrl for display)
   // Always include success flag so UI can display correct status indicator
   // Include generatedCode and testFile in structured data so agents can programmatically handle it
-  const session = sessionManager.getCurrentSession();
+  const session = core.getCurrentSession();
   return {
     content,
     structuredContent: { 
@@ -386,28 +540,40 @@ function createToolResult(
   };
 }
 
-// Create MCP server wrapped with Sentry for automatic tracing
-const server = isSentryEnabled()
-  ? Sentry.wrapMcpServerWithSentry(
-      new McpServer({
+/**
+ * Build a fully-registered MCP server instance (all resources + tools).
+ *
+ * This used to run once at module load against a single shared `server`. It is
+ * now a factory so the HTTP transport can mint one server PER connection — each
+ * bound (via the surrounding {@link core.runInContext}) to its own isolated
+ * {@link core.CoreContext}. That's what stops one Streamable-HTTP client's tool
+ * call from reading another client's sandbox. The stdio host calls this once and
+ * runs it over the global context, so its behavior is unchanged.
+ *
+ * The tool/resource handlers below don't reference any per-connection state
+ * directly — they go through the context-aware helpers (`storeImage`,
+ * `getStoredImage`, `core.*`), which resolve the active context. So a single
+ * copy of the registration code serves every connection correctly.
+ */
+function buildServer(): McpServer {
+  // Create MCP server wrapped with Sentry for automatic tracing
+  const server = isSentryEnabled()
+    ? Sentry.wrapMcpServerWithSentry(
+        new McpServer({
+          name: "testdriver",
+          version: version,
+        })
+      )
+    : new McpServer({
         name: "testdriver",
         version: version,
-      })
-    )
-  : new McpServer({
-      name: "testdriver",
-      version: version,
-    });
+      });
 
-// Element reference storage (for click/hover after find)
-// Stores actual Element instances - no raw coordinates as input
-const elementRefs = new Map<string, { element: any; description: string; coords: { x: number; y: number; centerX: number; centerY: number } }>();
+  // =============================================================================
+  // Register UI Resource
+  // =============================================================================
 
-// =============================================================================
-// Register UI Resource
-// =============================================================================
-
-registerAppResource(
+  registerAppResource(
   server,
   RESOURCE_URI,
   RESOURCE_URI,
@@ -524,226 +690,96 @@ Debug mode (connect to existing sandbox):
     inputSchema: SessionStartInputSchema as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params: SessionStartInput): Promise<CallToolResult> => {
+  async (params: SessionStartInput, extra: ToolExtra): Promise<CallToolResult> => {
     const startTime = Date.now();
-    logger.info("session_start: Starting", { 
-      type: params.type, 
+    const progress = makeProgressReporter(extra);
+
+    // Resolve OS with priority: explicit param > TD_OS env var > "linux" default
+    // This mirrors the behavior of the Vitest hooks (hooks.mjs) which also reads TD_OS
+    const { os: resolvedOs, warning: osWarning } = resolveOs(params.os);
+    if (osWarning) {
+      logger.warn(`session_start: ${osWarning}`);
+    } else if (!params.os && resolvedOs !== "linux") {
+      logger.info("session_start: Using TD_OS environment variable", { os: resolvedOs });
+    }
+
+    // Resolve E2B template ID with priority: explicit param > TD_E2B_TEMPLATE_ID env var
+    // This mirrors the behavior of the Vitest hooks (hooks.mjs) which also reads TD_E2B_TEMPLATE_ID
+    const resolvedE2bTemplateId = resolveE2bTemplateId(params.e2bTemplateId);
+    if (!params.e2bTemplateId && resolvedE2bTemplateId) {
+      logger.info("session_start: Using TD_E2B_TEMPLATE_ID environment variable", { e2bTemplateId: resolvedE2bTemplateId });
+    }
+
+    logger.info("session_start: Starting", {
+      type: params.type,
       url: params.url,
-      os: params.os, 
+      os: resolvedOs,
       reconnect: params.reconnect,
       sandboxId: params.sandboxId,
     });
 
     try {
-      // Validate required fields for specific provision types (unless connecting to existing sandbox)
-      if (!params.sandboxId) {
-        if (params.type === "installer" && !params.installerUrl) {
-          return createToolResult(false, "installer type requires 'installerUrl' parameter", { error: "Missing required parameter: installerUrl" });
-        }
-        if (params.type === "electron" && !params.appPath) {
-          return createToolResult(false, "electron type requires 'appPath' parameter", { error: "Missing required parameter: appPath" });
-        }
-      }
-
-      // Create new session
-      const newSession = sessionManager.createSession({
-        os: params.os,
-        keepAlive: params.keepAlive,
-        testFile: params.testFile,
-      });
-      logger.debug("session_start: Session created", { sessionId: newSession.sessionId });
-
-      // Determine API root
-      const apiRoot = params.apiRoot || process.env.TD_API_ROOT || "https://api.testdriver.ai";
-      logger.debug("session_start: Using API root", { apiRoot });
-
-      // Initialize SDK
-      logger.debug("session_start: Initializing SDK");
-      const TestDriverSDK = (await import("../../sdk.js")).default;
-      
-      // Determine preview mode from environment variable
-      // TD_PREVIEW can be "ide", "browser", or "none"
-      // Default to "ide" so the live preview shows within the IDE
-      const previewMode = process.env.TD_PREVIEW || "ide";
-      logger.debug("session_start: Preview mode", { preview: previewMode });
-      
-      // Get IP from params or environment (for self-hosted instances)
-      const instanceIp = params.ip || process.env.TD_IP;
-      
-      // Get API key - check multiple sources for GitHub Copilot coding agent compatibility
-      // 1. TD_API_KEY (standard environment variable)
-      // 2. COPILOT_MCP_TD_API_KEY (fallback for GitHub Copilot coding agent)
-      const apiKey = process.env.TD_API_KEY || process.env.COPILOT_MCP_TD_API_KEY || "";
-      
-      if (!apiKey) {
-        logger.error("session_start: No API key found", {
-          hasTD_API_KEY: !!process.env.TD_API_KEY,
-          hasCOPILOT_MCP_TD_API_KEY: !!process.env.COPILOT_MCP_TD_API_KEY,
-          availableEnvVars: Object.keys(process.env).filter(k => k.includes('TD') || k.includes('COPILOT_MCP'))
-        });
-        return createToolResult(false, "No API key found. Please set TD_API_KEY or COPILOT_MCP_TD_API_KEY environment variable.", { 
-          error: "Missing API key",
-          hint: "For GitHub Copilot coding agent, create a Copilot environment secret named COPILOT_MCP_TD_API_KEY"
-        });
-      }
-      
-      logger.debug("session_start: API key found", { 
-        source: process.env.TD_API_KEY ? "TD_API_KEY" : "COPILOT_MCP_TD_API_KEY",
-        keyPrefix: apiKey.substring(0, 7) + "..."
-      });
-      
-      sdk = new TestDriverSDK(apiKey, {
-        os: params.os,
-        logging: false,
-        apiRoot,
-        preview: previewMode as "browser" | "ide" | "none",
-        ip: instanceIp,
-      });
-
-      // Handle sandboxId mode - connect to existing sandbox (debug-on-failure mode)
-      if (params.sandboxId) {
-        logger.info("session_start: Connecting to existing sandbox (debug mode)", { sandboxId: params.sandboxId });
-        await sdk.connect({
-          sandboxId: params.sandboxId,
-          keepAlive: params.keepAlive,
-        });
-        
-        // Get sandbox ID
-        const instance = sdk.getInstance();
-        logger.info("session_start: Connected to existing sandbox", { instanceId: instance?.instanceId });
-        sessionManager.activateSession(newSession.sessionId, instance?.instanceId || params.sandboxId);
-        
-        // Set Sentry context for error tracking
-        setSessionContext(newSession.sessionId, instance?.instanceId);
-        
-        // Capture screenshot of current state
-        logger.debug("session_start: Capturing screenshot of existing sandbox");
-        const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-        
-        let screenshotResourceUri: string | undefined;
-        if (screenshotBase64) {
-          screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-          lastScreenshotBase64 = screenshotBase64;
-        }
-
-        const duration = Date.now() - startTime;
-        logger.info("session_start: Connected to existing sandbox", { duration, sessionId: newSession.sessionId, sandboxId: params.sandboxId });
-
-        return createToolResult(
-          true,
-          `Connected to existing sandbox (debug mode)
-Session: ${newSession.sessionId}
-Sandbox: ${params.sandboxId}
-Expires in: ${Math.round(params.keepAlive / 1000)}s
-
-You are now connected to the sandbox in its current state. Use find, click, type, etc. to interact.`,
-          { 
-            action: "session_start",
-            sessionId: newSession.sessionId, 
-            sandboxId: params.sandboxId,
-            debugMode: true,
-            screenshotResourceUri,
-            duration 
-          },
-          "// Connected to existing sandbox - no provision code needed"
+      // The core owns session creation, SDK init, connect, provisioning and the
+      // initial screenshot. We keep the abort race + heartbeat scaffolding here:
+      // a heartbeat ticks while the long provisioning await is in flight, and the
+      // whole core call is raced against the client's abort signal so cancellation
+      // still returns promptly. Progress messages from the core are forwarded.
+      const stopHeartbeat = progress.heartbeat(
+        params.sandboxId
+          ? `Connecting to existing sandbox ${params.sandboxId}...`
+          : "Starting session..."
+      );
+      let result: ActionResult;
+      try {
+        result = await raceAbort(
+          extra.signal,
+          "session_start",
+          core.sessionStart(
+            params,
+            { os: resolvedOs, e2bTemplateId: resolvedE2bTemplateId },
+            { onProgress: (m) => progress.report(m) }
+          )
         );
-      }
-
-      // Connect to sandbox
-      if (instanceIp) {
-        logger.info("session_start: Connecting to self-hosted instance...", { ip: instanceIp });
-      } else {
-        logger.info("session_start: Connecting to cloud sandbox...");
-      }
-      await sdk.connect({
-        reconnect: params.reconnect,
-        keepAlive: params.keepAlive,
-        ip: instanceIp,
-      });
-
-      // Get sandbox ID
-      const instance = sdk.getInstance();
-      logger.info("session_start: Connected to sandbox", { instanceId: instance?.instanceId });
-      sessionManager.activateSession(newSession.sessionId, instance?.instanceId || "unknown");
-      
-      // Set Sentry context for error tracking
-      setSessionContext(newSession.sessionId, instance?.instanceId);
-
-      // Get provision-specific options
-      const provisionOptions = getProvisionOptions(params);
-      let provisionCmd = "";
-
-      // Provision based on type
-      switch (params.type) {
-        case "chrome": {
-          const chromeOpts = provisionOptions as { url: string; maximized?: boolean; guest?: boolean };
-          logger.info("session_start: Provisioning Chrome", { url: chromeOpts.url });
-          await sdk.provision.chrome(chromeOpts);
-          provisionCmd = "provision.chrome";
-          logger.debug("session_start: Chrome provisioned");
-          break;
-        }
-        
-        case "chromeExtension": {
-          const extOpts = provisionOptions as { extensionPath?: string; extensionId?: string; maximized?: boolean };
-          logger.info("session_start: Provisioning Chrome Extension", { extensionPath: extOpts.extensionPath, extensionId: extOpts.extensionId });
-          await sdk.provision.chromeExtension(extOpts);
-          provisionCmd = "provision.chromeExtension";
-          logger.debug("session_start: Chrome Extension provisioned");
-          break;
-        }
-        
-        case "vscode": {
-          const vscodeOpts = provisionOptions as { workspace?: string; extensions?: string[] };
-          logger.info("session_start: Provisioning VS Code", { workspace: vscodeOpts.workspace });
-          await sdk.provision.vscode(vscodeOpts);
-          provisionCmd = "provision.vscode";
-          logger.debug("session_start: VS Code provisioned");
-          break;
-        }
-        
-        case "installer": {
-          const installerOpts = provisionOptions as { url: string; filename?: string; appName?: string; launch?: boolean };
-          logger.info("session_start: Provisioning installer", { url: installerOpts.url });
-          await sdk.provision.installer(installerOpts);
-          provisionCmd = "provision.installer";
-          logger.debug("session_start: Installer provisioned");
-          break;
-        }
-        
-        case "electron": {
-          const electronOpts = provisionOptions as { appPath: string; args?: string[] };
-          logger.info("session_start: Provisioning Electron", { appPath: electronOpts.appPath });
-          await sdk.provision.electron(electronOpts);
-          provisionCmd = "provision.electron";
-          logger.debug("session_start: Electron app provisioned");
-          break;
-        }
-      }
-
-      // Capture initial screenshot after provisioning
-      logger.debug("session_start: Capturing initial screenshot");
-      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-      
-      let screenshotResourceUri: string | undefined;
-      if (screenshotBase64) {
-        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-        lastScreenshotBase64 = screenshotBase64;
+      } finally {
+        stopHeartbeat();
       }
 
       const duration = Date.now() - startTime;
-      logger.info("session_start: Completed", { duration, sessionId: newSession.sessionId, selfHosted: !!instanceIp });
 
-      // Generate the code for this provision action
-      const generatedCode = generateActionCode(provisionCmd, provisionOptions);
+      // Set Sentry context once the session id is known.
+      if (result.ok && typeof result.data.sessionId === "string") {
+        setSessionContext(result.data.sessionId, (result.data.sandboxId as string) || undefined);
+      }
 
-      // Build debugger URL for the session
-      const debuggerUrl = instance?.debuggerUrl || (instanceIp ? `http://${instanceIp}:9222` : null);
+      logger.info("session_start: Completed", { duration, ok: result.ok });
 
-      const connectionType = instanceIp ? `Self-hosted (${instanceIp})` : "Cloud";
-      return createToolResult(
-        true,
-        `Session started: ${newSession.sessionId}\nConnection: ${connectionType}\nType: ${params.type}\nSandbox: ${instance?.instanceId}\nExpires in: ${Math.round(params.keepAlive / 1000)}s
+      if (!result.ok) {
+        // Validation / missing-key failures: pass through with duration added.
+        return resultToMcp({ ...result, data: { ...result.data, duration } });
+      }
+
+      // Reproduce the server's exact success output (text + data) which differs
+      // from the core's neutral text. Images are mapped to resource URIs.
+      const data: Record<string, unknown> = { ...result.data, duration };
+      for (const img of result.images ?? []) {
+        const uri = storeImage(img.base64, img.kind);
+        if (img.kind === "cropped") data.croppedImageResourceUri = uri;
+        else data.screenshotResourceUri = uri;
+      }
+
+      if (result.data.debugMode) {
+        // Debug (existing-sandbox) success text — preserve original wording.
+        const text = `Connected to existing sandbox (debug mode)
+Session: ${result.data.sessionId}
+Sandbox: ${result.data.sandboxId}
+Expires in: ${Math.round(params.keepAlive / 1000)}s
+
+You are now connected to the sandbox in its current state. Use find, click, type, etc. to interact.`;
+        return createToolResult(true, text, data, result.code);
+      }
+
+      // Normal provisioning success — append the EXACT dependency guidance block.
+      const text = `${result.text}
 
 IMPORTANT - If creating a new test project, use these EXACT dependencies in package.json:
 {
@@ -755,20 +791,21 @@ IMPORTANT - If creating a new test project, use these EXACT dependencies in pack
   "scripts": {
     "test": "vitest"
   }
-}`,
-        { 
-          action: "session_start",
-          sessionId: newSession.sessionId, 
-          provisionType: params.type, 
-          selfHosted: !!instanceIp, 
-          instanceIp: instanceIp || undefined,
-          debuggerUrl,
-          screenshotResourceUri,
-          duration 
-        },
-        generatedCode
-      );
+}`;
+      return createToolResult(true, text, data, result.code);
     } catch (error) {
+      // On client cancellation, tear down the half-provisioned session so we
+      // don't leak a connected sandbox. The underlying SDK call may still be
+      // running in the background; best-effort cleanup is all we can do.
+      if (error instanceof ToolAbortError) {
+        logger.info("session_start: Cancelled by client, tearing down session");
+        try {
+          await core.disconnect();
+        } catch (cleanupErr) {
+          logger.warn("session_start: Cleanup after cancel failed", { error: String(cleanupErr) });
+        }
+        return createToolResult(false, "Session start was cancelled.", { action: "session_start", cancelled: true });
+      }
       logger.error("session_start: Failed", { error: String(error) });
       captureException(error as Error, { tags: { tool: "session_start" }, extra: { params } });
       throw error;
@@ -786,27 +823,17 @@ server.registerTool(
   async (): Promise<CallToolResult> => {
     const startTime = Date.now();
     logger.info("session_status: Checking");
-    const session = sessionManager.getCurrentSession();
 
-    if (!session) {
-      logger.warn("session_status: No active session");
-      return createToolResult(false, "No active session", { error: "No active session. Call session_start first." });
-    }
-
-    const summary = sessionManager.getSessionSummary(session.sessionId);
+    const result = core.sessionStatus();
     const duration = Date.now() - startTime;
-    logger.info("session_status: Completed", { 
-      sessionId: session.sessionId, 
-      status: session.status,
-      timeRemaining: summary?.timeRemaining,
-      duration 
+    logger.info("session_status: Completed", {
+      ok: result.ok,
+      sessionId: result.data.sessionId,
+      status: result.data.status,
+      duration,
     });
 
-    return createToolResult(
-      true,
-      `Session: ${session.sessionId}\nStatus: ${session.status}\nTime remaining: ${Math.round((summary?.timeRemaining || 0) / 1000)}s`,
-      { action: "session_status", ...summary, sessionId: session.sessionId, status: session.status, duration }
-    );
+    return resultToMcp({ ...result, data: { ...result.data, duration } });
   }
 );
 
@@ -821,22 +848,22 @@ server.registerTool(
   },
   async (params) => {
     logger.info("session_extend: Extending", { additionalMs: params.additionalMs });
-    const session = sessionManager.getCurrentSession();
 
-    if (!session) {
+    const result = core.sessionExtend(params.additionalMs);
+
+    if (!result.ok) {
       logger.warn("session_extend: No active session");
       return { content: [{ type: "text" as const, text: "No active session" }] };
     }
 
-    sessionManager.extendSession(session.sessionId, params.additionalMs);
-    const newExpiry = sessionManager.getTimeRemaining(session.sessionId);
-    logger.info("session_extend: Extended", { sessionId: session.sessionId, newExpiry });
+    logger.info("session_extend: Extended", { newExpiry: result.data.newExpiry });
 
+    // Preserve the original plain content shape (not via createToolResult).
     return {
       content: [
         {
           type: "text" as const,
-          text: `Session extended by ${params.additionalMs / 1000}s. New expiry: ${Math.round(newExpiry / 1000)}s`,
+          text: result.text,
         },
       ],
     };
@@ -856,107 +883,32 @@ registerAppTool(
     }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params: { description: string; timeout?: number }): Promise<CallToolResult> => {
+  async (params: { description: string; timeout?: number }, extra: ToolExtra): Promise<CallToolResult> => {
     const startTime = Date.now();
+    const progress = makeProgressReporter(extra);
     logger.info("find: Starting", { description: params.description, timeout: params.timeout });
-
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("find: No active session");
-      return sessionCheck.error;
-    }
 
     try {
       logger.debug("find: Calling SDK find");
-      const element = await sdk.find(params.description, params.timeout ? { timeout: params.timeout } : undefined);
-      const found = element.found();
-      const coords = element.getCoordinates();
-
-      // Store element ref for later use (stores actual Element instance)
-      const elementRef = `el-${Date.now()}`;
-      if (found && coords) {
-        elementRefs.set(elementRef, {
-          element: element,  // Store the actual Element instance
-          description: params.description,
-          coords: {
-            x: coords.x,
-            y: coords.y,
-            centerX: coords.centerX,
-            centerY: coords.centerY,
-          },
-        });
-        logger.info("find: Element found", { 
-          description: params.description, 
-          coords: { x: coords.centerX, y: coords.centerY },
-          confidence: element.confidence,
-          elementRef 
-        });
-      } else {
-        logger.warn("find: Element not found", { description: params.description });
+      const stopHeartbeat = progress.heartbeat(`Looking for "${params.description}"...`);
+      let result: ActionResult;
+      try {
+        result = await raceAbort(extra.signal, "find", core.find(params.description, params.timeout));
+      } finally {
+        stopHeartbeat();
       }
 
-      // Return raw SDK response directly
-      const rawResponse = element._response || {};
       const duration = Date.now() - startTime;
-      
-      // Store cropped image for resource serving (instead of inline data URL)
-      let croppedImageResourceUri: string | undefined;
-      let screenshotResourceUri: string | undefined;
-      const croppedImage = rawResponse.croppedImage;
-      if (croppedImage) {
-        const imageData = croppedImage.startsWith('data:') 
-          ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
-          : croppedImage;
-        croppedImageResourceUri = storeImage(imageData, "cropped");
-        // Remove croppedImage from response to avoid context bloat
-        delete rawResponse.croppedImage;
-      } else if (!found) {
-        // Element not found and no cropped image - capture a fresh screenshot
-        // so the user can see what's currently visible on screen
-        try {
-          const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-          if (screenshotBase64) {
-            screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-            logger.debug("find: Captured screenshot for not-found state");
-          }
-        } catch (e) {
-          logger.warn("find: Failed to capture screenshot for not-found state", { error: String(e) });
-        }
-      }
-      
-      // Remove extractedText and pixelDiffImage from response to reduce context bloat
-      delete rawResponse.extractedText;
-      delete rawResponse.pixelDiffImage;
+      logger.info("find: Completed", { description: params.description, found: result.ok, duration });
 
-      // Generate code for this find action
-      const generatedCode = found ? generateActionCode("find", { description: params.description }) : undefined;
-
-      // Build element info for display (cropped image is always centered on element)
-      const elementInfo = found ? {
-        description: params.description,
-        centerX: coords?.centerX,
-        centerY: coords?.centerY,
-        confidence: element.confidence,
-        ref: elementRef,
-      } : undefined;
-
-      return createToolResult(
-        found,
-        found
-          ? `Found: "${params.description}" at (${rawResponse.coordinates?.x}, ${rawResponse.coordinates?.y})\nRef: ${elementRef}`
-          : `Element not found: "${params.description}"`,
-        {
-          ...rawResponse,
-          action: "find",
-          element: elementInfo,
-          ref: elementRef,
-          croppedImageResourceUri,
-          screenshotResourceUri,
-          duration,
-        },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("find: No active session");
+        return noSessionResult(error);
+      }
+      const cancelled = cancelledResultOrNull(error, "find");
+      if (cancelled) return cancelled;
       logger.error("find: Failed", { error: String(error), description: params.description });
       captureException(error as Error, { tags: { tool: "find" }, extra: { description: params.description } });
       throw error;
@@ -977,115 +929,32 @@ registerAppTool(
     }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params: { description: string; timeout?: number }): Promise<CallToolResult> => {
+  async (params: { description: string; timeout?: number }, extra: ToolExtra): Promise<CallToolResult> => {
     const startTime = Date.now();
+    const progress = makeProgressReporter(extra);
     logger.info("findall: Starting", { description: params.description, timeout: params.timeout });
-
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("findall: No active session");
-      return sessionCheck.error;
-    }
 
     try {
       logger.debug("findall: Calling SDK findAll");
-      const elements = await sdk.findAll(params.description, params.timeout ? { timeout: params.timeout } : undefined);
-      const count = elements.length;
-
-      // Store element refs for later use
-      const refs: string[] = [];
-      const elementInfos: Array<{ ref: string; x: number; y: number; centerX: number; centerY: number; confidence: number }> = [];
-      
-      for (let i = 0; i < elements.length; i++) {
-        const element = elements[i];
-        const coords = element.getCoordinates();
-        const elementRef = `el-${Date.now()}-${i}`;
-        
-        if (coords) {
-          elementRefs.set(elementRef, {
-            element: element,
-            description: `${params.description} [${i}]`,
-            coords: {
-              x: coords.x,
-              y: coords.y,
-              centerX: coords.centerX,
-              centerY: coords.centerY,
-            },
-          });
-          refs.push(elementRef);
-          elementInfos.push({
-            ref: elementRef,
-            x: coords.x,
-            y: coords.y,
-            centerX: coords.centerX,
-            centerY: coords.centerY,
-            confidence: element.confidence,
-          });
-        }
+      const stopHeartbeat = progress.heartbeat(`Looking for all "${params.description}"...`);
+      let result: ActionResult;
+      try {
+        result = await raceAbort(extra.signal, "findall", core.findAll(params.description, params.timeout));
+      } finally {
+        stopHeartbeat();
       }
 
-      logger.info("findall: Elements found", { 
-        description: params.description, 
-        count,
-        refs 
-      });
-
-      // Get the first element's response for the image (shows all highlights)
-      const rawResponse = elements[0]?._response || {};
       const duration = Date.now() - startTime;
-      
-      // Store cropped image for resource serving (instead of inline data URL)
-      let croppedImageResourceUri: string | undefined;
-      let screenshotResourceUri: string | undefined;
-      const croppedImage = rawResponse.croppedImage;
-      if (croppedImage) {
-        const imageData = croppedImage.startsWith('data:') 
-          ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
-          : croppedImage;
-        croppedImageResourceUri = storeImage(imageData, "cropped");
-        // Remove croppedImage from response to avoid context bloat
-        delete rawResponse.croppedImage;
-      } else if (count === 0) {
-        // No elements found and no cropped image - capture a fresh screenshot
-        // so the user can see what's currently visible on screen
-        try {
-          const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-          if (screenshotBase64) {
-            screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-            logger.debug("findall: Captured screenshot for not-found state");
-          }
-        } catch (e) {
-          logger.warn("findall: Failed to capture screenshot for not-found state", { error: String(e) });
-        }
-      }
-      
-      // Remove extractedText and pixelDiffImage from response to reduce context bloat
-      delete rawResponse.extractedText;
-      delete rawResponse.pixelDiffImage;
+      logger.info("findall: Completed", { description: params.description, count: result.data.count, duration });
 
-      // Generate code for this findall action
-      const generatedCode = count > 0 ? generateActionCode("findall", { description: params.description }) : undefined;
-
-      // Build refs list for text output
-      const refsList = refs.map((ref, i) => `  [${i}] ${ref}`).join('\n');
-
-      return createToolResult(
-        count > 0,
-        count > 0
-          ? `Found ${count} elements matching "${params.description}":\n${refsList}`
-          : `No elements found matching: "${params.description}"`,
-        {
-          ...rawResponse,
-          count,
-          refs,
-          elements: elementInfos,
-          croppedImageResourceUri,
-          screenshotResourceUri,
-          duration,
-        },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("findall: No active session");
+        return noSessionResult(error);
+      }
+      const cancelled = cancelledResultOrNull(error, "findall");
+      if (cancelled) return cancelled;
       logger.error("findall: Failed", { error: String(error), description: params.description });
       captureException(error as Error, { tags: { tool: "findall" }, extra: { description: params.description } });
       throw error;
@@ -1110,70 +979,20 @@ registerAppTool(
     const startTime = Date.now();
     logger.info("click: Starting", { elementRef: params.elementRef, action: params.action });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("click: No active session");
-      return sessionCheck.error;
-    }
-
-    // Look up the element reference
-    const ref = elementRefs.get(params.elementRef);
-    if (!ref) {
-      logger.warn("click: Element reference not found", { elementRef: params.elementRef });
-      return createToolResult(false, `Element reference "${params.elementRef}" not found. Use 'find' first to locate the element.`, { error: "Element reference not found" });
-    }
-
-    const { element, description, coords } = ref;
-
     try {
-      logger.debug("click: Executing click on element", { description, action: params.action });
-      
-      // Use the Element's click method instead of raw coordinates
-      if (params.action === "click") {
-        await element.click();
-      } else if (params.action === "double-click") {
-        await element.doubleClick();
-      } else if (params.action === "right-click") {
-        await element.rightClick();
-      }
+      logger.debug("click: Executing click on element", { elementRef: params.elementRef, action: params.action });
+      const result = await core.click(params.elementRef, params.action);
 
-      // Capture screenshot after click to show result
-      logger.debug("click: Capturing screenshot after click");
-      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-      
-      let screenshotResourceUri: string | undefined;
-      if (screenshotBase64) {
-        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-        lastScreenshotBase64 = screenshotBase64;
-      }
-
-      const rawResponse = element._response || {};
-      // Remove large data from response to reduce context bloat
-      delete rawResponse.croppedImage;
-      delete rawResponse.extractedText;
-      delete rawResponse.pixelDiffImage;
-      
       const duration = Date.now() - startTime;
-      logger.info("click: Completed", { description, duration });
+      logger.info("click: Completed", { elementRef: params.elementRef, duration });
 
-      // Generate code for this click action
-      const generatedCode = generateActionCode("click", { action: params.action });
-
-      return createToolResult(
-        true,
-        `Clicked on "${description}"`,
-        { 
-          ...rawResponse, 
-          action: "click", 
-          clickAction: params.action, 
-          clickPosition: coords, 
-          screenshotResourceUri,
-          duration 
-        },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
-      logger.error("click: Failed", { error: String(error), description });
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("click: No active session");
+        return noSessionResult(error);
+      }
+      logger.error("click: Failed", { error: String(error), elementRef: params.elementRef });
       captureException(error as Error, { tags: { tool: "click" }, extra: { elementRef: params.elementRef, action: params.action } });
       throw error;
     }
@@ -1196,60 +1015,20 @@ registerAppTool(
     const startTime = Date.now();
     logger.info("hover: Starting", { elementRef: params.elementRef });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("hover: No active session");
-      return sessionCheck.error;
-    }
-
-    // Look up the element reference
-    const ref = elementRefs.get(params.elementRef);
-    if (!ref) {
-      logger.warn("hover: Element reference not found", { elementRef: params.elementRef });
-      return createToolResult(false, `Element reference "${params.elementRef}" not found. Use 'find' first to locate the element.`, { error: "Element reference not found" });
-    }
-
-    const { element, description, coords } = ref;
-
     try {
-      logger.debug("hover: Executing hover on element", { description });
-      await element.hover();
+      logger.debug("hover: Executing hover on element", { elementRef: params.elementRef });
+      const result = await core.hover(params.elementRef);
 
-      // Capture screenshot after hover to show result
-      logger.debug("hover: Capturing screenshot after hover");
-      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-      
-      let screenshotResourceUri: string | undefined;
-      if (screenshotBase64) {
-        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-        lastScreenshotBase64 = screenshotBase64;
-      }
-
-      const rawResponse = element._response || {};
-      // Remove large data from response to reduce context bloat
-      delete rawResponse.croppedImage;
-      delete rawResponse.extractedText;
-      delete rawResponse.pixelDiffImage;
-      
       const duration = Date.now() - startTime;
-      logger.info("hover: Completed", { description, duration });
+      logger.info("hover: Completed", { elementRef: params.elementRef, duration });
 
-      // Generate code for this hover action
-      const generatedCode = generateActionCode("hover", {});
-
-      return createToolResult(
-        true,
-        `Hovered over "${description}"`,
-        { 
-          ...rawResponse, 
-          action: "hover", 
-          screenshotResourceUri,
-          duration 
-        },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
-      logger.error("hover: Failed", { error: String(error), description });
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("hover: No active session");
+        return noSessionResult(error);
+      }
+      logger.error("hover: Failed", { error: String(error), elementRef: params.elementRef });
       captureException(error as Error, { tags: { tool: "hover" }, extra: { elementRef: params.elementRef } });
       throw error;
     }
@@ -1269,29 +1048,19 @@ server.registerTool(
     const startTime = Date.now();
     logger.info("wait: Starting", { timeout: params.timeout });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("wait: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("wait: Waiting", { timeout: params.timeout });
-      await sdk.wait(params.timeout);
+      const result = await core.wait(params.timeout);
 
       const duration = Date.now() - startTime;
       logger.info("wait: Completed", { timeout: params.timeout, duration });
 
-      // Generate code for this wait action
-      const generatedCode = generateActionCode("wait", { timeout: params.timeout });
-
-      return createToolResult(
-        true,
-        `Waited for ${params.timeout}ms`,
-        { action: "wait", timeout: params.timeout, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("wait: No active session");
+        return noSessionResult(error);
+      }
       logger.error("wait: Failed", { error: String(error) });
       captureException(error as Error, { tags: { tool: "wait" }, extra: { timeout: params.timeout } });
       throw error;
@@ -1312,29 +1081,19 @@ server.registerTool(
     const startTime = Date.now();
     logger.info("focus_application: Starting", { name: params.name });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("focus_application: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("focus_application: Focusing", { name: params.name });
-      await sdk.focusApplication(params.name);
+      const result = await core.focusApplication(params.name);
 
       const duration = Date.now() - startTime;
       logger.info("focus_application: Completed", { name: params.name, duration });
 
-      // Generate code for this focus action
-      const generatedCode = generateActionCode("focus_application", { name: params.name });
-
-      return createToolResult(
-        true,
-        `Focused application: "${params.name}"`,
-        { action: "focus", name: params.name, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("focus_application: No active session");
+        return noSessionResult(error);
+      }
       logger.error("focus_application: Failed", { error: String(error), name: params.name });
       captureException(error as Error, { tags: { tool: "focus_application" }, extra: { name: params.name } });
       throw error;
@@ -1355,144 +1114,32 @@ registerAppTool(
     }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params: { description: string; action: "click" | "double-click" | "right-click" }): Promise<CallToolResult> => {
+  async (params: { description: string; action: "click" | "double-click" | "right-click" }, extra: ToolExtra): Promise<CallToolResult> => {
     const startTime = Date.now();
+    const progress = makeProgressReporter(extra);
     logger.info("find_and_click: Starting", { description: params.description, action: params.action });
-
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("find_and_click: No active session");
-      return sessionCheck.error;
-    }
 
     try {
       logger.debug("find_and_click: Finding element");
-      const element = await sdk.find(params.description);
-      const found = element.found();
-
-      if (!found) {
-        logger.warn("find_and_click: Element not found", { description: params.description });
-        
-        // Capture screenshot to show current state even when element not found
-        const rawResponse = element._response || {};
-        const duration = Date.now() - startTime;
-        
-        // Store cropped image (screenshot) for resource serving
-        let croppedImageResourceUri: string | undefined;
-        let screenshotResourceUri: string | undefined;
-        const croppedImage = rawResponse.croppedImage;
-        if (croppedImage) {
-          const imageData = croppedImage.startsWith('data:') 
-            ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
-            : croppedImage;
-          croppedImageResourceUri = storeImage(imageData, "screenshot");
-          delete rawResponse.croppedImage;
-        } else {
-          // No cropped image - capture a fresh screenshot so the user can see
-          // what's currently visible on screen when element was not found
-          try {
-            const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-            if (screenshotBase64) {
-              screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-              logger.debug("find_and_click: Captured screenshot for not-found state");
-            }
-          } catch (e) {
-            logger.warn("find_and_click: Failed to capture screenshot for not-found state", { error: String(e) });
-          }
-        }
-        
-        // Remove extractedText and pixelDiffImage from response to reduce context bloat
-        delete rawResponse.extractedText;
-        delete rawResponse.pixelDiffImage;
-        
-        return createToolResult(
-          false, 
-          `Element not found: "${params.description}"`, 
-          { 
-            ...rawResponse,
-            action: "find_and_click",
-            error: "Element not found", 
-            croppedImageResourceUri,
-            screenshotResourceUri,
-            duration 
-          }
-        );
+      const stopHeartbeat = progress.heartbeat(`Looking for "${params.description}"...`);
+      let result: ActionResult;
+      try {
+        result = await raceAbort(extra.signal, "find_and_click", core.findAndClick(params.description, params.action));
+      } finally {
+        stopHeartbeat();
       }
 
-      const coords = element.getCoordinates();
-
-      // Store element ref for later use (in case user wants to interact again)
-      const elementRef = `el-${Date.now()}`;
-      if (coords) {
-        elementRefs.set(elementRef, {
-          element: element,
-          description: params.description,
-          coords: {
-            x: coords.x,
-            y: coords.y,
-            centerX: coords.centerX,
-            centerY: coords.centerY,
-          },
-        });
-      }
-
-      logger.debug("find_and_click: Element found, clicking", { action: params.action, elementRef });
-      if (params.action === "click") {
-        await element.click();
-      } else if (params.action === "double-click") {
-        await element.doubleClick();
-      } else if (params.action === "right-click") {
-        await element.rightClick();
-      }
-
-      // Return raw SDK response directly
-      const rawResponse = element._response || {};
       const duration = Date.now() - startTime;
-      
-      // Store cropped image for resource serving (instead of inline data URL)
-      let croppedImageResourceUri: string | undefined;
-      const croppedImage = rawResponse.croppedImage;
-      if (croppedImage) {
-        const imageData = croppedImage.startsWith('data:') 
-          ? croppedImage.replace(/^data:image\/\w+;base64,/, '')
-          : croppedImage;
-        croppedImageResourceUri = storeImage(imageData, "cropped");
-        // Remove croppedImage from response to avoid context bloat
-        delete rawResponse.croppedImage;
-      }
-      
-      // Remove extractedText and pixelDiffImage from response to reduce context bloat
-      delete rawResponse.extractedText;
-      delete rawResponse.pixelDiffImage;
+      logger.info("find_and_click: Completed", { description: params.description, found: result.ok, duration });
 
-      // Generate code for this find_and_click action
-      const generatedCode = generateActionCode("find_and_click", { description: params.description, action: params.action });
-
-      // Build element info for display (match find action format)
-      const elementInfo = coords ? {
-        description: params.description,
-        centerX: coords.centerX,
-        centerY: coords.centerY,
-        confidence: element.confidence,
-        ref: elementRef,
-      } : undefined;
-
-      return createToolResult(
-        true,
-        `Found and clicked: "${params.description}" at (${rawResponse.coordinates?.x}, ${rawResponse.coordinates?.y})\nRef: ${elementRef}`,
-        {
-          ...rawResponse,
-          action: "find_and_click",
-          element: elementInfo,
-          ref: elementRef,
-          clickAction: params.action,
-          clickPosition: coords ? { x: coords.centerX, y: coords.centerY } : undefined,
-          croppedImageResourceUri,
-          duration,
-        },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("find_and_click: No active session");
+        return noSessionResult(error);
+      }
+      const cancelled = cancelledResultOrNull(error, "find_and_click");
+      if (cancelled) return cancelled;
       logger.error("find_and_click: Failed", { error: String(error), description: params.description });
       captureException(error as Error, { tags: { tool: "find_and_click" }, extra: { description: params.description, action: params.action } });
       throw error;
@@ -1515,29 +1162,19 @@ server.registerTool(
     const startTime = Date.now();
     logger.info("type: Starting", { textLength: params.text.length, secret: params.secret });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("type: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("type: Typing text");
-      await sdk.type(params.text, { secret: params.secret, delay: params.delay });
+      const result = await core.type(params.text, params.secret, params.delay);
 
       const duration = Date.now() - startTime;
       logger.info("type: Completed", { duration });
 
-      // Generate code for this type action
-      const generatedCode = generateActionCode("type", { text: params.text, secret: params.secret });
-
-      return createToolResult(
-        true,
-        `Typed: ${params.secret ? "[secret text]" : `"${params.text}"`}`,
-        { action: "type", text: params.secret ? "[SECRET]" : params.text, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("type: No active session");
+        return noSessionResult(error);
+      }
       logger.error("type: Failed", { error: String(error) });
       captureException(error as Error, { tags: { tool: "type" }, extra: { textLength: params.text.length, secret: params.secret } });
       throw error;
@@ -1558,29 +1195,19 @@ server.registerTool(
     const startTime = Date.now();
     logger.info("press_keys: Starting", { keys: params.keys });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("press_keys: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("press_keys: Pressing keys");
-      await sdk.pressKeys(params.keys);
+      const result = await core.pressKeys(params.keys);
 
       const duration = Date.now() - startTime;
       logger.info("press_keys: Completed", { keys: params.keys, duration });
 
-      // Generate code for this press_keys action
-      const generatedCode = generateActionCode("press_keys", { keys: params.keys });
-
-      return createToolResult(
-        true,
-        `Pressed keys: ${params.keys.join(" + ")}`,
-        { action: "press_keys", keys: params.keys, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("press_keys: No active session");
+        return noSessionResult(error);
+      }
       logger.error("press_keys: Failed", { error: String(error), keys: params.keys });
       captureException(error as Error, { tags: { tool: "press_keys" }, extra: { keys: params.keys } });
       throw error;
@@ -1602,29 +1229,19 @@ server.registerTool(
     const startTime = Date.now();
     logger.info("scroll: Starting", { direction: params.direction, amount: params.amount });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("scroll: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("scroll: Scrolling");
-      await sdk.scroll(params.direction, params.amount ? { amount: params.amount } : undefined);
+      const result = await core.scroll(params.direction, params.amount);
 
       const duration = Date.now() - startTime;
       logger.info("scroll: Completed", { direction: params.direction, duration });
 
-      // Generate code for this scroll action
-      const generatedCode = generateActionCode("scroll", { direction: params.direction, amount: params.amount });
-
-      return createToolResult(
-        true,
-        `Scrolled ${params.direction}${params.amount ? ` by ${params.amount}px` : ""}`,
-        { action: "scroll", scrollDirection: params.direction, direction: params.direction, amount: params.amount, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("scroll: No active session");
+        return noSessionResult(error);
+      }
       logger.error("scroll: Failed", { error: String(error), direction: params.direction });
       captureException(error as Error, { tags: { tool: "scroll" }, extra: { direction: params.direction, amount: params.amount } });
       throw error;
@@ -1651,29 +1268,19 @@ Unlike 'check' which is for your understanding during development, 'assert' crea
     const startTime = Date.now();
     logger.info("assert: Starting", { assertion: params.assertion });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("assert: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("assert: Running assertion");
-      const result = await sdk.assert(params.assertion);
+      const result = await core.assert(params.assertion);
 
       const duration = Date.now() - startTime;
-      logger.info("assert: Completed", { assertion: params.assertion, passed: result, duration });
+      logger.info("assert: Completed", { assertion: params.assertion, passed: result.ok, duration });
 
-      // Generate code for this assert action
-      const generatedCode = generateActionCode("assert", { assertion: params.assertion });
-
-      return createToolResult(
-        result,
-        result ? `✓ Assertion passed: "${params.assertion}"` : `✗ Assertion failed: "${params.assertion}"`,
-        { action: "assert", assertion: params.assertion, passed: result, success: result, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("assert: No active session");
+        return noSessionResult(error);
+      }
       logger.error("assert: Failed", { error: String(error), assertion: params.assertion });
       captureException(error as Error, { tags: { tool: "assert" }, extra: { assertion: params.assertion } });
       throw error;
@@ -1712,119 +1319,66 @@ You can optionally provide a reference image URI to compare against a previous s
     }) as any,
     _meta: { ui: { resourceUri: RESOURCE_URI, expanded: true } },
   },
-  async (params: { task: string; referenceImageUri?: string }): Promise<CallToolResult> => {
+  async (params: { task: string; referenceImageUri?: string }, extra: ToolExtra): Promise<CallToolResult> => {
     const startTime = Date.now();
+    const progress = makeProgressReporter(extra);
     logger.info("check: Starting", { task: params.task, hasReferenceImageUri: !!params.referenceImageUri });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("check: No active session");
-      return sessionCheck.error;
-    }
-
     try {
-      // Capture current screenshot
-      logger.debug("check: Capturing current screenshot");
-      const currentScreenshot = await sdk.agent.system.captureScreenBase64(1, false, true);
-      
-      // Use provided reference image URI, last screenshot as "before" state, or current if no previous screenshot
-      let beforeScreenshot: string;
+      // Resolve the optional reference image from the image store (a server/UI
+      // concern). The core handles "last screenshot" / current-screenshot
+      // fallback internally when no reference image is passed.
+      let referenceImage: string | undefined;
       if (params.referenceImageUri) {
         // Extract image ID from URI (e.g., "screenshot://testdriver/screenshot/screenshot-1" -> "screenshot-1")
-        const uriParts = params.referenceImageUri.split('/');
+        const uriParts = params.referenceImageUri.split("/");
         const imageId = uriParts[uriParts.length - 1];
-        
-        logger.info("check: Looking up reference image", { 
-          referenceImageUri: params.referenceImageUri, 
+
+        logger.info("check: Looking up reference image", {
+          referenceImageUri: params.referenceImageUri,
           extractedImageId: imageId,
-          imageStoreSize: imageStore.size,
-          availableKeys: Array.from(imageStore.keys())
+          ...imageStoreDiagnostics(),
         });
-        
+
         const storedImage = getStoredImage(imageId);
-        
+
         if (storedImage) {
-          logger.info("check: Found reference image", { 
-            imageId, 
+          logger.info("check: Found reference image", {
+            imageId,
             dataLength: storedImage.data?.length,
             type: storedImage.type,
-            hasData: !!storedImage.data
+            hasData: !!storedImage.data,
           });
-          beforeScreenshot = storedImage.data;
+          referenceImage = storedImage.data;
         } else {
-          logger.warn("check: Reference image NOT found in store, falling back to last screenshot", { 
-            referenceImageUri: params.referenceImageUri, 
+          logger.warn("check: Reference image NOT found in store, falling back to last screenshot", {
+            referenceImageUri: params.referenceImageUri,
             imageId,
-            imageStoreSize: imageStore.size,
-            availableKeys: Array.from(imageStore.keys())
+            ...imageStoreDiagnostics(),
           });
-          beforeScreenshot = lastScreenshotBase64 || currentScreenshot;
         }
-      } else {
-        beforeScreenshot = lastScreenshotBase64 || currentScreenshot;
       }
-      
-      // Update last screenshot for next check
-      lastScreenshotBase64 = currentScreenshot;
-      
-      // Get system state
-      const mousePosition = await sdk.agent.system.getMousePosition();
-      const activeWindow = await sdk.agent.system.activeWin();
-      
-      // Call the check endpoint
-      logger.info("check: Calling check API endpoint", { 
-        hasLastScreenshot: beforeScreenshot !== currentScreenshot,
-        usingReferenceImageUri: !!params.referenceImageUri,
-        beforeScreenshotLength: beforeScreenshot?.length || 0,
-        currentScreenshotLength: currentScreenshot?.length || 0,
-        beforeScreenshotPreview: beforeScreenshot?.substring(0, 50),
-        currentScreenshotPreview: currentScreenshot?.substring(0, 50)
-      });
-      const response = await sdk.agent.sdk.req("check", {
-        tasks: [params.task],
-        images: [beforeScreenshot, currentScreenshot],
-        mousePosition,
-        activeWindow,
-      });
 
-      const aiResponse = response.data;
-      
-      // Store screenshot for resource serving
-      let screenshotResourceUri: string | undefined;
-      if (currentScreenshot) {
-        screenshotResourceUri = storeImage(currentScreenshot, "screenshot");
+      progress.report("Capturing screenshot...");
+      const stopHeartbeat = progress.heartbeat(`Checking: "${params.task}"...`);
+      let result: ActionResult;
+      try {
+        result = await raceAbort(extra.signal, "check", core.check(params.task, referenceImage));
+      } finally {
+        stopHeartbeat();
       }
-      
-      // Determine if the check passed based on the AI response
-      // The AI typically returns markdown with its analysis
-      // We consider it "complete" if the response doesn't contain code blocks (indicating more work needed)
-      const hasCodeBlocks = aiResponse && (
-        aiResponse.includes("```yml") || 
-        aiResponse.includes("```yaml") ||
-        aiResponse.includes("- command:")
-      );
-      const isComplete = !hasCodeBlocks;
 
       const duration = Date.now() - startTime;
-      logger.info("check: Completed", { task: params.task, complete: isComplete, duration });
+      logger.info("check: Completed", { task: params.task, complete: result.ok, duration });
 
-      // Note: check doesn't generate code - it's for AI understanding, not test recording
-      return createToolResult(
-        isComplete,
-        isComplete 
-          ? `✓ Task appears complete: "${params.task}"\n\nAI Analysis:\n${aiResponse}`
-          : `⚠ Task may not be complete: "${params.task}"\n\nAI Analysis:\n${aiResponse}`,
-        { 
-          action: "check", 
-          task: params.task, 
-          complete: isComplete, 
-          success: isComplete, 
-          aiResponse, 
-          screenshotResourceUri,
-          duration 
-        }
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("check: No active session");
+        return noSessionResult(error);
+      }
+      const cancelled = cancelledResultOrNull(error, "check");
+      if (cancelled) return cancelled;
       logger.error("check: Failed", { error: String(error), task: params.task });
       captureException(error as Error, { tags: { tool: "check" }, extra: { task: params.task } });
       throw error;
@@ -1847,29 +1401,19 @@ server.registerTool(
     const startTime = Date.now();
     logger.info("exec: Starting", { language: params.language, codeLength: params.code.length, timeout: params.timeout });
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("exec: No active session");
-      return sessionCheck.error;
-    }
-
     try {
       logger.debug("exec: Executing code", { language: params.language });
-      const output = await sdk.exec(params.language, params.code, params.timeout);
+      const result = await core.exec(params.language, params.code, params.timeout);
 
       const duration = Date.now() - startTime;
-      logger.info("exec: Completed", { language: params.language, outputLength: output?.length || 0, duration });
+      logger.info("exec: Completed", { language: params.language, outputLength: (result.data.output as string)?.length || 0, duration });
 
-      // Generate code for this exec action
-      const generatedCode = generateActionCode("exec", { language: params.language, code: params.code, timeout: params.timeout });
-
-      return createToolResult(
-        true,
-        `Executed ${params.language} code:\n${output || "(no output)"}`,
-        { action: "exec", language: params.language, output, duration },
-        generatedCode
-      );
+      return resultToMcp({ ...result, data: { ...result.data, duration } });
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("exec: No active session");
+        return noSessionResult(error);
+      }
       logger.error("exec: Failed", { error: String(error), language: params.language });
       captureException(error as Error, { tags: { tool: "exec" }, extra: { language: params.language, codeLength: params.code.length } });
       throw error;
@@ -2249,37 +1793,27 @@ Only use 'screenshot' when you explicitly want to show something to the human us
     const startTime = Date.now();
     logger.info("screenshot: Starting");
 
-    const sessionCheck = requireActiveSession();
-    if (!sessionCheck.valid) {
-      logger.warn("screenshot: No active session");
-      return sessionCheck.error;
-    }
-
     try {
-      // Capture full screen screenshot
-      const screenshotBase64 = await sdk.agent.system.captureScreenBase64(1, false, true);
-      
-      let screenshotResourceUri: string | undefined;
-      if (screenshotBase64) {
-        // Store raw base64 for the resource blob with unique ID
-        screenshotResourceUri = storeImage(screenshotBase64, "screenshot");
-      }
-      
-      const duration = Date.now() - startTime;
-      logger.info("screenshot: Completed", { duration, hasImage: !!screenshotBase64 });
+      const result = await core.screenshot();
 
-      // Only send the resource URI - the MCP app will fetch the image via resources/read
-      // This keeps the base64 image data OUT of AI context
-      return createToolResult(
-        true,
-        "Screenshot captured and displayed to user",
-        { 
-          action: "screenshot",
-          screenshotResourceUri,
-          duration 
-        }
-      );
+      // Store the captured image as a resource URI (kept OUT of AI context — the
+      // MCP app fetches it via resources/read). Preserve the original user-facing
+      // text rather than the core's neutral text.
+      const data: Record<string, unknown> = { action: "screenshot" };
+      for (const img of result.images ?? []) {
+        data.screenshotResourceUri = storeImage(img.base64, "screenshot");
+      }
+
+      const duration = Date.now() - startTime;
+      data.duration = duration;
+      logger.info("screenshot: Completed", { duration, hasImage: (result.images?.length ?? 0) > 0 });
+
+      return createToolResult(true, "Screenshot captured and displayed to user", data);
     } catch (error) {
+      if (error instanceof NoActiveSessionError) {
+        logger.warn("screenshot: No active session");
+        return noSessionResult(error);
+      }
       logger.error("screenshot: Failed", { error: String(error) });
       return createToolResult(false, `Screenshot failed: ${error}`, { error: String(error) });
     }
@@ -2309,6 +1843,7 @@ API Key: The apiKey parameter is optional. If not provided, you'll need to manua
       directory: z.string().optional().describe("Target directory (defaults to current working directory)"),
       apiKey: z.string().optional().describe("TestDriver API key (will be saved to .env)"),
       skipInstall: z.boolean().default(false).describe("Skip npm install step"),
+      skipSampleTest: z.boolean().default(false).describe("Skip scaffolding the example test files (tests/example.test.js + tests/login.js). Useful when an agent writes its own tests."),
     }),
   },
   async (params): Promise<CallToolResult> => {
@@ -2327,6 +1862,7 @@ API Key: The apiKey parameter is optional. If not provided, you'll need to manua
         targetDir,
         apiKey: params.apiKey,
         skipInstall: params.skipInstall,
+        skipSampleTest: params.skipSampleTest,
       });
 
       const duration = Date.now() - startTime;
@@ -2375,28 +1911,214 @@ Learn more at https://docs.testdriver.ai/v7/getting-started/
   }
 );
 
+  return server;
+}
+
+
+// =============================================================================
+// HTTP transport (Streamable HTTP, no auth)
+// =============================================================================
+
+/** A live MCP connection: its transport, the server bound to it, and the
+ *  isolated action context every one of its tool calls runs inside. */
+interface HttpConnection {
+  transport: StreamableHTTPServerTransport;
+  server: McpServer;
+  ctx: core.CoreContext;
+}
+
+/** Read and JSON-parse a request body. Returns undefined for an empty/invalid
+ *  body (GET/DELETE carry none) so callers can treat "no body" uniformly. */
+function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk) => chunks.push(chunk as Buffer));
+    req.on("end", () => {
+      if (chunks.length === 0) return resolve(undefined);
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
+      } catch {
+        resolve(undefined);
+      }
+    });
+    req.on("error", () => resolve(undefined));
+  });
+}
+
+/**
+ * Serve the MCP server over Streamable HTTP with no authentication.
+ *
+ * This is what the eve agent (and any other Streamable-HTTP MCP client) connects
+ * to. Each MCP session gets its OWN transport + server + isolated action context,
+ * keyed by the `mcp-session-id` header:
+ *
+ *  - An `initialize` request (no session id yet) mints a fresh connection: a new
+ *    isolated {@link core.CoreContext}, a server built over it, and a transport
+ *    whose generated session id we store. Every later request carrying that id
+ *    routes back to the same connection and runs inside its context via
+ *    {@link core.runInContext} — so one client's tool call can only ever touch
+ *    its own sandbox / element refs / image store. This is the fix for the
+ *    cross-session bleed: state is per-connection, not process-global.
+ *  - `DELETE` (or transport close) tears the connection down and drops it from
+ *    the map, so a disconnecting client frees its slot and its context is GC'd.
+ *
+ * No auth is applied here by design (the connection is expected to be local-only
+ * or otherwise protected outside the MCP layer). Do not expose this on a public
+ * network without putting a real authenticating proxy in front of it.
+ */
+async function startHttpServer() {
+  const host = process.env.TD_MCP_HOST || "127.0.0.1";
+  const port = Number(process.env.TD_MCP_PORT || process.env.PORT || 8788);
+  const mcpPath = process.env.TD_MCP_PATH || "/mcp";
+
+  // Live connections keyed by MCP session id. One entry per connected client.
+  const connections = new Map<string, HttpConnection>();
+
+  const httpServer = http.createServer((req, res) => {
+    void (async () => {
+      const url = new URL(req.url || "/", `http://${req.headers.host}`);
+
+      // Lightweight health check for readiness probes / `eve dev`.
+      if (req.method === "GET" && url.pathname === "/health") {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ status: "ok", server: "testdriver", version, sessions: connections.size }));
+        return;
+      }
+
+      if (url.pathname !== mcpPath) {
+        res.writeHead(404, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Not found", hint: `MCP endpoint is ${mcpPath}` }));
+        return;
+      }
+
+      const sessionId = req.headers["mcp-session-id"];
+      const sid = Array.isArray(sessionId) ? sessionId[0] : sessionId;
+
+      // POST bodies must be parsed here (to detect `initialize` and to hand the
+      // transport a pre-parsed body). GET (SSE) and DELETE carry no JSON body.
+      const body = req.method === "POST" ? await readJsonBody(req) : undefined;
+
+      let connection: HttpConnection | undefined = sid ? connections.get(sid) : undefined;
+
+      // A brand-new session: only an `initialize` request may create one.
+      if (!connection) {
+        if (sid) {
+          // Client presented a session id we don't know — it was torn down or is
+          // stale. 404 so the client re-initializes (matches SDK stateful mode).
+          res.writeHead(404, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "Unknown or expired MCP session", sessionId: sid }));
+          return;
+        }
+        if (!isInitializeRequest(body)) {
+          res.writeHead(400, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "Bad Request: no MCP session id and not an initialize request" }));
+          return;
+        }
+
+        // Mint an isolated context + a server bound to it + a transport.
+        const ctx = core.createIsolatedContext();
+        const mcpServer = buildServer();
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (newId: string) => {
+            connections.set(newId, { transport, server: mcpServer, ctx });
+            logger.info("http: MCP session initialized", { sessionId: newId, activeSessions: connections.size });
+          },
+        });
+        // When the transport closes (client DELETE, network drop, or shutdown),
+        // drop the connection and best-effort tear down its sandbox so a
+        // disconnecting client doesn't leak a live VM.
+        transport.onclose = () => {
+          const closedId = transport.sessionId;
+          if (closedId && connections.delete(closedId)) {
+            logger.info("http: MCP session closed", { sessionId: closedId, activeSessions: connections.size });
+          }
+          // Disconnect the SDK inside this connection's context (best-effort).
+          core.runInContext(ctx, () => { void core.disconnect(); });
+        };
+
+        await mcpServer.connect(transport);
+        connection = { transport, server: mcpServer, ctx };
+      }
+
+      // Route the request through THIS connection's transport, inside THIS
+      // connection's action context so every core.* call the handlers make
+      // resolves the right sandbox / refs / image store.
+      const conn = connection;
+      await core.runInContext(conn.ctx, () =>
+        conn.transport.handleRequest(req, res, body),
+      ).catch((error: unknown) => {
+        logger.error("http: handleRequest failed", { error: String(error) });
+        captureException(error as Error, { tags: { phase: "http" } });
+        if (!res.headersSent) {
+          res.writeHead(500, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "Internal server error" }));
+        }
+      });
+    })().catch((error: unknown) => {
+      logger.error("http: request handling failed", { error: String(error) });
+      captureException(error as Error, { tags: { phase: "http" } });
+      if (!res.headersSent) {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Internal server error" }));
+      }
+    });
+  });
+
+  await new Promise<void>((resolve) => httpServer.listen(port, host, resolve));
+  logger.info("TestDriver MCP Server running on Streamable HTTP", {
+    url: `http://${host}:${port}${mcpPath}`,
+  });
+
+  const shutdown = async () => {
+    logger.info("Shutting down MCP Server", { activeSessions: connections.size });
+    httpServer.close();
+    for (const conn of connections.values()) {
+      await conn.transport.close().catch(() => {});
+    }
+    connections.clear();
+    await flushSentry();
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+}
 
 // Start the server
 async function main() {
-  logger.info("Starting TestDriver MCP Server", { 
+  // Transport selection: TD_MCP_TRANSPORT=http serves Streamable HTTP (used by
+  // the eve agent); anything else (default) uses stdio for local CLI clients.
+  const transportMode = (process.env.TD_MCP_TRANSPORT || "stdio").toLowerCase();
+
+  logger.info("Starting TestDriver MCP Server", {
     version,
+    transport: transportMode,
     logLevel: process.env.TD_LOG_LEVEL || "INFO",
     distDir: DIST_DIR,
     sentryEnabled: isSentryEnabled(),
   });
-  
+
+  if (transportMode === "http") {
+    await startHttpServer();
+    return;
+  }
+
+  // stdio: one long-lived server for the process. It runs over the global
+  // action context (no runInContext wrap), so behavior is unchanged — a single
+  // local CLI client, one sandbox at a time, exactly as before.
+  const server = buildServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
+
   logger.info("TestDriver MCP Server running on stdio");
-  
+
   // Handle graceful shutdown
   const shutdown = async () => {
     logger.info("Shutting down MCP Server");
     await flushSentry();
     process.exit(0);
   };
-  
+
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 }

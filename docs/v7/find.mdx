@@ -50,8 +50,12 @@ const element = await testdriver.find(description, options)
       - `"any"` — No wrapping, uses the description as-is (default behavior)
     </ParamField>
     
-    <ParamField path="zoom" type="boolean" default={true}>
-      Two-phase zoom mode for better precision in crowded UIs with many similar elements. Enabled by default.
+    <ParamField path="zoom" type="boolean" default={false}>
+      Two-phase zoom mode for better precision in crowded UIs with many similar elements. Disabled by default.
+    </ParamField>
+    
+    <ParamField path="verify" type="boolean" default={false}>
+      Enable AI verification of the located element. When `true`, a second AI call checks that the coordinates returned actually correspond to the requested element, catching hallucinated or incorrect positions. Disabled by default for lower latency. Defaults to the global `verify` option set on the [SDK constructor](/v7/client) when not specified per call.
     </ParamField>
     
     <ParamField path="ai" type="object">
@@ -335,17 +339,17 @@ The `timeout` option:
 
 ## Zoom Mode
 
-Zoom mode is **enabled by default**. It uses a two-phase approach for better precision when locating elements, especially in crowded UIs with many similar elements.
+Zoom mode is **disabled by default**. It uses a two-phase approach for better precision when locating elements, especially in crowded UIs with many similar elements.
 
-To disable zoom for a specific find call, pass `zoom: false`:
+To enable zoom for a specific find call, pass `zoom: true`:
 
 ```javascript
-// Zoom is on by default — no option needed
-const extensionsBtn = await testdriver.find('extensions puzzle icon in Chrome toolbar');
+// Enable zoom for better precision in crowded UIs
+const extensionsBtn = await testdriver.find('extensions puzzle icon in Chrome toolbar', { zoom: true });
 await extensionsBtn.click();
 
-// Disable zoom for a specific call if needed
-const largeButton = await testdriver.find('big hero button', { zoom: false });
+// Without zoom (default)
+const largeButton = await testdriver.find('big hero button');
 ```
 
 ### How Zoom Mode Works
@@ -358,12 +362,43 @@ const largeButton = await testdriver.find('big hero button', { zoom: false });
 This two-phase approach gives the AI a higher-resolution view of the target area, improving accuracy when multiple similar elements are close together.
 
 <Tip>
-  You may want to disable zoom with `zoom: false` when:
-  - Targeting large, isolated elements where the extra precision isn't needed
-  - You want to speed up find calls in simple UIs
+  You may want to enable zoom with `zoom: true` when:
+  - Targeting small elements in crowded UIs with many similar elements
+  - You need extra precision for closely spaced UI elements
 </Tip>
 
+## Verify Mode
+
+Verify mode is **disabled by default**. When enabled, a second AI call checks that the coordinates returned by `find()` actually correspond to the requested element, catching hallucinated or incorrect positions.
+
+```javascript
+// Enable verification for critical interactions
+const deleteBtn = await testdriver.find('delete account button', { verify: true });
+await deleteBtn.click();
+```
+
+### How Verify Mode Works
+
+1. **Phase 1**: AI locates the element and returns coordinates
+2. **Phase 2**: A second AI call examines the screenshot at those coordinates to confirm the element matches the description
+3. **Result**: If verification fails, the find is retried or marked as not found
+
+### Combining Zoom and Verify
+
+For maximum accuracy, enable both `zoom` and `verify` together. This is useful for critical interactions where clicking the wrong element could cause cascading failures:
+
+```javascript
+// Maximum accuracy: zoom for precision + verify to catch hallucinations
+const element = await testdriver.find('small cancel icon next to the subscription', {
+  zoom: true,
+  verify: true,
+});
+await element.click();
+```
+
 ## Cache Options
+
+When a test completes successfully, the result of each `find()` is cached. On later runs, TestDriver reuses the cached match instead of making a fresh AI call, which significantly speeds up locating the same element. The cache lives in your [dashboard](https://console.testdriver.ai/cache) and is shared across runs — see the [Cache](/v7/cache) page for how matching, thresholds, and invalidation work.
 
 Control caching behavior to optimize performance, especially when using dynamic variables in prompts.
 

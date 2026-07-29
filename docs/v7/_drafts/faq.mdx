@@ -116,21 +116,13 @@ Features:
 
 ### How does caching work?
 
-Two types of caching:
-
-**1. Prompt Cache** - Caches AI-generated commands locally
-```javascript
-await testdriver.ai('click button'); // AI call
-await testdriver.ai('click button'); // Uses cache
-```
-
-**2. Selector Cache** - Caches element locations on server
+**Selector Cache** - Caches element locations on server
 ```javascript
 await testdriver.find('button'); // AI vision
 await testdriver.find('button'); // Cache hit (95%+ similar UI)
 ```
 
-See [caching guide](/v7/guides/caching-ai) for details.
+See [caching guide](/v7/caching) for details.
 
 ### Can I test responsive designs?
 

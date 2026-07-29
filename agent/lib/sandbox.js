@@ -6,6 +6,17 @@ const { version } = require("../../package.json");
 const { withRetry, getSentryTraceHeaders } = require("./sdk");
 const sentry = require("../../lib/sentry");
 
+// How long (ms) to keep polling for a free concurrency slot before giving up.
+// Configurable via TD_CONCURRENCY_MAX_WAIT (in seconds). Defaults to 60s.
+// A value of 0 (or negative) disables polling entirely — fail on first denial.
+function resolveConcurrencyMaxWait() {
+  var raw = process.env.TD_CONCURRENCY_MAX_WAIT;
+  if (raw === undefined || raw === "") return 60000;
+  var seconds = Number(raw);
+  if (!Number.isFinite(seconds) || seconds < 0) return 60000;
+  return Math.round(seconds * 1000);
+}
+
 const createSandbox = function (emitter, analytics, sessionInstance) {
   class Sandbox {
     constructor() {
@@ -372,7 +383,37 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             step: 'discontinuity',
             message: 'Recovering missed messages after connection interruption...',
           });
-          self._recoverFromDiscontinuity();
+          self._recoverFromDiscontinuity().catch(function (err) {
+            logger.debug('[realtime] Discontinuity recovery error (suppressed): ' + (err.message || err));
+          });
+        }
+
+        // When the channel is detached or failed (e.g. sandbox terminated — 404/90001),
+        // reject all pending promises immediately so callers don't hang for the full
+        // command timeout (up to 5 minutes for dashcam stop).
+        if (current === 'detached' || current === 'failed') {
+          var pendingIds = Object.keys(self.ps);
+          if (pendingIds.length > 0) {
+            logger.warn(
+              '[realtime] Channel ' + current + ' with ' + pendingIds.length +
+              ' pending request(s) — rejecting immediately' +
+              (reasonMsg ? ' (reason: ' + reasonMsg + ')' : '')
+            );
+            var channelErr = new Error(
+              'Channel ' + current + (reasonMsg ? ': ' + reasonMsg : '') +
+              ' — sandbox session may have terminated'
+            );
+            channelErr.name = 'NotFoundError';
+            if (reason && reason.code) channelErr.code = reason.code;
+            for (var pi = 0; pi < pendingIds.length; pi++) {
+              var entry = self.ps[pendingIds[pi]];
+              if (entry) {
+                delete self.ps[pendingIds[pi]];
+                delete self._execBuffers[pendingIds[pi]];
+                entry.reject(channelErr);
+              }
+            }
+          }
         }
       });
     }
@@ -433,6 +474,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
      */
     async _httpPostWithConcurrencyRetry(path, body, timeout) {
       var concurrencyRetryInterval = 10000; // 10 seconds between concurrency retries
+      var concurrencyMaxWait = resolveConcurrencyMaxWait(); // give up polling for a slot after this many ms
       var startTime = Date.now();
       var sessionId = this.sessionInstance ? this.sessionInstance.get() : null;
 
@@ -476,6 +518,15 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           var responseData = err.response && err.response.data;
           if (responseData && responseData.errorCode === "CONCURRENCY_LIMIT_EXCEEDED") {
             var elapsed = Date.now() - startTime;
+            if (elapsed >= concurrencyMaxWait) {
+              var giveUpErr = new Error(
+                (responseData.errorMessage || responseData.message || "Concurrency limit reached") +
+                " — gave up after " + Math.round(elapsed / 1000) + "s " +
+                "(max wait " + (concurrencyMaxWait / 1000) + "s).",
+              );
+              giveUpErr.responseData = responseData;
+              throw giveUpErr;
+            }
             logger.log(
               "Concurrency limit reached — waiting " +
               concurrencyRetryInterval / 1000 +
@@ -584,6 +635,10 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       // On slot-denied, we poll forever (re-calling authenticate every 10s)
       // until a slot opens, matching _httpPostWithConcurrencyRetry behavior.
       var concurrencyRetryInterval = 10000;
+      // Overall cap on how long we'll keep polling for a free slot before
+      // giving up. Keeps a queued agent from hanging forever when the account
+      // is at its concurrency limit. Configurable via TD_CONCURRENCY_MAX_WAIT.
+      var concurrencyMaxWait = resolveConcurrencyMaxWait();
       var slotPollStart = Date.now();
       while (reply.status === 'pending') {
         logger.log('Slot claim pending — waiting for approval via Ably...');
@@ -659,12 +714,27 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
           // Slot denied — disconnect Ably and re-try the full authenticate
           // flow after a delay, polling forever until a slot opens.
           var elapsed = Date.now() - slotPollStart;
+          if (elapsed >= concurrencyMaxWait) {
+            try {
+              if (this._ably) this._ably.close();
+              this._ably = null;
+              this._sessionChannel = null;
+            } catch (_) {}
+            var giveUpErr = new Error(
+              'Slot denied: ' + (slotDecision.data.message || 'concurrency limit reached') +
+              ' — gave up after ' + Math.round(elapsed / 1000) + 's ' +
+              '(max wait ' + (concurrencyMaxWait / 1000) + 's). ' +
+              'Upgrade for more slots → https://console.testdriver.ai/checkout/pro'
+            );
+            giveUpErr.responseData = slotDecision.data;
+            throw giveUpErr;
+          }
           logger.log(
             'Slot denied: ' + (slotDecision.data.message || 'concurrency limit reached') +
             ' — waiting ' + (concurrencyRetryInterval / 1000) + 's before retrying' +
             ' (' + Math.round(elapsed / 1000) + 's elapsed)...'
           );
-          logger.log('Upgrade for more slots → https://console.testdriver.ai/checkout/team');
+          logger.log('Upgrade for more slots → https://console.testdriver.ai/checkout/pro');
           try {
             if (this._ably) this._ably.close();
             this._ably = null;
@@ -741,14 +811,160 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         break; // slot approved and provisioned — exit the while loop
       }
 
+      // ─── Handle async provisioning status ─────────────────────────────
+      // API may return early with status: 'provisioning' while a background
+      // job is still creating/configuring the sandbox. Prefer Ably control
+      // events for completion and only fall back to authenticate polling when
+      // an event is not observed in time.
+      var provisioningPollStart = Date.now();
+      var provisioningTimeoutMs = 10 * 60 * 1000;
+      while (reply.status === 'provisioning') {
+        var provisionElapsed = Date.now() - provisioningPollStart;
+        if (provisionElapsed >= provisioningTimeoutMs) {
+          var provisioningTimeoutErr = new Error(
+            "Sandbox provisioning timed out after " +
+            Math.round(provisionElapsed / 1000) +
+            "s" +
+            (this._sandboxId || (reply && reply.sandboxId)
+              ? " for sandbox " + (this._sandboxId || (reply && reply.sandboxId))
+              : "") +
+            ". Last known status: provisioning"
+          );
+          provisioningTimeoutErr.responseData = reply;
+          throw provisioningTimeoutErr;
+        }
+        logger.log(
+          'Waiting for sandbox to be ready...'
+        );
+
+        var self = this;
+        var provisioningEvent = null;
+
+        if (this._sessionChannel) {
+          provisioningEvent = await new Promise(function (resolve) {
+            var resolved = false;
+            var eventTimeout = 30000;
+
+            function finish(data) {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timer);
+              try { self._sessionChannel.unsubscribe('control', onProvisionCtrl); } catch (_) {}
+              resolve(data || null);
+            }
+
+            function onProvisionCtrl(msg) {
+              var data = msg && msg.data;
+              if (!data) return;
+              if (data.type === 'provisioning.started') {
+                logger.log((data.message || 'Provisioning started') + (data.os ? ' (' + data.os + ')' : ''));
+                return;
+              }
+              if (data.type === 'provisioning.progress') {
+                var progress = data.message || ('Provisioning step: ' + (data.phase || 'in-progress'));
+                logger.log(progress);
+                return;
+              }
+              if (data.type === 'provisioning.completed' || data.type === 'provisioning.failed') {
+                finish(data);
+              }
+            }
+
+            var timer = setTimeout(function () {
+              finish(null);
+            }, eventTimeout);
+            if (timer.unref) timer.unref();
+
+            try {
+              self._sessionChannel.subscribe('control', onProvisionCtrl);
+
+              // Check recent history to close race window where event was
+              // published before this subscription was attached.
+              self._sessionChannel.history({ limit: 20 }).then(function (page) {
+                if (!page || !page.items || resolved) return;
+                for (var i = 0; i < page.items.length; i++) {
+                  var item = page.items[i];
+                  var data = item && item.data;
+                  if (item && item.name === 'control' && data && (data.type === 'provisioning.completed' || data.type === 'provisioning.failed')) {
+                    finish(data);
+                    return;
+                  }
+                }
+              }).catch(function (err) {
+                logger.warn('Provisioning history lookup failed (non-fatal): ' + (err.message || err));
+              });
+            } catch (subscribeErr) {
+              logger.warn('Provisioning event subscribe failed (non-fatal): ' + (subscribeErr.message || subscribeErr));
+              finish(null);
+            }
+          });
+        }
+
+        if (provisioningEvent && provisioningEvent.type === 'provisioning.failed') {
+          var eventErr = new Error(
+            provisioningEvent.errorMessage || 'Failed while waiting for sandbox provisioning',
+          );
+          eventErr.responseData = provisioningEvent;
+          throw eventErr;
+        }
+
+        if (provisioningEvent && provisioningEvent.type === 'provisioning.completed') {
+          // Event carries the final payload shape from the API, so we can stop
+          // polling authenticate in the common case.
+          reply = Object.assign({}, reply, provisioningEvent);
+          if (reply.status === 'provisioning') {
+            reply.status = 'ready';
+          }
+          if (reply.success !== true) {
+            reply.success = true;
+          }
+          break;
+        }
+
+        await new Promise(function (resolve) {
+          var t = setTimeout(resolve, 10000);
+          if (t.unref) t.unref();
+        });
+
+        var pollBody = {
+          apiKey: this.apiKey,
+          version: version,
+          os: message.os || this.os || 'linux',
+          session: sessionId,
+          apiRoot: this.apiRoot,
+          sandboxId: this._sandboxId || (reply && reply.sandboxId),
+          slotApproved: true,
+        };
+        if (message.resolution) pollBody.resolution = message.resolution;
+        if (message.ci) pollBody.ci = message.ci;
+        if (message.ami) pollBody.ami = message.ami;
+        if (message.instanceType) pollBody.instanceType = message.instanceType;
+        if (message.e2bTemplateId) pollBody.e2bTemplateId = message.e2bTemplateId;
+        if (message.keepAlive !== undefined) pollBody.keepAlive = message.keepAlive;
+
+        reply = await this._httpPostWithConcurrencyRetry(
+          "/api/v7/sandbox/authenticate",
+          pollBody,
+          timeout,
+        );
+
+        if (!reply.success && reply.status !== 'provisioning') {
+          var provisioningErr = new Error(
+            reply.errorMessage || "Failed while waiting for sandbox provisioning",
+          );
+          provisioningErr.responseData = reply;
+          throw provisioningErr;
+        }
+      }
+
       if (message.type === "create") {
         // E2B (Linux) sandboxes return a url directly.
         // We still need to wait for runner.ready since sandbox-agent.js runs inside E2B.
         const isE2B = !!reply.url;
-        
-        const runnerIp = reply.runner && reply.runner.ip;
-        const noVncPort = reply.runner && reply.runner.noVncPort;
-        const runnerVncUrl = reply.runner && reply.runner.vncUrl;
+
+        let runnerIp = reply.runner && reply.runner.ip;
+        let noVncPort = reply.runner && reply.runner.noVncPort;
+        let runnerVncUrl = reply.runner && reply.runner.vncUrl;
 
         // Log image version info (AMI for Windows, E2B template for Linux)
         if (reply.imageVersion) {
@@ -771,12 +987,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         // For presence-based Windows runners (reply.runner already set), the runner
         // is already listening so we can skip the wait.
         var self = this;
-        const needsReadyWait = this._sessionChannel && (isE2B || !reply.runner);
+        const needsReadyWait = this._sessionChannel && (isE2B || !reply.runner || (reply.runner && reply.runner.os === 'windows'));
         if (needsReadyWait) {
           logger.log('Waiting for runner agent to signal readiness...');
-          // E2B (Linux) sandboxes need extra time: S3 upload + npm install can add 60-120s on top of sandbox boot
-          // EC2 (Windows) cold starts can be slow due to AV scanning and native module loading
-          var readyTimeout = isE2B ? 300000 : 180000; // 5 min for E2B (S3+npm), 3 min for EC2
+          // E2B (Linux) sandboxes need extra time: S3 upload + npm install can add 60-120s on top of sandbox boot.
+          // Hosted EC2 (Windows) can also take several minutes when launching/provisioning in background.
+          var readyTimeout = isE2B ? 300000 : 300000; // 5 min for E2B and EC2
           await new Promise(function (resolve, reject) {
             var resolved = false;
             var waitStart = Date.now();
@@ -787,7 +1003,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
               clearInterval(progressTimer);
               self._sessionChannel.unsubscribe('control', onCtrl);
               // Update runner info if provided
-              if (data && data.os) reply.runner = reply.runner || {};
+              if (data && (data.os || data.ip)) reply.runner = reply.runner || {};
               if (data && data.os && reply.runner) reply.runner.os = data.os;
               if (data && data.ip && reply.runner) reply.runner.ip = data.ip;
               if (data && data.runnerVersion && reply.runner) reply.runner.version = data.runnerVersion;
@@ -853,11 +1069,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             // Also check channel history in case runner.ready was published
             // before we subscribed (race condition on fast-booting agents).
             try {
-              self._sessionChannel.history({ limit: 50 }, function (err, page) {
-                if (err) {
-                  logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
-                  return;
-                }
+              self._sessionChannel.history({ limit: 50 }).then(function (page) {
                 if (page && page.items) {
                   for (var i = 0; i < page.items.length; i++) {
                     var item = page.items[i];
@@ -868,12 +1080,21 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
                     }
                   }
                 }
+              }).catch(function (err) {
+                logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
               });
             } catch (histErr) {
               logger.warn('History call threw (non-fatal): ' + (histErr.message || histErr));
             }
           });
         }
+
+        // Refresh runner metadata after runner.ready wait because the wait handler
+        // can populate reply.runner fields from control messages.
+        runnerIp = reply.runner && reply.runner.ip;
+        noVncPort = reply.runner && reply.runner.noVncPort;
+        runnerVncUrl = reply.runner && reply.runner.vncUrl;
+
         // Prefer the full vncUrl reported by the runner (infrastructure-agnostic).
         // For E2B sandboxes, use the url from the API reply.
         // Fall back to constructing from ip + noVncPort for older runners.
@@ -1005,11 +1226,7 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
             // Also check channel history in case runner.ready was published
             // before we subscribed (race condition on fast-booting agents).
             try {
-              self._sessionChannel.history({ limit: 50 }, function (err, page) {
-                if (err) {
-                  logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
-                  return;
-                }
+              self._sessionChannel.history({ limit: 50 }).then(function (page) {
                 if (page && page.items) {
                   for (var i = 0; i < page.items.length; i++) {
                     var item = page.items[i];
@@ -1020,6 +1237,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
                     }
                   }
                 }
+              }).catch(function (err) {
+                logger.warn('History lookup failed (non-fatal): ' + (err.message || err));
               });
             } catch (histErr) {
               logger.warn('History call threw (non-fatal): ' + (histErr.message || histErr));
@@ -1204,9 +1423,11 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         startTime: Date.now(),
       };
 
-      if (message.type === "output") {
-        p.catch(function () { });
-      }
+      // Prevent unhandled rejections from late Ably responses that arrive
+      // after the caller has moved on (e.g. test retry, cleanup). The await
+      // chain still receives the rejection; this just marks the promise as
+      // "handled" so Node does not emit unhandledRejection.
+      p.catch(function () { });
 
       this._throttledPublish(this._sessionChannel, "command", message)
         .then(function () {
@@ -1255,12 +1476,12 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         var rate = (this._publishCount / windowElapsed) * 1000;
         var rateStr = rate.toFixed(1);
 
-        // Log rate - warning if approaching limit, debug otherwise
-        if (rate > 45) {
-          logger.warn("Ably publish rate: " + rateStr + " msg/sec (approaching 50/sec limit)");
-        } else if (process.env.VERBOSE || process.env.TD_DEBUG) {
-          logger.log("Ably publish rate: " + rateStr + " msg/sec");
-        }
+        // // Log rate - warning if approaching limit, debug otherwise
+        // if (rate > 45) {
+        //   logger.warn("Ably publish rate: " + rateStr + " msg/sec (approaching 50/sec limit)");
+        // } else if (process.env.VERBOSE || process.env.TD_DEBUG) {
+        //   logger.log("Ably publish rate: " + rateStr + " msg/sec");
+        // }
 
         // Reset window
         this._publishCount = 0;
@@ -1441,6 +1662,18 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       this.authenticated = false;
       this.instance = null;
       this._lastConnectParams = null;
+
+      // Reject all pending promises so active callers get a clear error
+      // instead of hanging forever. The safety .catch() in _sendAbly()
+      // ensures these rejections never surface as unhandled.
+      var pendingIds = Object.keys(this.ps);
+      var closedError = new Error('Sandbox connection closed');
+      for (var i = 0; i < pendingIds.length; i++) {
+        var entry = this.ps[pendingIds[i]];
+        if (entry && typeof entry.reject === 'function') {
+          try { entry.reject(closedError); } catch (_) { /* already settled */ }
+        }
+      }
       this.ps = {};
     }
 

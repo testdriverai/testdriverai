@@ -6,29 +6,72 @@ description: Run TestDriver tests in CI/CD with parallel execution and cross-pla
 
 TestDriver integrates seamlessly with popular CI providers, enabling automated end-to-end testing on every push and pull request.
 
-## Adding Your API Key
+## Authentication
 
-TestDriver requires an API key to authenticate with the TestDriver cloud. Store this securely as a secret in your CI provider.
+On **GitHub Actions, prefer OIDC** via the published `testdriverai/action` —
+there's no `TD_API_KEY` secret to store, copy, or rotate. The action proves the
+workflow is running inside your org and TestDriver exchanges that proof for your
+team's key at run time. See the GitHub Actions tab below.
 
-<Steps>
-  <Step title="Get Your API Key">
-    Go to [console.testdriver.ai/team](https://console.testdriver.ai/team) and copy your team's API key
-  </Step>
-  <Step title="Add Secret to Your CI Provider">
-    Add `TD_API_KEY` as a secret environment variable in your CI provider's settings.
-  </Step>
-</Steps>
+For other CI providers (or self-hosted runners without OIDC), fall back to a
+stored API key from [console.testdriver.ai/team](https://console.testdriver.ai/team),
+added as a `TD_API_KEY` secret in your CI provider's settings.
 
 <Note>
-  Never commit your API key directly in code. Always use your CI provider's secrets management.
+  Never commit your API key directly in code. Always use OIDC or your CI provider's secrets management.
 </Note>
 
 ## CI Provider Examples
 
 <Tabs>
   <Tab title="GitHub Actions">
-    ### Adding Secrets
-    
+    ### Authenticate with OIDC via `testdriverai/action` (recommended)
+
+    Use the published [`testdriverai/action`](https://github.com/testdriverai/action) — it mints the OIDC token, exchanges it for your team's API key, and exports `TD_API_KEY` for the steps that follow. **No `TD_API_KEY` secret to store or rotate.**
+
+    <Note>
+      One-time setup: authorize the [TestDriver GitHub App](https://console.testdriver.ai) for your org so the org → team binding exists. If your org authorized the App before OIDC support shipped, re-authorize once. If the App isn't authorized, the action fails with a console link (or falls back to the `api-key` secret if you provide one).
+    </Note>
+
+    ```yaml .github/workflows/testdriver.yml
+    name: TestDriver Tests
+
+    on:
+      push:
+        branches: [main]
+      pull_request:
+        branches: [main]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        permissions:
+          id-token: write   # REQUIRED to mint an OIDC token
+          contents: read
+
+        steps:
+          - uses: actions/checkout@v4
+
+          - uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+              cache: 'npm'
+
+          - run: npm ci
+
+          - name: Authenticate to TestDriver
+            uses: testdriverai/action@stable   # pin @stable / @canary / @test to your SDK channel
+            with:
+              api-key: ${{ secrets.TD_API_KEY }}   # optional fallback if OIDC isn't set up
+
+          - name: Run TestDriver tests
+            run: npx vitest run
+    ```
+
+    ### Stored-key fallback
+
+    Only if you can't use OIDC (e.g. self-hosted runners without an OIDC provider). Add the key as a secret and pass it via `env`:
+
     1. Navigate to your GitHub repository
     2. Go to **Settings** → **Secrets and variables** → **Actions**
     3. Click **New repository secret**
@@ -571,7 +614,7 @@ When using multi-platform testing, read the `TD_OS` environment variable in your
 
 ```javascript tests/cross-platform.test.mjs
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("Cross-platform tests", () => {
   it("should work on both Linux and Windows", async (context) => {
@@ -590,6 +633,47 @@ describe("Cross-platform tests", () => {
   });
 });
 ```
+
+## Concurrency limits
+
+Your plan allows a fixed number of sandboxes running at once. When a test asks for
+a sandbox and you're already at that limit, the request is **queued** rather than
+failed immediately: the SDK waits for a slot to free up, retrying every 10 seconds,
+then proceeds automatically once one opens. This is what lets a parallel CI matrix
+(many jobs starting at once) work on a plan with fewer slots than jobs — the extra
+jobs simply wait their turn instead of erroring.
+
+By default the SDK waits up to **60 seconds** for a slot before giving up with a
+concurrency-limit error. Control that ceiling with `TD_CONCURRENCY_MAX_WAIT`:
+
+| Value | Behavior |
+| ----- | -------- |
+| _unset_ | Wait up to **60 seconds** (the default). |
+| `TD_CONCURRENCY_MAX_WAIT=300` | Wait up to **300 seconds** (5 minutes) before giving up. |
+| `TD_CONCURRENCY_MAX_WAIT=0` | **Don't queue** — fail on the first denial. |
+
+The value is **in seconds** (fractional values are allowed and rounded to the
+nearest millisecond). Any invalid or negative value falls back to the 60-second
+default. The wait applies per sandbox request, across both the initial allocation
+and the realtime slot-approval handshake.
+
+```yaml
+# Example: a large parallel matrix that may queue for a while.
+# Give each job up to 5 minutes to acquire a slot before failing.
+- name: Run TestDriver tests
+  env:
+    TD_API_KEY: ${{ secrets.TD_API_KEY }}
+    TD_CONCURRENCY_MAX_WAIT: "300"
+  run: npx vitest run
+```
+
+<Tip>
+Raise `TD_CONCURRENCY_MAX_WAIT` when you run more parallel jobs than your plan has
+slots and would rather they queue than fail. Set it to `0` when you'd prefer a job
+to **fail fast** on a busy account (e.g. a quick smoke test that shouldn't sit
+waiting). When jobs routinely give up waiting, that's the signal to
+[add more slots](https://console.testdriver.ai/checkout/pro).
+</Tip>
 
 ## Viewing Results
 

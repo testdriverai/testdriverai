@@ -10,7 +10,7 @@ icon: "camera"
 Capture a screenshot of the current screen and automatically save it to a local file. Screenshots are organized by test file for easy debugging and review.
 
 <Note>
-  **Automatic Screenshots (Default: Enabled)**: TestDriver automatically captures screenshots before and after every command (click, type, find, etc.). These are saved with descriptive filenames like `001-click-before-L42-submit-button.png` that include the line number from your test file. You can disable this with `autoScreenshots: false` in your TestDriver options.
+  **Automatic Screenshots**: TestDriver can automatically capture screenshots before and after every command (click, type, find, etc.). These are saved with descriptive filenames like `001-click-before-L42-submit-button.png` that include the line number from your test file. Enable this with `autoScreenshots: true` in your TestDriver options.
 </Note>
 
 ## Syntax
@@ -51,7 +51,7 @@ Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>
 
 ### Automatic Screenshot Naming
 
-When `autoScreenshots` is enabled (default), filenames follow this format:
+When `autoScreenshots` is enabled, filenames follow this format:
 
 `<seq>-<action>-<phase>-L<line>-<description>.png`
 
@@ -92,7 +92,7 @@ await testdriver.screenshot("after-click");
 
 ```javascript
 import { describe, expect, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("Login Flow", () => {
   it("should log in successfully", async (context) => {
@@ -154,7 +154,7 @@ Automatic screenshots are taken around these commands:
 - `find()` / `findAll()`
 - `click()` / `hover()` / `doubleClick()` / `rightClick()`
 - `type()` / `pressKeys()`
-- `scroll()` / `scrollUntilText()` / `scrollUntilImage()`
+- `scroll()`
 - `waitForText()` / `waitForImage()`
 - `focusApplication()`
 - `assert()` / `extract()` / `exec()`
@@ -189,7 +189,7 @@ If an error occurs, the phase will be `error` instead of `after`.
 
 <AccordionGroup>
   <Accordion title="Let automatic screenshots do the work">
-    With `autoScreenshots: true` (default), you get comprehensive coverage without adding manual `screenshot()` calls. Only add manual screenshots for specific named checkpoints.
+    With `autoScreenshots: true`, you get comprehensive coverage without adding manual `screenshot()` calls. Only add manual screenshots for specific named checkpoints.
   </Accordion>
   
   <Accordion title="Use screenshots for debugging flaky tests">

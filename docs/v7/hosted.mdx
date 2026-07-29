@@ -25,12 +25,11 @@ Hosted pricing is based on **device-seconds**: the amount of time your tests run
   </Card>
   
   <Card title="Pro" icon="rocket" href="https://console.testdriver.ai/checkout/pro">
-    **$20/month**
+    **$20/month per user**
     
     - 2 Concurrent Sandboxes
     - 600 Minutes Included
-    - Overage: $0.002/second
-    - 1 Team User
+    - Overage: $0.001/second
     - Test Recordings
     - Community Support
   </Card>
@@ -77,7 +76,7 @@ To prevent tests from failing due to exceeding your license slot limit, we recom
 
     ```javascript vitest.config.mjs
     import { defineConfig } from 'vitest/config';
-    import { TestDriver } from 'testdriverai/vitest';
+    import TestDriver from 'testdriverai/vitest';
 
     export default defineConfig({
       test: {

@@ -294,7 +294,7 @@ When creating a new test project, use these exact dependencies:
 {
   "type": "module",
   "devDependencies": {
-    "testdriverai": "beta",
+    "testdriverai": "canary",
     "vitest": "^4.0.0"
   },
   "scripts": {
@@ -303,7 +303,7 @@ When creating a new test project, use these exact dependencies:
 }
 ```
 
-**Important:** The package is `testdriverai` (NOT `@testdriverai/sdk`). Always install from the `beta` tag.
+**Important:** The package is `testdriverai` (NOT `@testdriverai/sdk`). Always install from the `canary` tag.
 
 ## Test File Format
 

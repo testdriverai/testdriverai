@@ -16,10 +16,6 @@ Access provision methods via `testdriver.provision.*`:
 await testdriver.provision.chrome({ url: 'https://example.com' });
 ```
 
-<Note>
-  When `reconnect: true` is set on the client, **all provision methods are skipped** since the application is assumed to already be running.
-</Note>
-
 ## Methods
 
 ### chrome()
@@ -234,22 +230,6 @@ await testdriver.provision.dashcam({
   logName: 'Application Log',
   webLogs: true,
 });
-```
-
-## Reconnect Behavior
-
-When `reconnect: true` is set on the client, all provision methods are wrapped in a Proxy that intercepts calls and skips them silently. This is because when reconnecting to an existing sandbox, the applications are already running.
-
-```javascript
-const testdriver = new TestDriver({
-  reconnect: true,
-});
-
-await testdriver.ready();
-
-// These calls are silently skipped:
-await testdriver.provision.chrome({ url: 'https://example.com' });
-await testdriver.provision.dashcam();
 ```
 
 ## Types

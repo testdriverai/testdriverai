@@ -89,6 +89,38 @@ To use the TestDriver MCP server with GitHub Copilot coding agent:
 
 For more information, see [Extending GitHub Copilot coding agent with Model Context Protocol](https://docs.github.com/en/copilot/customizing-copilot/extending-copilot-coding-agent-with-mcp).
 
+### With Claude Code (plugin)
+
+TestDriver ships as a [Claude Code plugin](https://docs.claude.com/en/docs/claude-code/plugins) so you get the MCP server, the `testdriver` expert agent, and all TestDriver skills with a single install.
+
+1. Set your TestDriver API key in your shell:
+
+   ```bash
+   export TD_API_KEY=your_api_key_from_https_console_testdriver_ai_team
+   ```
+
+2. Add this repo as a Claude Code plugin marketplace and install the `testdriver` plugin:
+
+   ```bash
+   # Add the marketplace (sources `.claude-plugin/marketplace.json` from this repo)
+   /plugin marketplace add testdriverai/testdriverai
+
+   # Install the plugin
+   /plugin install testdriver@testdriver
+   ```
+
+   This reads `.claude-plugin/plugin.json` (shipped inside the `testdriverai` npm package) and:
+
+   - Registers the `testdriver` MCP server (`npx -p testdriverai testdriverai-mcp`)
+   - Registers the `testdriver` sub-agent (from `ai/agents/testdriver.md`)
+   - Registers all TestDriver skills (from `ai/skills/testdriver-*/SKILL.md`)
+
+3. In a Claude Code session, delegate to the agent with:
+
+   ```text
+   @testdriver Write a test that signs into example.com and adds an item to the cart.
+   ```
+
 ### With Claude Desktop / Cursor
 
 Add to your MCP config (`~/.cursor/mcp.json` or `~/Library/Application Support/Claude/claude_desktop_config.json`):

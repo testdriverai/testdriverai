@@ -193,7 +193,7 @@ Tests should use `context.ip || process.env.TD_IP` for the IP configuration:
 
 ```javascript
 import { describe, it } from "vitest";
-import { TestDriver } from "testdriverai/lib/vitest/hooks.mjs";
+import { TestDriver } from "testdriverai/vitest/hooks";
 
 describe("My Test", () => {
   it("should run on self-hosted instance", async (context) => {

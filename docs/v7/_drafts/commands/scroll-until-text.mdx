@@ -23,7 +23,7 @@ The `scroll-until-text` command is used to scroll the screen in a specified dire
 |   `text`    | `string`  | The text to find on the screen. Longer and unique are better. Note this is **case sensitive**                           |
 | `direction` | `string`  | (Optional) The direction to scroll. Available directions are: `up`, `down`, `left`, `right`. Defaults to `down`.        |
 |  `method`   | `string`  | (Optional) The method to use to scroll the page. Available methods are: `mouse` and `keyboard`. Defaults to `keyboard`. |
-| `distance`  | `number`  | (Optional) The maximum number of pixels to scroll before giving up. Default is `10000`.                                 |
+| `distance`  | `number`  | (Optional) The maximum number of scroll clicks before giving up. Default is `100`.                                 |
 |  `invert`   | `boolean` | (Optional) If set to `true`, the command will scroll until the specified text is NOT detected. Default is `false`.      |
 
 <Note>
@@ -47,7 +47,7 @@ distance: 1000
 
 - Use unique and specific text to improve detection accuracy.
 - Adjust the `distance` value to control how far the command scrolls before giving up.
-- If you don't specify a `distance`, the command will scroll 300 pixels at a time, giving up after 5 attempts.
+- If you don't specify a `distance`, the command will scroll 5 clicks at a time, giving up after reaching 100 clicks.
 
 ## Gotchas
 

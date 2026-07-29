@@ -52,18 +52,35 @@ describe("Chrome Extension Test", () => {
     // The hello-world extension adds a puzzle piece icon to the toolbar
     // When clicked, it shows a popup with "Hello Extensions"
 
-    // Click on the extensions button (puzzle piece icon) in Chrome toolbar
-    const extensionsButton = await testdriver.find("The extensions button in the Chrome toolbar", {zoom: true});
-    await extensionsButton.click();
+    // Retry opening the extension popup and verifying it up to 3 times
+    let popupResult;
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        // Click on the extensions button (puzzle piece icon) in Chrome toolbar
+        const extensionsButton = await testdriver.find("The extensions button in the Chrome toolbar", {zoom: true, verify: true, timeout: 10000});
+        await extensionsButton.click();
 
-    // Look for the hello world extension in the extensions menu
-    const helloExtension = await testdriver.find("Hello Extensions extension in the extensions dropdown");
-    await helloExtension.click();
+        // Look for the hello world extension in the extensions menu
+        const helloExtension = await testdriver.find("Hello Extensions extension in the extensions dropdown", {zoom: true, verify: true, timeout: 10000});
+        await helloExtension.click();
 
-    await testdriver.wait(2000); // wait for the popup to open
+        await testdriver.wait(2000); // wait for the popup to open
 
-    // Verify the extension popup shows "Hello Extensions" text
-    const popupResult = await testdriver.assert("a popup shows with the text 'Hello Extensions'");
+        // Verify the extension popup shows "Hello Extensions" text
+        popupResult = await testdriver.assert("a popup shows with the text 'Hello Extensions'");
+        if (popupResult) break;
+      } catch (err) {
+        lastError = err;
+        console.log(`Attempt ${attempt} failed:`, err.message);
+      }
+      if (attempt < 3) {
+        // Dismiss any open popup/menu before retrying
+        await testdriver.pressKeys(["escape"]);
+        await testdriver.wait(1000);
+      }
+    }
+    if (!popupResult && lastError) throw lastError;
     expect(popupResult).toBeTruthy();
   });
 

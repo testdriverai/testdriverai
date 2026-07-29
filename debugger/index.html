@@ -415,6 +415,18 @@
         : "TestDriver";
       document.title = `${testFileName} - Debugger`;
 
+      const shouldDowngradeToHttp =
+        window.location.protocol === "https:" &&
+        parsedData?.os === "windows" &&
+        typeof parsedData?.url === "string" &&
+        parsedData.url.startsWith("http://");
+
+      if (shouldDowngradeToHttp) {
+        const redirectUrl = new URL(window.location.href);
+        redirectUrl.protocol = "http:";
+        window.location.replace(redirectUrl.toString());
+      }
+
       // Embed the VNC URL in the iframe with token
       iframe.style.display = "block";
       const vncUrl = new URL(parsedData.url);

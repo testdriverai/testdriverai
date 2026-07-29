@@ -49,4 +49,4 @@ await testdriver.wait();
   const element = await testdriver.find('success message');
   ```
 - Avoid excessively long timeouts to keep tests efficient.
-- Use sparingly — TestDriver's [redraw detection](/v7/waiting-for-elements) automatically waits for screen and network stability after each action.
+- Use sparingly — TestDriver's [redraw detection](/v7/performing-actions#waiting-for-dynamic-content) automatically waits for screen and network stability after each action.

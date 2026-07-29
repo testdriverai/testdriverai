@@ -3,6 +3,7 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { formatter } = require("./sdk-log-formatter");
+const { createProvisionAPI } = require("./lib/provision");
 
 // Load .env — use monorepo root .env when running inside the monorepo,
 // otherwise fall back to default dotenv.config() for end users.
@@ -471,17 +472,21 @@ class Element {
     this.sdk.emitter.emit(events.log.log, findingMessage);
 
     try {
-      const screenshot = await this.system.captureScreenBase64();
+      // Returns { imageKey } (fast S3-key path, no local round-trip) or
+      // { image } (base64 fallback). See system.captureScreenImage.
+      const imagePayload = await this.system.captureScreenImage();
       // Only store screenshot in DEBUG mode to prevent memory leaks
-      if (debugMode) {
-        this._screenshot = screenshot;
+      if (debugMode && imagePayload.image) {
+        this._screenshot = imagePayload.image;
       }
 
       // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold/cache
       let cacheKey = null;
       let cacheThreshold = null;
       let perCommandThresholds = null; // Per-command { screen, element } override
-      let zoom = true; // Default to enabled
+      let zoom = false; // Default to disabled
+      // Default to global verifyDefault (set via SDK constructor { verify: true })
+      let verify = this.sdk.verifyDefault === true;
       let perCommandAi = null; // Per-command AI config override
 
       let minConfidence = null; // Minimum confidence threshold
@@ -494,8 +499,12 @@ class Element {
         // New: options is an object with cacheKey and/or cacheThreshold
         cacheKey = options.cacheKey || null;
         cacheThreshold = options.cacheThreshold ?? null;
-        // zoom defaults to true unless explicitly set to false
-        zoom = options.zoom !== false;
+        // zoom defaults to false unless explicitly set to true
+        zoom = options.zoom === true;
+        // verify defaults to global verifyDefault unless explicitly set per-call
+        if (options.verify !== undefined) {
+          verify = options.verify === true;
+        }
         // Minimum confidence threshold: fail find if AI confidence is below this value
         minConfidence = options.confidence ?? null;
         // Element type hint for prompt wrapping
@@ -562,13 +571,14 @@ class Element {
       response = await this.sdk.apiClient.req("find", {
         session: this.sdk.getSessionId(),
         element: description,
-        image: screenshot,
+        ...imagePayload,
         threshold: threshold,
         elementSimilarity: elementSimilarity,
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
         zoom: zoom === true ? 1 : zoom === false ? 0 : zoom,
+        skipVerify: !verify,
         confidence: minConfidence,
         type: elementType,
         ai: {
@@ -1505,6 +1515,25 @@ class TestDriverSDK {
     this.reconnect =
       options.reconnect !== undefined ? options.reconnect : false;
 
+    // Explicit sandbox id to reconnect to (overrides last-sandbox file)
+    this.sandboxId = options.sandboxId || null;
+
+    // When reconnect is requested, an explicit sandboxId implies newSandbox=false.
+    // If reconnect:true but no sandboxId given, try to load from .testdriver/last-sandbox.
+    if (this.reconnect && !this.sandboxId) {
+      const last = TestDriverSDK._readLastSandbox();
+      if (last && last.sandboxId) {
+        this.sandboxId = last.sandboxId;
+      }
+    }
+    if (this.sandboxId && options.newSandbox === undefined) {
+      this.newSandbox = false;
+    }
+
+    // Store keepAlive preference from options
+    this.keepAlive =
+      options.keepAlive !== undefined ? options.keepAlive : undefined;
+
     // Store dashcam preference (default: true)
     this.dashcamEnabled = options.dashcam !== false;
 
@@ -1568,6 +1597,11 @@ class TestDriverSDK {
         k: options.ai.top?.k,
       },
     } : {};
+
+    // Global AI verification default for find()
+    // When true, every find() verifies located coordinates unless overridden per-call.
+    // Can be overridden per find() call via { verify: true|false }.
+    this.verifyDefault = options.verify === true;
 
     // Redraw configuration
     // Supports:
@@ -1790,733 +1824,7 @@ class TestDriverSDK {
   }
 
   _createProvisionAPI() {
-    const self = this;
-
-    const provisionMethods = {
-      /**
-       * Launch Chrome browser
-       * @param {Object} options - Chrome launch options
-       * @param {string} [options.url='http://testdriver-sandbox.vercel.app/'] - URL to navigate to
-       * @param {boolean} [options.maximized=true] - Start maximized
-       * @param {boolean} [options.guest=false] - Use guest mode
-       * @returns {Promise<void>}
-       */
-      chrome: async (options = {}) => {
-        const {
-          url = "http://testdriver-sandbox.vercel.app/",
-          maximized = true,
-          guest = false,
-        } = options;
-
-        // Store the URL for domain-specific web log tracking
-        self._provisionedChromeUrl = url;
-
-        // Set up Chrome profile with preferences
-        const shell = this.os === "windows" ? "pwsh" : "sh";
-        const userDataDir =
-          this.os === "windows"
-            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
-            : "/tmp/testdriver-chrome-profile";
-
-        // Create user data directory and Default profile directory
-        const defaultProfileDir =
-          this.os === "windows"
-            ? `${userDataDir}\\Default`
-            : `${userDataDir}/Default`;
-
-        const createDirCmd =
-          this.os === "windows"
-            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
-            : `mkdir -p "${defaultProfileDir}"`;
-
-        await this.exec(shell, createDirCmd, 60000, true);
-
-        // Write Chrome preferences
-        const chromePrefs = {
-          credentials_enable_service: false,
-          profile: {
-            password_manager_enabled: false,
-            default_content_setting_values: {},
-          },
-          signin: {
-            allowed: false,
-          },
-          sync: {
-            requested: false,
-            first_setup_complete: true,
-            sync_all_os_types: false,
-          },
-          autofill: {
-            enabled: false,
-          },
-          local_state: {
-            browser: {
-              has_seen_welcome_page: true,
-            },
-          },
-        };
-
-        const prefsPath =
-          this.os === "windows"
-            ? `${defaultProfileDir}\\Preferences`
-            : `${defaultProfileDir}/Preferences`;
-
-        const prefsJson = JSON.stringify(chromePrefs, null, 2);
-        const writePrefCmd =
-          this.os === "windows"
-            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
-              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
-            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
-
-        await this.exec(shell, writePrefCmd, 60000, true);
-
-        // Build Chrome launch command
-        const chromeArgs = [];
-        if (maximized) chromeArgs.push("--start-maximized");
-        if (guest) chromeArgs.push("--guest");
-        chromeArgs.push(
-          "--disable-fre",
-          "--no-default-browser-check",
-          "--no-first-run",
-          "--no-experiments",
-          "--disable-infobars",
-          "--disable-features=StartupBrowserCreator",
-          "--disable-features=ChromeWhatsNewUI",
-          `--user-data-dir=${userDataDir}`,
-        );
-
-        // Add remote debugging port for captcha solving support
-        chromeArgs.push("--remote-debugging-port=9222");
-
-        // Add dashcam-chrome extension
-        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
-        if (dashcamChromePath) {
-          chromeArgs.push(`--load-extension=${dashcamChromePath}`);
-        }
-
-        // Launch Chrome
-
-        if (this.os === "windows") {
-          const argsString = chromeArgs.map((arg) => `"${arg}"`).join(", ");
-          await this.exec(
-            shell,
-            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}, "${url}"`,
-            30000,
-          );
-        } else {
-          const argsString = chromeArgs.join(" ");
-          await this.exec(
-            shell,
-            `chrome-for-testing ${argsString} "${url}" >/dev/null 2>&1 &`,
-            30000,
-          );
-        }
-
-        // Wait for Chrome debugger port and page to be ready
-        await this._waitForChromeDebuggerReady();
-        await this.focusApplication("Google Chrome");
-
-        // Add web log tracking with domain wildcard pattern, then start dashcam
-        if (this.dashcamEnabled) {
-          const domainPattern = this._getUrlDomainPattern(url);
-          await this.dashcam.addWebLog(domainPattern, "Web Logs");
-          
-          // Start dashcam recording after logs are configured
-          if (!(await this.dashcam.isRecording())) {
-            await this.dashcam.start();
-          }
-        }
-      },
-
-      /**
-       * Launch Chrome browser with a custom extension loaded
-       * @param {Object} options - Chrome extension launch options
-       * @param {string} [options.extensionPath] - Local filesystem path to the unpacked extension directory
-       * @param {string} [options.extensionId] - Chrome Web Store extension ID (e.g., "cjpalhdlnbpafiamejdnhcphjbkeiagm" for uBlock Origin)
-       * @param {boolean} [options.maximized=true] - Start maximized
-       * @returns {Promise<void>}
-       * @example
-       * // Load extension from local path
-       * await testdriver.exec('sh', 'git clone https://github.com/user/extension.git /tmp/extension');
-       * await testdriver.provision.chromeExtension({
-       *   extensionPath: '/tmp/extension'
-       * });
-       *
-       * @example
-       * // Load extension by Chrome Web Store ID
-       * await testdriver.provision.chromeExtension({
-       *   extensionId: 'cjpalhdlnbpafiamejdnhcphjbkeiagm' // uBlock Origin
-       * });
-       */
-      chromeExtension: async (options = {}) => {
-        const {
-          extensionPath: providedExtensionPath,
-          extensionId,
-          maximized = true,
-        } = options;
-
-        if (!providedExtensionPath && !extensionId) {
-          throw new Error(
-            "[provision.chromeExtension] Either extensionPath or extensionId is required",
-          );
-        }
-
-        let extensionPath = providedExtensionPath;
-        const shell = this.os === "windows" ? "pwsh" : "sh";
-
-        // If extensionId is provided, download and extract the extension from Chrome Web Store
-        if (extensionId && !extensionPath) {
-          console.log(
-            `[provision.chromeExtension] Downloading extension ${extensionId} from Chrome Web Store...`,
-          );
-
-          const extensionDir =
-            this.os === "windows"
-              ? `C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Extensions\\${extensionId}`
-              : `/tmp/testdriver-extensions/${extensionId}`;
-
-          // Create extension directory
-          const mkdirCmd =
-            this.os === "windows"
-              ? `New-Item -ItemType Directory -Path "${extensionDir}" -Force | Out-Null`
-              : `mkdir -p "${extensionDir}"`;
-          await this.exec(shell, mkdirCmd, 60000, true);
-
-          // Download CRX from Chrome Web Store
-          // The CRX download URL format for Chrome Web Store
-          const crxUrl = `https://clients2.google.com/service/update2/crx?response=redirect&prodversion=131.0.0.0&acceptformat=crx2,crx3&x=id%3D${extensionId}%26installsource%3Dondemand%26uc`;
-          const crxPath =
-            this.os === "windows"
-              ? `${extensionDir}\\extension.crx`
-              : `${extensionDir}/extension.crx`;
-
-          if (this.os === "windows") {
-            await this.exec(
-              "pwsh",
-              `Invoke-WebRequest -Uri "${crxUrl}" -OutFile "${crxPath}"`,
-              60000,
-              true,
-            );
-          } else {
-            await this.exec(
-              "sh",
-              `curl -L -o "${crxPath}" "${crxUrl}"`,
-              60000,
-              true,
-            );
-          }
-
-          // Extract the CRX file (CRX is a ZIP with a header)
-          // Skip the CRX header and extract as ZIP
-          if (this.os === "windows") {
-            // PowerShell: Read CRX, skip header, extract ZIP
-            await this.exec(
-              "pwsh",
-              `
-$crxBytes = [System.IO.File]::ReadAllBytes("${crxPath}")
-# CRX3 header: 4 bytes magic + 4 bytes version + 4 bytes header length + header
-$magic = [System.Text.Encoding]::ASCII.GetString($crxBytes[0..3])
-if ($magic -eq "Cr24") {
-  $headerLen = [BitConverter]::ToUInt32($crxBytes, 8)
-  $zipStart = 12 + $headerLen
-} else {
-  # CRX2 format
-  $zipStart = 16 + [BitConverter]::ToUInt32($crxBytes, 8) + [BitConverter]::ToUInt32($crxBytes, 12)
-}
-$zipBytes = $crxBytes[$zipStart..($crxBytes.Length - 1)]
-$zipPath = "${extensionDir}\\extension.zip"
-[System.IO.File]::WriteAllBytes($zipPath, $zipBytes)
-Expand-Archive -Path $zipPath -DestinationPath "${extensionDir}\\unpacked" -Force
-              `,
-              30000,
-              true,
-            );
-            extensionPath = `${extensionDir}\\unpacked`;
-          } else {
-            // Linux: Use unzip with offset or python to extract
-            await this.exec(
-              "sh",
-              `
-cd "${extensionDir}"
-# Extract CRX (skip header and unzip)
-# CRX3 format: magic(4) + version(4) + header_length(4) + header + zip
-python3 -c "
-import struct
-import zipfile
-import io
-import os
-
-with open('extension.crx', 'rb') as f:
-    data = f.read()
-
-# Check magic number
-magic = data[:4]
-if magic == b'Cr24':
-    # CRX3 format
-    header_len = struct.unpack('<I', data[8:12])[0]
-    zip_start = 12 + header_len
-else:
-    # CRX2 format  
-    pub_key_len = struct.unpack('<I', data[8:12])[0]
-    sig_len = struct.unpack('<I', data[12:16])[0]
-    zip_start = 16 + pub_key_len + sig_len
-
-zip_data = data[zip_start:]
-os.makedirs('unpacked', exist_ok=True)
-with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
-    zf.extractall('unpacked')
-"
-              `,
-              30000,
-              true,
-            );
-            extensionPath = `${extensionDir}/unpacked`;
-          }
-
-          console.log(
-            `[provision.chromeExtension] Extension ${extensionId} extracted to ${extensionPath}`,
-          );
-        }
-
-        // Set up Chrome profile with preferences
-        const userDataDir =
-          this.os === "windows"
-            ? "C:\\Users\\testdriver\\AppData\\Local\\TestDriver\\Chrome"
-            : "/tmp/testdriver-chrome-profile";
-
-        // Create user data directory and Default profile directory
-        const defaultProfileDir =
-          this.os === "windows"
-            ? `${userDataDir}\\Default`
-            : `${userDataDir}/Default`;
-
-        const createDirCmd =
-          this.os === "windows"
-            ? `New-Item -ItemType Directory -Path "${defaultProfileDir}" -Force | Out-Null`
-            : `mkdir -p "${defaultProfileDir}"`;
-
-        await this.exec(shell, createDirCmd, 60000, true);
-
-        // Write Chrome preferences
-        const chromePrefs = {
-          credentials_enable_service: false,
-          profile: {
-            password_manager_enabled: false,
-            default_content_setting_values: {},
-          },
-          signin: {
-            allowed: false,
-          },
-          sync: {
-            requested: false,
-            first_setup_complete: true,
-            sync_all_os_types: false,
-          },
-          autofill: {
-            enabled: false,
-          },
-          local_state: {
-            browser: {
-              has_seen_welcome_page: true,
-            },
-          },
-        };
-
-        const prefsPath =
-          this.os === "windows"
-            ? `${defaultProfileDir}\\Preferences`
-            : `${defaultProfileDir}/Preferences`;
-
-        const prefsJson = JSON.stringify(chromePrefs, null, 2);
-        const writePrefCmd =
-          this.os === "windows"
-            ? // Use compact JSON and [System.IO.File]::WriteAllText to avoid Set-Content hanging issues
-              `[System.IO.File]::WriteAllText("${prefsPath}", '${JSON.stringify(chromePrefs).replace(/'/g, "''")}')`
-            : `cat > "${prefsPath}" << 'EOF'\n${prefsJson}\nEOF`;
-
-        await this.exec(shell, writePrefCmd, 60000, true);
-
-        // Build Chrome launch command
-        const chromeArgs = [];
-        if (maximized) chromeArgs.push("--start-maximized");
-        chromeArgs.push(
-          "--disable-fre",
-          "--no-default-browser-check",
-          "--no-first-run",
-          "--no-experiments",
-          "--disable-infobars",
-          "--disable-features=ChromeLabs",
-          `--user-data-dir=${userDataDir}`,
-        );
-
-        // Add remote debugging port for captcha solving support
-        chromeArgs.push("--remote-debugging-port=9222");
-
-        // Add user extension and dashcam-chrome extension
-        const dashcamChromePath = await this._getDashcamChromeExtensionPath();
-        if (dashcamChromePath) {
-          // Load both user extension and dashcam-chrome for web log capture
-          chromeArgs.push(
-            `--load-extension=${extensionPath},${dashcamChromePath}`,
-          );
-        } else {
-          // If dashcam-chrome unavailable, just load user extension
-          chromeArgs.push(`--load-extension=${extensionPath}`);
-        }
-
-        // Launch Chrome (opens to New Tab by default)
-        if (this.os === "windows") {
-          const argsString = chromeArgs.map((arg) => `"${arg}"`).join(", ");
-          await this.exec(
-            shell,
-            `Start-Process "C:\\ChromeForTesting\\chrome-win64\\chrome.exe" -ArgumentList ${argsString}`,
-            30000,
-          );
-        } else {
-          const argsString = chromeArgs.join(" ");
-          await this.exec(
-            shell,
-            `chrome-for-testing ${argsString} >/dev/null 2>&1 &`,
-            30000,
-          );
-        }
-
-        // Wait for Chrome debugger port and page to be ready
-        await this._waitForChromeDebuggerReady();
-        await this.focusApplication("Google Chrome");
-
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
-        }
-      },
-
-      /**
-       * Launch VS Code
-       * @param {Object} options - VS Code launch options
-       * @param {string} [options.workspace] - Workspace/folder to open
-       * @param {string[]} [options.extensions=[]] - Extensions to install
-       * @returns {Promise<void>}
-       */
-      vscode: async (options = {}) => {
-        const { workspace = null, extensions = [] } = options;
-
-        const shell = this.os === "windows" ? "pwsh" : "sh";
-
-        // Install extensions if provided
-        for (const extension of extensions) {
-          console.log(`[provision.vscode] Installing extension: ${extension}`);
-          await this.exec(
-            shell,
-            `code --install-extension ${extension} --force`,
-            120000,
-            true,
-          );
-          console.log(
-            `[provision.vscode] ✅ Extension installed: ${extension}`,
-          );
-        }
-
-        // Launch VS Code
-        const workspaceArg = workspace ? `"${workspace}"` : "";
-
-        if (this.os === "windows") {
-          await this.exec(
-            shell,
-            `Start-Process code -ArgumentList ${workspaceArg}`,
-            30000,
-          );
-        } else {
-          await this.exec(
-            shell,
-            `code ${workspaceArg} >/dev/null 2>&1 &`,
-            30000,
-          );
-        }
-
-        // Wait for VS Code to start up
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        // Wait for VS Code to be ready
-        await this.focusApplication("Visual Studio Code");
-
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
-        }
-      },
-
-      /**
-       * Download and install an application
-       * @param {Object} options - Installer options
-       * @param {string} options.url - URL to download the installer from
-       * @param {string} [options.filename] - Filename to save as (auto-detected from URL if not provided)
-       * @param {string} [options.appName] - Application name to focus after install
-       * @param {boolean} [options.launch=true] - Whether to launch the app after installation
-       * @returns {Promise<string>} Path to the downloaded file
-       * @example
-       * // Install a .deb package on Linux (auto-detected)
-       * await testdriver.provision.installer({
-       *   url: 'https://example.com/app.deb',
-       *   appName: 'MyApp'
-       * });
-       *
-       * @example
-       * // Download and run custom commands
-       * const filePath = await testdriver.provision.installer({
-       *   url: 'https://example.com/app.AppImage',
-       *   launch: false
-       * });
-       * await testdriver.exec('sh', `chmod +x "${filePath}" && "${filePath}" &`, 10000);
-       */
-      installer: async (options = {}) => {
-        const { url, filename, appName, launch = true } = options;
-
-        if (!url) {
-          throw new Error("[provision.installer] url is required");
-        }
-
-        const shell = this.os === "windows" ? "pwsh" : "sh";
-
-        // Determine download directory
-        const downloadDir =
-          this.os === "windows" ? "C:\\Users\\testdriver\\Downloads" : "/tmp";
-
-        console.log(`[provision.installer] Downloading ${url}...`);
-
-        let actualFilePath;
-
-        // Download the file and get the actual filename (handles redirects)
-        if (this.os === "windows") {
-          // Simple approach: download first, then get the actual filename from the response
-          const tempFile = `${downloadDir}\\installer_temp_${Date.now()}`;
-
-          const downloadScript = `
-            $ProgressPreference = 'SilentlyContinue'
-            $response = Invoke-WebRequest -Uri "${url}" -OutFile "${tempFile}" -PassThru -UseBasicParsing
-            
-            # Try to get filename from Content-Disposition header
-            $filename = $null
-            if ($response.Headers['Content-Disposition']) {
-              if ($response.Headers['Content-Disposition'] -match 'filename=\\"?([^\\"]+)\\"?') {
-                $filename = $matches[1]
-              }
-            }
-            
-            # If no filename from header, try to get from URL or use default
-            if (-not $filename) {
-              $uri = [System.Uri]"${url}"
-              $filename = [System.IO.Path]::GetFileName($uri.LocalPath)
-              if (-not $filename -or $filename -eq '') {
-                $filename = "installer"
-              }
-            }
-            
-            # Move temp file to final location with proper filename
-            $finalPath = Join-Path "${downloadDir}" $filename
-            Move-Item -Path "${tempFile}" -Destination $finalPath -Force
-            Write-Output $finalPath
-          `;
-
-          const result = await this.exec(shell, downloadScript, 300000, true);
-          actualFilePath = result ? result.trim() : null;
-
-          if (!actualFilePath) {
-            throw new Error("[provision.installer] Failed to download file");
-          }
-        } else {
-          // Use curl with options to get the final filename
-          const tempMarker = `installer_${Date.now()}`;
-          const downloadScript = `
-            cd "${downloadDir}"
-            curl -L -J -O -w "%{filename_effective}" "${url}" 2>/dev/null || echo "${tempMarker}"
-          `;
-
-          const result = await this.exec(shell, downloadScript, 300000, true);
-          const downloadedFile = result ? result.trim() : null;
-
-          if (downloadedFile && downloadedFile !== tempMarker) {
-            actualFilePath = `${downloadDir}/${downloadedFile}`;
-          } else {
-            // Fallback: use curl without -J and specify output file
-            const fallbackFilename = filename || "installer";
-            actualFilePath = `${downloadDir}/${fallbackFilename}`;
-            await this.exec(
-              shell,
-              `curl -L -o "${actualFilePath}" "${url}"`,
-              300000,
-              true,
-            );
-          }
-        }
-
-        console.log(`[provision.installer] ✅ Downloaded to ${actualFilePath}`);
-
-        // Auto-detect install command based on file extension (use actualFilePath for extension detection)
-        const actualFilename = actualFilePath.split(/[/\\]/).pop() || "";
-        const ext = actualFilename.split(".").pop()?.toLowerCase();
-        let installCommand = null;
-
-        if (this.os === "windows") {
-          if (ext === "msi") {
-            installCommand = `Start-Process msiexec -ArgumentList '/i', '"${actualFilePath}"', '/quiet', '/norestart' -Wait`;
-          } else if (ext === "exe") {
-            installCommand = `Start-Process "${actualFilePath}" -ArgumentList '/S' -Wait`;
-          }
-        } else if (this.os === "linux") {
-          if (ext === "deb") {
-            installCommand = `sudo dpkg -i "${actualFilePath}" && sudo apt-get install -f -y`;
-          } else if (ext === "rpm") {
-            installCommand = `sudo rpm -i "${actualFilePath}"`;
-          } else if (ext === "appimage") {
-            installCommand = `chmod +x "${actualFilePath}"`;
-          } else if (ext === "sh") {
-            installCommand = `chmod +x "${actualFilePath}" && "${actualFilePath}"`;
-          }
-        } else if (this.os === "darwin") {
-          if (ext === "dmg") {
-            installCommand = `hdiutil attach "${actualFilePath}" -mountpoint /Volumes/installer && cp -R /Volumes/installer/*.app /Applications/ && hdiutil detach /Volumes/installer`;
-          } else if (ext === "pkg") {
-            installCommand = `sudo installer -pkg "${actualFilePath}" -target /`;
-          }
-        }
-
-        if (installCommand) {
-          console.log(`[provision.installer] Installing...`);
-          await this.exec(shell, installCommand, 300000, true);
-          console.log(`[provision.installer] ✅ Installation complete`);
-        }
-
-        // Launch and focus the app if appName is provided and launch is true
-        if (appName && launch) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          await this.focusApplication(appName);
-        }
-
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
-        }
-
-        return actualFilePath;
-      },
-
-      /**
-       * Launch Electron app
-       * @param {Object} options - Electron launch options
-       * @param {string} options.appPath - Path to Electron app (required)
-       * @param {string[]} [options.args=[]] - Additional electron args
-       * @returns {Promise<void>}
-       */
-      electron: async (options = {}) => {
-        const { appPath, args = [] } = options;
-
-        if (!appPath) {
-          throw new Error("provision.electron requires appPath option");
-        }
-
-        const shell = this.os === "windows" ? "pwsh" : "sh";
-
-        const argsString = args.join(" ");
-
-        if (this.os === "windows") {
-          await this.exec(
-            shell,
-            `Start-Process electron -ArgumentList "${appPath}", ${argsString}`,
-            30000,
-          );
-        } else {
-          await this.exec(
-            shell,
-            `electron "${appPath}" ${argsString} >/dev/null 2>&1 &`,
-            30000,
-          );
-        }
-
-        await this.focusApplication("Electron");
-
-        // Start dashcam recording
-        if (this.dashcamEnabled && !(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
-        }
-      },
-
-      /**
-       * Initialize Dashcam recording with logging
-       * @param {Object} options - Dashcam options
-       * @param {string} [options.logPath] - Path to log file (auto-generated if not provided)
-       * @param {string} [options.logName='TestDriver Log'] - Display name for the log
-       * @param {boolean} [options.webLogs=true] - Enable web log tracking
-       * @param {string} [options.title] - Custom title for the recording
-       * @returns {Promise<void>}
-       */
-      dashcam: async (options = {}) => {
-        const {
-          logPath,
-          logName = "TestDriver Log",
-          webLogs = true,
-          title,
-        } = options;
-
-        // Ensure dashcam is enabled
-        if (!this.dashcamEnabled) {
-          console.warn(
-            "[provision.dashcam] Dashcam is not enabled. Skipping.",
-          );
-          return;
-        }
-
-        // Set custom title if provided
-        if (title) {
-          this.dashcam.setTitle(title);
-        }
-
-        // Add file log tracking
-        const actualLogPath =
-          logPath ||
-          (this.os === "windows"
-            ? "C:\\Users\\testdriver\\testdriver.log"
-            : "/tmp/testdriver.log");
-
-        await this.dashcam.addFileLog(actualLogPath, logName);
-
-        // Add web log tracking if enabled
-        // Use domain pattern from provisioned Chrome URL if available
-        if (webLogs) {
-          const pattern = this._provisionedChromeUrl
-            ? this._getUrlDomainPattern(this._provisionedChromeUrl)
-            : "**";
-          await this.dashcam.addWebLog(pattern, "Web Logs");
-        }
-
-        // Start recording if not already recording
-        if (!(await this.dashcam.isRecording())) {
-          await this.dashcam.start();
-        }
-
-        console.log("[provision.dashcam] ✅ Dashcam recording started");
-      },
-    };
-
-    // Wrap all provision methods with reconnect check using Proxy
-    return new Proxy(provisionMethods, {
-      get(target, prop) {
-        const method = target[prop];
-        if (typeof method === "function") {
-          return async (...args) => {
-            // Skip provisioning if reconnecting to existing sandbox
-            if (self.reconnect) {
-              console.log(
-                `[provision.${prop}] Skipping provisioning (reconnect mode)`,
-              );
-              return;
-            }
-            return method(...args);
-          };
-        }
-        return method;
-      },
-    });
+    return createProvisionAPI(this);
   }
 
   /**
@@ -2782,11 +2090,18 @@ CAPTCHA_SOLVER_EOF`,
         connectOptions.newSandbox !== undefined
           ? connectOptions.newSandbox
           : this.newSandbox,
+      // Attach to `sandboxId` or throw — never silently substitute a fresh
+      // sandbox. Off by default so the CLI keeps its forgiving
+      // reconnect-or-create behavior; see buildEnv's `requireSandbox`.
+      requireSandbox: connectOptions.requireSandbox === true,
     };
 
     // Set agent properties for buildEnv to use
     if (connectOptions.sandboxId) {
       this.agent.sandboxId = connectOptions.sandboxId;
+    } else if (this.sandboxId) {
+      // Constructor-provided sandboxId (explicit or loaded from .testdriver/last-sandbox)
+      this.agent.sandboxId = this.sandboxId;
     }
     // Use IP from connectOptions if provided, otherwise fall back to constructor IP
     if (connectOptions.ip !== undefined) {
@@ -2826,9 +2141,11 @@ CAPTCHA_SOLVER_EOF`,
     } else {
       this.agent.sandboxOs = this.os;
     }
-    // Use keepAlive from connectOptions if provided
+    // Use keepAlive from connectOptions if provided, otherwise fall back to constructor option
     if (connectOptions.keepAlive !== undefined) {
       this.agent.keepAlive = connectOptions.keepAlive;
+    } else if (this.keepAlive !== undefined) {
+      this.agent.keepAlive = this.keepAlive;
     }
 
     // Set redrawThreshold on agent's cliArgs.options
@@ -2882,6 +2199,20 @@ CAPTCHA_SOLVER_EOF`,
     this.analytics.track("sdk.connect", {
       sandboxId: this.instance?.instanceId,
     });
+
+    // Persist the active sandbox id so a later run with `reconnect: true`
+    // can reattach without the caller having to thread the id through.
+    const activeSandboxId =
+      this.instance?.sandboxId || this.instance?.instanceId || null;
+    if (activeSandboxId) {
+      this.sandboxId = activeSandboxId;
+      TestDriverSDK._writeLastSandbox({
+        sandboxId: activeSandboxId,
+        os: this.os,
+        e2bTemplateId: this.e2bTemplateId || null,
+        createdAt: Date.now(),
+      });
+    }
 
     return this.instance;
   }
@@ -3088,7 +2419,8 @@ CAPTCHA_SOLVER_EOF`,
     const { events } = require("./agent/events.js");
 
     try {
-      const screenshot = await this.system.captureScreenBase64();
+      // { imageKey } (fast S3-key path) or { image } (base64 fallback).
+      const imagePayload = await this.system.captureScreenImage();
 
       // Handle options - can be a number (cacheThreshold) or object with cacheKey/cacheThreshold/cache
       let cacheKey = null;
@@ -3157,7 +2489,7 @@ CAPTCHA_SOLVER_EOF`,
         {
           session: this.getSessionId(),
           element: description,
-          image: screenshot,
+          ...imagePayload,
           threshold: threshold,
           cacheKey: cacheKey,
           os: this.os,
@@ -3196,11 +2528,12 @@ CAPTCHA_SOLVER_EOF`,
             elementData,
           );
 
-          // Only store screenshot in DEBUG mode
+          // Only store screenshot in DEBUG mode (and only when we have the
+          // bytes locally — the fast imageKey path doesn't download them)
           const debugMode =
             process.env.VERBOSE || process.env.TD_DEBUG;
-          if (debugMode) {
-            element._screenshot = screenshot;
+          if (debugMode && imagePayload.image) {
+            element._screenshot = imagePayload.image;
           }
 
           return element;
@@ -3684,11 +3017,9 @@ CAPTCHA_SOLVER_EOF`,
     const { events } = require("./agent/events.js");
     this.emitter.emit(events.log.log, "🔍 Running OmniParser screen analysis...");
 
-    const screenshot = await this.system.captureScreenBase64();
-
     const response = await this.apiClient.req("parse", {
       session: this.getSessionId(),
-      image: screenshot,
+      ...(await this.system.captureScreenImage()),
     });
 
     if (response.error) {
@@ -3845,8 +3176,9 @@ CAPTCHA_SOLVER_EOF`,
     const apiRoot = this.config?.TD_API_ROOT || 'unknown';
     const apiKey = this.config?.TD_API_KEY || '';
     const maskedKey = apiKey.length > 4 ? '***' + apiKey.slice(-4) : '(not set)';
-    const env = process.env.TD_CHANNEL || process.env.TD_ENV || 'unknown';
-    const os = this.agent?.options?.os || process.env.TD_OS || 'linux';
+    const channelConfig = require('./lib/resolve-channel.js');
+    const env = process.env.TD_CHANNEL || process.env.TD_ENV || channelConfig.active || 'unknown';
+    const os = this.os || this.agent?.options?.os || process.env.TD_OS || 'linux';
     const sdkVersion = require('./package.json').version;
 
     // Always print local config immediately
@@ -4345,7 +3677,11 @@ CAPTCHA_SOLVER_EOF`,
     if (this._logBuffer.length === 0) return "";
     const startTime = this._logBuffer[0].time;
     return this._logBuffer
-      .map((entry) => JSON.stringify({ ...entry, time: entry.time - startTime }))
+      .map((entry, index) => {
+        const obj = { ...entry, time: entry.time - startTime };
+        if (index === 0) obj.epoch = startTime; // absolute epoch for video alignment
+        return JSON.stringify(obj);
+      })
       .join("\n");
   }
 
@@ -4354,6 +3690,52 @@ CAPTCHA_SOLVER_EOF`,
    */
   clearLogs() {
     this._logBuffer = [];
+  }
+
+  /**
+   * Return info about the most recently provisioned sandbox (from this process
+   * or persisted from a previous run via .testdriver/last-sandbox).
+   * @returns {{ sandboxId: string, os?: string, e2bTemplateId?: string|null, createdAt?: number } | null}
+   */
+  getLastSandboxId() {
+    if (this.sandboxId) {
+      return {
+        sandboxId: this.sandboxId,
+        os: this.os,
+        e2bTemplateId: this.e2bTemplateId || null,
+      };
+    }
+    return TestDriverSDK._readLastSandbox();
+  }
+
+  /** @private */
+  static _lastSandboxPath() {
+    return path.join(process.cwd(), ".testdriver", "last-sandbox");
+  }
+
+  /** @private */
+  static _readLastSandbox() {
+    try {
+      const p = TestDriverSDK._lastSandboxPath();
+      if (!fs.existsSync(p)) return null;
+      const raw = fs.readFileSync(p, "utf8");
+      const data = JSON.parse(raw);
+      if (!data || !data.sandboxId) return null;
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /** @private */
+  static _writeLastSandbox(data) {
+    try {
+      const p = TestDriverSDK._lastSandboxPath();
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.writeFileSync(p, JSON.stringify(data, null, 2));
+    } catch (_) {
+      // Best-effort — don't fail the test if we can't persist.
+    }
   }
 }
 

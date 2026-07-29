@@ -1,11 +1,13 @@
 ---
-title: "Caching Prompts"
-description: "1.7x faster test execution with intelligent caching and optimization"
-icon: "bolt"
+title: "Learn"
+sidebarTitle: "Learn"
+description: "How TestDriver learns your app and caches what it discovers for instant, deterministic replays"
+icon: "brain"
 ---
 
-TestDriver is engineered for performance with intelligent caching that delivers up to **1.7x faster** test execution by skipping redundant AI vision analysis.
+Once the agent has [explored your app](/v7/generating-tests), TestDriver remembers what it found. Every element the AI vision agent discovers is cached with a vision fingerprint—a perceptual hash of the screen state where it was located. On the next run, TestDriver matches against that cache instead of calling the AI again. Passing tests replay instantly, deterministically, and cheaply.
 
+This learning is what makes TestDriver fast. Intelligent caching delivers up to **1.7x faster** test execution by skipping redundant AI vision analysis—the agent only thinks when it sees something new.
 
 ```javascript
 // First run: builds cache
@@ -17,7 +19,7 @@ await testdriver.find('submit button');
 
 ## Automatic Caching
 
-Caching is enabled automatically with zero configuration. The cache key is computed from:
+Learning is enabled automatically with zero configuration. The cache key—the fingerprint TestDriver uses to recognize what it already knows—is computed from:
 
 - **File hash**: SHA-256 hash of the test file contents
 - **Selector prompt**: The exact text description passed to `find()`
@@ -53,7 +55,7 @@ You can clear the cache within the TestDriver console. There, you'll also find p
 
 ## Debugging Cache Hits and Misses
 
-You can track cache performance in your tests:
+You can track what TestDriver has learned by inspecting cache performance in your tests:
 
 ```javascript
 test('monitor cache performance', async (context) => {
@@ -75,7 +77,7 @@ test('monitor cache performance', async (context) => {
 
 ## Configuring the Cache
 
-You can configure cache behavior globally when initializing TestDriver:
+You can configure how TestDriver learns globally when initializing TestDriver:
 
 ```javascript
 import { TestDriver } from 'testdriverai';
@@ -103,7 +105,7 @@ await testdriver.find('submit button', {
 
 ## Caching with Variables
 
-Custom cache keys prevent cache pollution when using variables in prompts, dramatically improving cache hit rates.
+Custom cache keys prevent cache pollution when using variables in prompts, dramatically improving cache hit rates—so TestDriver reuses what it learned even when your data changes.
 
 ```javascript
 // ❌ Without cache key - creates new cache for each variable value
@@ -123,6 +125,8 @@ await testdriver.find(`order ${orderId} status`, {
 });
 ```
 
+## Next
 
-
-
+<Card href="/v7/copilot/running-tests" title="Run" icon="play">
+  Now that TestDriver has learned your app, run your tests in CI and locally—replaying the cache for fast, deterministic results.
+</Card>

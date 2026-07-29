@@ -1,0 +1,17 @@
+{
+  "name": "testdriver",
+  "version": "7.9.54-test",
+  "description": "TestDriver.ai plugins for Claude Code — MCP server, agent, and skills for building natural-language end-to-end tests.",
+  "repository": "https://github.com/testdriverai/testdriverai",
+  "owner": {
+    "name": "TestDriver.ai",
+    "url": "https://testdriver.ai"
+  },
+  "plugins": [
+    {
+      "name": "testdriver",
+      "source": "./ai",
+      "description": "TestDriver.ai MCP server, TestDriver expert agent, and skills for authoring computer-use end-to-end tests with Vitest."
+    }
+  ]
+}

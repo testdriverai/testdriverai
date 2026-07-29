@@ -39,7 +39,7 @@ const testdriver = TestDriver(context, {
 
   // === Recording & Screenshots ===
   dashcam: true,             // Enable/disable Dashcam video recording (default: true)
-  autoScreenshots: true,     // Capture screenshots before/after each command (default: true)
+  autoScreenshots: true,     // Capture screenshots before/after each command (default: false)
 
   // === AI Configuration ===
   ai: {                      // Global AI sampling configuration
@@ -283,9 +283,9 @@ const testdriver = TestDriver(context, {
 });
 ```
 
-### Reconnecting to Existing Sandbox
+### Connecting to an Existing Sandbox
 
-Speed up test development by reconnecting to an existing sandbox instead of starting fresh each time. This lets you iterate quickly on failing steps without re-running the entire test from the beginning.
+Speed up test development by connecting to an existing sandbox instead of starting fresh each time. This lets you iterate quickly on failing steps without re-running the entire test from the beginning.
 
 Split your test into two files: one for known-good steps that set up the desired state, and another for work-in-progress steps you want to debug.
 
@@ -298,8 +298,10 @@ const testdriver = TestDriver(context, {
 ```javascript work-in-progress.test.mjs
 // Second test file: experiment.test.mjs (run within keepAlive window)
 const testdriver = TestDriver(context, {
-  reconnect: true,  // Reconnect to existing sandbox
+  keepAlive: 60000,
 });
+
+await testdriver.connect({ sandboxId: "sandbox-abc123" });
 ```
 
 Then, you can run both tests in sequence:
@@ -315,5 +317,5 @@ vitest run work-in-progress.test.mjs
 ```
 
 <Warning>
-  Reconnect only works if run within the `keepAlive` window of the previous test.
+  Connecting to the same machine only works if run within the `keepAlive` window of the previous test.
 </Warning>

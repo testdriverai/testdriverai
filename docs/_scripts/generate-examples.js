@@ -21,6 +21,16 @@ const MANIFEST_PATH = path.join(__dirname, "../_data/examples-manifest.json");
 const OUTPUT_DIR = path.join(__dirname, "../v7/examples");
 const DOCS_JSON_PATH = path.join(__dirname, "../docs.json");
 
+// Examples to exclude from docs generation (filenames without path)
+const EXCLUDE_FROM_DOCS = [
+  "exec-output.test.mjs",
+  "exec-pwsh.test.mjs",
+  "focus-window.test.mjs",
+  "prompt.test.mjs",
+  "scroll-until-image.test.mjs",
+  "windows-installer.test.mjs",
+];
+
 // Icon mapping based on test type/content
 const ICON_MAP = {
   ai: "wand-magic-sparkles",
@@ -74,11 +84,11 @@ function saveDocsJson(docsJson) {
   fs.writeFileSync(DOCS_JSON_PATH, JSON.stringify(docsJson, null, 2) + "\n", "utf-8");
 }
 
-// Get all example files
+// Get all example files (excluding ones in EXCLUDE_FROM_DOCS)
 function getExampleFiles() {
   return fs
     .readdirSync(EXAMPLES_DIR)
-    .filter((f) => f.endsWith(".test.mjs"))
+    .filter((f) => f.endsWith(".test.mjs") && !EXCLUDE_FROM_DOCS.includes(f))
     .sort();
 }
 
@@ -292,23 +302,48 @@ function apiRootFromConsoleUrl(sourceUrl) {
   }
 }
 
-// Generate replay URL from testcase ID
-// sourceUrl is the manifest URL used to infer the correct API environment
-function generateReplayUrl(testcaseId, sourceUrl) {
-  // Use the API replay endpoint which handles the redirect with embed=true
-  const apiRoot = apiRootFromConsoleUrl(sourceUrl) || process.env.TD_API_ROOT || 'https://api.testdriver.ai';
+function normalizeEmbedUrl(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const url = new URL(rawUrl);
+    if (!url.pathname.includes('/replay/')) return null;
+    if (!url.searchParams.get('share')) return null;
+    url.searchParams.set('embed', 'true');
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+// Resolve the best embed URL for docs:
+// 1) explicit embedUrl from manifest (preferred)
+// 2) replayUrl in manifest (converted to embed=true)
+// 3) legacy run URL via testcase replay redirect endpoint
+function resolveReplayEmbedUrl(manifestEntry) {
+  const directEmbed = normalizeEmbedUrl(manifestEntry?.embedUrl);
+  if (directEmbed) return directEmbed;
+
+  const replayEmbed = normalizeEmbedUrl(manifestEntry?.replayUrl);
+  if (replayEmbed) return replayEmbed;
+
+  const testcaseId = manifestEntry?.url ? extractTestcaseId(manifestEntry.url) : null;
+  if (!testcaseId) return null;
+
+  const apiRoot = apiRootFromConsoleUrl(manifestEntry?.url) || process.env.TD_API_ROOT || 'https://api.testdriver.ai';
   return `${apiRoot}/api/v1/testdriver/testcase/${testcaseId}/replay`;
 }
 
 // Update existing MDX file by finding the marker comment and replacing the iframe
-function updateExistingMDX(existingContent, filename, testcaseId, sourceUrl) {
+function updateExistingMDX(existingContent, filename, replayEmbedUrl) {
   const marker = `{/* ${filename} output */}`;
   
   if (!existingContent.includes(marker)) {
     return null; // Marker not found, can't update
   }
   
-  const replayUrl = generateReplayUrl(testcaseId, sourceUrl);
+  if (!replayEmbedUrl) {
+    return null;
+  }
   
   // Pattern to match the marker followed by the iframe tag
   const escapedFilename = filename.replace(/\./g, '\\.');
@@ -317,7 +352,7 @@ function updateExistingMDX(existingContent, filename, testcaseId, sourceUrl) {
     's'
   );
   
-  const replacement = `$1<iframe \n  src="${replayUrl}"$2/>`;
+  const replacement = `$1<iframe \n  src="${replayEmbedUrl}"$2/>`;
   const updated = existingContent.replace(pattern, replacement);
   
   if (updated === existingContent) {
@@ -353,7 +388,7 @@ function generateMDX(testMeta, manifest, description) {
   const sidebarTitle = generateSidebarTitle(testMeta.filename);
   const shortDescription = generateShortDescription(testMeta);
   const manifestEntry = manifest.examples[testMeta.filename];
-  const testcaseId = manifestEntry?.url ? extractTestcaseId(manifestEntry.url) : null;
+  const replayEmbedUrl = resolveReplayEmbedUrl(manifestEntry);
 
   let mdx = `---
 title: "${title}"
@@ -369,15 +404,14 @@ ${description}
 `;
 
   // Add Live Test Run section if URL exists
-  if (testcaseId) {
-    const replayUrl = generateReplayUrl(testcaseId, manifestEntry?.url);
+  if (replayEmbedUrl) {
     mdx += `## Live Test Run
 
 Watch this test execute in a real sandbox environment:
 
 {/* ${testMeta.filename} output */}
 <iframe 
-  src="${replayUrl}" 
+  src="${replayEmbedUrl}" 
   width="100%" 
   height="600" 
   style={{ border: "1px solid #333", borderRadius: "8px" }}
@@ -574,9 +608,9 @@ async function main() {
 
         // Update iframe URL if manifest entry exists
         const manifestEntry = manifest.examples[testMeta.filename];
-        const testcaseId = manifestEntry?.url ? extractTestcaseId(manifestEntry.url) : null;
-        if (testcaseId) {
-          const iframeUpdated = updateExistingMDX(content, testMeta.filename, testcaseId, manifestEntry.url);
+        const replayEmbedUrl = resolveReplayEmbedUrl(manifestEntry);
+        if (replayEmbedUrl) {
+          const iframeUpdated = updateExistingMDX(content, testMeta.filename, replayEmbedUrl);
           if (iframeUpdated && iframeUpdated !== content) {
             content = iframeUpdated;
             changed = true;

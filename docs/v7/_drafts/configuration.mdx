@@ -205,18 +205,6 @@ const { testdriver, dashcam } = await electron(context, {
 
 ## Cache Configuration
 
-### Prompt Cache
-
-Configure AI prompt caching:
-
-```javascript
-// Disable prompt cache globally
-process.env.TD_NO_PROMPT_CACHE = 'true';
-
-// Per call
-await testdriver.ai('click button', false); // bypass cache
-```
-
 ### Selector Cache
 
 Configure element location caching:

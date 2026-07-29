@@ -10,7 +10,19 @@ function createCommandDefinitions(agent) {
     init: {
       description: "Initialize a new TestDriver project with Vitest SDK examples",
       args: {},
-      flags: {},
+      flags: {
+        client: Flags.string({
+          description:
+            "AI client(s) to install into (comma-separated, or 'all'). e.g. --client claude-code,cursor. Omit for an interactive picker.",
+          multiple: false,
+        }),
+        "sample-test": Flags.boolean({
+          description:
+            "Scaffold the example test files (tests/example.test.js + tests/login.js). Use --no-sample-test to skip them (e.g. when an agent writes its own tests).",
+          default: true,
+          allowNo: true,
+        }),
+      },
       handler: async () => {
         // This handler is special - it doesn't need an agent instance
         // It just scaffolds files, so it will be handled by the CLI command

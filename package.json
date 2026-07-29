@@ -1,6 +1,6 @@
 {
   "name": "testdriverai",
-  "version": "7.9.3",
+  "version": "7.11.38",
   "description": "Next generation autonomous AI agent for end-to-end testing of web & desktop",
   "main": "sdk.js",
   "types": "sdk.d.ts",
@@ -12,6 +12,18 @@
     "./core": {
       "types": "./lib/core/index.d.ts",
       "default": "./lib/core/index.js"
+    },
+    "./mcp-core": {
+      "types": "./mcp-server/dist/core/actions.d.ts",
+      "default": "./mcp-server/dist/core/actions.js"
+    },
+    "./mcp-core/provision-types": {
+      "types": "./mcp-server/dist/provision-types.d.ts",
+      "default": "./mcp-server/dist/provision-types.js"
+    },
+    "./mcp-core/env-utils": {
+      "types": "./mcp-server/dist/env-utils.d.ts",
+      "default": "./mcp-server/dist/env-utils.js"
     },
     "./vitest": {
       "types": "./interfaces/vitest-plugin.d.ts",
@@ -37,8 +49,8 @@
     "start": "node bin/testdriverai.js",
     "dev": "DEV=true node bin/testdriverai.js",
     "debug": "DEV=true VERBOSE=true node bin/testdriverai.js",
-    "docs": "npm run docs:skills && cd docs && npx mint@latest dev --port 3002",
-    "docs:dev": "cd docs && npx mint dev --port 3002",
+    "docs": "npm run docs:skills && cd docs && npx mint@latest dev --port 3003",
+    "docs:dev": "cd docs && npx mint dev --port 3003",
     "docs:build": "npm run docs:skills && cd docs && npx mint@latest build",
     "docs:links": "node docs/_scripts/link-replacer.js",
     "docs:skills": "node docs/_scripts/generate-skills.js",
@@ -46,6 +58,7 @@
     "docs:extract-urls": "node docs/_scripts/extract-example-urls.js",
     "bundle": "node build.mjs",
     "test": "mocha test/*",
+    "test:unit": "vitest run --config vitest.unit.config.mjs",
     "test:sdk": "vitest run",
     "test:sdk:dev": "vitest run --project dev",
     "test:sdk:staging": "vitest run --project staging",

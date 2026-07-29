@@ -2,35 +2,82 @@
 title: Using TestDriver with Claude Code (MCP)
 ---
 
-TestDriver exposes test results and analytics over an **HTTP MCP server**, so Claude Code (or any MCP-compatible client) can inspect your test runs, failures, and filters.
+TestDriver ships as a native [Claude Code plugin](https://docs.claude.com/en/docs/claude-code/plugins) that bundles the **TestDriver MCP server**, the **`testdriver` expert sub-agent**, and all **TestDriver skills**. You get everything you need to drive TestDriver from Claude Code with a single install.
 
-This guide assumes:
+> The plugin lives inside the `testdriverai` npm package at `ai/.claude-plugin/plugin.json`, and the marketplace entry lives at `.claude-plugin/marketplace.json` in this repo.
 
-- Your API server is running the MCP endpoint at `POST /api/v1/mcp`
-- You have a **team or user API key** for authentication
-- You are using this repo (`testdriverai`) as the SDK / local tooling
-
-## 1. Configure an API key
-
-Get your API key from the team settings:
+## 1. Get a TestDriver API key
 
 - Visit your team page (e.g. `https://console.testdriver.ai/team`)
 - Create or copy a **Team API Key** (or User API Key)
-- Store it locally as an environment variable, for example:
+- Export it in your shell so Claude Code can pass it to the MCP server:
 
-```bash
-export TD_API_KEY="your_api_key_here"
+  ```bash
+  export TD_API_KEY="your_api_key_here"
+  ```
+
+## 2. Install the plugin in Claude Code
+
+From inside Claude Code, add this repo as a plugin marketplace and install the `testdriver` plugin:
+
+```text
+/plugin marketplace add testdriverai/testdriverai
+/plugin install testdriver@testdriver
 ```
 
-The MCP server expects this API key in the `X-Api-Key` header (or `Authorization: Bearer <key>`).
+That registers three things:
 
-## 2. HTTP MCP endpoint contract
+- **`testdriver` MCP server** — spawned via `npx -p testdriverai testdriverai-mcp`, with `TD_API_KEY` forwarded from your environment.
+- **`testdriver` sub-agent** — the TestDriver expert agent from `ai/agents/testdriver.md`. Invoke it with `@testdriver ...`.
+- **TestDriver skills** — every `ai/skills/testdriver-*` skill, auto-loaded by Claude Code.
+
+## 3. Write tests with the agent
+
+In a Claude Code session, delegate to the agent:
+
+```text
+@testdriver Write a test that signs into https://example.com and adds an item to the cart.
+```
+
+The agent will use the TestDriver MCP tools (`session_start`, `find`, `click`, `type`, `assert`, …) to interactively build a Vitest test, append generated code to your test file after every action, and run it with `vitest run` until it passes.
+
+For the full agent guide, see the [`testdriver` agent definition](https://github.com/testdriverai/testdriverai/blob/main/ai/agents/testdriver.md) and the [MCP workflow skill](https://github.com/testdriverai/testdriverai/blob/main/ai/skills/testdriver-mcp-workflow/SKILL.md).
+
+## Manual MCP configuration (no plugin)
+
+If you prefer not to use the plugin, you can register the MCP server manually in any MCP-compatible client (Claude Desktop, Cursor, VS Code, …):
+
+```json
+{
+  "mcpServers": {
+    "testdriver": {
+      "command": "npx",
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
+      "env": {
+        "TD_API_KEY": "${TD_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+This is the same config the plugin wires up for you — the plugin just bundles it alongside the agent and skills.
+
+---
+
+## Observing test runs via HTTP MCP
+
+TestDriver also exposes **test results and analytics** over an HTTP MCP endpoint, so Claude Code (or any MCP-compatible client) can inspect your test runs, failures, and filters without provisioning a sandbox.
+
+### HTTP MCP endpoint contract
 
 The HTTP endpoint lives at:
 
 ```text
 POST /api/v1/mcp
 ```
+
+It expects the TestDriver API key in the `X-Api-Key` header (or `Authorization: Bearer <key>`).
 
 Common request shapes:
 
@@ -89,7 +136,7 @@ The MCP server advertises at least these tools in `list_tools`:
 - `get_filter_options`  
   Get branch, suite, repo, filename, commit, status, platform, and test name options for building queries.
 
-## 3. Claude Code MCP server configuration
+### Pointing Claude Code at the HTTP MCP endpoint
 
 You can point Claude Code at the HTTP MCP endpoint using a JSON configuration similar to:
 
@@ -137,12 +184,12 @@ For local development:
 }
 ```
 
-## 4. Skills documentation for Claude
+### Skills documentation for Claude
 
-Claude Code expects a `SKILLs.md` file to explain how to use a server. In this repo:
+Claude Code loads the agent and skills automatically when you install the plugin (see step 2). The underlying sources are:
 
 - `ai/agents/testdriver.md` contains the **full TestDriver Agent Guide**
-- `SKILLs.md` acts as a short wrapper that points Claude (and other agents) to the agent guide
+- `ai/skills/testdriver-*/SKILL.md` provide task-specific skills (MCP workflow, assertions, provisioning, etc.)
 
 Use these as the primary reference for:
 

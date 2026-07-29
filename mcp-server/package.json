@@ -10,7 +10,9 @@
     "build:ui": "cross-env INPUT=mcp-app.html vite build",
     "dev": "tsx watch src/server.ts",
     "serve": "tsx src/server.ts",
-    "start": "node dist/server.js"
+    "serve:http": "cross-env TD_MCP_TRANSPORT=http tsx src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.0.0",
@@ -26,6 +28,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
-    "vite-plugin-singlefile": "^2.3.0"
+    "vite-plugin-singlefile": "^2.3.0",
+    "vitest": "^4.0.18"
   }
 }

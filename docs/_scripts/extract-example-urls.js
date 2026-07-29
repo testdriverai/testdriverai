@@ -15,6 +15,19 @@ const path = require("path");
 
 const MANIFEST_PATH = path.join(__dirname, "../_data/examples-manifest.json");
 
+function deriveEmbedUrlFromReplayUrl(replayUrl) {
+  if (!replayUrl) return null;
+  try {
+    const url = new URL(replayUrl);
+    if (!url.pathname.includes("/replay/")) return null;
+    if (!url.searchParams.get("share")) return null;
+    url.searchParams.set("embed", "true");
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -81,12 +94,16 @@ function processResultsDir(resultsDir) {
         const result = JSON.parse(content);
         const testFileName = path.basename(result.test?.file || result.testFile || entry.name);
         const url = result.urls?.testRun || result.testRunLink;
+        const replayUrl = result.replay?.url || result.replayUrl || null;
+        const embedUrl = result.replay?.embedUrl || deriveEmbedUrlFromReplayUrl(replayUrl);
 
-        if (!url) continue;
+        if (!url && !embedUrl) continue;
 
         const isNew = !manifest.examples[testFileName];
         manifest.examples[testFileName] = {
-          url: url,
+          url: url || manifest.examples[testFileName]?.url || null,
+          ...(replayUrl ? { replayUrl } : {}),
+          ...(embedUrl ? { embedUrl } : {}),
           lastUpdated: result.date || new Date().toISOString(),
         };
 
@@ -96,7 +113,8 @@ function processResultsDir(resultsDir) {
           stats.updated++;
         }
 
-        console.log(`${isNew ? "➕" : "🔄"} ${testFileName}: ${url}`);
+        const displayUrl = embedUrl || url || "(no URL)";
+        console.log(`${isNew ? "➕" : "🔄"} ${testFileName}: ${displayUrl}`);
       } catch (err) {
         console.warn(`⚠️  Failed to read ${jsonFile}: ${err.message}`);
       }

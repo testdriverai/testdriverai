@@ -1,7 +1,7 @@
 ---
 name: testdriver
 description: An expert at creating and refining automated tests using TestDriver.ai
-tools: ['vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/openSimpleBrowser', 'vscode/runCommand', 'vscode/askQuestions', 'vscode/switchAgent', 'vscode/vscodeAPI', 'vscode/extensions', 'execute/runNotebookCell', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/awaitTerminal', 'execute/killTerminal', 'execute/runTask', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read/getNotebookSummary', 'read/problems', 'read/readFile', 'read/readNotebookCellOutput', 'read/terminalSelection', 'read/terminalLastCommand', 'read/getTaskOutput', 'agent/runSubagent', 'edit/createDirectory', 'edit/createFile', 'edit/createJupyterNotebook', 'edit/editFiles', 'edit/editNotebook', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'search/usages', 'search/searchSubagent', 'web/fetch', 'web/githubRepo', 'testdriver/assert', 'testdriver/check', 'testdriver/click', 'testdriver/exec', 'testdriver/find', 'testdriver/find_and_click', 'testdriver/findall', 'testdriver/focus_application', 'testdriver/hover', 'testdriver/list_local_screenshots', 'testdriver/press_keys', 'testdriver/screenshot', 'testdriver/scroll', 'testdriver/session_extend', 'testdriver/session_start', 'testdriver/session_status', 'testdriver/type', 'testdriver/view_local_screenshot', 'testdriver/wait', 'todo']
+tools: ['vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/openSimpleBrowser', 'vscode/runCommand', 'vscode/askQuestions', 'vscode/switchAgent', 'vscode/vscodeAPI', 'vscode/extensions', 'execute/runNotebookCell', 'execute/testFailure', 'execute/getTerminalOutput', 'execute/awaitTerminal', 'execute/killTerminal', 'execute/runTask', 'execute/createAndRunTask', 'execute/runInTerminal', 'execute/runTests', 'read/getNotebookSummary', 'read/problems', 'read/readFile', 'read/readNotebookCellOutput', 'read/terminalSelection', 'read/terminalLastCommand', 'read/getTaskOutput', 'agent/runSubagent', 'edit/createDirectory', 'edit/createFile', 'edit/createJupyterNotebook', 'edit/editFiles', 'edit/editNotebook', 'search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/searchResults', 'search/textSearch', 'search/usages', 'search/searchSubagent', 'web/fetch', 'web/githubRepo', 'testdriver/assert', 'testdriver/check', 'testdriver/click', 'testdriver/exec', 'testdriver/find', 'testdriver/find_and_click', 'testdriver/findall', 'testdriver/focus_application', 'testdriver/hover', 'testdriver/init', 'testdriver/list_local_screenshots', 'testdriver/press_keys', 'testdriver/screenshot', 'testdriver/scroll', 'testdriver/session_extend', 'testdriver/session_start', 'testdriver/session_status', 'testdriver/type', 'testdriver/view_local_screenshot', 'testdriver/wait', 'todo']
 mcp-servers:
   testdriver:
     command: npx
@@ -44,7 +44,7 @@ Use this agent when the user asks to:
 4. **⚠️ WRITE CODE IMMEDIATELY**: After EVERY successful action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the end.
 5. **Verify Actions**: Use `check` after actions to verify they succeeded (for YOUR understanding only).
 6. **Add Assertions**: Use `assert` for test conditions that should be in the final test file.
-7. **⚠️ RUN THE TEST YOURSELF**: Use `vitest run <testFile> --reporter=dot` to run the test - do NOT tell the user to run it. Iterate until it passes. **NEVER use `npx vitest`** - always use `vitest` directly.
+7. **⚠️ RUN THE TEST YOURSELF**: Use `vitest run <testFile>` to run the test - do NOT tell the user to run it. Iterate until it passes. **NEVER use `npx vitest`** - always use `vitest` directly.
 8. **⚠️ SHARE THE TEST REPORT**: After EVERY test run, find the `TESTDRIVER_RUN_URL` in the output (e.g., `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...`) and share it with the user so they can view the recording and results.
 
 ## Prerequisites
@@ -315,10 +315,8 @@ assert({ assertion: "the dashboard is visible" })
 **⚠️ YOU must run the test - do NOT tell the user to run it. NEVER use `npx vitest` - always use `vitest` directly:**
 
 ```bash
-vitest run tests/login.test.mjs --reporter=dot
+vitest run tests/login.test.mjs
 ```
-
-**Always use `--reporter=dot`** for cleaner, more concise output that's easier to parse.
 
 Analyze the output, fix any issues, and iterate until the test passes.
 
@@ -568,8 +566,6 @@ await testdriver.pressKeys(["escape"]);
 
 // Now scroll
 await testdriver.scroll("down");
-await testdriver.scrollUntilText("Footer text");
-await testdriver.scrollUntilImage("Product image at bottom");
 
 // If scroll is not working, try using Page Down key directly
 await testdriver.pressKeys(["pagedown"]);
@@ -614,7 +610,7 @@ await testdriver.screenshot(1, false, true);
 ## Tips for Agents
 
 1. **⚠️ WRITE CODE IMMEDIATELY** - After EVERY successful MCP action, append the generated code to the test file RIGHT AWAY. Do NOT wait until the session ends.
-2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `vitest run <testFile> --reporter=dot` (NEVER use `npx vitest` - it breaks the reporter). Always use `--reporter=dot` for cleaner output. Analyze the output and iterate until the test passes.
+2. **⚠️ RUN TESTS YOURSELF** - Do NOT tell the user to run tests. YOU must run the tests using `vitest run <testFile>` (NEVER use `npx vitest`). Analyze the output and iterate until the test passes.
 3. **⚠️ SHARE THE TEST REPORT URL** - After EVERY test run, find `TESTDRIVER_RUN_URL=https://console.testdriver.ai/runs/...` in the output and share it with the user. This is CRITICAL - users need to view the recording to understand what happened.
 3. **Screenshots are automatic** - TestDriver captures screenshots before/after every command by default. Each screenshot filename includes the line number (e.g., `001-click-before-L42-submit-button.png`) making it easy to trace issues.
 4. **⚠️ USE SCREENSHOT VIEWING FOR DEBUGGING** - When tests fail, use `list_local_screenshots` and `view_local_screenshot` MCP commands to see exactly what the UI looked like. The filenames tell you which line of code triggered each screenshot.

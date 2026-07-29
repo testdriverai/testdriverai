@@ -12,5 +12,5 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/mcp-app.ts", "src/mcp-app.css"]
+  "exclude": ["node_modules", "dist", "src/mcp-app.ts", "src/mcp-app.css", "src/**/*.test.ts"]
 }

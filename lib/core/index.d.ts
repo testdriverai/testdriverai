@@ -39,6 +39,13 @@ export class Dashcam {
   addApplicationLog(application: string, name: string): Promise<void>;
   
   /**
+   * Add a web log to Dashcam
+   * @param pattern - URL pattern to match (e.g., "*example.com*")
+   * @param name - Name/description for the log entry
+   */
+  addWebLog(pattern: string, name: string): Promise<void>;
+  
+  /**
    * Start recording
    * @returns Promise that resolves when recording starts
    */
@@ -68,7 +75,7 @@ export interface LogConfig {
   /**
    * Type of log entry
    */
-  type: 'file' | 'application';
+  type: 'file' | 'application' | 'web';
   
   /**
    * Path to file (for file logs)
@@ -79,6 +86,11 @@ export interface LogConfig {
    * Application name (for application logs)
    */
   application?: string;
+  
+  /**
+   * URL pattern (for web logs, e.g., "*example.com*")
+   */
+  pattern?: string;
   
   /**
    * Name/description for the log entry

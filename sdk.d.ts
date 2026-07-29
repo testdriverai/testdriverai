@@ -277,12 +277,14 @@ export interface TestDriverOptions {
   e2bTemplateId?: string;
   /** Cache key for element finding operations. If provided, enables caching tied to this key */
   cacheKey?: string;
-  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
+  /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Looks up the sandbox id from `.testdriver/last-sandbox` if `sandboxId` is not also provided. */
   reconnect?: boolean;
+  /** Explicit sandbox id to reconnect to. Implies `newSandbox: false` unless explicitly overridden. */
+  sandboxId?: string;
   /** Enable/disable Dashcam video recording (default: true) */
   dashcam?: boolean;
   /**
-   * Enable automatic screenshots before and after each command (default: true)
+   * Enable automatic screenshots before and after each command (default: false)
    * Screenshots are saved to .testdriver/screenshots/<test>/ with descriptive filenames
    * Format: <seq>-<action>-<phase>-L<line>-<description>.png
    * Example: 001-click-before-L42-submit-button.png
@@ -319,6 +321,16 @@ export interface TestDriverOptions {
 export interface ConnectOptions {
   /** Existing sandbox ID to reconnect to */
   sandboxId?: string;
+  /**
+   * Require `sandboxId` to be attached exactly: throw if that sandbox is gone
+   * rather than silently provisioning a fresh one in its place (default: false).
+   *
+   * The replacement would be blank — provision methods (chrome, vscode, …) only
+   * run at session start and are never re-applied on a reconnect — so callers
+   * that depend on the sandbox's existing state should set this and handle the
+   * error by provisioning a new session explicitly.
+   */
+  requireSandbox?: boolean;
   /** Force creation of a new sandbox */
   newSandbox?: boolean;
   /** Reconnect to the last used sandbox instead of creating a new one. When true, provision methods (chrome, vscode, installer, etc.) will be skipped since the application is already running. Throws error if no previous sandbox exists. */
@@ -1042,15 +1054,15 @@ export default class TestDriverSDK {
   disconnect(): Promise<void>;
 
   /**
-   * Get the last sandbox info from the stored file
+   * Get info about the most recently provisioned sandbox (from this SDK instance
+   * if connected, otherwise read from `.testdriver/last-sandbox`).
    * @returns Last sandbox info or null if not found
    */
   getLastSandboxId(): {
-    sandboxId: string | null;
-    os: "windows" | "linux";
-    ami: string | null;
-    instanceType: string | null;
-    timestamp: string | null;
+    sandboxId: string;
+    os?: "windows" | "linux";
+    e2bTemplateId?: string | null;
+    createdAt?: number;
   } | null;
 
   // Element Finding API
@@ -1086,7 +1098,7 @@ export default class TestDriverSDK {
   find(description: string, cacheThreshold?: number): ChainableElementPromise;
   find(
     description: string,
-    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; confidence?: number; type?: "text" | "image" | "ui" | "any"; ai?: AIConfig; cache?: { thresholds?: { screen?: number; element?: number } } },
+    options?: { cacheThreshold?: number; cacheKey?: string; timeout?: number; confidence?: number; type?: "text" | "image" | "ui" | "any"; zoom?: boolean | number; verify?: boolean; ai?: AIConfig; cache?: { thresholds?: { screen?: number; element?: number } } },
   ): ChainableElementPromise;
 
   /**

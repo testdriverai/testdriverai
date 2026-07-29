@@ -1,9 +1,94 @@
 {
   "name": "testdriver",
-  "description": "TestDriver plugin: SDK guidance plus MCP access to test runs and results.",
-  "version": "1.0.0",
+  "version": "7.9.54-test",
+  "description": "TestDriver.ai Claude Code plugin: MCP server, TestDriver expert agent, and skills for authoring computer-use end-to-end tests with Vitest.",
   "author": {
-    "name": "TestDriver"
-  }
+    "name": "TestDriver.ai",
+    "url": "https://testdriver.ai"
+  },
+  "homepage": "https://docs.testdriver.ai",
+  "repository": "https://github.com/testdriverai/testdriverai",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "testdriver",
+    "testing",
+    "e2e",
+    "mcp",
+    "vitest",
+    "automation",
+    "computer-use",
+    "browser",
+    "ai",
+    "qa"
+  ],
+  "mcpServers": {
+    "testdriver": {
+      "command": "npx",
+      "args": ["-p", "testdriverai", "testdriverai-mcp"],
+      "env": {
+        "TD_API_KEY": "${TD_API_KEY}"
+      }
+    }
+  },
+  "agents": [
+    "./agents/testdriver.md"
+  ],
+  "skills": [
+    "./skills/testdriver-ai",
+    "./skills/testdriver-assert",
+    "./skills/testdriver-aws-setup",
+    "./skills/testdriver-cache",
+    "./skills/testdriver-caching",
+    "./skills/testdriver-captcha",
+    "./skills/testdriver-ci-cd",
+    "./skills/testdriver-click",
+    "./skills/testdriver-client",
+    "./skills/testdriver-cloud",
+    "./skills/testdriver-customizing-devices",
+    "./skills/testdriver-dashcam",
+    "./skills/testdriver-debugging-with-screenshots",
+    "./skills/testdriver-device-config",
+    "./skills/testdriver-double-click",
+    "./skills/testdriver-elements",
+    "./skills/testdriver-enterprise",
+    "./skills/testdriver-errors",
+    "./skills/testdriver-events",
+    "./skills/testdriver-examples",
+    "./skills/testdriver-exec",
+    "./skills/testdriver-find",
+    "./skills/testdriver-focus-application",
+    "./skills/testdriver-generating-tests",
+    "./skills/testdriver-hosted",
+    "./skills/testdriver-hover",
+    "./skills/testdriver-locating-elements",
+    "./skills/testdriver-making-assertions",
+    "./skills/testdriver-mcp",
+    "./skills/testdriver-mcp-workflow",
+    "./skills/testdriver-mouse-down",
+    "./skills/testdriver-mouse-up",
+    "./skills/testdriver-parse",
+    "./skills/testdriver-performing-actions",
+    "./skills/testdriver-press-keys",
+    "./skills/testdriver-provision",
+    "./skills/testdriver-quickstart",
+    "./skills/testdriver-redraw",
+    "./skills/testdriver-reusable-code",
+    "./skills/testdriver-right-click",
+    "./skills/testdriver-running-tests",
+    "./skills/testdriver-screenshot",
+    "./skills/testdriver-screenshots",
+    "./skills/testdriver-scroll",
+    "./skills/testdriver-secrets",
+    "./skills/testdriver-self-hosted",
+    "./skills/testdriver-test-results-json",
+    "./skills/testdriver-test-writer",
+    "./skills/testdriver-testdriver",
+    "./skills/testdriver-testdriver-mechanic",
+    "./skills/testdriver-type",
+    "./skills/testdriver-variables",
+    "./skills/testdriver-wait",
+    "./skills/testdriver-waiting-for-elements",
+    "./skills/testdriver-what-is-testdriver"
+  ]
 }
 

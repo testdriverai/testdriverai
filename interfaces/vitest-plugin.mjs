@@ -10,6 +10,7 @@ import { setTestRunInfo } from "./shared-test-state.mjs";
 // Use createRequire to import CommonJS modules without esbuild processing
 const require = createRequire(import.meta.url);
 const channelConfig = require("../lib/resolve-channel.js");
+const environments = require("../lib/environments.json");
 
 // Import Sentry for error reporting
 const Sentry = require("@sentry/node");
@@ -39,8 +40,8 @@ function initializeSentry() {
         "https://452bd5a00dbd83a38ee8813e11c57694@o4510262629236736.ingest.us.sentry.io/4510480443637760",
       environment: channelConfig.sentryEnvironment,
       release: version,
-      sampleRate: 1.0,
-      tracesSampleRate: 1.0,
+      sampleRate: 0.01,
+      tracesSampleRate: 0.01,
       enableLogs: true,
       integrations: [Sentry.httpIntegration(), Sentry.nodeContextIntegration()],
       initialScope: {
@@ -820,10 +821,6 @@ class TestDriverReporter {
     // Initialize Sentry for error reporting
     initializeSentry();
 
-    // Store project root for making file paths relative
-    pluginState.projectRoot = ctx.config.root || process.cwd();
-    logger.debug("Project root:", pluginState.projectRoot);
-
     // NOW read the API key and API root (after setupFiles have run, including dotenv/config)
     pluginState.apiKey = this.options.apiKey || process.env.TD_API_KEY;
     pluginState.apiRoot =
@@ -875,7 +872,7 @@ class TestDriverReporter {
       // Create test run via direct API call
       const testRunData = {
         runId: pluginState.testRunId,
-        suiteName: getSuiteName(),
+        suiteName: getSuiteName(this.ctx),
         ...pluginState.gitInfo,
       };
 
@@ -1094,27 +1091,25 @@ class TestDriverReporter {
     const sessionId = meta.sessionId || null;
     const platform = meta.platform || null;
     const sandboxId = meta.sandboxId || null;
-    let testFile = meta.testFile || "unknown";
-    const testOrder = meta.testOrder !== undefined ? meta.testOrder : 0;
 
-    // If testFile not in meta, fallback to test object properties
-    if (testFile === "unknown") {
-      const absolutePath =
-        test.module?.task?.filepath ||
-        test.module?.file?.filepath ||
-        test.module?.file?.name ||
-        test.file?.filepath ||
-        test.file?.name ||
-        test.suite?.file?.filepath ||
-        test.suite?.file?.name ||
-        test.location?.file ||
-        "unknown";
-      testFile =
-        pluginState.projectRoot && absolutePath !== "unknown"
-          ? path.relative(pluginState.projectRoot, absolutePath)
-          : absolutePath;
-      logger.debug(`Resolved testFile from fallback: ${testFile}`);
+    // Test identity from Vitest's standard reporter API (TestCase in v4+).
+    const projectName = test.project?.name || null;
+    const projectRoot = test.project?.config?.root || process.cwd();
+    const moduleId = test.module?.moduleId || null;
+    let testFile =
+      moduleId && !moduleId.includes("://") ? path.relative(projectRoot, moduleId) : "unknown";
+    if (path.isAbsolute(testFile) || testFile.startsWith("..")) testFile = "unknown";
+
+    // Full nested describe path (top-level first), joined with " > ".
+    const suitePath = [];
+    {
+      let cursor = test.parent;
+      while (cursor && cursor.type === "suite") {
+        suitePath.unshift(cursor.name);
+        cursor = cursor.parent;
+      }
     }
+    const suiteName = suitePath.length > 0 ? suitePath.join(" > ") : null;
 
     // Update test run platform from first test that reports it
     if (platform && !pluginState.detectedPlatform) {
@@ -1150,7 +1145,6 @@ class TestDriverReporter {
         // We only want actual SDK crashes and exceptions reported to Sentry.
       }
 
-      const suiteName = test.suite?.name;
       const startTime = Date.now() - duration; // Calculate start time from duration
       // In Vitest v4, retryCount is on diagnostic(), not result()
       // result() only returns { state, errors }, while diagnostic() has retryCount, duration, etc.
@@ -1160,12 +1154,14 @@ class TestDriverReporter {
       const consoleUrl = getConsoleUrl(pluginState.apiRoot);
       const hasRetries = retryCount > 0 && dashcamUrls.length > 1;
 
-      // Record a single test case with all metadata
+      // Record a single test case with all metadata.
+      // Field names match the current API contract; `projectName` is a
+      // forward-compatible addition (ignored by the API today).
       const testCaseData = {
         runId: testRunId,
         testName: test.name,
         testFile: testFile,
-        testOrder: testOrder,
+        projectName: projectName,
         status,
         startTime: startTime,
         endTime: Date.now(),
@@ -1186,7 +1182,13 @@ class TestDriverReporter {
       // Include per-attempt replay URLs for retry visibility
       if (dashcamUrls.length > 0) {
         const attemptUrls = dashcamUrls
-          .map(a => ({ attempt: a.attempt, url: a.url || null, sessionId: a.sessionId || null }));
+          .map(a => ({
+            attempt: a.attempt,
+            url: a.url || null,
+            sessionId: a.sessionId || null,
+            errorMessage: a.errorMessage || null,
+            errorStack: a.errorStack || null,
+          }));
         testCaseData.replayUrls = attemptUrls;
       }
 
@@ -1195,7 +1197,7 @@ class TestDriverReporter {
       if (errorStack) testCaseData.errorStack = errorStack;
 
       logger.debug(
-        `Recording test case: ${test.name} (${status}) with testFile: ${testFile}, testOrder: ${testOrder}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`,
+        `Recording test case: ${test.name} (${status}) with testFile: ${testFile}, project: ${projectName}, suite: ${suiteName || "(none)"}, duration: ${duration}ms, replay: ${dashcamUrl ? "yes" : "no"}`,
       );
 
       const testCaseResponse = await recordTestCaseDirect(
@@ -1304,32 +1306,13 @@ class TestDriverReporter {
           interactions: testResult.interactions || { total: 0, cached: 0, byType: {} },
         };
 
-        // Sanitize testName for filesystem use
-        const safeName = (test.name || "unknown").replace(/[^a-zA-Z0-9_.-]/g, "_").substring(0, 200);
+        // Use Vitest's stable per-test id as the filename — it's unique within
+        // a run and avoids the name-collision problem entirely.
         const resultDir = path.join(process.cwd(), ".testdriver", "results", testFile);
         fs.mkdirSync(resultDir, { recursive: true });
-
-        // Include a stable unique suffix in the filename to avoid collisions
-        // when multiple tests in the same file share the same name.
-        const hashSourceParts = [];
-        if (test.id) {
-          hashSourceParts.push(String(test.id));
-        }
-        if (Array.isArray(test.suitePath)) {
-          hashSourceParts.push(test.suitePath.join(" > "));
-        }
-        if (test.file && (test.file.name || test.file.path)) {
-          hashSourceParts.push(test.file.name || test.file.path);
-        }
-        // Fallback to the test name if no other identifiers are available.
-        if (hashSourceParts.length === 0) {
-          hashSourceParts.push(test.name || "unknown");
-        }
-        const hashSource = hashSourceParts.join(" | ");
-        const uniqueHash = crypto.createHash("sha256").update(hashSource).digest("hex").slice(0, 8);
-
+        const safeId = (test.id || "unknown").replace(/[^\w.-]/g, "_");
         fs.writeFileSync(
-          path.join(resultDir, `${safeName}-${uniqueHash}.json`),
+          path.join(resultDir, `${safeId}.json`),
           JSON.stringify(resultData, null, 2),
         );
       }
@@ -1376,11 +1359,11 @@ function getConsoleUrl(apiRoot) {
     return `https://${flyMatch[1]}-web.fly.dev`;
   }
 
-  // Known channel API URLs -> console equivalents
-  // e.g. https://api-canary.testdriver.ai -> https://console-canary.testdriver.ai
-  for (const url of Object.values(channelConfig.channels)) {
-    if (url === apiRoot) {
-      return url.replace("api", "console").replace("1337", "3001");
+  // Known channel API URLs -> console equivalents (from environments.json)
+  // e.g. https://api-dev.testdriver.ai -> https://console-dev.testdriver.ai
+  for (const env of Object.values(environments)) {
+    if (env.apiRoot === apiRoot && env.consoleUrl) {
+      return env.consoleUrl;
     }
   }
 
@@ -1404,7 +1387,14 @@ function generateRunId() {
   return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 }
 
-function getSuiteName() {
+function getSuiteName(ctx) {
+  // Derived from Vitest's configured projects (joined when multiple).
+  // Must always return a string: the test-run-create API requires suiteName.
+  const projects = ctx?.projects;
+  if (Array.isArray(projects) && projects.length > 0) {
+    const names = projects.map((p) => p?.name).filter(Boolean);
+    if (names.length > 0) return names.join(",");
+  }
   return process.env.npm_package_name || path.basename(process.cwd());
 }
 
@@ -1490,6 +1480,24 @@ function getGitInfo() {
     if (process.env.GITHUB_REF_NAME) info.branch = process.env.GITHUB_REF_NAME;
     if (process.env.GITHUB_SHA) info.commit = process.env.GITHUB_SHA;
     if (process.env.GITHUB_ACTOR) info.author = process.env.GITHUB_ACTOR;
+
+    // The GitHub account the run is attributed to. Sent separately from
+    // `author` — which is the same value here but means "git display name"
+    // outside GitHub CI — so the API has one unambiguous field to bill per
+    // GitHub user on. The API still falls back to `author` for SDKs older
+    // than this, so don't assume this field is always present server-side.
+    if (process.env.GITHUB_ACTOR) info.githubActor = process.env.GITHUB_ACTOR;
+    if (process.env.GITHUB_RUN_ID) info.githubRunId = process.env.GITHUB_RUN_ID;
+    if (process.env.GITHUB_RUN_ATTEMPT) {
+      info.githubRunAttempt = Number(process.env.GITHUB_RUN_ATTEMPT);
+    }
+    // Exported to $GITHUB_ENV by the testdriver action after it verifies the
+    // OIDC token (see `action/action.yml`). GitHub itself provides no
+    // GITHUB_ACTOR_ID env var, so this is absent whenever the caller
+    // authenticated with a bare TD_API_KEY secret instead of our action.
+    if (process.env.TD_GITHUB_ACTOR_ID) {
+      info.githubActorId = process.env.TD_GITHUB_ACTOR_ID;
+    }
   } else if (process.env.GITLAB_CI) {
     if (process.env.CI_PROJECT_PATH) info.repo = process.env.CI_PROJECT_PATH;
     if (process.env.CI_COMMIT_BRANCH)
