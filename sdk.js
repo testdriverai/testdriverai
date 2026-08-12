@@ -462,6 +462,9 @@ class Element {
     const startTime = absoluteTimestamp;
     let response = null;
     let findError = null;
+    // Resolved find options, hoisted so they can be reported to interaction tracking
+    let resolvedZoom = 0;
+    let resolvedVerify = this.sdk.verifyDefault === true;
 
     const debugMode =
       process.env.VERBOSE || process.env.TD_DEBUG;
@@ -568,6 +571,14 @@ class Element {
         );
       }
 
+      // Remember the resolved options so click()/hover() and interaction
+      // tracking can report what this find actually ran with
+      const requestedZoom = typeof options === "object" && options !== null ? options.zoom : undefined;
+      resolvedZoom = requestedZoom === true ? 1 : requestedZoom === false ? 0 : typeof requestedZoom === "number" ? requestedZoom : 0;
+      resolvedVerify = verify;
+      this._zoom = resolvedZoom;
+      this._verify = resolvedVerify;
+
       response = await this.sdk.apiClient.req("find", {
         session: this.sdk.getSessionId(),
         element: description,
@@ -577,7 +588,7 @@ class Element {
         cacheKey: cacheKey,
         os: this.sdk.os,
         resolution: this.sdk.resolution,
-        zoom: zoom === true ? 1 : zoom === false ? 0 : zoom,
+        zoom: resolvedZoom,
         skipVerify: !verify,
         confidence: minConfidence,
         type: elementType,
@@ -612,6 +623,18 @@ class Element {
         this.sdk.emitter.emit(events.log.log, notFoundMessage);
       }
     } catch (error) {
+      // A rejected or missing OpenRouter key breaks every find the same way.
+      // Reporting it as "element not found" hides the one thing the user needs
+      // to know, so it escapes instead of being folded into the not-found path.
+      if (error.isConfigError) {
+        const { events } = require("./agent/events.js");
+        this.sdk.emitter.emit(
+          events.log.log,
+          formatter.formatError("Cannot run find()", error),
+        );
+        throw error;
+      }
+
       this._response = error.response
         ? this._sanitizeResponse(error.response)
         : null;
@@ -648,12 +671,15 @@ class Element {
           success: this._found,
           error: findError,
           cacheHit: findCacheHit,
+          coordinates: response?.coordinates ?? null,
           selector: response?.selector,
           selectorUsed: !!response?.selector,
           confidence: response?.confidence ?? null,
           reasoning: response?.reasoning ?? null,
           similarity: response?.similarity ?? null,
           screenshotUrl: response?.screenshotKey ?? null,
+          zoom: resolvedZoom,
+          verify: resolvedVerify,
         })
         .catch((err) => {
           console.warn("Failed to track find interaction:", err.message);
@@ -1027,6 +1053,8 @@ class Element {
       reasoning: this._response?.reasoning ?? null,
       similarity: this._response?.similarity ?? null,
       screenshotUrl: this._response?.screenshotKey ?? null,
+      zoom: this._zoom ?? null,
+      verify: this._verify ?? null,
     };
 
     if (action === "hover") {
@@ -1078,7 +1106,12 @@ class Element {
       cacheHit: this._response?.cacheHit,
       selectorUsed: !!this._response?.selector,
       selector: this._response?.selector,
+      confidence: this._response?.confidence ?? null,
+      reasoning: this._response?.reasoning ?? null,
+      similarity: this._response?.similarity ?? null,
       screenshotUrl: this._response?.screenshotKey ?? null,
+      zoom: this._zoom ?? null,
+      verify: this._verify ?? null,
     };
 
     await this.commands.hover(
@@ -2637,6 +2670,17 @@ CAPTCHA_SOLVER_EOF`,
       }
     } catch (error) {
       const duration = Date.now() - startTime;
+
+      // A rejected or missing OpenRouter key isn't "zero elements matched" —
+      // returning [] here would hide the only thing the user can act on.
+      if (error.isConfigError) {
+        this._lastPromiseSettled = true;
+        this.emitter.emit(
+          events.log.log,
+          formatter.formatError("Cannot run findAll()", error),
+        );
+        throw error;
+      }
 
       // Single log at the end - error
       const formattedMessage = formatter.formatElementsFound(

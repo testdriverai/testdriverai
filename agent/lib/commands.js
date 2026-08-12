@@ -156,6 +156,8 @@ const createCommands = (
    * @param {number} [data.similarity] - Cache similarity score
    * @param {string} [data.screenshotUrl] - S3 key for screenshot
    * @param {boolean} [data.isSecret] - Whether interaction contains sensitive data
+   * @param {number} [data.zoom] - Zoom factor used by the find (0 = disabled)
+   * @param {boolean} [data.verify] - Whether AI verification was enabled for the find
    */
   const trackInteraction = (data) => {
     const sessionId = sessionInstance?.get();
@@ -180,6 +182,8 @@ const createCommands = (
       reasoning: data.reasoning,
       similarity: data.similarity,
       screenshotUrl: data.screenshotUrl,
+      zoom: data.zoom,
+      verify: data.verify,
     }).catch((err) => {
       console.warn(`Failed to track ${data.interactionType} interaction:`, err.message);
     });
@@ -614,9 +618,11 @@ const createCommands = (
             reasoning: elementData.reasoning ?? null,
             similarity: elementData.similarity ?? null,
             screenshotUrl: elementData.screenshotUrl ?? null,
+            zoom: elementData.zoom ?? null,
+            verify: elementData.verify ?? null,
           });
         }
-        
+
         // Wait for redraw and track duration
         const redrawStartTime = Date.now();
         await redraw.wait(5000, redrawOptions);
@@ -662,6 +668,8 @@ const createCommands = (
           confidence: elementData.confidence ?? null,
           reasoning: elementData.reasoning ?? null,
           similarity: elementData.similarity ?? null,
+          zoom: elementData.zoom ?? null,
+          verify: elementData.verify ?? null,
         });
       }
       throw error;
@@ -730,6 +738,8 @@ const createCommands = (
           reasoning: elementData.reasoning ?? null,
           similarity: elementData.similarity ?? null,
           screenshotUrl: elementData.screenshotUrl ?? null,
+          zoom: elementData.zoom ?? null,
+          verify: elementData.verify ?? null,
         });
       }
 
@@ -767,6 +777,8 @@ const createCommands = (
           reasoning: elementData.reasoning ?? null,
           similarity: elementData.similarity ?? null,
           screenshotUrl: elementData.screenshotUrl ?? null,
+          zoom: elementData.zoom ?? null,
+          verify: elementData.verify ?? null,
         });
       }
       throw error;

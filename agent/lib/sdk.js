@@ -31,13 +31,51 @@ const DEFAULT_RETRY_CONFIG = {
 };
 
 /**
+ * API error codes that mean "your configuration is wrong" rather than
+ * "something went wrong this time". These fail identically on every attempt, so
+ * retrying only delays the message the user needs to read.
+ */
+const CONFIG_ERROR_CODES = [
+  "OPENROUTER_KEY_ERROR",
+  "OPENROUTER_KEY_REQUIRED",
+];
+
+/**
+ * Read the API's error code out of a response body, whichever field it used.
+ * @param {Error} error - The axios error
+ * @returns {string|null}
+ */
+function apiErrorCode(error) {
+  const data = error.response?.data;
+  if (!data || typeof data !== "object") return null;
+  return data.code || (typeof data.error === "string" ? data.error : null);
+}
+
+/**
  * Determines if an error is retryable
  * @param {Error} error - The axios error
  * @param {Object} config - Retry configuration
  * @returns {boolean} Whether the request should be retried
  */
 function isRetryableError(error, config = DEFAULT_RETRY_CONFIG) {
-  return true;
+  // A rejected OpenRouter key (or a missing one) is not going to start working
+  // on attempt two — surface it now instead of after ten backoffs.
+  if (CONFIG_ERROR_CODES.includes(apiErrorCode(error))) {
+    return false;
+  }
+
+  // A request the API rejected as malformed won't fix itself either.
+  if (error.response?.status === 400) {
+    return false;
+  }
+
+  // Network errors (no HTTP response)
+  if (!error.response) {
+    return !!error.code && config.retryableNetworkCodes.includes(error.code);
+  }
+
+  // Retry only on explicitly retryable HTTP statuses.
+  return config.retryableStatusCodes.includes(error.response.status);
 }
 
 /**
@@ -566,8 +604,35 @@ const createSDK = (emitter, config, sessionInstance) => {
         throw detailedError;
       }
 
-      // Server errors (5xx) - API is down or having issues
       const status = error.response?.status;
+
+      // Configuration errors (400 + a known code) — the API rejected the call
+      // for a reason the user can fix, most often an OpenRouter key that was
+      // revoked, ran out of credit, or was never configured. These used to
+      // arrive as a bare "Request failed with status code 400" and get folded
+      // into "element not found", so the real cause never reached the user.
+      const code = apiErrorCode(error);
+      if (status === 400 && CONFIG_ERROR_CODES.includes(code)) {
+        const data = error.response.data;
+        const configError = new Error(
+          data.error || data.message || "TestDriver rejected the request",
+        );
+        configError.code = code;
+        configError.isConfigError = true;
+        configError.details = data.details;
+        configError.originalError = error;
+        configError.path = path;
+
+        emitter.emit(events.error.sdk, {
+          message: configError.message,
+          code: configError.code,
+          fullError: error,
+        });
+
+        throw configError;
+      }
+
+      // Server errors (5xx) - API is down or having issues
       if (status >= 500) {
         const serverError = new Error(
           error.response?.data?.message ||
