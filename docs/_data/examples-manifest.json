@@ -2,16 +2,16 @@
   "$schema": "./examples-manifest.schema.json",
   "examples": {
     "assert.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe5850969a1b54e5b454",
-      "lastUpdated": "2026-08-12T00:29:12.175Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf7c67567db3aa600c25",
+      "lastUpdated": "2026-08-15T00:14:52.029Z"
     },
     "drag-and-drop.test.mjs": {
       "url": "https://console.testdriver.ai/runs/69a62b3aaa712ecd3dea730a/69a62b42fc0ac3cc632a918b",
       "lastUpdated": "2026-03-03T00:32:25.275Z"
     },
     "exec-pwsh.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbd81ddd0491255a48cb4",
-      "lastUpdated": "2026-08-12T00:32:06.730Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf6c4a1bfd6ec0e1f6d2",
+      "lastUpdated": "2026-08-15T00:15:11.333Z"
     },
     "match-image.test.mjs": {
       "url": "https://console-test.testdriver.ai/runs/69c8738614b73310c7839412/69c8738c14b73310c783941d",
@@ -22,78 +22,78 @@
       "lastUpdated": "2026-03-03T00:32:25.282Z"
     },
     "hover-text-with-description.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbdb0d98608f90d1e1b5e",
-      "lastUpdated": "2026-08-12T00:32:54.684Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf6f4a1bfd6ec0e1f6d3",
+      "lastUpdated": "2026-08-15T00:15:14.314Z"
     },
     "windows-installer.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbdb2d98608f90d1e1b60",
-      "lastUpdated": "2026-08-12T01:03:26.629Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf717a89140d35ac0879",
+      "lastUpdated": "2026-08-15T00:20:55.348Z"
     },
     "exec-output.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbdb4d98608f90d1e1b61",
-      "lastUpdated": "2026-08-12T00:39:30.114Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf722503be908af5fce7",
+      "lastUpdated": "2026-08-15T00:15:50.882Z"
     },
     "chrome-extension.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbd7f46ab228201ef36dd",
-      "lastUpdated": "2026-08-12T00:32:04.308Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf6a4a1bfd6ec0e1f6d1",
+      "lastUpdated": "2026-08-15T00:15:09.450Z"
     },
     "launch-vscode-linux.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbd9946ab228201ef36e6",
-      "lastUpdated": "2026-08-12T00:39:02.870Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf6e67567db3aa600c21",
+      "lastUpdated": "2026-08-15T00:15:45.787Z"
     },
     "hover-image.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbdcb46ab228201ef36f9",
-      "lastUpdated": "2026-08-12T00:26:51.490Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf744a1bfd6ec0e1f6d4",
+      "lastUpdated": "2026-08-15T00:14:44.406Z"
     },
     "installer.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbdf9d98608f90d1e1b6e",
-      "lastUpdated": "2026-08-12T00:27:37.172Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf7667567db3aa600c22",
+      "lastUpdated": "2026-08-15T00:14:46.353Z"
     },
     "type.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe29d98608f90d1e1b7e",
-      "lastUpdated": "2026-08-12T00:41:23.061Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf782503be908af5fcea",
+      "lastUpdated": "2026-08-15T00:15:56.085Z"
     },
     "press-keys.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe4150969a1b54e5b44e",
-      "replayUrl": "https://console-test.testdriver.ai/replay/6a7bc80ed98608f90d1e1c04?share=GC4dpqRCMp63ZCT1qdQ",
-      "embedUrl": "https://console-test.testdriver.ai/replay/6a7bc80ed98608f90d1e1c04?share=GC4dpqRCMp63ZCT1qdQ&embed=true",
-      "lastUpdated": "2026-08-12T01:10:44.381Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf7a67567db3aa600c23",
+      "replayUrl": "https://console-test.testdriver.ai/replay/6a7fb25f7a89140d35ac08d8?share=oWdvkkslNwCzrK2dTQdRQ",
+      "embedUrl": "https://console-test.testdriver.ai/replay/6a7fb25f7a89140d35ac08d8?share=oWdvkkslNwCzrK2dTQdRQ&embed=true",
+      "lastUpdated": "2026-08-15T00:27:16.577Z"
     },
     "scroll-keyboard.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe89d98608f90d1e1b90",
-      "lastUpdated": "2026-08-12T00:42:54.510Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf8067567db3aa600c26",
+      "lastUpdated": "2026-08-15T00:16:03.070Z"
     },
     "scroll.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbea4d98608f90d1e1b95",
-      "lastUpdated": "2026-08-12T00:37:03.681Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf8667567db3aa600c28",
+      "lastUpdated": "2026-08-15T00:15:35.636Z"
     },
     "scroll-until-image.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe8b46ab228201ef372a",
-      "lastUpdated": "2026-08-12T00:30:03.329Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf817a89140d35ac087a",
+      "lastUpdated": "2026-08-15T00:14:57.791Z"
     },
     "prompt.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe8cddd0491255a48ccc",
-      "lastUpdated": "2026-08-12T00:42:59.230Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf8367567db3aa600c27",
+      "lastUpdated": "2026-08-15T00:16:06.384Z"
     },
     "focus-window.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe8e46ab228201ef372b",
-      "lastUpdated": "2026-08-12T00:43:01.068Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf844a1bfd6ec0e1f6d6",
+      "lastUpdated": "2026-08-15T00:16:07.822Z"
     },
     "captcha-api.test.mjs": {
       "url": "https://console.testdriver.ai/runs/698f7df69e27ce1528d7d087/698f7fb0d3b320ad547d9d44",
       "lastUpdated": "2026-02-13T19:55:05.951Z"
     },
     "element-not-found.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbebe46ab228201ef3732",
-      "lastUpdated": "2026-08-12T00:37:27.165Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf887a89140d35ac087b",
+      "lastUpdated": "2026-08-15T00:15:37.316Z"
     },
     "formatted-logging.test.mjs": {
       "url": "https://console-test.testdriver.ai/runs/69c8738614b73310c7839412/69c873a714b73310c7839450",
       "lastUpdated": "2026-03-29T00:36:10.628Z"
     },
     "hover-text.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbed6d98608f90d1e1b9a",
-      "lastUpdated": "2026-08-12T00:37:51.253Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf8967567db3aa600c29",
+      "lastUpdated": "2026-08-15T00:15:39.033Z"
     },
     "no-provision.test.mjs": {
       "url": "https://console.testdriver.ai/runs/69a62b3aaa712ecd3dea730a/69a62b7706a177a05bccd1cf",
@@ -138,12 +138,12 @@
       "lastUpdated": "2026-02-13T19:55:05.953Z"
     },
     "findall-coffee-icons.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbe7150969a1b54e5b459",
-      "lastUpdated": "2026-08-12T00:29:37.151Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf7e4a1bfd6ec0e1f6d5",
+      "lastUpdated": "2026-08-15T00:14:53.867Z"
     },
     "parse.test.mjs": {
-      "url": "https://console-test.testdriver.ai/runs/6a7bbd67ddd0491255a48cb0/6a7bbeeed98608f90d1e1ba0",
-      "lastUpdated": "2026-08-12T00:38:13.716Z"
+      "url": "https://console-test.testdriver.ai/runs/6a7faf684a1bfd6ec0e1f6cf/6a7faf8b67567db3aa600c2a",
+      "lastUpdated": "2026-08-15T00:15:40.757Z"
     },
     "flake-diffthreshold-001.test.mjs": {
       "url": "https://console.testdriver.ai/runs/69a62b3aaa712ecd3dea730a/69a62bcafc0ac3cc632a91aa",
