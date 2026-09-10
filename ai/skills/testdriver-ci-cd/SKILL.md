@@ -14,7 +14,7 @@ workflow is running inside your org and TestDriver exchanges that proof for your
 team's key at run time. See the GitHub Actions tab below.
 
 For other CI providers (or self-hosted runners without OIDC), fall back to a
-stored API key from [console.testdriver.ai/team](https://console.testdriver.ai/team),
+stored API key from [console.testdriver.ai/settings](https://console.testdriver.ai/settings),
 added as a `TD_API_KEY` secret in your CI provider's settings.
 
 <Note>

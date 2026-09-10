@@ -26,7 +26,7 @@ Hosted pricing is based on **device-seconds**: the amount of time your tests run
     **$20/month per user**
     
     - 2 Concurrent Sandboxes
-    - 600 Minutes Included
+    - 120 Minutes Included
     - Overage: $0.001/second
     - Test Recordings
     - Community Support

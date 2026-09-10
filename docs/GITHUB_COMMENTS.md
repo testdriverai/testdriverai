@@ -55,7 +55,7 @@ jobs:
 
 | Variable | Description | Required | Example |
 |----------|-------------|----------|---------|
-| `TD_API_KEY` | TestDriver API key | ✅ Yes | Get from [console.testdriver.ai](https://console.testdriver.ai/team) |
+| `TD_API_KEY` | TestDriver API key | ✅ Yes | Get from [console.testdriver.ai](https://console.testdriver.ai/settings) |
 | `GITHUB_TOKEN` | GitHub token with PR write permissions | ✅ Yes | Automatically available in GitHub Actions |
 | `GITHUB_PR_NUMBER` | Pull request number | For PR comments | `123` |
 | `GITHUB_SHA` | Commit SHA | For commit comments | Automatically set in GitHub Actions |

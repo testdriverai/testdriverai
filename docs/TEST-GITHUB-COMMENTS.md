@@ -4,7 +4,7 @@
 
 1. **Ensure TD_API_KEY is set**
    - Go to: https://github.com/testdriverai/testdriverai/settings/secrets/actions
-   - Add secret named `TD_API_KEY` with your API key from https://console.testdriver.ai/team
+   - Add secret named `TD_API_KEY` with your API key from https://console.testdriver.ai/settings
    - If already set, you're good to go!
 
 2. **Create a test branch and PR**

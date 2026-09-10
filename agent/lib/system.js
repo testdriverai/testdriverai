@@ -57,13 +57,21 @@ const createSystem = (emitter, sandbox, config) => {
   // which is one of:
   //   { s3Key, width, height } — runner uploaded to S3 (Ably 64KB limit)
   //   { base64 }               — direct/local connection, bytes inline
-  const captureRaw = async () => {
+  //
+  // `target` ({ width, height }) asks the runner to do the downscale before it
+  // uploads. Only pass it when the bytes are going to be shrunk to that size
+  // on arrival regardless — it saves a multi-megabyte round-trip per capture,
+  // but it also moves the resample from Jimp (here) to sharp (there), so the
+  // pixels differ slightly. Anything feeding vision or the selector cache must
+  // keep resizing locally.
+  const captureRaw = async (target = null) => {
     return await sandbox.send({
       type: "system.screenshot",
+      ...(target ? { targetWidth: target.width, targetHeight: target.height } : {}),
     });
   };
 
-  const screenshot = async (options, rawResponse) => {
+  const screenshot = async (options, rawResponse, target = null) => {
     const MAX_RETRIES = 3;
     let lastError;
 
@@ -74,7 +82,7 @@ const createSystem = (emitter, sandbox, config) => {
         // capture fresh.
         let response = attempt === 0 && rawResponse
           ? rawResponse
-          : await captureRaw();
+          : await captureRaw(target);
 
         let base64;
 
@@ -125,7 +133,11 @@ const createSystem = (emitter, sandbox, config) => {
     return path.join(os.tmpdir(), `td-${Date.now()}-${randomUUID().slice(0, 8)}-${countImages}.png`);
   };
 
-  const captureAndResize = async (scale = 1, silent = false, mouse = false, rawResponse = null) => {
+  // `remoteResize` pushes the downscale onto the runner so the frame never
+  // crosses the wire at full resolution. Off by default: it changes which
+  // resampler produced the pixels, which callers feeding vision or the
+  // selector cache must not do. See `captureRaw`.
+  const captureAndResize = async (scale = 1, silent = false, mouse = false, rawResponse = null, remoteResize = false) => {
     try {
       if (!silent) {
         emitter.emit(events.screenCapture.start, {
@@ -138,21 +150,29 @@ const createSystem = (emitter, sandbox, config) => {
       let step1 = tmpFilename();
       let step2 = tmpFilename();
 
-      await screenshot({ filename: step1, format: "png" }, rawResponse);
+      const targetWidth = Math.floor(config.TD_RESOLUTION[0] * scale);
+      const targetHeight = Math.floor(config.TD_RESOLUTION[1] * scale);
+
+      await screenshot(
+        { filename: step1, format: "png" },
+        rawResponse,
+        remoteResize ? { width: targetWidth, height: targetHeight } : null,
+      );
 
       // Load the screenshot image with Jimp
       let image = await Jimp.read(step1);
-      
+
       // Validate the image was loaded correctly (not a 1x1 or tiny placeholder)
       if (image.getWidth() < 10 || image.getHeight() < 10) {
         throw new Error(`Screenshot appears corrupted: got ${image.getWidth()}x${image.getHeight()} pixels`);
       }
 
-      // Resize the image
-      image.resize(
-        Math.floor(config.TD_RESOLUTION[0] * scale),
-        Math.floor(config.TD_RESOLUTION[1] * scale),
-      );
+      // Resize the image. Still unconditional when the runner already resized:
+      // an older runner ignores targetWidth/targetHeight and returns a
+      // full-size frame, and Jimp treats a resize to the current size as a
+      // no-op, so this both stays correct across versions and guarantees every
+      // frame comes out at the same dimensions for pixel diffing.
+      image.resize(targetWidth, targetHeight);
 
       if (mouse) {
         // Only get mouse position when needed to avoid unnecessary websocket calls
@@ -196,8 +216,8 @@ const createSystem = (emitter, sandbox, config) => {
     return fs.readFileSync(step2, "base64");
   };
 
-  const captureScreenPNG = async (scale = 1, silent = false, mouse = false) => {
-    return await captureAndResize(scale, silent, mouse);
+  const captureScreenPNG = async (scale = 1, silent = false, mouse = false, remoteResize = false) => {
+    return await captureAndResize(scale, silent, mouse, null, remoteResize);
   };
 
   // Build the image payload to send to the API for a command (find/assert/etc).

@@ -303,7 +303,16 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
       };
       this._fileSubscription = await this._sessionChannel.subscribe("file", this._onFileMsg);
 
-      this.heartbeat = setInterval(function () { }, 5000);
+      // Idle keepalive: publish a control message every 30s so the API renews the
+      // Redis lease (LEASE_RENEWAL_WINDOW_MS = 2min). Without this, an idle session
+      // (no commands) lets the lease lapse and the sandbox is reaped mid-test on
+      // both Linux (E2B) and Windows (EC2).
+      this.heartbeat = setInterval(function () {
+        if (!self._sessionChannel || !self._ably || self._ably.connection.state !== "connected") return;
+        self._sessionChannel.publish("control", { type: "keepalive" }).catch(function (err) {
+          logger.debug("[realtime] keepalive publish failed (non-fatal): " + (err.message || err));
+        });
+      }, 30000);
       if (this.heartbeat.unref) this.heartbeat.unref();
 
       // ─── Periodic stats logging ────────────────────────────────────────
@@ -590,6 +599,8 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         body.resolution = message.resolution;
         body.ci = message.ci;
         if (message.instanceId) body.instanceId = message.instanceId;
+        // Reuse the same slot on re-auth so the old Ably channel isn't orphaned.
+        if (message.sandboxId) body.sandboxId = message.sandboxId;
       }
 
       var reply = await this._httpPostWithConcurrencyRetry(
@@ -1704,29 +1715,36 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         var cmdId = JSON.parse(output).Command.CommandId;
         logger.log('SSM command sent: ' + cmdId);
 
-        // Wait for the command to complete
-        execSync(
-          'aws ssm wait command-executed --region "' + region + '" ' +
-          '--command-id "' + cmdId + '" --instance-id "' + instanceId + '"',
-          { encoding: 'utf-8', timeout: 300000 } // 5 min — runner install can take a while
-        );
-
-        // Get the command output for debugging
-        try {
-          var invocationOutput = execSync(
-            'aws ssm get-command-invocation --region "' + region + '" ' +
-            '--command-id "' + cmdId + '" --instance-id "' + instanceId + '" --output json',
-            { encoding: 'utf-8', timeout: 30000 }
-          );
-          var invocation = JSON.parse(invocationOutput);
-          if (invocation.StandardOutputContent) {
-            logger.log('SSM output:\n' + invocation.StandardOutputContent);
+        // Poll for completion instead of `aws ssm wait command-executed` which
+        // hard-caps at 20 attempts (100s) — too short for npm install on cold VMs.
+        var deadline = Date.now() + 300000; // 5 min
+        var settled = false;
+        while (Date.now() < deadline) {
+          try {
+            var pollOutput = execSync(
+              'aws ssm get-command-invocation --region "' + region + '" ' +
+              '--command-id "' + cmdId + '" --instance-id "' + instanceId + '" --output json',
+              { encoding: 'utf-8', timeout: 30000 }
+            );
+            var pollResult = JSON.parse(pollOutput);
+            var st = pollResult.Status;
+            if (st === 'Success') {
+              if (pollResult.StandardOutputContent) logger.log('SSM output:\n' + pollResult.StandardOutputContent);
+              if (pollResult.StandardErrorContent) logger.warn('SSM errors:\n' + pollResult.StandardErrorContent);
+              settled = true;
+              break;
+            }
+            if (st === 'Failed' || st === 'Cancelled' || st === 'TimedOut') {
+              throw new Error('SSM command ' + st + ': ' + (pollResult.StandardErrorContent || pollResult.StatusDetails || st));
+            }
+          } catch (pollErr) {
+            // InvocationDoesNotExist means SSM hasn't registered the invocation yet
+            if (pollErr.message && !pollErr.message.includes('InvocationDoesNotExist')) throw pollErr;
           }
-          if (invocation.StandardErrorContent) {
-            logger.warn('SSM errors:\n' + invocation.StandardErrorContent);
-          }
-        } catch (e) {
-          logger.warn('Could not retrieve SSM command output: ' + e.message);
+          execSync('sleep 5');
+        }
+        if (!settled) {
+          throw new Error('SSM command ' + cmdId + ' did not complete within 5 minutes');
         }
       } finally {
         try { unlinkSync(tmpFile); } catch (e) { /* ignore */ }
@@ -1809,29 +1827,33 @@ const createSandbox = function (emitter, analytics, sessionInstance) {
         const cmdId = JSON.parse(output).Command.CommandId;
         logger.log('SSM command sent: ' + cmdId);
 
-        // Wait for the command to complete
-        execSync(
-          'aws ssm wait command-executed --region "' + region + '" ' +
-          '--command-id "' + cmdId + '" --instance-id "' + instanceId + '"',
-          { encoding: 'utf-8', timeout: 60000 }
-        );
-
-        // Get the command output for debugging
-        try {
-          const invocationOutput = execSync(
-            'aws ssm get-command-invocation --region "' + region + '" ' +
-            '--command-id "' + cmdId + '" --instance-id "' + instanceId + '" --output json',
-            { encoding: 'utf-8', timeout: 30000 }
-          );
-          const invocation = JSON.parse(invocationOutput);
-          if (invocation.StandardOutputContent) {
-            logger.log('SSM output:\n' + invocation.StandardOutputContent);
+        // Poll instead of `aws ssm wait` (hard-capped at 100s, too short)
+        var deadline2 = Date.now() + 180000; // 3 min for config-only
+        var done2 = false;
+        while (Date.now() < deadline2) {
+          try {
+            var p2 = execSync(
+              'aws ssm get-command-invocation --region "' + region + '" ' +
+              '--command-id "' + cmdId + '" --instance-id "' + instanceId + '" --output json',
+              { encoding: 'utf-8', timeout: 30000 }
+            );
+            var r2 = JSON.parse(p2);
+            if (r2.Status === 'Success') {
+              if (r2.StandardOutputContent) logger.log('SSM output:\n' + r2.StandardOutputContent);
+              if (r2.StandardErrorContent) logger.warn('SSM errors:\n' + r2.StandardErrorContent);
+              done2 = true;
+              break;
+            }
+            if (r2.Status === 'Failed' || r2.Status === 'Cancelled' || r2.Status === 'TimedOut') {
+              throw new Error('SSM command ' + r2.Status + ': ' + (r2.StandardErrorContent || r2.StatusDetails || r2.Status));
+            }
+          } catch (pe) {
+            if (pe.message && !pe.message.includes('InvocationDoesNotExist')) throw pe;
           }
-          if (invocation.StandardErrorContent) {
-            logger.warn('SSM errors:\n' + invocation.StandardErrorContent);
-          }
-        } catch (e) {
-          logger.warn('Could not retrieve SSM command output: ' + e.message);
+          execSync('sleep 5');
+        }
+        if (!done2) {
+          throw new Error('SSM command ' + cmdId + ' did not complete within 3 minutes');
         }
       } finally {
         try { unlinkSync(tmpFile); } catch (e) { /* ignore */ }

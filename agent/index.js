@@ -1729,13 +1729,23 @@ ${regression}
 
     // Set sandbox ID for reconnection (only if not creating new and recent ID exists)
     if (this.ip) {
+      // Reuse a known sandboxId for this machine so a re-auth re-attaches to the
+      // same Ably channel instead of minting a new slot and orphaning the old
+      // one (self-hosted: one machine → one sandbox).
       let instance = await this.sandbox.send({
         type: "direct",
         resolution: this.config.TD_RESOLUTION,
         ci: this.config.CI,
         ip: this.ip,
+        sandboxId: this.sandboxId || undefined,
         instanceId: this.instanceId || undefined,
       });
+
+      // Remember the slot so a later re-auth reuses it instead of minting a new one.
+      this.sandboxId =
+        instance?.instance?.sandboxId ||
+        instance?.instance?.instanceId ||
+        this.sandboxId;
 
       // Store connection params for reconnection
       // For direct IP connections, store as a direct type so reconnection
@@ -1743,7 +1753,7 @@ ${regression}
       this.sandbox.setConnectionParams({
         type: 'direct',
         ip: this.ip,
-        sandboxId: instance?.instance?.instanceId || instance?.instance?.sandboxId || null,
+        sandboxId: this.sandboxId,
         persist: true,
         keepAlive: this.keepAlive,
       });

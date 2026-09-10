@@ -33,7 +33,7 @@ function getSentryTraceHeaders(sessionId) {
     if (typeof Sentry.getTraceData === "function") {
       const traceData = Sentry.getTraceData();
       if (traceData && traceData["sentry-trace"]) {
-        return traceData;
+        return { ...traceData };
       }
     }
   } catch (e) {

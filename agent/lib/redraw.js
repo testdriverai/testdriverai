@@ -232,7 +232,10 @@ const createRedraw = (
     
     // Capture initial image for screen stability monitoring
     if (currentOptions.screenRedraw) {
-      initialScreenImage = await system.captureScreenPNG(0.25, true);
+      // remoteResize=true: these frames exist only to be pixel-diffed at
+      // quarter scale, so let the runner shrink them before upload rather
+      // than shipping full-resolution PNGs on every poll.
+      initialScreenImage = await system.captureScreenPNG(0.25, true, false, true);
       lastScreenImage = initialScreenImage;
       emitter.emit(events.log.debug, `[redraw] start() - captured initial image: ${initialScreenImage}`);
     }
@@ -254,7 +257,7 @@ const createRedraw = (
       await updateNetwork();
     }
     
-    let nowImage = screenRedraw ? await system.captureScreenPNG(0.25, true) : null;
+    let nowImage = screenRedraw ? await system.captureScreenPNG(0.25, true, false, true) : null;
     let timeElapsed = Date.now() - startTime;
     let diffFromInitial = 0;
     let diffFromLast = 0;

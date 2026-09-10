@@ -106,6 +106,18 @@ export interface CoreContext {
   sdkGeneration: number;
   lastScreenshotBase64: string | null;
   reconnectResolver: ReconnectResolver | null;
+  /** Notified once a sandbox is proven gone, so durable adapters drop their handle. */
+  onRecoveryFailed: RecoveryFailedHook | null;
+  /**
+   * Sandboxes this context has already failed to reconnect to.
+   *
+   * A dead sandbox never comes back, but nothing used to remember that: the
+   * durable handle still named it, so every following action re-entered recovery,
+   * and each attempt bumped {@link sdkGeneration} before failing. Those bumps are
+   * what turned one expiry into the SESSION_SUPERSEDED loop — a genuine
+   * `session_start` racing a queue of doomed rebuilds could never win the publish.
+   */
+  deadSandboxIds: Set<string>;
   /** In-flight reconnect, so concurrent actions in one context share one rebuild. */
   reconnecting: Promise<void> | null;
   /** Stored element instances from `find`/`findall`, addressable by ref. */
@@ -131,6 +143,8 @@ export function createCoreContext(): CoreContext {
     sdkGeneration: 0,
     lastScreenshotBase64: null,
     reconnectResolver: null,
+    onRecoveryFailed: null,
+    deadSandboxIds: new Set(),
     reconnecting: null,
     elementRefs: new Map(),
     // Reuse the shared SessionManager for the global context so that consumers
@@ -214,11 +228,24 @@ export function getSessionTimeRemaining(sessionId: string): number {
 export type ReconnectResolver = () => Promise<ReconnectParams | null>;
 
 /**
+ * Called once mcp-core has proven a sandbox is unreachable, so the durable owner
+ * can drop its handle. Without it the two stores disagree: mcp-core knows the
+ * sandbox is dead while eve's durable slot still names it, so the resolver keeps
+ * handing back the same corpse and every action re-enters recovery.
+ */
+export type RecoveryFailedHook = (sandboxId: string) => void;
+
+/**
  * Register (or clear, with `null`) the recovery hook. Durable adapters call this
  * at the start of each step with a resolver bound to the current tool context.
  */
 export function setReconnectResolver(resolver: ReconnectResolver | null): void {
   ctx().reconnectResolver = resolver;
+}
+
+/** Register (or clear) the callback fired when a sandbox is proven unreachable. */
+export function setRecoveryFailedHook(hook: RecoveryFailedHook | null): void {
+  ctx().onRecoveryFailed = hook;
 }
 
 /** Expose internals the adapters legitimately need (read-only intent). */
@@ -395,15 +422,27 @@ async function publishSdk(c: CoreContext, sdk: any, generation: number): Promise
   return true;
 }
 
-/** Result for a `sessionStart` that lost the epoch race to a newer session_start. */
-function supersededResult(): ActionResult {
+/**
+ * Result for a `sessionStart` that lost the epoch race to a newer flow.
+ *
+ * The advice has to depend on what actually survived. A supersede does NOT imply
+ * a healthy winner: the flow that bumped the epoch past us may itself have failed
+ * (the common case is a recovery rebuild of an already-dead sandbox). Telling the
+ * agent to "use the active session" when there is none sent it into the
+ * session_status → session_end → session_start loop this guard exists to prevent.
+ */
+function supersededResult(c: CoreContext): ActionResult {
+  const current = c.sessions.getCurrentSession();
+  const live = sdkIsConnected(c.sdk) && !!current && c.sessions.isSessionValid(current.sessionId);
   return {
     ok: false,
-    text:
-      "This session_start was superseded by a newer one that is already connected. " +
-      "The sandbox this call provisioned has been released. Use the active session, " +
-      "or call session_end and then session_start if you need a fresh sandbox.",
-    data: { action: "session_start", error: "SESSION_SUPERSEDED" },
+    text: live
+      ? "This session_start was superseded by a newer one that is already connected. " +
+        "The sandbox this call provisioned has been released. Use the active session, " +
+        "or call session_end and then session_start if you need a fresh sandbox."
+      : "This session_start raced a concurrent reconnect and neither connection survived. " +
+        "No sandbox is held now and no cleanup is needed — call session_start once more.",
+    data: { action: "session_start", error: "SESSION_SUPERSEDED", hasActiveSession: live },
   };
 }
 
@@ -424,6 +463,15 @@ async function tryRecoverSession(): Promise<boolean> {
     c.reconnecting = (async () => {
       const params = await resolver();
       if (!params?.sandboxId) return; // nothing provisioned this session
+      // Already proven gone — don't rebuild toward a corpse. Recovering costs an
+      // epoch bump, and repeating it is what starves a concurrent session_start
+      // of its publish. Report it as NO_SESSION so the caller re-provisions.
+      if (c.deadSandboxIds.has(params.sandboxId)) {
+        throw new NoActiveSessionError(
+          "NO_SESSION",
+          "The previous sandbox is gone and no new one has been started. Call session_start to create one."
+        );
+      }
       // Close any half-dead socket on the outgoing SDK before replacing it, so a
       // parked-then-rebuilt session doesn't leak an orphaned Ably connection.
       try {
@@ -431,7 +479,12 @@ async function tryRecoverSession(): Promise<boolean> {
       } catch {
         /* best effort — reconnectSession installs a fresh SDK regardless */
       }
-      await reconnectSession(params);
+      try {
+        await reconnectSession(params);
+      } catch (err) {
+        markSandboxDead(c, params.sandboxId);
+        throw err;
+      }
     })().finally(() => {
       c.reconnecting = null;
     });
@@ -448,6 +501,22 @@ async function tryRecoverSession(): Promise<boolean> {
   }
   const session = c.sessions.getCurrentSession();
   return !!c.sdk && !!session && c.sessions.isSessionValid(session.sessionId);
+}
+
+/**
+ * Record that `sandboxId` is unreachable and tell the durable owner to forget it.
+ *
+ * Both halves matter. The local set stops *this* process from retrying a rebuild
+ * it already knows will fail; the hook stops the durable store from handing the
+ * same id back after a recycle, which would defeat the set.
+ */
+function markSandboxDead(c: CoreContext, sandboxId: string): void {
+  c.deadSandboxIds.add(sandboxId);
+  try {
+    c.onRecoveryFailed?.(sandboxId);
+  } catch {
+    /* best effort — the local set alone still breaks the retry loop */
+  }
 }
 
 /**
@@ -534,6 +603,14 @@ async function captureScreen(sdk: any = ctx().sdk): Promise<string | null> {
 export interface SessionStartHooks {
   /** Called before a long await; return a stop fn. Lets adapters heartbeat. */
   onProgress?: (message: string) => void;
+  /**
+   * Fired once the sandbox is connected and published to the context, BEFORE
+   * provisioning starts. Provisioning is the slow part (~20s+), but the live
+   * VNC stream is already watchable at this point — this is the hook an adapter
+   * uses to surface the viewer URL early instead of at the end of the call.
+   * Runs inside the context, so `getSdk()`/`getInstance()` are valid here.
+   */
+  onSandboxLive?: () => void;
 }
 
 /**
@@ -548,6 +625,14 @@ export async function sessionStart(
 ): Promise<ActionResult> {
   const c = ctx();
   const progress = hooks.onProgress ?? (() => {});
+  // Best-effort: an adapter's notification must never fail the provision.
+  const sandboxLive = () => {
+    try {
+      hooks.onSandboxLive?.();
+    } catch {
+      /* ignore */
+    }
+  };
 
   // Validate required fields for specific provision types (unless reconnecting).
   if (!params.sandboxId) {
@@ -616,7 +701,8 @@ export async function sessionStart(
       keepAlive: params.keepAlive,
       requireSandbox: true,
     });
-    if (!(await publishSdk(c, sdk, generation))) return supersededResult();
+    if (!(await publishSdk(c, sdk, generation))) return supersededResult(c);
+    sandboxLive();
 
     const instance = sdk.getInstance();
     const newSession = c.sessions.createSession({
@@ -641,7 +727,8 @@ export async function sessionStart(
 
   progress(instanceIp ? `Connecting to self-hosted instance ${instanceIp}...` : "Connecting to cloud sandbox...");
   await sdk.connect({ reconnect: params.reconnect, keepAlive: params.keepAlive, ip: instanceIp });
-  if (!(await publishSdk(c, sdk, generation))) return supersededResult();
+  if (!(await publishSdk(c, sdk, generation))) return supersededResult(c);
+  sandboxLive();
 
   const instance = sdk.getInstance();
   const newSession = c.sessions.createSession({
@@ -781,9 +868,14 @@ export async function reconnectSession(params: ReconnectParams): Promise<string>
   // a loser never leaves a stray "initializing" session current.
   if (!(await publishSdk(c, sdk, generation))) {
     const current = c.sessions.getCurrentSession();
-    if (current && c.sessions.isSessionValid(current.sessionId)) return current.sessionId;
+    // Require a *connected* winner, not merely a current session: the flow that
+    // took the epoch may still be mid-`connect()`, and returning its id here told
+    // the caller a session was ready that no action could then use.
+    if (sdkIsConnected(c.sdk) && current && c.sessions.isSessionValid(current.sessionId)) {
+      return current.sessionId;
+    }
     throw new NoActiveSessionError(
-      "SESSION_EXPIRED",
+      "NO_SESSION",
       "The sandbox connection was superseded and no active session remains. Call session_start again to create a new sandbox session."
     );
   }
@@ -823,6 +915,15 @@ export async function ensureActiveSession(params?: ReconnectParams): Promise<boo
   if (!params?.sandboxId) {
     return false;
   }
+  // Proven gone already — skip the doomed rebuild (and the epoch bump it costs).
+  if (c.deadSandboxIds.has(params.sandboxId)) {
+    c.sdk = null;
+    throw new NoActiveSessionError(
+      "NO_SESSION",
+      "The previous sandbox is gone and no new one has been started. Call session_start to create one.",
+      params.sandboxId
+    );
+  }
   try {
     await reconnectSession(params);
     return true;
@@ -831,6 +932,7 @@ export async function ensureActiveSession(params?: ReconnectParams): Promise<boo
     // id is stale). Surface a SESSION_EXPIRED so the adapter's mapper tells the
     // agent to call session_start again, instead of a raw connect error.
     c.sdk = null;
+    markSandboxDead(c, params.sandboxId);
     throw new NoActiveSessionError(
       "SESSION_EXPIRED",
       `Could not reconnect to sandbox ${params.sandboxId}: ${err instanceof Error ? err.message : String(err)}. The sandbox has expired — call session_start again to create a new one.`,

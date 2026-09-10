@@ -12,8 +12,18 @@
  * could not serve a single command.
  */
 
-import { describe, it, expect } from "vitest";
-import { clearSession, createIsolatedContext, hasLiveSession, runInContext, type CoreContext } from "./actions.js";
+import { describe, it, expect, vi } from "vitest";
+import {
+  clearSession,
+  createIsolatedContext,
+  ensureActiveSession,
+  hasLiveSession,
+  NoActiveSessionError,
+  runInContext,
+  setRecoveryFailedHook,
+  type CoreContext,
+  type ReconnectParams,
+} from "./actions.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -99,6 +109,56 @@ describe("clearSession", () => {
     const c = createIsolatedContext();
     expect(() => runInContext(c, () => clearSession())).not.toThrow();
     expect(live(c)).toBe(false);
+  });
+});
+
+describe("ensureActiveSession with a dead sandbox", () => {
+  /** Reconnect params naming a sandbox the server no longer has. */
+  const params = (): ReconnectParams => ({
+    sandboxId: "sb-dead",
+    os: "linux",
+    keepAlive: 60_000,
+    apiKey: "k",
+  });
+
+  it("does not bump the epoch again once the sandbox is known dead", async () => {
+    // The loop's engine: every retry against a corpse used to bump the epoch, so
+    // a real session_start racing them could never win its publish.
+    const c = createIsolatedContext();
+    c.deadSandboxIds.add("sb-dead");
+    const before = c.sdkGeneration;
+
+    await expect(
+      runInContext(c, () => ensureActiveSession(params())),
+    ).rejects.toBeInstanceOf(NoActiveSessionError);
+
+    expect(c.sdkGeneration).toBe(before);
+  });
+
+  it("reports NO_SESSION, not SESSION_EXPIRED, so the agent just re-provisions", async () => {
+    const c = createIsolatedContext();
+    c.deadSandboxIds.add("sb-dead");
+    await runInContext(c, () => ensureActiveSession(params())).catch((err) => {
+      expect(err).toBeInstanceOf(NoActiveSessionError);
+      expect((err as NoActiveSessionError).code).toBe("NO_SESSION");
+    });
+  });
+
+  it("tells the durable owner to forget a sandbox it just proved unreachable", async () => {
+    // Without this the durable store keeps handing back the dead id after a
+    // recycle wipes deadSandboxIds, and recovery loops again.
+    const c = createIsolatedContext();
+    const forgotten = vi.fn();
+
+    await runInContext(c, async () => {
+      setRecoveryFailedHook(forgotten);
+      // No SDK is loadable in unit tests, so reconnectSession throws — which is
+      // exactly the "sandbox is gone" path.
+      await ensureActiveSession(params()).catch(() => {});
+    });
+
+    expect(forgotten).toHaveBeenCalledWith("sb-dead");
+    expect(c.deadSandboxIds.has("sb-dead")).toBe(true);
   });
 });
 

@@ -116,7 +116,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
     `init` detects clients already present in your project and pre-selects them in the picker. Re-running `init` is safe — it merges the TestDriver entry into existing config without overwriting your other servers.
     </Info>
 
-    You'll need a TestDriver API key. Create one at [console.testdriver.ai/team](https://console.testdriver.ai/team) and `init` will save it to `.env` as `TD_API_KEY`.
+    You'll need a TestDriver API key. Create one at [console.testdriver.ai/settings](https://console.testdriver.ai/settings) and `init` will save it to `.env` as `TD_API_KEY`.
 
     ### The agent
 
@@ -261,7 +261,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
             {
               "type": "promptString",
               "id": "testdriver-api-key",
-              "description": "TestDriver API Key From https://console.testdriver.ai/team",
+              "description": "TestDriver API Key From https://console.testdriver.ai/settings",
               "password": true
             }
           ]
@@ -357,7 +357,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
         <Card
           title="Get an API Key"
           icon="user-plus"
-          href="https://console.testdriver.ai/team"
+          href="https://console.testdriver.ai/settings"
           arrow
           horizontal
         >

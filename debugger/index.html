@@ -458,18 +458,20 @@
         };
       }
 
-      // Responsive: scale and center the overlay to fit the window
+      // Responsive: scale and center the overlay to fit the window. No 1x cap —
+      // the embedder sizes the iframe to the sandbox's aspect ratio, so the
+      // overlay should scale up to fill it rather than sit letterboxed at 1x.
       const resizeOverlay = () => {
         const ww = window.innerWidth;
         const wh = window.innerHeight;
-        const scale = Math.min(ww / overlayWidth, wh / overlayHeight, 1);
+        const scale = Math.min(ww / overlayWidth, wh / overlayHeight);
         const sw = overlayWidth * scale;
         const sh = overlayHeight * scale;
 
         overlay.style.width = overlayWidth + "px";
         overlay.style.height = overlayHeight + "px";
         overlay.style.position = "absolute";
-        overlay.style.transform = scale < 1 ? `scale(${scale})` : "none";
+        overlay.style.transform = `scale(${scale})`;
         overlay.style.left = `${(ww - sw) / 2}px`;
         overlay.style.top = `${(wh - sh) / 2}px`;
       };

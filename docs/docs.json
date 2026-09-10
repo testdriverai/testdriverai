@@ -25,7 +25,6 @@
                 "icon": "code",
                 "pages": [
                   "/v7/examples/assert",
-                  "/v7/examples/chrome-extension",
                   "/v7/examples/element-not-found",
                   "/v7/examples/findall-coffee-icons",
                   "/v7/examples/hover-image",
@@ -41,6 +40,7 @@
                 ]
               },
               "/v7/what-is-testdriver",
+              "/v7/agent",
               {
                 "group": "Deployment",
                 "icon": "server",

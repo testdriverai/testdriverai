@@ -125,7 +125,7 @@ function windowsProvisionCommands({ channel, configJson, sandboxId, s3DownloadUr
       commands.push(
         "Write-Host 'Checking installed runner version...'",
         "$installedVersion = ''",
-        "try { $pkg = Get-Content 'node_modules/@testdriverai/runner/package.json' -Raw | ConvertFrom-Json; $installedVersion = $pkg.version } catch {}",
+        "try { $pkg = Get-Content 'node_modules/@testdriverai/runner/package.json' -Raw -ErrorAction Stop | ConvertFrom-Json; $installedVersion = $pkg.version } catch {}",
         "$installedMinor = if ($installedVersion) { ($installedVersion -split '[.-]')[0..1] -join '.' } else { '' }",
         "if (('" + expectedMinor + "' -ne '') -and ($installedMinor -eq '" + expectedMinor + "')) {",
         "  Write-Host \"Runner already at v$installedVersion (minor " + expectedMinor + "), skipping update\"",
@@ -135,7 +135,7 @@ function windowsProvisionCommands({ channel, configJson, sandboxId, s3DownloadUr
         "  Write-Host 'Installing @testdriverai/runner@" + runnerTag + "...'",
         '  npm install @testdriverai/runner@' + runnerTag + ' --omit=dev 2>&1 | Write-Host',
         "  $newVersion = ''",
-        "  try { $newPkg = Get-Content 'node_modules/@testdriverai/runner/package.json' -Raw | ConvertFrom-Json; $newVersion = $newPkg.version } catch {}",
+        "  try { $newPkg = Get-Content 'node_modules/@testdriverai/runner/package.json' -Raw -ErrorAction Stop | ConvertFrom-Json; $newVersion = $newPkg.version } catch {}",
         "  Write-Host (\"RUNNER_VERSION_CHECK:\" + (ConvertTo-Json -Compress @{ action='updated'; previousVersion=$installedVersion; expectedVersion='" + imageVersion + "'; expectedMinor='" + expectedMinor + "'; newVersion=$newVersion; channel='" + channel + "'; sandboxId='" + sandboxId + "' }))",
         "  Write-Host 'Runner install complete'",
         "}"

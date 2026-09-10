@@ -295,6 +295,7 @@ export const pluginState = {
   detectedPlatform: null,
   pendingTestCaseRecords: new Set(),
   ciProvider: null,
+  isCI: false,
   gitInfo: {},
   apiKey: null,
   apiRoot: null,
@@ -773,6 +774,7 @@ export default function testDriverPlugin(options = {}) {
     process.env.TD_API_ROOT ||
     channelConfig.channels[channelConfig.active];
   pluginState.ciProvider = detectCI();
+  pluginState.isCI = detectIsCI();
   pluginState.gitInfo = getGitInfo();
 
   // Store TestDriver-specific options (excluding plugin-specific ones)
@@ -788,6 +790,7 @@ export default function testDriverPlugin(options = {}) {
   logger.debug("API key from options:", !!options.apiKey);
   logger.debug("API key from env (at config time):", !!process.env.TD_API_KEY);
   logger.debug("CI Provider:", pluginState.ciProvider || "none");
+  logger.debug("Is CI:", pluginState.isCI);
   if (Object.keys(testDriverOptions).length > 0) {
     logger.debug("Global TestDriver options:", testDriverOptions);
   }
@@ -882,6 +885,7 @@ class TestDriverReporter {
       if (pluginState.ciProvider) {
         testRunData.ciProvider = pluginState.ciProvider;
       }
+      testRunData.isCI = pluginState.isCI;
 
       // Platform will be set from the first test result file
       // Default to linux if no tests write platform info
@@ -1469,6 +1473,17 @@ function detectCI() {
   if (process.env.JENKINS_URL) return "jenkins";
   if (process.env.BUILDKITE) return "buildkite";
   return null;
+}
+
+// Broader than detectCI(): virtually every CI provider exports CI=true, so this
+// still reports true on providers we don't name (Azure, TeamCity, Woodpecker,
+// self-hosted runners...). Vitest and other tools also set CI=true themselves
+// when they detect one, so this is the value we trust for "was this run in CI".
+function detectIsCI() {
+  if (detectCI()) return true;
+  const ci = process.env.CI;
+  if (!ci) return false;
+  return ci !== "false" && ci !== "0";
 }
 
 function getGitInfo() {

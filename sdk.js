@@ -3477,6 +3477,14 @@ CAPTCHA_SOLVER_EOF`,
       ciRunId: options.ci?.runId,
       ciJobId: options.ci?.jobId,
       ciUrl: options.ci?.url,
+      // Nearly every CI provider exports CI=true, including ones we have no
+      // named detection for, so this is the value to trust for "ran in CI".
+      isCI:
+        options.ci?.isCI ??
+        (!!options.ci?.provider ||
+          (!!process.env.CI &&
+            process.env.CI !== "false" &&
+            process.env.CI !== "0")),
       // Git
       repo: options.git?.repo,
       branch: options.git?.branch,
