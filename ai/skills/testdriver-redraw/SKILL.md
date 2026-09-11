@@ -132,7 +132,7 @@ The final settling condition requires **both** screen AND network to be settled 
 
 ## Events
 
-The redraw system emits events through the SDK emitter. See [Events](/v7/events) for the full event reference.
+The redraw system emits events through the SDK emitter. See [Events](/events) for the full event reference.
 
 | Event | Description |
 |---|---|

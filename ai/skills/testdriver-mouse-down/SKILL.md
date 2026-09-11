@@ -6,7 +6,7 @@ description: Press the mouse button without releasing it
 
 ## Overview
 
-The `mouseDown()` method presses the mouse button at an element's location without releasing it. This is useful for drag operations, custom gestures, or when you need precise control over mouse events. You can either call it on an [`Element`](/v7/core-concepts/elements) instance or use it directly with a selector.
+The `mouseDown()` method pushes the mouse button at the location of an element. It does not release the button. Use this for drag operations, custom gestures, or when you need precise control of the mouse events. You can call it on an [`Element`](/core-concepts/elements) instance. Or you can use it with a selector.
 
 ## Syntax
 
@@ -30,7 +30,7 @@ When called directly on the AI client:
 
 ## Returns
 
-Returns a `Promise<void>` that resolves when the mouse button is pressed.
+It returns a `Promise<void>`. The promise resolves when TestDriver pushes the mouse button.
 
 ## Examples
 
@@ -147,15 +147,15 @@ test('resizes panel', async () => {
 
 ## Important Notes
 
-- Always pair `mouseDown()` with [`mouseUp()`](/v7/mouse-up) to complete the gesture
+- Always pair `mouseDown()` with [`mouseUp()`](/mouse-up) to complete the gesture
 - The mouse button remains pressed until `mouseUp()` is called
-- Use [`hover()`](/v7/hover) to move the mouse while the button is pressed
+- Use [`hover()`](/hover) to move the mouse while the button is pressed
 - For simple drag operations, consider using `ai()` with a natural language description like `"drag file to folder"`
 
 ## Related Methods
 
-- [`mouseUp()`](/v7/mouse-up) - Release the mouse button
-- [`hover()`](/v7/hover) - Move mouse to element
-- [`click()`](/v7/click) - Full click (mouseDown + mouseUp)
-- [`doubleClick()`](/v7/double-click) - Double-click on element
-- [`rightClick()`](/v7/right-click) - Right-click for context menu
+- [`mouseUp()`](/mouse-up) - Release the mouse button
+- [`hover()`](/hover) - Move mouse to element
+- [`click()`](/click) - Full click (mouseDown + mouseUp)
+- [`doubleClick()`](/double-click) - Double-click on element
+- [`rightClick()`](/right-click) - Right-click for context menu

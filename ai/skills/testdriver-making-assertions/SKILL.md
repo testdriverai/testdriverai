@@ -18,7 +18,7 @@ await testdriver.find('first product card in the grid');
 await testdriver.find('dropdown menu labeled "Country"');
 ```
 
-<Info>TestDriver will cache found elements for improved performance on subsequent calls. Learn more about [element caching here](/v7/caching).</Info>
+<Info>TestDriver will cache found elements for improved performance on subsequent calls. Learn more about [element caching here](/caching).</Info>
 
 ### Debugging Found Elements
 
@@ -103,6 +103,6 @@ await testdriver.assert('form has red border');
 
 ## Next
 
-<Card title="Adapt" icon="arrows-rotate" href="/v7/performing-actions">
+<Card title="Adapt" icon="arrows-rotate" href="/performing-actions">
   Drive your app forward by performing actions on the elements you've located and validated.
 </Card>

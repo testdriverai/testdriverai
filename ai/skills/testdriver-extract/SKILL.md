@@ -8,7 +8,7 @@ description: Read information from the screen using AI and return it as a string
 
 Extract information from the current screen using AI and return it as a string. Describe what you want in natural language, and the AI reads the screen and returns the matching value — text, numbers, labels, status messages, or any other on-screen content.
 
-Unlike [`assert()`](/v7/assert), which returns a boolean verdict, `extract()` returns the actual value so you can store it, compare it, or feed it into later steps and framework assertions.
+Unlike [`assert()`](/assert), which returns a boolean verdict, `extract()` returns the actual value so you can store it, compare it, or feed it into later steps and framework assertions.
 
 ## Syntax
 
@@ -100,7 +100,7 @@ expect(Number(totalText)).toBeGreaterThan(0);
 <Check>
   **Extract for detailed assertions**
 
-  Use `extract()` when a boolean [`assert()`](/v7/assert) isn't enough and you need the actual value to inspect:
+  Use `extract()` when a boolean [`assert()`](/assert) isn't enough and you need the actual value to inspect:
 
   ```javascript
   const confirmation = await testdriver.extract('the confirmation number');
@@ -214,11 +214,11 @@ describe('Extraction', () => {
 4. The extracted value is returned as a string
 
 <Note>
-  Like [assertions](/v7/making-assertions), `extract()` reads the screen fresh on every call — it is not cached — so it always reflects the current state of the app.
+  Like [assertions](/making-assertions), `extract()` reads the screen fresh on every call — it is not cached — so it always reflects the current state of the app.
 </Note>
 
 ## Related Methods
 
-- [`assert()`](/v7/assert) - Verify screen state with a boolean AI judgment
-- [`find()`](/v7/find) - Locate elements to interact with
-- [`parse()`](/v7/parse) - Detect all UI elements on screen
+- [`assert()`](/assert) - Verify screen state with a boolean AI judgment
+- [`find()`](/find) - Locate elements to interact with
+- [`parse()`](/parse) - Detect all UI elements on screen

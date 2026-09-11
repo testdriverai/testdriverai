@@ -6,7 +6,7 @@ description: Press keyboard keys and shortcuts
 
 ## Overview
 
-Press one or more keyboard keys simultaneously, useful for keyboard shortcuts, navigation, and special keys.
+Push one or more keyboard keys at the same time. Use this for keyboard shortcuts, navigation, and special keys.
 
 ## Syntax
 
@@ -17,7 +17,7 @@ await testdriver.pressKeys(keys)
 ## Parameters
 
 <ParamField path="keys" type="Array&lt;string&gt;" required>
-  Array of keys to press simultaneously
+  An array of the keys to push at the same time
 </ParamField>
 
 ## Returns
@@ -343,6 +343,6 @@ describe('Keyboard Navigation', () => {
 
 ## Related Methods
 
-- [`type()`](/v7/type) - Type text
-- [`click()`](/v7/click) - Click elements
-- [`scroll()`](/v7/scroll) - Scroll pages
+- [`type()`](/type) - Type text
+- [`click()`](/click) - Click elements
+- [`scroll()`](/scroll) - Scroll pages

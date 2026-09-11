@@ -4,27 +4,27 @@ description: Reliably test your most difficult user flows
 ---
 <!-- Generated from what-is-testdriver.mdx. DO NOT EDIT. -->
 
-## The problem with modern testing tools
+## The problem with usual test tools
 
-Modern testing tools like Playwright are designed to test a single web application, running in a single browser tab using selectors.
+Usual test tools such as Playwright test one web application. They use one browser tab and they use selectors.
 
-However, selectors are often either unreliable or unavailable in complex scenarios, leading to brittle and flaky tests:
+But selectors are frequently not reliable, or they are not available. This makes tests weak and not stable:
 
 | Challenge | Problem | Examples |
 |-----------|---------|----------|
-| **Fast moving teams** | Frequently change UI structure, breaking CSS/XPath selectors | Agile teams, startups, vibe-coders |
-| **Dynamic content** | Cannot be targeted with selectors | AI chatbots, PDFs, images, videos |
-| **Software you don't own** | May lack proper accessibility attributes | Other websites, extensions, third-party applications |
-| **Multi-application workflows** | Cannot be tested with web-only tools | Desktop apps, browser extensions, IDEs |
-| **Visual states** | Impossible to verify with code-based selectors | Charts, graphs, videos, images, spelling errors, UI layout |
+| **Teams that move quickly** | They change the UI structure frequently. This breaks the CSS and XPath selectors. | Agile teams, startups, vibe-coders |
+| **Dynamic content** | You cannot select it with selectors. | AI chatbots, PDFs, images, videos |
+| **Software that you do not own** | It can have no correct accessibility attributes. | Other websites, extensions, third-party applications |
+| **Workflows with more than one application** | You cannot test them with web-only tools. | Desktop apps, browser extensions, IDEs |
+| **Visual states** | You cannot make a check of them with code selectors. | Charts, graphs, videos, images, spelling errors, UI layout |
 
-## The TestDriver Solution
+## The TestDriver solution
 
-TestDriver is a complete testing platform built specifically for handling these scenarios. It consists of a Javascript SDK, hosted infrastructure, and debugging tools that make it easy to write, run, and maintain tests for your most difficult user flows.
+TestDriver is a complete test platform. It handles these conditions. It has a Javascript SDK, hosted infrastructure, and debug tools. These tools make it easy to write, run, and keep tests for your most difficult user flows.
 
 ### Javascript SDK
 
-Here is an example of a TestDriver test that installs a production Chrome extension from the Chrome Web Store and verifies that it appears in the extensions menu:
+This is an example of a TestDriver test. The test installs a production Chrome extension from the Chrome Web Store. Then it makes sure that the extension is in the extensions menu:
 
 ```javascript Installing Loom from the Chrome Web Store
 import { describe, expect, it } from "vitest";

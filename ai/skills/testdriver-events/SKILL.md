@@ -155,7 +155,7 @@ testdriver.emitter.on('sandbox:progress', ({ step, message }) => {
 
 ### Redraw Events
 
-Emitted during screen stability detection. See [Redraw](/v7/redraw) for more details.
+Emitted during screen stability detection. See [Redraw](/redraw) for more details.
 
 | Event | Payload |
 |---|---|

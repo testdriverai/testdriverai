@@ -6,11 +6,11 @@ description: Hover over elements or coordinates
 
 ## Overview
 
-Move the mouse cursor over elements or specific coordinates without clicking, useful for revealing tooltips, dropdowns, and hover effects.
+Move the mouse cursor onto elements or coordinates without a click. Use this to show tooltips, dropdowns, and hover effects.
 
 ## Element Hover
 
-Hover over a located element.
+Put the cursor on a found element.
 
 ### Syntax
 
@@ -42,7 +42,7 @@ await submenu.click();
 
 ## Coordinate Hover
 
-Hover at specific screen coordinates.
+Put the cursor at screen coordinates.
 
 ### Syntax
 
@@ -273,6 +273,6 @@ describe('Hover Interactions', () => {
 
 ## Related Methods
 
-- [`find()`](/v7/find) - Locate elements to hover
-- [`click()`](/v7/click) - Click after hovering
-- [`mouseDown()`](/v7/click) - Start drag operations
+- [`find()`](/find) - Locate elements to hover
+- [`click()`](/click) - Click after hovering
+- [`mouseDown()`](/click) - Start drag operations

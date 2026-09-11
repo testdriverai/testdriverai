@@ -6,7 +6,7 @@ description: Bring an application window to the foreground
 
 ## Overview
 
-Bring a specific application window to the foreground and make it the active window for interactions.
+Move a specific application window to the front. Make it the active window for interactions.
 
 ## Syntax
 
@@ -17,12 +17,12 @@ await testdriver.focusApplication(name)
 ## Parameters
 
 <ParamField path="name" type="string" required>
-  Application name (e.g., `'Google Chrome'`, `'Microsoft Edge'`, `'Notepad'`)
+  The application name (for example, `'Google Chrome'`, `'Microsoft Edge'`, `'Notepad'`)
 </ParamField>
 
 ## Returns
 
-`Promise<string>` - Result message
+`Promise<string>` - The result message
 
 ## Examples
 
@@ -288,6 +288,6 @@ describe('Multi-Application Workflow', () => {
 
 ## Related Methods
 
-- [`exec()`](/v7/exec) - Launch applications with PowerShell
-- [`pressKeys()`](/v7/press-keys) - Use Alt+Tab to switch windows
-- [`find()`](/v7/find) - Locate elements in the focused window
+- [`exec()`](/exec) - Launch applications with PowerShell
+- [`pressKeys()`](/press-keys) - Use Alt+Tab to switch windows
+- [`find()`](/find) - Locate elements in the focused window

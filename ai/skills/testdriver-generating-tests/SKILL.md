@@ -9,7 +9,7 @@ Start by exploring your app. This is where tests begin: you describe a flow in p
 There are two ways to explore: chatting interactively with your AI assistant through the TestDriver MCP server, or handing a coding agent our instructions file and prompting it to generate a test.
 
 <Info>
-  Both paths need an MCP-capable AI coding assistant. If you don't have one yet, start with **GitHub Copilot** — there's a [free tier](https://github.com/features/copilot/plans), no credit card required. See [Run → Setup](/v7/copilot/running-tests#setup) for the full install and sign-in walkthrough.
+  Both paths need an MCP-capable AI coding assistant. If you don't have one yet, start with **GitHub Copilot** — there's a [free tier](https://github.com/features/copilot/plans), no credit card required. See [Run → Setup](/copilot/running-tests#setup) for the full install and sign-in walkthrough.
 </Info>
 
 ## Instructions for Coding Agents
@@ -65,7 +65,7 @@ When the agent starts a session, a **live preview panel** opens in your editor. 
 - **Debug issues** — see exactly what the AI sees
 
 <Note>
-  The live preview panel requires the TestDriver VS Code extension. Set `TD_PREVIEW=ide` in your MCP configuration to enable it. See the [Run page](/v7/copilot/running-tests) for all device and preview options.
+  The live preview panel requires the TestDriver VS Code extension. Set `TD_PREVIEW=ide` in your MCP configuration to enable it. See the [Run page](/copilot/running-tests) for all device and preview options.
 </Note>
 
 ## Interactive Workflow
@@ -186,6 +186,6 @@ describe("Login Flow", () => {
 
 ## Next
 
-<Card title="Learn" icon="brain" arrow="true" horizontal href="/v7/caching">
+<Card title="Learn" icon="brain" arrow="true" horizontal href="/caching">
   Once the agent has explored your app, TestDriver caches what it discovers so your tests replay instantly without re-reasoning over the screen every time.
 </Card>

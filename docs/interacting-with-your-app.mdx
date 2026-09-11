@@ -1,0 +1,198 @@
+---
+title: "Interacting With Your App"
+sidebarTitle: "Interacting With Your App"
+description: "Click, hover, drag, and interact with located UI elements"
+icon: "hand-pointer"
+---
+
+## Overview
+
+Once you've [located an element](/locating-elements), the `Element` object exposes methods to interact with it. Use these to click, hover, and perform mouse operations that drive your app.
+
+## Interaction Methods
+
+#### click()
+
+Click on the element.
+
+```javascript
+await element.click(action)
+```
+
+**Parameters:**
+- `action` (string, optional) - Type of click: `'click'` (default), `'double-click'`, `'right-click'`, `'hover'`, `'mouseDown'`, `'mouseUp'`
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const button = await testdriver.find('submit button');
+await button.click(); // Regular click
+
+const file = await testdriver.find('document.txt');
+await file.click('double-click'); // Double-click
+
+const menu = await testdriver.find('settings icon');
+await menu.click('right-click'); // Right-click
+```
+
+<Note>
+  The element must be found before clicking. The `find()` method automatically locates the element.
+</Note>
+
+#### hover()
+
+Hover over the element without clicking.
+
+```javascript
+await element.hover()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const tooltip = await testdriver.find('info icon');
+await tooltip.hover();
+// Wait to see tooltip
+await new Promise(resolve => setTimeout(resolve, 1000));
+```
+
+#### doubleClick()
+
+Double-click on the element.
+
+```javascript
+await element.doubleClick()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const file = await testdriver.find('README.txt file icon');
+await file.doubleClick();
+```
+
+#### rightClick()
+
+Right-click on the element to open context menu.
+
+```javascript
+await element.rightClick()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+const folder = await testdriver.find('Documents folder');
+await folder.rightClick();
+```
+
+#### mouseDown() / mouseUp()
+
+Press or release mouse button on the element (for drag operations).
+
+```javascript
+await element.mouseDown()
+await element.mouseUp()
+```
+
+**Returns:** `Promise<void>`
+
+**Example:**
+```javascript
+// Drag and drop
+const item = await testdriver.find('draggable item');
+await item.mouseDown();
+
+// Move to drop target (using coordinates or another element)
+const target = await testdriver.find('drop zone');
+await target.hover();
+await target.mouseUp();
+```
+
+## Examples
+
+### Basic Element Interaction
+
+```javascript
+// Find and click
+const submitButton = await testdriver.find('submit button');
+await submitButton.click();
+
+// Find, verify, then interact
+const emailInput = await testdriver.find('email input field');
+if (emailInput.found()) {
+  await emailInput.click();
+  await testdriver.type('user@example.com');
+}
+```
+
+### Working with Forms
+
+```javascript
+// Fill out a multi-field form
+const nameField = await testdriver.find('name input field');
+await nameField.click();
+await testdriver.type('John Doe');
+
+const emailField = await testdriver.find('email input field');
+await emailField.click();
+await testdriver.type('john@example.com');
+
+const submitButton = await testdriver.find('submit button');
+await submitButton.click();
+```
+
+### Conditional Interactions
+
+```javascript
+// Check if element exists before interacting
+const closeButton = await testdriver.find('close popup button');
+
+if (closeButton.found()) {
+  await closeButton.click();
+  console.log('Popup closed');
+} else {
+  console.log('No popup to close');
+}
+```
+
+### Re-locating Dynamic Elements
+
+```javascript
+// Element that moves or changes
+const notification = await testdriver.find('success notification');
+
+// Do something that might cause it to move
+await testdriver.scroll('down', 300);
+
+// Re-locate the element
+await notification.find();
+
+if (notification.found()) {
+  await notification.click();
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Reuse element references when possible">
+    If you need to interact with the same element multiple times, reuse the reference:
+    
+    ```javascript
+    const input = await testdriver.find('search input');
+    await input.click();
+    await testdriver.type('first search');
+    await testdriver.pressKeys(['enter']);
+    
+    // Re-use the same element reference
+    await input.click();
+    await testdriver.pressKeys(['ctrl', 'a']); // Select all
+    await testdriver.type('second search');
+    ```
+  </Accordion>
+</AccordionGroup>

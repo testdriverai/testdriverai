@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const docsDir = path.resolve(__dirname, "../docs/v7");
+const docsDir = path.resolve(__dirname, "../docs");
 const skillsDir = path.resolve(__dirname, "../ai/skills");
 
 console.log(`Generating skills from ${docsDir} to ${skillsDir}`);

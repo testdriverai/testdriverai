@@ -6,7 +6,7 @@ description: Locate UI elements using natural language
 
 ## Overview
 
-Locate UI elements on screen using AI-powered natural language descriptions. Returns an `Element` object that can be interacted with.
+Find UI elements on the screen with natural language descriptions and AI. This returns an `Element` object. You can interact with the object.
 
 ## Syntax
 
@@ -26,19 +26,19 @@ const element = await testdriver.find(description, options)
   
   <Expandable title="properties">
     <ParamField path="cacheKey" type="string">
-      Custom cache key for storing element location. Use this to prevent cache pollution when using dynamic variables in prompts, or to share cache across tests.
+      A custom cache key to store the element location. Use this to keep the cache clean when you use dynamic variables in prompts. You can also use it to share the cache between tests.
     </ParamField>
     
     <ParamField path="cacheThreshold" type="number" default={0.05}>
-      Similarity threshold (0-1) for cache matching. Lower values require more similarity. Set to -1 to disable cache.
+      The similarity threshold (0-1) for a cache match. A lower value needs more similarity. Set it to -1 to disable the cache.
     </ParamField>
     
     <ParamField path="timeout" type="number" default={10000}>
-      Maximum time in milliseconds to poll for the element. Retries every 5 seconds until found or timeout expires. Defaults to `10000` (10 seconds). Set to `0` to disable polling and make a single attempt.
+      The maximum time in milliseconds to poll for the element. TestDriver tries again each 5 seconds until it finds the element or the timeout ends. The default is `10000` (10 seconds). Set it to `0` to disable the poll and try one time.
     </ParamField>
     
     <ParamField path="confidence" type="number">
-      Minimum confidence threshold (0-1). If the AI's confidence score for the found element is below this value, the find will be treated as a failure (`element.found()` returns `false`). Useful for ensuring high-quality matches in critical test steps.
+      The minimum confidence threshold (0-1). If the confidence score of the found element is less than this value, the find is a failure (`element.found()` returns `false`). Use this to make sure of good matches in critical test steps.
     </ParamField>
     
     <ParamField path="type" type="string">
@@ -50,11 +50,11 @@ const element = await testdriver.find(description, options)
     </ParamField>
     
     <ParamField path="zoom" type="boolean" default={false}>
-      Two-phase zoom mode for better precision in crowded UIs with many similar elements. Disabled by default.
+      A two-phase zoom mode for more precision in full UIs that have many similar elements. It is disabled by default.
     </ParamField>
     
     <ParamField path="verify" type="boolean" default={false}>
-      Enable AI verification of the located element. When `true`, a second AI call checks that the coordinates returned actually correspond to the requested element, catching hallucinated or incorrect positions. Disabled by default for lower latency. Defaults to the global `verify` option set on the [SDK constructor](/v7/client) when not specified per call.
+      This enables AI verification of the found element. When `true`, a second AI call makes sure that the coordinates agree with the correct element. This catches incorrect positions. It is disabled by default for less latency. When you do not set it for each call, it uses the global `verify` option from the [SDK constructor](/client).
     </ParamField>
     
     <ParamField path="ai" type="object">
@@ -85,7 +85,7 @@ const element = await testdriver.find(description, options)
 
 ## Returns
 
-`Promise<Element>` - Element instance that has been automatically located
+`Promise<Element>` - The Element instance that TestDriver found automatically.
 
 ## Examples
 
@@ -141,16 +141,16 @@ console.log('Price text:', price.text);
 
 ## Element Object
 
-The returned `Element` object provides:
+The `Element` object that TestDriver returns gives these:
 
 ### Methods
 
-- `found()` - Check if element was located
+- `found()` - Make a check if TestDriver found the element
 - `click(action)` - Click the element
-- `hover()` - Hover over the element
+- `hover()` - Put the cursor on the element
 - `doubleClick()` - Double-click the element
 - `rightClick()` - Right-click the element
-- `find(newDescription)` - Re-locate with optional new description
+- `find(newDescription)` - Find the element again with an optional new description
 
 ### Properties
 
@@ -163,11 +163,11 @@ The returned `Element` object provides:
 - `width`, `height` - Element dimensions
 - `boundingBox` - Complete bounding box
 
-See [Elements Reference](/v7/elements) for complete details.
+See [Elements Reference](/elements) for complete details.
 
 ### JSON Serialization
 
-Elements can be safely serialized using `JSON.stringify()` for logging and debugging. Circular references are automatically removed:
+You can serialize elements safely with `JSON.stringify()` for logs and for debug. TestDriver removes circular references automatically:
 
 ```javascript
 const element = await testdriver.find('login button');
@@ -197,18 +197,18 @@ console.log(JSON.stringify(element, null, 2));
 // }
 ```
 
-This is useful for:
-- Debugging element detection issues
-- Logging test execution details
-- Sharing element information across processes
-- Analyzing cache performance
+Use this for these:
+- To debug problems with element detection
+- To log the details of the test
+- To share element data between processes
+- To examine the cache performance
 
 ## Best Practices
 
 <Check>
   **Be specific in descriptions**
   
-  More specific descriptions improve accuracy:
+  More specific descriptions make the accuracy better:
   
   ```javascript
   // ✅ Good
@@ -222,7 +222,7 @@ This is useful for:
 <Check>
   **Always check if found**
   
-  Verify elements were located before interacting:
+  Make sure that TestDriver found the elements before you interact with them:
   
   ```javascript
   const element = await testdriver.find('login button');
@@ -250,7 +250,7 @@ This is useful for:
 
 ## Confidence Threshold
 
-Require a minimum AI confidence score for element matches. If the confidence is below the threshold, `find()` treats the result as not found:
+Set a minimum confidence score for element matches. If the confidence is less than the threshold, `find()` makes the result "not found":
 
 ```javascript
 // Require at least 90% confidence
@@ -264,10 +264,10 @@ if (!element.found()) {
 await element.click();
 ```
 
-This is useful for:
-- Critical test steps where an incorrect click could cause cascading failures
-- Distinguishing between similar elements (e.g., multiple buttons)
-- Failing fast when the UI has changed unexpectedly
+Use this for these:
+- Critical test steps. An incorrect click can cause more failures.
+- To tell the difference between similar elements (for example, many buttons)
+- To fail quickly when the UI changed
 
 ```javascript
 // Combine with timeout for robust polling with confidence gate
@@ -278,11 +278,11 @@ const element = await testdriver.find('success notification', {
 ```
 
 <Tip>
-  The `confidence` value is a float between 0 and 1 (e.g., `0.9` = 90%). The AI returns its confidence with each find result, which you can also read from `element.confidence` after a successful find.
+  The `confidence` value is a float between 0 and 1 (for example, `0.9` = 90%). The AI returns its confidence with each find result. You can also read this from `element.confidence` after a good find.
 </Tip>
 ## Element Type
 
-Use the `type` option to hint what kind of element you're looking for. This wraps your description into a more specific prompt for the AI, improving match accuracy — especially when users provide short or ambiguous descriptions.
+Use the `type` option to show which kind of element you look for. This puts your description into a more specific prompt for the AI. It makes the match accuracy better, primarily when a description is short or not clear.
 
 ```javascript
 // Find text on the page
@@ -309,11 +309,11 @@ const el = await testdriver.find('the blue submit button', { type: 'any' });
 | `"any"` | Original description (no wrapping) |
 
 <Tip>
-  This is particularly useful for short descriptions like `"Submit"` or `"Login"` where the AI may not know whether to look for a button, a link, or visible text. Specifying `type` removes the ambiguity.
+  Use this primarily for short descriptions such as `"Submit"` or `"Login"`. In these, the AI can be not sure to look for a button, a link, or visible text. When you give the `type`, the description becomes clear.
 </Tip>
 ## Polling for Dynamic Elements
 
-By default, `find()` polls for up to 10 seconds (retrying every 5 seconds) until the element is found. You can customize this with the `timeout` option:
+By default, `find()` polls for a maximum of 10 seconds (it tries again each 5 seconds) until it finds the element. You can change this with the `timeout` option:
 
 ```javascript
 // Uses default 10s timeout - polls every 5 seconds
@@ -329,18 +329,18 @@ const element = await testdriver.find('login button', { timeout: 0 });
 ```
 
 The `timeout` option:
-- Defaults to `10000` (10 seconds)
-- Retries finding the element every 5 seconds
-- Stops when the element is found or the timeout expires
-- Logs progress during polling
-- Returns the element (check `element.found()` if not throwing on failure)
-- Set to `0` to disable polling and make a single attempt
+- Has a default of `10000` (10 seconds)
+- Tries to find the element again each 5 seconds
+- Stops when it finds the element or the timeout ends
+- Logs the progress during the poll
+- Returns the element (make a check with `element.found()` if it does not throw an error on a failure)
+- Set it to `0` to disable the poll and try one time
 
 ## Zoom Mode
 
-Zoom mode is **disabled by default**. It uses a two-phase approach for better precision when locating elements, especially in crowded UIs with many similar elements.
+Zoom mode is **disabled by default**. It uses a two-phase method for more precision when it finds elements, primarily in full UIs that have many similar elements.
 
-To enable zoom for a specific find call, pass `zoom: true`:
+To enable zoom for a specific find call, give `zoom: true`:
 
 ```javascript
 // Enable zoom for better precision in crowded UIs
@@ -353,22 +353,22 @@ const largeButton = await testdriver.find('big hero button');
 
 ### How Zoom Mode Works
 
-1. **Phase 1**: AI identifies the approximate location of the element
-2. **Phase 2**: A 30% crop of the screen is created around that location
-3. **Phase 3**: AI performs precise location on the zoomed/cropped image
-4. **Result**: Coordinates are converted back to absolute screen position
+1. **Phase 1**: The AI finds the approximate location of the element.
+2. **Phase 2**: TestDriver makes a 30% crop of the screen around that location.
+3. **Phase 3**: The AI does the precise location on the cropped image.
+4. **Result**: TestDriver changes the coordinates back to the absolute screen position.
 
-This two-phase approach gives the AI a higher-resolution view of the target area, improving accuracy when multiple similar elements are close together.
+This two-phase method gives the AI a higher-resolution view of the target area. It makes the accuracy better when many similar elements are near together.
 
 <Tip>
-  You may want to enable zoom with `zoom: true` when:
-  - Targeting small elements in crowded UIs with many similar elements
-  - You need extra precision for closely spaced UI elements
+  Enable zoom with `zoom: true` when:
+  - You target small elements in full UIs that have many similar elements
+  - You need more precision for UI elements that are near together
 </Tip>
 
 ## Verify Mode
 
-Verify mode is **disabled by default**. When enabled, a second AI call checks that the coordinates returned by `find()` actually correspond to the requested element, catching hallucinated or incorrect positions.
+Verify mode is **disabled by default**. When it is enabled, a second AI call makes sure that the coordinates from `find()` agree with the correct element. This catches incorrect positions.
 
 ```javascript
 // Enable verification for critical interactions
@@ -378,13 +378,13 @@ await deleteBtn.click();
 
 ### How Verify Mode Works
 
-1. **Phase 1**: AI locates the element and returns coordinates
-2. **Phase 2**: A second AI call examines the screenshot at those coordinates to confirm the element matches the description
-3. **Result**: If verification fails, the find is retried or marked as not found
+1. **Phase 1**: The AI finds the element and returns coordinates.
+2. **Phase 2**: A second AI call looks at the screenshot at those coordinates. It makes sure that the element agrees with the description.
+3. **Result**: If the verification fails, TestDriver tries the find again or marks it "not found".
 
 ### Combining Zoom and Verify
 
-For maximum accuracy, enable both `zoom` and `verify` together. This is useful for critical interactions where clicking the wrong element could cause cascading failures:
+For the maximum accuracy, enable `zoom` and `verify` together. Use this for critical interactions. A click on the wrong element can cause more failures:
 
 ```javascript
 // Maximum accuracy: zoom for precision + verify to catch hallucinations
@@ -397,13 +397,13 @@ await element.click();
 
 ## Cache Options
 
-When a test completes successfully, the result of each `find()` is cached. On later runs, TestDriver reuses the cached match instead of making a fresh AI call, which significantly speeds up locating the same element. The cache lives in your [dashboard](https://console.testdriver.ai/cache) and is shared across runs — see the [Cache](/v7/cache) page for how matching, thresholds, and invalidation work.
+When a test completes correctly, TestDriver caches the result of each `find()`. On later runs, TestDriver uses the cached match again. It does not make a new AI call. This finds the same element much more quickly. The cache is in your [dashboard](https://console.testdriver.ai/cache). TestDriver shares it between runs. Read the [Cache](/cache) page to see how the match, the thresholds, and the invalidation work.
 
-Control caching behavior to optimize performance, especially when using dynamic variables in prompts.
+Control the cache to make the performance better, primarily when you use dynamic variables in prompts.
 
 ### Custom Cache Key
 
-Use `cacheKey` to prevent cache pollution when prompts contain variables:
+Use `cacheKey` to keep the cache clean when prompts have variables:
 
 ```javascript
 // ❌ Without cacheKey - creates new cache entry for each email value
@@ -425,7 +425,7 @@ await testdriver.find(`order ${orderId} status`, {
 
 ### Cache Threshold
 
-Control how similar a cached result must be to reuse it:
+Control how similar a cached result must be before TestDriver uses it again:
 
 ```javascript
 // Default: 95% similarity required
@@ -449,12 +449,12 @@ await testdriver.find('submit button', {
 ```
 
 <Tip>
-  By default, TestDriver auto-generates a cache key from the SHA-256 hash of your test file. When you modify your test file, the hash changes automatically, invalidating stale cache entries.
+  By default, TestDriver makes a cache key automatically from the SHA-256 hash of your test file. When you change your test file, the hash changes automatically. This makes the old cache entries not valid.
 </Tip>
 
 ### Manual Polling (Alternative)
 
-If you need custom polling logic:
+If you need custom poll logic:
 
 ```javascript
 async function waitForElement(testdriver, description, timeout = 30000) {
@@ -594,10 +594,10 @@ describe('Element Finding', () => {
 
 ## Related Methods
 
-- [`click()`](/v7/click) - Click on found elements
-- [`hover()`](/v7/hover) - Hover over elements
-- [`assert()`](/v7/assert) - Verify element states
-- [Elements Reference](/v7/elements) - Complete Element API
+- [`click()`](/click) - Click on found elements
+- [`hover()`](/hover) - Hover over elements
+- [`assert()`](/assert) - Verify element states
+- [Elements Reference](/elements) - Complete Element API
 
 ---
 

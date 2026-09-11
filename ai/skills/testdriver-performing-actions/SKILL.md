@@ -6,11 +6,11 @@ description: Perform actions and handle dynamic, async UI so tests adapt to chan
 
 Real apps move, load, and change. Adapt your tests to handle it.
 
-Once you've [generated](/v7/generating-tests) and [learned](/v7/caching) your tests and gotten them [running](/v7/copilot/running-tests), the next challenge is the real world: buttons appear after a spinner, pages navigate, animations play, and content streams in over the network. To keep tests reliable, you need to perform the right actions and handle timing so your tests adapt to how the UI actually behaves instead of breaking.
+Once you've [generated](/generating-tests) and [learned](/caching) your tests and gotten them [running](/copilot/running-tests), the next challenge is the real world: buttons appear after a spinner, pages navigate, animations play, and content streams in over the network. To keep tests reliable, you need to perform the right actions and handle timing so your tests adapt to how the UI actually behaves instead of breaking.
 
 ## Performing Actions
 
-TestDriver provides a variety of actions you can perform, like [clicking](/v7/click), [typing](/v7/type), [hovering](/v7/hover), and [scrolling](/v7/scroll). For a full list, see the [API Reference](/v7/click).
+TestDriver provides a variety of actions you can perform, like [clicking](/click), [typing](/type), [hovering](/hover), and [scrolling](/scroll). For a full list, see the [API Reference](/click).
 
 ```javascript
 // Clicking
@@ -141,8 +141,8 @@ await testdriver.wait(1000);
   For waiting for specific **elements** to appear, prefer `find()` with a `timeout` option. Use `wait()` only for simple time-based pauses.
 </Note>
 
-Once your tests can reliably act on a changing UI and [assert](/v7/making-assertions) the results, the next step is figuring out what happened when something does go wrong.
+Once your tests can reliably act on a changing UI and [assert](/making-assertions) the results, the next step is figuring out what happened when something does go wrong.
 
-<Card title="Next: Debug" icon="bug" href="/v7/debugging-with-screenshots">
+<Card title="Next: Debug" icon="bug" href="/debugging-with-screenshots">
   Use screenshots and run output to see exactly what your test saw and pinpoint failures.
 </Card>

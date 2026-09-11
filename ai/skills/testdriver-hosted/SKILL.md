@@ -51,7 +51,7 @@ Hosted is the default when you follow the Quickstart guide.
 <Card
   title="Try the Quickstart"  
   icon="play"
-  href="/v7/quickstart"
+  href="/quickstart"
 >
   Set your API key and start testing in minutes.
 </Card>
@@ -137,7 +137,7 @@ To prevent tests from failing due to exceeding your license slot limit, we recom
 
 ## When to Consider Self-Hosted
 
-Hosted is perfect for getting started and for teams that want zero infrastructure management. However, you might consider [Self-Hosted](/v7/self-hosted) if you:
+Hosted is perfect for getting started and for teams that want zero infrastructure management. However, you might consider [Self-Hosted](/self-hosted) if you:
 
 - Want to escape per-second billing with a flat license fee
 - Require greater concurrency than offered in Cloud plans
@@ -149,7 +149,7 @@ Hosted is perfect for getting started and for teams that want zero infrastructur
 <Card
   title="Explore Self-Hosted"
   icon="server"
-  href="/v7/self-hosted"
+  href="/self-hosted"
 >
   Learn about self-hosting for unlimited test execution at a flat rate.
 </Card>

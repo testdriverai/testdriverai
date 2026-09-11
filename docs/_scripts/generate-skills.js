@@ -4,13 +4,13 @@ const fs = require("fs");
 const path = require("path");
 
 /**
- * Script to generate MCP skills from docs/v7/*.mdx files
+ * Script to generate MCP skills from the docs/*.mdx files
  *
  * This script reads the frontmatter from each mdx file and generates
  * SKILL.md files in the skills/ output directory.
  */
 
-const DOCS_DIR = path.join(__dirname, "../v7");
+const DOCS_DIR = path.join(__dirname, "..");
 const OUTPUT_DIR = path.join(__dirname, "../../ai/skills");
 
 // Parse YAML frontmatter from mdx content
@@ -108,7 +108,7 @@ function processFiles() {
 
 // Main function
 function main() {
-  console.log("🚀 Generating MCP skills from docs/v7/*.mdx files...\n");
+  console.log("🚀 Generating MCP skills from docs/*.mdx files...\n");
   console.log(`📂 Source: ${DOCS_DIR}`);
   console.log(`📂 Output: ${OUTPUT_DIR}\n`);
 
@@ -133,7 +133,7 @@ Options:
   --help, -h    Show this help message
 
 Description:
-  This script generates MCP skill files from the docs/v7/*.mdx documentation.
+  This script generates MCP skill files from the docs/*.mdx documentation.
   
   Each .mdx file is converted to a SKILL.md file with:
   - name: testdriver:<filename>

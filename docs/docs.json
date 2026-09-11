@@ -11,286 +11,149 @@
     "default": "dark"
   },
   "favicon": "/images/template/icon.png",
-  "navigation": {
-    "versions": [
+  "navigation": { 
+
+    "groups": [
       {
-        "version": "v7",
-        "groups": [
+        "group": "Overview",
+        "pages": [
+          "/agent",
+          "/what-is-testdriver",
+
+      {
+        "group": "Quickstart",
+        "icon": "rocket",
+        "pages": [
+          "/quickstart-github",
+          "/quickstart-cli"
+        ]
+      },
+      {
+        "group": "Examples",
+        "icon": "code",
+        "pages": [
+          "/examples/ai",
+          "/examples/assert",
+          "/examples/captcha-api",
+          "/examples/chrome-extension",
+          "/examples/drag-and-drop",
+          "/examples/element-not-found",
+          "/examples/findall-coffee-icons",
+          "/examples/formatted-logging",
+          "/examples/hover-image",
+          "/examples/hover-text-with-description",
+          "/examples/hover-text",
+          "/examples/installer",
+          "/examples/launch-vscode-linux",
+          "/examples/match-image",
+          "/examples/parse",
+          "/examples/press-keys",
+          "/examples/scroll-keyboard",
+          "/examples/scroll-until-text",
+          "/examples/scroll",
+          "/examples/type"
+        ]
+      }
+        ]
+      },
+      {
+        "group": "Using TestDriver",
+        "pages": [
+          "/generating-tests",
+          "/copilot/running-tests",
+          "/debugging-with-screenshots",
+          "/caching",
+          "/performing-actions",
+          "/copilot/auto-healing"
+        ]
+      },
+      {
+        "group": "Building & Maintaining Tests",
+        "pages": [
+          "/quickstart-manual",
           {
-            "group": "Overview",
+            "group": "Configure the SDK",
+            "icon": "sliders",
             "pages": [
-              "/v7/quickstart",
-              {
-                "group": "Examples",
-                "icon": "code",
-                "pages": [
-                  "/v7/examples/assert",
-                  "/v7/examples/element-not-found",
-                  "/v7/examples/findall-coffee-icons",
-                  "/v7/examples/hover-image",
-                  "/v7/examples/hover-text-with-description",
-                  "/v7/examples/hover-text",
-                  "/v7/examples/installer",
-                  "/v7/examples/launch-vscode-linux",
-                  "/v7/examples/parse",
-                  "/v7/examples/press-keys",
-                  "/v7/examples/scroll-keyboard",
-                  "/v7/examples/scroll",
-                  "/v7/examples/type"
-                ]
-              },
-              "/v7/what-is-testdriver",
-              "/v7/agent",
-              {
-                "group": "Deployment",
-                "icon": "server",
-                "pages": [
-                  "/v7/hosted",
-                  "/v7/self-hosted"
-                ]
-              },
-              "/changelog"
+              "/client",
+              "/options"
+            ]
+          },
+          "/provision",
+          "/locating-elements",
+          {
+            "group": "Interacting",
+            "icon": "hand-pointer",
+            "pages": [
+              "/assert",
+              "/captcha",
+              "/click",
+              "/double-click",
+              "/exec",
+              "/extract",
+              "/find",
+              "/focus-application",
+              "/hover",
+              "/mouse-down",
+              "/mouse-up",
+              "/parse",
+              "/press-keys",
+              "/right-click",
+              "/screenshot",
+              "/scroll",
+              "/type",
+              "/wait"
             ]
           },
           {
-            "group": "Guide",
+            "group": "Debugging",
+            "icon": "bug",
             "pages": [
-              "/v7/generating-tests",
-              "/v7/caching",
-              "/v7/copilot/running-tests",
-              "/v7/making-assertions",
-              "/v7/performing-actions",
-              "/v7/debugging-with-screenshots",
-              "/v7/copilot/auto-healing",
-              "/v7/ci-cd",
-              "/v7/test-results-json"
+              "/redraw",
+              "/screenshots",
+              "/errors",
+              "/events",
+              "/dashcam",
+              "/test-results-json"
             ]
           },
+          "/making-assertions",
+
+        {
+          "group": "Integrations",
+          "icon": "plug",
+          "pages": [
+            "/github",
+            "/ci-cd"
+          ]
+      },
           {
-            "group": "Scaling",
+            "group": "Deploying",
+            "icon": "cloud-arrow-up",
             "pages": [
-              "/v7/variables",
-              "/v7/secrets",
-              "/v7/reusable-code",
+              "/hosted",
               {
                 "group": "Self-Hosting",
                 "icon": "server",
                 "pages": [
-                  "/v7/aws-setup"
+                  "/self-hosted",
+                  "/aws-setup"
                 ]
               }
-            ]
-          },
-          {
-            "group": "Actions",
-            "pages": [
-              "/v7/assert",
-              "/v7/captcha",
-              "/v7/click",
-              "/v7/double-click",
-              "/v7/exec",
-              "/v7/extract",
-              "/v7/find",
-              "/v7/focus-application",
-              "/v7/hover",
-              "/v7/mouse-down",
-              "/v7/mouse-up",
-              "/v7/parse",
-              "/v7/press-keys",
-              "/v7/right-click",
-              "/v7/screenshot",
-              "/v7/scroll",
-              "/v7/type"
-            ]
-          },
-          {
-            "group": "SDK Reference",
-            "pages": [
-              "/v7/client",
-              "/v7/elements",
-              "/v7/dashcam"
             ]
           }
         ]
       },
       {
-        "version": "v6",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "/v6/overview/what-is-testdriver",
-              {
-                "group": "Concepts",
-                "icon": "book",
-                "pages": [
-                  "/v6/features/selectorless",
-                  "/v6/overview/comparison",
-                  "/v6/overview/performance",
-                  "/v6/overview/faq"
-                ]
-              },
-              "/v6/account/enterprise"
-            ]
-          },
-          {
-            "group": "Get Started",
-            "pages": [
-              "/v6/overview/quickstart",
-              {
-                "group": "CLI",
-                "icon": "terminal",
-                "pages": [
-                  "/v6/cli/overview",
-                  {
-                    "group": "Commands",
-                    "icon": "command",
-                    "pages": [
-                      "/v6/interactive/explore",
-                      "/v6/interactive/run",
-                      "/v6/interactive/save"
-                    ]
-                  }
-                ]
-              },
-              "/v6/getting-started/self-hosting",
-              "/v6/getting-started/playwright",
-              "/v6/getting-started/vscode"
-            ]
-          },
-          {
-            "group": "Examples",
-            "pages": [
-              {
-                "group": "Apps",
-                "icon": "laptop",
-                "pages": [
-                  "/v6/apps/static-websites",
-                  "/v6/apps/desktop-apps",
-                  "/v6/apps/chrome-extensions",
-                  "/v6/apps/mobile-apps",
-                  "/v6/apps/tauri-apps"
-                ]
-              },
-              {
-                "group": "Scenarios",
-                "icon": "computer-mouse",
-                "pages": [
-                  "/v6/scenarios/ai-chatbot",
-                  "/v6/scenarios/cookie-banner",
-                  "/v6/scenarios/file-upload",
-                  "/v6/scenarios/form-filling",
-                  "/v6/scenarios/log-in",
-                  "/v6/scenarios/pdf-generation",
-                  "/v6/scenarios/spell-check"
-                ]
-              },
-              {
-                "group": "Build Systems",
-                "icon": "helmet-safety",
-                "pages": [
-                  "/v6/integrations/electron",
-                  "/v6/integrations/netlify",
-                  "/v6/integrations/vercel"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Guide",
-            "pages": [
-              {
-                "group": "Configuration",
-                "icon": "desktop",
-                "pages": [
-                  "/v6/guide/authentication",
-                  "/v6/guide/variables",
-                  "/v6/guide/lifecycle",
-                  "/v6/guide/dashcam",
-                  "/v6/guide/environment-variables",
-                  "/v6/action/ami"
-                ]
-              },
-              {
-                "group": "Writing",
-                "icon": "pencil",
-                "pages": [
-                  "/v6/features/generation",
-                  "/v6/guide/locating",
-                  "/v6/guide/waiting",
-                  "/v6/guide/assertions",
-                  "/v6/guide/code",
-                  "/v6/features/reusable-snippets",
-                  "/v6/guide/protips"
-                ]
-              },
-              {
-                "group": "Importing",
-                "icon": "file-import",
-                "pages": [
-                  "/v6/importing/csv",
-                  "/v6/importing/gherkin",
-                  "/v6/importing/jira",
-                  "/v6/importing/testrail"
-                ]
-              },
-              {
-                "group": "Running",
-                "icon": "play",
-                "pages": [
-                  "/v6/getting-started/running",
-                  "/v6/getting-started/ci",
-                  "/v6/features/parallel-testing",
-                  "/v6/action/performance",
-                  "/v6/action/secrets"
-                ]
-              },
-              {
-                "group": "Maintaining",
-                "icon": "wrench",
-                "pages": [
-                  "/v6/getting-started/editing",
-                  "/v6/features/auto-healing"
-                ]
-              },
-              {
-                "group": "Reporting",
-                "icon": "chart-simple",
-                "pages": [
-                  "/v6/exporting/junit",
-                  "/v6/bugs/jira"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Reference",
-            "pages": [
-              {
-                "group": "YAML",
-                "icon": "file-code",
-                "pages": [
-                  "/v6/commands/assert",
-                  "/v6/commands/exec",
-                  "/v6/commands/focus-application",
-                  "/v6/commands/hover-image",
-                  "/v6/commands/hover-text",
-                  "/v6/commands/if",
-                  "/v6/commands/match-image",
-                  "/v6/commands/press-keys",
-                  "/v6/commands/remember",
-                  "/v6/commands/run",
-                  "/v6/commands/scroll",
-                  "/v6/commands/scroll-until-image",
-                  "/v6/commands/scroll-until-text",
-                  "/v6/commands/type",
-                  "/v6/commands/wait",
-                  "/v6/commands/wait-for-image",
-                  "/v6/commands/wait-for-text"
-                ]
-              }
-            ]
-          }
+        "group": "Advanced Topics",
+        "pages": [
+
+          "/variables",
+          "/secrets",
+          "/reusable-code",
+          "/cache",
+          "/customizing-devices",
+          "/guide/best-practices-polling"
         ]
       }
     ]
@@ -303,24 +166,14 @@
   "navbar": {
     "links": [
       {
-        "label": "Discord",
+        "label": "Join Discord",
         "icon": "discord",
         "href": "https://discord.com/invite/cWDFW8DzPm"
       },
       {
-        "label": "Book a Demo",
-        "href": "http://testdriver.ai/demo",
-        "icon": "calendar"
-      },
-      {
         "icon": "gauge-high",
         "label": "Dashboard",
-        "href": "https://console.testdriver.ai"
-      },
-      {
-        "icon": "megaphone",
-        "label": "Changelog",
-        "href": "/changelog"
+        "href": "https://console-canary.testdriver.ai"
       }
     ]
   },
@@ -334,84 +187,372 @@
   },
   "redirects": [
     {
+      "source": "/",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/quickstart-ai-setup",
+      "destination": "/quickstart-cli"
+    },
+    {
       "source": "/v7/ai",
-      "destination": "/v7/quickstart"
+      "destination": "/quickstart"
     },
     {
       "source": "/v7/ai/:slug*",
-      "destination": "/v7/quickstart"
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/overview/what-is-testdriver",
+      "destination": "/what-is-testdriver"
+    },
+    {
+      "source": "/v6/overview/quickstart",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/overview/comparison",
+      "destination": "/what-is-testdriver"
+    },
+    {
+      "source": "/v6/overview/performance",
+      "destination": "/what-is-testdriver"
+    },
+    {
+      "source": "/v6/overview/faq",
+      "destination": "/what-is-testdriver"
+    },
+    {
+      "source": "/v6/overview/:slug*",
+      "destination": "/what-is-testdriver"
+    },
+    {
+      "source": "/v6/account/enterprise",
+      "destination": "/self-hosted"
+    },
+    {
+      "source": "/v6/account/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/features/selectorless",
+      "destination": "/find"
+    },
+    {
+      "source": "/v6/features/generation",
+      "destination": "/generating-tests"
+    },
+    {
+      "source": "/v6/features/reusable-snippets",
+      "destination": "/reusable-code"
+    },
+    {
+      "source": "/v6/features/auto-healing",
+      "destination": "/copilot/auto-healing"
+    },
+    {
+      "source": "/v6/features/parallel-testing",
+      "destination": "/ci-cd"
+    },
+    {
+      "source": "/v6/features/visual-assertions",
+      "destination": "/making-assertions"
+    },
+    {
+      "source": "/v6/features/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/cli/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/interactive/explore",
+      "destination": "/generating-tests"
+    },
+    {
+      "source": "/v6/interactive/run",
+      "destination": "/copilot/running-tests"
+    },
+    {
+      "source": "/v6/interactive/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/getting-started/self-hosting",
+      "destination": "/self-hosted"
+    },
+    {
+      "source": "/v6/getting-started/playwright",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/getting-started/vscode",
+      "destination": "/copilot/running-tests"
+    },
+    {
+      "source": "/v6/getting-started/running",
+      "destination": "/copilot/running-tests"
+    },
+    {
+      "source": "/v6/getting-started/ci",
+      "destination": "/ci-cd"
+    },
+    {
+      "source": "/v6/getting-started/editing",
+      "destination": "/debugging-with-screenshots"
+    },
+    {
+      "source": "/v6/getting-started/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/guide/authentication",
+      "destination": "/secrets"
+    },
+    {
+      "source": "/v6/guide/variables",
+      "destination": "/variables"
+    },
+    {
+      "source": "/v6/guide/environment-variables",
+      "destination": "/variables"
+    },
+    {
+      "source": "/v6/guide/lifecycle",
+      "destination": "/client"
+    },
+    {
+      "source": "/v6/guide/dashcam",
+      "destination": "/dashcam"
+    },
+    {
+      "source": "/v6/guide/locating",
+      "destination": "/find"
+    },
+    {
+      "source": "/v6/guide/waiting",
+      "destination": "/wait"
+    },
+    {
+      "source": "/v6/guide/assertions",
+      "destination": "/making-assertions"
+    },
+    {
+      "source": "/v6/guide/code",
+      "destination": "/reusable-code"
+    },
+    {
+      "source": "/v6/guide/protips",
+      "destination": "/performing-actions"
+    },
+    {
+      "source": "/v6/guide/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/action/ami",
+      "destination": "/aws-setup"
+    },
+    {
+      "source": "/v6/action/performance",
+      "destination": "/ci-cd"
+    },
+    {
+      "source": "/v6/action/secrets",
+      "destination": "/secrets"
+    },
+    {
+      "source": "/v6/action/:slug*",
+      "destination": "/ci-cd"
+    },
+    {
+      "source": "/v6/apps/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/scenarios/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/integrations/:slug*",
+      "destination": "/ci-cd"
+    },
+    {
+      "source": "/v6/tutorials/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/security/:slug*",
+      "destination": "/self-hosted"
+    },
+    {
+      "source": "/v6/importing/:slug*",
+      "destination": "/generating-tests"
+    },
+    {
+      "source": "/v6/exporting/junit",
+      "destination": "/test-results-json"
+    },
+    {
+      "source": "/v6/exporting/:slug*",
+      "destination": "/test-results-json"
+    },
+    {
+      "source": "/v6/bugs/:slug*",
+      "destination": "/debugging-with-screenshots"
+    },
+    {
+      "source": "/v6/commands/assert",
+      "destination": "/assert"
+    },
+    {
+      "source": "/v6/commands/exec",
+      "destination": "/exec"
+    },
+    {
+      "source": "/v6/commands/focus-application",
+      "destination": "/focus-application"
+    },
+    {
+      "source": "/v6/commands/hover-image",
+      "destination": "/hover"
+    },
+    {
+      "source": "/v6/commands/hover-text",
+      "destination": "/hover"
+    },
+    {
+      "source": "/v6/commands/if",
+      "destination": "/performing-actions"
+    },
+    {
+      "source": "/v6/commands/match-image",
+      "destination": "/find"
+    },
+    {
+      "source": "/v6/commands/press-keys",
+      "destination": "/press-keys"
+    },
+    {
+      "source": "/v6/commands/remember",
+      "destination": "/variables"
+    },
+    {
+      "source": "/v6/commands/run",
+      "destination": "/reusable-code"
+    },
+    {
+      "source": "/v6/commands/scroll",
+      "destination": "/scroll"
+    },
+    {
+      "source": "/v6/commands/scroll-until-image",
+      "destination": "/scroll"
+    },
+    {
+      "source": "/v6/commands/scroll-until-text",
+      "destination": "/scroll"
+    },
+    {
+      "source": "/v6/commands/type",
+      "destination": "/type"
+    },
+    {
+      "source": "/v6/commands/wait",
+      "destination": "/wait"
+    },
+    {
+      "source": "/v6/commands/wait-for-image",
+      "destination": "/wait"
+    },
+    {
+      "source": "/v6/commands/wait-for-text",
+      "destination": "/wait"
+    },
+    {
+      "source": "/v6/commands/:slug*",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v6/:slug*",
+      "destination": "/quickstart"
     },
     {
       "source": "/guides/github-actions",
-      "destination": "/v6/action/setup"
+      "destination": "/ci-cd"
     },
     {
       "source": "/reference/test-steps",
-      "destination": "/v6/features/selectorless"
+      "destination": "/find"
     },
     {
       "source": "/guides/debugging-test-runs",
-      "destination": "/v6/getting-started/editing"
+      "destination": "/debugging-with-screenshots"
     },
     {
       "source": "/overview/:slug*",
-      "destination": "/v6/overview/:slug*"
+      "destination": "/what-is-testdriver"
     },
     {
       "source": "/features/:slug*",
-      "destination": "/v6/features/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/getting-started/:slug*",
-      "destination": "/v6/getting-started/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/cli/:slug*",
-      "destination": "/v6/cli/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/interactive/:slug*",
-      "destination": "/v6/interactive/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/guide/:slug*",
-      "destination": "/v6/guide/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/action/:slug*",
-      "destination": "/v6/action/:slug*"
+      "destination": "/ci-cd"
     },
     {
       "source": "/account/:slug*",
-      "destination": "/v6/account/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/apps/:slug*",
-      "destination": "/v6/apps/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/scenarios/:slug*",
-      "destination": "/v6/scenarios/:slug*"
+      "destination": "/quickstart"
     },
     {
       "source": "/integrations/:slug*",
-      "destination": "/v6/integrations/:slug*"
+      "destination": "/ci-cd"
     },
     {
       "source": "/importing/:slug*",
-      "destination": "/v6/importing/:slug*"
+      "destination": "/generating-tests"
     },
     {
       "source": "/exporting/:slug*",
-      "destination": "/v6/exporting/:slug*"
+      "destination": "/test-results-json"
     },
     {
       "source": "/bugs/:slug*",
-      "destination": "/v6/bugs/:slug*"
+      "destination": "/debugging-with-screenshots"
     },
     {
       "source": "/commands/:slug*",
-      "destination": "/v6/commands/:slug*"
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/v7/:slug*",
+      "destination": "/:slug*"
     }
   ],
   "integrations": {

@@ -6,17 +6,17 @@ description: Scroll pages and elements
 
 ## Overview
 
-Scroll the page or active element in any direction using mouse wheel or keyboard.
+Scroll the page or the active element in any direction with the mouse wheel or the keyboard.
 
 <Warning>
   **Focus Requirements**
   
-  Scrolling requires the page or a frame to be focused. If an input field or other interactive element has focus, scroll commands may not work as expected. Before scrolling, ensure focus is on the page by:
-  - Clicking on a non-interactive area (e.g., page background)
-  - Pressing the Escape key to unfocus interactive elements
-  - Clicking outside of input fields or text areas
+  A scroll needs focus on the page or on a frame. If an input field or another interactive element has focus, scroll commands can fail. Before you scroll, put the focus on the page:
+  - Click a non-interactive area (for example, the page background)
+  - Push the Escape key to remove the focus from interactive elements
+  - Click outside of input fields or text areas
   
-  **If scroll is still not working**, try using Page Down/Page Up keys directly:
+  **If the scroll still does not work**, use the Page Down or Page Up keys directly:
   ```javascript
   await testdriver.pressKeys(['pagedown']); // Scroll down
   await testdriver.pressKeys(['pageup']);   // Scroll up
@@ -88,7 +88,7 @@ await testdriver.pressKeys(['pagedown']);
 ## Best Practices
 
 <Check>
-  **Ensure page has focus before scrolling**
+  **Make sure that the page has focus before you scroll**
   
   ```javascript
   // After typing in an input, unfocus it first
@@ -109,7 +109,7 @@ await testdriver.pressKeys(['pagedown']);
 </Check>
 
 <Check>
-  **Control scroll distance with the options object**
+  **Control the scroll distance with the options object**
   
   ```javascript
   // For web pages, mouse scroll works well
@@ -121,9 +121,9 @@ await testdriver.pressKeys(['pagedown']);
 </Check>
 
 <Warning>
-  **Keyboard scroll uses Page Down/Up**
+  **The keyboard scroll uses Page Down and Page Up**
   
-  Keyboard scrolling typically moves by one "page" at a time, which may be more than the specified click amount. It's more compatible but less precise than mouse scrolling.
+  A keyboard scroll usually moves one "page" each time. This can be more than the click amount that you set. It is more compatible than a mouse scroll, but it is less precise.
 </Warning>
 
 ## Use Cases
@@ -200,6 +200,6 @@ describe('Scrolling', () => {
 
 ## Related Methods
 
-- [`find()`](/v7/find) - Locate elements after scrolling
-- [`pressKeys()`](/v7/press-keys) - Use Page Down/Up keys
-- [`wait()`](/v7/wait) - Wait after scrolling
+- [`find()`](/find) - Find elements after a scroll
+- [`pressKeys()`](/press-keys) - Use the Page Down and Page Up keys
+- [`wait()`](/wait) - Wait after a scroll

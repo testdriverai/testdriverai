@@ -6,7 +6,7 @@ description: Perform a double-click action on an element or at specific coordina
 
 ## Overview
 
-The `doubleClick()` method performs a double-click action on an element. You can either call it on an [`Element`](/v7/core-concepts/elements) instance or use it directly with a selector.
+The `doubleClick()` method does a double-click action on an element. You can call it on an [`Element`](/core-concepts/elements) instance. Or you can use it with a selector.
 
 ## Syntax
 
@@ -30,7 +30,7 @@ When called directly on the AI client:
 
 ## Returns
 
-Returns a `Promise<void>` that resolves when the double-click action completes.
+It returns a `Promise<void>`. The promise resolves when the double-click action completes.
 
 ## Examples
 
@@ -95,8 +95,8 @@ expect(selectedText).toBe('TestDriver');
 
 ## Related Methods
 
-- [`click()`](/v7/click) - Single click on an element
-- [`rightClick()`](/v7/right-click) - Right-click to open context menu
-- [`mouseDown()`](/v7/mouse-down) - Press mouse button without releasing
-- [`mouseUp()`](/v7/mouse-up) - Release mouse button
-- [`hover()`](/v7/hover) - Move mouse over element without clicking
+- [`click()`](/click) - Single click on an element
+- [`rightClick()`](/right-click) - Right-click to open context menu
+- [`mouseDown()`](/mouse-down) - Press mouse button without releasing
+- [`mouseUp()`](/mouse-up) - Release mouse button
+- [`hover()`](/hover) - Move mouse over element without clicking

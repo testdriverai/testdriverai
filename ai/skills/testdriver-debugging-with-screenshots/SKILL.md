@@ -410,16 +410,16 @@ When tests fail or behave unexpectedly, replay what happened step by step:
 
 ## Where this fits in the Guide
 
-Debugging is what you reach for when a [Run](/v7/copilot/running-tests) goes sideways or a [Validate](/v7/making-assertions) assertion fails — the screenshots show you precisely what the AI saw before it acted. Once you've diagnosed the failure, the next step is to stop it from recurring.
+Debugging is what you reach for when a [Run](/copilot/running-tests) goes sideways or a [Validate](/making-assertions) assertion fails — the screenshots show you precisely what the AI saw before it acted. Once you've diagnosed the failure, the next step is to stop it from recurring.
 
 ## Related
 
-- [screenshot()](/v7/screenshot) - Capture screenshots during test execution
-- [Dashcam](/v7/dashcam) - Record full test sessions with video and logs
-- [assert()](/v7/assert) - Make AI-powered assertions that benefit from screenshot context
+- [screenshot()](/screenshot) - Capture screenshots during test execution
+- [Dashcam](/dashcam) - Record full test sessions with video and logs
+- [assert()](/assert) - Make AI-powered assertions that benefit from screenshot context
 
 ## Next
 
-<Card title="Prevent" icon="shield-check" href="/v7/copilot/auto-healing">
+<Card title="Prevent" icon="shield-check" href="/copilot/auto-healing">
   You've seen what went wrong — now keep it from happening again. Let auto-healing repair flaky tests automatically before they fail your suite.
 </Card>

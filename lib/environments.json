@@ -11,7 +11,7 @@
   },
   "canary": {
     "apiRoot": "https://api-canary.testdriver.ai",
-    "consoleUrl": "https://console-canary.testdriver.ai",
+    "consoleUrl": "https://console.testdriver.ai",
     "tdEnv": "production"
   },
   "stable": {

@@ -6,7 +6,7 @@ description: Click at specific coordinates or on elements
 
 ## Element Click
 
-When called on an Element object, clicks on the located element.
+When you call this on an Element object, it clicks on the found element.
 
 ### Syntax
 
@@ -89,7 +89,7 @@ await testdriver.click(500, 300, 'right-click');
 
 ### Regular Click
 
-Single left-click action.
+One left-click action.
 
 ```javascript
 const button = await testdriver.find('Login button');
@@ -98,7 +98,7 @@ await button.click();
 
 ### Double Click
 
-Double-click action, commonly used to open files or select text.
+A double-click action. It usually opens files or selects text.
 
 ```javascript
 const file = await testdriver.find('document.pdf');
@@ -122,7 +122,7 @@ await folder.rightClick();
 
 ### Mouse Down / Mouse Up
 
-For drag operations or custom click behavior.
+Use these for drag operations or custom click behavior.
 
 ```javascript
 const draggable = await testdriver.find('draggable item');
@@ -141,9 +141,9 @@ await dropZone.mouseUp();
 ## Best Practices
 
 <Check>
-  **Prefer element clicks over coordinate clicks**
+  **Prefer element clicks to coordinate clicks**
   
-  Element-based clicking is more reliable and resolution-independent:
+  A click on an element is more reliable. It does not depend on the resolution:
   
   ```javascript
   // ✅ Preferred
@@ -156,7 +156,7 @@ await dropZone.mouseUp();
 </Check>
 
 <Check>
-  **Verify element was found**
+  **Make sure that TestDriver found the element**
   
   ```javascript
   const element = await testdriver.find('button');
@@ -168,9 +168,9 @@ await dropZone.mouseUp();
 </Check>
 
 <Warning>
-  **Element must be found before clicking**
+  **TestDriver must find the element before you click it**
   
-  The `find()` method automatically locates elements, but clicking an element that wasn't found will throw an error:
+  The `find()` method finds elements automatically. But a click on an element that TestDriver did not find throws an error:
   
   ```javascript
   const element = await testdriver.find('button');
@@ -280,7 +280,7 @@ describe('Click Interactions', () => {
 
 ## Related Methods
 
-- [`find()`](/v7/find) - Locate elements to click
-- [`hover()`](/v7/hover) - Hover without clicking
-- [`doubleClick()`](/v7/double-click) - Dedicated double-click method
-- [`rightClick()`](/v7/right-click) - Dedicated right-click method
+- [`find()`](/find) - Find elements to click
+- [`hover()`](/hover) - Put the cursor on the element without a click
+- [`doubleClick()`](/double-click) - The double-click method
+- [`rightClick()`](/right-click) - The right-click method

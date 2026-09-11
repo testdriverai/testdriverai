@@ -6,7 +6,7 @@ description: Type text into focused input fields
 
 ## Overview
 
-Type text or numbers into the currently focused input field with optional delay between keystrokes.
+Type text or numbers into the input field that has focus. You can set an optional delay between the keystrokes.
 
 ## Syntax
 
@@ -29,7 +29,7 @@ await testdriver.type(text, options)
     </ParamField>
     
     <ParamField path="secret" type="boolean" default={false}>
-      If `true`, treats text as sensitive data (won't be logged or stored in debug info/dashcam)
+      If `true`, TestDriver makes the text sensitive data. It does not log or store it in the debug info or in dashcam.
     </ParamField>
   </Expandable>
 </ParamField>
@@ -78,9 +78,9 @@ await testdriver.type('4111111111111111', { secret: true });
 ```
 
 <Warning>
-  **Always use `secret: true` for passwords and sensitive data!**
+  **Always use `secret: true` for passwords and sensitive data.**
   
-  Without this option, typed text appears in:
+  If you do not use this option, the typed text shows in these:
   - Dashcam video replays
   - TestDriver logs
   - Debug screenshots
@@ -352,6 +352,6 @@ describe('Form Filling with Type', () => {
 
 ## Related Methods
 
-- [`pressKeys()`](/v7/press-keys) - Press keyboard keys and shortcuts
-- [`find()`](/v7/find) - Locate input fields
-- [`click()`](/v7/click) - Focus input fields
+- [`pressKeys()`](/press-keys) - Press keyboard keys and shortcuts
+- [`find()`](/find) - Locate input fields
+- [`click()`](/click) - Focus input fields

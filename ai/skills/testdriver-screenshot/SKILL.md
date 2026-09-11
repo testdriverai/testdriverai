@@ -6,10 +6,10 @@ description: Capture and save screenshots during test execution
 
 ## Overview
 
-Capture a screenshot of the current screen and automatically save it to a local file. Screenshots are organized by test file for easy debugging and review.
+Capture a screenshot of the screen. TestDriver saves it to a local file automatically. TestDriver groups the screenshots by test file. This makes debug and review easy.
 
 <Note>
-  **Automatic Screenshots**: TestDriver can automatically capture screenshots before and after every command (click, type, find, etc.). These are saved with descriptive filenames like `001-click-before-L42-submit-button.png` that include the line number from your test file. Enable this with `autoScreenshots: true` in your TestDriver options.
+  **Automatic Screenshots**: TestDriver can capture screenshots automatically before and after each command (click, type, find, and more). It saves them with clear filenames such as `001-click-before-L42-submit-button.png`. The filename includes the line number from your test file. Enable this with `autoScreenshots: true` in your TestDriver options.
 </Note>
 
 ## Syntax
@@ -21,16 +21,16 @@ const filePath = await testdriver.screenshot(filename)
 ## Parameters
 
 <ParamField path="filename" type="string" optional>
-  Custom filename for the screenshot (without .png extension). If not provided, a timestamp-based filename is generated automatically.
+  A custom filename for the screenshot (without the .png extension). If you do not give one, TestDriver makes a filename from the timestamp automatically.
 </ParamField>
 
 ## Returns
 
-`Promise<string>` - The absolute file path where the screenshot was saved
+`Promise<string>` - The absolute file path where TestDriver saved the screenshot
 
 ## File Organization
 
-Screenshots are automatically saved to `.testdriver/screenshots/<test-file-name>/` in your project root:
+TestDriver saves screenshots automatically to `.testdriver/screenshots/<test-file-name>/` in your project root:
 
 ```
 .testdriver/
@@ -238,11 +238,11 @@ These commands allow you to:
 - Compare screenshots across test runs to identify flaky behavior
 
 <Note>
-  For detailed workflows and examples of using these MCP commands for debugging, see the [Debugging with Screenshots](/v7/debugging-with-screenshots) guide.
+  For detailed workflows and examples of using these MCP commands for debugging, see the [Debugging with Screenshots](/debugging-with-screenshots) guide.
 </Note>
 
 ## Related
 
-- [Debugging with Screenshots](/v7/debugging-with-screenshots) - View and analyze saved screenshots using MCP
-- [assert()](/v7/assert) - Make AI-powered assertions
-- [find()](/v7/find) - Locate elements on screen
+- [Debugging with Screenshots](/debugging-with-screenshots) - View and analyze saved screenshots using MCP
+- [assert()](/assert) - Make AI-powered assertions
+- [find()](/find) - Locate elements on screen

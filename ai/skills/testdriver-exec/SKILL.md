@@ -6,7 +6,7 @@ description: Execute shell or PowerShell commands in the sandbox
 
 ## Overview
 
-Execute shell commands (Linux) or PowerShell commands (Windows) in the sandbox environment.
+Run shell commands (Linux) or PowerShell commands (Windows) in the sandbox.
 
 ## Syntax
 
@@ -17,28 +17,28 @@ await testdriver.exec(language, code, timeout, silent)
 ## Parameters
 
 <ParamField path="language" type="string" required>
-  Language to execute: `'sh'` (Shell/Linux) or `'pwsh'` (PowerShell/Windows)
+  The language to run: `'sh'` (Shell/Linux) or `'pwsh'` (PowerShell/Windows)
 </ParamField>
 
 <ParamField path="code" type="string" required>
-  Code or command to execute
+  The code or the command to run
 </ParamField>
 
 <ParamField path="timeout" type="number" required>
-  Timeout in milliseconds
+  The timeout in milliseconds
 </ParamField>
 
 <ParamField path="silent" type="boolean" default="false">
-  Suppress output if `true`
+  If `true`, TestDriver does not show the output
 </ParamField>
 
 ## Returns
 
-`Promise<string>` - Command output
+`Promise<string>` - The command output
 
 ## Shell Execution (Linux)
 
-Execute shell commands in the Linux sandbox.
+Run shell commands in the Linux sandbox.
 
 ### Basic Commands
 
@@ -312,6 +312,6 @@ describe('Code Execution', () => {
 
 ## Related Methods
 
-- [`focusApplication()`](/v7/focus-application) - Focus apps before exec
-- [`find()`](/v7/find) - Locate elements visually
-- [`type()`](/v7/type) - Type text into inputs
+- [`focusApplication()`](/focus-application) - Focus apps before exec
+- [`find()`](/find) - Locate elements visually
+- [`type()`](/type) - Type text into inputs

@@ -6,7 +6,7 @@ description: Release the mouse button
 
 ## Overview
 
-The `mouseUp()` method releases the mouse button, completing a drag operation or custom mouse gesture that was started with [`mouseDown()`](/v7/mouse-down). You can call it without parameters to release at the current mouse position.
+The `mouseUp()` method releases the mouse button. It completes a drag operation or a custom mouse gesture that you started with [`mouseDown()`](/mouse-down). Call it without parameters to release the button at the present mouse position.
 
 ## Syntax
 
@@ -21,7 +21,7 @@ None. The mouse button is released at the current cursor position.
 
 ## Returns
 
-Returns a `Promise<void>` that resolves when the mouse button is released.
+It returns a `Promise<void>`. The promise resolves when TestDriver releases the mouse button.
 
 ## Examples
 
@@ -150,15 +150,15 @@ test('selects text with mouse drag', async () => {
 
 ## Important Notes
 
-- `mouseUp()` must be preceded by [`mouseDown()`](/v7/mouse-down) to have an effect
+- `mouseUp()` must be preceded by [`mouseDown()`](/mouse-down) to have an effect
 - Releases the button at the current cursor position
 - Completes any drag or selection operation that was in progress
-- For simple clicks, use [`click()`](/v7/click) instead of mouseDown/mouseUp pair
+- For simple clicks, use [`click()`](/click) instead of mouseDown/mouseUp pair
 
 ## Related Methods
 
-- [`mouseDown()`](/v7/mouse-down) - Press mouse button without releasing
-- [`hover()`](/v7/hover) - Move mouse to element
-- [`click()`](/v7/click) - Complete click (mouseDown + mouseUp)
-- [`doubleClick()`](/v7/double-click) - Double-click on element
-- [`rightClick()`](/v7/right-click) - Right-click for context menu
+- [`mouseDown()`](/mouse-down) - Press mouse button without releasing
+- [`hover()`](/hover) - Move mouse to element
+- [`click()`](/click) - Complete click (mouseDown + mouseUp)
+- [`doubleClick()`](/double-click) - Double-click on element
+- [`rightClick()`](/right-click) - Right-click for context menu

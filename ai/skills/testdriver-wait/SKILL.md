@@ -6,7 +6,7 @@ description: Pause the execution of the script for a specified duration.
 
 ## Description
 
-The `wait` method pauses test execution for a specified number of milliseconds before continuing. This is useful for adding delays between actions, waiting for animations to complete, or pausing for state changes to settle.
+The `wait` method stops the test for a number of milliseconds. Then it continues. Use this to add delays between actions, to wait for animations to complete, or to let state changes become stable.
 
 ## Syntax
 
@@ -36,8 +36,8 @@ await testdriver.wait();
 
 ## Best Practices
 
-- **Use for simple delays** — waiting for animations, transitions, or state changes after an action.
-- **Avoid for element waiting** — if you're waiting for a specific element to appear, use `find()` with a `timeout` option instead:
+- **Use it for simple delays** — to wait for animations, transitions, or state changes after an action.
+- **Do not use it to wait for an element** — if you wait for a specific element to show, use `find()` with a `timeout` option:
   ```javascript
   // ✅ Better for waiting for elements
   const element = await testdriver.find('success message', { timeout: 30000 });
@@ -46,5 +46,5 @@ await testdriver.wait();
   await testdriver.wait(5000);
   const element = await testdriver.find('success message');
   ```
-- Avoid excessively long timeouts to keep tests efficient.
-- Use sparingly — TestDriver's [redraw detection](/v7/performing-actions#waiting-for-dynamic-content) automatically waits for screen and network stability after each action.
+- Do not use very long timeouts. This keeps the tests efficient.
+- Use it only when necessary. The TestDriver [redraw detection](/performing-actions#waiting-for-dynamic-content) waits automatically for the screen and the network to become stable after each action.

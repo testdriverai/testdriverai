@@ -53,7 +53,7 @@ const testdriver = new TestDriver(apiKey, options)
     </ParamField>
     
     <ParamField path="reconnect" type="boolean" default="false">
-      Reattach to the last used sandbox instead of creating a new one. When `true`, the SDK reads the sandbox id from `.testdriver/last-sandbox` (written automatically on every successful connect) and rejoins that VM. Provision methods (`chrome`, `vscode`, `installer`, etc.) are skipped because the application is already running. The previous sandbox must still be alive — see [`keepAlive`](#keepalive) and the [Run guide](/v7/copilot/running-tests#keeping-machines-alive-between-runs).
+      Reattach to the last used sandbox instead of creating a new one. When `true`, the SDK reads the sandbox id from `.testdriver/last-sandbox` (written automatically on every successful connect) and rejoins that VM. Provision methods (`chrome`, `vscode`, `installer`, etc.) are skipped because the application is already running. The previous sandbox must still be alive — see [`keepAlive`](#keepalive) and the [Run guide](/copilot/running-tests#keeping-machines-alive-between-runs).
     </ParamField>
 
     <ParamField path="sandboxId" type="string">

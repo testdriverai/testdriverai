@@ -230,7 +230,7 @@ console.log(`Image dimensions: ${result.imageWidth}x${result.imageHeight}`);
 
 ## Related
 
-- [find()](/v7/find) - AI-powered element location
-- [assert()](/v7/assert) - Make AI-powered assertions about screen state
-- [screenshot()](/v7/screenshot) - Capture screenshots
-- [Elements Reference](/v7/elements) - Complete Element API
+- [find()](/find) - AI-powered element location
+- [assert()](/assert) - Make AI-powered assertions about screen state
+- [screenshot()](/screenshot) - Capture screenshots
+- [Elements Reference](/elements) - Complete Element API

@@ -4,14 +4,14 @@ description: Run your first computer-use test in minutes.
 ---
 <!-- Generated from quickstart.mdx. DO NOT EDIT. -->
 
-TestDriver makes it easy to write automated computer-use tests for web browsers, desktop apps, and more. Follow the directions below to run your first TestDriver test.
+TestDriver makes it easy to write automated computer-use tests. You can test web browsers, desktop apps, and more. Follow the directions below to run your first TestDriver test.
 
 <Tip><a href="https://discord.com/invite/cWDFW8DzPm" target="_blank" rel="noreferrer">Join our Discord</a> if you have any questions or need help getting started!</Tip>
 
 <Tabs>
   <Tab title="Add to GitHub" icon="github">
 
-    Drop-in UI testing for any GitHub repository. Mention `@testdriverai` anywhere in your repo and it writes UI tests and catches regressions before they merge.
+    Drop-in UI tests for any GitHub repository. Mention `@testdriverai` in your repo. It writes UI tests and it finds regressions before they merge.
 
     <Card
       title="Add to GitHub"
@@ -25,30 +25,30 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
 
     <Steps>
       <Step title="Install the GitHub App">
-        Click **Add to GitHub** above and install TestDriver on the repositories you want to test.
+        Click **Add to GitHub** above. Then install TestDriver on the repositories that you want to test.
       </Step>
 
       <Step title="Mention @testdriverai">
-        Open a pull request or issue and mention `@testdriverai` to have it write and run UI tests:
+        Open a pull request or an issue. Mention `@testdriverai` to make it write and run UI tests:
 
         ```
         @testdriverai Write a test that verifies the homepage loads and the signup button works.
         ```
 
-        TestDriver spawns a sandbox, writes the test, and posts results right in the conversation.
+        TestDriver starts a sandbox, writes the test, and shows the results in the conversation.
       </Step>
 
       <Step title="Catch Regressions Automatically">
-        Once your tests are committed, TestDriver runs them on every pull request and flags regressions before they merge.
+        After you commit your tests, TestDriver runs them on each pull request. It shows regressions before they merge.
       </Step>
     </Steps>
 
-    Want to use TestDriver from GitHub Copilot or the GitHub Mobile app instead? See the full GitHub guide:
+    Do you want to use TestDriver from GitHub Copilot or the GitHub Mobile app? Read the full GitHub guide:
 
     <Card
       title="GitHub Integration Guide"
       icon="arrow-right"
-      href="/v7/copilot/auto-healing#use-testdriver-in-github"
+      href="/copilot/auto-healing#use-testdriver-in-github"
       arrow
       horizontal
     >
@@ -58,18 +58,18 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
   </Tab>
   <Tab title="CLI" icon="terminal">
 
-    Get started quickly with the TestDriver CLI.
+    Start quickly with the TestDriver CLI.
 
     <Steps>
       <Step title="Install TestDriver">
 
-        Use `npx` to quickly set up an example project:
+        Use `npx` to set up an example project quickly:
 
         ```bash
         npx testdriverai init
         ```
 
-        This will walk you through creating a new project folder, installing dependencies, setting up your API key, and configuring MCP for your preferred AI assistant (VS Code, Cursor, Claude Desktop, etc.).
+        This helps you to make a new project folder, install dependencies, set up your API key, and configure MCP for your AI assistant (VS Code, Cursor, Claude Desktop, and others).
 
       </Step>
       
@@ -81,22 +81,22 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
         vitest run
         ```
 
-        This will spawn a sandbox, launch Chrome, and run the example test!
+        This starts a sandbox, starts Chrome, and runs the example test.
 
       </Step>
     </Steps>
   </Tab>
   <Tab title="AI Setup" icon="robot">
 
-    Plug TestDriver into your AI client so you can write, run, and debug real end-to-end tests right from chat. There are three pieces, and `testdriverai init` installs all of them for you:
+    Connect TestDriver to your AI client. Then you can write, run, and debug real end-to-end tests from chat. There are three parts. `testdriverai init` installs all of them for you:
 
-    - **The agent** — an expert test-creator that drives a live sandbox, writes code after each step, and reruns the test until it passes.
-    - **Skills** — small instruction files that teach the agent the exact syntax for each TestDriver capability (`find`, `click`, `type`, `assert`, …).
-    - **The MCP server** — exposes TestDriver's computer-use tools over the [Model Context Protocol](https://modelcontextprotocol.io) so any MCP-capable client can use them.
+    - **The agent**. This is an expert test-creator. It controls a live sandbox, writes code after each step, and runs the test again until the test passes.
+    - **Skills**. These are small instruction files. They teach the agent the correct syntax for each TestDriver capability (`find`, `click`, `type`, `assert`, and more).
+    - **The MCP server**. This gives the computer-use tools of TestDriver through the [Model Context Protocol](https://modelcontextprotocol.io). Then an MCP client can use them.
 
     ### Quick install (recommended)
 
-    `testdriverai init` wires up the agent, skills, and MCP server for you, writing each client's config in the exact format and location it expects:
+    `testdriverai init` connects the agent, skills, and MCP server for you. It writes the config of each client in the correct format and location:
 
     ```bash
     # interactive — pick your client(s)
@@ -113,18 +113,18 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
     ```
 
     <Info>
-    `init` detects clients already present in your project and pre-selects them in the picker. Re-running `init` is safe — it merges the TestDriver entry into existing config without overwriting your other servers.
+    `init` finds the clients that are in your project. It selects them in the picker. To run `init` again is safe. It merges the TestDriver entry into the config that exists. It does not write over your other servers.
     </Info>
 
-    You'll need a TestDriver API key. Create one at [console.testdriver.ai/settings](https://console.testdriver.ai/settings) and `init` will save it to `.env` as `TD_API_KEY`.
+    You need a TestDriver API key. Create one at [console.testdriver.ai/settings](https://console.testdriver.ai/settings). Then `init` saves it to `.env` as `TD_API_KEY`.
 
     ### The agent
 
-    The **TestDriver agent** is an expert test-creator that runs inside your AI client (Claude Code, Cursor, VS Code, and others). It writes, runs, and debugs real end-to-end tests by driving your app the same way a person would — using AI vision to find elements, click, type, and assert — through the TestDriver MCP server.
+    The **TestDriver agent** is an expert test-creator. It runs in your AI client (Claude Code, Cursor, VS Code, and others). It writes, runs, and debugs real end-to-end tests. It controls your app the same as a person. It uses AI vision to find elements, click, type, and assert, through the TestDriver MCP server.
 
-    Unlike a chat assistant that only suggests code, the agent works **iteratively against a live sandbox**: it starts a session, performs each action, writes the generated code to your test file, verifies the result with a screenshot, and reruns the test until it passes.
+   Unlike a chat assistant only suggests code, the agent works **iteratively on a live sandbox**. It starts a session, does each action, writes the code to your test file, makes sure of the result with a screenshot, and runs the test again until the test passes.
 
-    During init you'll be asked which AI client(s) to install into. The agent is written to the location each client expects:
+    In init, the tool asks which AI clients to install into. The agent is written to the location that each client expects:
 
     | Client | Agent location |
     | --- | --- |
@@ -135,19 +135,19 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
     | Codex | `AGENTS.md` |
     | Zed | `.rules` |
 
-    Once installed, invoke it from your client's chat:
+    After you install it, start it from the chat of your client:
 
     ```text
     @testdriver write a test that logs in and verifies the dashboard loads
     ```
 
-    The agent will spin up a sandbox, perform the steps live, write them into a test file under `tests/`, and run it for you.
+    The agent starts a sandbox, does the steps live, writes them into a test file in `tests/`, and runs it for you.
 
     ### Skills
 
-    **Skills** are small, focused instruction files — one per TestDriver capability — that teach your AI client exactly how to use each part of the TestDriver SDK and MCP tools. They follow the [Anthropic `SKILL.md` format](https://code.claude.com/docs/en/skills): a folder per skill, each containing a `SKILL.md` with YAML frontmatter and a markdown body.
+    **Skills** are small instruction files. There is one skill for each TestDriver capability. They teach your AI client how to use each part of the TestDriver SDK and the MCP tools. They obey the [Anthropic `SKILL.md` format](https://code.claude.com/docs/en/skills): one folder for each skill. Each folder has a `SKILL.md` with YAML frontmatter and a markdown body.
 
-    There are **106 skills**, generated directly from the TestDriver documentation, covering every action and concept: `find`, `click`, `type`, `assert`, `check`, `scroll`, `press-keys`, `provision`, caching, secrets, CI/CD, and more. They're written to the directory each client expects:
+    There are **106 skills**. TestDriver makes them from the documentation. They include each action and concept: `find`, `click`, `type`, `assert`, `check`, `scroll`, `press-keys`, `provision`, caching, secrets, CI/CD, and more. They are written to the directory that each client expects:
 
     | Client | Skills location |
     | --- | --- |
@@ -156,19 +156,16 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
     | Codex | referenced from `AGENTS.md` |
     | VS Code · Cursor · Windsurf | folded into the agent rules/instructions |
 
-    <Note>
-    Skills are **generated, not hand-edited** — each is built from a `.mdx` docs page and carries a `DO NOT EDIT` marker. To change a skill, edit the corresponding documentation page and run `node docs/_scripts/generate-skills.js`.
-    </Note>
 
     ### MCP server
 
-    The **TestDriver MCP server** exposes TestDriver's computer-use tools — `session_start`, `find`, `click`, `type`, `assert`, `check`, `screenshot`, and more — over the [Model Context Protocol](https://modelcontextprotocol.io). It runs as a local stdio process:
+    The **TestDriver MCP server** gives the computer-use tools of TestDriver — `session_start`, `find`, `click`, `type`, `assert`, `check`, `screenshot`, and more through the [Model Context Protocol](https://modelcontextprotocol.io). It runs as a local stdio process:
 
     ```bash
     npx -p testdriverai testdriverai-mcp
     ```
 
-    and authenticates with your `TD_API_KEY`. `testdriverai init` configures it for you, but you can also wire it up by hand:
+    It authenticates with your `TD_API_KEY`. `testdriverai init` configures it for you. But you can also configure it by hand:
 
     | Client | Auto-install | MCP config file | Config key |
     | --- | --- | --- | --- |
@@ -184,12 +181,12 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
     | v0 (Vercel) | 📝 manual | web UI only | — |
 
     <Note>
-    Each client uses a **different top-level key** for MCP servers. The most common mistake when configuring by hand is using `mcpServers` for VS Code (it wants `servers`), Codex (TOML `[mcp_servers]`), or Zed (`context_servers`).
+    Each client uses a **different top-level key** for MCP servers. When you configure by hand, the most common error is to use `mcpServers` for VS Code (it needs `servers`), Codex (TOML `[mcp_servers]`), or Zed (`context_servers`).
     </Note>
 
     <Tabs>
       <Tab title="Claude Code">
-        Add to `.mcp.json` at your project root (or `~/.claude.json` for all projects):
+        Add this to `.mcp.json` at your project root (or `~/.claude.json` for all projects):
 
         ```json
         {
@@ -224,11 +221,11 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
         }
         ```
 
-        Restart Claude Desktop after saving.
+        Start Claude Desktop again after you save.
       </Tab>
 
       <Tab title="Cursor">
-        Add to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
+        Add this to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
 
         ```json
         {
@@ -245,7 +242,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Tab>
 
       <Tab title="VS Code">
-        Add to `.vscode/mcp.json`. VS Code uses the `servers` key and an `inputs` prompt for secrets:
+        Add this to `.vscode/mcp.json`. VS Code uses the `servers` key and an `inputs` prompt for secrets:
 
         ```json
         {
@@ -270,7 +267,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Tab>
 
       <Tab title="Windsurf">
-        Windsurf reads MCP config globally. Add to `~/.codeium/windsurf/mcp_config.json`:
+        Windsurf reads the MCP config globally. Add this to `~/.codeium/windsurf/mcp_config.json`:
 
         ```json
         {
@@ -286,7 +283,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Tab>
 
       <Tab title="Codex">
-        Codex uses TOML. Add to `~/.codex/config.toml`:
+        Codex uses TOML. Add this to `~/.codex/config.toml`:
 
         ```toml
         [mcp_servers.testdriver]
@@ -297,7 +294,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Tab>
 
       <Tab title="Zed">
-        Zed calls them "context servers". Add to `.zed/settings.json` (project) or `~/.config/zed/settings.json` (global):
+        Zed calls them "context servers". Add this to `.zed/settings.json` (project) or `~/.config/zed/settings.json` (global):
 
         ```json
         {
@@ -313,46 +310,46 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Tab>
     </Tabs>
 
-    **Web-based clients** — Lovable, Replit, and v0 run in the browser, so the MCP server can't be launched as a local process. Configure them through each product's UI:
+    **Web-based clients** — Lovable, Replit, and v0 run in the browser. Thus you cannot start the MCP server as a local process. Configure them through the UI of each product:
 
     <AccordionGroup>
       <Accordion title="Lovable">
-        1. Connect your GitHub repo and run `npx testdriverai init --client lovable` — this writes `AGENTS.md` and the skills into the repo so Lovable's agent picks them up.
-        2. In Lovable, open **Settings → MCP** and add the TestDriver server.
+        1. Connect your GitHub repo. Then run `npx testdriverai init --client lovable`. This writes `AGENTS.md` and the skills into the repo. Then the Lovable agent uses them.
+        2. In Lovable, open **Settings → MCP**. Then add the TestDriver server.
       </Accordion>
 
       <Accordion title="Replit">
         1. Run `npx testdriverai init --client replit` to write `replit.md` with the TestDriver agent guidance.
-        2. In Replit, open **Tools → Integrations → MCP** and add a custom MCP server.
+        2. In Replit, open **Tools → Integrations → MCP**. Then add a custom MCP server.
       </Accordion>
 
       <Accordion title="v0 (Vercel)">
-        v0 is fully UI-driven and does not read repo files.
+        The v0 client uses only the UI. It does not read repo files.
 
-        1. Open **[v0.app/chat/settings/mcp-connections](https://v0.app/chat/settings/mcp-connections)** and add the TestDriver MCP connection.
-        2. Paste the agent guidance into **Instructions** (the **+** in the prompt bar).
+        1. Open **[v0.app/chat/settings/mcp-connections](https://v0.app/chat/settings/mcp-connections)**. Then add the TestDriver MCP connection.
+        2. Put the agent guidance into **Instructions** (the **+** in the prompt bar).
       </Accordion>
     </AccordionGroup>
 
-    ### Verifying the install
+    ### Verify the install
 
-    Open your client's chat and ask the agent to write a test:
+    Open the chat of your client. Then tell the agent to write a test:
 
     ```text
     @testdriver write a test that opens the homepage and asserts the title
     ```
 
-    If the MCP server is wired up correctly, the agent will start a session and you'll see screenshots come back as it works. If tools don't appear, check that `TD_API_KEY` is set and restart the client.
+    If the MCP server is correct, the agent starts a session. You see screenshots as it works. If the tools do not show, make sure that `TD_API_KEY` is set. Then start the client again.
 
   </Tab>
   <Tab title="Manual" icon="wrench">
 
-    Install TestDriver and manually create the files yourself.
+    Install TestDriver. Then make the files by hand.
 
     <Steps>
       <Step title="Create a TestDriver Account">
 
-        You will need a TestDriver account to get an API key.
+        You need a TestDriver account to get an API key.
 
         <Card
           title="Get an API Key"
@@ -376,7 +373,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Step>
       <Step title="Create a vitest.config.js File">
 
-        In your project root, create a `vitest.config.js` file with the following content:
+        In your project root, make a `vitest.config.js` file with this content:
 
         ```js vitest.config.js
         import TestDriver from 'testdriverai/vitest';
@@ -398,7 +395,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
       </Step>
       <Step title="Create an Example Test File">
 
-        Add your API key to the example test file below and save it as `test.mjs` in your project root.
+        Add your API key to the example test file below. Then save it as `test.mjs` in your project root.
 
         ```js test.mjs highlight={9}
         import { describe, expect, it } from "vitest";
@@ -442,7 +439,7 @@ TestDriver makes it easy to write automated computer-use tests for web browsers,
         vitest run
         ```
 
-        This will spawn a sandbox, launch Chrome, and run the example test!
+        This starts a sandbox, starts Chrome, and runs the example test.
 
       </Step>
     </Steps>

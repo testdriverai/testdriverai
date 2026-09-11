@@ -4,4 +4,4 @@ description: Self-hosted enterprise deployments with assisted setup and dedicate
 ---
 <!-- Generated from enterprise.mdx. DO NOT EDIT. -->
 
-This page has moved to [Self-Hosted](/v7/self-hosted).
+This page has moved to [Self-Hosted](/self-hosted).

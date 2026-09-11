@@ -4,7 +4,7 @@ description: How TestDriver learns your app and caches what it discovers for ins
 ---
 <!-- Generated from caching.mdx. DO NOT EDIT. -->
 
-Once the agent has [explored your app](/v7/generating-tests), TestDriver remembers what it found. Every element the AI vision agent discovers is cached with a vision fingerprint—a perceptual hash of the screen state where it was located. On the next run, TestDriver matches against that cache instead of calling the AI again. Passing tests replay instantly, deterministically, and cheaply.
+Once the agent has [explored your app](/generating-tests), TestDriver remembers what it found. Every element the AI vision agent discovers is cached with a vision fingerprint—a perceptual hash of the screen state where it was located. On the next run, TestDriver matches against that cache instead of calling the AI again. Passing tests replay instantly, deterministically, and cheaply.
 
 This learning is what makes TestDriver fast. Intelligent caching delivers up to **1.7x faster** test execution by skipping redundant AI vision analysis—the agent only thinks when it sees something new.
 
@@ -126,6 +126,6 @@ await testdriver.find(`order ${orderId} status`, {
 
 ## Next
 
-<Card href="/v7/copilot/running-tests" title="Run" icon="play">
+<Card href="/copilot/running-tests" title="Run" icon="play">
   Now that TestDriver has learned your app, run your tests in CI and locally—replaying the cache for fast, deterministic results.
 </Card>

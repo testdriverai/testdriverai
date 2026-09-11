@@ -18,7 +18,7 @@ const path = require("path");
 // Paths
 const EXAMPLES_DIR = path.join(__dirname, "../../examples");
 const MANIFEST_PATH = path.join(__dirname, "../_data/examples-manifest.json");
-const OUTPUT_DIR = path.join(__dirname, "../v7/examples");
+const OUTPUT_DIR = path.join(__dirname, "../examples");
 const DOCS_JSON_PATH = path.join(__dirname, "../docs.json");
 
 // Examples to exclude from docs generation (filenames without path)
@@ -460,25 +460,24 @@ npx vitest run examples/${testMeta.filename}
 
 // Update docs.json navigation
 function updateDocsNavigation(docsJson, examplePages, options) {
-  // Find v7 version in navigation
-  const v7Version = docsJson.navigation.versions.find((v) => v.version === "v7");
-  if (!v7Version) {
-    console.error("❌ Could not find v7 version in docs.json");
+  const groups = docsJson.navigation.groups;
+  if (!groups) {
+    console.error("❌ Could not find navigation.groups in docs.json");
     return false;
   }
 
   // Find Examples group - it may be nested inside Overview's pages
-  const examplesPages = examplePages.map((slug) => `/v7/examples/${slug}`);
+  const examplesPages = examplePages.map((slug) => `/examples/${slug}`);
   let examplesGroup = null;
 
   // Search top-level groups first
-  examplesGroup = v7Version.groups.find((g) =>
+  examplesGroup = groups.find((g) =>
     typeof g === "object" && g.group === "Examples"
   );
 
   // If not found at top level, search inside each group's pages (nested groups)
   if (!examplesGroup) {
-    for (const group of v7Version.groups) {
+    for (const group of groups) {
       if (group.pages) {
         const nested = group.pages.find((p) =>
           typeof p === "object" && p.group === "Examples"
@@ -499,7 +498,7 @@ function updateDocsNavigation(docsJson, examplePages, options) {
     }
   } else {
     // Create new group nested inside Overview
-    const overviewGroup = v7Version.groups.find((g) => g.group === "Overview");
+    const overviewGroup = groups.find((g) => g.group === "Overview");
     const newGroup = {
       group: "Examples",
       icon: "code",
@@ -511,7 +510,7 @@ function updateDocsNavigation(docsJson, examplePages, options) {
       const insertIdx = Math.min(2, overviewGroup.pages.length);
       overviewGroup.pages.splice(insertIdx, 0, newGroup);
     } else {
-      v7Version.groups.push(newGroup);
+      groups.push(newGroup);
     }
 
     if (options.verbose) {

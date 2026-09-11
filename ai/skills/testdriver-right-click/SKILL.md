@@ -6,7 +6,7 @@ description: Perform a right-click action to open context menus
 
 ## Overview
 
-The `rightClick()` method performs a right-click action on an element, typically used to open context menus. You can either call it on an [`Element`](/v7/core-concepts/elements) instance or use it directly with a selector.
+The `rightClick()` method does a right-click action on an element. It usually opens context menus. You can call it on an [`Element`](/core-concepts/elements) instance. Or you can use it with a selector.
 
 ## Syntax
 
@@ -30,7 +30,7 @@ When called directly on the AI client:
 
 ## Returns
 
-Returns a `Promise<void>` that resolves when the right-click action completes.
+It returns a `Promise<void>`. The promise resolves when the right-click action completes.
 
 ## Examples
 
@@ -116,8 +116,8 @@ test('uses custom context menu', async () => {
 
 ## Related Methods
 
-- [`click()`](/v7/click) - Single click on an element
-- [`doubleClick()`](/v7/double-click) - Double-click on an element
-- [`mouseDown()`](/v7/mouse-down) - Press mouse button without releasing
-- [`mouseUp()`](/v7/mouse-up) - Release mouse button
-- [`hover()`](/v7/hover) - Move mouse over element without clicking
+- [`click()`](/click) - Single click on an element
+- [`doubleClick()`](/double-click) - Double-click on an element
+- [`mouseDown()`](/mouse-down) - Press mouse button without releasing
+- [`mouseUp()`](/mouse-up) - Release mouse button
+- [`hover()`](/hover) - Move mouse over element without clicking

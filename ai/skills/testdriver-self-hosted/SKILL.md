@@ -47,7 +47,7 @@ Run test sandboxes on your AWS infrastructure while using TestDriver's hosted da
 <Card
   title="AWS Setup Guide"
   icon="aws"
-  href="/v7/aws-setup"
+  href="/aws-setup"
 >
   Step-by-step instructions for deploying TestDriver on your AWS infrastructure using CloudFormation.
 </Card>

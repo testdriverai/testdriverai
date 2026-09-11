@@ -6,7 +6,7 @@ description: Make AI-powered assertions about screen state
 
 ## Overview
 
-Make AI-powered assertions about the current screen state using natural language. The AI analyzes the screen and verifies that your assertion is true.
+Make assertions about the screen state with natural language and AI. The AI examines the screen. It makes sure that your assertion is true.
 
 ## Syntax
 
@@ -53,7 +53,7 @@ await testdriver.assert(assertion, options)
 
 ## Returns
 
-`Promise<boolean>` - `true` if assertion passes, throws error if assertion fails
+`Promise<boolean>` - `true` if the assertion passes. It throws an error if the assertion fails.
 
 ## Examples
 
@@ -100,7 +100,7 @@ await testdriver.assert('the modal dialog is open');
 <Check>
   **Assert state changes**
   
-  Verify state before and after actions:
+  Make sure of the state before and after actions:
   
   ```javascript
   // Before
@@ -310,5 +310,5 @@ describe('Assertions', () => {
 
 ## Related Methods
 
-- [`extract()`](/v7/extract) - Extract information for detailed assertions
-- [`find()`](/v7/find) - Locate elements to verify
+- [`extract()`](/extract) - Extract information for detailed assertions
+- [`find()`](/find) - Locate elements to verify
