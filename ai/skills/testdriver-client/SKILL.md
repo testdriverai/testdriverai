@@ -1,12 +1,12 @@
 ---
 name: testdriver:client
-description: Initialize and configure the TestDriver SDK client
+description: Create the TestDriver client, authenticate, and connect to a sandbox
 ---
 <!-- Generated from client.mdx. DO NOT EDIT. -->
 
 ## Overview
 
-The `TestDriver` client is the main entry point for the SDK. It handles authentication, sandbox connection, and provides access to all testing methods.
+The `TestDriver` client is the main entry point for the SDK. It does the authentication and the sandbox connection. It gives access to all test methods.
 
 ## Constructor
 
@@ -21,170 +21,7 @@ const testdriver = new TestDriver(apiKey, options)
 </ParamField>
 
 <ParamField path="options" type="object">
-  Configuration options for the client
-  
-  <Expandable title="properties">
-    <ParamField path="os" type="string" default="linux">
-      Operating system for the sandbox: `'windows'` or `'linux'`
-    </ParamField>
-    
-    <ParamField path="resolution" type="string" default="1366x768">
-      Screen resolution for the sandbox (e.g., `'1920x1080'`, `'1366x768'`). Custom resolutions are only available on Enterprise plans.
-    </ParamField>
-    
-    <ParamField path="apiRoot" type="string">
-      API endpoint URL (typically only changed for self-hosted deployments)
-    </ParamField>
-    
-    <ParamField path="analytics" type="boolean" default="true">
-      Enable or disable usage analytics
-    </ParamField>
-    
-    <ParamField path="logging" type="boolean" default="true">
-      Enable or disable console logging
-    </ParamField>
-    
-    <ParamField path="autoScreenshots" type="boolean" default="false">
-      Automatically capture screenshots before and after each command. Screenshots are saved to `.testdriver/screenshots/<test>/` with descriptive filenames that include the line number and action name. Format: `<seq>-<action>-<phase>-L<line>-<description>.png`
-    </ParamField>
-    
-    <ParamField path="newSandbox" type="boolean" default="true">
-      Force creation of a new sandbox instead of reusing an existing one
-    </ParamField>
-    
-    <ParamField path="reconnect" type="boolean" default="false">
-      Reattach to the last used sandbox instead of creating a new one. When `true`, the SDK reads the sandbox id from `.testdriver/last-sandbox` (written automatically on every successful connect) and rejoins that VM. Provision methods (`chrome`, `vscode`, `installer`, etc.) are skipped because the application is already running. The previous sandbox must still be alive — see [`keepAlive`](#keepalive) and the [Run guide](/copilot/running-tests#keeping-machines-alive-between-runs).
-    </ParamField>
-
-    <ParamField path="sandboxId" type="string">
-      Reattach to a specific sandbox id instead of the one recorded in `.testdriver/last-sandbox`. Use this for CI matrices or to pin a chain of tests to a known VM. Implies `reconnect: true` behavior (provision calls are skipped).
-    </ParamField>
-    
-    <ParamField path="preview" type="string" default="browser">
-      Preview mode for live test visualization:
-      - `"browser"` — Opens debugger in default browser (default)
-      - `"ide"` — Opens preview in IDE panel (VSCode, Cursor - requires TestDriver extension)
-      - `"none"` — Headless mode, no visual preview
-    </ParamField>
-    
-    <ParamField path="headless" type="boolean" default="false">
-      **Deprecated**: Use `preview: "none"` instead. Run in headless mode without opening the debugger.
-    </ParamField>
-    
-    <ParamField path="debugOnFailure" type="boolean" default="false">
-      Keep the sandbox alive when a test fails so you can reconnect and debug interactively. The sandbox ID is printed to the console.
-    </ParamField>
-    
-    <ParamField path="ip" type="string">
-      Direct IP address to connect to a running sandbox instance (for self-hosted deployments)
-    </ParamField>
-    
-    <ParamField path="sandboxAmi" type="string">
-      Custom AMI ID for the sandbox instance (AWS deployments, e.g., `'ami-1234'`)
-    </ParamField>
-    
-    <ParamField path="sandboxInstance" type="string">
-      EC2 instance type for the sandbox (AWS deployments, e.g., `'i3.metal'`)
-    </ParamField>
-    
-    <ParamField path="cache" type="boolean | object" default="true">
-      Enable or disable element caching, or provide advanced threshold configuration.
-      
-      <Expandable title="advanced config">
-        <ParamField path="enabled" type="boolean" default="true">
-          Enable or disable caching
-        </ParamField>
-        
-        <ParamField path="thresholds" type="object">
-          Fine-tune cache matching
-          
-          <Expandable title="properties">
-            <ParamField path="find" type="object">
-              Thresholds for `find()` operations
-              
-              <Expandable title="properties">
-                <ParamField path="screen" type="number" default="0.05">
-                  Pixel diff threshold for screen comparison (0-1). `0.05` = 5% diff allowed.
-                </ParamField>
-                
-                <ParamField path="element" type="number" default="0.8">
-                  OpenCV template match threshold for element matching (0-1). `0.8` = 80% correlation.
-                </ParamField>
-              </Expandable>
-            </ParamField>
-            
-            <ParamField path="assert" type="number" default="0.05">
-              Pixel diff threshold for `assert()` operations (0-1). `0.05` = 5% diff allowed.
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
-    </ParamField>
-    
-    <ParamField path="cacheKey" type="string">
-      Cache key for element finding operations. If provided, enables caching tied to this key.
-    </ParamField>
-    
-    <ParamField path="verify" type="boolean" default="false">
-      Global default for AI verification of located elements. When `true`, every `find()` runs a second AI check to confirm the returned coordinates actually match the requested element (catching hallucinated or incorrect positions), at the cost of extra latency. Can be overridden per call via `find(description, { verify: true | false })`.
-    </ParamField>
-    
-    <ParamField path="dashcam" type="boolean" default="true">
-      Enable or disable Dashcam video recording
-    </ParamField>
-    
-    <ParamField path="redraw" type="boolean | object" default="true">
-      Enable or disable screen-change (redraw) detection, or provide advanced configuration.
-      
-      <Expandable title="advanced config">
-        <ParamField path="enabled" type="boolean" default="true">
-          Enable or disable redraw detection
-        </ParamField>
-        
-        <ParamField path="thresholds" type="object">
-          Threshold configuration
-          
-          <Expandable title="properties">
-            <ParamField path="screen" type="number | false" default="0.05">
-              Pixel diff threshold (0-1). Set to `false` to disable screen redraw detection.
-            </ParamField>
-            
-            <ParamField path="network" type="boolean" default="false">
-              Enable or disable network activity monitoring
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
-    </ParamField>
-    
-    <ParamField path="environment" type="object">
-      Additional environment variables to pass to the sandbox
-    </ParamField>
-    
-    <ParamField path="ai" type="object">
-      Global AI sampling configuration. Controls how the AI model generates responses for `find()` verification and `assert()` calls. Can be overridden per call.
-      
-      <Expandable title="properties">
-        <ParamField path="temperature" type="number">
-          Controls randomness in AI responses. `0` = deterministic (best for verification), higher values = more creative. Default: `0` for find verification, model default for assert.
-        </ParamField>
-        
-        <ParamField path="top" type="object">
-          Nucleus and top-k sampling parameters
-          
-          <Expandable title="properties">
-            <ParamField path="p" type="number">
-              Top-P (nucleus sampling). Limits token choices to the smallest set whose cumulative probability exceeds P. Lower values = more focused responses. Range: 0-1.
-            </ParamField>
-            
-            <ParamField path="k" type="number">
-              Top-K sampling. Limits token choices to the top K most likely tokens. `1` = always pick the most likely token. `0` = disabled (consider all tokens).
-            </ParamField>
-          </Expandable>
-        </ParamField>
-      </Expandable>
-    </ParamField>
-  </Expandable>
+  The configuration options for the client. See [SDK Options](/options) for the full list, with defaults and examples for each option.
 </ParamField>
 
 ### Example

@@ -4,11 +4,11 @@ description: Use dynamic data and secure secrets in your tests
 ---
 <!-- Generated from variables.mdx. DO NOT EDIT. -->
 
-Scale your testing with dynamic data and secure secrets management. Choose the right approach based on your testing needs.
+Make your tests larger with dynamic data and secure secrets. Select the correct method for your test needs.
 
 ## Environment Variables
 
-Environment variables are ideal for **configuration that changes between environments** (dev, staging, production) or for **secrets that shouldn't be committed to code**. Use this approach when you need to run the same tests against different servers or with different credentials.
+Use environment variables for **configuration that changes between environments** (dev, staging, production). Also use them for **secrets that you must not commit to the code**. Use this method when you must run the same tests against different servers or with different credentials.
 
 ```javascript
 import { test } from 'vitest';

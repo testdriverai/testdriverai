@@ -1,0 +1,11 @@
+# Overrides the root .dockerignore (which excludes sdk/) for the MCP server image.
+# Only the SDK package is needed; everything else in the repo is excluded.
+*
+!sdk
+**/node_modules
+**/.env
+sdk/docs
+sdk/examples
+sdk/test
+sdk/vscode-extension
+sdk/mcp-server/dist

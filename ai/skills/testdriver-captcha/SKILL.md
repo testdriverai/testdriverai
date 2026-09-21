@@ -6,7 +6,7 @@ description: Solve captchas using 2captcha service
 
 # Captcha Solving
 
-TestDriver can automatically solve captchas during your tests using the 2captcha service. This feature works on both **Linux** and **Windows** sandboxes.
+TestDriver can solve captchas automatically during your tests. It uses the 2captcha service. This feature works on **Linux** sandboxes and **Windows** sandboxes.
 
 ## Quick Start
 
@@ -20,12 +20,12 @@ console.log(result.success); // true
 console.log(result.token);   // The solved captcha token
 ```
 
-That's it! TestDriver will automatically:
-- Detect the captcha type on the page
-- Extract the sitekey
-- Solve the captcha via 2captcha
-- Inject the token into the page
-- Trigger any callbacks
+That is all. TestDriver does these automatically:
+- Finds the captcha type on the page
+- Gets the sitekey
+- Solves the captcha with 2captcha
+- Puts the token into the page
+- Starts the callbacks
 
 ## Supported Captcha Types
 

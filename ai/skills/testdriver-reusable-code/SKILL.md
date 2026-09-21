@@ -4,11 +4,11 @@ description: Build maintainable test suites with reusable code patterns
 ---
 <!-- Generated from reusable-code.mdx. DO NOT EDIT. -->
 
-As your test suite grows, you'll want to extract common patterns into reusable code. This keeps tests DRY, readable, and easy to maintain.
+When your test suite becomes larger, put the common patterns into reusable code. This keeps the tests short, easy to read, and easy to keep.
 
 ## Helper Functions
 
-The simplest approach is extracting common actions into helper functions. Create a `helpers/` directory for shared utilities:
+The most simple method is to put the common actions into helper functions. Make a `helpers/` directory for the shared utilities:
 
 ```javascript test/helpers/auth.js
 export async function login(testdriver, { email, password }) {
@@ -37,7 +37,7 @@ export async function logout(testdriver) {
 ```
 
 <Warning>
-**Avoid hardcoding dynamic values in element descriptions.** Element selectors should describe the *type* of element, not specific content that might change.
+**Do not put dynamic values in element descriptions.** An element selector must describe the *type* of the element. It must not describe specific content that can change.
 
 **❌ Bad:** `await testdriver.find('profile name TestDriver in the top right')`  
 **✅ Good:** `await testdriver.find('user profile name in the top right')`

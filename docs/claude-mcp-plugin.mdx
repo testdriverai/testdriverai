@@ -65,6 +65,43 @@ This is the same config the plugin wires up for you — the plugin just bundles 
 
 ---
 
+## Remote (hosted URL) install — no CLI, browser login
+
+TestDriver also runs a **hosted MCP server** you can connect to with just a URL. There is no `npx` command and no API key to paste: the server speaks OAuth 2.1, so your client opens a browser, you sign in with TestDriver, and the tools appear. It exposes the **full live tool set** (`session_start`, `find`, `click`, `type`, `assert`, …) plus the read-only data tools, all scoped to your team.
+
+Hosted endpoint:
+
+```text
+https://mcp.testdriver.ai/mcp
+```
+
+The server advertises its authorization server (Auth0) via [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728) protected-resource metadata at:
+
+```text
+https://mcp.testdriver.ai/.well-known/oauth-protected-resource
+```
+
+Spec-compliant clients discover and complete the OAuth flow automatically:
+
+- **Claude** — add a custom connector pointing at the URL above; Claude runs the browser login for you.
+- **VS Code / Copilot** — add a remote MCP server entry with the URL; VS Code handles the OAuth handshake.
+- **ChatGPT** — add it as a connector by URL.
+- **Any spec-compliant client** — point it at the URL; it will read the metadata, sign you in, and connect.
+
+```json
+{
+  "mcpServers": {
+    "testdriver": {
+      "url": "https://mcp.testdriver.ai/mcp"
+    }
+  }
+}
+```
+
+Each connection gets its own isolated sandbox, so multiple people (or multiple chats) can run tests at the same time without interfering. The API-key paths above still work for automation and CI.
+
+---
+
 ## Observing test runs via HTTP MCP
 
 TestDriver also exposes **test results and analytics** over an HTTP MCP endpoint, so Claude Code (or any MCP-compatible client) can inspect your test runs, failures, and filters without provisioning a sandbox.

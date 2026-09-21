@@ -4,21 +4,21 @@ description: Run TestDriver tests in CI/CD with parallel execution and cross-pla
 ---
 <!-- Generated from ci-cd.mdx. DO NOT EDIT. -->
 
-TestDriver integrates seamlessly with popular CI providers, enabling automated end-to-end testing on every push and pull request.
+TestDriver integrates with the common CI providers. It lets you do automated end-to-end tests on each push and pull request.
 
 ## Authentication
 
-On **GitHub Actions, prefer OIDC** via the published `testdriverai/action` —
-there's no `TD_API_KEY` secret to store, copy, or rotate. The action proves the
-workflow is running inside your org and TestDriver exchanges that proof for your
+On **GitHub Actions, use OIDC** through the published `testdriverai/action`. Then
+there is no `TD_API_KEY` secret to store, copy, or change. The action shows that the
+workflow runs in your org. TestDriver changes that proof for your
 team's key at run time. See the GitHub Actions tab below.
 
-For other CI providers (or self-hosted runners without OIDC), fall back to a
-stored API key from [console.testdriver.ai/settings](https://console.testdriver.ai/settings),
-added as a `TD_API_KEY` secret in your CI provider's settings.
+For other CI providers (or self-hosted runners without OIDC), use a
+stored API key from [console.testdriver.ai/settings](https://console.testdriver.ai/settings).
+Add it as a `TD_API_KEY` secret in the settings of your CI provider.
 
 <Note>
-  Never commit your API key directly in code. Always use OIDC or your CI provider's secrets management.
+  Never commit your API key in the code. Always use OIDC or the secrets management of your CI provider.
 </Note>
 
 ## CI Provider Examples
@@ -27,10 +27,10 @@ added as a `TD_API_KEY` secret in your CI provider's settings.
   <Tab title="GitHub Actions">
     ### Authenticate with OIDC via `testdriverai/action` (recommended)
 
-    Use the published [`testdriverai/action`](https://github.com/testdriverai/action) — it mints the OIDC token, exchanges it for your team's API key, and exports `TD_API_KEY` for the steps that follow. **No `TD_API_KEY` secret to store or rotate.**
+    Use the published [`testdriverai/action`](https://github.com/testdriverai/action). It makes the OIDC token, changes it for your team's API key, and exports `TD_API_KEY` for the steps that come after. **There is no `TD_API_KEY` secret to store or change.**
 
     <Note>
-      One-time setup: authorize the [TestDriver GitHub App](https://console.testdriver.ai) for your org so the org → team binding exists. If your org authorized the App before OIDC support shipped, re-authorize once. If the App isn't authorized, the action fails with a console link (or falls back to the `api-key` secret if you provide one).
+      Do this one time: authorize the [TestDriver GitHub App](https://console.testdriver.ai) for your org. Then the org → team binding exists. If your org authorized the App before OIDC support was available, authorize it again one time. If the App is not authorized, the action fails with a console link. (Or it uses the `api-key` secret if you give one.)
     </Note>
 
     ```yaml .github/workflows/testdriver.yml

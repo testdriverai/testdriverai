@@ -6,9 +6,9 @@ description: Per-test JSON result files with metadata, versions, and infrastruct
 
 ## Overview
 
-TestDriver automatically writes a JSON result file for each test case after it finishes. These files contain comprehensive metadata about the test run, including SDK and runner versions, infrastructure details, interaction statistics, and links to recordings.
+TestDriver writes a JSON result file for each test case after it finishes. These files have full metadata about the test run. This includes the SDK version, the runner version, infrastructure details, interaction statistics, and links to recordings.
 
-Result files are written to:
+TestDriver writes the result files to:
 
 ```
 .testdriver/results/<testFile>/<testName>.json
@@ -21,12 +21,12 @@ For example, a test file `tests/login.test.mjs` with a test named `"should log i
 ```
 
 <Note>
-  Test names are sanitized for filesystem use — special characters are replaced with underscores and names are truncated to 200 characters.
+  TestDriver makes the test names safe for the file system. It changes special characters to underscores. It cuts the names to 200 characters.
 </Note>
 
 ## Enabling
 
-No configuration is required. The JSON files are written automatically by the TestDriver Vitest reporter plugin whenever tests run.
+You do not need configuration. The TestDriver Vitest reporter plugin writes the JSON files automatically each time the tests run.
 
 ## JSON Schema
 

@@ -29,6 +29,7 @@ import { z } from "zod";
 import * as core from "./core/actions.js";
 import { NoActiveSessionError, type ActionResult } from "./core/actions.js";
 import { resolveE2bTemplateId, resolveOs } from "./env-utils.js";
+import { authenticate, authorizationServerMetadata, authorizeRedirectUrl, isOAuthEnabled, protectedResourceMetadata, wwwAuthenticate } from "./http-auth.js";
 import { SessionStartInputSchema, type SessionStartInput } from "./provision-types.js";
 import { type SessionState } from "./session.js";
 
@@ -251,6 +252,13 @@ function imageStoreState(): ImageStoreState {
     adapter.imageStore = state;
   }
   return state;
+}
+
+/** Per-session team API key resolved from the caller's OAuth token (hosted mode).
+ *  Null when unset, so session_start falls back to the process-wide env key. */
+function sessionApiKey(): string | undefined {
+  const key = core.getAdapterState().apiKey;
+  return typeof key === "string" && key.length > 0 ? key : undefined;
 }
 
 /**
@@ -736,7 +744,7 @@ Debug mode (connect to existing sandbox):
           "session_start",
           core.sessionStart(
             params,
-            { os: resolvedOs, e2bTemplateId: resolvedE2bTemplateId },
+            { os: resolvedOs, e2bTemplateId: resolvedE2bTemplateId, apiKey: sessionApiKey() },
             { onProgress: (m) => progress.report(m) }
           )
         );
@@ -1911,7 +1919,89 @@ Learn more at https://docs.testdriver.ai/v7/getting-started/
   }
 );
 
+// =============================================================================
+// Data tools — read TestDriver run history via the backend REST API, scoped to
+// the caller's team by their OAuth token (hosted mode) or env API key.
+// =============================================================================
+
+server.registerTool(
+  "list_test_runs",
+  {
+    description: "List recent TestDriver test runs for the current team.",
+    inputSchema: z.object({
+      page: z.number().optional().describe("Page number (1-indexed)"),
+      limit: z.number().optional().describe("Maximum number of test runs to return"),
+      status: z.string().optional().describe("Filter by test run status"),
+      platform: z.string().optional().describe("Filter by platform"),
+      branch: z.string().optional().describe("Filter by git branch"),
+      testFile: z.string().optional().describe("Filter by test file path"),
+      search: z.string().optional().describe("Search by suite name substring"),
+    }),
+  },
+  async (params): Promise<CallToolResult> => {
+    try {
+      const data = await backendGet("/api/v1/testdriver/test-runs-list", params as Record<string, unknown>);
+      return createToolResult(true, JSON.stringify(data, null, 2), { action: "list_test_runs" });
+    } catch (error) {
+      logger.error("list_test_runs: Failed", { error: String(error) });
+      captureException(error as Error, { tags: { tool: "list_test_runs" } });
+      return createToolResult(false, `Failed to list test runs: ${String(error)}`, { action: "list_test_runs" });
+    }
+  }
+);
+
+server.registerTool(
+  "get_test_run_detail",
+  {
+    description: "Get details for a single TestDriver test run, including its test cases.",
+    inputSchema: z.object({
+      id: z.string().describe("The test run id"),
+    }),
+  },
+  async (params): Promise<CallToolResult> => {
+    try {
+      const data = await backendGet("/api/v1/testdriver/test-run-detail", { id: params.id });
+      return createToolResult(true, JSON.stringify(data, null, 2), { action: "get_test_run_detail" });
+    } catch (error) {
+      logger.error("get_test_run_detail: Failed", { error: String(error) });
+      captureException(error as Error, { tags: { tool: "get_test_run_detail" } });
+      return createToolResult(false, `Failed to get test run detail: ${String(error)}`, { action: "get_test_run_detail" });
+    }
+  }
+);
+
   return server;
+}
+
+/**
+ * Call a backend REST endpoint as the current session's team. Prefers the
+ * caller's OAuth Bearer (hosted mode); otherwise sends the env API key via
+ * `X-Api-Key` (stdio / local mode).
+ */
+async function backendGet(pathname: string, query: Record<string, unknown>): Promise<unknown> {
+  const apiRoot = (process.env.TD_API_ROOT || "https://api.testdriver.ai").replace(/\/$/, "");
+  const url = new URL(`${apiRoot}${pathname}`);
+  for (const [k, v] of Object.entries(query)) {
+    if (v !== undefined && v !== null && v !== "") {
+      url.searchParams.set(k, String(v));
+    }
+  }
+
+  const adapter = core.getAdapterState();
+  const headers: Record<string, string> = { accept: "application/json" };
+  const token = adapter.oauthToken;
+  const apiKey = adapter.apiKey || process.env.TD_API_KEY || process.env.COPILOT_MCP_TD_API_KEY;
+  if (typeof token === "string" && token) {
+    headers.authorization = `Bearer ${token}`;
+  } else if (typeof apiKey === "string" && apiKey) {
+    headers["x-api-key"] = apiKey;
+  }
+
+  const resp = await fetch(url.toString(), { headers });
+  if (!resp.ok) {
+    throw new Error(`backend ${pathname} returned ${resp.status}`);
+  }
+  return resp.json();
 }
 
 
@@ -1966,6 +2056,48 @@ function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
  * or otherwise protected outside the MCP layer). Do not expose this on a public
  * network without putting a real authenticating proxy in front of it.
  */
+/**
+ * Exchange a verified Auth0 access token for the caller's native TestDriver team
+ * API key via the backend, so each hosted session provisions under the right
+ * team and quota. Returns null if the exchange fails (caller falls back / errors).
+ */
+async function exchangeOAuthTokenForApiKey(token: string): Promise<string | null> {
+  const apiRoot = process.env.TD_API_ROOT || "https://api.testdriver.ai";
+  try {
+    const resp = await fetch(`${apiRoot.replace(/\/$/, "")}/auth/exchange-oauth-token`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({}),
+    });
+    if (!resp.ok) {
+      logger.warn("http: exchange-oauth-token failed", { status: resp.status });
+      return null;
+    }
+    const data = (await resp.json()) as { apiKey?: string };
+    return data.apiKey || null;
+  } catch (error) {
+    logger.error("http: exchange-oauth-token error", { error: String(error) });
+    return null;
+  }
+}
+
+// Fly.io machine that owns this process. When set (hosted, multi-machine), we
+// tag it into each session id so a request landing on the wrong machine can be
+// replayed to the owner via the `fly-replay` header — session affinity without a
+// shared store. Empty locally / single-machine, where every request is already
+// local.
+const FLY_MACHINE_ID = process.env.FLY_MACHINE_ID || "";
+
+// Session ids are `<uuid>.<machineId>` in multi-machine mode. These split the
+// two back out; a plain uuid (no dot) means single-machine and owns itself.
+function sessionOwnerMachine(sid: string): string {
+  const dot = sid.lastIndexOf(".");
+  return dot === -1 ? "" : sid.slice(dot + 1);
+}
+
 async function startHttpServer() {
   const host = process.env.TD_MCP_HOST || "127.0.0.1";
   const port = Number(process.env.TD_MCP_PORT || process.env.PORT || 8788);
@@ -1985,10 +2117,74 @@ async function startHttpServer() {
         return;
       }
 
+      // RFC 9728 protected-resource metadata, pointing OAuth clients at this
+      // server as the authorization server (see http-auth.ts for why we sit in
+      // front of Auth0 rather than advertising it directly). Only advertised
+      // when OAuth is enforced. Some clients append the resource path to the
+      // well-known URL, so match both.
+      if (
+        isOAuthEnabled() &&
+        req.method === "GET" &&
+        (url.pathname === "/.well-known/oauth-protected-resource" ||
+          url.pathname === `/.well-known/oauth-protected-resource${mcpPath}`)
+      ) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify(protectedResourceMetadata(req, mcpPath)));
+        return;
+      }
+
+      // RFC 8414 authorization-server metadata. Clients look for it at the
+      // OAuth path and, per OpenID Discovery, sometimes the OIDC one; both
+      // describe the same hop, so serve both.
+      if (
+        isOAuthEnabled() &&
+        req.method === "GET" &&
+        (url.pathname === "/.well-known/oauth-authorization-server" ||
+          url.pathname === `/.well-known/oauth-authorization-server${mcpPath}` ||
+          url.pathname === "/.well-known/openid-configuration")
+      ) {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify(authorizationServerMetadata(req)));
+        return;
+      }
+
+      // The one proxied endpoint: redirect to Auth0 with the API audience
+      // injected. `state`, PKCE and `redirect_uri` pass through untouched, so
+      // the callback goes straight from Auth0 back to the client and the code
+      // is exchanged at Auth0's token endpoint without touching this server.
+      if (isOAuthEnabled() && req.method === "GET" && url.pathname === "/authorize") {
+        res.writeHead(302, { location: authorizeRedirectUrl(url), "cache-control": "no-store" });
+        res.end();
+        return;
+      }
+
       if (url.pathname !== mcpPath) {
         res.writeHead(404, { "content-type": "application/json" });
         res.end(JSON.stringify({ error: "Not found", hint: `MCP endpoint is ${mcpPath}` }));
         return;
+      }
+
+      // OAuth resource-server enforcement (only when TD_MCP_AUTH=oauth). When
+      // disabled this is a no-op so local/trusted-network usage is unchanged.
+      let resolvedApiKey: string | null = null;
+      let resolvedToken: string | null = null;
+      if (isOAuthEnabled()) {
+        const auth = await authenticate(req);
+        if (!auth.ok) {
+          res.writeHead(auth.status, {
+            "content-type": "application/json",
+            "www-authenticate": wwwAuthenticate(req, { error: auth.error, description: auth.description }),
+          });
+          res.end(JSON.stringify({ error: auth.error, error_description: auth.description }));
+          return;
+        }
+        resolvedToken = auth.token;
+        resolvedApiKey = await exchangeOAuthTokenForApiKey(auth.token);
+        if (!resolvedApiKey) {
+          res.writeHead(403, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "no_team", error_description: "No TestDriver team is linked to this account" }));
+          return;
+        }
       }
 
       const sessionId = req.headers["mcp-session-id"];
@@ -2003,6 +2199,15 @@ async function startHttpServer() {
       // A brand-new session: only an `initialize` request may create one.
       if (!connection) {
         if (sid) {
+          // The session lives on another Fly machine: ask Fly's proxy to replay
+          // this request there instead of 404ing (which would force a new
+          // sandbox). Only when the owner is a *different* known machine.
+          const owner = sessionOwnerMachine(sid);
+          if (FLY_MACHINE_ID && owner && owner !== FLY_MACHINE_ID) {
+            res.writeHead(409, { "fly-replay": `instance=${owner}` });
+            res.end();
+            return;
+          }
           // Client presented a session id we don't know — it was torn down or is
           // stale. 404 so the client re-initializes (matches SDK stateful mode).
           res.writeHead(404, { "content-type": "application/json" });
@@ -2017,9 +2222,21 @@ async function startHttpServer() {
 
         // Mint an isolated context + a server bound to it + a transport.
         const ctx = core.createIsolatedContext();
+        // Seed the per-session team key so session_start provisions under the
+        // caller's own team (hosted OAuth mode). Falls back to env when unset.
+        if (resolvedApiKey) {
+          ctx.adapter.apiKey = resolvedApiKey;
+        }
+        // Keep the caller's Bearer so data tools can call the backend REST API as
+        // the authenticated user.
+        if (resolvedToken) {
+          ctx.adapter.oauthToken = resolvedToken;
+        }
         const mcpServer = buildServer();
         const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
+          // Tag the owning machine into the id (multi-machine only) so later
+          // requests can be replayed here via `fly-replay`.
+          sessionIdGenerator: () => (FLY_MACHINE_ID ? `${randomUUID()}.${FLY_MACHINE_ID}` : randomUUID()),
           onsessioninitialized: (newId: string) => {
             connections.set(newId, { transport, server: mcpServer, ctx });
             logger.info("http: MCP session initialized", { sessionId: newId, activeSessions: connections.size });

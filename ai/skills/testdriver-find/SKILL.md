@@ -54,7 +54,7 @@ const element = await testdriver.find(description, options)
     </ParamField>
     
     <ParamField path="verify" type="boolean" default={false}>
-      This enables AI verification of the found element. When `true`, a second AI call makes sure that the coordinates agree with the correct element. This catches incorrect positions. It is disabled by default for less latency. When you do not set it for each call, it uses the global `verify` option from the [SDK constructor](/client).
+      This enables AI verification of the found element. When `true`, a second AI call makes sure that the coordinates agree with the correct element. This catches incorrect positions. It is disabled by default for less latency. When you do not set it for each call, it uses the global `verify` option from the [SDK options](/options#ai-and-element-location).
     </ParamField>
     
     <ParamField path="ai" type="object">

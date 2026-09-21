@@ -6,13 +6,13 @@ description: Record test execution with video and logs
 
 ## Overview
 
-Dashcam provides automatic video recording and log aggregation for your tests. It captures screen recordings, application logs, and test execution details that can be reviewed later.
+Dashcam makes automatic video recordings. It also collects the logs for your tests. It captures screen recordings, application logs, and test details. You can review them later.
 
 ## Basic Usage
 
 ### With Presets
 
-Most presets automatically include Dashcam:
+Most presets include Dashcam automatically:
 
 ```javascript
 import { test } from 'vitest';
@@ -33,7 +33,7 @@ test('my test', async (context) => {
 
 ### Manual Setup
 
-For more control, create a Dashcam instance directly:
+For more control, make a Dashcam instance directly:
 
 ```javascript
 import TestDriver from 'testdriverai';

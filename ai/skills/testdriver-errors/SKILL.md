@@ -6,7 +6,7 @@ description: Custom error classes and error handling
 
 ## Overview
 
-TestDriver provides custom error classes with rich debugging information. These are exported from the SDK and can be used for `instanceof` checks in your tests.
+TestDriver gives custom error classes with full debug information. The SDK exports them. You can use them for `instanceof` checks in your tests.
 
 ```javascript
 import TestDriver, { ElementNotFoundError, AIError } from 'testdriverai';
@@ -14,7 +14,7 @@ import TestDriver, { ElementNotFoundError, AIError } from 'testdriverai';
 
 ## ElementNotFoundError
 
-Thrown when `find()` cannot locate an element on screen, or when calling `click()`/`hover()` on an unfound element.
+TestDriver throws this when `find()` cannot find an element on the screen. It also throws this when you call `click()` or `hover()` on an element that TestDriver did not find.
 
 ```javascript
 try {
@@ -35,7 +35,7 @@ try {
 </ParamField>
 
 <ParamField path="message" type="string">
-  Enhanced message with a debug block containing element description, cache status, similarity scores, and AI response details.
+  A message with a debug block. The block has the element description, the cache status, the similarity scores, and the AI response details.
 </ParamField>
 
 <ParamField path="description" type="string">

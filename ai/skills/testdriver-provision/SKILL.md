@@ -6,9 +6,9 @@ description: Launch browsers, desktop apps, and extensions in your sandbox
 
 ## Overview
 
-The Provision API sets up applications in your sandbox before tests run. It handles downloading, installing, and launching browsers, desktop apps, VS Code, Chrome extensions, and more.
+The Provision API sets up applications in your sandbox before the tests run. It downloads, installs, and starts browsers, desktop apps, VS Code, Chrome extensions, and more.
 
-Access provision methods via `testdriver.provision.*`:
+Use the provision methods through `testdriver.provision.*`:
 
 ```javascript
 await testdriver.provision.chrome({ url: 'https://example.com' });
@@ -18,7 +18,7 @@ await testdriver.provision.chrome({ url: 'https://example.com' });
 
 ### chrome()
 
-Launch Google Chrome with an optional URL.
+Start Google Chrome with an optional URL.
 
 ```javascript
 await testdriver.provision.chrome(options?)
@@ -27,15 +27,15 @@ await testdriver.provision.chrome(options?)
 <ParamField path="options" type="ProvisionChromeOptions">
   <Expandable title="properties">
     <ParamField path="url" type="string" default="http://testdriver-sandbox.vercel.app/">
-      URL to navigate to after launch.
+      The URL to go to after Chrome starts.
     </ParamField>
     
     <ParamField path="maximized" type="boolean" default={true}>
-      Launch Chrome in maximized window mode.
+      Start Chrome with the window at the maximum size.
     </ParamField>
     
     <ParamField path="guest" type="boolean" default={false}>
-      Launch Chrome in guest profile mode.
+      Start Chrome in the guest profile mode.
     </ParamField>
   </Expandable>
 </ParamField>
@@ -54,7 +54,7 @@ await testdriver.provision.chrome({
 
 ### chromeExtension()
 
-Install and launch a Chrome extension. You can install from a local unpacked directory or from the Chrome Web Store by extension ID.
+Install and start a Chrome extension. You can install it from a local unpacked directory. Or you can install it from the Chrome Web Store by the extension ID.
 
 ```javascript
 await testdriver.provision.chromeExtension(options)

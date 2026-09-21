@@ -4,13 +4,13 @@ description: Locate elements and verify app state with AI-powered assertions
 ---
 <!-- Generated from making-assertions.mdx. DO NOT EDIT. -->
 
-Once a test runs, validate that the app did what it should. Validation has two parts: locating the elements you want to check, and making assertions about the state of your app. TestDriver uses AI as a judge, returning a boolean plus reasoning about whether your app is in the expected state.
+After a test runs, make sure that the app did the correct thing. Validation has two parts: to find the elements that you want to check, and to make assertions about the state of your app. TestDriver uses the AI as a judge. It returns a boolean and the reason. This shows if your app is in the correct state.
 
 ## Locating Elements
 
 ### Locating Single Elements
 
-Use natural language to describe elements. Descriptions should be specific enough to locate the element, but not too-specific that they break with minor UI changes. For example:
+Use natural language to describe elements. A description must be specific enough to find the element. But it must not be so specific that it breaks with small UI changes. For example:
 
 ```javascript
 await testdriver.find('email input field');
@@ -18,11 +18,11 @@ await testdriver.find('first product card in the grid');
 await testdriver.find('dropdown menu labeled "Country"');
 ```
 
-<Info>TestDriver will cache found elements for improved performance on subsequent calls. Learn more about [element caching here](/caching).</Info>
+<Info>TestDriver caches the found elements for better performance on later calls. Read more about [element caching here](/caching).</Info>
 
 ### Debugging Found Elements
 
-After finding an element, you can inspect its properties for debugging:
+After TestDriver finds an element, you can look at its properties for debug:
 
 ```javascript
 const button = await testdriver.find('submit button');

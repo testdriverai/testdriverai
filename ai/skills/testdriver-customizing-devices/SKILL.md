@@ -6,7 +6,7 @@ description: Configure TestDriver sandbox options and environment settings
 
 ## TestDriver Options
 
-Configure TestDriver behavior with options passed to the `TestDriver()` function:
+Configure the TestDriver behavior with options that you give to the `TestDriver()` function:
 
 ```javascript
 const testdriver = TestDriver(context, {

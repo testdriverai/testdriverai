@@ -6,17 +6,17 @@ description: Detect all UI elements on screen using OmniParser
 
 ## Overview
 
-Parse the current screen using OmniParser v2 to detect all visible UI elements. Returns structured data including element types, text content, interactivity levels, and bounding box coordinates.
+Parse the screen with OmniParser v2 to find all visible UI elements. TestDriver returns structured data. This includes element types, text content, interactivity levels, and bounding box coordinates.
 
-This method analyzes the entire screen and returns every detected element. It's useful for:
-- Understanding the full UI layout of a screen
-- Finding all clickable or interactive elements
-- Building custom element-based logic
-- Debugging what elements TestDriver can detect
-- Accessibility auditing
+This method examines all of the screen and returns each element that it finds. Use it for these:
+- To understand the full UI layout of a screen
+- To find all clickable or interactive elements
+- To build custom element logic
+- To debug which elements TestDriver can find
+- To do an accessibility audit
 
 <Note>
-  **Availability**: `parse()` requires an enterprise or self-hosted plan. It uses OmniParser v2 server-side for element detection.
+  **Availability**: `parse()` needs an enterprise plan or a self-hosted plan. It uses OmniParser v2 on the server for element detection.
 </Note>
 
 ## Syntax

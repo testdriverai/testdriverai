@@ -4,23 +4,23 @@ description: How the TestDriver agent behaves on GitHub issues, pull requests, a
 ---
 <!-- Generated from agent.mdx. DO NOT EDIT. -->
 
-The TestDriver agent is an AI teammate that lives in your GitHub repository. It's
-**code review that runs your app** — instead of only reading a diff and guessing
-what might break, it starts a real sandbox, drives the real app, and reports what
-actually happens.
+The TestDriver agent is an AI teammate in your GitHub repository. It is
+**code review that runs your app**. It does not only read a diff and guess
+what can break. It starts a real sandbox, controls the real app, and reports what
+really happens.
 
 ## Scope: it only builds and maintains tests
 
-The agent is focused. The one thing it does is **write, debug, fix, and maintain
-automated tests** with TestDriver, and review pull requests by writing and running
-a test against the change. It will politely decline off-scope work — it won't edit
-your application code, fix product bugs, answer unrelated programming questions, or
+The agent has one purpose. It does one thing: it **writes, debugs, fixes, and keeps
+automated tests** with TestDriver. It reviews pull requests. It writes and runs
+a test against the change. It does not do work that is not in scope. It does not edit
+your application code, fix product bugs, answer other programming questions, or
 act as a general coding assistant.
 
 ## How it behaves depends on the surface
 
-The agent reacts to three different GitHub surfaces, and its behavior is
-noticeably different on each.
+The agent reacts to three different GitHub surfaces. Its behavior is
+different on each one.
 
 | Surface | Trigger | What it does |
 |---------|---------|--------------|
@@ -30,13 +30,13 @@ noticeably different on each.
 
 ## Pull requests — automatic code review
 
-When a pull request is **opened**, the agent reviews it automatically — nobody has
+When a pull request is **opened**, the agent reviews it automatically. Nobody has
 to ask.
 
-- **The review is the deliverable, not chatter.** An automatic review is
-  unsolicited, so the agent stays quiet while it works and posts a **single review
-  comment** at the end rather than scattering inline threads across the diff or
-  narrating each step.
+- **The review is the deliverable, not chatter.** No person asks for an automatic review.
+  Thus the agent stays quiet while it works. It posts a **single review
+  comment** at the end. It does not put many inline threads across the diff. It does not
+  tell each step.
 - **It runs the change when it can.** Its default first move is to start a session,
   work out what the PR changes from a user's point of view, and write and run a
   TestDriver test that exercises exactly that. A bug it *watched happen* is far

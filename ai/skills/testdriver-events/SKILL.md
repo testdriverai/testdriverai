@@ -6,9 +6,9 @@ description: Listen to SDK lifecycle events with wildcard support
 
 ## Overview
 
-TestDriver uses [EventEmitter2](https://github.com/EventEmitter2/EventEmitter2) for its event system. Events use a colon-delimited namespace pattern and support wildcard listeners.
+TestDriver uses [EventEmitter2](https://github.com/EventEmitter2/EventEmitter2) for its event system. Events use a namespace pattern with colons. They permit wildcard listeners.
 
-Access the emitter through `testdriver.emitter`:
+Use the emitter through `testdriver.emitter`:
 
 ```javascript
 testdriver.emitter.on('command:start', (data) => {
@@ -32,7 +32,7 @@ new EventEmitter2({
 
 ### Wildcard Listeners
 
-Use `*` to match a single level or `**` to match multiple levels:
+Use `*` to match one level. Use `**` to match many levels:
 
 ```javascript
 // Match all log events

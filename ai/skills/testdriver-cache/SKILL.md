@@ -6,18 +6,18 @@ description: Speed up tests with screenshot-based caching
 
 ## Overview
 
-The cache system speeds up repeated test runs by comparing screenshots to cached results. When the screen hasn't changed significantly, cached element positions are reused instead of making an AI call.
+The cache system makes repeated test runs faster. It compares screenshots to cached results. When the screen did not change much, TestDriver uses the cached element positions again. It does not make an AI call.
 
-Cache works at two levels:
-- **Screen cache** — pixel diff comparison between the current screenshot and the cached screenshot
-- **Element cache** — OpenCV template matching to verify the cached element position is still correct
+The cache works at two levels:
+- **Screen cache**: a pixel diff comparison between the present screenshot and the cached screenshot
+- **Element cache**: OpenCV template matching to make sure that the cached element position is still correct
 
 ## How It Works
 
-1. On `find()`, the SDK sends the current screenshot and cache metadata to the API
-2. The API compares the screenshot against previously cached results for the same `cacheKey`
-3. If the screen pixel diff is within the `screen` threshold AND the element template match exceeds the `element` threshold, the cached position is returned
-4. Otherwise, a new AI call is made and the result is cached
+1. On `find()`, the SDK sends the present screenshot and the cache metadata to the API.
+2. The API compares the screenshot against the cached results for the same `cacheKey`.
+3. If the screen pixel diff is in the `screen` threshold AND the element template match is more than the `element` threshold, TestDriver returns the cached position.
+4. If not, TestDriver makes a new AI call and caches the result.
 
 ```mermaid
 flowchart LR

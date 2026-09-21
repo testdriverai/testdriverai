@@ -6,22 +6,22 @@ description: Locate and interact with UI elements using AI
 
 ## Overview
 
-TestDriver's element finding system uses AI to locate elements on screen using natural language descriptions. The `find()` method returns an `Element` object that you can interact with.
+The TestDriver element finding system uses AI. It finds elements on the screen with natural language descriptions. The `find()` method returns an `Element` object. You can interact with the object.
 
 ## Finding Elements
 
 ### find()
 
-Locate an element on screen using a natural language description.
+Find an element on the screen with a natural language description.
 
 ```javascript
 const element = await testdriver.find(description)
 ```
 
 **Parameters:**
-- `description` (string) - Natural language description of the element to find
+- `description` (string) - A natural language description of the element to find
 
-**Returns:** `Promise<Element>` - Element instance that has been located
+**Returns:** `Promise<Element>` - The Element instance that TestDriver found
 
 **Example:**
 ```javascript
@@ -36,7 +36,7 @@ const redButton = await testdriver.find('red button in the top right corner');
 ```
 
 <Tip>
-  Be specific in your descriptions. Include visual details, location context, or nearby text to improve accuracy.
+  Be specific in your descriptions. Include visual details, location context, or nearby text to make the accuracy better.
 </Tip>
 
 ## Element Class

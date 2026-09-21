@@ -6,10 +6,10 @@ description: Diagnose failing tests with screenshots, replays, and logs
 
 ## Overview
 
-When a test fails, debug it by seeing exactly what happened — don't guess. TestDriver captures screenshots, video replays, and logs as your test runs, so you can replay the moment of failure instead of squinting at a stack trace. TestDriver MCP provides powerful commands to view and analyze the screenshots saved during test execution, enabling rapid debugging, test development, and comparison workflows without manually opening image files.
+When a test fails, debug it. Look at what happened. Do not guess. TestDriver captures screenshots, video replays, and logs while your test runs. Thus you can replay the moment of the failure. You do not need to look at a stack trace. TestDriver MCP gives commands to view and examine the screenshots that TestDriver saved during the test. This lets you debug quickly, develop tests, and compare, without a manual open of image files.
 
 <Note>
-  **Automatic Screenshots (Default: Enabled)**: TestDriver automatically captures screenshots before and after every command. Screenshots are named with the line number and action, making it easy to trace exactly which line of code produced each screenshot. For example: `001-click-before-L42-submit-button.png`
+  **Automatic Screenshots (Default: Enabled)**: TestDriver captures screenshots automatically before and after each command. The screenshot name has the line number and the action. Thus it is easy to see which line of code made each screenshot. For example: `001-click-before-L42-submit-button.png`
 </Note>
 
 ## MCP Commands
@@ -25,15 +25,15 @@ list_local_screenshots()
 **Filter Parameters:**
 
 <ParamField path="directory" type="string" optional>
-  Filter screenshots by test file or subdirectory (e.g., "login.test", "mcp-screenshots"). If omitted, lists all screenshots.
+  Filter the screenshots by test file or subdirectory (for example, "login.test", "mcp-screenshots"). If you do not give this, the tool lists all screenshots.
 </ParamField>
 
 <ParamField path="line" type="number" optional>
-  Filter by exact line number from test file (e.g., 42 matches L42 in filename).
+  Filter by the exact line number from the test file (for example, 42 matches L42 in the filename).
 </ParamField>
 
 <ParamField path="lineRange" type="object" optional>
-  Filter by line number range. Example: `{ start: 10, end: 20 }` matches screenshots from lines 10-20.
+  Filter by a line number range. Example: `{ start: 10, end: 20 }` matches screenshots from lines 10-20.
 </ParamField>
 
 <ParamField path="action" type="string" optional>

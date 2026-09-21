@@ -11,49 +11,40 @@
     "default": "dark"
   },
   "favicon": "/images/template/icon.png",
-  "navigation": { 
-
+  "navigation": {
     "groups": [
       {
         "group": "Overview",
         "pages": [
           "/agent",
           "/what-is-testdriver",
-
-      {
-        "group": "Quickstart",
-        "icon": "rocket",
-        "pages": [
-          "/quickstart-github",
-          "/quickstart-cli"
-        ]
-      },
-      {
-        "group": "Examples",
-        "icon": "code",
-        "pages": [
-          "/examples/ai",
-          "/examples/assert",
-          "/examples/captcha-api",
-          "/examples/chrome-extension",
-          "/examples/drag-and-drop",
-          "/examples/element-not-found",
-          "/examples/findall-coffee-icons",
-          "/examples/formatted-logging",
-          "/examples/hover-image",
-          "/examples/hover-text-with-description",
-          "/examples/hover-text",
-          "/examples/installer",
-          "/examples/launch-vscode-linux",
-          "/examples/match-image",
-          "/examples/parse",
-          "/examples/press-keys",
-          "/examples/scroll-keyboard",
-          "/examples/scroll-until-text",
-          "/examples/scroll",
-          "/examples/type"
-        ]
-      }
+          {
+            "group": "Quickstart",
+            "icon": "rocket",
+            "pages": [
+              "/quickstart-github",
+              "/quickstart-cli"
+            ]
+          },
+          {
+            "group": "Examples",
+            "icon": "code",
+            "pages": [
+              "/examples/assert",
+              "/examples/element-not-found",
+              "/examples/findall-coffee-icons",
+              "/examples/hover-image",
+              "/examples/hover-text-with-description",
+              "/examples/hover-text",
+              "/examples/installer",
+              "/examples/launch-vscode-linux",
+              "/examples/parse",
+              "/examples/press-keys",
+              "/examples/scroll-keyboard",
+              "/examples/scroll",
+              "/examples/type"
+            ]
+          }
         ]
       },
       {
@@ -118,15 +109,14 @@
             ]
           },
           "/making-assertions",
-
-        {
-          "group": "Integrations",
-          "icon": "plug",
-          "pages": [
-            "/github",
-            "/ci-cd"
-          ]
-      },
+          {
+            "group": "Integrations",
+            "icon": "plug",
+            "pages": [
+              "/github",
+              "/ci-cd"
+            ]
+          },
           {
             "group": "Deploying",
             "icon": "cloud-arrow-up",
@@ -147,7 +137,6 @@
       {
         "group": "Advanced Topics",
         "pages": [
-
           "/variables",
           "/secrets",
           "/reusable-code",
@@ -188,7 +177,7 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/quickstart"
+      "destination": "/quickstart-github"
     },
     {
       "source": "/quickstart-ai-setup",

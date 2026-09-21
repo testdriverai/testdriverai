@@ -4,26 +4,26 @@ description: Our enterprise solution with unlimited test execution, assisted set
 ---
 <!-- Generated from self-hosted.mdx. DO NOT EDIT. -->
 
-Self-hosted is our enterprise solution for teams that need unlimited test execution, infrastructure control, and dedicated support. Pricing is based on **parallel test capacity** with a flat license fee — no per-second billing.
+Self-hosted is our enterprise solution. Use it for teams that need unlimited test runs, infrastructure control, and dedicated support. The price uses **parallel test capacity** with a flat license fee. There is no per-second bill.
 
 <CardGroup cols={2}>
   <Card title="Unlimited Execution" icon="infinity">
-    Run as many tests as you want with no device-second metering. Predictable monthly costs.
+    Run as many tests as you want. There is no device-second count. The monthly costs are known.
   </Card>
   <Card title="Assisted Setup & Support" icon="headset">
-    Our team helps you deploy, configure, and optimize your infrastructure. Dedicated engineering support included.
+    Our team helps you to deploy, configure, and optimize your infrastructure. Dedicated engineering support is included.
   </Card>
   <Card title="Full Control" icon="gear">
-    Use your own AI keys, custom hardware, specific software, and network configurations. RDP into test machines for debugging.
+    Use your own AI keys, custom hardware, specific software, and network configurations. Use RDP into the test machines for debug.
   </Card>
   <Card title="Security & Compliance" icon="shield-check">
-    Keep data in your environment. Air-gapped deployment available for regulated industries.
+    Keep the data in your environment. Air-gapped deployment is available for regulated industries.
   </Card>
 </CardGroup>
 
 ## Deployment Options
 
-Choose the level of control you need:
+Select the level of control that you need:
 
 | Component | Standard | Air-Gapped |
 |-----------|----------|------------|

@@ -4,9 +4,9 @@ description: Generate tests by exploring your app with the AI vision agent
 ---
 <!-- Generated from generating-tests.mdx. DO NOT EDIT. -->
 
-Start by exploring your app. This is where tests begin: you describe a flow in plain English, and the TestDriver vision agent clicks, types, and reads the screen to figure it out — then writes the test for you. No selectors, no DOM, no brittle locators. Just describe what you want to test and let the agent discover the rest.
+Start with an exploration of your app. Tests begin here: you describe a flow in plain English. Then the TestDriver vision agent clicks, types, and reads the screen to understand it. Then it writes the test for you. There are no selectors, no DOM, and no weak locators. Only describe what you want to test. Let the agent find the other parts.
 
-There are two ways to explore: chatting interactively with your AI assistant through the TestDriver MCP server, or handing a coding agent our instructions file and prompting it to generate a test.
+There are two methods for an exploration. You can chat with your AI assistant through the TestDriver MCP server. Or you can give a coding agent our instructions file and tell it to generate a test.
 
 <Info>
   Both paths need an MCP-capable AI coding assistant. If you don't have one yet, start with **GitHub Copilot** — there's a [free tier](https://github.com/features/copilot/plans), no credit card required. See [Run → Setup](/copilot/running-tests#setup) for the full install and sign-in walkthrough.
@@ -14,7 +14,7 @@ There are two ways to explore: chatting interactively with your AI assistant thr
 
 ## Instructions for Coding Agents
 
-We recommend starting with [our quickstart](./quickstart), then supplying your coding agent with our agent instructions file.
+Start with [our quickstart](./quickstart). Then give your coding agent our agent instructions file.
 
 <Card title="TestDriver Agent Instructions" icon="link" arrow="true" horizontal href="https://github.com/testdriverai/testdriverai/blob/main/ai/agents/testdriver.md?plain=1">
   Copy the current version of our agent instructions to provide your coding agent with up-to-date instructions on how to generate TestDriver tests.
@@ -32,13 +32,13 @@ Push Submit button
 Verify new page contains expected text 'logged in'
 ```
 
-<Info>Explicit commands are preferred for production tests, as they are cheaper, faster, and more reliable.</Info>
+<Info>Use explicit commands for production tests. They are at a lower cost, faster, and more reliable.</Info>
 
 ## Start a Conversation
 
-With TestDriver's MCP server and your AI assistant (GitHub Copilot, Cursor, or Claude Desktop), you can create tests by chatting with an AI agent. The agent spawns a virtual machine, executes actions, and writes test code for you.
+Use the TestDriver MCP server and your AI assistant (GitHub Copilot, Cursor, or Claude Desktop) to make tests. You chat with an AI agent. The agent starts a virtual machine, does actions, and writes the test code for you.
 
-Open your AI assistant's chat. If your project has no other agents configured, the TestDriver agent is used by default. Otherwise, select **testdriver** from the agent dropdown in the chat panel.
+Open the chat of your AI assistant. If your project has no other agents, TestDriver uses the TestDriver agent by default. If not, select **testdriver** from the agent dropdown in the chat panel.
 
 Describe what you want to test:
 

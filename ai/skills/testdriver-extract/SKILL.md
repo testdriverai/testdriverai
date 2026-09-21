@@ -6,9 +6,9 @@ description: Read information from the screen using AI and return it as a string
 
 ## Overview
 
-Extract information from the current screen using AI and return it as a string. Describe what you want in natural language, and the AI reads the screen and returns the matching value — text, numbers, labels, status messages, or any other on-screen content.
+Get information from the screen with AI. TestDriver returns it as a string. Describe what you want in natural language. The AI reads the screen and returns the correct value: text, numbers, labels, status messages, or other content on the screen.
 
-Unlike [`assert()`](/assert), which returns a boolean verdict, `extract()` returns the actual value so you can store it, compare it, or feed it into later steps and framework assertions.
+[`assert()`](/assert) returns a boolean result. But `extract()` returns the real value. Thus you can store it, compare it, or use it in later steps and in framework assertions.
 
 ## Syntax
 
@@ -20,16 +20,16 @@ const value = await testdriver.extract({ description })
 ## Parameters
 
 <ParamField path="description" type="string" required>
-  Natural language description of the information to read from the screen.
+  A natural language description of the information to read from the screen.
 </ParamField>
 
 <Info>
-  `extract()` also accepts an options object — `extract({ description })` — which is equivalent to the positional form. The bare string form is the most common.
+  `extract()` also accepts an options object, `extract({ description })`. This is the same as the positional form. The string form is the most common.
 </Info>
 
 ## Returns
 
-`Promise<string>` — The information read from the screen. Returns the extracted value as text; parse or cast it yourself if you need a number or other type.
+`Promise<string>` — The information from the screen. TestDriver returns the value as text. Parse it or cast it yourself if you need a number or another type.
 
 ## Examples
 

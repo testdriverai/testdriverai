@@ -110,6 +110,26 @@ class InitCommand extends BaseCommand {
       }
     }
 
+    // Key already provided via the environment: use it without prompting.
+    const envKey = process.env.TD_API_KEY && process.env.TD_API_KEY.trim();
+    if (envKey) {
+      console.log(chalk.gray("\n  Using TD_API_KEY from environment...\n"));
+      return envKey;
+    }
+
+    // Non-interactive stdin (CI, agents, piped input): the prompts below would
+    // never get an answer (readline closes on EOF without resolving, so init
+    // silently exits before scaffolding). Skip auth and keep going.
+    if (!process.stdin.isTTY) {
+      console.log(
+        chalk.yellow(
+          "\n  ⚠️  Non-interactive shell, skipping API key setup. Add it later to .env:\n",
+        ),
+      );
+      console.log(chalk.gray("     TD_API_KEY=your_api_key\n"));
+      return null;
+    }
+
     console.log(chalk.cyan("  Setting up your TestDriver API key...\n"));
 
     // Ask user how they want to authenticate

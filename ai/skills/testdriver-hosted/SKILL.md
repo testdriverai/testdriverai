@@ -4,11 +4,11 @@ description: The fastest way to get started with TestDriver. Just set your API k
 ---
 <!-- Generated from hosted.mdx. DO NOT EDIT. -->
 
-Hosted pricing is based on **device-seconds**: the amount of time your tests run on **our infrastructure**.
+The hosted price uses **device-seconds**: the time that your tests run on **our infrastructure**.
 
-- **Zero Setup** — Start testing immediately. No DevOps required.
-- **Free Tier** — Get started with a limited preview at no cost.
-- **Pay As You Go** — Only pay for the device-seconds you use.
+- **Zero Setup**. Start tests immediately. You do not need DevOps.
+- **Free Tier** — Start with a limited preview at no cost.
+- **Pay As You Go** — Pay only for the device-seconds that you use.
 
 ## Hosted Plans
 

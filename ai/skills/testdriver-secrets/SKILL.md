@@ -4,11 +4,11 @@ description: Securely manage passwords and sensitive data in your tests
 ---
 <!-- Generated from secrets.mdx. DO NOT EDIT. -->
 
-Protect sensitive information like passwords, API keys, and tokens in your TestDriver tests.
+Protect sensitive information such as passwords, API keys, and tokens in your TestDriver tests.
 
 ## Typing Secrets Securely
 
-When typing sensitive information like passwords, use the `secret: true` option to prevent the value from being logged or stored:
+When you type sensitive information such as passwords, use the `secret: true` option. This stops TestDriver from a log or a store of the value:
 
 ```javascript
 import { test } from 'vitest';
@@ -32,12 +32,12 @@ test('login with secure password', async (context) => {
 ```
 
 <Note>
-When `secret: true` is set, the typed text appears as `****` in all logs, recordings, and dashcam output.
+When you set `secret: true`, the typed text shows as `****` in all logs, recordings, and dashcam output.
 </Note>
 
 ## Storing Secrets in GitHub
 
-Store sensitive credentials as GitHub repository secrets so they're never exposed in your code:
+Store sensitive credentials as GitHub repository secrets. Then they are never in your code:
 
 <Steps>
   <Step title="Navigate to Repository Settings">

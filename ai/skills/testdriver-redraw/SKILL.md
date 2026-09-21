@@ -6,20 +6,20 @@ description: Wait for the screen to stabilize after interactions
 
 ## Overview
 
-The redraw system waits for the screen to stabilize after an interaction before continuing. It detects when animations, page loads, and network requests have settled, preventing actions from being performed on a changing screen.
+The redraw system waits for the screen to become stable after an interaction. Then it continues. It finds when animations, page loads, and network requests are complete. This stops actions on a screen that changes.
 
 <Note>
-  **Redraw is disabled by default since v7.3.** Enable it explicitly if your tests interact with applications that have significant animations or loading states.
+  **Redraw is disabled by default from v7.3.** Enable it if your tests interact with applications that have many animations or load states.
 </Note>
 
 ## How It Works
 
-Redraw uses a **two-phase detection** approach:
+Redraw uses a **two-phase detection** method:
 
-1. **Change Detection** — Compare the current frame to the initial screenshot taken right after the action. If the pixel diff exceeds 0.1%, the screen has changed.
-2. **Stability Detection** — Compare consecutive frames using z-score analysis. When the diff between frames drops below 0.1% or the z-score is negative (current diff is below average), the screen has settled.
+1. **Change Detection**. TestDriver compares the present frame to the first screenshot from after the action. If the pixel diff is more than 0.1%, the screen changed.
+2. **Stability Detection** — TestDriver compares frames that come after each other with z-score analysis. When the diff between frames is less than 0.1%, or the z-score is negative (the present diff is less than the average), the screen is complete.
 
-The screen is considered **settled** when both phases complete: the screen changed from the initial state AND consecutive frames are now stable.
+The screen is **complete** when both phases finish: the screen changed from the first state AND the frames that come after each other are now stable.
 
 ```mermaid
 flowchart TD

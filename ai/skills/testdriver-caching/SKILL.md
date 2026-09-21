@@ -4,9 +4,10 @@ description: How TestDriver learns your app and caches what it discovers for ins
 ---
 <!-- Generated from caching.mdx. DO NOT EDIT. -->
 
-Once the agent has [explored your app](/generating-tests), TestDriver remembers what it found. Every element the AI vision agent discovers is cached with a vision fingerprint—a perceptual hash of the screen state where it was located. On the next run, TestDriver matches against that cache instead of calling the AI again. Passing tests replay instantly, deterministically, and cheaply.
+After the agent [explored your app](/generating-tests), TestDriver keeps what it found. TestDriver caches each element that the AI vision agent finds. It uses a vision fingerprint. This is a perceptual hash of the screen state at the element location. On the next run, TestDriver matches against that cache. It does not call the AI again. Tests that pass replay quickly, in the same way each time, and at a low cost.
 
-This learning is what makes TestDriver fast. Intelligent caching delivers up to **1.7x faster** test execution by skipping redundant AI vision analysis—the agent only thinks when it sees something new.
+This learning makes TestDriver fast. The cache makes the test run a maximum of **1.7x faster**. It does not do the same AI vision analysis again. The agent thinks only when it sees something new.
+
 
 ```javascript
 // First run: builds cache
@@ -18,14 +19,14 @@ await testdriver.find('submit button');
 
 ## Automatic Caching
 
-Learning is enabled automatically with zero configuration. The cache key—the fingerprint TestDriver uses to recognize what it already knows—is computed from:
+TestDriver enables learning automatically. You do not need configuration. TestDriver computes the cache key from these. The cache key is the fingerprint that TestDriver uses to know what it learned:
 
-- **File hash**: SHA-256 hash of the test file contents
-- **Selector prompt**: The exact text description passed to `find()`
-- **Screenshot context**: Perceptual hash of the current screen state
-- **Platform**: Operating system and browser version
+- **File hash**: The SHA-256 hash of the test file contents
+- **Selector prompt**: The exact text description that you give to `find()`
+- **Screenshot context**: The perceptual hash of the present screen state
+- **Platform**: The operating system and the browser version
 
-When you modify your test file, the hash changes automatically, invalidating stale cache entries and ensuring fresh AI analysis with your updated test logic.
+When you change your test file, the hash changes automatically. This makes the old cache entries not valid. Then TestDriver does a new AI analysis with your new test logic.
 
 ```javascript
 import { test } from 'vitest';
@@ -46,7 +47,7 @@ test('auto-cached test', async (context) => {
 
 ## Managing the Cache
 
-You can clear the cache within the TestDriver console. There, you'll also find previews of cached elements, the input prompts, as well as analytics on cache hit rates.
+You can clear the cache in the TestDriver console. There, you also find previews of cached elements, the input prompts, and analytics on the cache hit rates.
 
 <Card href="https://console.testdriver.ai/cache" title="TestDriver Cache" icon="database">
   Manage and clear your test cache from the TestDriver console.

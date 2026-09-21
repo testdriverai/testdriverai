@@ -6,11 +6,11 @@ description: Capture and manage screenshots during test execution
 
 ## Overview
 
-TestDriver can capture screenshots manually at any point during a test, or automatically before and after every command. Screenshots are saved to a structured directory for easy debugging.
+TestDriver can capture screenshots by hand at any point during a test. It can also capture them automatically before and after each command. TestDriver saves the screenshots to a structured directory. This makes debug easy.
 
 ## Manual Screenshots
 
-Use `testdriver.screenshot()` to capture the current screen:
+Use `testdriver.screenshot()` to capture the present screen:
 
 ```javascript
 const path = await testdriver.screenshot();
@@ -25,7 +25,7 @@ await testdriver.screenshot(filename?)
 ```
 
 <ParamField path="filename" type="string">
-  Custom filename for the screenshot. `.png` is appended automatically if missing. If omitted, defaults to `screenshot-<timestamp>.png`.
+  A custom filename for the screenshot. TestDriver adds `.png` automatically if it is not there. If you do not give this, the default is `screenshot-<timestamp>.png`.
 </ParamField>
 
 **Returns:** `Promise<string>` — the absolute file path of the saved screenshot.

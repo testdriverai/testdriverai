@@ -4,13 +4,13 @@ description: Perform actions and handle dynamic, async UI so tests adapt to chan
 ---
 <!-- Generated from performing-actions.mdx. DO NOT EDIT. -->
 
-Real apps move, load, and change. Adapt your tests to handle it.
+Real apps move, load, and change. Adapt your tests to these conditions.
 
-Once you've [generated](/generating-tests) and [learned](/caching) your tests and gotten them [running](/copilot/running-tests), the next challenge is the real world: buttons appear after a spinner, pages navigate, animations play, and content streams in over the network. To keep tests reliable, you need to perform the right actions and handle timing so your tests adapt to how the UI actually behaves instead of breaking.
+You [generated](/generating-tests) and [learned](/caching) your tests. Then you got them to [run](/copilot/running-tests). Now the challenge is the real world: buttons show after a spinner, pages navigate, animations play, and content comes in over the network. To keep the tests reliable, do the correct actions and control the timing. Then your tests adapt to the true behavior of the UI. They do not break.
 
 ## Performing Actions
 
-TestDriver provides a variety of actions you can perform, like [clicking](/click), [typing](/type), [hovering](/hover), and [scrolling](/scroll). For a full list, see the [API Reference](/click).
+TestDriver gives you many actions. You can [click](/click), [type](/type), [hover](/hover), and [scroll](/scroll). For a full list, read the [API Reference](/click).
 
 ```javascript
 // Clicking
@@ -42,14 +42,14 @@ const orderNumber = await testdriver.extract('the order confirmation number');
 
 ### Chaining Actions
 
-TestDriver supports method chaining for cleaner code:
+TestDriver lets you chain methods for cleaner code:
 
 ```javascript
 // Chain find() with actions
 const button = await testdriver.find('submit button').click();
 ```
 
-Or save element reference for later use:
+Or keep the element reference for later use:
 
 ```javascript
 const button = await testdriver.find('submit button');
@@ -58,9 +58,9 @@ await button.click();
 
 ## Waiting for Dynamic Content
 
-By default, `find()` automatically polls for up to 10 seconds, retrying every 5 seconds until the element is found. This means most elements that appear after short async operations will be found without any extra configuration.
+By default, `find()` polls automatically for a maximum of 10 seconds. It tries again each 5 seconds until it finds the element. Thus TestDriver finds most elements that show after short async operations. You do not need more configuration.
 
-For longer operations, increase the `timeout`:
+For longer operations, make the `timeout` larger:
 
 ```javascript
 // Default behavior - polls for up to 10 seconds automatically

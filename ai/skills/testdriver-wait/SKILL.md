@@ -36,8 +36,8 @@ await testdriver.wait();
 
 ## Best Practices
 
-- **Use it for simple delays** — to wait for animations, transitions, or state changes after an action.
-- **Do not use it to wait for an element** — if you wait for a specific element to show, use `find()` with a `timeout` option:
+- **Use it for simple delays**. Wait for animations, transitions, or state changes after an action.
+- **Do not use it to wait for an element**. If you wait for a specific element to show, use `find()` with a `timeout` option:
   ```javascript
   // ✅ Better for waiting for elements
   const element = await testdriver.find('success message', { timeout: 30000 });

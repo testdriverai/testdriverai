@@ -4,7 +4,7 @@ description: Deploy TestDriver on your AWS infrastructure using CloudFormation
 ---
 <!-- Generated from aws-setup.mdx. DO NOT EDIT. -->
 
-This guide walks you through setting up self-hosted TestDriver instances on AWS. By the end, you'll have fully automated test infrastructure that spawns and terminates instances on-demand.
+This guide helps you to set up self-hosted TestDriver instances on AWS. At the end, you have automated test infrastructure. It starts and stops instances when you need them.
 
 ```mermaid
 graph LR
@@ -16,13 +16,13 @@ graph LR
 
 ## How It Works
 
-TestDriver automatically manages AWS EC2 instances for your tests:
+TestDriver manages the AWS EC2 instances for your tests automatically:
 
-1. **Deploy CloudFormation** — One-time infrastructure setup
-2. **Configure Vitest** — Add one line to your config
-3. **Run Tests** — Instances spawn automatically, run tests, and terminate
+1. **Deploy CloudFormation**. Set up the infrastructure one time.
+2. **Configure Vitest**. Add one line to your config.
+3. **Run Tests**. The instances start automatically, run the tests, and stop.
 
-That's it! No manual instance management needed.
+That is all. You do not need to manage the instances by hand.
 
 # Quickstart
 
